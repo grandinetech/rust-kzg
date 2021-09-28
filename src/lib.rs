@@ -1,18 +1,11 @@
-pub type KzgRet = ::std::os::raw::c_uint;
-
-pub const KZG_OK: KzgRet = 0;
-pub const KZG_BAD_ARGS: KzgRet = 1;
-pub const KZG_ERROR: KzgRet = 2;
-pub const KZG_MALLOC: KzgRet = 3;
-
-/* TODO: need something like this:
-enum KzgRet : uint_t {
-    KZG_OK,
-    KZG_BAD_ARGS,
-    KZG_ERROR,
-    KZG_MALLOC
-};
-*/
+#[repr(u8)]
+#[derive(Debug, PartialEq)]
+pub enum KzgRet {
+    KzgOk = 0,
+    KzgBadArgs = 1,
+    KzgError = 2,
+    KzgMalloc = 3
+}
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -36,16 +29,15 @@ extern "C" {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Poly, new_poly, free_poly, KZG_OK, BlstFr};
+    use crate::{Poly, new_poly, free_poly, KzgRet, BlstFr};
 
     #[test]
-    fn it_works() {
+    fn test_poly() {
         unsafe {
             let some_l: [u64; 4] = [0, 0, 0, 0];
             let some_poly = &mut Poly{ coeffs: &mut BlstFr{l: some_l }, length: 4 };
-            assert_eq!(new_poly(some_poly, 4), KZG_OK);
+            assert_eq!(new_poly(some_poly, 4), KzgRet::KzgOk);
             free_poly(some_poly);
         }
-        assert_eq!(2 + 2, 4);
     }
 }
