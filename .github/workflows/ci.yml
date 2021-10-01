@@ -1,0 +1,20 @@
+name: CI Build 
+  
+on: [push] 
+ 
+jobs: 
+  build: 
+ 
+    runs-on: [ubuntu-latest, windows-latest, macos-11] 
+    defaults:
+      run:
+        shell: bash
+        working-directory: kzg-bench
+ 
+    steps: 
+    - uses: actions/checkout@v2 
+    - name: Tests
+      run: cargo test
+    - name: Benchmarks
+      run: cargo bench
+
