@@ -1,3 +1,4 @@
+// Blst
 /*pub type Pairing = blst::Pairing;
 pub type Fp = blst::blst_fp;
 pub type Fp12 = blst::blst_fp12;
@@ -9,8 +10,13 @@ pub type P2 = blst::blst_p2;
 pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;*/
+// Poly
+pub type Poly = KzgPoly;
+// Common
+pub type Error = KzgRet;
 
 pub mod finite;
+pub mod poly;
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -29,30 +35,13 @@ pub enum KzgRet {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct Poly {
+pub struct KzgPoly {
     pub coeffs: *mut BlstFr,
     pub length: u64
 }
 
-/*
-#[link(name = "ckzg", kind = "static")]
-#[link(name = "blst", kind = "static")]
-extern "C" {
-    pub fn new_poly(out: *mut Poly, length: u64) -> KzgRet;
-    pub fn free_poly(p: *mut Poly);
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{Poly, new_poly, free_poly, KzgRet, BlstFr};
-
-    #[test]
-    fn test_poly() {
-        unsafe {
-            let some_l: [u64; 4] = [0, 0, 0, 0];
-            let some_poly = &mut Poly{ coeffs: &mut BlstFr{l: some_l }, length: 4 };
-            assert_eq!(new_poly(some_poly, 4), KzgRet::KzgOk);
-            free_poly(some_poly);
-        }
+impl<> Default for KzgPoly<> {
+    fn default() -> Self {
+        Self { coeffs: &mut BlstFr{l: [0, 0, 0, 0] }, length: 4 }
     }
-}*/
+}
