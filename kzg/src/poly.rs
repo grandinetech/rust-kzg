@@ -3,8 +3,8 @@ use super::Error;
 
 #[link(name = "ckzg", kind = "static")]
 extern "C" {
-    pub fn new_poly(out: *mut Poly, length: u64) -> Error;
-    pub fn free_poly(p: *mut Poly);
+    fn new_poly(out: *mut Poly, length: u64) -> Error;
+    fn free_poly(p: *mut Poly);
 }
 
 pub fn create_poly(length: u64) -> Result<Poly, Error> {
