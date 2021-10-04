@@ -37,6 +37,25 @@ pub fn create_divided_poly(dividend: *const Poly, divisor: *const Poly) -> Resul
     }
 }
 
+// https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/poly_bench.c#L39
+fn randomize_poly_coefficients(poly: &mut Poly, length: u64) {
+    for i in 0..length  {
+        unsafe {
+            *poly.coeffs.offset(i as isize) = rand_fr();
+        }
+    }
+}
+
+// Ensure that the polynomials' orders corresponds to their lengths
+// https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/poly_bench.c#L46
+fn check_poly_order(poly: &mut Poly, length: u64) {
+    unsafe {
+        if is_zero_fr(*poly.coeffs.offset((length - 1) as isize)) {
+            *poly.coeffs.offset((length - 1) as isize) = u64_to_fr(1);
+        }
+    }
+}
+
 pub fn poly_division_in_finite_field(scale : u64) -> Error {
     let dividend_length: u64 = 1 << scale;
     let divisor_length: u64 = dividend_length / 2;
@@ -50,28 +69,11 @@ pub fn poly_division_in_finite_field(scale : u64) -> Error {
         Err(_) => Poly::default()
     };
 
-    for i in 0..dividend_length  {
-        unsafe {
-            *dividend.coeffs.offset(i as isize) = rand_fr();
-        }
-    }
-    for i in 0..divisor_length  {
-        unsafe {
-            *divisor.coeffs.offset(i as isize) = rand_fr();
-        }
-    }
+    randomize_poly_coefficients(&mut dividend, dividend_length);
+    randomize_poly_coefficients(&mut divisor, divisor_length);
 
-    // Ensure that the polynomials' orders corresponds to their lengths
-    unsafe {
-        if is_zero_fr(*dividend.coeffs.offset((dividend_length - 1) as isize)) {
-            *divisor.coeffs.offset((dividend_length - 1) as isize) = u64_to_fr(1);
-        }
-    }
-    unsafe {
-        if is_zero_fr(*divisor.coeffs.offset((divisor_length - 1) as isize)) {
-            *divisor.coeffs.offset((divisor_length - 1) as isize) = u64_to_fr(1);
-        }
-    }
+    check_poly_order(&mut dividend, dividend_length);
+    check_poly_order(&mut divisor, divisor_length);
 
     let mut errors = Error::KzgOk;
     let mut divided_poly = match create_divided_poly(&mut dividend, &mut divisor) {
