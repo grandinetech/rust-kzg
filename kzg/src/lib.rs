@@ -1,3 +1,4 @@
+// Blst
 /*pub type Pairing = blst::Pairing;
 pub type Fp = blst::blst_fp;
 pub type Fp12 = blst::blst_fp12;
@@ -9,9 +10,14 @@ pub type P2 = blst::blst_p2;
 pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;*/
+// Poly
+pub type Poly = KzgPoly;
+// Common
+pub type Error = KzgRet;
 
 pub mod finite;
 pub mod fftsettings;
+pub mod poly;
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -39,42 +45,31 @@ pub enum KzgRet {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct Poly {
+pub struct KzgPoly {
     pub coeffs: *mut BlstFr,
     pub length: u64
 }
 
-#[link(name = "ckzg")]
-#[link(name = "blst")]
-extern "C" {
-    pub fn new_poly(out: *mut Poly, length: u64) -> KzgRet;
-    pub fn free_poly(p: *mut Poly);
+impl<> Default for KzgPoly<> {
+    fn default() -> Self {
+        Self { coeffs: &mut BlstFr { l: [0, 0, 0, 0] }, length: 4 }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Poly, new_poly, free_poly, KzgRet, BlstFr, FFTSettings};
+    use crate::{KzgRet, BlstFr, FFTSettings};
     use crate::fftsettings::{ckzg_new_fft_settings};
-
-    #[test]
-    fn test_poly() {
-        unsafe {
-            let some_l: [u64; 4] = [0, 0, 0, 0];
-            let some_poly = &mut Poly{ coeffs: &mut BlstFr{l: some_l }, length: 4 };
-            assert_eq!(new_poly(some_poly, 4), KzgRet::KzgOk);
-            free_poly(some_poly);
-        }
-    }
 
     #[test]
     fn test_fft_settings_alloc() {
         let root_of_unity_poly: [u64; 4] = [0, 0, 0, 0];
-        let root_of_unity = &mut BlstFr{l: root_of_unity_poly };
+        let root_of_unity = &mut BlstFr { l: root_of_unity_poly };
         let expanded_roots_of_unity_poly: [u64; 4] = [0, 0, 0, 0];
-        let expanded_roots_of_unity = &mut BlstFr{l: expanded_roots_of_unity_poly };
+        let expanded_roots_of_unity = &mut BlstFr { l: expanded_roots_of_unity_poly };
         let reverse_roots_of_unity_poly: [u64; 4] = [0, 0, 0, 0];
-        let reverse_roots_of_unity = &mut BlstFr{l: reverse_roots_of_unity_poly };
-        let settings = &mut FFTSettings{
+        let reverse_roots_of_unity = &mut BlstFr { l: reverse_roots_of_unity_poly };
+        let settings = &mut FFTSettings {
             max_width: 16,
             root_of_unity: root_of_unity,
             expanded_roots_of_unity: expanded_roots_of_unity,
