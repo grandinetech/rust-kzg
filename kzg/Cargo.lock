@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "blst"
 version = "0.3.5"
-source = "git+https://github.com/supranational/blst.git#ea226a03f18c25c3c820d467d44f9f083e2502c2"
+source = "git+https://github.com/supranational/blst.git#7205bda9244e06e992114bfbc21c05560c932f4a"
 dependencies = [
  "cc",
  "glob",
@@ -77,9 +77,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.77"
+version = "1.0.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5239bc68e0fef57495900cfea4e8dc75596d9a319d7e16b1e0a440d24e6fe0a0"
+checksum = "a4eac2e6c19f5c3abc0c229bea31ff0b9b091c7b14990e8924b92902a303a0c0"
 dependencies = [
  "proc-macro2",
  "quote",
