@@ -62,11 +62,17 @@ pub fn poly_division_in_finite_field(scale : u64) -> Error {
 
     let mut dividend = match create_poly(dividend_length) {
         Ok(p) => p,
-        Err(_) => Poly::default()
+        Err(e) => {
+            println!("Poly error: {:?}", e);
+            Poly::default()
+        }
     };
     let mut divisor = match create_poly(divisor_length) {
         Ok(p) => p,
-        Err(_) => Poly::default()
+        Err(e) => {
+            println!("Poly error: {:?}", e);
+            Poly::default()
+        }
     };
 
     randomize_poly_coefficients(&mut dividend, dividend_length);
@@ -80,6 +86,7 @@ pub fn poly_division_in_finite_field(scale : u64) -> Error {
         Ok(p) => p,
         Err(e) => {
             errors = e;
+            println!("Poly error: {:?}", e);
             Poly::default()
         }
     };

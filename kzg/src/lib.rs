@@ -25,7 +25,7 @@ pub struct BlstFr {
 }
 
 #[repr(u8)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum KzgRet {
     KzgOk = 0,
     KzgBadArgs = 1,
