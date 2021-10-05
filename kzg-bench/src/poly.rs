@@ -6,7 +6,10 @@ mod tests {
     fn create_poly_of_length_ten() {
         let mut poly = match kzg::poly::create_poly(10) {
             Ok(p) => p,
-            Err(_) => Poly::default()
+            Err(e) => {
+                println!("Poly error: {:?}", e);
+                Poly::default()
+            }
         };
         assert_eq!(poly.length, 10);
         kzg::poly::destroy_poly(&mut poly);
