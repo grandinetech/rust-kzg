@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use kzg::Poly;
+    use kzg::{Error, Poly};
 
     #[test]
     fn create_poly_of_length_ten() {
@@ -10,5 +10,11 @@ mod tests {
         };
         assert_eq!(poly.length, 10);
         kzg::poly::destroy_poly(&mut poly);
+    }
+
+    #[test]
+    fn create_divided_poly_in_finite_field() {
+        let errors = kzg::poly::poly_division_in_finite_field(15);
+        assert_eq!(errors, Error::KzgOk);
     }
 }
