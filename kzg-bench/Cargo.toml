@@ -15,3 +15,6 @@ criterion = "0.3.5"
 name = "finite"
 harness = false
 
+[[bench]]
+name = "poly"
+harness = false
