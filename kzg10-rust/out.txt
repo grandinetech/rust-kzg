@@ -1,0 +1,511 @@
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+WARNING: HTML report generation will become a non-default optional feature in Criterion.rs 0.4.0.
+This feature is being moved to cargo-criterion (https://github.com/bheisler/cargo-criterion) and will be optional in a future version of Criterion.rs. To silence this warning, either switch to cargo-criterion or enable the 'html_reports' feature in your Cargo.toml.
+
+Gnuplot not found, using plotters backend
+Benchmarking bench_simple_commit
+Benchmarking bench_simple_commit: Warming up for 3.0000 s
+Benchmarking bench_simple_commit: Collecting 100 samples in estimated 5.2535 s (76k iterations)
+Benchmarking bench_simple_commit: Analyzing
+bench_simple_commit     time:   [68.068 us 68.629 us 69.432 us]
+                        change: [-2.0735% -0.6662% +0.9831%] (p = 0.41 > 0.05)
+                        No change in performance detected.
+Found 19 outliers among 100 measurements (19.00%)
+  1 (1.00%) low severe
+  5 (5.00%) low mild
+  4 (4.00%) high mild
+  9 (9.00%) high severe
+
+Benchmarking bench_large_commit
+Benchmarking bench_large_commit: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 6.1s, or reduce sample count to 80.
+Benchmarking bench_large_commit: Collecting 100 samples in estimated 6.0770 s (100 iterations)
+Benchmarking bench_large_commit: Analyzing
+bench_large_commit      time:   [60.677 ms 60.937 ms 61.347 ms]
+                        change: [-1.2231% -0.4676% +0.4473%] (p = 0.27 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  1 (1.00%) low mild
+  4 (4.00%) high mild
+  5 (5.00%) high severe
+
+WARNING: HTML report generation will become a non-default optional feature in Criterion.rs 0.4.0.
+This feature is being moved to cargo-criterion (https://github.com/bheisler/cargo-criterion) and will be optional in a future version of Criterion.rs. To silence this warning, either switch to cargo-criterion or enable the 'html_reports' feature in your Cargo.toml.
+
+Gnuplot not found, using plotters backend
+Benchmarking bench_das_fft_extension scale: '4'
+Benchmarking bench_das_fft_extension scale: '4': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '4': Collecting 100 samples in estimated 5.0020 s (3.3M iterations)
+Benchmarking bench_das_fft_extension scale: '4': Analyzing
+bench_das_fft_extension scale: '4'
+                        time:   [1.4205 us 1.4277 us 1.4371 us]
+Found 18 outliers among 100 measurements (18.00%)
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+  14 (14.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '5'
+Benchmarking bench_das_fft_extension scale: '5': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '5': Collecting 100 samples in estimated 5.0119 s (1.9M iterations)
+Benchmarking bench_das_fft_extension scale: '5': Analyzing
+bench_das_fft_extension scale: '5'
+                        time:   [2.6806 us 2.6900 us 2.7018 us]
+Found 15 outliers among 100 measurements (15.00%)
+  3 (3.00%) low mild
+  4 (4.00%) high mild
+  8 (8.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '6'
+Benchmarking bench_das_fft_extension scale: '6': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '6': Collecting 100 samples in estimated 5.0287 s (843k iterations)
+Benchmarking bench_das_fft_extension scale: '6': Analyzing
+bench_das_fft_extension scale: '6'
+                        time:   [5.9318 us 5.9436 us 5.9550 us]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) low severe
+  1 (1.00%) low mild
+
+Benchmarking bench_das_fft_extension scale: '7'
+Benchmarking bench_das_fft_extension scale: '7': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '7': Collecting 100 samples in estimated 5.0583 s (394k iterations)
+Benchmarking bench_das_fft_extension scale: '7': Analyzing
+bench_das_fft_extension scale: '7'
+                        time:   [12.817 us 12.854 us 12.919 us]
+Found 9 outliers among 100 measurements (9.00%)
+  2 (2.00%) low mild
+  3 (3.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '8'
+Benchmarking bench_das_fft_extension scale: '8': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '8': Collecting 100 samples in estimated 5.0080 s (172k iterations)
+Benchmarking bench_das_fft_extension scale: '8': Analyzing
+bench_das_fft_extension scale: '8'
+                        time:   [28.962 us 29.108 us 29.327 us]
+Found 9 outliers among 100 measurements (9.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '9'
+Benchmarking bench_das_fft_extension scale: '9': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '9': Collecting 100 samples in estimated 5.2914 s (81k iterations)
+Benchmarking bench_das_fft_extension scale: '9': Analyzing
+bench_das_fft_extension scale: '9'
+                        time:   [64.748 us 64.784 us 64.822 us]
+Found 6 outliers among 100 measurements (6.00%)
+  1 (1.00%) low mild
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '10'
+Benchmarking bench_das_fft_extension scale: '10': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '10': Collecting 100 samples in estimated 5.1710 s (35k iterations)
+Benchmarking bench_das_fft_extension scale: '10': Analyzing
+bench_das_fft_extension scale: '10'
+                        time:   [147.84 us 150.22 us 152.92 us]
+Found 15 outliers among 100 measurements (15.00%)
+  4 (4.00%) high mild
+  11 (11.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '11'
+Benchmarking bench_das_fft_extension scale: '11': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '11': Collecting 100 samples in estimated 6.5357 s (20k iterations)
+Benchmarking bench_das_fft_extension scale: '11': Analyzing
+bench_das_fft_extension scale: '11'
+                        time:   [321.59 us 322.06 us 322.79 us]
+Found 9 outliers among 100 measurements (9.00%)
+  3 (3.00%) low severe
+  2 (2.00%) low mild
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '12'
+Benchmarking bench_das_fft_extension scale: '12': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '12': Collecting 100 samples in estimated 7.1396 s (10k iterations)
+Benchmarking bench_das_fft_extension scale: '12': Analyzing
+bench_das_fft_extension scale: '12'
+                        time:   [704.94 us 706.42 us 708.32 us]
+Found 6 outliers among 100 measurements (6.00%)
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '13'
+Benchmarking bench_das_fft_extension scale: '13': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 7.9s, enable flat sampling, or reduce sample count to 50.
+Benchmarking bench_das_fft_extension scale: '13': Collecting 100 samples in estimated 7.9191 s (5050 iterations)
+Benchmarking bench_das_fft_extension scale: '13': Analyzing
+bench_das_fft_extension scale: '13'
+                        time:   [1.5594 ms 1.5604 ms 1.5616 ms]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '14'
+Benchmarking bench_das_fft_extension scale: '14': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '14': Collecting 100 samples in estimated 5.2809 s (1500 iterations)
+Benchmarking bench_das_fft_extension scale: '14': Analyzing
+bench_das_fft_extension scale: '14'
+                        time:   [3.5136 ms 3.5738 ms 3.6487 ms]
+Found 16 outliers among 100 measurements (16.00%)
+  1 (1.00%) high mild
+  15 (15.00%) high severe
+
+Benchmarking bench_das_fft_extension scale: '15'
+Benchmarking bench_das_fft_extension scale: '15': Warming up for 3.0000 s
+Benchmarking bench_das_fft_extension scale: '15': Collecting 100 samples in estimated 5.2595 s (700 iterations)
+Benchmarking bench_das_fft_extension scale: '15': Analyzing
+bench_das_fft_extension scale: '15'
+                        time:   [7.4706 ms 7.4763 ms 7.4824 ms]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+
+WARNING: HTML report generation will become a non-default optional feature in Criterion.rs 0.4.0.
+This feature is being moved to cargo-criterion (https://github.com/bheisler/cargo-criterion) and will be optional in a future version of Criterion.rs. To silence this warning, either switch to cargo-criterion or enable the 'html_reports' feature in your Cargo.toml.
+
+Gnuplot not found, using plotters backend
+Benchmarking bench_fft_fr scale: '4'
+Benchmarking bench_fft_fr scale: '4': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '4': Collecting 100 samples in estimated 5.0047 s (5.4M iterations)
+Benchmarking bench_fft_fr scale: '4': Analyzing
+bench_fft_fr scale: '4' time:   [908.47 ns 914.15 ns 921.79 ns]
+Found 10 outliers among 100 measurements (10.00%)
+  3 (3.00%) high mild
+  7 (7.00%) high severe
+
+Benchmarking bench_fft_fr scale: '5'
+Benchmarking bench_fft_fr scale: '5': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '5': Collecting 100 samples in estimated 5.0024 s (2.5M iterations)
+Benchmarking bench_fft_fr scale: '5': Analyzing
+bench_fft_fr scale: '5' time:   [1.9857 us 1.9915 us 2.0003 us]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) low mild
+  2 (2.00%) high severe
+
+Benchmarking bench_fft_fr scale: '6'
+Benchmarking bench_fft_fr scale: '6': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '6': Collecting 100 samples in estimated 5.0014 s (1.1M iterations)
+Benchmarking bench_fft_fr scale: '6': Analyzing
+bench_fft_fr scale: '6' time:   [4.4627 us 4.4696 us 4.4770 us]
+Found 5 outliers among 100 measurements (5.00%)
+  2 (2.00%) low severe
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking bench_fft_fr scale: '7'
+Benchmarking bench_fft_fr scale: '7': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '7': Collecting 100 samples in estimated 5.0170 s (515k iterations)
+Benchmarking bench_fft_fr scale: '7': Analyzing
+bench_fft_fr scale: '7' time:   [9.6845 us 9.7090 us 9.7403 us]
+Found 10 outliers among 100 measurements (10.00%)
+  1 (1.00%) low severe
+  7 (7.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking bench_fft_fr scale: '8'
+Benchmarking bench_fft_fr scale: '8': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '8': Collecting 100 samples in estimated 5.0507 s (237k iterations)
+Benchmarking bench_fft_fr scale: '8': Analyzing
+bench_fft_fr scale: '8' time:   [21.415 us 21.748 us 22.181 us]
+Found 11 outliers among 100 measurements (11.00%)
+  1 (1.00%) high mild
+  10 (10.00%) high severe
+
+Benchmarking bench_fft_fr scale: '9'
+Benchmarking bench_fft_fr scale: '9': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '9': Collecting 100 samples in estimated 5.2293 s (111k iterations)
+Benchmarking bench_fft_fr scale: '9': Analyzing
+bench_fft_fr scale: '9' time:   [48.218 us 48.316 us 48.453 us]
+Found 8 outliers among 100 measurements (8.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking bench_fft_fr scale: '10'
+Benchmarking bench_fft_fr scale: '10': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '10': Collecting 100 samples in estimated 5.0633 s (50k iterations)
+Benchmarking bench_fft_fr scale: '10': Analyzing
+bench_fft_fr scale: '10'
+                        time:   [101.90 us 103.46 us 105.21 us]
+Found 17 outliers among 100 measurements (17.00%)
+  2 (2.00%) low mild
+  4 (4.00%) high mild
+  11 (11.00%) high severe
+
+Benchmarking bench_fft_fr scale: '11'
+Benchmarking bench_fft_fr scale: '11': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '11': Collecting 100 samples in estimated 5.4762 s (25k iterations)
+Benchmarking bench_fft_fr scale: '11': Analyzing
+bench_fft_fr scale: '11'
+                        time:   [214.91 us 215.38 us 216.06 us]
+Found 6 outliers among 100 measurements (6.00%)
+  1 (1.00%) low mild
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking bench_fft_fr scale: '12'
+Benchmarking bench_fft_fr scale: '12': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '12': Collecting 100 samples in estimated 7.0440 s (15k iterations)
+Benchmarking bench_fft_fr scale: '12': Analyzing
+bench_fft_fr scale: '12'
+                        time:   [464.08 us 466.96 us 472.09 us]
+Found 8 outliers among 100 measurements (8.00%)
+  1 (1.00%) low severe
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking bench_fft_fr scale: '13'
+Benchmarking bench_fft_fr scale: '13': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 5.0s, enable flat sampling, or reduce sample count to 70.
+Benchmarking bench_fft_fr scale: '13': Collecting 100 samples in estimated 5.0247 s (5050 iterations)
+Benchmarking bench_fft_fr scale: '13': Analyzing
+bench_fft_fr scale: '13'
+                        time:   [990.30 us 992.56 us 996.03 us]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking bench_fft_fr scale: '14'
+Benchmarking bench_fft_fr scale: '14': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '14': Collecting 100 samples in estimated 5.1195 s (2300 iterations)
+Benchmarking bench_fft_fr scale: '14': Analyzing
+bench_fft_fr scale: '14'
+                        time:   [2.1415 ms 2.1452 ms 2.1509 ms]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking bench_fft_fr scale: '15'
+Benchmarking bench_fft_fr scale: '15': Warming up for 3.0000 s
+Benchmarking bench_fft_fr scale: '15': Collecting 100 samples in estimated 5.1225 s (1000 iterations)
+Benchmarking bench_fft_fr scale: '15': Analyzing
+bench_fft_fr scale: '15'
+                        time:   [5.0601 ms 5.0829 ms 5.1106 ms]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '4'
+Benchmarking bench_fft_g1 scale: '4': Warming up for 3.0000 s
+Benchmarking bench_fft_g1 scale: '4': Collecting 100 samples in estimated 8.5749 s (10k iterations)
+Benchmarking bench_fft_g1 scale: '4': Analyzing
+bench_fft_g1 scale: '4' time:   [852.67 us 864.97 us 883.35 us]
+Found 13 outliers among 100 measurements (13.00%)
+  4 (4.00%) high mild
+  9 (9.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '5'
+Benchmarking bench_fft_g1 scale: '5': Warming up for 3.0000 s
+Benchmarking bench_fft_g1 scale: '5': Collecting 100 samples in estimated 5.0400 s (2400 iterations)
+Benchmarking bench_fft_g1 scale: '5': Analyzing
+bench_fft_g1 scale: '5' time:   [2.0902 ms 2.0935 ms 2.0986 ms]
+Found 9 outliers among 100 measurements (9.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '6'
+Benchmarking bench_fft_g1 scale: '6': Warming up for 3.0000 s
+Benchmarking bench_fft_g1 scale: '6': Collecting 100 samples in estimated 5.1798 s (1000 iterations)
+Benchmarking bench_fft_g1 scale: '6': Analyzing
+bench_fft_g1 scale: '6' time:   [5.0731 ms 5.0854 ms 5.1016 ms]
+Found 9 outliers among 100 measurements (9.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '7'
+Benchmarking bench_fft_g1 scale: '7': Warming up for 3.0000 s
+Benchmarking bench_fft_g1 scale: '7': Collecting 100 samples in estimated 6.1534 s (500 iterations)
+Benchmarking bench_fft_g1 scale: '7': Analyzing
+bench_fft_g1 scale: '7' time:   [12.159 ms 12.177 ms 12.202 ms]
+Found 10 outliers among 100 measurements (10.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  3 (3.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '8'
+Benchmarking bench_fft_g1 scale: '8': Warming up for 3.0000 s
+Benchmarking bench_fft_g1 scale: '8': Collecting 100 samples in estimated 5.6397 s (200 iterations)
+Benchmarking bench_fft_g1 scale: '8': Analyzing
+bench_fft_g1 scale: '8' time:   [28.021 ms 28.046 ms 28.072 ms]
+Found 9 outliers among 100 measurements (9.00%)
+  1 (1.00%) low severe
+  4 (4.00%) low mild
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '9'
+Benchmarking bench_fft_g1 scale: '9': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 6.5s, or reduce sample count to 70.
+Benchmarking bench_fft_g1 scale: '9': Collecting 100 samples in estimated 6.5265 s (100 iterations)
+Benchmarking bench_fft_g1 scale: '9': Analyzing
+bench_fft_g1 scale: '9' time:   [63.987 ms 64.165 ms 64.390 ms]
+Found 9 outliers among 100 measurements (9.00%)
+  4 (4.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '10'
+Benchmarking bench_fft_g1 scale: '10': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 14.5s, or reduce sample count to 30.
+Benchmarking bench_fft_g1 scale: '10': Collecting 100 samples in estimated 14.477 s (100 iterations)
+Benchmarking bench_fft_g1 scale: '10': Analyzing
+bench_fft_g1 scale: '10'
+                        time:   [144.84 ms 145.68 ms 146.64 ms]
+Found 18 outliers among 100 measurements (18.00%)
+  1 (1.00%) high mild
+  17 (17.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '11'
+Benchmarking bench_fft_g1 scale: '11': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 32.1s, or reduce sample count to 10.
+Benchmarking bench_fft_g1 scale: '11': Collecting 100 samples in estimated 32.092 s (100 iterations)
+Benchmarking bench_fft_g1 scale: '11': Analyzing
+bench_fft_g1 scale: '11'
+                        time:   [319.55 ms 319.87 ms 320.25 ms]
+Found 10 outliers among 100 measurements (10.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+  8 (8.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '12'
+Benchmarking bench_fft_g1 scale: '12': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 70.5s, or reduce sample count to 10.
+Benchmarking bench_fft_g1 scale: '12': Collecting 100 samples in estimated 70.549 s (100 iterations)
+Benchmarking bench_fft_g1 scale: '12': Analyzing
+bench_fft_g1 scale: '12'
+                        time:   [704.19 ms 706.16 ms 708.56 ms]
+Found 19 outliers among 100 measurements (19.00%)
+  2 (2.00%) high mild
+  17 (17.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '13'
+Benchmarking bench_fft_g1 scale: '13': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 154.2s, or reduce sample count to 10.
+Benchmarking bench_fft_g1 scale: '13': Collecting 100 samples in estimated 154.22 s (100 iterations)
+Benchmarking bench_fft_g1 scale: '13': Analyzing
+bench_fft_g1 scale: '13'
+                        time:   [1.5384 s 1.5419 s 1.5460 s]
+Found 15 outliers among 100 measurements (15.00%)
+  1 (1.00%) high mild
+  14 (14.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '14'
+Benchmarking bench_fft_g1 scale: '14': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 335.0s, or reduce sample count to 10.
+Benchmarking bench_fft_g1 scale: '14': Collecting 100 samples in estimated 335.02 s (100 iterations)
+Benchmarking bench_fft_g1 scale: '14': Analyzing
+bench_fft_g1 scale: '14'
+                        time:   [3.3328 s 3.3398 s 3.3476 s]
+Found 16 outliers among 100 measurements (16.00%)
+  7 (7.00%) high mild
+  9 (9.00%) high severe
+
+Benchmarking bench_fft_g1 scale: '15'
+Benchmarking bench_fft_g1 scale: '15': Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 717.2s, or reduce sample count to 10.
+Benchmarking bench_fft_g1 scale: '15': Collecting 100 samples in estimated 717.21 s (100 iterations)
+Benchmarking bench_fft_g1 scale: '15': Analyzing
+bench_fft_g1 scale: '15'
+                        time:   [7.1736 s 7.1833 s 7.1942 s]
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) high mild
+  6 (6.00%) high severe
+
+WARNING: HTML report generation will become a non-default optional feature in Criterion.rs 0.4.0.
+This feature is being moved to cargo-criterion (https://github.com/bheisler/cargo-criterion) and will be optional in a future version of Criterion.rs. To silence this warning, either switch to cargo-criterion or enable the 'html_reports' feature in your Cargo.toml.
+
+Gnuplot not found, using plotters backend
+Benchmarking bench_simple_proof_check
+Benchmarking bench_simple_proof_check: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 7.7s, enable flat sampling, or reduce sample count to 50.
+Benchmarking bench_simple_proof_check: Collecting 100 samples in estimated 7.7301 s (5050 iterations)
+Benchmarking bench_simple_proof_check: Analyzing
+bench_simple_proof_check
+                        time:   [1.5223 ms 1.5255 ms 1.5304 ms]
+                        change: [-1.5684% -1.1732% -0.8144%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 6 outliers among 100 measurements (6.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking bench_large_proof_check
+Benchmarking bench_large_proof_check: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 8.0s, enable flat sampling, or reduce sample count to 50.
+Benchmarking bench_large_proof_check: Collecting 100 samples in estimated 7.9551 s (5050 iterations)
+Benchmarking bench_large_proof_check: Analyzing
+bench_large_proof_check time:   [1.5567 ms 1.5598 ms 1.5635 ms]
+                        change: [-4.1957% -3.1246% -2.2181%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 15 outliers among 100 measurements (15.00%)
+  1 (1.00%) low severe
+  5 (5.00%) low mild
+  4 (4.00%) high mild
+  5 (5.00%) high severe
+
+WARNING: HTML report generation will become a non-default optional feature in Criterion.rs 0.4.0.
+This feature is being moved to cargo-criterion (https://github.com/bheisler/cargo-criterion) and will be optional in a future version of Criterion.rs. To silence this warning, either switch to cargo-criterion or enable the 'html_reports' feature in your Cargo.toml.
+
+Gnuplot not found, using plotters backend
+Benchmarking bench_simple_proof_gen
+Benchmarking bench_simple_proof_gen: Warming up for 3.0000 s
+Benchmarking bench_simple_proof_gen: Collecting 100 samples in estimated 5.3162 s (35k iterations)
+Benchmarking bench_simple_proof_gen: Analyzing
+bench_simple_proof_gen  time:   [146.45 us 147.70 us 149.46 us]
+                        change: [-2.3546% -0.3392% +1.5995%] (p = 0.75 > 0.05)
+                        No change in performance detected.
+Found 15 outliers among 100 measurements (15.00%)
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+  11 (11.00%) high severe
+
+Benchmarking bench_large_proof_gen
+Benchmarking bench_large_proof_gen: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 6.2s, or reduce sample count to 80.
+Benchmarking bench_large_proof_gen: Collecting 100 samples in estimated 6.2113 s (100 iterations)
+Benchmarking bench_large_proof_gen: Analyzing
+bench_large_proof_gen   time:   [61.865 ms 61.919 ms 61.973 ms]
+                        change: [-2.9367% -2.1256% -1.4964%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) low mild
+
+Benchmarking bench_random_multi_proof_gen
+Benchmarking bench_random_multi_proof_gen: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 8.8s, or reduce sample count to 50.
+Benchmarking bench_random_multi_proof_gen: Collecting 100 samples in estimated 8.8392 s (100 iterations)
+Benchmarking bench_random_multi_proof_gen: Analyzing
+bench_random_multi_proof_gen
+                        time:   [87.703 ms 87.756 ms 87.809 ms]
+                        change: [+0.9933% +1.2232% +1.4279%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 5 outliers among 100 measurements (5.00%)
+  2 (2.00%) low mild
+  3 (3.00%) high mild
+
