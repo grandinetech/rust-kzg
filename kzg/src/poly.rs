@@ -1,5 +1,4 @@
 use super::{Error, Fr, Poly};
-use super::finite::{is_zero_fr, rand_fr, u64_to_fr};
 
 #[link(name = "ckzg", kind = "static")]
 extern "C" {
@@ -60,15 +59,15 @@ impl Poly {
     // https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/poly_bench.c#L39
     fn randomize_coeffs(&mut self, length: u64) {
         for i in 0..length {
-            self.set_coeff_at(i as isize, rand_fr());
+            self.set_coeff_at(i as isize, Fr::rand());
         }
     }
 
     // Ensure that the polynomials' orders corresponds to their lengths
     // https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/poly_bench.c#L46
     fn check_order(&mut self, length: u64) {
-        if is_zero_fr(self.get_coeff_at((length - 1) as isize)) {
-            self.set_coeff_at((length - 1) as isize, u64_to_fr(1));
+        if self.get_coeff_at((length - 1) as isize).is_zero() {
+            self.set_coeff_at((length - 1) as isize, Fr::one());
         }
     }
 

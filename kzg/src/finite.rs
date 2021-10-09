@@ -1,5 +1,5 @@
-use rand::{thread_rng, Rng};
 use super::Fr;
+use rand::{thread_rng, Rng};
 
 #[link(name = "blst", kind = "static")]
 extern "C" {
@@ -10,51 +10,59 @@ extern "C" {
     fn fr_equal(aa: *const Fr, bb: *const Fr) -> bool;
 }
 
-pub fn rand_fr() -> Fr {
-    let mut ret: Fr = Fr::default();
-    let mut rng = thread_rng();
-    let a: [u64; 4] = [
-        rng.next_u64(),
-        rng.next_u64(),
-        rng.next_u64(),
-        rng.next_u64()
-    ];
-    unsafe { fr_from_uint64s(&mut ret, a.as_ptr()); }
-    ret
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct BlstFr {
+    pub l: [u64; 4]
 }
 
-pub fn add_fr(first: Fr, second: Fr) -> Fr {
-    let mut sum = Fr::default();
-    unsafe {
-        blst_fr_add(&mut sum, &first, &second);
+impl Fr {
+    pub fn zero() -> Fr {
+        Fr::from_u64(0)
     }
-    sum
-}
 
-pub fn u64_to_fr(n: u64) -> Fr {
-    let mut fr = Fr::default();
-    unsafe {
-        fr_from_uint64(&mut fr, n);
+    pub fn one() -> Fr {
+        Fr::from_u64(1)
     }
-    fr
-}
 
-pub fn is_zero_fr(point: Fr) -> bool {
-    unsafe {
-        return fr_is_zero(&point);
+    pub fn rand() -> Fr {
+        let mut ret: Fr = Fr::default();
+        let mut rng = thread_rng();
+        let a: [u64; 4] = [
+            rng.next_u64(),
+            rng.next_u64(),
+            rng.next_u64(),
+            rng.next_u64()
+        ];
+        unsafe { fr_from_uint64s(&mut ret, a.as_ptr()); }
+        ret
     }
-}
 
-pub fn is_equal(first: Fr, second: Fr) -> bool {
-    unsafe {
-        return fr_equal(&first, &second);
+    pub fn add(first: Fr, second: Fr) -> Fr {
+        let mut sum = Fr::default();
+        unsafe {
+            blst_fr_add(&mut sum, &first, &second);
+        }
+        sum
     }
-}
 
-pub fn zero_fr() -> Fr {
-    u64_to_fr(0)
-}
+    pub fn from_u64(n: u64) -> Fr {
+        let mut fr = Fr::default();
+        unsafe {
+            fr_from_uint64(&mut fr, n);
+        }
+        fr
+    }
 
-pub fn one_fr() -> Fr {
-    u64_to_fr(1)
+    pub fn is_zero(&self) -> bool {
+        unsafe {
+            return fr_is_zero(self);
+        }
+    }
+
+    pub fn is_equal(first: Fr, second: Fr) -> bool {
+        unsafe {
+            return fr_equal(&first, &second);
+        }
+    }
 }
