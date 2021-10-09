@@ -7,6 +7,7 @@ extern "C" {
     fn fr_from_uint64(out: *mut Fr, n: u64);
     fn fr_from_uint64s(out: *mut Fr, vals: *const u64);
     fn fr_is_zero(p: *const Fr) -> bool;
+    fn fr_equal(aa: *const Fr, bb: *const Fr) -> bool;
 }
 
 pub fn rand_fr() -> Fr {
@@ -42,4 +43,18 @@ pub fn is_zero_fr(point: Fr) -> bool {
     unsafe {
         return fr_is_zero(&point);
     }
+}
+
+pub fn is_equal(first: Fr, second: Fr) -> bool {
+    unsafe {
+        return fr_equal(&first, &second);
+    }
+}
+
+pub fn zero_fr() -> Fr {
+    u64_to_fr(0)
+}
+
+pub fn one_fr() -> Fr {
+    u64_to_fr(1)
 }
