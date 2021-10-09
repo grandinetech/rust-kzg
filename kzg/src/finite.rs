@@ -7,7 +7,9 @@ extern "C" {
     fn fr_from_uint64(out: *mut Fr, n: u64);
     fn fr_from_uint64s(out: *mut Fr, vals: *const u64);
     fn fr_is_zero(p: *const Fr) -> bool;
+    fn fr_is_one(p: *const Fr) -> bool;
     fn fr_equal(aa: *const Fr, bb: *const Fr) -> bool;
+    fn fr_negate(out: *mut Fr, in_: *const Fr);
 }
 
 #[repr(C)]
@@ -60,9 +62,23 @@ impl Fr {
         }
     }
 
+    pub fn is_one(&self) -> bool {
+        unsafe {
+            return fr_is_one(self);
+        }
+    }
+
     pub fn is_equal(first: Fr, second: Fr) -> bool {
         unsafe {
             return fr_equal(&first, &second);
         }
+    }
+
+    pub fn negate(first: *const Fr) -> Fr {
+        let mut ret: Fr = Fr::default();
+        unsafe {
+            fr_negate(&mut ret, first);
+        }
+        ret
     }
 }

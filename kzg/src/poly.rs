@@ -6,6 +6,7 @@ extern "C" {
     fn free_poly(p: *mut Poly);
     fn new_poly_div(out: *mut Poly, dividend: *const Poly, divisor: *const Poly) -> Error;
     fn eval_poly(out: *mut Fr, p: *const Poly, x: *const Fr);
+    fn poly_inverse(out: *mut Poly, b: *mut Poly) -> Error;
 }
 
 #[repr(C)]
@@ -31,7 +32,7 @@ impl Poly {
                     })
                 }
                 e => {
-                    println!("An error has occurred in \"Poly::new\" : {:?}", e);
+                    println!("An error has occurred in \"Poly::new\" ==> {:?}", e);
                     Err(e)
                 }
             }
@@ -49,7 +50,7 @@ impl Poly {
                     })
                 }
                 e => {
-                    println!("An error has occurred in \"Poly::new_divided\" : {:?}", e);
+                    println!("An error has occurred in \"Poly::new_divided\" ==> {:?}", e);
                     Err(e)
                 }
             }
@@ -104,6 +105,12 @@ impl Poly {
         divided_poly.destroy();
 
         errors
+    }
+
+    pub fn inverse(&mut self, poly: *mut Poly) -> Error {
+        unsafe {
+            return poly_inverse(self, poly);
+        }
     }
 
     pub fn eval_at(&self, point: &Fr) -> Fr {
