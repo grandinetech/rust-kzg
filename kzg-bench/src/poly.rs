@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use kzg::{Error, Poly};
+    use kzg::{Error, Fr, Poly};
 
     #[test]
     fn create_poly_of_length_ten() {
@@ -26,12 +26,12 @@ mod tests {
             Err(_) => Poly::default()
         };
         for i in 0..n {
-            let fr = kzg::finite::u64_to_fr(i + 1);
+            let fr = Fr::from_u64(i + 1);
             poly.set_coeff_at(i as isize, fr);
         }
-        let expected = kzg::finite::u64_to_fr(n * (n + 1) / 2);
-        let actual = poly.eval_at(&kzg::finite::one_fr());
-        assert_eq!(kzg::finite::is_equal(expected, actual), true);
+        let expected = Fr::from_u64(n * (n + 1) / 2);
+        let actual = poly.eval_at(&Fr::one());
+        assert_eq!(Fr::is_equal(expected, actual), true);
         poly.destroy();
     }
 
@@ -44,12 +44,12 @@ mod tests {
             Err(_) => Poly::default()
         };
         for i in 0..n {
-            let fr = kzg::finite::u64_to_fr(i + a);
+            let fr = Fr::from_u64(i + a);
             poly.set_coeff_at(i as isize, fr);
         }
-        let expected = kzg::finite::u64_to_fr(a);
-        let actual = poly.eval_at(&kzg::finite::zero_fr());
-        assert_eq!(kzg::finite::is_equal(expected, actual), true);
+        let expected = Fr::from_u64(a);
+        let actual = poly.eval_at(&Fr::zero());
+        assert_eq!(Fr::is_equal(expected, actual), true);
         poly.destroy();
     }
 
@@ -60,8 +60,8 @@ mod tests {
             Ok(p) => p,
             Err(_) => Poly::default()
         };
-        let actual = poly.eval_at(&kzg::finite::one_fr());
-        assert_eq!(kzg::finite::is_equal(kzg::finite::zero_fr(), actual), true);
+        let actual = poly.eval_at(&Fr::one());
+        assert_eq!(Fr::is_equal(Fr::zero(), actual), true);
         poly.destroy();
     }
 }
