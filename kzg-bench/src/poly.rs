@@ -64,4 +64,27 @@ mod tests {
         assert_eq!(Fr::is_equal(Fr::zero(), actual), true);
         poly.destroy();
     }
+
+    #[test]
+    fn poly_inverse_simple() {
+        let d: u64 = 16;
+        let mut p = match Poly::new(2) {
+            Ok(p) => p,
+            Err(_) => Poly::default()
+        };
+        p.set_coeff_at(0, Fr::one());
+        p.set_coeff_at(1, Fr::one());
+        p.set_coeff_at(1, Fr::negate(&p.get_coeff_at(1)));
+        let mut q = match Poly::new(d) {
+            Ok(p) => p,
+            Err(_) => Poly::default()
+        };
+        let errors = q.inverse(&mut p);
+        assert_eq!(errors, Error::KzgOk);
+        for i in 0..d {
+            assert_eq!(q.get_coeff_at(i as isize).is_one(), true);
+        }
+        p.destroy();
+        q.destroy();
+    }
 }
