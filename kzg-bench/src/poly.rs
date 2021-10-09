@@ -66,7 +66,8 @@ mod tests {
     }
 
     #[test]
-    fn poly_inverse_simple() {
+    fn poly_inverse_simple_0() {
+        // 1 / (1 - x) = 1 + x + x^2 + ...
         let d: u64 = 16;
         let mut p = match Poly::new(2) {
             Ok(p) => p,
@@ -83,6 +84,33 @@ mod tests {
         assert_eq!(errors, Error::KzgOk);
         for i in 0..d {
             assert_eq!(q.get_coeff_at(i as isize).is_one(), true);
+        }
+        p.destroy();
+        q.destroy();
+    }
+
+    #[test]
+    fn poly_inverse_simple_1() {
+        // 1 / (1 + x) = 1 - x + x^2 - ...
+        let d: u64 = 16;
+        let mut p = match Poly::new(2) {
+            Ok(p) => p,
+            Err(_) => Poly::default()
+        };
+        p.set_coeff_at(0, Fr::one());
+        p.set_coeff_at(1, Fr::one());
+        let mut q = match Poly::new(d) {
+            Ok(p) => p,
+            Err(_) => Poly::default()
+        };
+        let errors = q.inverse(&mut p);
+        assert_eq!(errors, Error::KzgOk);
+        for i in 0..d {
+            let mut tmp = q.get_coeff_at(i as isize);
+            if i & 1 != 0 {
+                tmp = Fr::negate(&mut tmp);
+            }
+            assert_eq!(tmp.is_one(), true);
         }
         p.destroy();
         q.destroy();
