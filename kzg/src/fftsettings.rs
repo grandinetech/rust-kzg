@@ -18,13 +18,13 @@ impl FFTSettings {
     pub fn default() -> Self {
         Self {
             max_width: 16,
-            root_of_unity: &mut Fr {l: [0, 0, 0, 0] },
-            expanded_roots_of_unity: &mut Fr {l: [0, 0, 0, 0] },
-            reverse_roots_of_unity: &mut Fr {l: [0, 0, 0, 0] }
+            root_of_unity: &mut Fr::default(),
+            expanded_roots_of_unity: &mut Fr::default(),
+            reverse_roots_of_unity: &mut Fr::default()
         }
     }
 
-    pub fn ckzg_new_fft_settings(max_scale: u32) -> Result<Self, Error> {
+    pub fn new(max_scale: u32) -> Result<Self, Error> {
         let mut settings = FFTSettings::default();
 
         unsafe {
@@ -38,7 +38,7 @@ impl FFTSettings {
         }
     }
 
-    pub fn ckzg_free_fft_settings(settings: *mut FFTSettings) {
+    pub fn free(settings: *mut FFTSettings) {
         unsafe {
             free_fft_settings(settings);
         }
