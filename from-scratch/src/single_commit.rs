@@ -1,48 +1,6 @@
 use super::P1 as P1;
 use super::Fr;
-
-pub enum STATUS {
-    SUCCESS,
-    BAD_ARGS,
-    ERROR
-}
-
-pub struct Poly {
-    pub coeffs: Fr,
-    pub length: u64,
-}
-
-/*
-typedef struct {
-    fr_t *coeffs;    //< `coeffs[i]` is the coefficient of the `x^i` term of the polynomial.
-    uint64_t length; //< One more than the polynomial's degree
-} poly;*/
-
-// typedef blst_p1 g1_t;
-// G1_T -> P1
-//type G1_T = blst::blst_p1;
-//type G2_T = blst::blst_p2;
-
-pub struct FFTSettings {
-    max_width: u64,
-    root_of_unity: Fr,
-    expanded_roots_of_unity: Fr,
-    reverse_roots_of_unity: Fr
-}
-/*
-typedef struct {
-    uint64_t max_width;            //< The maximum size of FFT these settings support, a power of 2. 
-    fr_t root_of_unity;            //< The root of unity used to generate the lists in the structure. 
-    fr_t *expanded_roots_of_unity; //< Ascending powers of the root of unity, size `width + 1`. 
-    fr_t *reverse_roots_of_unity;  //< Descending powers of the root of unity, size `width + 1`. 
-} FFTSettings;*/
-
-pub struct KZGSettings {
-    pub fs: FFTSettings,
-    pub secret_g1: P1,
-    pub secret_g2: P1,
-    pub length: u64
-}
+mod kzg_types;
 /*
 typedef struct {
     const FFTSettings *fs; //< The corresponding settings for performing FFTs 
@@ -51,13 +9,13 @@ typedef struct {
     uint64_t length;       //< The number of elements in secret_g1 and secret_g2
 } KZGSettings;*/
 
-pub fn commit_to_poly(_out: P1, p: Poly, ks: KZGSettings) -> STATUS {
+pub fn commit_to_poly(_out: kzg_types::P1, p: kzg_types::Poly, ks: kzg_types::KZGSettings) -> kzg_types::STATUS {
     if p.length > ks.length {
-        return STATUS::BAD_ARGS;
+        return kzg_types::STATUS::BAD_ARGS;
     }
     
     // g1_linear_combination()
-    STATUS::SUCCESS
+    kzg_types::STATUS::SUCCESS
 }
 
 /*
