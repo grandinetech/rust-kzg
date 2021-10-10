@@ -1,5 +1,6 @@
 use crate::finite::BlstFr;
-use crate::common::KzgRet;
+use crate::Fr;
+use crate::Error;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -11,22 +12,39 @@ pub struct FFTSettings {
 }
 
 extern "C" {
-    pub fn new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> KzgRet;
+    pub fn new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> Error;
     pub fn free_fft_settings(settings: *mut FFTSettings);
 }
 
-pub fn ckzg_new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> KzgRet {
-    let result;
-
-    unsafe {
-        result = new_fft_settings(settings, max_scale);
+impl FFTSettings {
+    pub fn default() -> Self {
+        Self {
+            max_width: 16,
+            root_of_unity: &mut Fr {l: [0, 0, 0, 0] },
+            expanded_roots_of_unity: &mut Fr {l: [0, 0, 0, 0] },
+            reverse_roots_of_unity: &mut Fr {l: [0, 0, 0, 0] }
+        }
     }
 
-    result
-}
+    pub fn ckzg_new_fft_settings(max_scale: u32) -> Result<Self, Error> {
+        let mut settings = FFTSettings::default();
 
-pub fn ckzg_free_fft_settings(settings: *mut FFTSettings) {
-    unsafe {
-        free_fft_settings(settings);
+        unsafe {
+            return match new_fft_settings(&mut settings, max_scale) {
+                Error::KzgOk => Ok(settings),
+                e => {
+                    println!("Error in \"FFTSettings::ckzg_new_fft_settings\" ==> {:?}", e);
+                    Err(e)
+                }
+            }
+        }
+    }
+
+    pub fn ckzg_free_fft_settings(settings: *mut FFTSettings) {
+        unsafe {
+            free_fft_settings(settings);
+        }
     }
 }
+
+
