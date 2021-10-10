@@ -27,7 +27,7 @@ mod tests {
         };
         for i in 0..n {
             let fr = Fr::from_u64(i + 1);
-            poly.set_coeff_at(i as isize, fr);
+            poly.set_coeff_at(i, fr);
         }
         let expected = Fr::from_u64(n * (n + 1) / 2);
         let actual = poly.eval_at(&Fr::one());
@@ -45,7 +45,7 @@ mod tests {
         };
         for i in 0..n {
             let fr = Fr::from_u64(i + a);
-            poly.set_coeff_at(i as isize, fr);
+            poly.set_coeff_at(i, fr);
         }
         let expected = Fr::from_u64(a);
         let actual = poly.eval_at(&Fr::zero());
@@ -83,7 +83,7 @@ mod tests {
         let errors = q.inverse(&mut p);
         assert_eq!(errors, Error::KzgOk);
         for i in 0..d {
-            assert_eq!(q.get_coeff_at(i as isize).is_one(), true);
+            assert_eq!(q.get_coeff_at(i).is_one(), true);
         }
         p.destroy();
         q.destroy();
@@ -106,7 +106,7 @@ mod tests {
         let errors = q.inverse(&mut p);
         assert_eq!(errors, Error::KzgOk);
         for i in 0..d {
-            let mut tmp = q.get_coeff_at(i as isize);
+            let mut tmp = q.get_coeff_at(i);
             if i & 1 != 0 {
                 tmp = Fr::negate(&mut tmp);
             }
