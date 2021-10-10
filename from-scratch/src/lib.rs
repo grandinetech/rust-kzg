@@ -11,5 +11,5 @@ pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
 pub mod finite;
-
+pub mod single_commit;
 
