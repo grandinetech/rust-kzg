@@ -56,6 +56,14 @@ name = "kzg_from_scratch"
 version = "0.1.0"
 dependencies = [
  "blst",
+]
+
+[[package]]
+name = "kzg_from_scratch"
+version = "0.1.0"
+dependencies = [
+ "blst",
+ "kzg",
  "rand",
 ]
 
