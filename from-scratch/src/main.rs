@@ -1,8 +1,9 @@
+mod das;
 mod kzg_types;
 
-use rand::{thread_rng, Rng};
 use blst::min_pk::*;
 use blst::BLST_ERROR;
+use rand::{thread_rng, Rng};
 
 // wrapper function for secret key generation
 fn gen_sk() -> SecretKey {
@@ -13,7 +14,7 @@ fn gen_sk() -> SecretKey {
 
 fn main() {
     // Rust Hello World
-    let entity= "Rust";
+    let entity = "Rust";
     println!("Hello, {}!", entity);
 
     // BLS12-381 Hello World
