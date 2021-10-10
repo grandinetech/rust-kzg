@@ -36,7 +36,9 @@ impl Fr {
             rng.next_u64(),
             rng.next_u64()
         ];
-        unsafe { fr_from_uint64s(&mut ret, a.as_ptr()); }
+        unsafe {
+            fr_from_uint64s(&mut ret, a.as_ptr());
+        }
         ret
     }
 

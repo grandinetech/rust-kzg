@@ -18,19 +18,24 @@ pub struct KzgPoly {
 
 impl Poly {
     pub fn default() -> Self {
-        Self { coeffs: &mut Fr { l: [0, 0, 0, 0] }, length: 4 }
+        Self {
+            coeffs: &mut Fr { l: [0, 0, 0, 0] },
+            length: 4
+        }
+    }
+
+    fn _self(poly: &mut Poly) -> Self {
+        Self {
+            coeffs: poly.coeffs,
+            length: poly.length
+        }
     }
 
     pub fn new(length: u64) -> Result<Self, Error> {
         let mut poly = Poly::default();
         unsafe {
             return match new_poly(&mut poly, length) {
-                Error::KzgOk => {
-                    Ok(Self {
-                        coeffs: poly.coeffs,
-                        length: poly.length
-                    })
-                }
+                Error::KzgOk => Ok(Poly::_self(&mut poly)),
                 e => {
                     println!("An error has occurred in \"Poly::new\" ==> {:?}", e);
                     Err(e)
@@ -43,12 +48,7 @@ impl Poly {
         let mut poly = Poly::default();
         unsafe {
             return match new_poly_div(&mut poly, dividend, divisor) {
-                Error::KzgOk => {
-                    Ok(Self {
-                        coeffs: poly.coeffs,
-                        length: poly.length
-                    })
-                }
+                Error::KzgOk => Ok(Poly::_self(&mut poly)),
                 e => {
                     println!("An error has occurred in \"Poly::new_divided\" ==> {:?}", e);
                     Err(e)
@@ -58,17 +58,17 @@ impl Poly {
     }
 
     // https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/poly_bench.c#L39
-    fn randomize_coeffs(&mut self, length: u64) {
-        for i in 0..length {
-            self.set_coeff_at(i as isize, Fr::rand());
+    fn randomize_coeffs(&mut self) {
+        for i in 0..self.length {
+            self.set_coeff_at(i, Fr::rand());
         }
     }
 
     // Ensure that the polynomials' orders corresponds to their lengths
     // https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/poly_bench.c#L46
-    fn check_order(&mut self, length: u64) {
-        if self.get_coeff_at((length - 1) as isize).is_zero() {
-            self.set_coeff_at((length - 1) as isize, Fr::one());
+    fn check_order(&mut self) {
+        if self.get_coeff_at(self.length - 1).is_zero() {
+            self.set_coeff_at(self.length - 1, Fr::one());
         }
     }
 
@@ -85,11 +85,10 @@ impl Poly {
             Err(_) => Poly::default()
         };
 
-        dividend.randomize_coeffs(dividend_length);
-        divisor.randomize_coeffs(divisor_length);
-
-        dividend.check_order(dividend_length);
-        divisor.check_order(divisor_length);
+        dividend.randomize_coeffs();
+        divisor.randomize_coeffs();
+        dividend.check_order();
+        divisor.check_order();
 
         let mut errors = Error::KzgOk;
         let mut divided_poly = match Poly::new_divided(&mut dividend, &mut divisor) {
@@ -121,15 +120,15 @@ impl Poly {
         out
     }
 
-    pub fn get_coeff_at(self, index: isize) -> Fr {
+    pub fn get_coeff_at(self, index: u64) -> Fr {
         unsafe {
             return *self.coeffs.offset(index as isize) as Fr;
         }
     }
 
-    pub fn set_coeff_at(&mut self, index: isize, point: Fr) {
+    pub fn set_coeff_at(&mut self, index: u64, point: Fr) {
         unsafe {
-            *self.coeffs.offset(index) = point;
+            *self.coeffs.offset(index as isize) = point;
         }
     }
 
