@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use kzg::fftsettings::{FFTSettings};
-    use kzg::common::KzgRet;
-    use kzg::finite::BlstFr;
+    use kzg::FFTSettings;
 
     #[test]
     fn test_fft_settings_alloc() {

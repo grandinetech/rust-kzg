@@ -1,19 +1,17 @@
-use crate::finite::BlstFr;
-use crate::Fr;
-use crate::Error;
+use super::{Error, Fr};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct FFTSettings {
     pub max_width: u64,
-    pub root_of_unity: *mut BlstFr,
-    pub expanded_roots_of_unity: *mut BlstFr,
-    pub reverse_roots_of_unity: *mut BlstFr
+    pub root_of_unity: *mut Fr,
+    pub expanded_roots_of_unity: *mut Fr,
+    pub reverse_roots_of_unity: *mut Fr
 }
 
 extern "C" {
-    pub fn new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> Error;
-    pub fn free_fft_settings(settings: *mut FFTSettings);
+    fn new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> Error;
+    fn free_fft_settings(settings: *mut FFTSettings);
 }
 
 impl FFTSettings {
