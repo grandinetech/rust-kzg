@@ -1,8 +1,15 @@
-use super::FFTSettings;
-use super::KzgRet;
+use crate::finite::BlstFr;
+use crate::common::KzgRet;
 
-#[link(name = "ckzg")]
-#[link(name = "blst")]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct FFTSettings {
+    pub max_width: u64,
+    pub root_of_unity: *mut BlstFr,
+    pub expanded_roots_of_unity: *mut BlstFr,
+    pub reverse_roots_of_unity: *mut BlstFr
+}
+
 extern "C" {
     pub fn new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> KzgRet;
     pub fn free_fft_settings(settings: *mut FFTSettings);
