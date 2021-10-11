@@ -52,7 +52,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kzg_from_scratch"
+name = "kzg"
 version = "0.1.0"
 dependencies = [
  "blst",
