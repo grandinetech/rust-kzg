@@ -48,6 +48,15 @@ fn poly_test_div() {
             assert_eq!(result.coeffs[j], expected.coeffs[j]);
         }
     }
+}
 
-    
+#[test]
+fn poly_div_by_zero() {
+    let dividend_vec: Vec<i32> = vec![1 ,1];
+    let zero_vec: Vec<Fr> = vec![Fr::default()];
+
+    let dividend = Polynomial::from_i32(&dividend_vec);
+    let divisor = Polynomial::from_fr(zero_vec);
+
+    let dummy = std::panic::catch_unwind(|| FFTSettings::new(32));
 }
