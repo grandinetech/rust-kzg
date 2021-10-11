@@ -1,15 +1,9 @@
 [package]
-name = "mcl_rust"
-version = "0.0.1"
-authors = ["MITSUNARI Shigeo <herumi@nifty.com>"]
-description = "a wrapper class/function of a pairing library; https://github.com/herumi/mcl"
-license = "BSD-3-Clause OR MIT OR Apache-2.0"
+name = "kzg"
+version = "0.1.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cc = "1.0"
-
-[build-dependencies]
-cc = "1.0"
+blst = {'git' = 'https://github.com/supranational/blst.git'}

@@ -1,1 +1,2 @@
-mod test;
+mod finite;
+mod poly;
