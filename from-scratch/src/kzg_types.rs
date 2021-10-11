@@ -1,9 +1,10 @@
 use kzg::{Fr, G1, G2};
 use blst::{blst_uint64_from_fr, blst_fr_from_uint64, blst_fr_from_scalar, blst_scalar};
 use crate::consts::{SCALE2_ROOT_OF_UNITY, expand_root_of_unity};
+use rand::{thread_rng, Rng};
 
 pub fn fr_is_one(fr: &Fr) -> bool {
-    let mut val: [u64; 4] = [0, 0, 0, 0];
+    let mut val: [u64; 4] = [0; 4];
     unsafe {
         blst_uint64_from_fr(val.as_mut_ptr(), fr);
     }
@@ -14,6 +15,28 @@ pub fn create_fr_one() -> Fr {
     let mut ret: Fr = Fr::default();
     unsafe {
         blst_fr_from_uint64(&mut ret, [1, 0, 0, 0].as_ptr());
+    }
+
+    ret
+}
+
+pub fn fr_are_equal(a: &Fr, b: &Fr) -> bool {
+    let mut val_a: [u64; 4] = [0; 4];
+    let mut val_b: [u64; 4] = [0; 4];
+
+    unsafe {
+        blst_uint64_from_fr(val_a.as_mut_ptr(), a);
+        blst_uint64_from_fr(val_b.as_mut_ptr(), b);
+    }
+
+    return val_a[0] == val_b[0] && val_a[1] == val_b[1] && val_a[2] == val_b[2] && val_a[3] == val_b[3];
+}
+
+pub fn create_fr_rand() -> Fr {
+    let mut val: [u64; 4] = rand::random();
+    let mut ret: Fr = Fr::default();
+    unsafe {
+        blst_fr_from_uint64(&mut ret, val.as_ptr());
     }
 
     ret
@@ -45,7 +68,7 @@ impl FFTSettings {
         let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
 
-        for i in 0..max_width {
+        for i in 0..(max_width + 1) {
             reverse_roots_of_unity[i] = expanded_roots_of_unity[max_width - i];
         }
 
