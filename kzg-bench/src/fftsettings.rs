@@ -4,7 +4,8 @@ mod tests {
 
     #[test]
     fn test_fft_settings_alloc() {
-        assert!(FFTSettings::new(16).is_ok());
-        // no free needed here, allocation on stack
+        let settings = FFTSettings::new(16);
+        assert!(settings.is_ok());
+        //FFTSettings::free(&mut settings.unwrap());
     }
 }
