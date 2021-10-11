@@ -89,10 +89,10 @@ pub fn das_fft_extension(ab: &mut [Fr], fft_settings: &FFTSettings) -> Result<()
 #[cfg(test)]
 mod tests {
     use crate::das::das_fft_extension;
-    use crate::kzg_types::{create_fr_rand, fr_are_equal, FFTSettings, fr_is_zero};
+    use crate::fft_fr::fft_fr;
+    use crate::kzg_types::{create_fr_rand, fr_are_equal, fr_is_zero, FFTSettings};
     use blst::blst_fr_from_uint64;
     use kzg::Fr;
-    use crate::fft_fr::fft_fr;
 
     #[test]
     fn das_extension_test_known() {

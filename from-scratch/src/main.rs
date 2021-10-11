@@ -1,9 +1,9 @@
 mod consts;
 mod das;
-mod kzg_types;
-mod utils;
-mod recovery;
 mod fft_fr;
+mod kzg_types;
+mod recovery;
+mod utils;
 
 use blst::min_pk::*;
 use blst::BLST_ERROR;

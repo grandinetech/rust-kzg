@@ -1,5 +1,5 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_from_uint64, blst_uint64_from_fr, blst_fr_inverse, blst_fr_mul};
+use blst::{blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr};
 use kzg::{Fr, G1, G2};
 
 pub fn fr_is_one(fr: &Fr) -> bool {

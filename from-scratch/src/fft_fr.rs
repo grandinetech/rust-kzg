@@ -1,7 +1,7 @@
-use kzg::Fr;
-use blst::{blst_fr_mul, blst_fr_sub, blst_fr_add, blst_fr_from_uint64, blst_fr_inverse};
 use crate::kzg_types::FFTSettings;
 use crate::utils::is_power_of_two;
+use blst::{blst_fr_add, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sub};
+use kzg::Fr;
 
 pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {
     let half: usize = ret.len() / 2;
@@ -74,10 +74,10 @@ pub fn fft_fr_slow(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roo
 
 #[cfg(test)]
 mod tests {
-    use crate::kzg_types::{FFTSettings, fr_are_equal};
-    use blst::{blst_fr_from_uint64, blst_fr_from};
+    use crate::fft_fr::{fft_fr, fft_fr_fast, fft_fr_slow};
+    use crate::kzg_types::{fr_are_equal, FFTSettings};
+    use blst::{blst_fr_from, blst_fr_from_uint64};
     use kzg::Fr;
-    use crate::fft_fr::{fft_fr_slow, fft_fr_fast, fft_fr};
 
     #[test]
     fn compare_sft_fft() {
