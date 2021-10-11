@@ -1,6 +1,6 @@
+use crate::kzg_types::{create_fr_one, fr_is_one};
+use blst::blst_fr_mul;
 use kzg::Fr;
-use blst::{blst_fr_mul};
-use crate::kzg_types::{fr_is_one, create_fr_one};
 
 pub const NUM_ROOTS: usize = 32;
 pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
@@ -67,9 +67,9 @@ pub fn expand_root_of_unity(root: &Fr, width: usize) -> Result<Vec<Fr>, String> 
 
 #[cfg(test)]
 mod tests {
-    use crate::consts::{NUM_ROOTS, SCALE2_ROOT_OF_UNITY, expand_root_of_unity};
-    use crate::kzg_types::{FFTSettings, fr_is_one};
-    use blst::{blst_fr_from_uint64, blst_fr_sqr, blst_fr_mul};
+    use crate::consts::{expand_root_of_unity, NUM_ROOTS, SCALE2_ROOT_OF_UNITY};
+    use crate::kzg_types::{fr_is_one, FFTSettings};
+    use blst::{blst_fr_from_uint64, blst_fr_mul, blst_fr_sqr};
     use kzg::Fr;
 
     #[test]
@@ -137,9 +137,11 @@ mod tests {
         let mut prod: Fr = Fr::default();
         for i in 0..width {
             unsafe {
-                blst_fr_mul(&mut prod,
-                            &fft_settings.expanded_roots_of_unity[i as usize],
-                            &fft_settings.reverse_roots_of_unity[i as usize]);
+                blst_fr_mul(
+                    &mut prod,
+                    &fft_settings.expanded_roots_of_unity[i as usize],
+                    &fft_settings.reverse_roots_of_unity[i as usize],
+                );
             }
 
             assert!(fr_is_one(&prod));

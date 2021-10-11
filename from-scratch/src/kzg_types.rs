@@ -1,6 +1,6 @@
+use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
+use blst::{blst_fr_from_uint64, blst_uint64_from_fr};
 use kzg::{Fr, G1, G2};
-use blst::{blst_uint64_from_fr, blst_fr_from_uint64};
-use crate::consts::{SCALE2_ROOT_OF_UNITY, expand_root_of_unity};
 
 pub fn fr_is_one(fr: &Fr) -> bool {
     let mut val: [u64; 4] = [0; 4];
@@ -28,7 +28,10 @@ pub fn fr_are_equal(a: &Fr, b: &Fr) -> bool {
         blst_uint64_from_fr(val_b.as_mut_ptr(), b);
     }
 
-    return val_a[0] == val_b[0] && val_a[1] == val_b[1] && val_a[2] == val_b[2] && val_a[3] == val_b[3];
+    return val_a[0] == val_b[0]
+        && val_a[1] == val_b[1]
+        && val_a[2] == val_b[2]
+        && val_a[3] == val_b[3];
 }
 
 pub fn create_fr_rand() -> Fr {
@@ -55,7 +58,9 @@ pub struct FFTSettings {
 impl FFTSettings {
     pub fn from_scale(max_scale: usize) -> Result<FFTSettings, String> {
         if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+            return Err(String::from(
+                "Scale is expected to be within root of unity matrix row size",
+            ));
         }
 
         let max_width: usize = 1 << max_scale;

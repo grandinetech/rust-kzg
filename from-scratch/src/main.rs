@@ -1,7 +1,7 @@
-pub mod das;
-pub mod kzg_types;
-pub mod utils;
 mod consts;
+mod das;
+mod kzg_types;
+mod utils;
 
 use blst::min_pk::*;
 use blst::BLST_ERROR;

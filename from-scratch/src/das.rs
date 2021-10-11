@@ -88,10 +88,10 @@ pub fn das_fft_extension(ab: &mut [Fr], fft_settings: &FFTSettings) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use crate::kzg_types::{FFTSettings, fr_are_equal, create_fr_rand};
-    use kzg::Fr;
-    use blst::blst_fr_from_uint64;
     use crate::das::das_fft_extension;
+    use crate::kzg_types::{create_fr_rand, fr_are_equal, FFTSettings};
+    use blst::blst_fr_from_uint64;
+    use kzg::Fr;
 
     #[test]
     fn das_extension_test_known() {
@@ -149,7 +149,6 @@ mod tests {
             let mut coeffs = vec![Fr::default(); width];
 
             for _rep in 0..4 {
-
                 // Initialize even data and duplicate it in even data
                 let mut i: usize = 0;
                 while i < width / 2 {
