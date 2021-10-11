@@ -89,9 +89,10 @@ pub fn das_fft_extension(ab: &mut [Fr], fft_settings: &FFTSettings) -> Result<()
 #[cfg(test)]
 mod tests {
     use crate::das::das_fft_extension;
-    use crate::kzg_types::{create_fr_rand, fr_are_equal, FFTSettings};
+    use crate::kzg_types::{create_fr_rand, fr_are_equal, FFTSettings, fr_is_zero};
     use blst::blst_fr_from_uint64;
     use kzg::Fr;
+    use crate::fft_fr::fft_fr;
 
     #[test]
     fn das_extension_test_known() {
@@ -150,15 +151,13 @@ mod tests {
 
             for _rep in 0..4 {
                 // Initialize even data and duplicate it in even data
-                let mut i: usize = 0;
-                while i < width / 2 {
+                for i in 0..(width / 2) {
                     even_data[i] = create_fr_rand();
                     odd_data[i] = even_data[i].clone();
-                    i += 1;
                 }
 
                 // Extend the even data to odd data
-                let result = das_fft_extension(&mut even_data, &fft_settings);
+                let result = das_fft_extension(&mut odd_data, &fft_settings);
                 assert!(result.is_ok());
 
                 for i in (0..width).step_by(2) {
@@ -166,12 +165,12 @@ mod tests {
                     data[i + 1] = odd_data[i / 2];
                 }
 
-                // TODO: uncomment and implement when fft_fr is implemented
-                // fft_fr(coeffs, data, true, width, fft_settings);
+                let result = fft_fr(&mut coeffs, &data, true, &fft_settings);
+                assert!(result.is_ok());
 
-                // for i in 0..(width / 2) {
-                //     assert!(fr_is_zero(coeffs[i]));
-                // }
+                for i in (width / 2)..(width) {
+                    assert!(fr_is_zero(&coeffs[i]));
+                }
             }
         }
     }

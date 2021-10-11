@@ -10,6 +10,14 @@ pub fn fr_is_one(fr: &Fr) -> bool {
     return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
 }
 
+pub fn fr_is_zero(fr: &Fr) -> bool {
+    let mut val: [u64; 4] = [0; 4];
+    unsafe {
+        blst_uint64_from_fr(val.as_mut_ptr(), fr);
+    }
+    return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
+}
+
 pub fn create_fr_one() -> Fr {
     let mut ret: Fr = Fr::default();
     unsafe {
@@ -49,7 +57,7 @@ pub struct Poly {
 }
 
 impl Poly {
-    pub fn scale(&mut self: Poly) {
+    pub fn scale(&mut self) {
         let mut scale_factor: Fr = Fr::default();
         let mut inv_factor: Fr = Fr::default();
 
@@ -67,7 +75,7 @@ impl Poly {
         }
     }
 
-    pub fn unscale(&mut self: Poly) {
+    pub fn unscale(&mut self) {
         let mut scale_factor: Fr = Fr::default();
 
         unsafe {
