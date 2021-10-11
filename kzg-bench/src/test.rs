@@ -1,6 +1,21 @@
 use std::{mem, vec};
-// use rand::prelude::*;
 use mcl_rust::implem::*;
+use mcl_rust::mlc_methods::init;
+use mcl_rust::mlc_methods::pairing;
+use mcl_rust::mlc_methods::get_curve_order;
+use mcl_rust::mlc_methods::get_fr_serialized_size;
+use mcl_rust::mlc_methods::get_gt_serialized_size;
+use mcl_rust::mlc_methods::get_g2_serialized_size;
+use mcl_rust::mlc_methods::get_g1_serialized_size;
+use mcl_rust::mlc_methods::get_field_order;
+use mcl_rust::mlc_methods::get_fp_serialized_size;
+use mcl_rust::CurveType;
+use mcl_rust::fr::Fr;
+use mcl_rust::fp::Fp;
+use mcl_rust::fp2::Fp2;
+use mcl_rust::g1::G1;
+use mcl_rust::g2::G2;
+use mcl_rust::gt::GT;
 
 macro_rules! field_test {
     ($t:ty) => {{
@@ -993,21 +1008,21 @@ fn roots_of_unity_are_plausible() {
 #[test]
 fn expand_roots_is_plausible() {
     //Arrange
-    const scale: usize = 15;
-    const width: usize = 1 << scale;
+    const Scale: usize = 15;
+    const Width: usize = 1 << Scale;
     let root: Fr;
     let mut prod: Fr = Fr::zero();
 
     //Act/Assert
     unsafe{
-        root = SCALE_2_ROOT_OF_UNITY[scale].clone();
+        root = SCALE_2_ROOT_OF_UNITY[Scale].clone();
     }
     let expanded = expand_root_of_unity(&root);
     assert!(expanded[0].is_one());
-    assert!(expanded[width].is_one());
+    assert!(expanded[Width].is_one());
 
-    for i in 1..(width/2 + 1) {
-        Fr::mul(&mut prod, &expanded[i], &expanded[width - i]);
+    for i in 1..(Width/2 + 1) {
+        Fr::mul(&mut prod, &expanded[i], &expanded[Width - i]);
         assert!(prod.is_one());
     }
 
@@ -1027,10 +1042,8 @@ fn poly_test_div() {
     let expected_len: usize;
     let result_len: usize;
 
-    unsafe {
-        expected_len = expected.coeffs.len();
-        result_len = result.coeffs.len();
-    }
+    expected_len = expected.coeffs.len();
+    result_len = result.coeffs.len();
 
     assert_eq!(expected_len, result_len);
     for i in 1..result_len {
