@@ -938,6 +938,81 @@ fn polynomial_recover_from_samples_should_recover_all_values_given_less_than_hal
     }
 }
 
+#[test]
+fn root_of_unity_is_the_expected_size() {
+    //Arrange
+    let element_size: usize;
+    let length: usize;
+    unsafe{
+        element_size = mem::size_of_val(&SCALE_2_ROOT_OF_UNITY[0]);
+        length = SCALE_2_ROOT_OF_UNITY.len()
+    }
+    
+    //Act/Assert
+    assert_eq!(mem::size_of::<Fr>(), element_size);
+    assert_eq!(32, length);
+}
+
+#[test]
+// #[should_panic]
+fn roots_of_unity_out_of_bounds_fails() {
+    //Arrange
+    assert!(init(CurveType::BLS12_381));
+
+    //Act
+    let settings = std::panic::catch_unwind(|| FFTSettings::new(32));
+    
+    //Assert
+    assert!(settings.is_err());
+}
+
+#[test]
+fn roots_of_unity_are_plausible() {
+    //Arrange
+    assert!(init(CurveType::BLS12_381));
+    let mut i = 0;
+    let mut r: Fr;
+
+    //Act/Assert
+    while i < 32 {
+        unsafe{
+            r = SCALE_2_ROOT_OF_UNITY[i].clone();
+        }
+        
+        let mut j = 0;
+        while j < i {
+            let cl = r.clone();
+            Fr::sqr(&mut r, &cl);
+            j = j + 1;
+        }
+        assert!(r.is_one());
+        i = i + 1;
+    }
+}
+
+#[test]
+fn expand_roots_is_plausible() {
+    //Arrange
+    const scale: usize = 15;
+    const width: usize = 1 << scale;
+    let root: Fr;
+    let mut prod: Fr = Fr::zero();
+
+    //Act/Assert
+    unsafe{
+        root = SCALE_2_ROOT_OF_UNITY[scale].clone();
+    }
+    let expanded = expand_root_of_unity(&root);
+    assert!(expanded[0].is_one());
+    assert!(expanded[width].is_one());
+
+    for i in 1..(width/2 + 1) {
+        Fr::mul(&mut prod, &expanded[i], &expanded[width - i]);
+        assert!(prod.is_one());
+    }
+
+}
+
 // Helpers
 // Based on poly seen in TestKZGSettings_DAUsingFK20Multi
 // A poly that helps test edge cases of some Fr values, helps with informal correctness verification
