@@ -1,5 +1,5 @@
-use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
-use blst::{blst_fr_from_uint64, blst_uint64_from_fr};
+use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
+use blst::{blst_fr_from_uint64, blst_uint64_from_fr, blst_fr_inverse, blst_fr_mul};
 use kzg::{Fr, G1, G2};
 
 pub fn fr_is_one(fr: &Fr) -> bool {
@@ -46,6 +46,42 @@ pub fn create_fr_rand() -> Fr {
 
 pub struct Poly {
     pub coeffs: Vec<Fr>,
+}
+
+impl Poly {
+    pub fn scale(&mut self: Poly) {
+        let mut scale_factor: Fr = Fr::default();
+        let mut inv_factor: Fr = Fr::default();
+
+        unsafe {
+            blst_fr_from_uint64(&mut scale_factor, [SCALE_FACTOR, 0, 0, 0].as_ptr());
+            blst_fr_inverse(&mut inv_factor, &scale_factor);
+        }
+
+        let mut factor_power = create_fr_one();
+        for i in 0..self.coeffs.len() {
+            unsafe {
+                blst_fr_mul(&mut factor_power, &factor_power, &inv_factor);
+                blst_fr_mul(&mut self.coeffs[i], &self.coeffs[i], &factor_power);
+            }
+        }
+    }
+
+    pub fn unscale(&mut self: Poly) {
+        let mut scale_factor: Fr = Fr::default();
+
+        unsafe {
+            blst_fr_from_uint64(&mut scale_factor, [SCALE_FACTOR, 0, 0, 0].as_ptr());
+        }
+
+        let mut factor_power = create_fr_one();
+        for i in 0..self.coeffs.len() {
+            unsafe {
+                blst_fr_mul(&mut factor_power, &factor_power, &scale_factor);
+                blst_fr_mul(&mut self.coeffs[i], &self.coeffs[i], &factor_power);
+            }
+        }
+    }
 }
 
 pub struct FFTSettings {

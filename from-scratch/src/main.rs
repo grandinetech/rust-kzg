@@ -2,6 +2,7 @@ mod consts;
 mod das;
 mod kzg_types;
 mod utils;
+mod recovery;
 
 use blst::min_pk::*;
 use blst::BLST_ERROR;

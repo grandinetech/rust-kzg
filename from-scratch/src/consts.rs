@@ -2,6 +2,8 @@ use crate::kzg_types::{create_fr_one, fr_is_one};
 use blst::blst_fr_mul;
 use kzg::Fr;
 
+pub const SCALE_FACTOR: u64 = 5;
+
 pub const NUM_ROOTS: usize = 32;
 pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000],
