@@ -12,5 +12,23 @@ mcl_rust = { path = '../kzg' }
 rand = "0.5"
 criterion = "0.3"
 
+[[bench]]
+name = "bench_fft"
+harness = false
 
+[[bench]]
+name = "bench_proof_check"
+harness = false
+
+[[bench]]
+name = "bench_das"
+harness = false
+
+[[bench]]
+name = "bench_proof_gen"
+harness = false
+
+[[bench]]
+name = "bench_commits"
+harness = false
 

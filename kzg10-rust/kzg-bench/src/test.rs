@@ -1008,21 +1008,21 @@ fn roots_of_unity_are_plausible() {
 #[test]
 fn expand_roots_is_plausible() {
     //Arrange
-    const Scale: usize = 15;
-    const Width: usize = 1 << Scale;
+    const SCALE: usize = 15;
+    const WIDTH: usize = 1 << SCALE;
     let root: Fr;
     let mut prod: Fr = Fr::zero();
 
     //Act/Assert
     unsafe{
-        root = SCALE_2_ROOT_OF_UNITY[Scale].clone();
+        root = SCALE_2_ROOT_OF_UNITY[SCALE].clone();
     }
     let expanded = expand_root_of_unity(&root);
     assert!(expanded[0].is_one());
-    assert!(expanded[Width].is_one());
+    assert!(expanded[WIDTH].is_one());
 
-    for i in 1..(Width/2 + 1) {
-        Fr::mul(&mut prod, &expanded[i], &expanded[Width - i]);
+    for i in 1..(WIDTH/2 + 1) {
+        Fr::mul(&mut prod, &expanded[i], &expanded[WIDTH - i]);
         assert!(prod.is_one());
     }
 
