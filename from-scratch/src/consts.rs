@@ -1,5 +1,5 @@
 use kzg::Fr;
-use blst::{blst_fr_from_uint64, blst_fr_mul};
+use blst::{blst_fr_mul};
 use crate::kzg_types::{fr_is_one, create_fr_one};
 
 pub const NUM_ROOTS: usize = 32;

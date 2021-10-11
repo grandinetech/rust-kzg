@@ -148,7 +148,7 @@ mod tests {
             let mut data = vec![Fr::default(); width];
             let mut coeffs = vec![Fr::default(); width];
 
-            for rep in 0..4 {
+            for _rep in 0..4 {
 
                 // Initialize even data and duplicate it in even data
                 let mut i: usize = 0;

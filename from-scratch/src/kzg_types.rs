@@ -1,7 +1,6 @@
 use kzg::{Fr, G1, G2};
-use blst::{blst_uint64_from_fr, blst_fr_from_uint64, blst_fr_from_scalar, blst_scalar};
+use blst::{blst_uint64_from_fr, blst_fr_from_uint64};
 use crate::consts::{SCALE2_ROOT_OF_UNITY, expand_root_of_unity};
-use rand::{thread_rng, Rng};
 
 pub fn fr_is_one(fr: &Fr) -> bool {
     let mut val: [u64; 4] = [0; 4];
@@ -33,7 +32,7 @@ pub fn fr_are_equal(a: &Fr, b: &Fr) -> bool {
 }
 
 pub fn create_fr_rand() -> Fr {
-    let mut val: [u64; 4] = rand::random();
+    let val: [u64; 4] = rand::random();
     let mut ret: Fr = Fr::default();
     unsafe {
         blst_fr_from_uint64(&mut ret, val.as_ptr());
