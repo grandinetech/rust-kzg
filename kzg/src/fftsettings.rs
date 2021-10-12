@@ -68,7 +68,7 @@ impl FFTSettings {
             return match fft_fr(&mut output, input, inverse, n, fs) {
                 Error::KzgOk => Ok(output),
                 e => {
-                    println!("Error in \"FFTSettings::ckzg_new_fft_settings\" ==> {:?}", e);
+                    println!("Error in \"FFTSettings::fft_fr\" ==> {:?}", e);
                     Err(e)
                 }
             }
@@ -82,7 +82,7 @@ impl FFTSettings {
             return match fft_g1(&mut output, input, inverse, n, fs) {
                 Error::KzgOk => Ok(output),
                 e => {
-                    println!("Error in \"FFTSettings::ckzg_new_fft_settings\" ==> {:?}", e);
+                    println!("Error in \"FFTSettings::fft_g1\" ==> {:?}", e);
                     Err(e)
                 }
             }
