@@ -3,7 +3,7 @@ use super::{Error, Fr, G1, Poly};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct FFTSettings {
-    pub max_width: u64,
+    pub max_width: usize,
     pub root_of_unity: Fr,
     pub expanded_roots_of_unity: *mut Fr,
     pub reverse_roots_of_unity: *mut Fr
@@ -11,30 +11,30 @@ pub struct FFTSettings {
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-pub struct blst_fp {
+pub struct BlstFp {
     pub l: [u64; 6]
 }
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-pub struct blst_fp2 {
-    pub fp: [blst_fp; 2]
+pub struct BlstFp2 {
+    pub fp: [BlstFp; 2]
 }
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
-pub struct blst_p2 {
-    pub x: blst_fp2,
-    pub y: blst_fp2,
-    pub z: blst_fp2
+pub struct BlstP2 {
+    pub x: BlstFp2,
+    pub y: BlstFp2,
+    pub z: BlstFp2
 }
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
-pub struct blst_p1 {
-    pub x: blst_fp,
-    pub y: blst_fp,
-    pub z: blst_fp
+pub struct BlstP1 {
+    pub x: BlstFp,
+    pub y: BlstFp,
+    pub z: BlstFp
 }
 
 extern "C" {
@@ -57,12 +57,11 @@ impl FFTSettings {
 
     pub fn new(max_scale: u32) -> Result<Self, Error> {
         let mut settings = FFTSettings::default();
-
         unsafe {
             return match new_fft_settings(&mut settings, max_scale) {
                 Error::KzgOk => Ok(settings),
                 e => {
-                    println!("Error in \"FFTSettings::ckzg_new_fft_settings\" ==> {:?}", e);
+                    println!("Error in \"FFTSettings::new\" ==> {:?}", e);
                     Err(e)
                 }
             }
@@ -77,7 +76,6 @@ impl FFTSettings {
 
     pub fn fft_fr(input: *mut Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<Fr, Error> {
         let mut output = Fr::default();
-
         unsafe {
             return match fft_fr(&mut output, input, inverse, n, fs) {
                 Error::KzgOk => Ok(output),
@@ -91,7 +89,6 @@ impl FFTSettings {
 
     pub fn fft_g1(input: *mut G1, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<G1, Error> {
         let mut output = G1::default();
-
         unsafe {
             return match fft_g1(&mut output, input, inverse, n, fs) {
                 Error::KzgOk => Ok(output),
@@ -105,7 +102,6 @@ impl FFTSettings {
 
     pub fn poly_mul(a: *const Poly, b: *const Poly, fs: *const FFTSettings) -> Result<Poly, Error> {
         let mut output = Poly::default();
-
         unsafe {
             return match poly_mul(&mut output, a, b, fs) {
                 Error::KzgOk => Ok(output),
@@ -117,5 +113,3 @@ impl FFTSettings {
         }
     }
 }
-
-

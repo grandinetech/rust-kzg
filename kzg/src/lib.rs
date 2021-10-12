@@ -12,10 +12,10 @@ pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;*/
 // Poly
 pub type Poly = poly::KzgPoly;
-pub type G1 = fftsettings::blst_p1;
-pub type G2 = fftsettings::blst_p2;
-pub type P1 = fftsettings::blst_p1;
-pub type P2 = fftsettings::blst_p2;
+pub type G1 = fftsettings::BlstP1;
+pub type G2 = fftsettings::BlstP2;
+pub type P1 = fftsettings::BlstP1;
+pub type P2 = fftsettings::BlstP2;
 pub type FFTSettings = fftsettings::FFTSettings;
 // Common
 pub type Error = common::KzgRet;
