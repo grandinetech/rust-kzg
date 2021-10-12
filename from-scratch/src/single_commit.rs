@@ -17,21 +17,20 @@ pub fn commit_to_poly(out: &mut G1, poly: kzg_types::Poly, kzg_settings: kzg_typ
     g1_linear_combination(out, kzg_settings.secret_g1, &poly.coeffs, poly.coeffs.len());
 }
 
-fn log_2_byte(b: u8) -> usize {
+fn log_2_byte(b: &u8) -> usize {
 
-    let mut b_copy = b;
-    let mut r: u8;
-    let shift: u8;
+    let mut r;
+    let mut shift;
 
-    r = if b_copy > 0xF {1} else {0} << 2;
-    b_copy >>= r;
-    shift =  if b_copy > 0x3 {1} else {0} << 1;
-    b_copy >>= (shift + 1);
-    r |= shift | b_copy;
+    r = if b > &0xF {1} else {0} << 2;
+    let mut b = b >> r;
+    shift =  if b > 0x3 {1} else {0} << 1;
+    b >>= (shift + 1);
+    r |= shift | b;
     r.into()
 }
 
-fn g1_mul(out: &mut G1, a: G1, b: & Fr) {
+fn g1_mul(out: &mut G1, a: &G1, b: & Fr) {
     let scalar: &mut blst_scalar = &mut blst_scalar::default();
     unsafe {
         blst_scalar_from_fr(&mut *scalar, b);
@@ -51,11 +50,11 @@ fn g1_mul(out: &mut G1, a: G1, b: & Fr) {
         };
         *out = g1_identity;
     } else if i == 1 && scalar.b[0] == 1 {
-        *out = a;
+        *out = *a;
     } else {
         // Count the number of bits to be multiplied.
         unsafe {
-            blst_p1_mult(out, &a, &(scalar.b[0]), 8 * i - 7 + log_2_byte(scalar.b[i - 1]));
+            blst_p1_mult(out, a, &(scalar.b[0]), 8 * i - 7 + log_2_byte(&scalar.b[i - 1]));
         }
     }
 }
@@ -76,7 +75,7 @@ fn g1_linear_combination(out: &mut G1, p: Vec<G1>, coeffs: & Vec<Fr>, len: usize
         for i in 0..len {
 
             unsafe {
-                g1_mul(&mut tmp, p[i], &coeffs[i]);
+                g1_mul(&mut tmp, &p[i], &coeffs[i]);
                 blst_p1_add_or_double(out, out, &tmp);
             }
         }
@@ -91,7 +90,7 @@ fn g1_linear_combination(out: &mut G1, p: Vec<G1>, coeffs: & Vec<Fr>, len: usize
         // Transform the points to affine representation
         //const blst_p1 *p_arg[2] = {p, NULL};
         // let p_arg: const* = {p, null}
-        let mut p_arg: [*const G1; 2] = [&p[0], &G1::default()];
+        let p_arg: [*const G1; 2] = [&p[0], &G1::default()];
         //p_arg[0] = &p;
         
         unsafe {
@@ -107,7 +106,7 @@ fn g1_linear_combination(out: &mut G1, p: Vec<G1>, coeffs: & Vec<Fr>, len: usize
         
         // Call the Pippenger implementation
         //const byte *scalars_arg[2] = {(byte *)scalars, NULL};
-        let mut scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), &blst_scalar::default()];
+        let scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), &blst_scalar::default()];
         //scalars_arg[0] = &scalars;
         
         //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
