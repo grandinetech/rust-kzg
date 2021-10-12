@@ -2,7 +2,7 @@ use std::{mem, vec};
 use mcl_rust::old::*;
 use mcl_rust::CurveType;
 use mcl_rust::data_types::fr::Fr;
-use mcl_rust::mlc_methods::init;
+use mcl_rust::mcl_methods::init;
 use mcl_rust::fk20_fft::*;
 
 #[test]
@@ -44,6 +44,8 @@ fn root_of_unity_is_the_expected_size() {
 }
 
 #[test]
+/*Library could be improved to use status codes/Result<T, E> or something like that,
+since in current implementation it simply panics*/
 // #[should_panic]
 fn roots_of_unity_out_of_bounds_fails() {
     //Arrange

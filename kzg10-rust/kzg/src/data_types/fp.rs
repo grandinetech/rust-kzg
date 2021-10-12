@@ -5,7 +5,7 @@ use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::mem::MaybeUninit;
 use std::os::raw::c_int;
-use crate::mlc_methods::*;
+use crate::mcl_methods::*;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]

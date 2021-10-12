@@ -14,7 +14,7 @@ const MCLBN_COMPILED_TIME_VAR: c_int = MCLBN_FR_UNIT_SIZE as c_int * 10 + MCLBN_
 
 
 #[macro_escape] pub mod init_def;
-pub mod mlc_methods;
+pub mod mcl_methods;
 pub mod utilities;
 pub mod data_types {
     pub mod fr;

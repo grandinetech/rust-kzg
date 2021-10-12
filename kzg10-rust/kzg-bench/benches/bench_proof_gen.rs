@@ -4,7 +4,7 @@ use mcl_rust::implem::FK20Matrix;
 use mcl_rust::implem::Polynomial;
 use mcl_rust::implem::Curve;
 use mcl_rust::fr::Fr;
-use mcl_rust::mlc_methods::init;
+use mcl_rust::mcl_methods::init;
 
 fn bench_simple_proof_gen(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
