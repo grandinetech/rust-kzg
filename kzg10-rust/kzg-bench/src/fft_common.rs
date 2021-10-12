@@ -1,5 +1,6 @@
 use std::{mem, vec};
-use mcl_rust::implem::*;
+use mcl_rust::old::*;
+use mcl_rust::utilities::*;
 use mcl_rust::CurveType;
 use mcl_rust::data_types::fr::Fr;
 use mcl_rust::mlc_methods::init;

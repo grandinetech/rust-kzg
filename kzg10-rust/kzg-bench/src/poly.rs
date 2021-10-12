@@ -1,5 +1,5 @@
 use std::vec;
-use mcl_rust::implem::*;
+use mcl_rust::old::*;
 use mcl_rust::data_types::fr::Fr;
 
 fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {

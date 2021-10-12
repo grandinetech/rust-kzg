@@ -8,6 +8,7 @@ use crate::data_types::g1::mclBnG1_mulVec;
 use crate::data_types::g2::G2;
 use crate::data_types::gt::GT;
 use crate::mlc_methods::*;
+use crate::utilities;
 
 
 // KZG 10
@@ -469,7 +470,7 @@ impl FFTSettings {
     }
 
     pub fn fft(&self, values: &Vec<Fr>, inv: bool) -> Vec<Fr> {
-        let n = next_pow_of_2(values.len());
+        let n = utilities::next_pow_of_2(values.len());
         
         let diff = n - values.len();
         let tail= iter::repeat(Fr::zero()).take(diff);
@@ -658,7 +659,7 @@ impl FK20Matrix {
 
         let mut proofs = extended_poly.fk20_multi_dao_optimized(&self);
 
-        order_by_rev_bit_order(&mut proofs);
+        utilities::order_by_rev_bit_order(&mut proofs);
 
         return proofs;
     }
@@ -968,7 +969,7 @@ impl FFTSettings {
         }
 
         let leaf_count = (indices.len() + per_leaf - 1) / per_leaf;
-        let n = next_pow_of_2(leaf_count * per_leaf_poly);
+        let n = utilities::next_pow_of_2(leaf_count * per_leaf_poly);
 
         // TODO: rust limitation, can't have multiple mutators for same value, code fails somewhere here, as I tried to achieve same func through duplicated value management.
         let mut out = vec![Fr::default(); n];
@@ -990,7 +991,7 @@ impl FFTSettings {
 
         while leaves.len() > 1 {
             let reduced_count = (leaves.len() + reduction_factor - 1) / reduction_factor;
-            let leaf_size = next_pow_of_2(leaves[0].len());
+            let leaf_size = utilities::next_pow_of_2(leaves[0].len());
             for i in 0..reduced_count {
                 let start = i * reduction_factor;
                 let mut end = start + reduction_factor;
@@ -1084,43 +1085,4 @@ impl FFTSettings {
             }
         }
     }
-}
-
-// Misc
-pub fn order_by_rev_bit_order<T>(vals: &mut Vec<T>) where T : Clone {
-    let unused_bit_len = vals.len().leading_zeros() + 1;
-     for i in 0..vals.len() {
-        let r = i.reverse_bits() >> unused_bit_len;
-        if r > i {
-            let tmp = vals[r].clone();
-            vals[r] = vals[i].clone();
-            vals[i] = tmp;
-        }
-     }
-}
-
-pub fn is_power_of_2(n: usize) -> bool {
-    return n & (n - 1) == 0;
-}
-
-const fn num_bits<T>() -> usize { std::mem::size_of::<T>() * 8 }
-
-pub fn log_2(x: usize) -> usize {
-    assert!(x > 0);
-    num_bits::<usize>() as usize - (x.leading_zeros() as usize) - 1
-}
-
-pub fn next_pow_of_2(x: usize) -> usize {
-    if x == 0 {
-        return 1;
-    }
-    if is_power_of_2(x) {
-        return x;
-    }
-    return 1 << (log_2(x) + 1);
-}
-
-pub fn reverse_bits_limited(length: usize, value: usize) -> usize {
-    let unused_bits = length.leading_zeros();
-    return value.reverse_bits() >> unused_bits;
 }
