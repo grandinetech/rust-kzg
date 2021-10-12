@@ -38,7 +38,7 @@ fn g1_mul(out: &mut G1, a: G1, b: & Fr) {
     }
 
     // Count the number of bytes to be multiplied.
-    let mut i = std::mem::size_of::<blst_scalar>();
+    let mut i = scalar.b.len();// std::mem::size_of::<blst_scalar>();
     while i != 0 && scalar.b[i - 1] == 0 {
         i-=1;
     }
@@ -84,9 +84,9 @@ fn g1_linear_combination(out: &mut G1, p: Vec<G1>, coeffs: & Vec<Fr>, len: usize
         
         // Blst's implementation of the Pippenger method
         //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
-        let mut p_affine: P1Affine;
+        let mut p_affine = vec![P1Affine::default(); len];
         //blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
-        let mut scalars: [blst_scalar; len] = vec![blst_scalar::default(); len];
+        let mut scalars = vec![blst_scalar::default(); len];
         
         // Transform the points to affine representation
         //const blst_p1 *p_arg[2] = {p, NULL};
@@ -94,27 +94,32 @@ fn g1_linear_combination(out: &mut G1, p: Vec<G1>, coeffs: & Vec<Fr>, len: usize
         let mut p_arg: [*const G1; 2] = [&p[0], &G1::default()];
         //p_arg[0] = &p;
         
-        blst_p1s_to_affine(&mut p_affine, p_arg.as_ptr(), len);
+        unsafe {
+            blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
+        }
         
         // Transform the field elements to 256-bit scalars
         for i in 0..len {
-            blst_scalar_from_fr(&mut scalars[i], &coeffs[i]);
+            unsafe {
+                blst_scalar_from_fr(&mut scalars[i], &coeffs[i]);
+            }
         }
         
         // Call the Pippenger implementation
         //const byte *scalars_arg[2] = {(byte *)scalars, NULL};
-        let mut scalars_arg: [*const u8; 2] =  [&scalars, &u8::default()];
+        let mut scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), &blst_scalar::default()];
         //scalars_arg[0] = &scalars;
         
         //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-        let points_arg: [*const P1Affine; 2] = [&p_affine, &P1Affine::default()];
+        let points_arg: [*const P1Affine; 2] = [p_affine.as_ptr(), &P1Affine::default()];
         //points_arg[0] = &p_affine;
         
         //void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
-        let mut scratch: u64;
+        let mut scratch: u64 = u64::default();
         //blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
-        blst_p1s_mult_pippenger(out,  points_arg.as_ptr(), len, scalars_arg.as_ptr(), 256, &mut scratch);
-        
+        unsafe {
+            blst_p1s_mult_pippenger(out,  points_arg.as_ptr(), len, scalars_arg.as_ptr() as *const *const u8, 256, &mut scratch);
+        }
     }
 }
 
