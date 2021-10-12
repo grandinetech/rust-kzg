@@ -5,6 +5,7 @@ use mcl_rust::utilities::*;
 use mcl_rust::kzg10::*;
 use mcl_rust::CurveType;
 use mcl_rust::data_types::{fr::*, fp::*, fp2::*, g1::*, g2::*, gt::*};
+use mcl_rust::fk20_fft::*;
 
 #[test]
 #[allow(non_snake_case)]

@@ -3,6 +3,7 @@ use mcl_rust::old::*;
 use mcl_rust::CurveType;
 use mcl_rust::data_types::fr::Fr;
 use mcl_rust::mlc_methods::init;
+use mcl_rust::fk20_fft::*;
 
 #[test]
 fn fftsettings_new_creates_valid_settings() {
