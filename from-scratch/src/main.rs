@@ -1,8 +1,13 @@
+mod consts;
+mod das;
 mod kzg_types;
+mod utils;
+mod recovery;
+mod fft_fr;
 
-use rand::{thread_rng, Rng};
 use blst::min_pk::*;
 use blst::BLST_ERROR;
+use rand::{thread_rng, Rng};
 
 mod single_commit;
 //mod lib;
@@ -16,7 +21,7 @@ fn gen_sk() -> SecretKey {
 
 fn main() {
     // Rust Hello World
-    let entity= "Rust";
+    let entity = "Rust";
     println!("Hello, {}!", entity);
 
     // BLS12-381 Hello World

@@ -4,8 +4,8 @@ version = 3
 
 [[package]]
 name = "blst"
-version = "0.3.5"
-source = "git+https://github.com/supranational/blst.git#f294964f4d11d255804dbace38fb1fede7ab5dc0"
+version = "0.3.6"
+source = "git+https://github.com/supranational/blst.git#3491df1a0b745c7c73efc7ac9390a2265ff00b1d"
 dependencies = [
  "cc",
  "glob",
