@@ -1,6 +1,6 @@
 use std::vec;
 use mcl_rust::implem::*;
-use mcl_rust::fr::Fr;
+use mcl_rust::data_types::fr::Fr;
 
 fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
     // (x^2 - 1) / (x + 1) = x - 1

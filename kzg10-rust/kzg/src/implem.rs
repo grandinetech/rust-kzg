@@ -1,12 +1,12 @@
 use std::{cmp::min, iter, ops, usize, vec};
 
-use crate::fr::Fr;
-use crate::fp::Fp;
-use crate::fp2::Fp2;
-use crate::g1::G1;
-use crate::g1::mclBnG1_mulVec;
-use crate::g2::G2;
-use crate::gt::GT;
+use crate::data_types::fr::Fr;
+use crate::data_types::fp::Fp;
+use crate::data_types::fp2::Fp2;
+use crate::data_types::g1::G1;
+use crate::data_types::g1::mclBnG1_mulVec;
+use crate::data_types::g2::G2;
+use crate::data_types::gt::GT;
 use crate::mlc_methods::*;
 
 

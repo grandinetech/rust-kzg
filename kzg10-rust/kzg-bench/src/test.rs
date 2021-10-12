@@ -10,12 +10,12 @@ use mcl_rust::mlc_methods::get_g1_serialized_size;
 use mcl_rust::mlc_methods::get_field_order;
 use mcl_rust::mlc_methods::get_fp_serialized_size;
 use mcl_rust::CurveType;
-use mcl_rust::fr::Fr;
-use mcl_rust::fp::Fp;
-use mcl_rust::fp2::Fp2;
-use mcl_rust::g1::G1;
-use mcl_rust::g2::G2;
-use mcl_rust::gt::GT;
+use mcl_rust::data_types::fr::Fr;
+use mcl_rust::data_types::fp::Fp;
+use mcl_rust::data_types::fp2::Fp2;
+use mcl_rust::data_types::g1::G1;
+use mcl_rust::data_types::g2::G2;
+use mcl_rust::data_types::gt::GT;
 
 #[test]
 #[allow(non_snake_case)]
