@@ -1,4 +1,4 @@
-use super::{Error, Fr, G1};
+use super::{Error, Fr, G1, Poly};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -12,7 +12,21 @@ pub struct FFTSettings {
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct blst_fp {
-    pub l: [u64; 6usize],
+    pub l: [u64; 6]
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct blst_fp2 {
+    pub fp: [blst_fp; 2]
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct blst_p2 {
+    pub x: blst_fp2,
+    pub y: blst_fp2,
+    pub z: blst_fp2
 }
 
 #[repr(C)]
@@ -20,7 +34,7 @@ pub struct blst_fp {
 pub struct blst_p1 {
     pub x: blst_fp,
     pub y: blst_fp,
-    pub z: blst_fp,
+    pub z: blst_fp
 }
 
 extern "C" {
@@ -28,6 +42,7 @@ extern "C" {
     fn free_fft_settings(settings: *mut FFTSettings);
     fn fft_fr(output: *mut Fr, input: *mut Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Error;
     fn fft_g1(output: *mut G1, input: *mut G1, inverse: bool, n: u64, fs: *const FFTSettings) -> Error;
+    fn poly_mul(output: *mut Poly, a: *const Poly, b: *const Poly, fs: *const FFTSettings) -> Error;
 }
 
 impl FFTSettings {
@@ -60,7 +75,6 @@ impl FFTSettings {
         }
     }
 
-
     pub fn fft_fr(input: *mut Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<Fr, Error> {
         let mut output = Fr::default();
 
@@ -83,6 +97,20 @@ impl FFTSettings {
                 Error::KzgOk => Ok(output),
                 e => {
                     println!("Error in \"FFTSettings::fft_g1\" ==> {:?}", e);
+                    Err(e)
+                }
+            }
+        }
+    }
+
+    pub fn poly_mul(a: *const Poly, b: *const Poly, fs: *const FFTSettings) -> Result<Poly, Error> {
+        let mut output = Poly::default();
+
+        unsafe {
+            return match poly_mul(&mut output, a, b, fs) {
+                Error::KzgOk => Ok(output),
+                e => {
+                    println!("Error in \"FFTSettings::poly_mul\" ==> {:?}", e);
                     Err(e)
                 }
             }
