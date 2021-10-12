@@ -1,3 +1,5 @@
+mod kzg_types;
+
 use rand::{thread_rng, Rng};
 use blst::min_pk::*;
 use blst::BLST_ERROR;
