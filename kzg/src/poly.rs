@@ -19,7 +19,7 @@ pub struct KzgPoly {
 impl Poly {
     pub fn default() -> Self {
         Self {
-            coeffs: &mut Fr { l: [0, 0, 0, 0] },
+            coeffs: &mut Fr::default(),
             length: 4
         }
     }
