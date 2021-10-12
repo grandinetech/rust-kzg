@@ -6,6 +6,6 @@ mod tests {
     fn test_fft_settings_alloc() {
         let settings = FFTSettings::new(16);
         assert!(settings.is_ok());
-        //FFTSettings::free(&mut settings.unwrap());
+        FFTSettings::free(&mut settings.unwrap());
     }
 }

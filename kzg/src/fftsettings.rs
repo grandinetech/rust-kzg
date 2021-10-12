@@ -4,7 +4,7 @@ use super::{Error, Fr};
 #[derive(Debug, Copy, Clone)]
 pub struct FFTSettings {
     pub max_width: u64,
-    pub root_of_unity: *mut Fr,
+    pub root_of_unity: Fr,
     pub expanded_roots_of_unity: *mut Fr,
     pub reverse_roots_of_unity: *mut Fr
 }
@@ -18,7 +18,7 @@ impl FFTSettings {
     pub fn default() -> Self {
         Self {
             max_width: 16,
-            root_of_unity: &mut Fr::default(),
+            root_of_unity: Fr::default(),
             expanded_roots_of_unity: &mut Fr::default(),
             reverse_roots_of_unity: &mut Fr::default()
         }
