@@ -1,5 +1,9 @@
 use mcl_rust::*;
 use criterion::{criterion_group, criterion_main, Criterion};
+use mcl_rust::fr::Fr;
+use mcl_rust::implem::Curve;
+use mcl_rust::implem::Polynomial;
+use mcl_rust::mlc_methods::init;
 
 fn bench_simple_proof_check(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
