@@ -1,5 +1,6 @@
 use std::vec;
 use mcl_rust::old::*;
+use mcl_rust::kzg10::*;
 use mcl_rust::data_types::fr::Fr;
 
 fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
@@ -53,10 +54,11 @@ fn poly_test_div() {
 #[test]
 fn poly_div_by_zero() {
     let dividend_vec: Vec<i32> = vec![1 ,1];
-    let zero_vec: Vec<Fr> = vec![Fr::default()];
+    let divisor: Vec<Fr> = vec![Fr::default()];
 
     let dividend = Polynomial::from_i32(&dividend_vec);
-    let divisor = Polynomial::from_fr(zero_vec);
 
-    let dummy = std::panic::catch_unwind(|| FFTSettings::new(32));
+    let dummy = std::panic::catch_unwind(|| dividend.long_division(&divisor));
+
+    assert!(dummy.is_err());
 }

@@ -23,6 +23,6 @@ pub mod data_types {
     pub mod g2;
     pub mod gt;
 }
-
+pub mod kzg10;
 pub mod utilities;
 pub mod old;
