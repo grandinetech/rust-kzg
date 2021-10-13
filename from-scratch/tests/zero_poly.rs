@@ -55,19 +55,13 @@ mod tests {
         assert!(result.is_ok());
         let fft_settings = result.unwrap();
 
-        let mut from_direct: Poly = Poly { coeffs: vec![Fr::default(); 9] };
-
         let partial_idxs: [[usize; 2]; 4] = [[1, 3], [7, 8], [9, 10], [12, 13]];
-        let mut poly_partials = [
-            Poly { coeffs: vec![Fr::default(); 3] },
-            Poly { coeffs: vec![Fr::default(); 3] },
-            Poly { coeffs: vec![Fr::default(); 3] },
-            Poly { coeffs: vec![Fr::default(); 3] },
-        ];
+        let mut poly_partials = Vec::new();
 
         for i in 0..4 {
-            let result = do_zero_poly_mul_partial(&mut poly_partials[i], &partial_idxs[i], 1, &fft_settings);
+            let result = do_zero_poly_mul_partial(3, &partial_idxs[i], 1, &fft_settings);
             assert!(result.is_ok());
+            poly_partials.push(result.unwrap());
         }
 
         let result = reduce_partials(16, &poly_partials, &fft_settings);
@@ -75,8 +69,9 @@ mod tests {
         let mut from_tree_reduction = result.unwrap();
 
         let idxs = [1, 3, 7, 8, 9, 10, 12, 13];
-        let result = do_zero_poly_mul_partial(&mut from_direct, &idxs, 1, &fft_settings);
+        let result = do_zero_poly_mul_partial(9, &idxs, 1, &fft_settings);
         assert!(result.is_ok());
+        let from_direct = result.unwrap();
 
         for i in 0..9 {
             assert!(fr_are_equal(&mut from_tree_reduction.coeffs[i], &from_direct.coeffs[i]));
@@ -116,24 +111,22 @@ mod tests {
                     }
 
                     let partial_size = end - start;
-                    partials.push(Poly { coeffs: vec![Fr::default(); partial_size + 1] });
-
                     for j in 0..partial_size {
                         idxs[j] = missing[i * missing_per_partial + j];
                     }
 
-                    let result = do_zero_poly_mul_partial(&mut partials[i], &idxs[..partial_size], 1, &fft_settings);
+                    let result = do_zero_poly_mul_partial(partial_size + 1, &idxs[..partial_size], 1, &fft_settings);
                     assert!(result.is_ok());
+                    partials.push(result.unwrap());
                 }
 
                 let result = reduce_partials(point_count, &partials, &fft_settings);
                 assert!(result.is_ok());
                 let from_tree_reduction = result.unwrap();
 
-                let mut from_direct: Poly = Poly { coeffs: vec![Fr::default(); missing_count + 1] };
-
-                let result = do_zero_poly_mul_partial(&mut from_direct, &missing[..missing_count], (fft_settings.max_width / point_count), &fft_settings);
+                let result = do_zero_poly_mul_partial(missing_count + 1, &missing[..missing_count], (fft_settings.max_width / point_count), &fft_settings);
                 assert!(result.is_ok());
+                let from_direct = result.unwrap();
 
                 for i in 0..(missing_count + 1) {
                     assert!(fr_are_equal(&from_tree_reduction.coeffs[i], &from_direct.coeffs[i]));

@@ -5,13 +5,14 @@ use crate::utils::{is_power_of_two, next_power_of_two};
 use blst::{blst_fr_add, blst_fr_mul};
 use kzg::Fr;
 
-pub fn do_zero_poly_mul_partial(poly: &mut Poly, idxs: &[usize], stride: usize, fft_settings: &FFTSettings) -> Result<(), String> {
+pub fn do_zero_poly_mul_partial(poly_size: usize, idxs: &[usize], stride: usize, fft_settings: &FFTSettings) -> Result<Poly, String> {
     if idxs.len() == 0 {
         return Err(String::from("idx array must be non-zero"));
-    } else if poly.coeffs.len() < idxs.len() + 1 {
+    } else if poly_size < idxs.len() + 1 {
         return Err(String::from("idx array must be non-zero"));
     }
 
+    let mut poly = Poly { coeffs: vec![Fr::default(); poly_size] };
     negate_fr(&mut poly.coeffs[0], &fft_settings.expanded_roots_of_unity[idxs[0] * stride]);
 
     for i in 1..idxs.len() {
@@ -42,7 +43,7 @@ pub fn do_zero_poly_mul_partial(poly: &mut Poly, idxs: &[usize], stride: usize, 
 
     poly.coeffs = poly.coeffs[..idxs.len() + 1].to_vec();
 
-    return Ok(());
+    return Ok(poly);
 }
 
 /// Create a copy of the given poly and pad it with zeros
@@ -117,18 +118,22 @@ pub fn zero_polynomial_via_multiplication(domain_size: usize, missing_idxs: &[us
     let n = min(next_power_of_two(partial_count * degree_of_partial), zero_eval.len());
 
     if missing_idxs.len() <= missing_per_partial {
-        do_zero_poly_mul_partial(&mut zero_poly, &missing_idxs, domain_stride, &fft_settings)?;
+        let zero_poly = do_zero_poly_mul_partial(domain_size, &missing_idxs, domain_stride, &fft_settings)?;
         zero_eval = fft_fr(&zero_poly.coeffs, false, fft_settings)?;
     } else {
-        let work = vec![Fr::default(); next_power_of_two(partial_count * degree_of_partial)];
+        let mut work = vec![Fr::default(); next_power_of_two(partial_count * degree_of_partial)];
         let mut partials = Vec::new();
         let mut offset = 0;
         let mut out_offset = 0;
         let max = missing_idxs.len();
-        for i in 0..partial_count {
+        for _i in 0..partial_count {
             let end = min(offset + missing_per_partial, max);
-            partials.push(Poly { coeffs: work[out_offset..(out_offset + degree_of_partial)].to_vec() });
-            do_zero_poly_mul_partial(&mut partials[i], &missing_idxs[offset..end], domain_stride, fft_settings)?;
+            let mut ret_zero_mul = do_zero_poly_mul_partial(domain_size, &missing_idxs[offset..end], domain_stride, fft_settings)?;
+            partials.push(ret_zero_mul.clone());
+            let mut tmp = work[..out_offset].to_vec();
+            tmp.append(&mut ret_zero_mul.coeffs);
+            tmp.append(&mut work[(out_offset + ret_zero_mul.coeffs.len())..].to_vec());
+            work = tmp;
             offset += missing_per_partial;
             out_offset += degree_of_partial;
         }
