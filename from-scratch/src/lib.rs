@@ -7,3 +7,4 @@ pub mod recovery;
 pub mod utils;
 pub mod zero_poly;
 pub mod kzg_proofs;
+pub mod fk20_proofs;
