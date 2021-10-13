@@ -74,15 +74,15 @@ impl FFTSettings {
         }
     }
 
-    pub fn fft(&self, input: &mut Vec<Fr>, inverse: bool) -> Vec<Fr> {
-        let output = match FFTSettings::fft_fr(input.as_mut_ptr(), inverse, input.len() as u64, self) {
+    pub fn fft_fr(&self, input: &mut Vec<Fr>, inverse: bool) -> Vec<Fr> {
+        let output = match FFTSettings::_fft_fr(input.as_mut_ptr(), inverse, input.len() as u64, self) {
             Ok(fr) => fr,
             Err(e) => panic!("Error in \"FFTSettings::fft\" ==> {:?}", e)
         };
         output
     }
 
-    fn fft_fr(input: *const Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<Vec<Fr>, Error> {
+    fn _fft_fr(input: *const Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<Vec<Fr>, Error> {
         let mut output = vec![Fr::default(); n as usize];
         unsafe {
             return match fft_fr(output.as_mut_ptr(), input, inverse, n, fs) {
@@ -119,5 +119,19 @@ impl FFTSettings {
                 }
             }
         }
+    }
+
+    // Used only for benchmarks
+    pub fn bench_fft_fr(scale: u64) {
+        let mut fs = match FFTSettings::new(scale as u32) {
+            Ok(s) => s,
+            Err(_) => FFTSettings::default()
+        };
+        let mut data = vec![Fr::default(); fs.max_width];
+        for i in 0..fs.max_width {
+            data[i] = Fr::rand();
+        }
+        fs.fft_fr(&mut data, false);
+        fs.destroy();
     }
 }

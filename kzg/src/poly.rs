@@ -72,7 +72,8 @@ impl Poly {
         }
     }
 
-    pub fn divide_in_finite_field(scale: u64) -> Error {
+    // Used only for benchmarks
+    pub fn bench_divide_in_finite_field(scale: u64) -> Error {
         let dividend_length: u64 = 1 << scale;
         let divisor_length: u64 = dividend_length / 2;
 
