@@ -1,13 +1,6 @@
-mod consts;
-mod das;
-mod utils;
-mod recovery;
-mod fft_fr;
-
 use blst::min_pk::*;
 use blst::BLST_ERROR;
 use rand::{thread_rng, Rng};
-
 
 // wrapper function for secret key generation
 fn gen_sk() -> SecretKey {
