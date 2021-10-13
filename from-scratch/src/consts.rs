@@ -1,6 +1,13 @@
 use crate::kzg_types::{create_fr_one, fr_is_one};
-use blst::blst_fr_mul;
-use kzg::Fr;
+use blst::{blst_fr_mul, blst_fp};
+use kzg::{Fr, G1};
+
+
+pub static G1_IDENTITY: G1 = G1 {
+    x: blst_fp{l: [0,0,0,0,0,0]},
+    y: blst_fp{l: [0,0,0,0,0,0]},
+    z: blst_fp{l: [0,0,0,0,0,0]},
+};
 
 pub const SCALE_FACTOR: u64 = 5;
 
