@@ -1,21 +1,11 @@
 use std::{mem, vec};
-use mcl_rust::implem::*;
-use mcl_rust::mlc_methods::init;
-use mcl_rust::mlc_methods::pairing;
-use mcl_rust::mlc_methods::get_curve_order;
-use mcl_rust::mlc_methods::get_fr_serialized_size;
-use mcl_rust::mlc_methods::get_gt_serialized_size;
-use mcl_rust::mlc_methods::get_g2_serialized_size;
-use mcl_rust::mlc_methods::get_g1_serialized_size;
-use mcl_rust::mlc_methods::get_field_order;
-use mcl_rust::mlc_methods::get_fp_serialized_size;
+use mcl_rust::old::*;
+use mcl_rust::mlc_methods::*;
+use mcl_rust::utilities::*;
+use mcl_rust::kzg10::*;
 use mcl_rust::CurveType;
-use mcl_rust::fr::Fr;
-use mcl_rust::fp::Fp;
-use mcl_rust::fp2::Fp2;
-use mcl_rust::g1::G1;
-use mcl_rust::g2::G2;
-use mcl_rust::gt::GT;
+use mcl_rust::data_types::{fr::*, fp::*, fp2::*, g1::*, g2::*, gt::*};
+use mcl_rust::fk20_fft::*;
 
 #[test]
 #[allow(non_snake_case)]

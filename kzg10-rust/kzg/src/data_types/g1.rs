@@ -1,6 +1,6 @@
-use crate::fr::Fr;
-use crate::fp::Fp;
-use crate::fp2::Fp2;
+use crate::data_types::fr::Fr;
+use crate::data_types::fp::Fp;
+use crate::data_types::fp2::Fp2;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};

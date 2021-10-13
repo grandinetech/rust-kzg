@@ -1,4 +1,4 @@
-use crate::fr::Fr;
+use crate::data_types::fr::Fr;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
