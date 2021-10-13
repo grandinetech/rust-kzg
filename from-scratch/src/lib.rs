@@ -6,3 +6,4 @@ pub mod kzg_types;
 pub mod recovery;
 pub mod utils;
 pub mod zero_poly;
+pub mod kzg_proofs;

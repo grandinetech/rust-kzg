@@ -87,7 +87,7 @@ mod tests {
                 }
 
                 let mut from_tree_reduction: Poly = Poly { coeffs: vec![Fr::default(); point_count] };
-                let mut scratch = vec![Fr::default(); point_count * 3];
+                let scratch = vec![Fr::default(); point_count * 3];
 
                 let result = reduce_partials(&mut from_tree_reduction, &scratch, &partials, &fft_settings);
                 assert!(result.is_ok());
@@ -132,6 +132,8 @@ mod tests {
         }
 
         let result = fft_fr(&mut tmp_poly.coeffs, &expected_eval.coeffs, true, &fft_settings);
+        assert!(result.is_ok());
+
         for i in 0..16 {
             assert!(fr_are_equal(&tmp_poly.coeffs[i], &expected_poly.coeffs[i]));
         }
