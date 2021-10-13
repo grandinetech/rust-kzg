@@ -14,7 +14,7 @@ mod tests {
 
     #[test]
     fn create_divided_poly_in_finite_field() {
-        let errors = Poly::divide_in_finite_field(15);
+        let errors = Poly::bench_divide_in_finite_field(15);
         assert_eq!(errors, Error::KzgOk);
     }
 

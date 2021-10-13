@@ -24,9 +24,9 @@ mod tests {
         for i in 0..fs.max_width {
             data[i] = Fr::from_u64(i as u64);
         }
-        let mut coeffs = fs.fft(&mut data, false);
+        let mut coeffs = fs.fft_fr(&mut data, false);
         assert_eq!(coeffs.len(), 2 << size - 1);
-        data = fs.fft(&mut coeffs, true);
+        data = fs.fft_fr(&mut coeffs, true);
         assert_eq!(data.len(), 2 << size - 1);
         // Verify that the result is still ascending values of i
         for i in 0..fs.max_width {
