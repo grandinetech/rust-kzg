@@ -1,5 +1,5 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr};
+use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr};
 use kzg::{Fr, G1, G2};
 
 pub fn fr_is_one(fr: &Fr) -> bool {
@@ -18,13 +18,21 @@ pub fn fr_is_zero(fr: &Fr) -> bool {
     return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
 }
 
-pub fn create_fr_one() -> Fr {
+pub fn create_fr_u64(val: u64) -> Fr {
     let mut ret: Fr = Fr::default();
     unsafe {
-        blst_fr_from_uint64(&mut ret, [1, 0, 0, 0].as_ptr());
+        blst_fr_from_uint64(&mut ret, [val, 0, 0, 0].as_ptr());
     }
 
     ret
+}
+
+pub fn create_fr_zero() -> Fr {
+    create_fr_u64(0)
+}
+
+pub fn create_fr_one() -> Fr {
+    create_fr_u64(1)
 }
 
 pub fn fr_are_equal(a: &Fr, b: &Fr) -> bool {
@@ -50,6 +58,12 @@ pub fn create_fr_rand() -> Fr {
     }
 
     ret
+}
+
+pub fn negate_fr(ret: &mut Fr, val: &Fr) {
+    unsafe {
+        blst_fr_cneg(ret, val, true);
+    }
 }
 
 pub struct Poly {
@@ -89,6 +103,30 @@ impl Poly {
                 blst_fr_mul(&mut self.coeffs[i], &self.coeffs[i], &factor_power);
             }
         }
+    }
+
+    pub fn eval(&mut self, x: &Fr) -> Fr {
+        if self.coeffs.len() == 0 {
+            return create_fr_zero();
+        } else if (fr_is_zero(x)) {
+            return self.coeffs[0].clone();
+        }
+
+        let mut ret = self.coeffs[self.coeffs.len() - 1];
+        let mut i = self.coeffs.len() - 2;
+        loop {
+            let mut temp = Fr::default();
+            unsafe {
+                blst_fr_mul(&mut temp, &ret, x);
+                blst_fr_add(&mut ret, &temp, &self.coeffs[i]);
+            }
+            if i == 0 {
+                break;
+            }
+            i -= 1;
+        }
+
+        return ret;
     }
 }
 

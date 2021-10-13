@@ -9,14 +9,14 @@ pub fn das_fft_extension_stride(ab: &mut [Fr], stride: usize, fft_settings: &FFT
     } else if ab.len() == 2 {
         let mut x: Fr = Fr::default();
         let mut y: Fr = Fr::default();
-        let mut temp: Fr = Fr::default();
+        let mut y_times_root: Fr = Fr::default();
 
         unsafe {
             blst_fr_add(&mut x, &ab[0], &ab[1]);
             blst_fr_sub(&mut y, &ab[0], &ab[1]);
-            blst_fr_mul(&mut temp, &y, &fft_settings.expanded_roots_of_unity[stride]);
-            blst_fr_add(&mut ab[0], &x, &temp);
-            blst_fr_sub(&mut ab[1], &x, &temp);
+            blst_fr_mul(&mut y_times_root, &y, &fft_settings.expanded_roots_of_unity[stride]);
+            blst_fr_add(&mut ab[0], &x, &y_times_root);
+            blst_fr_sub(&mut ab[1], &x, &y_times_root);
         }
     } else {
         let half: usize = ab.len();

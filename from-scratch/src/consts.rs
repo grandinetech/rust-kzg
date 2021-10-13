@@ -111,7 +111,6 @@ mod tests {
 
         let result = expand_root_of_unity(&root, width);
         assert!(result.is_ok());
-
         let expanded = result.unwrap();
 
         assert!(fr_is_one(&expanded[0]));
@@ -139,8 +138,7 @@ mod tests {
         let mut prod: Fr = Fr::default();
         for i in 0..width {
             unsafe {
-                blst_fr_mul(
-                    &mut prod,
+                blst_fr_mul(&mut prod,
                     &fft_settings.expanded_roots_of_unity[i as usize],
                     &fft_settings.reverse_roots_of_unity[i as usize],
                 );
