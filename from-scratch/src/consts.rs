@@ -1,7 +1,6 @@
 use crate::kzg_types::{create_fr_one, fr_is_one};
-use blst::{blst_fr_mul, blst_fp};
+use blst::{blst_fp, blst_fr_mul};
 use kzg::{Fr, G1};
-
 
 pub static G1_IDENTITY: G1 = G1 {
     x: blst_fp{l: [0,0,0,0,0,0]},
@@ -145,7 +144,8 @@ mod tests {
         let mut prod: Fr = Fr::default();
         for i in 0..width {
             unsafe {
-                blst_fr_mul(&mut prod,
+                blst_fr_mul(
+                    &mut prod,
                     &fft_settings.expanded_roots_of_unity[i as usize],
                     &fft_settings.reverse_roots_of_unity[i as usize],
                 );

@@ -1,5 +1,3 @@
-use kzg::Fr;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use crate::kzg_types::{create_fr_rand, FFTSettings};
 fn bench_fft_fr(c: &mut Criterion) {
     for scale in 4..16 {
@@ -30,7 +28,6 @@ fn _fft_g1(scale: u8, c: &mut Criterion) {
     c.bench_function(&id, |b| b.iter(|| settings.fft_g1(&data)));
 }
 */
-
 
 //criterion_group!(benches, bench_fft_fr, bench_fft_g1);
 criterion_group!(benches, bench_fft_fr);

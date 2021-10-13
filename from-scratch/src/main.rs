@@ -1,6 +1,8 @@
 mod consts;
 mod das;
+mod fft_bench;
 mod fft_fr;
+mod fft_g1;
 mod kzg_types;
 mod recovery;
 mod utils;

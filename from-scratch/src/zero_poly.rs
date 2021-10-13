@@ -1,8 +1,8 @@
+use crate::fft_fr::fft_fr;
+use crate::kzg_types::{create_fr_one, create_fr_zero, negate_fr, FFTSettings, Poly};
+use crate::utils::is_power_of_two;
 use blst::{blst_fr_add, blst_fr_mul};
 use kzg::Fr;
-use crate::fft_fr::fft_fr;
-use crate::kzg_types::{create_fr_one, create_fr_zero, FFTSettings, negate_fr, Poly};
-use crate::utils::is_power_of_two;
 
 pub fn do_zero_poly_mul_partial(poly: &mut Poly, idxs: &[usize], stride: &usize, fft_settings: &FFTSettings) -> Result<(), String> {
     if idxs.len() == 0 {
@@ -96,16 +96,15 @@ pub fn reduce_partials(ret: &mut Poly, scratch: &[Fr], partials: &[Poly], fft_se
     return Ok(());
 }
 
-
 #[cfg(test)]
 mod tests {
+    use crate::fft_fr::fft_fr;
+    use crate::kzg_types::{fr_are_equal, fr_is_zero, FFTSettings, Poly};
+    use crate::zero_poly::{do_zero_poly_mul_partial, reduce_partials};
     use blst::blst_fr_from_uint64;
     use kzg::Fr;
     use rand::seq::SliceRandom;
     use rand::thread_rng;
-    use crate::fft_fr::fft_fr;
-    use crate::kzg_types::{FFTSettings, fr_are_equal, fr_is_zero, Poly};
-    use crate::zero_poly::{do_zero_poly_mul_partial, reduce_partials};
 
     #[test]
     fn test_reduce_partials() {

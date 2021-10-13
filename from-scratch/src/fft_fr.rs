@@ -76,7 +76,7 @@ pub fn fft_fr_slow(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roo
 mod tests {
     use crate::fft_fr::{fft_fr, fft_fr_fast, fft_fr_slow};
     use crate::kzg_types::{fr_are_equal, FFTSettings};
-    use blst::{blst_fr_from_uint64};
+    use blst::blst_fr_from_uint64;
     use kzg::Fr;
 
     #[test]
