@@ -25,15 +25,16 @@ mod tests {
         let fft_settings = result.unwrap();
         let half = fft_settings.max_width / 2;
 
-        let mut data = vec![Fr::default(); half];
+        let mut evens = vec![Fr::default(); half];
         for i in 0..half {
             unsafe {
-                blst_fr_from_uint64(&mut data[i], [i as u64, 0, 0, 0].as_ptr());
+                blst_fr_from_uint64(&mut evens[i], [i as u64, 0, 0, 0].as_ptr());
             }
         }
 
-        let result = das_fft_extension(&mut data, &fft_settings);
+        let result = das_fft_extension(&mut evens, &fft_settings);
         assert!(result.is_ok());
+        let odds = result.unwrap();
 
         for i in 0..expected_u.len() {
             let mut expected: Fr = Fr::default();
@@ -41,7 +42,7 @@ mod tests {
                 blst_fr_from_uint64(&mut expected, expected_u[i].as_ptr());
             }
 
-            assert!(fr_are_equal(&expected, &data[i]));
+            assert!(fr_are_equal(&expected, &odds[i]));
         }
     }
 
@@ -56,24 +57,23 @@ mod tests {
             let width: usize = 1 << scale;
             assert!(width <= fft_settings.max_width);
 
-            let mut even_data = vec![Fr::default(); width / 2];
-            let mut odd_data = vec![Fr::default(); width / 2];
+            let mut evens = vec![Fr::default(); width / 2];
             let mut data = vec![Fr::default(); width];
 
             for _rep in 0..4 {
                 // Initialize even data and duplicate it in even data
                 for i in 0..(width / 2) {
-                    even_data[i] = create_fr_rand();
-                    odd_data[i] = even_data[i].clone();
+                    evens[i] = create_fr_rand();
                 }
 
                 // Extend the even data to odd data
-                let result = das_fft_extension(&mut odd_data, &fft_settings);
+                let result = das_fft_extension(&evens, &fft_settings);
                 assert!(result.is_ok());
+                let odds = result.unwrap();
 
                 for i in (0..width).step_by(2) {
-                    data[i] = even_data[i / 2];
-                    data[i + 1] = odd_data[i / 2];
+                    data[i] = evens[i / 2];
+                    data[i + 1] = odds[i / 2];
                 }
 
                 let result = fft_fr(&data, true, &fft_settings);
