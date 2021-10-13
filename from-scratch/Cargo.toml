@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 blst = { 'git' = 'https://github.com/supranational/blst.git' }
 rand = "0.8.4"
+rand_pcg = "0.3.1"
 kzg = { path = "../kzg" }
 
 [dev-dependencies]

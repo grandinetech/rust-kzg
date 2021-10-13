@@ -67,9 +67,7 @@ pub fn das_fft_extension(ab: &mut [Fr], fft_settings: &FFTSettings) -> Result<()
     } else if !is_power_of_two(ab.len()) {
         return Err(String::from("A list with power-of-two length expected"));
     } else if ab.len() * 2 > fft_settings.max_width {
-        return Err(String::from(
-            "Supplied list is longer than the available max width",
-        ));
+        return Err(String::from("Supplied list is longer than the available max width"));
     }
 
     das_fft_extension_stride(ab, fft_settings.max_width / (ab.len() * 2), fft_settings);

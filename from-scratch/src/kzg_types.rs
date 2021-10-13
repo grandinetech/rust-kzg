@@ -130,6 +130,12 @@ impl Poly {
     }
 }
 
+impl Clone for Poly {
+    fn clone(&self) -> Self {
+        Poly { coeffs: self.coeffs.clone() }
+    }
+}
+
 pub struct FFTSettings {
     pub max_width: usize,
     pub root_of_unity: Fr,

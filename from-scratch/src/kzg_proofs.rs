@@ -9,7 +9,7 @@ use blst::{blst_p1_add_or_double,
 };
 use crate::kzg_types::{KZGSettings, Poly};
 
-pub fn commit_to_poly(out: &mut G1, poly: Poly, kzg_settings: KZGSettings) -> Result<(), String> {
+pub fn commit_to_poly(out: &mut G1, poly: &Poly, kzg_settings: &KZGSettings) -> Result<(), String> {
     if poly.coeffs.len() > kzg_settings.secret_g1.len() {
         return Err(String::from("Polynomial is longer than secret g1"));
     }
@@ -19,8 +19,8 @@ pub fn commit_to_poly(out: &mut G1, poly: Poly, kzg_settings: KZGSettings) -> Re
     return Ok(());
 }
 
-fn log_2_byte(b: &u8) -> usize {
-    let mut r = if b > &0xF { 1 } else { 0 } << 2;
+fn log_2_byte(b: u8) -> usize {
+    let mut r = if b > 0xF { 1 } else { 0 } << 2;
     let mut b = b >> r;
     let shift = if b > 0x3 { 1 } else { 0 } << 1;
     b >>= shift + 1;
@@ -52,7 +52,7 @@ fn g1_mul(out: &mut G1, a: &G1, b: &Fr) {
     } else {
         // Count the number of bits to be multiplied.
         unsafe {
-            blst_p1_mult(out, a, &(scalar.b[0]), 8 * i - 7 + log_2_byte(&scalar.b[i - 1]));
+            blst_p1_mult(out, a, &(scalar.b[0]), 8 * i - 7 + log_2_byte(scalar.b[i - 1]));
         }
     }
 }
