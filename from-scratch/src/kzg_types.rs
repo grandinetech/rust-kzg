@@ -105,7 +105,7 @@ impl Poly {
         }
     }
 
-    pub fn eval(&mut self, x: &Fr) -> Fr {
+    pub fn eval(&self, x: &Fr) -> Fr {
         if self.coeffs.len() == 0 {
             return create_fr_zero();
         } else if fr_is_zero(x) {

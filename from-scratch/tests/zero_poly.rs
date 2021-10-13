@@ -6,9 +6,8 @@ mod tests {
     use blst::blst_fr_from_uint64;
     use kzg::Fr;
     use rand::seq::SliceRandom;
-    use rand::{Rng, RngCore, SeedableRng, thread_rng};
+    use rand::{RngCore, SeedableRng, thread_rng};
     use rand::rngs::StdRng;
-    use rand_pcg::Pcg64;
 
 
     const EXISTS: [bool; 16] = [true, false, false, true, false, true, true, false,
@@ -56,7 +55,6 @@ mod tests {
         assert!(result.is_ok());
         let fft_settings = result.unwrap();
 
-        let mut from_tree_reduction: Poly = Poly { coeffs: vec![Fr::default(); 16] };
         let mut from_direct: Poly = Poly { coeffs: vec![Fr::default(); 9] };
 
         let partial_idxs: [[usize; 2]; 4] = [[1, 3], [7, 8], [9, 10], [12, 13]];
@@ -72,9 +70,9 @@ mod tests {
             assert!(result.is_ok());
         }
 
-        let scratch = vec![Fr::default(); from_tree_reduction.coeffs.len() * 3];
-        let result = reduce_partials(&mut from_tree_reduction, &scratch, &poly_partials, &fft_settings);
+        let result = reduce_partials(16, &poly_partials, &fft_settings);
         assert!(result.is_ok());
+        let mut from_tree_reduction = result.unwrap();
 
         let idxs = [1, 3, 7, 8, 9, 10, 12, 13];
         let result = do_zero_poly_mul_partial(&mut from_direct, &idxs, 1, &fft_settings);
@@ -128,11 +126,9 @@ mod tests {
                     assert!(result.is_ok());
                 }
 
-                let mut from_tree_reduction: Poly = Poly { coeffs: vec![Fr::default(); point_count] };
-                let scratch = vec![Fr::default(); point_count * 3];
-
-                let result = reduce_partials(&mut from_tree_reduction, &scratch, &partials, &fft_settings);
+                let result = reduce_partials(point_count, &partials, &fft_settings);
                 assert!(result.is_ok());
+                let from_tree_reduction = result.unwrap();
 
                 let mut from_direct: Poly = Poly { coeffs: vec![Fr::default(); missing_count + 1] };
 
@@ -175,8 +171,10 @@ mod tests {
             assert!(fr_is_zero(&tmp));
         }
 
-        let result = fft_fr(&mut tmp_poly.coeffs, &expected_eval.coeffs, true, &fft_settings);
+        let result = fft_fr(&expected_eval.coeffs, true, &fft_settings);
         assert!(result.is_ok());
+        tmp_poly.coeffs = result.unwrap();
+
         for i in 0..16 {
             assert!(fr_are_equal(&tmp_poly.coeffs[i], &expected_poly.coeffs[i]));
         }
@@ -191,8 +189,6 @@ mod tests {
         let mut missing_idxs = Vec::new();
         let mut expected_eval = Poly { coeffs: vec![Fr::default(); 16] };
         let mut expected_poly = Poly { coeffs: vec![Fr::default(); 16] };
-        let mut zero_eval = Poly { coeffs: vec![Fr::default(); 16] };
-        let mut zero_poly = Poly { coeffs: vec![Fr::default(); 16] };
 
         for i in 0..16 {
             unsafe {
@@ -205,13 +201,14 @@ mod tests {
             }
         }
 
-        let result = zero_polynomial_via_multiplication(&mut zero_eval.coeffs, &mut zero_poly, &missing_idxs, &fft_settings);
+        let result = zero_polynomial_via_multiplication(16, &missing_idxs, &fft_settings);
         assert!(result.is_ok());
+        let (zero_eval, zero_poly) = result.unwrap();
 
         assert_eq!(missing_idxs.len() + 1, zero_poly.coeffs.len());
 
         for i in 0..expected_eval.coeffs.len() {
-            assert!(fr_are_equal(&expected_eval.coeffs[i], &zero_eval.coeffs[i]));
+            assert!(fr_are_equal(&expected_eval.coeffs[i], &zero_eval[i]));
             assert!(fr_are_equal(&expected_poly.coeffs[i], &zero_poly.coeffs[i]));
         }
     }
@@ -232,11 +229,9 @@ mod tests {
                     }
                 }
 
-                let mut zero_eval = vec![Fr::default(); fft_settings.max_width];
-                let mut zero_poly = Poly { coeffs: vec![Fr::default(); fft_settings.max_width] };
-
-                let result = zero_polynomial_via_multiplication(&mut zero_eval, &mut zero_poly, &missing_idxs, &fft_settings);
+                let result = zero_polynomial_via_multiplication(fft_settings.max_width, &missing_idxs, &fft_settings);
                 assert!(result.is_ok());
+                let (zero_eval, zero_poly) = result.unwrap();
 
                 assert_eq!(missing_idxs.len() + 1, zero_poly.coeffs.len());
 
@@ -245,9 +240,9 @@ mod tests {
                     assert!(fr_is_zero(&out));
                 }
 
-                let mut zero_eval_fft = vec![Fr::default(); fft_settings.max_width];
-                let result = fft_fr(&mut zero_eval_fft, &zero_eval, true, &fft_settings);
+                let result = fft_fr(&zero_eval, true, &fft_settings);
                 assert!(result.is_ok());
+                let zero_eval_fft = result.unwrap();
 
                 for i in 0..zero_poly.coeffs.len() {
                     assert!(fr_are_equal(&zero_poly.coeffs[i], &zero_eval_fft[i]));
@@ -271,10 +266,9 @@ mod tests {
             missing_idxs.push(i + 1);
         }
 
-        let mut zero_eval = vec![Fr::default(); fft_settings.max_width];
-        let mut zero_poly = Poly { coeffs: vec![Fr::default(); fft_settings.max_width] };
-
-        let result = zero_polynomial_via_multiplication(&mut zero_eval, &mut zero_poly, &missing_idxs[..missing_idxs.len() - 1], &fft_settings);
+        let result = zero_polynomial_via_multiplication(fft_settings.max_width, &missing_idxs[..missing_idxs.len() - 1], &fft_settings);
+        assert!(result.is_ok());
+        let (zero_eval, zero_poly) = result.unwrap();
 
         assert_eq!(missing_idxs.len(), zero_poly.coeffs.len());
         for i in 0..(missing_idxs.len() - 1) {
@@ -283,8 +277,9 @@ mod tests {
         }
 
         let mut zero_eval_fft = vec![Fr::default(); fft_settings.max_width];
-        let result = fft_fr(&mut zero_eval_fft, &zero_eval, true, &fft_settings);
+        let result = fft_fr(&zero_eval, true, &fft_settings);
         assert!(result.is_ok());
+        let zero_eval_fft = result.unwrap();
 
         for i in 0..zero_poly.coeffs.len() {
             assert!(fr_are_equal(&zero_poly.coeffs[i], &zero_eval_fft[i]));
@@ -306,10 +301,9 @@ mod tests {
             missing_idxs.push(i + 1);
         }
 
-        let mut zero_eval = vec![Fr::default(); fft_settings.max_width];
-        let mut zero_poly = Poly { coeffs: vec![Fr::default(); fft_settings.max_width] };
-
-        let result = zero_polynomial_via_multiplication(&mut zero_eval, &mut zero_poly, &missing_idxs[..missing_idxs.len() - 1], &fft_settings);
+        let result = zero_polynomial_via_multiplication(fft_settings.max_width, &missing_idxs[..missing_idxs.len() - 1], &fft_settings);
+        assert!(result.is_ok());
+        let (zero_eval, zero_poly) = result.unwrap();
 
         assert_eq!(missing_idxs.len() + 1, zero_poly.coeffs.len());
         for i in 0..missing_idxs.len() {
@@ -317,9 +311,9 @@ mod tests {
             assert!(fr_is_zero(&ret));
         }
 
-        let mut zero_eval_fft = vec![Fr::default(); fft_settings.max_width];
-        let result = fft_fr(&mut zero_eval_fft, &zero_eval, true, &fft_settings);
+        let result = fft_fr(&zero_eval, true, &fft_settings);
         assert!(result.is_ok());
+        let zero_eval_fft = result.unwrap();
 
         for i in 0..zero_poly.coeffs.len() {
             assert!(fr_are_equal(&zero_poly.coeffs[i], &zero_eval_fft[i]));

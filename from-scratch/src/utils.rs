@@ -13,7 +13,7 @@ pub fn next_power_of_two(v: usize) -> usize {
     v |= v >> 16;
     v |= v >> 32;
     v += 1;
-    v += ((v == 0) as usize);
+    v += (v == 0) as usize;
 
     v
 }

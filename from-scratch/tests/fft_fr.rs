@@ -49,11 +49,13 @@ mod tests {
         }
 
         // Forward and inverse FFT
-        let result = fft_fr(&mut coeffs, &data, false, &fft_settings);
+        let result = fft_fr(&data, false, &fft_settings);
         assert!(result.is_ok());
+        let coeffs = result.unwrap();
 
-        let result = fft_fr(&mut data, &coeffs, true, &fft_settings);
+        let result = fft_fr(&coeffs, true, &fft_settings);
         assert!(result.is_ok());
+        let data = result.unwrap();
 
         for i in 0..fft_settings.max_width {
             let mut temp: Fr = Fr::default();
@@ -92,15 +94,15 @@ mod tests {
         let fft_settings = result.unwrap();
 
         let mut data = vec![Fr::default(); fft_settings.max_width];
-        let mut out = vec![Fr::default(); fft_settings.max_width];
         for i in 0..fft_settings.max_width {
             unsafe {
                 blst_fr_from_uint64(&mut data[i], [i as u64, 0, 0, 0].as_ptr());
             }
         }
 
-        let result = fft_fr(&mut out, &data, true, &fft_settings);
+        let result = fft_fr(&data, true, &fft_settings);
         assert!(result.is_ok());
+        let out = result.unwrap();
 
         assert_eq!(inv_fft_expected.len(), fft_settings.max_width);
         for i in 0..inv_fft_expected.len() {
@@ -128,19 +130,19 @@ mod tests {
         let fft_settings2 = result.unwrap();
 
         let mut data = vec![Fr::default(); width];
-        let mut coeffs1 = vec![Fr::default(); width];
-        let mut coeffs2 = vec![Fr::default(); width];
         for i in 0..width {
             unsafe {
                 blst_fr_from_uint64(&mut data[i], [i as u64, 0, 0, 0].as_ptr());
             }
         }
 
-        let result = fft_fr(&mut coeffs1, &data, false, &fft_settings1);
+        let result = fft_fr(&data, false, &fft_settings1);
         assert!(result.is_ok());
+        let coeffs1 = result.unwrap();
 
-        let result = fft_fr(&mut coeffs2, &data, false, &fft_settings2);
+        let result = fft_fr(&data, false, &fft_settings2);
         assert!(result.is_ok());
+        let coeffs2 = result.unwrap();
 
         for i in 0..width {
             assert!(fr_are_equal(&coeffs1[i], &coeffs2[i]));

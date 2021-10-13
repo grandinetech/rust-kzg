@@ -3,6 +3,7 @@ use crate::utils::is_power_of_two;
 use blst::{blst_fr_add, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sub};
 use kzg::Fr;
 
+/// Fast Fourier Transform for finite field elements
 pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {
     let half: usize = ret.len() / 2;
     if half > 0 {
@@ -21,7 +22,8 @@ pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roo
     }
 }
 
-pub fn fft_fr(ret: &mut [Fr], data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<(), String> {
+/// Fast Fourier Transform for finite field elements
+pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<Vec<Fr>, String> {
     if data.len() > fft_settings.max_width {
         return Err(String::from(
             "Supplied list is longer than the available max width",
@@ -30,7 +32,8 @@ pub fn fft_fr(ret: &mut [Fr], data: &[Fr], inverse: bool, fft_settings: &FFTSett
         return Err(String::from("A list with power-of-two length expected"));
     }
 
-    let stride: usize = fft_settings.max_width / data.len();
+    let stride = fft_settings.max_width / data.len();
+    let mut ret = vec![Fr::default(); data.len()];
 
     if inverse {
         let mut inv_len: Fr = Fr::default();
@@ -38,19 +41,20 @@ pub fn fft_fr(ret: &mut [Fr], data: &[Fr], inverse: bool, fft_settings: &FFTSett
             blst_fr_from_uint64(&mut inv_len, [data.len() as u64, 0, 0, 0].as_ptr());
             blst_fr_inverse(&mut inv_len, &inv_len);
         }
-        fft_fr_fast(ret, data, 1, &fft_settings.reverse_roots_of_unity, stride);
+        fft_fr_fast(&mut ret, data, 1, &fft_settings.reverse_roots_of_unity, stride);
         for i in 0..data.len() {
             unsafe {
                 blst_fr_mul(&mut ret[i], &ret[i], &inv_len);
             }
         }
     } else {
-        fft_fr_fast(ret, data, 1, &fft_settings.expanded_roots_of_unity, stride);
+        fft_fr_fast(&mut ret, data, 1, &fft_settings.expanded_roots_of_unity, stride);
     }
 
-    return Ok(());
+    return Ok(ret);
 }
 
+/// Simplified Discrete Fourier Transform, mainly used for testing
 pub fn fft_fr_slow(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {
     let mut last: Fr = Fr::default();
     let mut v: Fr = Fr::default();

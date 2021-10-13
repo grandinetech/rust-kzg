@@ -59,7 +59,6 @@ mod tests {
             let mut even_data = vec![Fr::default(); width / 2];
             let mut odd_data = vec![Fr::default(); width / 2];
             let mut data = vec![Fr::default(); width];
-            let mut coeffs = vec![Fr::default(); width];
 
             for _rep in 0..4 {
                 // Initialize even data and duplicate it in even data
@@ -77,8 +76,9 @@ mod tests {
                     data[i + 1] = odd_data[i / 2];
                 }
 
-                let result = fft_fr(&mut coeffs, &data, true, &fft_settings);
+                let result = fft_fr(&data, true, &fft_settings);
                 assert!(result.is_ok());
+                let coeffs = result.unwrap();
 
                 for i in (width / 2)..(width) {
                     assert!(fr_is_zero(&coeffs[i]));
