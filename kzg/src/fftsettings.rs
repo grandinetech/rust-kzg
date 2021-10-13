@@ -40,7 +40,7 @@ pub struct BlstP1 {
 extern "C" {
     fn new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> Error;
     fn free_fft_settings(settings: *mut FFTSettings);
-    fn fft_fr(output: *mut Fr, input: *mut Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Error;
+    fn fft_fr(output: *mut Fr, input: *const Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Error;
     fn fft_g1(output: *mut G1, input: *mut G1, inverse: bool, n: u64, fs: *const FFTSettings) -> Error;
     fn poly_mul(output: *mut Poly, a: *const Poly, b: *const Poly, fs: *const FFTSettings) -> Error;
 }
@@ -68,16 +68,24 @@ impl FFTSettings {
         }
     }
 
-    pub fn free(settings: *mut FFTSettings) {
+    pub fn destroy(&mut self) {
         unsafe {
-            free_fft_settings(settings);
+            free_fft_settings(self);
         }
     }
 
-    pub fn fft_fr(input: *mut Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<Fr, Error> {
-        let mut output = Fr::default();
+    pub fn fft(&self, input: &mut Vec<Fr>, inverse: bool) -> Vec<Fr> {
+        let output = match FFTSettings::fft_fr(input.as_mut_ptr(), inverse, input.len() as u64, self) {
+            Ok(fr) => fr,
+            Err(e) => panic!("Error in \"FFTSettings::fft\" ==> {:?}", e)
+        };
+        output
+    }
+
+    fn fft_fr(input: *const Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<Vec<Fr>, Error> {
+        let mut output = vec![Fr::default(); n as usize];
         unsafe {
-            return match fft_fr(&mut output, input, inverse, n, fs) {
+            return match fft_fr(output.as_mut_ptr(), input, inverse, n, fs) {
                 Error::KzgOk => Ok(output),
                 e => {
                     println!("Error in \"FFTSettings::fft_fr\" ==> {:?}", e);
