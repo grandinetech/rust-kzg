@@ -1,10 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use blst::blst_fr_from_uint64;
+    use blst::{blst_fr_from_uint64};
     use kzg::Fr;
     use kzg_from_scratch::fft_fr::{fft_fr, fft_fr_fast, fft_fr_slow};
     use kzg_from_scratch::kzg_types::{FFTSettings, fr_are_equal};
 
+    /// Check that both FFT implementations produce the same results
     #[test]
     fn compare_sft_fft() {
         let size: usize = 12;
@@ -32,6 +33,7 @@ mod tests {
         }
     }
 
+    /// Check that inserting an FFT result produces the starting data
     #[test]
     fn roundtrip_fft() {
         let size: usize = 12;
@@ -40,33 +42,28 @@ mod tests {
         assert!(result.is_ok());
         let fft_settings = result.unwrap();
 
-        let mut coeffs = vec![Fr::default(); fft_settings.max_width];
-        let mut data = vec![Fr::default(); fft_settings.max_width];
+        let mut starting_data = vec![Fr::default(); fft_settings.max_width];
         for i in 0..fft_settings.max_width {
             unsafe {
-                blst_fr_from_uint64(&mut data[i], [i as u64, 0, 0, 0].as_ptr());
+                blst_fr_from_uint64(&mut starting_data[i], [i as u64, 0, 0, 0].as_ptr());
             }
         }
 
         // Forward and inverse FFT
-        let result = fft_fr(&data, false, &fft_settings);
+        let result = fft_fr(&starting_data, false, &fft_settings);
         assert!(result.is_ok());
-        let coeffs = result.unwrap();
+        let forward_result = result.unwrap();
 
-        let result = fft_fr(&coeffs, true, &fft_settings);
+        let result = fft_fr(&forward_result, true, &fft_settings);
         assert!(result.is_ok());
-        let data = result.unwrap();
+        let inverse_result = result.unwrap();
 
         for i in 0..fft_settings.max_width {
-            let mut temp: Fr = Fr::default();
-            unsafe {
-                blst_fr_from_uint64(&mut temp, [i as u64, 0, 0, 0].as_ptr());
-            }
-
-            assert!(fr_are_equal(&temp, &data[i]));
+            assert!(fr_are_equal(&starting_data[i], &inverse_result[i]));
         }
     }
 
+    /// Check the inverse FFT operation on precomputed values
     #[test]
     fn inverse_fft() {
         let inv_fft_expected: [[u64; 4]; 16] =
@@ -102,7 +99,7 @@ mod tests {
 
         let result = fft_fr(&data, true, &fft_settings);
         assert!(result.is_ok());
-        let out = result.unwrap();
+        let forward_result = result.unwrap();
 
         assert_eq!(inv_fft_expected.len(), fft_settings.max_width);
         for i in 0..inv_fft_expected.len() {
@@ -110,10 +107,11 @@ mod tests {
             unsafe {
                 blst_fr_from_uint64(&mut expected, inv_fft_expected[i].as_ptr());
             }
-            assert!(fr_are_equal(&expected, &out[i]));
+            assert!(fr_are_equal(&expected, &forward_result[i]));
         }
     }
 
+    /// Check that stride is normalized when roots of different precision are used
     #[test]
     fn stride_fft() {
         let size1: usize = 9;
@@ -138,14 +136,14 @@ mod tests {
 
         let result = fft_fr(&data, false, &fft_settings1);
         assert!(result.is_ok());
-        let coeffs1 = result.unwrap();
+        let result1 = result.unwrap();
 
         let result = fft_fr(&data, false, &fft_settings2);
         assert!(result.is_ok());
-        let coeffs2 = result.unwrap();
+        let result2 = result.unwrap();
 
         for i in 0..width {
-            assert!(fr_are_equal(&coeffs1[i], &coeffs2[i]));
+            assert!(fr_are_equal(&result1[i], &result2[i]));
         }
     }
 }
