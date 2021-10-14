@@ -76,6 +76,7 @@ extern "C" {
     // Blst
     fn g1_add_or_dbl(out: *mut G1, a: *const G1, b: *const G1);
     fn g1_equal(a: *const G1, b: *const G1) -> bool;
+    fn g1_mul(out: *mut G1, a: *const G1, b: *const Fr);
 }
 
 impl FFTSettings {
@@ -206,5 +207,28 @@ impl FFTSettings {
         }
         fs.fft_fr(&mut data, false);
         fs.destroy();
+    }
+
+    // Used only for benchmarks
+    pub fn bench_fft_g1(scale: u64) {
+        let mut fs = match FFTSettings::new(scale as u32) {
+            Ok(s) => s,
+            Err(_) => FFTSettings::default()
+        };
+        let mut data = vec![G1::default(); fs.max_width];
+        for i in 0..fs.max_width {
+            data[i] = FFTSettings::rand_g1();
+        }
+        fs.fft_g1(&mut data, false);
+        fs.destroy();
+    }
+
+    pub fn rand_g1() -> G1 {
+        let mut ret = G1::default();
+        let random = Fr::rand();
+        unsafe {
+            g1_mul(&mut ret, &G1_GENERATOR, &random);
+        }
+        ret
     }
 }
