@@ -10,5 +10,14 @@ fn fft_fr(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, fft_fr);
+fn fft_g1(c: &mut Criterion) {
+    c.bench_function(
+        "fft_g1",
+        |b| b.iter(|| {
+            FFTSettings::bench_fft_g1(5)
+        })
+    );
+}
+
+criterion_group!(benches, fft_fr, fft_g1);
 criterion_main!(benches);
