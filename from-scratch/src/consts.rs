@@ -3,14 +3,15 @@ use blst::{blst_fp, blst_fr_mul};
 use kzg::{Fr, G1};
 
 pub static G1_IDENTITY: G1 = G1 {
-    x: blst_fp{l: [0,0,0,0,0,0]},
-    y: blst_fp{l: [0,0,0,0,0,0]},
-    z: blst_fp{l: [0,0,0,0,0,0]},
+    x: blst_fp { l: [0, 0, 0, 0, 0, 0] },
+    y: blst_fp { l: [0, 0, 0, 0, 0, 0] },
+    z: blst_fp { l: [0, 0, 0, 0, 0, 0] },
 };
 
 pub const SCALE_FACTOR: u64 = 5;
 
 pub const NUM_ROOTS: usize = 32;
+/// The roots of unity. Every root_i equals 1 when raised to the power of (2 ^ i)
 pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000],
     [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48],
@@ -46,31 +47,24 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x63e7cb4906ffc93f, 0xf070bb00e28a193d, 0xad1715b02e5713b5, 0x4b5371495990693f]
 ];
 
+/// Multiply a given root of unity by itself until it results in a 1 and result all multiplication values in a vector
 pub fn expand_root_of_unity(root: &Fr, width: usize) -> Result<Vec<Fr>, String> {
-    let mut generated_powers = vec![Fr::default(); width + 1];
-    generated_powers[0] = create_fr_one();
-    generated_powers[1] = *root;
+    let mut generated_powers = vec![create_fr_one(), root.clone()];
+    let mut last = *generated_powers.last().unwrap();
 
-    let mut i = 2;
-    while !(fr_is_one(&generated_powers[i - 1])) {
-        if i > width {
-            return Err(String::from("Internal error: looped too long"));
+    while !(fr_is_one(&last)) {
+        if generated_powers.len() > width {
+            return Err(String::from("Root of unity multiplied for too long"));
         }
 
-        let mut next: Fr = Fr::default();
         unsafe {
-            blst_fr_mul(&mut next, &generated_powers[i - 1], root);
+            blst_fr_mul(&mut last, generated_powers.last().unwrap(), root);
         }
 
-        generated_powers[i] = next;
-        i += 1;
+        generated_powers.push(last);
     }
 
-    if !fr_is_one(&generated_powers[width]) {
-        return Err(String::from("Internal error: width'd element must be one"));
-    }
-
-    return Ok(generated_powers);
+    Ok(generated_powers)
 }
 
 

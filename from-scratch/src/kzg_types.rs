@@ -144,32 +144,30 @@ pub struct FFTSettings {
 }
 
 impl FFTSettings {
+    /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
     pub fn from_scale(max_scale: usize) -> Result<FFTSettings, String> {
         if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from(
-                "Scale is expected to be within root of unity matrix row size",
-            ));
+            return Err(String::from("Scale is expected to be within root of unity matrix row size"));
         }
 
+        // max_width = 2 ^ max_scale
         let max_width: usize = 1 << max_scale;
         let mut root_of_unity: Fr = Fr::default();
         unsafe {
             blst_fr_from_uint64(&mut root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale].as_ptr());
         }
 
+        // create max_width of roots & store them reversed as well
         let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
 
-        for i in 0..(max_width + 1) {
-            reverse_roots_of_unity[i] = expanded_roots_of_unity[max_width - i];
-        }
-
-        return Ok(FFTSettings {
+        Ok(FFTSettings {
             max_width,
             root_of_unity,
             expanded_roots_of_unity,
             reverse_roots_of_unity,
-        });
+        })
     }
 }
 
