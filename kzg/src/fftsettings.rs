@@ -143,6 +143,7 @@ impl FFTSettings {
         }
     }
 
+    // https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/fft_g1.c#L95
     pub fn make_data(n: usize) -> Vec<G1> {
         // It's not mentioned in c-kzg implementation but for safety reasons allocate (n + 1) space
         // because we'll try to access one element further its initial size in the first for loop
