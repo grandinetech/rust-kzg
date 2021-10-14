@@ -1,7 +1,6 @@
-use kzg::{Fr, P1, G1, Fp, P1Affine};
+use kzg::{Fr, G1, Fp, P1Affine};
 use blst::{blst_p1_add_or_double,
            blst_p1s_to_affine,
-           blst_p1s_mult_pippenger_scratch_sizeof,
            blst_scalar,
            blst_scalar_from_fr,
            blst_p1_mult,
