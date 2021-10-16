@@ -1,5 +1,5 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr};
+use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr};
 use kzg::{Fr, G1, G2};
 
 pub fn fr_is_one(fr: &Fr) -> bool {
@@ -25,6 +25,30 @@ pub fn create_fr_u64(val: u64) -> Fr {
     }
 
     ret
+}
+
+pub fn fr_pow(a: &Fr, n: usize) -> Result<Fr, String> {
+    //fr_t tmp = *a;
+    let mut tmp: Fr = *a;
+    
+    //*out = fr_one;
+    let mut out = create_fr_one();
+    let mut n2 = n;
+
+    unsafe {
+        loop {
+            if n2 & 1 == 1 {
+                blst_fr_mul(&mut out, &out, &tmp);
+            }
+            n2 = n2 >> 1;
+            if n == 0 {
+                break;
+            }
+            blst_fr_sqr(&mut tmp, &tmp);
+        }
+    }
+
+    Ok(out)
 }
 
 pub fn create_fr_zero() -> Fr {

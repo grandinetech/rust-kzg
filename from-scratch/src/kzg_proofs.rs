@@ -6,7 +6,10 @@ use blst::{blst_p1_add_or_double,
            blst_p1_mult,
            blst_p1s_mult_pippenger,
 };
-use crate::kzg_types::{KZGSettings, Poly};
+
+use crate::poly_utils::{new_poly_div};
+use crate::kzg_types::{KZGSettings, Poly, create_fr_one, create_fr_zero, fr_pow, negate_fr};
+use crate::utils::{is_power_of_two, log_2_byte};
 
 pub fn commit_to_poly(out: &mut G1, poly: &Poly, kzg_settings: &KZGSettings) -> Result<(), String> {
     if poly.coeffs.len() > kzg_settings.secret_g1.len() {
@@ -18,13 +21,50 @@ pub fn commit_to_poly(out: &mut G1, poly: &Poly, kzg_settings: &KZGSettings) -> 
     return Ok(());
 }
 
-fn log_2_byte(b: u8) -> usize {
-    let mut r = if b > 0xF { 1 } else { 0 } << 2;
-    let mut b = b >> r;
-    let shift = if b > 0x3 { 1 } else { 0 } << 1;
-    b >>= shift + 1;
-    r |= shift | b;
-    r.into()
+fn compute_proof_multi(p: &Poly, x0: &Fr, n: usize, kzg_settings: &KZGSettings) -> Result<G1, String>{
+    //CHECK(is_power_of_two(n));
+    assert!(is_power_of_two(n));
+    //poly divisor, q;
+    //let mut divisor = Poly::default();
+    let mut divisor: Poly = Poly { coeffs: Vec::default()};
+    let mut q: Poly = Poly { coeffs: Vec::default()};
+
+    
+    // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
+    // TRY(new_poly(&divisor, n + 1));
+    
+    // -(x0^n)
+    let result = fr_pow(&x0, n);
+    assert!(result.is_ok()); 
+    //fr_t x_pow_n;
+    let x_pow_n = result.unwrap();
+    
+    // fr_negate(&divisor.coeffs[0], &x_pow_n);
+    negate_fr(&mut divisor.coeffs[0], &x_pow_n);
+
+    // Zeros
+    for _ in 1..n {
+        // divisor.coeffs[i] = create_fr_zero();
+        divisor.coeffs.push(create_fr_zero());
+    }
+
+    // x^n
+    divisor.coeffs.push(create_fr_one());
+    // divisor.coeffs[n] = create_fr_one();
+
+    // Calculate q = p / (x^n - x0^n)
+    //TRY(new_poly_div(&q, p, &divisor));
+
+
+    let result = new_poly_div(&p, &divisor);
+    assert!(result.is_ok()); 
+    q = result.unwrap();
+
+    //TRY(commit_to_poly(out, &q, ks));
+    let mut out = G1::default(); 
+    commit_to_poly(&mut out, &q, &kzg_settings);
+
+    return Ok(out);
 }
 
 fn g1_mul(out: &mut G1, a: &G1, b: &Fr) {
@@ -116,87 +156,3 @@ fn g1_linear_combination(out: &mut G1, p: &Vec<G1>, coeffs: &Vec<Fr>, len: usize
         }
     }
 }
-
-
-/*
-C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks) {
-    CHECK(p->length <= ks->length);
-    g1_linear_combination(out, ks->secret_g1, p->coeffs, p->length);
-    return C_KZG_OK;
-}
-*/
-
-
-
-/*
- * Multiply a G1 group element by a field element.
- *
- * This "undoes" the Blst constant-timedness. FFTs do a lot of multiplication by one, so constant time is rather slow.
- *
- * @param[out] out [@p b]@p a
- * @param[in]  a   The G1 group element
- * @param[in]  b   The multiplier
- */
-/*
-void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b); // blst::blst_scalar_from_fr(&s, b)
-
-    // Count the number of bytes to be multiplied.
-    int i = sizeof(blst_scalar);
-    while (i && !s.b[i - 1]) --i;
-    if (i == 0) {
-        *out = g1_identity;
-    } else if (i == 1 && s.b[0] == 1) {
-        *out = *a;
-    } else {
-        // Count the number of bits to be multiplied.
-        blst_p1_mult(out, a, s.b, 8 * i - 7 + log_2_byte(s.b[i - 1])); //blst::blst_p1_mult();
-    }
-}*/
-/*
-void g1_linear_combination(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
-
-    if (len < 8) { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
-        // Direct approach
-        g1_t tmp;
-        *out = g1_identity;
-        for (uint64_t i = 0; i < len; i++) {
-            g1_mul(&tmp, &p[i], &coeffs[i]); //blst::g1_mul(&tmp, &p[i], &coeffs[i]);
-            blst_p1_add_or_double(out, out, &tmp); //blst::blst_p1_add_or_double();
-        }
-    } else {
-        // Blst's implementation of the Pippenger method
-        void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
-        blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
-        blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
-
-        // Transform the points to affine representation
-        const blst_p1 *p_arg[2] = {p, NULL};
-        // let p_arg: const* = {p, null}
-
-        blst_p1s_to_affine(p_affine, p_arg, len);
-
-        // Transform the field elements to 256-bit scalars
-        for (int i = 0; i < len; i++) {
-            blst_scalar_from_fr(&scalars[i], &coeffs[i]);
-        }
-
-        // Call the Pippenger implementation
-        const byte *scalars_arg[2] = {(byte *)scalars, NULL};
-        const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-        blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
-
-        // Tidy up
-        free(scratch);
-        free(p_affine);
-        free(scalars);
-    }
-}
-
-C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks) {
-    CHECK(p->length <= ks->length);
-    g1_linear_combination(out, ks->secret_g1, p->coeffs, p->length);
-    return C_KZG_OK;
-}
-*/
