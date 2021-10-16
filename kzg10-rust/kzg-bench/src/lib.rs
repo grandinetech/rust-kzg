@@ -3,3 +3,4 @@
 mod test;
 mod poly;
 mod fft_common;
+mod converter_tests;

@@ -7,6 +7,7 @@ edition = "2018"
 
 [dependencies]
 mcl_rust = { path = '../kzg' }
+blst = {'git' = 'https://github.com/supranational/blst.git'}
 
 [dev-dependencies]
 rand = "0.5"
