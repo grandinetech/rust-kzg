@@ -24,11 +24,11 @@ pub fn fr_div(a: &Fr, b: &Fr) -> Result<Fr, String> {
 
 pub fn poly_norm(p: &Poly) -> Result<Poly, String> {
     let mut ret = p.clone();
-    let mut tempLen: usize = ret.coeffs.len();
-    while tempLen > 0 && fr_is_zero(&ret.coeffs[tempLen - 1]) {
-        tempLen -= 1;
+    let mut temp_len: usize = ret.coeffs.len();
+    while temp_len > 0 && fr_is_zero(&ret.coeffs[temp_len - 1]) {
+        temp_len -= 1;
     }
-    if tempLen == 0 {
+    if temp_len == 0 {
         ret.coeffs = Vec::default();
     }
 
@@ -183,8 +183,8 @@ pub fn poly_inverse(b: &Poly, output_len: usize) -> Result<Poly, String> {
         // 2 - b.c -> tmp0
         for i in 0..tmp0.coeffs.len() {
             // fr_negate(&tmp0.coeffs[i], &tmp0.coeffs[i]);
-            let clonedFr = tmp0.coeffs[i].clone();
-            negate_fr(&mut tmp0.coeffs[i], &clonedFr);
+            let cloned_fr = tmp0.coeffs[i].clone();
+            negate_fr(&mut tmp0.coeffs[i], &cloned_fr);
         }
         // fr_from_uint64(&fr_two, 2);
         let fr_two: Fr = create_fr_u64(2);

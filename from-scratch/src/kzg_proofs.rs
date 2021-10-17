@@ -83,13 +83,13 @@ pub fn compute_proof_multi(p: &Poly, x0: &Fr, n: usize, kzg_settings: &KZGSettin
 }
 
 fn g1_mul(out: &mut G1, a: &G1, b: &Fr) {
-    let scalar: &mut blst_scalar = &mut blst_scalar::default();
+    let mut scalar: blst_scalar = blst_scalar::default();
     unsafe {
-        blst_scalar_from_fr(&mut *scalar, b);
+        blst_scalar_from_fr(&mut scalar, b);
     }
 
     // Count the number of bytes to be multiplied.
-    let mut i = scalar.b.len();// std::mem::size_of::<blst_scalar>();
+    let mut i = scalar.b.len();
     while i != 0 && scalar.b[i - 1] == 0 {
         i -= 1;
     }
