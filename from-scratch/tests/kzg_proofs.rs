@@ -1,118 +1,97 @@
-use blst::{blst_fr_inverse, blst_fr_mul, blst_p2_mult, blst_p1_add_or_double};
-use kzg::{Fr, P1, G1, Fp, P1Affine, G2};
-use kzg_from_scratch::fft_fr::fft_fr;
-use kzg_from_scratch::kzg_types::{KZGSettings, Poly};
-use kzg_from_scratch::utils::is_power_of_two;
+#[cfg(test)]
+mod tests {
+    
+    use kzg::{Fr, G1, G2};
+    use kzg_from_scratch::kzg_types::{KZGSettings, FFTSettings, Poly, create_fr_u64};
+    use kzg_from_scratch::kzg_proofs::{commit_to_poly, compute_proof_multi, check_proof_multi};
+    use blst::{
+        blst_fr_mul,
+    };
+
+    // #[test]
+    // fn proof_multi() {
+    //     // Our polynomial: degree 15, 16 coefficients
+    //     // uint64_t coeffs[] = {1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13};
+    //     let coeffs: [u64; 16usize] = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+
+    //     // FFTSettings fs1, fs2;
+    //     let fs1: FFTSettings = FFTSettings::from_scale(coeffs.len()).unwrap();
+    //     let fs2: FFTSettings = FFTSettings::from_scale(coeffs.len()).unwrap();
+
+    //     //KZGSettings ks1, ks2;
+    //     let kzgSettings_1: KZGSettings = KZGSettings::from_scale(coeffs.len()).unwrap();
+    //     let kzgSettings_2: KZGSettings = KZGSettings::from_scale(coeffs.len()).unwrap();
+
+    //     let mut p: Poly = Poly { coeffs: vec![Fr::default(); 16]};
+        
+    //     // g1_t commitment, proof;
+    //     let commitment: G1;
+    //     let proof: G1;
+
+    //     // fr_t x, tmp;
+    //     let mut x: Fr = Fr::default();
+    //     let mut tmp: Fr = Fr::default();
+    //     let result: bool;
+
+    //     // Compute proof at 2^coset_scale points
+    //     //int coset_scale = 3, coset_len = (1 << coset_scale);
+    //     let coset_scale = 3;
+    //     let coset_len = 1 << coset_scale;
+
+    //     // fr_t y[coset_len];
+    //     let y: Vec<Fr>;
+    //     // must be a vec
+
+    //     // uint64_t secrets_len = coeffs.len() > coset_len ? coeffs.len() + 1 : coset_len + 1;
+    //     let secrets_len: usize = if coeffs.len() > coset_len {coeffs.len() + 1} else {coset_len + 1};
+
+    //     //g1_t s1[secrets_len];
+    //     //g2_t s2[secrets_len];
+    //     let secret1: Vec<G1>;
+    //     let secret2: Vec<G2>;
+
+    //     // Create the polynomial
+    //     //new_poly(&p, coeffs.len());
+
+    //     for i in 0..coeffs.len() {
+    //         // fr_from_uint64(&p.coeffs[i], coeffs[i]);
+    //         p.coeffs[i] = create_fr_u64(coeffs[i]);
+    //     }
+
+    //     // Initialise the secrets and data structures
+    //     generate_trusted_setup(s1, s2, &secret, secrets_len); //TODO: create this function
 
 
-// should return what ckzg returns using first arg 'out: bool'
-// pub fn check_proof_multi(commitment: &G1, proof: &G1, x: &Fr, ys: &Fr, n: usize, ks: KZGSettings) -> bool {
-//     if !is_power_of_two(n) {
-//         return false; // fix to error
-//     }
-//     //poly interp;
-//     let interp: Poly = Poly::default();
-//     interp.length = n;
-//     //fr_t inv_x, inv_x_pow, x_pow;
-//     let inv_x: Fr = Fr::default();
-//     let inv_x_pow: Fr = Fr::default();
-//     let x_pow: Fr = Fr::default();
-//
-//     //g2_t xn2, xn_minus_yn;
-//     let xn2: G2 = G2::default();
-//     let xn_minus_yn: G2 = G2::default();
-//     //g1_t is1, commit_minus_interp;
-//     let is1: G1 = G1::default();
-//     let commit_minus_interp: G1 = G1::default();
-//
-//     // Mostly done down to here
-//
-//     //CHECK(is_power_of_two(n));
-//
-//     // Interpolate at a coset.
-//     //TRY(new_poly(&interp, n));
-//     new_fr_array(&interp, n);
-//     TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
-//
-//     // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
-//     fr_inv(&inv_x, x);
-//     inv_x_pow = inv_x;
-//     for (uint64_t i = 1; i < n; i+ +) {
-//         fr_mul(&interp.coeffs[i], &interp.coeffs[i], &inv_x_pow);
-//         fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
-//     }
-//
-//     // [x^n]_2
-//     fr_inv(&x_pow, &inv_x_pow);
-//     g2_mul(&xn2, &g2_generator, &x_pow);
-//
-//     // [s^n - x^n]_2
-//     g2_sub(&xn_minus_yn, &ks->secret_g2[n], &xn2);
-//
-//     // [interpolation_polynomial(s)]_1
-//     TRY(commit_to_poly(&is1, &interp, ks));
-//
-//     // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
-//     g1_sub(&commit_minus_interp, commitment, &is1);
-//
-//     *out = pairings_verify(&commit_minus_interp, &g2_generator, proof, &xn_minus_yn);
-//
-//     // free_poly(&interp);
-//
-//
-//     return true;
-// }
+    //     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs1, 4)); // ln_2 of coeffs.len()
+    //     TEST_CHECK(C_KZG_OK == new_kzg_settings(&kzgSettings_1, s1, s2, secrets_len, &fs1));
 
-/*
-C-kzg copied over (below) as a template for rust code
+    //     // Commit to the polynomial
+    //     // TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks1));
+    //     let result = commit_to_poly(&mut commitment, &p, &kzgSettings_1);
+    //     assert!(result.is_ok());
 
+    //     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs2, coset_scale));
+    //     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks2, s1, s2, secrets_len, &fs2));
 
-C_KZG_RET new_fr_array(fr_t **x, size_t n) {
-    return c_kzg_malloc((void **)x, n * sizeof **x);
+    //     // Compute proof at the points [x * root_i] 0 <= i < coset_len
+    //     // fr_from_uint64(&x, 5431);
+    //     x = create_fr_u64(5431);
+
+    //     TEST_CHECK(C_KZG_OK == compute_proof_multi(&proof, &p, &x, coset_len, &kzgSettings_2));
+
+    //     // y_i is the value of the polynomial at each x_i
+    //     for i in 0..coset_len {
+    //         fr_mul(&tmp, &x, &kzgSettings_2.fs.expanded_roots_of_unity[i]);
+    //         eval_poly(&y[i], &p, &tmp);
+    //     }
+
+    //     // Verify the proof that the (unknown) polynomial has value y_i at x_i
+    //     TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &kzgSettings_2));
+    //     TEST_CHECK(true == result);
+
+    //     // Change a value and check that the proof fails
+    //     fr_add(y + coset_len / 2, y + coset_len / 2, &fr_one);
+    //     TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &kzgSettings_2));
+    //     TEST_CHECK(false == result);
+    // }
 }
-
-C_KZG_RET new_poly(poly *out, uint64_t length) {
-    out->length = length;
-    return new_fr_array(&out->coeffs, length);
-}
-
-C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, const fr_t *ys,
-    uint64_t n, const KZGSettings *ks) {
-    poly interp;
-    fr_t inv_x, inv_x_pow, x_pow;
-    g2_t xn2, xn_minus_yn;
-    g1_t is1, commit_minus_interp;
-
-    CHECK(is_power_of_two(n));
-
-    // Interpolate at a coset.
-    TRY(new_poly(&interp, n));
-    TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
-
-    // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
-    fr_inv(&inv_x, x);
-    inv_x_pow = inv_x;
-    for (uint64_t i = 1; i < n; i++) {
-    fr_mul(&interp.coeffs[i], &interp.coeffs[i], &inv_x_pow);
-    fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
-    }
-
-    // [x^n]_2
-    fr_inv(&x_pow, &inv_x_pow);
-    g2_mul(&xn2, &g2_generator, &x_pow);
-
-    // [s^n - x^n]_2
-    g2_sub(&xn_minus_yn, &ks->secret_g2[n], &xn2);
-
-    // [interpolation_polynomial(s)]_1
-    TRY(commit_to_poly(&is1, &interp, ks));
-
-    // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
-    g1_sub(&commit_minus_interp, commitment, &is1);
-
-    *out = pairings_verify(&commit_minus_interp, &g2_generator, proof, &xn_minus_yn);
-
-    free_poly(&interp);
-    return C_KZG_OK;
-}
-*/
