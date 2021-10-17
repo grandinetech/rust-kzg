@@ -10,9 +10,7 @@ mod tests {
     fn compare_sft_fft() {
         let size: usize = 12;
 
-        let result = FFTSettings::from_scale(size);
-        assert!(result.is_ok());
-        let fft_settings = result.unwrap();
+        let fft_settings = FFTSettings::from_scale(size).unwrap();
 
         let mut data = vec![Fr::default(); fft_settings.max_width];
         for i in 0..fft_settings.max_width {
@@ -33,14 +31,12 @@ mod tests {
         }
     }
 
-    /// Check that inserting an FFT result produces the starting data
+    /// Check that computing FFT and inverse FFT results in the starting data
     #[test]
     fn roundtrip_fft() {
         let size: usize = 12;
 
-        let result = FFTSettings::from_scale(size);
-        assert!(result.is_ok());
-        let fft_settings = result.unwrap();
+        let fft_settings = FFTSettings::from_scale(size).unwrap();
 
         let mut starting_data = vec![Fr::default(); fft_settings.max_width];
         for i in 0..fft_settings.max_width {
@@ -50,13 +46,8 @@ mod tests {
         }
 
         // Forward and inverse FFT
-        let result = fft_fr(&starting_data, false, &fft_settings);
-        assert!(result.is_ok());
-        let forward_result = result.unwrap();
-
-        let result = fft_fr(&forward_result, true, &fft_settings);
-        assert!(result.is_ok());
-        let inverse_result = result.unwrap();
+        let forward_result = fft_fr(&starting_data, false, &fft_settings).unwrap();
+        let inverse_result = fft_fr(&forward_result, true, &fft_settings).unwrap();
 
         for i in 0..fft_settings.max_width {
             assert!(fr_are_equal(&starting_data[i], &inverse_result[i]));
@@ -86,9 +77,7 @@ mod tests {
                 [0x10d6917f04735dea, 0x7e04a13731049a48, 0x42cbd9ab89d7b1f7, 0x60546bd624850b42]
             ];
 
-        let result = FFTSettings::from_scale(4);
-        assert!(result.is_ok());
-        let fft_settings = result.unwrap();
+        let fft_settings = FFTSettings::from_scale(4).unwrap();
 
         let mut data = vec![Fr::default(); fft_settings.max_width];
         for i in 0..fft_settings.max_width {
@@ -97,9 +86,7 @@ mod tests {
             }
         }
 
-        let result = fft_fr(&data, true, &fft_settings);
-        assert!(result.is_ok());
-        let forward_result = result.unwrap();
+        let forward_result = fft_fr(&data, true, &fft_settings).unwrap();
 
         assert_eq!(inv_fft_expected.len(), fft_settings.max_width);
         for i in 0..inv_fft_expected.len() {
@@ -119,13 +106,8 @@ mod tests {
 
         let width: usize = 1 << size1;
 
-        let result = FFTSettings::from_scale(size1);
-        assert!(result.is_ok());
-        let fft_settings1 = result.unwrap();
-
-        let result = FFTSettings::from_scale(size2);
-        assert!(result.is_ok());
-        let fft_settings2 = result.unwrap();
+        let fft_settings1 = FFTSettings::from_scale(size1).unwrap();
+        let fft_settings2 = FFTSettings::from_scale(size2).unwrap();
 
         let mut data = vec![Fr::default(); width];
         for i in 0..width {
@@ -134,13 +116,8 @@ mod tests {
             }
         }
 
-        let result = fft_fr(&data, false, &fft_settings1);
-        assert!(result.is_ok());
-        let result1 = result.unwrap();
-
-        let result = fft_fr(&data, false, &fft_settings2);
-        assert!(result.is_ok());
-        let result2 = result.unwrap();
+        let result1 = fft_fr(&data, false, &fft_settings1).unwrap();
+        let result2 = fft_fr(&data, false, &fft_settings2).unwrap();
 
         for i in 0..width {
             assert!(fr_are_equal(&result1[i], &result2[i]));

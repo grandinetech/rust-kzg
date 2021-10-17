@@ -42,9 +42,7 @@ mod tests {
             blst_fr_from_uint64(&mut root, SCALE2_ROOT_OF_UNITY[scale].as_ptr());
         }
 
-        let result = expand_root_of_unity(&root, width);
-        assert!(result.is_ok());
-        let expanded = result.unwrap();
+        let expanded = expand_root_of_unity(&root, width).unwrap();
 
         assert!(fr_is_one(&expanded[0]));
         assert!(fr_is_one(&expanded[width]));
@@ -66,9 +64,7 @@ mod tests {
         let scale = 21;
         let width: usize = 1 << scale;
 
-        let result = FFTSettings::from_scale(scale);
-        assert!(result.is_ok());
-        let fft_settings = result.unwrap();
+        let fft_settings = FFTSettings::from_scale(scale).unwrap();
 
         assert_eq!(fft_settings.max_width, width);
 

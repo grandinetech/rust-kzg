@@ -39,6 +39,7 @@ pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<
     let mut ret = vec![Fr::default(); data.len()];
 
     // Inverse is same as regular, but all constants are reversed and results are divided by n
+    // This is a property of the DFT matrix
     let roots = if inverse { &fft_settings.reverse_roots_of_unity } else { &fft_settings.expanded_roots_of_unity };
     fft_fr_fast(&mut ret, data, 1, roots, stride);
 
