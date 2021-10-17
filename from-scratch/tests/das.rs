@@ -6,6 +6,7 @@ mod tests {
     use kzg_from_scratch::fft_fr::fft_fr;
     use kzg_from_scratch::kzg_types::{create_fr_rand, FFTSettings, fr_are_equal, fr_is_zero};
 
+    /// Check if DAS FFT creates odds that match precomputed values
     #[test]
     fn das_extension_test_known() {
         let expected_u: [[u64; 4]; 8] = [
@@ -19,25 +20,21 @@ mod tests {
             [0x7f171458d2b071a9, 0xd185bbb2a46cbd9b, 0xa41aab0d02886e80, 0x01cacceef58ccee9, ],
         ];
 
-        let result = FFTSettings::from_scale(4);
-        assert!(result.is_ok());
+        let fft_settings = FFTSettings::from_scale(4).unwrap();
 
-        let fft_settings = result.unwrap();
-        let half = fft_settings.max_width / 2;
-
-        let mut evens = vec![Fr::default(); half];
-        for i in 0..half {
+        let mut evens = Vec::new();
+        for i in 0..(fft_settings.max_width / 2) {
+            let mut temp = Fr::default();
             unsafe {
-                blst_fr_from_uint64(&mut evens[i], [i as u64, 0, 0, 0].as_ptr());
+                blst_fr_from_uint64(&mut temp, [i as u64, 0, 0, 0].as_ptr());
             }
+            evens.push(temp);
         }
 
-        let result = das_fft_extension(&mut evens, &fft_settings);
-        assert!(result.is_ok());
-        let odds = result.unwrap();
+        let odds = das_fft_extension(&mut evens, &fft_settings).unwrap();
 
         for i in 0..expected_u.len() {
-            let mut expected: Fr = Fr::default();
+            let mut expected = Fr::default();
             unsafe {
                 blst_fr_from_uint64(&mut expected, expected_u[i].as_ptr());
             }
@@ -46,39 +43,33 @@ mod tests {
         }
     }
 
+    /// Check that DAS extension produces correct odds.
+    /// Verify this by checking that the second half of the inverse FFT coefficients of odd-even interpolated vector results in zeros.
     #[test]
     fn das_extension_test_random() {
         let max_scale: usize = 15;
-        let result = FFTSettings::from_scale(max_scale);
-        assert!(result.is_ok());
 
-        let fft_settings = result.unwrap();
+        let fft_settings = FFTSettings::from_scale(max_scale).unwrap();
+
         for scale in 1..(max_scale + 1) {
             let width: usize = 1 << scale;
             assert!(width <= fft_settings.max_width);
 
-            let mut evens = vec![Fr::default(); width / 2];
-            let mut data = vec![Fr::default(); width];
-
             for _rep in 0..4 {
-                // Initialize even data and duplicate it in even data
-                for i in 0..(width / 2) {
-                    evens[i] = create_fr_rand();
+                let mut evens = Vec::new();
+                for _i in 0..(width / 2) {
+                    evens.push(create_fr_rand());
                 }
 
-                // Extend the even data to odd data
-                let result = das_fft_extension(&evens, &fft_settings);
-                assert!(result.is_ok());
-                let odds = result.unwrap();
+                let odds = das_fft_extension(&evens, &fft_settings).unwrap();
 
+                let mut data = Vec::new();
                 for i in (0..width).step_by(2) {
-                    data[i] = evens[i / 2];
-                    data[i + 1] = odds[i / 2];
+                    data.push(evens[i / 2]);
+                    data.push(odds[i / 2]);
                 }
 
-                let result = fft_fr(&data, true, &fft_settings);
-                assert!(result.is_ok());
-                let coeffs = result.unwrap();
+                let coeffs = fft_fr(&data, true, &fft_settings).unwrap();
 
                 for i in (width / 2)..(width) {
                     assert!(fr_is_zero(&coeffs[i]));
