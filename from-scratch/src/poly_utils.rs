@@ -8,20 +8,23 @@ use blst::{
 };
 use kzg::{Fr};
 
-use crate::utils::{next_power_of_two, log2_pow2, log2_u64};
+use crate::utils::{next_power_of_two, log2_pow2, log2_u64, min_u64};
+use crate::fft_fr::fft_fr;
 
 pub fn fr_div(a: &Fr, b: &Fr) -> Result<Fr, String> {
     let mut tmp = Fr::default();
     let mut out = Fr::default();
 
-    blst_fr_eucl_inverse(&mut tmp, b);
-    blst_fr_mul(&mut out, a, &tmp);
+    unsafe {
+        blst_fr_eucl_inverse(&mut tmp, b);
+        blst_fr_mul(&mut out, a, &tmp);
+    }
     Ok(out)
 }
 
 pub fn poly_norm(p: &Poly) -> Result<Poly, String> {
-    let ret = *p;
-    let tempLen: usize = ret.coeffs.len();
+    let mut ret = p.clone();
+    let mut tempLen: usize = ret.coeffs.len();
     while tempLen > 0 && fr_is_zero(&ret.coeffs[tempLen - 1]) {
         tempLen -= 1;
     }
@@ -51,9 +54,9 @@ pub fn poly_long_div(dividend: &Poly, divisor: &Poly) -> Result<Poly, String> {
     //uint64_t a_pos = dividend->length - 1;
     //uint64_t b_pos = divisor->length - 1;
     //uint64_t diff = a_pos - b_pos;
-    let a_pos = dividend.coeffs.len();
+    let mut a_pos = dividend.coeffs.len();
     let b_pos = divisor.coeffs.len();
-    let diff = a_pos - b_pos;
+    let mut diff = a_pos - b_pos;
     
     // Deal with the size of the output polynomial
     // uint64_t out_length = poly_quotient_length(dividend, divisor);
@@ -71,7 +74,7 @@ pub fn poly_long_div(dividend: &Poly, divisor: &Poly) -> Result<Poly, String> {
     
     //fr_t *a;
     // TRY(new_fr_array(&a, dividend->length));
-    let a = vec![Fr::default(); dividend.coeffs.len()];
+    let mut a = vec![Fr::default(); dividend.coeffs.len()];
     for i in 0..dividend.coeffs.len() {
         //a[i] = dividend->coeffs[i];
         a.push(dividend.coeffs[i]);
@@ -83,12 +86,14 @@ pub fn poly_long_div(dividend: &Poly, divisor: &Poly) -> Result<Poly, String> {
         assert!(result.is_ok());
         out.coeffs[diff] = result.unwrap();
     
-        for i in 0..(b_pos+1) {
-            // fr_t tmp;
-            let tmp = Fr::default();
-            // a[diff + i] -= b[i] * quot
-            blst_fr_mul(&mut tmp, &out.coeffs[diff], &divisor.coeffs[i]);
-            blst_fr_sub(&mut a[diff + i], &a[diff + i], &tmp);
+        unsafe {
+            for i in 0..(b_pos+1) {
+                // fr_t tmp;
+                let mut tmp = Fr::default();
+                // a[diff + i] -= b[i] * quot
+                blst_fr_mul(&mut tmp, &out.coeffs[diff], &divisor.coeffs[i]);
+                blst_fr_sub(&mut a[diff + i], &a[diff + i], &tmp);
+            }
         }
         diff -= 1;
         a_pos -= 1;
@@ -102,7 +107,7 @@ pub fn poly_long_div(dividend: &Poly, divisor: &Poly) -> Result<Poly, String> {
 }
 
 pub fn poly_flip(input: &Poly) -> Result<Poly, String> {
-    let output = Poly { coeffs: Vec::default() };
+    let mut output = Poly { coeffs: Vec::default() };
     for i in 0..input.coeffs.len() {
         output.coeffs.push(input.coeffs[input.coeffs.len() - i - 1]);
     }
@@ -113,10 +118,12 @@ pub fn poly_inverse(b: &Poly, output_len: usize) -> Result<Poly, String> {
     assert!(b.coeffs.len() > 0);
     assert!(!fr_is_zero(&b.coeffs[0]));
 
-    let output = Poly { coeffs: Vec::default() };
+    let mut output = Poly { coeffs: Vec::default() };
     // If the input polynomial is constant, the remainder of the series is zero
     if b.coeffs.len() == 1 {
-        blst_fr_eucl_inverse(&mut output.coeffs[0], &b.coeffs[0]);
+        unsafe {
+            blst_fr_eucl_inverse(&mut output.coeffs[0], &b.coeffs[0]);
+        }
         for i in 1..output_len {
             output.coeffs[i] = create_fr_zero();
         }
@@ -143,11 +150,13 @@ pub fn poly_inverse(b: &Poly, output_len: usize) -> Result<Poly, String> {
     // To store intermediate results
     // TRY(new_poly(&tmp0, length));
     // TRY(new_poly(&tmp1, length));
-    let tmp0 = Poly { coeffs: Vec::default() };
-    let tmp1 = Poly { coeffs: Vec::default() };
+    let mut tmp0 = Poly { coeffs: Vec::default() };
+    let mut tmp1 = Poly { coeffs: Vec::default() };
 
     // Base case for d == 0
-    blst_fr_eucl_inverse(&mut output.coeffs[0], &b.coeffs[0]);
+    unsafe {
+        blst_fr_eucl_inverse(&mut output.coeffs[0], &b.coeffs[0]);
+    }
     //output->length = 1;
 
     let mut d: usize = 0;
@@ -174,11 +183,14 @@ pub fn poly_inverse(b: &Poly, output_len: usize) -> Result<Poly, String> {
         // 2 - b.c -> tmp0
         for i in 0..tmp0.coeffs.len() {
             // fr_negate(&tmp0.coeffs[i], &tmp0.coeffs[i]);
-            negate_fr(&mut tmp0.coeffs[i], &tmp0.coeffs[i]);
+            let clonedFr = tmp0.coeffs[i].clone();
+            negate_fr(&mut tmp0.coeffs[i], &clonedFr);
         }
         // fr_from_uint64(&fr_two, 2);
         let fr_two: Fr = create_fr_u64(2);
-        blst_fr_add(&mut tmp0.coeffs[0], &tmp0.coeffs[0], &fr_two);
+        unsafe {
+            blst_fr_add(&mut tmp0.coeffs[0], &tmp0.coeffs[0], &fr_two);
+        }
 
         // c.(2 - b.c) -> tmp1;
         // tmp1.length = d + 1;
@@ -267,81 +279,124 @@ pub fn poly_mul_direct(a: &Poly, b: &Poly, output_len: usize) -> Result<Poly, St
     let b_degree: usize = b.coeffs.len() - 1;
     let mut output = Poly { coeffs: Vec::default() };
 
-    for i in 0..output_len {
+    for _ in 0..output_len {
         output.coeffs.push(create_fr_zero());
     }
 
     // Truncate the output to the length of the output polynomial
     for i in 0..(a_degree + 1) {
         let mut j: usize = 0;
-        while j <= b_degree && i + j < output.coeffs.len() {
-            let tmp: Fr;
-            blst_fr_mul(&mut tmp, &a.coeffs[i], &b.coeffs[j]);
-            blst_fr_add(&mut output.coeffs[i + j], &output.coeffs[i + j], &tmp);
-
-            j += 1;
+        unsafe {
+            while j <= b_degree && i + j < output.coeffs.len() {
+                let mut tmp: Fr = Fr::default();
+                blst_fr_mul(&mut tmp, &a.coeffs[i], &b.coeffs[j]);
+                blst_fr_add(&mut output.coeffs[i + j], &output.coeffs[i + j], &tmp);
+                
+                j += 1;
+            }
         }
     }
 
     Ok(output)
 }
 
+pub fn pad(input: &Vec<Fr>, n_in: usize, n_out: usize) -> Result<Vec<Fr>, String> {
+    // uint64_t num = min_u64(n_in, n_out);
+    let num: usize = min_u64(n_in, n_out).unwrap();
+    let mut output: Vec<Fr> = Vec::default();
+    for i in 0..num {
+        output[i] = input[i].clone();
+    }
+    for i in num..n_out {
+        output[i] = create_fr_zero();
+    }
+    Ok(output)
+}
 
-// TODO: finish function below so utils can compile
-// pub fn poly_mul_fft(a: &Poly, b: &Poly, fs_: &FFTSettings) -> Result<Poly, String>{
+pub fn poly_mul_fft(a: &Poly, b: &Poly, fs_: Option<&FFTSettings>, output_len: usize) -> Result<Poly, String>{
 
-//     // Truncate a and b so as not to do excess work for the number of coefficients required.
-//     uint64_t a_len = min_u64(a->length, out->length);
-//     uint64_t b_len = min_u64(b->length, out->length);
-//     uint64_t length = next_power_of_two(a_len + b_len - 1);
+    // Truncate a and b so as not to do excess work for the number of coefficients required.
+    // uint64_t a_len = min_u64(a->length, out->length);
+    // uint64_t b_len = min_u64(b->length, out->length);
+    // uint64_t length = next_power_of_two(a_len + b_len - 1);
 
-//     // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
-//     FFTSettings fs, *fs_p;
-//     if (fs_ != NULL) {
-//         fs_p = fs_;
-//     } else {
-//         fs_p = &fs;
-//         int scale = log2_pow2(length); // TODO only good up to length < 32 bits
-//         TRY(new_fft_settings(fs_p, scale));
-//     }
-//     CHECK(length <= fs_p->max_width);
+    let a_len = min_u64(a.coeffs.len(), output_len).unwrap();
+    let b_len = min_u64(a.coeffs.len(), output_len).unwrap();
+    let length =  next_power_of_two(a_len + b_len - 1);
 
-//     fr_t *a_pad, *b_pad, *a_fft, *b_fft;
-//     TRY(new_fr_array(&a_pad, length));
-//     TRY(new_fr_array(&b_pad, length));
-//     pad(a_pad, a->coeffs, a_len, length);
-//     pad(b_pad, b->coeffs, b_len, length);
+    // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
+    // FFTSettings fs, *fs_p;
 
-//     TRY(new_fr_array(&a_fft, length));
-//     TRY(new_fr_array(&b_fft, length));
-//     TRY(fft_fr(a_fft, a_pad, false, length, fs_p));
-//     TRY(fft_fr(b_fft, b_pad, false, length, fs_p));
+    let mut fs: FFTSettings = FFTSettings::from_scale(0).unwrap();
+    match fs_ {
+        Some(x) => fs = x.clone(),
+        None    => {
+            let scale: usize = log2_pow2(length);
+            fs = FFTSettings::from_scale(scale).unwrap();
+        }
+    }
 
-//     fr_t *ab_fft = a_pad; // reuse the a_pad array
-//     fr_t *ab = b_pad;     // reuse the b_pad array
-//     for (uint64_t i = 0; i < length; i++) {
-//         fr_mul(&ab_fft[i], &a_fft[i], &b_fft[i]);
-//     }
-//     TRY(fft_fr(ab, ab_fft, true, length, fs_p));
+    // if (fs_ != NULL) {
+    //     fs_p = fs_;
+    // } else {
+    //     fs_p = &fs;
+    //     int scale = log2_pow2(length); // TODO only good up to length < 32 bits
+    //     TRY(new_fft_settings(fs_p, scale));
+    // }
 
-//     // Copy result to output
-//     uint64_t data_len = min_u64(out->length, length);
-//     for (uint64_t i = 0; i < data_len; i++) {
-//         out->coeffs[i] = ab[i];
-//     }
-//     for (uint64_t i = data_len; i < out->length; i++) {
-//         out->coeffs[i] = fr_zero;
-//     }
+    // CHECK(length <= fs_p->max_width);
+    assert!(length <= fs.max_width);
 
-//     return Ok(output);
-// }
+    // fr_t *a_pad, *b_pad, *a_fft, *b_fft;
+    let mut a_pad: Vec<Fr> = Vec::default();
+    let mut b_pad: Vec<Fr> = Vec::default();
+    let mut a_fft: Vec<Fr> = Vec::default();
+    let mut b_fft: Vec<Fr> = Vec::default();
 
-pub fn poly_mul_(a: &Poly, b: &Poly, fs: &FFTSettings, outputLength: usize) -> Result<Poly, String>{
-    let mut out = Poly { coeffs: Vec::default() };
-    if a.coeffs.len() < 64 || b.coeffs.len() < 64 || outputLength < 128 { // Tunable parameter
-        return poly_mul_direct(&a, &b, outputLength);
+    // TRY(new_fr_array(&a_pad, length));
+    // TRY(new_fr_array(&b_pad, length));
+    a_pad = pad(&a.coeffs, a_len, length).unwrap();
+    b_pad = pad(&b.coeffs, b_len, length).unwrap();
+
+    // TRY(new_fr_array(&a_fft, length));
+    // TRY(new_fr_array(&b_fft, length));
+    // TRY(fft_fr(a_fft, a_pad, false, length, fs_p));
+    // TRY(fft_fr(b_fft, b_pad, false, length, fs_p));
+    a_fft = fft_fr(&a_pad, false, &fs).unwrap();
+    b_fft = fft_fr(&b_pad, false, &fs).unwrap();
+
+    // fr_t *ab_fft = a_pad; // reuse the a_pad array
+    // fr_t *ab = b_pad;     // reuse the b_pad array
+    let mut ab_fft: Vec<Fr> = a_pad.clone();
+    // let mut ab: &Vec<Fr> = &b_pad;
+    
+    unsafe {
+        for i in 0..length {
+            blst_fr_mul(&mut ab_fft[i], &a_fft[i], &b_fft[i]);
+        }
+    }
+    // TRY(fft_fr(ab, ab_fft, true, length, fs_p));
+    let ab = &fft_fr(&ab_fft, true, &fs).unwrap();
+
+    // Copy result to output
+    // uint64_t data_len = min_u64(out->length, length);
+    let mut output = Poly { coeffs: Vec::default() };
+    let data_len = min_u64(output_len, length).unwrap();
+    for i in 0..data_len {
+        output.coeffs.push(ab[i]);
+    }
+    for _ in data_len..output_len {
+        output.coeffs.push(create_fr_zero());
+    }
+
+    return Ok(output);
+}
+
+pub fn poly_mul_(a: &Poly, b: &Poly, fs: &FFTSettings, output_len: usize) -> Result<Poly, String>{
+    if a.coeffs.len() < 64 || b.coeffs.len() < 64 || output_len < 128 { // Tunable parameter
+        return poly_mul_direct(&a, &b, output_len);
     } else {
-        return poly_mul_fft(&mut out, a, b, fs);
+        return poly_mul_fft(a, b, Some(&fs), output_len);
     }
 }
 
@@ -363,7 +418,7 @@ pub fn new_poly_div(dividend_: &Poly, divisor_: &Poly) -> Result<Poly, String>{
     let divisor: Poly = result.unwrap();
 
     //TRY(new_poly(out, poly_quotient_length(&dividend, &divisor)));
-    let newLength = poly_quotient_length(&dividend, &divisor).unwrap();
+    // let newLength = poly_quotient_length(&dividend, &divisor).unwrap();
 
     if divisor.coeffs.len() >= dividend.coeffs.len() || divisor.coeffs.len() < 128 { // Tunable paramter
         let result = poly_long_div(&dividend, &divisor);

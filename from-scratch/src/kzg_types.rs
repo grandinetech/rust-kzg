@@ -197,6 +197,17 @@ impl FFTSettings {
     }
 }
 
+impl Clone for FFTSettings {
+    fn clone(&self) -> Self {
+        let mut output = FFTSettings::from_scale(0).unwrap();
+        output.max_width = self.max_width;
+        output.root_of_unity = self.root_of_unity.clone();
+        output.expanded_roots_of_unity = self.expanded_roots_of_unity.clone();
+        output.reverse_roots_of_unity = self.reverse_roots_of_unity.clone();
+        output
+    }
+}
+
 pub struct KZGSettings {
     pub fs: FFTSettings,
     // Both secret_g1 and secret_g2 have the same number of elements
