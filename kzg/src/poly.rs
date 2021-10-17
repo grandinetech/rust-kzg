@@ -107,9 +107,12 @@ impl Poly {
         errors
     }
 
-    pub fn inverse(&mut self, poly: *mut Poly) -> Error {
+    pub fn inverse(&mut self, poly: *mut Poly) -> Result<(), Error> {
         unsafe {
-            return poly_inverse(self, poly);
+            return match poly_inverse(self, poly) {
+                Error::KzgOk => Ok(()),
+                e => Err(e)
+            }
         }
     }
 

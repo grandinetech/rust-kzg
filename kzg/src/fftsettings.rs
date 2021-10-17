@@ -79,6 +79,31 @@ extern "C" {
     fn g1_mul(out: *mut G1, a: *const G1, b: *const Fr);
 }
 
+impl G1 {
+    pub fn rand() -> G1 {
+        let mut ret = G1::default();
+        let random = Fr::rand();
+        unsafe {
+            g1_mul(&mut ret, &G1_GENERATOR, &random);
+        }
+        ret
+    }
+
+    pub fn is_equal(first: *const G1, second: *const G1) -> bool {
+        unsafe {
+            return g1_equal(first, second);
+        }
+    }
+
+    fn add_or_dbl(a: G1, b: *const G1) -> G1 {
+        let mut out = G1::default();
+        unsafe {
+            g1_add_or_dbl(&mut out, &a, b);
+        }
+        out
+    }
+}
+
 impl FFTSettings {
     pub fn default() -> Self {
         Self {
@@ -154,7 +179,7 @@ impl FFTSettings {
         if n == 0 { return vec![G1::default(); 0]; }
         for i in 1..n as isize {
             unsafe {
-                *out_ptr.offset(i + 1) = FFTSettings::add_or_dbl(*out_ptr.offset(i - 1), &G1_GENERATOR);
+                *out_ptr.offset(i + 1) = G1::add_or_dbl(*out_ptr.offset(i - 1), &G1_GENERATOR);
             }
         }
         unsafe {
@@ -165,20 +190,6 @@ impl FFTSettings {
                 i += 1;
             }
             return out
-        }
-    }
-
-    fn add_or_dbl(a: G1, b: *const G1) -> G1 {
-        let mut out = G1::default();
-        unsafe {
-            g1_add_or_dbl(&mut out, &a, b);
-        }
-        out
-    }
-
-    pub fn g1_equal(a: *const G1, b: *const G1) -> bool {
-        unsafe {
-            return g1_equal(a, b);
         }
     }
 
@@ -217,18 +228,9 @@ impl FFTSettings {
         };
         let mut data = vec![G1::default(); fs.max_width];
         for i in 0..fs.max_width {
-            data[i] = FFTSettings::rand_g1();
+            data[i] = G1::rand();
         }
         fs.fft_g1(&mut data, false);
         fs.destroy();
-    }
-
-    pub fn rand_g1() -> G1 {
-        let mut ret = G1::default();
-        let random = Fr::rand();
-        unsafe {
-            g1_mul(&mut ret, &G1_GENERATOR, &random);
-        }
-        ret
     }
 }
