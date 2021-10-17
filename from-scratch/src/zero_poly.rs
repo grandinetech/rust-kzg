@@ -155,17 +155,24 @@ pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], 
             work_offset += degree_of_partial;
         }
 
-        let reduction_factor = 4;
+        // Adjust last length to match its actual length
+        partial_lens[partial_count - 1] = 1 + missing_idxs.len() - (partial_count - 1) * missing_per_partial;
+
+        // Reduce all vectors into one by reducing them w/ varying size multiplications
+        let reduction_factor = 4; // Can be tuned & optimized (but must be a power of 2)
         while partial_count > 1 {
             let reduced_count = 1 + (partial_count - 1) / reduction_factor;
             let partial_size = next_power_of_two(partial_lens[0]);
 
+            // Step over polynomial space and produce larger multiplied polynomials
             for i in 0..reduced_count {
                 let start = i * reduction_factor;
                 let out_end = min((start + reduction_factor) * partial_size, domain_ceiling);
                 let reduced_len = min(out_end - start * partial_size, domain_size);
                 let partials_num = min(reduction_factor, partial_count - start);
 
+                // Calculate partial views from lens and offsets
+                // Also update offsets to match current iteration
                 let mut partial_vec = Vec::new();
                 partial_offsets[i] = start * partial_size;
                 for j in 0..(partials_num) {
@@ -174,17 +181,19 @@ pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], 
                 }
 
                 if partials_num > 1 {
-                    let mut reduced_poly = reduce_partials(
-                        reduced_len, &partial_vec, fft_settings)?;
+                    let mut reduced_poly = reduce_partials(reduced_len, &partial_vec, fft_settings)?;
+                    // Update partial length to match its length after reduction
                     partial_lens[i] = reduced_poly.coeffs.len();
                     reduced_poly.coeffs = pad_poly(&reduced_poly, partial_size * partials_num)?;
                     work.splice((partial_offsets[i])..(partial_offsets[i] + reduced_poly.coeffs.len()),
                                 reduced_poly.coeffs);
                 } else {
+                    // Instead of keeping track of remaining polynomials, reuse i'th partial for start'th one
                     partial_lens[i] = partial_lens[start];
                 }
             }
 
+            // Number of steps done equals the number of polynomials that we still need to reduce together
             partial_count = reduced_count;
         }
 

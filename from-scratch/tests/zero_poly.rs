@@ -242,7 +242,7 @@ mod tests {
         }
 
         let (zero_eval, zero_poly) = zero_poly_via_multiplication(
-            next_power_of_two(fft_settings.max_width), &missing_idxs, &fft_settings).unwrap();
+            fft_settings.max_width, &missing_idxs, &fft_settings).unwrap();
 
         for i in 0..missing_idxs.len() {
             let ret = zero_poly.eval(&fft_settings.expanded_roots_of_unity[missing_idxs[i]]);
