@@ -1,6 +1,4 @@
-mod finite;
-mod poly;
-mod fft_fr;
-mod das;
-mod consts;
-mod zero_poly;
+pub mod finite;
+pub mod poly;
+pub mod fftsettings;
+pub mod tests;

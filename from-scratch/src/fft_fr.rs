@@ -1,7 +1,7 @@
 use crate::kzg_types::FFTSettings;
 use crate::utils::is_power_of_two;
-use blst::{blst_fr_add, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sub};
-use kzg::Fr;
+use crate::kzg_types::Fr;
+use kzg::IFr;
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {
@@ -13,12 +13,9 @@ pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roo
         fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
         fft_fr_fast(&mut ret[half..], &data[stride..], stride * 2, roots, roots_stride * 2);
         for i in 0..half {
-            let mut y_times_root: Fr = Fr::default();
-            unsafe {
-                blst_fr_mul(&mut y_times_root, &ret[i + half], &roots[i * roots_stride]);
-                blst_fr_sub(&mut ret[i + half], &ret[i], &y_times_root);
-                blst_fr_add(&mut ret[i], &ret[i], &y_times_root);
-            }
+            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
+            ret[i + half] = ret[i].sub(&y_times_root);
+            ret[i] = ret[i].add(&y_times_root);
         }
     } else {
         // When len = 1, return the permuted element
@@ -44,13 +41,10 @@ pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<
     fft_fr_fast(&mut ret, data, 1, roots, stride);
 
     if inverse {
-        unsafe {
-            let mut inv_len: Fr = Fr::default();
-            blst_fr_from_uint64(&mut inv_len, [data.len() as u64, 0, 0, 0].as_ptr());
-            blst_fr_inverse(&mut inv_len, &inv_len);
-            for i in 0..data.len() {
-                blst_fr_mul(&mut ret[i], &ret[i], &inv_len);
-            }
+        let mut inv_len: Fr = Fr::from_u64(data.len() as u64);
+        inv_len = inv_len.inverse();
+        for i in 0..data.len() {
+            ret[i] = ret[i].mul(&inv_len);
         }
     }
 
@@ -61,18 +55,13 @@ pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<
 pub fn fft_fr_slow(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {
     for i in 0..data.len() {
         // Evaluate first member at 1
-        unsafe {
-            blst_fr_mul(&mut ret[i], &data[0], &roots[0]);
-        }
+        ret[i] = data[0].mul(&roots[0]);
 
         // Evaluate the rest of members using a step of (i * J) % data.len() over the roots
         // This distributes the roots over correct x^n members and saves on multiplication
         for j in 1..data.len() {
-            let mut v: Fr = Fr::default();
-            unsafe {
-                blst_fr_mul(&mut v, &data[j * stride], &roots[((i * j) % data.len()) * roots_stride]);
-                blst_fr_add(&mut ret[i], &ret[i], &v);
-            }
+            let v = data[j * stride].mul(&roots[((i * j) % data.len()) * roots_stride]);
+            ret[i] = ret[i].add(&v);
         }
     }
 }

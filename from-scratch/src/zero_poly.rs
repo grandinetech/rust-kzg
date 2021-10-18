@@ -1,9 +1,9 @@
 use std::cmp::min;
 use crate::fft_fr::fft_fr;
-use crate::kzg_types::{create_fr_one, create_fr_zero, negate_fr, FFTSettings, Poly};
+use crate::kzg_types::{FFTSettings, Poly};
 use crate::utils::{is_power_of_two, next_power_of_two};
-use blst::{blst_fr_add, blst_fr_mul};
-use kzg::Fr;
+use kzg::IFr;
+use crate::kzg_types::Fr;
 
 /// Calculates a polynomial that evaluates to zero for roots of unity at given indices.
 /// The returned polynomial has a length of idxs.len() + 1.
@@ -14,33 +14,27 @@ pub fn do_zero_poly_mul_partial(idxs: &[usize], stride: usize, fft_settings: &FF
 
     // Makes use of long multiplication in terms of (x - w_0)(x - w_1)..
     // Initialize poly with 1s
-    let mut poly = Poly { coeffs: vec![create_fr_one(); idxs.len() + 1] };
+    let mut poly = Poly { coeffs: vec![Fr::one(); idxs.len() + 1] };
     // For the first member, store -w_0 as constant term
-    negate_fr(&mut poly.coeffs[0], &fft_settings.expanded_roots_of_unity[idxs[0] * stride]);
+    poly.coeffs[0] = fft_settings.expanded_roots_of_unity[idxs[0] * stride].negate();
 
     for i in 1..idxs.len() {
         // For member (x - w_i) take coefficient as -(w_i + w_{i-1} + ...)
-        negate_fr(&mut poly.coeffs[i], &fft_settings.expanded_roots_of_unity[idxs[i] * stride]);
-        let neg_di: Fr = poly.coeffs[i];
-        unsafe {
-            blst_fr_add(&mut poly.coeffs[i], &poly.coeffs[i], &poly.coeffs[i - 1]);
-        }
+        poly.coeffs[i] = fft_settings.expanded_roots_of_unity[idxs[i] * stride].negate();
+        let neg_di = poly.coeffs[i].clone();
+        poly.coeffs[i] = poly.coeffs[i].add(&poly.coeffs[i - 1]);
 
         // Multiply all previous members by (x - w_i)
         // It equals multiplying by - w_i and adding x^(i - 1) coefficient (implied multiplication by x)
         let mut j = i - 1;
         while j > 0 {
-            unsafe {
-                blst_fr_mul(&mut poly.coeffs[j], &poly.coeffs[j], &neg_di);
-                blst_fr_add(&mut poly.coeffs[j], &poly.coeffs[j], &poly.coeffs[j - 1]);
-            }
+            poly.coeffs[j] = poly.coeffs[j].mul(&neg_di);
+            poly.coeffs[j] = poly.coeffs[j].add(&poly.coeffs[j - 1]);
             j -= 1;
         }
 
         // Multiply x^0 member by - w_i
-        unsafe {
-            blst_fr_mul(&mut poly.coeffs[0], &poly.coeffs[0], &neg_di);
-        }
+        poly.coeffs[0] = poly.coeffs[0].mul(&neg_di);
     }
 
     Ok(poly)
@@ -55,7 +49,7 @@ pub fn pad_poly(poly: &Poly, new_length: usize) -> Result<Vec<Fr>, String> {
     let mut ret = poly.coeffs.to_vec();
 
     for _i in poly.coeffs.len()..new_length {
-        ret.push(create_fr_zero())
+        ret.push(Fr::zero())
     }
 
     Ok(ret)
@@ -87,9 +81,7 @@ pub fn reduce_partials(domain_size: usize, partials: &[Poly], fft_settings: &FFT
         padded_partial = pad_poly(&partials[i], domain_size)?;
         let evaluated_partial = fft_fr(&padded_partial, false, fft_settings)?;
         for j in 0..domain_size {
-            unsafe {
-                blst_fr_mul(&mut eval_result[j], &eval_result[j], &evaluated_partial[j]);
-            }
+            eval_result[j] = eval_result[j].mul(&evaluated_partial[j]);
         }
     }
 
@@ -132,7 +124,7 @@ pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], 
     } else {
         // Otherwise, construct a set of partial polynomials
         // Save all constructed polynomials in a shared 'work' vector
-        let mut work = vec![create_fr_zero(); next_power_of_two(partial_count * degree_of_partial)];
+        let mut work = vec![Fr::zero(); next_power_of_two(partial_count * degree_of_partial)];
 
         let mut partial_lens = Vec::new();
         let mut partial_offsets = Vec::new();
