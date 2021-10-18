@@ -1,6 +1,9 @@
 use mcl_rust::data_types::fr::Fr;
+use mcl_rust::data_types::fp::Fp;
 use mcl_rust::BlstFr;
+use mcl_rust::BlstFp;
 use mcl_rust::data_converter::fr_converter::*;
+use mcl_rust::data_converter::fp_converter::*;
 use mcl_rust::mcl_methods::init;
 use mcl_rust::CurveType;
 
@@ -59,4 +62,12 @@ fn convertToBlstFrCorrectRandomInts() {
 
         assert_eq!(blstFr, converted);
     }
+}
+
+#[test]
+fn convertBlstFpCorrectZero() {
+    let blstZero = BlstFp::default();
+    let converted = fpFromBlst(blstZero);
+
+    assert_eq!(converted, Fp::default());
 }
