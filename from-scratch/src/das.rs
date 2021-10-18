@@ -1,7 +1,7 @@
 use crate::kzg_types::FFTSettings;
 use crate::utils::is_power_of_two;
 use crate::kzg_types::Fr;
-use kzg::IFr;
+use kzg::TFr;
 
 // TODO: explain algo
 pub fn das_fft_extension_stride(evens: &mut [Fr], stride: usize, fft_settings: &FFTSettings) {

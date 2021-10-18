@@ -1,8 +1,8 @@
-use kzg::{IFFTSettings, IFr};
+use kzg::{TFFTSettings, TFr};
 
 /// Check if DAS FFT creates odds that match precomputed values
-pub fn das_extension_test_known<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
-    das_fft_extension: &dyn Fn(&[TFr], &TFFTSettings) -> Result<Vec<TFr>, String>
+pub fn das_extension_test_known<Fr: TFr, FFTSettings: TFFTSettings<Fr>>(
+    das_fft_extension: &dyn Fn(&[Fr], &FFTSettings) -> Result<Vec<Fr>, String>
 ) {
     let expected_u: [[u64; 4]; 8] = [
         [0xa0c43757db972d7d, 0x79d15a1e0677962c, 0xf678865c0c95fa6a, 0x4e85fd4814f96825, ],
@@ -15,18 +15,18 @@ pub fn das_extension_test_known<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
         [0x7f171458d2b071a9, 0xd185bbb2a46cbd9b, 0xa41aab0d02886e80, 0x01cacceef58ccee9, ],
     ];
 
-    let fft_settings = TFFTSettings::new(4).unwrap();
+    let fft_settings = FFTSettings::new(4).unwrap();
 
     let mut evens = Vec::new();
     for i in 0..(fft_settings.get_max_width() / 2) {
-        let temp = TFr::from_u64(i as u64);
+        let temp = Fr::from_u64(i as u64);
         evens.push(temp);
     }
 
     let odds = das_fft_extension(&mut evens, &fft_settings).unwrap();
 
     for i in 0..expected_u.len() {
-        let expected = TFr::from_u64_arr(&expected_u[i]);
+        let expected = Fr::from_u64_arr(&expected_u[i]);
         assert!(expected.equals(&odds[i]));
     }
 }
@@ -34,13 +34,13 @@ pub fn das_extension_test_known<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
 /// Check that DAS extension produces correct odds.
 /// Verify this by checking that the second half of the inverse FFT coefficients of odd-even interpolated vector results in zeros.
 
-pub fn das_extension_test_random<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
-    das_fft_extension: &dyn Fn(&[TFr], &TFFTSettings) -> Result<Vec<TFr>, String>,
-    fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>,
+pub fn das_extension_test_random<Fr: TFr, FFTSettings: TFFTSettings<Fr>>(
+    das_fft_extension: &dyn Fn(&[Fr], &FFTSettings) -> Result<Vec<Fr>, String>,
+    fft_fr: &dyn Fn(&[Fr], bool, &FFTSettings) -> Result<Vec<Fr>, String>,
 ) {
     let max_scale: usize = 15;
 
-    let fft_settings = TFFTSettings::new(max_scale).unwrap();
+    let fft_settings = FFTSettings::new(max_scale).unwrap();
 
     for scale in 1..(max_scale + 1) {
         let width: usize = 1 << scale;
@@ -49,7 +49,7 @@ pub fn das_extension_test_random<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
         for _rep in 0..4 {
             let mut evens = Vec::new();
             for _i in 0..(width / 2) {
-                evens.push(TFr::rand());
+                evens.push(Fr::rand());
             }
 
             let odds = das_fft_extension(&evens, &fft_settings).unwrap();

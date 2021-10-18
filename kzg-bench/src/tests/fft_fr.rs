@@ -1,21 +1,21 @@
-use kzg::{IFFTSettings, IFr};
+use kzg::{TFFTSettings, TFr};
 
 /// Check that both FFT implementations produce the same results
-pub fn compare_sft_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
-    fft_fr_slow: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
-    fft_fr_fast: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
+pub fn compare_sft_fft<Fr: TFr, FFTSettings: TFFTSettings<Fr>>(
+    fft_fr_slow: &dyn Fn(&mut [Fr], &[Fr], usize, &[Fr], usize),
+    fft_fr_fast: &dyn Fn(&mut [Fr], &[Fr], usize, &[Fr], usize),
 ) {
     let size: usize = 12;
 
-    let fft_settings = TFFTSettings::new(size).unwrap();
+    let fft_settings = FFTSettings::new(size).unwrap();
 
-    let mut data = vec![TFr::default(); fft_settings.get_max_width()];
+    let mut data = vec![Fr::default(); fft_settings.get_max_width()];
     for i in 0..fft_settings.get_max_width() {
-        data[i] = TFr::from_u64_arr(&[i as u64, 0, 0, 0]);
+        data[i] = Fr::from_u64_arr(&[i as u64, 0, 0, 0]);
     }
 
-    let mut out0 = vec![TFr::default(); fft_settings.get_max_width()];
-    let mut out1 = vec![TFr::default(); fft_settings.get_max_width()];
+    let mut out0 = vec![Fr::default(); fft_settings.get_max_width()];
+    let mut out1 = vec![Fr::default(); fft_settings.get_max_width()];
 
     // Compare fast and slow FFT approach
     fft_fr_slow(&mut out0, &data, 1, &fft_settings.get_expanded_roots_of_unity(), 1);
@@ -27,16 +27,16 @@ pub fn compare_sft_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
 }
 
 /// Check that computing FFT and inverse FFT results in the starting data
-pub fn roundtrip_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
-    fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
+pub fn roundtrip_fft<Fr: TFr, FFTSettings: TFFTSettings<Fr>>(
+    fft_fr: &dyn Fn(&[Fr], bool, &FFTSettings) -> Result<Vec<Fr>, String>
 ) {
     let size: usize = 12;
 
-    let fft_settings = TFFTSettings::new(size).unwrap();
+    let fft_settings = FFTSettings::new(size).unwrap();
 
-    let mut starting_data = vec![TFr::default(); fft_settings.get_max_width()];
+    let mut starting_data = vec![Fr::default(); fft_settings.get_max_width()];
     for i in 0..fft_settings.get_max_width() {
-        starting_data[i] = TFr::from_u64(i as u64);
+        starting_data[i] = Fr::from_u64(i as u64);
     }
 
     // Forward and inverse FFT
@@ -49,8 +49,8 @@ pub fn roundtrip_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
 }
 
 /// Check the inverse FFT operation on precomputed values
-pub fn inverse_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
-    fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
+pub fn inverse_fft<Fr: TFr, FFTSettings: TFFTSettings<Fr>>(
+    fft_fr: &dyn Fn(&[Fr], bool, &FFTSettings) -> Result<Vec<Fr>, String>
 ) {
     let inv_fft_expected: [[u64; 4]; 16] =
         [
@@ -72,37 +72,37 @@ pub fn inverse_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
             [0x10d6917f04735dea, 0x7e04a13731049a48, 0x42cbd9ab89d7b1f7, 0x60546bd624850b42]
         ];
 
-    let fft_settings = TFFTSettings::new(4).unwrap();
+    let fft_settings = FFTSettings::new(4).unwrap();
 
-    let mut data = vec![TFr::default(); fft_settings.get_max_width()];
+    let mut data = vec![Fr::default(); fft_settings.get_max_width()];
     for i in 0..fft_settings.get_max_width() {
-        data[i] = TFr::from_u64(i as u64);
+        data[i] = Fr::from_u64(i as u64);
     }
 
     let forward_result = fft_fr(&data, true, &fft_settings).unwrap();
 
     assert_eq!(inv_fft_expected.len(), fft_settings.get_max_width());
     for i in 0..inv_fft_expected.len() {
-        let expected = TFr::from_u64_arr(&inv_fft_expected[i]);
+        let expected = Fr::from_u64_arr(&inv_fft_expected[i]);
         assert!(expected.equals(&forward_result[i]));
     }
 }
 
 /// Check that stride is normalized when roots of different precision are used
-pub fn stride_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
-    fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
+pub fn stride_fft<Fr: TFr, FFTSettings: TFFTSettings<Fr>>(
+    fft_fr: &dyn Fn(&[Fr], bool, &FFTSettings) -> Result<Vec<Fr>, String>
 ) {
     let size1: usize = 9;
     let size2: usize = 12;
 
     let width: usize = 1 << size1;
 
-    let fft_settings1 = TFFTSettings::new(size1).unwrap();
-    let fft_settings2 = TFFTSettings::new(size2).unwrap();
+    let fft_settings1 = FFTSettings::new(size1).unwrap();
+    let fft_settings2 = FFTSettings::new(size2).unwrap();
 
-    let mut data = vec![TFr::default(); width];
+    let mut data = vec![Fr::default(); width];
     for i in 0..width {
-        data[i] = TFr::from_u64(i as u64);
+        data[i] = Fr::from_u64(i as u64);
     }
 
     let result1 = fft_fr(&data, false, &fft_settings1).unwrap();
