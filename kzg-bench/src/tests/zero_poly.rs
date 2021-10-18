@@ -263,7 +263,8 @@ pub fn zero_poly_all_but_one<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Pol
 /// Check an edge case where 252 is missing with width 8
 pub fn zero_poly_252<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>,
-    zero_poly_via_multiplication: &dyn Fn(usize, &[usize], &TFFTSettings) -> Result<(Vec<TFr>, TPoly), String>, ) {
+    zero_poly_via_multiplication: &dyn Fn(usize, &[usize], &TFFTSettings) -> Result<(Vec<TFr>, TPoly), String>,
+) {
     let fft_settings = TFFTSettings::new(8).unwrap();
 
     let mut missing_idxs = Vec::new();
