@@ -19,18 +19,18 @@ impl Fr for FsFr {
 
     fn rand() -> Self {
         let val: [u64; 4] = rand::random();
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_from_uint64(&ret as *const Self as *mut blst_fr, val.as_ptr());
+            blst_fr_from_uint64(&mut ret.0, val.as_ptr());
         }
 
         ret
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_from_uint64(&ret as *const Self as *mut blst_fr, u.as_ptr());
+            blst_fr_from_uint64(&mut ret.0, u.as_ptr());
         }
 
         ret
@@ -43,7 +43,7 @@ impl Fr for FsFr {
     fn is_one(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), self as *const Self as *const blst_fr);
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
         }
         return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
@@ -51,15 +51,15 @@ impl Fr for FsFr {
     fn is_zero(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), self as *const Self as *const blst_fr);
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
         }
         return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 
     fn sqr(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_sqr(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr);
+            blst_fr_sqr(&mut ret.0, &self.0);
         }
 
         ret
@@ -91,54 +91,54 @@ impl Fr for FsFr {
     // }
 
     fn mul(&self, b: &Self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_mul(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, b as *const Self as *const blst_fr);
+            blst_fr_mul(&mut ret.0, &self.0, &b.0);
         }
 
         ret
     }
 
     fn add(&self, b: &Self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_add(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, b as *const Self as *const blst_fr);
+            blst_fr_add(&mut ret.0, &self.0, &b.0);
         }
 
         ret
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_sub(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, b as *const Self as *mut blst_fr);
+            blst_fr_sub(&mut ret.0, &self.0, &b.0);
         }
 
         ret
     }
 
     fn eucl_inverse(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_eucl_inverse(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr);
+            blst_fr_eucl_inverse(&mut ret.0, &self.0);
         }
 
         return ret;
     }
 
     fn negate(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_cneg(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, true);
+            blst_fr_cneg(&mut ret.0, &self.0, true);
         }
 
         ret
     }
 
     fn inverse(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_inverse(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr);
+            blst_fr_inverse(&mut ret.0, &self.0);
         }
 
         ret
@@ -149,8 +149,8 @@ impl Fr for FsFr {
         let mut val_b: [u64; 4] = [0; 4];
 
         unsafe {
-            blst_uint64_from_fr(val_a.as_mut_ptr(), self as *const Self as *const blst_fr);
-            blst_uint64_from_fr(val_b.as_mut_ptr(), b as *const Self as *mut blst_fr);
+            blst_uint64_from_fr(val_a.as_mut_ptr(), &self.0);
+            blst_uint64_from_fr(val_b.as_mut_ptr(), &b.0);
         }
 
         return val_a[0] == val_b[0]
@@ -179,7 +179,7 @@ impl Poly<FsFr> for FsPoly {
         Self { coeffs: vec![FsFr::default(); size] }
     }
 
-    fn get_coeff_at(&self, i: usize) -> FsFr where FsFr: Sized {
+    fn get_coeff_at(&self, i: usize) -> FsFr {
         self.coeffs[i]
     }
 
@@ -282,7 +282,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         self.max_width
     }
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr where FsFr: Sized {
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.expanded_roots_of_unity[i]
     }
 
@@ -290,7 +290,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         &self.expanded_roots_of_unity
     }
 
-    fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr where FsFr: Sized {
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.reverse_roots_of_unity[i]
     }
 

@@ -49,26 +49,26 @@ pub trait Fr: Clone {
     fn destroy(&self);
 }
 
-pub trait FFTSettings<Coeff: Fr>: Clone where Coeff: Sized {
-    fn new(scale: usize) -> Result<Self, String> where Self: Sized;
+pub trait FFTSettings<Coeff: Fr>: Clone {
+    fn new(scale: usize) -> Result<Self, String>;
 
     fn get_max_width(&self) -> usize;
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff where Coeff: Sized;
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_expanded_roots_of_unity(&self) -> &[Coeff];
 
-    fn get_reverse_roots_of_unity_at(&self, i: usize) -> Coeff where Coeff: Sized;
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
 
     fn destroy(&self);
 }
 
-pub trait Poly<Coeff: Fr> {
+pub trait Poly<Coeff: Fr>: Clone {
     fn new(size: usize) -> Self;
 
-    fn get_coeff_at(&self, i: usize) -> Coeff where Coeff: Sized;
+    fn get_coeff_at(&self, i: usize) -> Coeff;
 
     fn set_coeff_at(&mut self, i: usize, x: &Coeff);
 
