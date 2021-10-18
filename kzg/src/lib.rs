@@ -66,7 +66,7 @@ pub trait IFFTSettings<TFr: IFr>: Clone where TFr: Sized {
     fn get_reversed_roots_of_unity(&self) -> &[TFr];
 }
 
-pub trait IPoly<TFr> {
+pub trait IPoly<TFr: IFr> {
     fn new(size: usize) -> Self;
 
     fn get_coeff_at(&self, i: usize) -> TFr where TFr: Sized;
