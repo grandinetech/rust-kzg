@@ -1,10 +1,10 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr};
-use kzg::{G1, G2, TFFTSettings, TFr, TPoly};
+use kzg::{G1, G2, IFFTSettings, IFr, IPoly};
 
 pub struct Fr(blst::blst_fr);
 
-impl TFr for Fr {
+impl IFr for Fr {
     fn default() -> Self {
         Fr(blst_fr::default())
     }
@@ -165,7 +165,7 @@ pub struct Poly {
     pub coeffs: Vec<Fr>,
 }
 
-impl TPoly<Fr> for Poly {
+impl IPoly<Fr> for Poly {
     fn new(size: usize) -> Self {
         Poly { coeffs: vec![Fr::default(); size] }
     }
@@ -228,8 +228,6 @@ impl TPoly<Fr> for Poly {
             self.coeffs[i] = self.coeffs[i].mul(&factor_power);
         }
     }
-
-    fn destroy(&self) {}
 }
 
 impl Clone for Poly {
@@ -245,7 +243,7 @@ pub struct FFTSettings {
     pub reverse_roots_of_unity: Vec<Fr>,
 }
 
-impl TFFTSettings<Fr> for FFTSettings {
+impl IFFTSettings<Fr> for FFTSettings {
     fn new(scale: usize) -> Result<FFTSettings, String> {
         FFTSettings::from_scale(scale)
     }
@@ -269,8 +267,6 @@ impl TFFTSettings<Fr> for FFTSettings {
     fn get_reversed_roots_of_unity(&self) -> &[Fr] {
         &self.reverse_roots_of_unity
     }
-
-    fn destroy(&self) {}
 }
 
 impl Clone for Fr {

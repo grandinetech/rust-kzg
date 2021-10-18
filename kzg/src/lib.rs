@@ -14,7 +14,7 @@ pub type G2 = blst::blst_p2;
 
 pub mod finite;
 
-pub trait TFr: Clone {
+pub trait IFr: Clone {
     fn default() -> Self;
 
     fn zero() -> Self;
@@ -52,38 +52,34 @@ pub trait TFr: Clone {
     fn destroy(&self);
 }
 
-pub trait TFFTSettings<Fr: TFr>: Clone where Fr: Sized {
+pub trait IFFTSettings<TFr: IFr>: Clone where TFr: Sized {
     fn new(scale: usize) -> Result<Self, String> where Self: Sized;
 
     fn get_max_width(&self) -> usize;
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Fr where Fr: Sized;
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> TFr where TFr: Sized;
 
-    fn get_expanded_roots_of_unity(&self) -> &[Fr];
+    fn get_expanded_roots_of_unity(&self) -> &[TFr];
 
-    fn get_reverse_roots_of_unity_at(&self, i: usize) -> Fr where Fr: Sized;
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> TFr where TFr: Sized;
 
-    fn get_reversed_roots_of_unity(&self) -> &[Fr];
-
-    fn destroy(&self);
+    fn get_reversed_roots_of_unity(&self) -> &[TFr];
 }
 
-pub trait TPoly<Fr: TFr> {
+pub trait IPoly<TFr: IFr> {
     fn new(size: usize) -> Self;
 
-    fn get_coeff_at(&self, i: usize) -> Fr where Fr: Sized;
+    fn get_coeff_at(&self, i: usize) -> TFr where TFr: Sized;
 
-    fn set_coeff_at(&mut self, i: usize, x: &Fr);
+    fn set_coeff_at(&mut self, i: usize, x: &TFr);
 
-    fn get_coeffs(&self) -> &[Fr];
+    fn get_coeffs(&self) -> &[TFr];
 
     fn len(&self) -> usize;
 
-    fn eval(&self, x: &Fr) -> Fr;
+    fn eval(&self, x: &TFr) -> TFr;
 
     fn scale(&mut self);
 
     fn unscale(&mut self);
-
-    fn destroy(&self);
 }

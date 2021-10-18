@@ -1,5 +1,5 @@
 use blst::{blst_fp, blst_fp2};
-use kzg::{G1, G2, TFr};
+use kzg::{G1, G2, IFr};
 use crate::kzg_types::Fr;
 
 pub static G1_IDENTITY: G1 = G1 {

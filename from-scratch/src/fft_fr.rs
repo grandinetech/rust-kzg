@@ -1,7 +1,7 @@
 use crate::kzg_types::FFTSettings;
 use crate::utils::is_power_of_two;
 use crate::kzg_types::Fr;
-use kzg::TFr;
+use kzg::IFr;
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {

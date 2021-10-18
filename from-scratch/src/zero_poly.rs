@@ -2,7 +2,7 @@ use std::cmp::min;
 use crate::fft_fr::fft_fr;
 use crate::kzg_types::{FFTSettings, Poly};
 use crate::utils::{is_power_of_two, next_power_of_two};
-use kzg::TFr;
+use kzg::IFr;
 use crate::kzg_types::Fr;
 
 /// Calculates a polynomial that evaluates to zero for roots of unity at given indices.
