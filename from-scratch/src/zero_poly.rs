@@ -1,20 +1,20 @@
 use std::cmp::min;
 use crate::fft_fr::fft_fr;
-use crate::kzg_types::{FFTSettings, Poly};
+use crate::kzg_types::{FsFFTSettings, FsPoly};
 use crate::utils::{is_power_of_two, next_power_of_two};
-use kzg::IFr;
-use crate::kzg_types::Fr;
+use kzg::Fr;
+use crate::kzg_types::FsFr;
 
 /// Calculates a polynomial that evaluates to zero for roots of unity at given indices.
 /// The returned polynomial has a length of idxs.len() + 1.
-pub fn do_zero_poly_mul_partial(idxs: &[usize], stride: usize, fft_settings: &FFTSettings) -> Result<Poly, String> {
+pub fn do_zero_poly_mul_partial(idxs: &[usize], stride: usize, fft_settings: &FsFFTSettings) -> Result<FsPoly, String> {
     if idxs.len() == 0 {
         return Err(String::from("idx array must be non-zero"));
     }
 
     // Makes use of long multiplication in terms of (x - w_0)(x - w_1)..
     // Initialize poly with 1s
-    let mut poly = Poly { coeffs: vec![Fr::one(); idxs.len() + 1] };
+    let mut poly = FsPoly { coeffs: vec![FsFr::one(); idxs.len() + 1] };
     // For the first member, store -w_0 as constant term
     poly.coeffs[0] = fft_settings.expanded_roots_of_unity[idxs[0] * stride].negate();
 
@@ -41,7 +41,7 @@ pub fn do_zero_poly_mul_partial(idxs: &[usize], stride: usize, fft_settings: &FF
 }
 
 /// Create a copy of the given poly and pad it with zeros
-pub fn pad_poly(poly: &Poly, new_length: usize) -> Result<Vec<Fr>, String> {
+pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
     if new_length < poly.coeffs.len() {
         return Err(String::from("new_length must be longer or equal to poly length"));
     }
@@ -49,7 +49,7 @@ pub fn pad_poly(poly: &Poly, new_length: usize) -> Result<Vec<Fr>, String> {
     let mut ret = poly.coeffs.to_vec();
 
     for _i in poly.coeffs.len()..new_length {
-        ret.push(Fr::zero())
+        ret.push(FsFr::zero())
     }
 
     Ok(ret)
@@ -57,7 +57,7 @@ pub fn pad_poly(poly: &Poly, new_length: usize) -> Result<Vec<Fr>, String> {
 
 /// Reduce partials using a specified domain size.
 /// Calculates the product of all polynomials via FFT and then applies an inverse FFT to produce a new Polynomial.
-pub fn reduce_partials(domain_size: usize, partials: &[Poly], fft_settings: &FFTSettings) -> Result<Poly, String> {
+pub fn reduce_partials(domain_size: usize, partials: &[FsPoly], fft_settings: &FsFFTSettings) -> Result<FsPoly, String> {
     if !is_power_of_two(domain_size) {
         return Err(String::from("Expected domain size to be a power of 2"));
     }
@@ -87,19 +87,19 @@ pub fn reduce_partials(domain_size: usize, partials: &[Poly], fft_settings: &FFT
 
     // Apply an inverse FFT to produce a new poly. Limit its size to out_degree + 1
     let coeffs = fft_fr(&eval_result, true, fft_settings)?;
-    let ret = Poly { coeffs: coeffs[..(out_degree + 1)].to_vec() };
+    let ret = FsPoly { coeffs: coeffs[..(out_degree + 1)].to_vec() };
 
     Ok(ret)
 }
 
 // TODO: explain how algo works
-pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], fft_settings: &FFTSettings) -> Result<(Vec<Fr>, Poly), String> {
-    let zero_eval: Vec<Fr>;
-    let mut zero_poly: Poly;
+pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], fft_settings: &FsFFTSettings) -> Result<(Vec<FsFr>, FsPoly), String> {
+    let zero_eval: Vec<FsFr>;
+    let mut zero_poly: FsPoly;
 
     if missing_idxs.len() == 0 {
         zero_eval = Vec::new();
-        zero_poly = Poly { coeffs: Vec::new() };
+        zero_poly = FsPoly { coeffs: Vec::new() };
         return Ok((zero_eval, zero_poly));
     }
 
@@ -124,7 +124,7 @@ pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], 
     } else {
         // Otherwise, construct a set of partial polynomials
         // Save all constructed polynomials in a shared 'work' vector
-        let mut work = vec![Fr::zero(); next_power_of_two(partial_count * degree_of_partial)];
+        let mut work = vec![FsFr::zero(); next_power_of_two(partial_count * degree_of_partial)];
 
         let mut partial_lens = Vec::new();
         let mut partial_offsets = Vec::new();
@@ -169,7 +169,7 @@ pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], 
                 partial_offsets[i] = start * partial_size;
                 for j in 0..(partials_num) {
                     partial_offsets[i + j] = (start + j) * partial_size;
-                    partial_vec.push(Poly { coeffs: work[partial_offsets[i + j]..(partial_offsets[i + j] + partial_lens[i + j])].to_vec() });
+                    partial_vec.push(FsPoly { coeffs: work[partial_offsets[i + j]..(partial_offsets[i + j] + partial_lens[i + j])].to_vec() });
                 }
 
                 if partials_num > 1 {
@@ -189,7 +189,7 @@ pub fn zero_poly_via_multiplication(domain_size: usize, missing_idxs: &[usize], 
             partial_count = reduced_count;
         }
 
-        zero_poly = Poly { coeffs: work };
+        zero_poly = FsPoly { coeffs: work };
     }
 
     // Pad resulting poly to expected length

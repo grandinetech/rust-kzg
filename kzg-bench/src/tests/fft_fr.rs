@@ -1,7 +1,7 @@
-use kzg::{IFFTSettings, IFr};
+use kzg::{FFTSettings, Fr};
 
 /// Check that both FFT implementations produce the same results
-pub fn compare_sft_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
+pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
     fft_fr_slow: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
     fft_fr_fast: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
 ) {
@@ -27,7 +27,7 @@ pub fn compare_sft_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
 }
 
 /// Check that computing FFT and inverse FFT results in the starting data
-pub fn roundtrip_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
+pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
 ) {
     let size: usize = 12;
@@ -49,7 +49,7 @@ pub fn roundtrip_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
 }
 
 /// Check the inverse FFT operation on precomputed values
-pub fn inverse_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
+pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
 ) {
     let inv_fft_expected: [[u64; 4]; 16] =
@@ -89,7 +89,7 @@ pub fn inverse_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
 }
 
 /// Check that stride is normalized when roots of different precision are used
-pub fn stride_fft<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
+pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
 ) {
     let size1: usize = 9;

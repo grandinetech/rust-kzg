@@ -2,7 +2,7 @@
 pub mod tests {
     use kzg_bench::tests::zero_poly::{check_test_data, reduce_partials_random, test_reduce_partials, zero_poly_252, zero_poly_all_but_one, zero_poly_known, zero_poly_random};
     use kzg_from_scratch::fft_fr::fft_fr;
-    use kzg_from_scratch::kzg_types::{FFTSettings, Fr, Poly};
+    use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr, FsPoly};
     use kzg_from_scratch::zero_poly::{do_zero_poly_mul_partial, reduce_partials, zero_poly_via_multiplication};
 
     #[test]
@@ -17,7 +17,7 @@ pub mod tests {
 
     #[test]
     fn check_test_data_() {
-        check_test_data::<Fr, FFTSettings, Poly>(&fft_fr);
+        check_test_data::<FsFr, FsFFTSettings, FsPoly>(&fft_fr);
     }
 
     #[test]

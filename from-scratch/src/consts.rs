@@ -1,6 +1,6 @@
 use blst::{blst_fp, blst_fp2};
-use kzg::{G1, G2, IFr};
-use crate::kzg_types::Fr;
+use kzg::{G1, G2, Fr};
+use crate::kzg_types::FsFr;
 
 pub static G1_IDENTITY: G1 = G1 {
     x: blst_fp { l: [0, 0, 0, 0, 0, 0] },
@@ -48,8 +48,8 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
 ];
 
 /// Multiply a given root of unity by itself until it results in a 1 and result all multiplication values in a vector
-pub fn expand_root_of_unity(root: &Fr, width: usize) -> Result<Vec<Fr>, String> {
-    let mut generated_powers = vec![Fr::one(), root.clone()];
+pub fn expand_root_of_unity(root: &FsFr, width: usize) -> Result<Vec<FsFr>, String> {
+    let mut generated_powers = vec![FsFr::one(), root.clone()];
 
     while !(generated_powers.last().unwrap().is_one()) {
         if generated_powers.len() > width {

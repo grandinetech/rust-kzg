@@ -1,4 +1,4 @@
-use kzg::{IFFTSettings, IFr, IPoly};
+use kzg::{FFTSettings, Fr, Poly};
 use rand::seq::SliceRandom;
 use rand::{RngCore, SeedableRng, thread_rng};
 use rand::rngs::StdRng;
@@ -50,7 +50,7 @@ const EXPECTED_POLY_U64: [[u64; 4]; 16] = [
 /// First, create polynomials that evaluate to zero at given roots.
 /// Check that multiplying them together (via reduce_partials) equals
 /// constructing a polynomial that evaluates to zero at all given roots.
-pub fn test_reduce_partials<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<TFr>>(
+pub fn test_reduce_partials<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     do_zero_poly_mul_partial: &dyn Fn(&[usize], usize, &TFFTSettings) -> Result<TPoly, String>,
     reduce_partials: &dyn Fn(usize, &[TPoly], &TFFTSettings) -> Result<TPoly, String>,
 ) {
@@ -77,7 +77,7 @@ pub fn test_reduce_partials<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IP
 /// Create random partial polynomials that equal 0 at given roots.
 /// Check that multiplying them together (via reduce_partials) equals
 /// constructing a polynomial that evaluates to zero at all given roots.
-pub fn reduce_partials_random<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<TFr>>(
+pub fn reduce_partials_random<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     do_zero_poly_mul_partial: &dyn Fn(&[usize], usize, &TFFTSettings) -> Result<TPoly, String>,
     reduce_partials: &dyn Fn(usize, &[TPoly], &TFFTSettings) -> Result<TPoly, String>,
 ) {
@@ -126,7 +126,7 @@ pub fn reduce_partials_random<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: 
 }
 
 /// Check that polynomial evaluation works against precomputed values
-pub fn check_test_data<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<TFr>>(
+pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
 ) {
     let mut expected_eval = TPoly::new(16);
@@ -159,7 +159,7 @@ pub fn check_test_data<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<T
 }
 
 /// Check if zero polynomial is calculated and evaluated as expected against precomputed values
-pub fn zero_poly_known<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<TFr>>(
+pub fn zero_poly_known<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     zero_poly_via_multiplication: &dyn Fn(usize, &[usize], &TFFTSettings) -> Result<(Vec<TFr>, TPoly), String>,
 ) {
     let fft_settings = TFFTSettings::new(4).unwrap();
@@ -187,7 +187,7 @@ pub fn zero_poly_known<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<T
 }
 
 /// Generate random series of missing indices and check if they are multiplied correctly
-pub fn zero_poly_random<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<TFr>>(
+pub fn zero_poly_random<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>,
     zero_poly_via_multiplication: &dyn Fn(usize, &[usize], &TFFTSettings) -> Result<(Vec<TFr>, TPoly), String>,
 ) {
@@ -230,7 +230,7 @@ pub fn zero_poly_random<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<
 
 /// Check that roots of unity loop correctly and the first value equals the last one
 /// by evaluating a polynomial created to equal zero for the last value
-pub fn zero_poly_all_but_one<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<TFr>>(
+pub fn zero_poly_all_but_one<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>,
     zero_poly_via_multiplication: &dyn Fn(usize, &[usize], &TFFTSettings) -> Result<(Vec<TFr>, TPoly), String>,
 ) {
@@ -261,7 +261,7 @@ pub fn zero_poly_all_but_one<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: I
 }
 
 /// Check an edge case where 252 is missing with width 8
-pub fn zero_poly_252<TFr: IFr, TFFTSettings: IFFTSettings<TFr>, TPoly: IPoly<TFr>>(
+pub fn zero_poly_252<TFr: Fr, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>>(
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>,
     zero_poly_via_multiplication: &dyn Fn(usize, &[usize], &TFFTSettings) -> Result<(Vec<TFr>, TPoly), String>, ) {
     let fft_settings = TFFTSettings::new(8).unwrap();

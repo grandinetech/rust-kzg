@@ -1,12 +1,12 @@
-use kzg::{IFFTSettings, IFr};
+use kzg::{FFTSettings, Fr};
 
-pub fn roots_of_unity_out_of_bounds_fails<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>() {
+pub fn roots_of_unity_out_of_bounds_fails<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() {
     let fft_settings = TFFTSettings::new(32);
     assert!(fft_settings.is_err());
 }
 
 /// Raise each root to the power of 2 ^ i and see if it equals 1
-pub fn roots_of_unity_are_plausible<TFr: IFr>(roots: &[[u64; 4]; 32]) {
+pub fn roots_of_unity_are_plausible<TFr: Fr>(roots: &[[u64; 4]; 32]) {
     for i in 0..32 {
         let mut r = TFr::from_u64_arr(&roots[i]);
         for _j in 0..i {
@@ -17,9 +17,8 @@ pub fn roots_of_unity_are_plausible<TFr: IFr>(roots: &[[u64; 4]; 32]) {
     }
 }
 
-
 /// Check if expanded root members follow symmetry and symmetrically multiply to produce a 1.
-pub fn expand_roots_is_plausible<TFr: IFr>(roots: &[[u64; 4]; 32], expand_root_of_unity: &dyn Fn(&TFr, usize) -> Result<Vec<TFr>, String>) {
+pub fn expand_roots_is_plausible<TFr: Fr>(roots: &[[u64; 4]; 32], expand_root_of_unity: &dyn Fn(&TFr, usize) -> Result<Vec<TFr>, String>) {
     let scale = 15;
     let width: usize = 1 << scale;
 
@@ -37,7 +36,7 @@ pub fn expand_roots_is_plausible<TFr: IFr>(roots: &[[u64; 4]; 32], expand_root_o
 }
 
 /// Check if generated reverse roots are reversed correctly and multiply with expanded roots to result in 1.
-pub fn new_fft_settings_is_plausible<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>() {
+pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() {
     let scale = 21;
     let width: usize = 1 << scale;
 

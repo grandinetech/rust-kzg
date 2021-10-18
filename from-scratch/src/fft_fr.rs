@@ -1,10 +1,10 @@
-use crate::kzg_types::FFTSettings;
+use crate::kzg_types::FsFFTSettings;
 use crate::utils::is_power_of_two;
-use crate::kzg_types::Fr;
-use kzg::IFr;
+use crate::kzg_types::FsFr;
+use kzg::Fr;
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
-pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {
+pub fn fft_fr_fast(ret: &mut [FsFr], data: &[FsFr], stride: usize, roots: &[FsFr], roots_stride: usize) {
     let half: usize = ret.len() / 2;
     if half > 0 {
         // Recurse
@@ -24,7 +24,7 @@ pub fn fft_fr_fast(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roo
 }
 
 /// Fast Fourier Transform for finite field elements
-pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<Vec<Fr>, String> {
+pub fn fft_fr(data: &[FsFr], inverse: bool, fft_settings: &FsFFTSettings) -> Result<Vec<FsFr>, String> {
     if data.len() > fft_settings.max_width {
         return Err(String::from("Supplied list is longer than the available max width"));
     } else if !is_power_of_two(data.len()) {
@@ -33,7 +33,7 @@ pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<
 
     // In case more roots are provided with fft_settings, use a larger stride
     let stride = fft_settings.max_width / data.len();
-    let mut ret = vec![Fr::default(); data.len()];
+    let mut ret = vec![FsFr::default(); data.len()];
 
     // Inverse is same as regular, but all constants are reversed and results are divided by n
     // This is a property of the DFT matrix
@@ -41,7 +41,7 @@ pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<
     fft_fr_fast(&mut ret, data, 1, roots, stride);
 
     if inverse {
-        let mut inv_len: Fr = Fr::from_u64(data.len() as u64);
+        let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
         inv_len = inv_len.inverse();
         for i in 0..data.len() {
             ret[i] = ret[i].mul(&inv_len);
@@ -52,7 +52,7 @@ pub fn fft_fr(data: &[Fr], inverse: bool, fft_settings: &FFTSettings) -> Result<
 }
 
 /// Simplified Discrete Fourier Transform, mainly used for testing
-pub fn fft_fr_slow(ret: &mut [Fr], data: &[Fr], stride: usize, roots: &[Fr], roots_stride: usize) {
+pub fn fft_fr_slow(ret: &mut [FsFr], data: &[FsFr], stride: usize, roots: &[FsFr], roots_stride: usize) {
     for i in 0..data.len() {
         // Evaluate first member at 1
         ret[i] = data[0].mul(&roots[0]);

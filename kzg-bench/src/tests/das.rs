@@ -1,7 +1,7 @@
-use kzg::{IFFTSettings, IFr};
+use kzg::{FFTSettings, Fr};
 
 /// Check if DAS FFT creates odds that match precomputed values
-pub fn das_extension_test_known<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
+pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
     das_fft_extension: &dyn Fn(&[TFr], &TFFTSettings) -> Result<Vec<TFr>, String>
 ) {
     let expected_u: [[u64; 4]; 8] = [
@@ -34,7 +34,7 @@ pub fn das_extension_test_known<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
 /// Check that DAS extension produces correct odds.
 /// Verify this by checking that the second half of the inverse FFT coefficients of odd-even interpolated vector results in zeros.
 
-pub fn das_extension_test_random<TFr: IFr, TFFTSettings: IFFTSettings<TFr>>(
+pub fn das_extension_test_random<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
     das_fft_extension: &dyn Fn(&[TFr], &TFFTSettings) -> Result<Vec<TFr>, String>,
     fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>,
 ) {
