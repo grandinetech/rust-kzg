@@ -30,13 +30,18 @@ impl Poly<BlstFr> for KzgPoly {
         let mut poly = Poly::default();
         unsafe {
             return match new_poly(&mut poly, size) {
-                KzgRet::KzgOk => Ok(
-                    Self {
-                        coeffs: poly.coeffs,
-                        length: poly.length
-                    }
-                ),
+                KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in \"Poly::new\" ==> {:?}", e))
+            }
+        }
+    }
+
+    fn new_div(p_dividend: *const Self, p_divisor: *const Self) -> Result<Self, String> where Self: Sized {
+        let mut poly = Poly::default();
+        unsafe {
+            return match new_poly_div(&mut poly, p_dividend, p_divisor) {
+                KzgRet::KzgOk => Ok(poly),
+                e => Err(format!("An error has occurred in \"Poly::new_div\" ==> {:?}", e))
             }
         }
     }
@@ -93,19 +98,6 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     /*
-    pub fn new_divided(dividend: *const Poly, divisor: *const Poly) -> Result<Poly, Error> {
-        let mut poly = Poly::default();
-        unsafe {
-            return match new_poly_div(&mut poly, dividend, divisor) {
-                Error::KzgOk => Ok(Poly::_self(&mut poly)),
-                e => {
-                    println!("An error has occurred in \"Poly::new_divided\" ==> {:?}", e);
-                    Err(e)
-                }
-            }
-        }
-    }
-
     // https://github.com/benjaminion/c-kzg/blob/63612c11192cea02b2cb78aa677f570041b6b763/src/poly_bench.c#L39
     fn randomize_coeffs(&mut self) {
         for i in 0..self.length {

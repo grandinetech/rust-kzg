@@ -17,7 +17,7 @@ mod tests {
 
     #[test]
     fn test_poly_eval_0_check() {
-        poly_eval_check::<BlstFr, KzgPoly>();
+        poly_eval_0_check::<BlstFr, KzgPoly>();
     }
 
     #[test]

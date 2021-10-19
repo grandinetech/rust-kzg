@@ -68,6 +68,8 @@ pub trait Poly<Coeff: Fr> {
 
     fn new(size: u64) -> Result<Self, String> where Self: Sized;
 
+    fn new_div(p_dividend: *const Self, p_divisor: *const Self) -> Result<Self, String> where Self: Sized;
+
     fn get_coeff_at(&self, i: u64) -> Coeff where Coeff: Sized;
 
     fn set_coeff_at(&mut self, i: u64, x: &Coeff);
