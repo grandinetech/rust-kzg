@@ -45,8 +45,6 @@ pub trait Fr: Clone {
     // fn pow(&self, n: usize) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
-
-    fn destroy(&self);
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {
@@ -62,10 +60,12 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
 
-    fn destroy(&self);
+    fn destroy(&mut self);
 }
 
 pub trait Poly<Coeff: Fr>: Clone {
+    fn default() -> Result<Self, String>;
+
     fn new(size: usize) -> Self;
 
     fn get_coeff_at(&self, i: usize) -> Coeff;
@@ -82,5 +82,9 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn unscale(&mut self);
 
-    fn destroy(&self);
+    fn inverse(&mut self) -> Result<(), String>;
+
+    fn div(&mut self, x: &Self) -> Result<Self, String>;
+
+    fn destroy(&mut self);
 }
