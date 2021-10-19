@@ -45,6 +45,8 @@ pub trait Fr: Clone {
     // fn pow(&self, n: usize) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
+
+    fn destroy(&mut self);
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {
