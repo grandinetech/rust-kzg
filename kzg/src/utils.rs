@@ -1,24 +1,24 @@
 use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
 use bls12_381::Scalar;
 use bls12_381::*;
+use std::fmt;
 
 use crate::poly::Poly;
 
 use pairing::Engine;
-
-type Zk_Fr = bls12_381::Scalar;
 
 pub struct polydata {
     coeffs: Vec<u64>,
 }
 
 
-pub fn blst_poly_into_pc_poly(pd: polydata) -> Result<Poly, Error> {
+pub fn blst_poly_into_zk_poly(pd: polydata) -> Result<Poly, fmt::Error> {
+	use bls12_381::Scalar as Fr;
     let mut poly = Vec::new();
     for x in pd.coeffs {
         poly.push(Fr::from(x))
     }
 
-    let p = DensePoly::from_coefficients_slice(&poly);
+    let p = super::Poly(poly);
     Ok(p)
 }
