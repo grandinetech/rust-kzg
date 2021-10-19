@@ -45,7 +45,7 @@ extern "C" {
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct Fp {
-    d: [u64; crate::MCLBN_FP_UNIT_SIZE],
+    pub d: [u64; crate::MCLBN_FP_UNIT_SIZE],
 }
 impl Fp {
     pub fn get_order() -> String {

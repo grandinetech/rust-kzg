@@ -37,6 +37,7 @@ pub mod data_types {
 }
 pub mod data_converter {
     pub mod fr_converter;
+    pub mod fp_converter;
     pub mod g1_converter;
 }
 pub mod kzg10;
