@@ -1,7 +1,8 @@
 use crate::kzg_types::FsFFTSettings;
 use crate::utils::is_power_of_two;
 use crate::kzg_types::FsFr;
-use kzg::Fr;
+use kzg::{FFTFr, Fr};
+
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(ret: &mut [FsFr], data: &[FsFr], stride: usize, roots: &[FsFr], roots_stride: usize) {
@@ -23,32 +24,34 @@ pub fn fft_fr_fast(ret: &mut [FsFr], data: &[FsFr], stride: usize, roots: &[FsFr
     }
 }
 
-/// Fast Fourier Transform for finite field elements
-pub fn fft_fr(data: &[FsFr], inverse: bool, fft_settings: &FsFFTSettings) -> Result<Vec<FsFr>, String> {
-    if data.len() > fft_settings.max_width {
-        return Err(String::from("Supplied list is longer than the available max width"));
-    } else if !is_power_of_two(data.len()) {
-        return Err(String::from("A list with power-of-two length expected"));
-    }
-
-    // In case more roots are provided with fft_settings, use a larger stride
-    let stride = fft_settings.max_width / data.len();
-    let mut ret = vec![FsFr::default(); data.len()];
-
-    // Inverse is same as regular, but all constants are reversed and results are divided by n
-    // This is a property of the DFT matrix
-    let roots = if inverse { &fft_settings.reverse_roots_of_unity } else { &fft_settings.expanded_roots_of_unity };
-    fft_fr_fast(&mut ret, data, 1, roots, stride);
-
-    if inverse {
-        let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
-        inv_len = inv_len.inverse();
-        for i in 0..data.len() {
-            ret[i] = ret[i].mul(&inv_len);
+impl FFTFr<FsFr> for FsFFTSettings {
+    /// Fast Fourier Transform for finite field elements
+    fn fft_fr(&self, data: &[FsFr], inverse: bool) -> Result<Vec<FsFr>, String> {
+        if data.len() > self.max_width {
+            return Err(String::from("Supplied list is longer than the available max width"));
+        } else if !is_power_of_two(data.len()) {
+            return Err(String::from("A list with power-of-two length expected"));
         }
-    }
 
-    return Ok(ret);
+        // In case more roots are provided with fft_settings, use a larger stride
+        let stride = self.max_width / data.len();
+        let mut ret = vec![FsFr::default(); data.len()];
+
+        // Inverse is same as regular, but all constants are reversed and results are divided by n
+        // This is a property of the DFT matrix
+        let roots = if inverse { &self.reverse_roots_of_unity } else { &self.expanded_roots_of_unity };
+        fft_fr_fast(&mut ret, data, 1, roots, stride);
+
+        if inverse {
+            let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
+            inv_len = inv_len.inverse();
+            for i in 0..data.len() {
+                ret[i] = ret[i].mul(&inv_len);
+            }
+        }
+
+        return Ok(ret);
+    }
 }
 
 /// Simplified Discrete Fourier Transform, mainly used for testing

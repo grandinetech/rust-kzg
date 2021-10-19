@@ -1,7 +1,7 @@
-use kzg::{FFTSettings, Fr};
+use kzg::{FFTFr, FFTSettings, Fr};
 
 /// Check that both FFT implementations produce the same results
-pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
+pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     fft_fr_slow: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
     fft_fr_fast: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
 ) {
@@ -27,9 +27,7 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
 }
 
 /// Check that computing FFT and inverse FFT results in the starting data
-pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
-    fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
-) {
+pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     let size: usize = 12;
 
     let fft_settings = TFFTSettings::new(size).unwrap();
@@ -40,8 +38,8 @@ pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
     }
 
     // Forward and inverse FFT
-    let forward_result = fft_fr(&starting_data, false, &fft_settings).unwrap();
-    let inverse_result = fft_fr(&forward_result, true, &fft_settings).unwrap();
+    let forward_result = fft_settings.fft_fr(&starting_data, false).unwrap();
+    let inverse_result = fft_settings.fft_fr(&forward_result, true).unwrap();
 
     for i in 0..fft_settings.get_max_width() {
         assert!(starting_data[i].equals(&inverse_result[i]));
@@ -49,9 +47,7 @@ pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
 }
 
 /// Check the inverse FFT operation on precomputed values
-pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
-    fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
-) {
+pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     let inv_fft_expected: [[u64; 4]; 16] =
         [
             [0x7fffffff80000008, 0xa9ded2017fff2dff, 0x199cec0404d0ec02, 0x39f6d3a994cebea4],
@@ -79,7 +75,7 @@ pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
         data[i] = TFr::from_u64(i as u64);
     }
 
-    let forward_result = fft_fr(&data, true, &fft_settings).unwrap();
+    let forward_result = fft_settings.fft_fr(&data, true).unwrap();
 
     assert_eq!(inv_fft_expected.len(), fft_settings.get_max_width());
     for i in 0..inv_fft_expected.len() {
@@ -89,9 +85,7 @@ pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
 }
 
 /// Check that stride is normalized when roots of different precision are used
-pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
-    fft_fr: &dyn Fn(&[TFr], bool, &TFFTSettings) -> Result<Vec<TFr>, String>
-) {
+pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     let size1: usize = 9;
     let size2: usize = 12;
 
@@ -105,8 +99,8 @@ pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
         data[i] = TFr::from_u64(i as u64);
     }
 
-    let result1 = fft_fr(&data, false, &fft_settings1).unwrap();
-    let result2 = fft_fr(&data, false, &fft_settings2).unwrap();
+    let result1 = fft_settings1.fft_fr(&data, false).unwrap();
+    let result2 = fft_settings2.fft_fr(&data, false).unwrap();
 
     for i in 0..width {
         assert!(result1[i].equals(&result2[i]));

@@ -19,18 +19,18 @@ impl Fr for FsFr {
 
     fn rand() -> Self {
         let val: [u64; 4] = rand::random();
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_from_uint64(&ret as *const Self as *mut blst_fr, val.as_ptr());
+            blst_fr_from_uint64(&mut ret.0, val.as_ptr());
         }
 
         ret
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_from_uint64(&ret as *const Self as *mut blst_fr, u.as_ptr());
+            blst_fr_from_uint64(&mut ret.0, u.as_ptr());
         }
 
         ret
@@ -43,7 +43,7 @@ impl Fr for FsFr {
     fn is_one(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), self as *const Self as *const blst_fr);
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
         }
         return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
@@ -51,94 +51,94 @@ impl Fr for FsFr {
     fn is_zero(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), self as *const Self as *const blst_fr);
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
         }
         return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 
     fn sqr(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_sqr(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr);
+            blst_fr_sqr(&mut ret.0, &self.0);
         }
 
         ret
     }
 
-    // TODO: double-check implementation
-    // fn pow(&self, n: usize) -> Self {
-    //     //fr_t tmp = *a;
-    //     let mut tmp: Fr = self.clone();
-    //
-    //     //*out = fr_one;
-    //     let mut out = Fr::one();
-    //     let mut n2 = n;
-    //
-    //     unsafe {
-    //         loop {
-    //             if n2 & 1 == 1 {
-    //                 blst_fr_mul(&out as *const Fr as *mut blst_fr, &out as *const Fr as *mut blst_fr, &tmp as *const Fr as *mut blst_fr);
-    //             }
-    //             n2 = n2 >> 1;
-    //             if n == 0 {
-    //                 break;
-    //             }
-    //             blst_fr_sqr(&tmp as *const Fr as *mut blst_fr, &tmp as *const Fr as *mut blst_fr);
-    //         }
-    //     }
-    //
-    //     out
-    // }
+    fn pow(&self, n: usize) -> Self {
+        todo!("double check implementation");
+        //fr_t tmp = *a;
+        let mut tmp = self.clone();
+
+        //*out = fr_one;
+        let mut out = Self::one();
+        let mut n2 = n;
+
+        unsafe {
+            loop {
+                if n2 & 1 == 1 {
+                    blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                }
+                n2 = n2 >> 1;
+                if n == 0 {
+                    break;
+                }
+                blst_fr_sqr(&mut out.0, &tmp.0);
+            }
+        }
+
+        out
+    }
 
     fn mul(&self, b: &Self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_mul(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, b as *const Self as *const blst_fr);
+            blst_fr_mul(&mut ret.0, &self.0, &b.0);
         }
 
         ret
     }
 
     fn add(&self, b: &Self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_add(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, b as *const Self as *const blst_fr);
+            blst_fr_add(&mut ret.0, &self.0, &b.0);
         }
 
         ret
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_sub(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, b as *const Self as *mut blst_fr);
+            blst_fr_sub(&mut ret.0, &self.0, &b.0);
         }
 
         ret
     }
 
     fn eucl_inverse(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_eucl_inverse(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr);
+            blst_fr_eucl_inverse(&mut ret.0, &self.0);
         }
 
         return ret;
     }
 
     fn negate(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_cneg(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr, true);
+            blst_fr_cneg(&mut ret.0, &self.0, true);
         }
 
         ret
     }
 
     fn inverse(&self) -> Self {
-        let ret = Self::default();
+        let mut ret = Self::default();
         unsafe {
-            blst_fr_inverse(&ret as *const Self as *mut blst_fr, self as *const Self as *const blst_fr);
+            blst_fr_inverse(&mut ret.0, &self.0);
         }
 
         ret
@@ -149,8 +149,8 @@ impl Fr for FsFr {
         let mut val_b: [u64; 4] = [0; 4];
 
         unsafe {
-            blst_uint64_from_fr(val_a.as_mut_ptr(), self as *const Self as *const blst_fr);
-            blst_uint64_from_fr(val_b.as_mut_ptr(), b as *const Self as *mut blst_fr);
+            blst_uint64_from_fr(val_a.as_mut_ptr(), &self.0);
+            blst_uint64_from_fr(val_b.as_mut_ptr(), &b.0);
         }
 
         return val_a[0] == val_b[0]
@@ -159,7 +159,7 @@ impl Fr for FsFr {
             && val_a[3] == val_b[3];
     }
 
-    fn destroy(&self) {}
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFr {
@@ -175,11 +175,15 @@ pub struct FsPoly {
 }
 
 impl Poly<FsFr> for FsPoly {
-    fn new(size: usize) -> Self {
-        Self { coeffs: vec![FsFr::default(); size] }
+    fn default() -> Result<Self, String> {
+        todo!()
     }
 
-    fn get_coeff_at(&self, i: usize) -> FsFr where FsFr: Sized {
+    fn new(size: usize) -> Result<Self, String> {
+        Ok(Self { coeffs: vec![FsFr::default(); size] })
+    }
+
+    fn get_coeff_at(&self, i: usize) -> FsFr {
         self.coeffs[i]
     }
 
@@ -238,7 +242,15 @@ impl Poly<FsFr> for FsPoly {
         }
     }
 
-    fn destroy(&self) {}
+    fn inverse(&mut self) -> Result<(), String> {
+        todo!()
+    }
+
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
+        todo!()
+    }
+
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsPoly {
@@ -282,7 +294,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         self.max_width
     }
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr where FsFr: Sized {
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.expanded_roots_of_unity[i]
     }
 
@@ -290,7 +302,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         &self.expanded_roots_of_unity
     }
 
-    fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr where FsFr: Sized {
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.reverse_roots_of_unity[i]
     }
 
@@ -298,7 +310,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         &self.reverse_roots_of_unity
     }
 
-    fn destroy(&self) {}
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFFTSettings {

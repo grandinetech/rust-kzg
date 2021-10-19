@@ -1,16 +1,15 @@
 #[cfg(test)]
 pub mod tests {
     use kzg_bench::tests::das::{das_extension_test_known, das_extension_test_random};
-    use kzg_from_scratch::das::das_fft_extension;
-    use kzg_from_scratch::fft_fr::fft_fr;
+    use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr};
 
     #[test]
     fn das_extension_test_known_() {
-        das_extension_test_known(&das_fft_extension);
+        das_extension_test_known::<FsFr, FsFFTSettings>();
     }
 
     #[test]
     fn das_extension_test_random_() {
-        das_extension_test_random(&das_fft_extension, &fft_fr);
+        das_extension_test_random::<FsFr, FsFFTSettings>();
     }
 }
