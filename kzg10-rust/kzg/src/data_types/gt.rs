@@ -39,7 +39,7 @@ extern "C" {
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct GT {
-    d: [Fp; 12],
+    pub d: [Fp; 12],
 }
 common_impl![GT, mclBnGT_isEqual, mclBnGT_isZero];
 serialize_impl![
