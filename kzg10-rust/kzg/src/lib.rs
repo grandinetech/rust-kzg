@@ -42,6 +42,7 @@ pub mod data_converter {
     pub mod fp2_converter;
     pub mod g1_converter;
     pub mod g2_converter;
+    pub mod gt_converter;
 }
 pub mod kzg10;
 pub mod fk20_fft;
