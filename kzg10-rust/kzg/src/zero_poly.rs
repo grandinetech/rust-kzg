@@ -8,17 +8,17 @@ use crate::fk20_fft::FFTSettings;
 
 impl FFTSettings {
     // TODO: could be optimized by using mutable slices!
-    pub fn zero_poly_via_multiplication(&self, indices: &[usize], length: usize) -> (Vec<Fr>, Vec<Fr>) {
+    pub fn zero_poly_via_multiplication_base(&self, indices: &[usize], length: usize, optimized: bool) -> (Vec<Fr>, Vec<Fr>) {
         if indices.is_empty() {
             return (vec![Fr::zero(); length], vec![Fr::zero(); length]);
         }
-
-        let stride = self.max_width / length;
+        
         let per_leaf_poly = 64;
         let per_leaf = per_leaf_poly - 1;
-        if indices.len() <= per_leaf {
+        //TO DO fix the optimisation, possibly using unsafe static memory block
+        if indices.len() <= per_leaf || !optimized {
             let mut zero_poly = vec![Fr::default(); length];
-            self.make_zero_poly_mul_leaf(&mut zero_poly, indices, stride);
+            self.make_zero_poly_mul_leaf(&mut zero_poly, indices);
 
             let zero_eval = self.fft(&zero_poly, false);
             return (zero_eval, zero_poly);
@@ -35,7 +35,7 @@ impl FFTSettings {
         for _ in 0..leaf_count {
             let end = min(offset + per_leaf, max);
             let mut slice = vec![Fr::default(); per_leaf_poly];
-            self.make_zero_poly_mul_leaf(&mut slice, &indices[offset..end], stride);
+            self.make_zero_poly_mul_leaf(&mut slice, &indices[offset..end]);
             let mut slice_copy = slice.clone();
             out.append(&mut slice_copy);
             leaves.push(slice);
@@ -68,6 +68,10 @@ impl FFTSettings {
         let zero_eval = self.fft(&zero_poly, false);
 
         return (zero_eval, zero_poly);
+    }
+    
+    pub fn zero_poly_via_multiplication(&self, indices: &[usize], length: usize) -> (Vec<Fr>, Vec<Fr>){
+        return self.zero_poly_via_multiplication_base(indices, length, false);
     }
 
     pub fn reduce_leaves(&self, scratch: &mut [Fr], ps: &[Vec<Fr>], n: usize) -> Vec<Fr> {
@@ -115,19 +119,15 @@ impl FFTSettings {
         return result[..out_degree + 1].to_vec();
     }
     
-    pub fn make_zero_poly_mul_leaf(&self, dest: &mut Vec<Fr>, indices: &[usize], stride: usize) {
+    pub fn make_zero_poly_mul_leaf(&self, dest: &mut Vec<Fr>, indices: &[usize]) {
         if (indices.len() + 1) > dest.len() {
             panic!("expected bigger dest length");
-        }
-        // is this neccessary?
-        for i in (indices.len() + 1)..dest.len() {
-            dest[i] = Fr::zero();
         }
 
         dest[indices.len()] = Fr::one();
         
         for (i, v) in indices.iter().enumerate() {
-            let neg_di = self.exp_roots_of_unity[v * stride].get_neg();
+            let neg_di = self.exp_roots_of_unity[v * 1].get_neg();
             dest[i] = neg_di.clone();
             if i > 0 {
                 let temp = &dest[i] + &dest[i - 1];
