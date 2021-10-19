@@ -12,13 +12,13 @@ pub type G1 = blst::blst_p1;
 pub type G2 = blst::blst_p2;
 
 pub trait Fr: Clone {
-    fn default() -> Self;
+    fn default() -> Result<Self, String>;
 
-    fn zero() -> Self;
+    fn zero() -> Result<Self, String>;
 
-    fn one() -> Self;
+    fn one() -> Result<Self, String>;
 
-    fn rand() -> Self;
+    fn rand() -> Result<Self, String>;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
 
@@ -42,7 +42,7 @@ pub trait Fr: Clone {
 
     fn inverse(&self) -> Self;
 
-    // fn pow(&self, n: usize) -> Self;
+    fn pow(&self, n: usize) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
 
