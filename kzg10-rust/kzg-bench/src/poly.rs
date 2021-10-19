@@ -2,6 +2,70 @@ use std::vec;
 use mcl_rust::old::*;
 use mcl_rust::kzg10::*;
 use mcl_rust::data_types::fr::Fr;
+use mcl_rust::CurveType;
+use mcl_rust::mcl_methods::init;
+
+#[test]
+fn polynomial_new_works_with_valid_params() {
+    // Arrange
+    assert!(init(CurveType::BLS12_381));
+    let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    
+    // Act
+    // Assert
+    let _poly = Polynomial::from_i32(&coefficients);
+}
+
+#[test]
+fn polynomial_eval_at_should_specific_value_given_exact_inputs() {
+        // Arrange
+        assert!(init(CurveType::BLS12_381));
+        let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+        let poly = Polynomial::from_i32(&coefficients);
+        // Act
+        let value = poly.eval_at(&Fr::from_int(17));
+        // Assert
+        let expected = "39537218396363405614";
+        let actual = value.get_str(10);
+        assert_eq!(expected, actual);
+}
+
+#[test]
+fn extend_poly_appends_fr_zero() {
+    // Arrange
+    assert!(init(CurveType::BLS12_381));
+    let poly = Polynomial::from_i32(&vec![1, 2, 3, 4]);
+    
+    // Act
+    let extended = poly.get_extended(8);
+
+    // Assert
+    let expected = vec![ "1", "2", "3", "4", "0", "0", "0", "0" ];
+    for i in 0..8  {
+        assert_eq!(expected[i], extended.coeffs[i].get_str(10));
+    }
+}
+
+#[test]
+fn poly_eval_0_check() {
+    //Arrange
+    assert!(init(CurveType::BLS12_381));
+    let mut coefficients = Vec::new();
+    let n: i32 = 7;
+    let a: i32 = 597;
+
+    for i in 0..n {
+        coefficients.push(i + a);
+    }
+    let p = Polynomial::from_i32(&coefficients);
+    let expected = Fr::from_int(a);
+
+    //Act
+    let actual = p.eval_at(&Fr::default());
+
+    //Assert
+    assert_eq!(expected, actual);
+}
 
 fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
     // (x^2 - 1) / (x + 1) = x - 1
@@ -26,6 +90,7 @@ fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
 
 #[test]
 fn poly_test_div() {
+    assert!(init(CurveType::BLS12_381));
     const SIZE: usize = 2; //should be <= size of test data in get_test_vec()
 
     for i in 0..SIZE {
@@ -51,14 +116,19 @@ fn poly_test_div() {
     }
 }
 
+/*Library could be improved to use status codes/Result<T, E> or something like that,
+since in current implementation it simply panics*/
 #[test]
 fn poly_div_by_zero() {
+    //Arrange
+    assert!(init(CurveType::BLS12_381));
     let dividend_vec: Vec<i32> = vec![1 ,1];
     let divisor: Vec<Fr> = vec![Fr::default()];
-
     let dividend = Polynomial::from_i32(&dividend_vec);
 
+    //Act
     let dummy = std::panic::catch_unwind(|| dividend.long_division(&divisor));
 
+    //Assert
     assert!(dummy.is_err());
 }
