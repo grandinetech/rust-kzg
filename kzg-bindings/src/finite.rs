@@ -19,7 +19,7 @@ pub struct BlstFr {
 }
 
 impl Fr for BlstFr {
-    fn default() -> Self where Self: Sized {
+    fn default() -> Self {
         Self { l: [0, 0, 0, 0] }
     }
 

@@ -1,3 +1,11 @@
+use kzg::{Fr, Poly};
+
+pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
+    let mut poly = TPoly::new(10).unwrap();
+    assert_eq!(poly.len(), 10);
+    poly.destroy();
+}
+
 // #[cfg(test)]
 // mod tests {
 //     use kzg::{Fr, Poly};

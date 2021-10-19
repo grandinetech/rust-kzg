@@ -1,49 +1,85 @@
-use super::{Error, Fr, Poly};
+use kzg::{Fr, Poly};
+use crate::finite::BlstFr;
+use crate::common::KzgRet;
 
 #[link(name = "ckzg", kind = "static")]
 extern "C" {
-    fn new_poly(out: *mut Poly, length: u64) -> Error;
-    fn free_poly(p: *mut Poly);
-    fn new_poly_div(out: *mut Poly, dividend: *const Poly, divisor: *const Poly) -> Error;
-    fn eval_poly(out: *mut Fr, p: *const Poly, x: *const Fr);
-    fn poly_inverse(out: *mut Poly, b: *mut Poly) -> Error;
+    fn new_poly(out: *mut KzgPoly, length: u64) -> KzgRet;
+    fn free_poly(p: *mut KzgPoly);
+    fn new_poly_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
+    fn eval_poly(out: *mut BlstFr, p: *const KzgPoly, x: *const BlstFr);
+    fn poly_inverse(out: *mut KzgPoly, b: *mut KzgPoly) -> KzgRet;
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct KzgPoly {
-    pub coeffs: *mut Fr,
+    pub coeffs: *mut BlstFr,
     pub length: u64
 }
 
-impl Poly {
-    pub fn default() -> Self {
+impl Poly<BlstFr> for KzgPoly {
+    fn default() -> Self {
         Self {
             coeffs: &mut Fr::default(),
             length: 4
         }
     }
 
-    fn _self(poly: &mut Poly) -> Self {
-        Self {
-            coeffs: poly.coeffs,
-            length: poly.length
-        }
-    }
-
-    pub fn new(length: u64) -> Result<Self, Error> {
+    fn new(size: usize) -> Result<Self, String> where Self: Sized {
         let mut poly = Poly::default();
         unsafe {
-            return match new_poly(&mut poly, length) {
-                Error::KzgOk => Ok(Poly::_self(&mut poly)),
-                e => {
-                    println!("An error has occurred in \"Poly::new\" ==> {:?}", e);
-                    Err(e)
-                }
+            return match new_poly(&mut poly, size as u64) {
+                KzgRet::KzgOk => Ok(
+                    Self {
+                        coeffs: poly.coeffs,
+                        length: poly.length
+                    }
+                ),
+                e => Err(format!("An error has occurred in \"Poly::new\" ==> {:?}", e))
             }
         }
     }
 
+    fn get_coeff_at(&self, i: usize) -> BlstFr where BlstFr: Sized {
+        unsafe {
+            return *self.coeffs.offset(i as isize) as BlstFr;
+        }
+    }
+
+    fn set_coeff_at(&mut self, i: usize, x: &BlstFr) {
+        unsafe {
+            *self.coeffs.offset(i as isize) = *x;
+        }
+    }
+
+    fn get_coeffs(&self) -> &[BlstFr] {
+        todo!()
+    }
+
+    fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    fn eval(&self, x: &BlstFr) -> BlstFr {
+        todo!()
+    }
+
+    fn scale(&mut self) {
+        todo!()
+    }
+
+    fn unscale(&mut self) {
+        todo!()
+    }
+
+    fn destroy(&mut self) {
+        unsafe {
+            free_poly(self);
+        }
+    }
+
+    /*
     pub fn new_divided(dividend: *const Poly, divisor: *const Poly) -> Result<Poly, Error> {
         let mut poly = Poly::default();
         unsafe {
@@ -123,22 +159,5 @@ impl Poly {
         }
         out
     }
-
-    pub fn get_coeff_at(self, index: u64) -> Fr {
-        unsafe {
-            return *self.coeffs.offset(index as isize) as Fr;
-        }
-    }
-
-    pub fn set_coeff_at(&mut self, index: u64, point: Fr) {
-        unsafe {
-            *self.coeffs.offset(index as isize) = point;
-        }
-    }
-
-    pub fn destroy(&mut self) {
-        unsafe {
-            free_poly(self);
-        }
-    }
+    */
 }

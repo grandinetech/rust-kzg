@@ -64,7 +64,9 @@ pub trait FFTSettings<Coeff: Fr>: Clone where Coeff: Sized {
 }
 
 pub trait Poly<Coeff: Fr> {
-    fn new(size: usize) -> Self;
+    fn default() -> Self;
+
+    fn new(size: usize) -> Result<Self, String> where Self: Sized;
 
     fn get_coeff_at(&self, i: usize) -> Coeff where Coeff: Sized;
 
@@ -80,5 +82,5 @@ pub trait Poly<Coeff: Fr> {
 
     fn unscale(&mut self);
 
-    fn destroy(&self);
+    fn destroy(&mut self);
 }
