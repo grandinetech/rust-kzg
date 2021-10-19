@@ -1,5 +1,7 @@
 use std::{cmp::min, ops, iter};
 use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
+use crate::{BlstFr};
+use crate::data_converter::fr_converter::*;
 use crate::mcl_methods::{pairing, final_exp, mclBn_FrEvaluatePolynomial};
 
 const G1_GEN_X: &str = "3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507";
@@ -199,7 +201,12 @@ impl Polynomial {
         self.coeffs.len()
     }
 
-    pub fn eval_at(&self, point: &Fr) -> Fr {
+    // pub fn eval_at(&self, point: &BlstFr) -> BlstFr {
+    //     let pointFromBlst = frFromBlst(*point);
+    //     return frToBlst(self.eval_at_mcl(&pointFromBlst));
+    // }
+
+    pub fn eval_at_mcl(&self, point: &Fr) -> Fr {
         let mut result = Fr::default();
         unsafe { 
             mclBn_FrEvaluatePolynomial(&mut result, self.coeffs.as_ptr(), self.order(), point)
