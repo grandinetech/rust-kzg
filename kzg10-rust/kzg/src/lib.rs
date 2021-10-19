@@ -2,6 +2,7 @@ use std::os::raw::c_int;
 
 pub type BlstPairing = blst::Pairing;
 pub type BlstFp = blst::blst_fp;
+pub type BlstFp2 = blst::blst_fp2;
 pub type BlstFp12 = blst::blst_fp12;
 pub type BlstFp6 = blst::blst_fp6;
 pub type BlstFr = blst::blst_fr;
@@ -38,7 +39,9 @@ pub mod data_types {
 pub mod data_converter {
     pub mod fr_converter;
     pub mod fp_converter;
+    pub mod fp2_converter;
     pub mod g1_converter;
+    pub mod g2_converter;
 }
 pub mod kzg10;
 pub mod fk20_fft;
