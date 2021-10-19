@@ -66,6 +66,7 @@ fn convertToBlstFrCorrectRandomInts() {
 
 #[test]
 fn convertBlstFpCorrectZero() {
+    assert!(init(CurveType::BLS12_381));
     let blstZero = BlstFp::default();
     let converted = fpFromBlst(blstZero);
 
