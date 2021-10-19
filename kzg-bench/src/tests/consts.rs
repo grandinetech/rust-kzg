@@ -18,7 +18,9 @@ pub fn roots_of_unity_are_plausible<TFr: Fr>(roots: &[[u64; 4]; 32]) {
 }
 
 /// Check if expanded root members follow symmetry and symmetrically multiply to produce a 1.
-pub fn expand_roots_is_plausible<TFr: Fr>(roots: &[[u64; 4]; 32], expand_root_of_unity: &dyn Fn(&TFr, usize) -> Result<Vec<TFr>, String>) {
+pub fn expand_roots_is_plausible<TFr: Fr>(
+    roots: &[[u64; 4]; 32], expand_root_of_unity: &dyn Fn(&TFr, usize) -> Result<Vec<TFr>, String>
+) {
     let scale = 15;
     let width: usize = 1 << scale;
 

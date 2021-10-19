@@ -12,13 +12,15 @@ pub type G1 = blst::blst_p1;
 pub type G2 = blst::blst_p2;
 
 pub trait Fr: Clone {
-    fn default() -> Result<Self, String>;
+    // Assume that Fr can't fail on creation
 
-    fn zero() -> Result<Self, String>;
+    fn default() -> Self; // -> Result<Self, String>;
 
-    fn one() -> Result<Self, String>;
+    fn zero() -> Self; // -> Result<Self, String>;
 
-    fn rand() -> Result<Self, String>;
+    fn one() -> Self; // -> Result<Self, String>;
+
+    fn rand() -> Self; // -> Result<Self, String>;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
 
@@ -47,6 +49,22 @@ pub trait Fr: Clone {
     fn equals(&self, b: &Self) -> bool;
 
     fn destroy(&mut self);
+}
+
+pub trait FFTFr<Coeff: Fr> {
+    fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
+}
+
+pub trait DAS<Coeff: Fr> {
+    fn das_fft_extension(&self, evens: &[Coeff]) -> Result<Vec<Coeff>, String>;
+}
+
+pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<Polynomial, String>;
+
+    fn reduce_partials(&self, domain_size: usize, partials: &[Polynomial]) -> Result<Polynomial, String>;
+
+    fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<Coeff>, Polynomial), String>;
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {

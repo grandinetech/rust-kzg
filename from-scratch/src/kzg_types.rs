@@ -65,30 +65,30 @@ impl Fr for FsFr {
         ret
     }
 
-    // TODO: double-check implementation
-    // fn pow(&self, n: usize) -> Self {
-    //     //fr_t tmp = *a;
-    //     let mut tmp: Fr = self.clone();
-    //
-    //     //*out = fr_one;
-    //     let mut out = Fr::one();
-    //     let mut n2 = n;
-    //
-    //     unsafe {
-    //         loop {
-    //             if n2 & 1 == 1 {
-    //                 blst_fr_mul(&out as *const Fr as *mut blst_fr, &out as *const Fr as *mut blst_fr, &tmp as *const Fr as *mut blst_fr);
-    //             }
-    //             n2 = n2 >> 1;
-    //             if n == 0 {
-    //                 break;
-    //             }
-    //             blst_fr_sqr(&tmp as *const Fr as *mut blst_fr, &tmp as *const Fr as *mut blst_fr);
-    //         }
-    //     }
-    //
-    //     out
-    // }
+    fn pow(&self, n: usize) -> Self {
+        todo!("double check implementation");
+        //fr_t tmp = *a;
+        let mut tmp = self.clone();
+
+        //*out = fr_one;
+        let mut out = Self::one();
+        let mut n2 = n;
+
+        unsafe {
+            loop {
+                if n2 & 1 == 1 {
+                    blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                }
+                n2 = n2 >> 1;
+                if n == 0 {
+                    break;
+                }
+                blst_fr_sqr(&mut out.0, &tmp.0);
+            }
+        }
+
+        out
+    }
 
     fn mul(&self, b: &Self) -> Self {
         let mut ret = Self::default();
@@ -159,7 +159,7 @@ impl Fr for FsFr {
             && val_a[3] == val_b[3];
     }
 
-    fn destroy(&self) {}
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFr {
@@ -175,8 +175,12 @@ pub struct FsPoly {
 }
 
 impl Poly<FsFr> for FsPoly {
-    fn new(size: usize) -> Self {
-        Self { coeffs: vec![FsFr::default(); size] }
+    fn default() -> Result<Self, String> {
+        todo!()
+    }
+
+    fn new(size: usize) -> Result<Self, String> {
+        Ok(Self { coeffs: vec![FsFr::default(); size] })
     }
 
     fn get_coeff_at(&self, i: usize) -> FsFr {
@@ -238,7 +242,15 @@ impl Poly<FsFr> for FsPoly {
         }
     }
 
-    fn destroy(&self) {}
+    fn inverse(&mut self) -> Result<(), String> {
+        todo!()
+    }
+
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
+        todo!()
+    }
+
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsPoly {
@@ -298,7 +310,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         &self.reverse_roots_of_unity
     }
 
-    fn destroy(&self) {}
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFFTSettings {
