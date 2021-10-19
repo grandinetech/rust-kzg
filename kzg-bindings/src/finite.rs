@@ -106,9 +106,17 @@ impl Fr for BlstFr {
         todo!()
     }
 
+    fn pow(&self, n: usize) -> Self {
+        todo!()
+    }
+
     fn equals(&self, b: &Self) -> bool {
         unsafe {
             return fr_equal(self, b);
         }
+    }
+
+    fn destroy(&mut self) {
+        todo!()
     }
 }

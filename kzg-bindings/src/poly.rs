@@ -26,33 +26,23 @@ impl Poly<BlstFr> for KzgPoly {
         }
     }
 
-    fn new(size: u64) -> Result<Self, String> where Self: Sized {
+    fn new(size: usize) -> Result<Self, String> {
         let mut poly = Poly::default();
         unsafe {
-            return match new_poly(&mut poly, size) {
+            return match new_poly(&mut poly, size as u64) {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in \"Poly::new\" ==> {:?}", e))
             }
         }
     }
 
-    fn new_div(p_dividend: *const Self, p_divisor: *const Self) -> Result<Self, String> where Self: Sized {
-        let mut poly = Poly::default();
-        unsafe {
-            return match new_poly_div(&mut poly, p_dividend, p_divisor) {
-                KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::new_div\" ==> {:?}", e))
-            }
-        }
-    }
-
-    fn get_coeff_at(&self, i: u64) -> BlstFr where BlstFr: Sized {
+    fn get_coeff_at(&self, i: usize) -> BlstFr {
         unsafe {
             return *self.coeffs.offset(i as isize) as BlstFr;
         }
     }
 
-    fn set_coeff_at(&mut self, i: u64, x: &BlstFr) {
+    fn set_coeff_at(&mut self, i: usize, x: &BlstFr) {
         unsafe {
             *self.coeffs.offset(i as isize) = *x;
         }
@@ -82,11 +72,24 @@ impl Poly<BlstFr> for KzgPoly {
         todo!()
     }
 
-    fn inverse(&mut self, p: *mut Self) -> Result<(), String> where Self: Sized {
+    fn inverse(&mut self, p: *mut Self) -> Result<(), String> {
         unsafe {
             return match poly_inverse(self, p) {
                 KzgRet::KzgOk => Ok(()),
                 e => Err(format!("An error has occurred in \"Poly::inverse\" ==> {:?}", e))
+            }
+        }
+    }
+
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
+        let mut poly = Poly::default();
+        unsafe {
+            return match new_poly_div(&mut poly, self, x) {
+                KzgRet::KzgOk => {
+                    self.destroy(); // don't leak memory??
+                    Ok(poly)
+                },
+                e => Err(format!("An error has occurred in \"Poly::div\" ==> {:?}", e))
             }
         }
     }
