@@ -7,3 +7,7 @@ edition = "2018"
 
 [dependencies]
 blst = {'git' = 'https://github.com/supranational/blst.git'}
+pairing = "0.21.0"
+bls12_381 = "0.6.0"
+num-bigint = "0.4"
+rand = "0.8"

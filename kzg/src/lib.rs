@@ -11,5 +11,10 @@ pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
 pub mod finite;
+pub mod utils;
+pub mod poly;
+pub mod kzg;
 
-
+pub type BlsScalar = bls12_381::Scalar;
+pub use crate::kzg::{Commitment, Kzg, Proof};
+pub use poly::Poly;
