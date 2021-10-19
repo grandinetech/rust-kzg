@@ -1,7 +1,7 @@
 use crate::data_types::fr::Fr;
 use crate::BlstFr;
 
-pub fn frFromBlst(fr: BlstFr) -> Fr {
+pub fn fr_from_blst(fr: BlstFr) -> Fr {
     let mut intValue: u64 = 0;
     let frBlst = fr;
     unsafe {

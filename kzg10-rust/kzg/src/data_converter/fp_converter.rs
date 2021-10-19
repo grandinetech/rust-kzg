@@ -1,7 +1,7 @@
 use crate::data_types::fp::Fp;
 use crate::BlstFp;
 
-pub fn fpFromBlst(fp: BlstFp) -> Fp {
+pub fn fp_from_blst(fp: BlstFp) -> Fp {
     let mut intValue: u64 = 0;
     let fpblst = fp;
     unsafe{

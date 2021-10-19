@@ -206,7 +206,7 @@ impl Polynomial {
     //     return frToBlst(self.eval_at_mcl(&pointFromBlst));
     // }
 
-    pub fn eval_at_mcl(&self, point: &Fr) -> Fr {
+    pub fn eval_at(&self, point: &Fr) -> Fr {
         let mut result = Fr::default();
         unsafe { 
             mclBn_FrEvaluatePolynomial(&mut result, self.coeffs.as_ptr(), self.order(), point)
