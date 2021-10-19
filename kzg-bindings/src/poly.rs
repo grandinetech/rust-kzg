@@ -26,10 +26,10 @@ impl Poly<BlstFr> for KzgPoly {
         }
     }
 
-    fn new(size: usize) -> Result<Self, String> where Self: Sized {
+    fn new(size: u64) -> Result<Self, String> where Self: Sized {
         let mut poly = Poly::default();
         unsafe {
-            return match new_poly(&mut poly, size as u64) {
+            return match new_poly(&mut poly, size) {
                 KzgRet::KzgOk => Ok(
                     Self {
                         coeffs: poly.coeffs,
@@ -41,13 +41,13 @@ impl Poly<BlstFr> for KzgPoly {
         }
     }
 
-    fn get_coeff_at(&self, i: usize) -> BlstFr where BlstFr: Sized {
+    fn get_coeff_at(&self, i: u64) -> BlstFr where BlstFr: Sized {
         unsafe {
             return *self.coeffs.offset(i as isize) as BlstFr;
         }
     }
 
-    fn set_coeff_at(&mut self, i: usize, x: &BlstFr) {
+    fn set_coeff_at(&mut self, i: u64, x: &BlstFr) {
         unsafe {
             *self.coeffs.offset(i as isize) = *x;
         }
@@ -62,7 +62,11 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn eval(&self, x: &BlstFr) -> BlstFr {
-        todo!()
+        let mut out = Fr::default();
+        unsafe {
+            eval_poly(&mut out, self, x);
+        }
+        out
     }
 
     fn scale(&mut self) {
@@ -71,6 +75,15 @@ impl Poly<BlstFr> for KzgPoly {
 
     fn unscale(&mut self) {
         todo!()
+    }
+
+    fn inverse(&mut self, p: *mut Self) -> Result<(), String> where Self: Sized {
+        unsafe {
+            return match poly_inverse(self, p) {
+                KzgRet::KzgOk => Ok(()),
+                e => Err(format!("An error has occurred in \"Poly::inverse\" ==> {:?}", e))
+            }
+        }
     }
 
     fn destroy(&mut self) {
@@ -141,23 +154,6 @@ impl Poly<BlstFr> for KzgPoly {
         divided_poly.destroy();
 
         errors
-    }
-
-    pub fn inverse(&mut self, poly: *mut Poly) -> Result<(), Error> {
-        unsafe {
-            return match poly_inverse(self, poly) {
-                Error::KzgOk => Ok(()),
-                e => Err(e)
-            }
-        }
-    }
-
-    pub fn eval_at(&self, point: &Fr) -> Fr {
-        let mut out = Fr::default();
-        unsafe {
-            eval_poly(&mut out, self, point);
-        }
-        out
     }
     */
 }
