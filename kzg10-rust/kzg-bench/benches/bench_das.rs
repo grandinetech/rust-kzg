@@ -1,6 +1,6 @@
 use mcl_rust::*;
 use criterion::{criterion_group, criterion_main, Criterion};
-use mcl_rust::mlc_methods::init;
+use mcl_rust::mcl_methods::init;
 use mcl_rust::implem::FFTSettings;
 use mcl_rust::fr::Fr;
 

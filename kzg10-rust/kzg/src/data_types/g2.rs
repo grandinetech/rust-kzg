@@ -7,7 +7,7 @@ use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::mem::MaybeUninit;
 use std::os::raw::c_int;
-use crate::mlc_methods;
+use crate::mcl_methods;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -44,7 +44,7 @@ common_impl![G2, mclBnG2_isEqual, mclBnG2_isZero];
 is_valid_impl![G2, mclBnG2_isValid];
 serialize_impl![
     G2,
-    mlc_methods::mclBn_getFpByteSize() * 2,
+    mcl_methods::mclBn_getFpByteSize() * 2,
     mclBnG2_serialize,
     mclBnG2_deserialize
 ];

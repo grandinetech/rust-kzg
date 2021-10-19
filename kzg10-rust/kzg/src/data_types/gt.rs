@@ -6,7 +6,7 @@ use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::mem::MaybeUninit;
 use std::os::raw::c_int;
-use crate::mlc_methods;
+use crate::mcl_methods;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -44,7 +44,7 @@ pub struct GT {
 common_impl![GT, mclBnGT_isEqual, mclBnGT_isZero];
 serialize_impl![
     GT,
-    mlc_methods::mclBn_getFpByteSize() * 12,
+    mcl_methods::mclBn_getFpByteSize() * 12,
     mclBnGT_serialize,
     mclBnGT_deserialize
 ];

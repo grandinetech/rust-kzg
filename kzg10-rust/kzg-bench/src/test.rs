@@ -1,6 +1,6 @@
 use std::{mem, vec};
 use mcl_rust::old::*;
-use mcl_rust::mlc_methods::*;
+use mcl_rust::mcl_methods::*;
 use mcl_rust::utilities::*;
 use mcl_rust::kzg10::*;
 use mcl_rust::CurveType;
@@ -49,18 +49,6 @@ fn mcl_test() {
     serialize_test! {G1, P};
     serialize_test! {G2, Q};
     serialize_test! {GT, e};
-}
-
-
-#[test]
-fn polynomial_new_works_with_valid_params() {
-    // Arrange
-    assert!(init(CurveType::BLS12_381));
-    let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
-    
-    // Act
-    // Assert
-    let _poly = Polynomial::from_i32(&coefficients);
 }
 
 const GEN_G1_STR: &str = "1 3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507 1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569";
@@ -180,20 +168,6 @@ fn polynomial_commit_should_have_specific_value_given_exact_inputs() {
 }
 
 #[test]
-fn polynomial_eval_at_should_specific_value_given_exact_inputs() {
-        // Arrange
-        assert!(init(CurveType::BLS12_381));
-        let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
-        let poly = Polynomial::from_i32(&coefficients);
-        // Act
-        let value = poly.eval_at(&Fr::from_int(17));
-        // Assert
-        let expected = "39537218396363405614";
-        let actual = value.get_str(10);
-        assert_eq!(expected, actual);
-}
-
-#[test]
 fn curve_is_proof_valid_should_return_true_when_same_parameters_used_for_gen_are_passed() {
     // Arrange
     assert!(init(CurveType::BLS12_381));
@@ -284,22 +258,6 @@ fn fk20matrix_new_builds_valid_settings() {
             let str = matrix.x_ext_fft_files[i][j].get_str(10);
             assert_eq!(expected[i][j], str);
         }
-    }
-}
-
-#[test]
-fn extend_poly_appends_fr_zero() {
-    // Arrange
-    assert!(init(CurveType::BLS12_381));
-    let poly = Polynomial::from_i32(&vec![1, 2, 3, 4]);
-    
-    // Act
-    let extended = poly.get_extended(8);
-
-    // Assert
-    let expected = vec![ "1", "2", "3", "4", "0", "0", "0", "0" ];
-    for i in 0..8  {
-        assert_eq!(expected[i], extended.coeffs[i].get_str(10));
     }
 }
 

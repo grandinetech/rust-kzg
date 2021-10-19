@@ -7,7 +7,7 @@ use crate::data_types::g1::G1;
 use crate::data_types::g1::mclBnG1_mulVec;
 use crate::data_types::g2::G2;
 use crate::data_types::gt::GT;
-use crate::mlc_methods::*;
+use crate::mcl_methods::*;
 use crate::utilities::*;
 use crate::kzg10::*;
 use crate::fk20_fft::*;

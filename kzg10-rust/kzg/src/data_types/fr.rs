@@ -4,7 +4,7 @@ use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::mem::MaybeUninit;
 use std::os::raw::c_int;
-use crate::mlc_methods;
+use crate::mcl_methods;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -43,18 +43,18 @@ extern "C" {
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct Fr {
-    d: [u64; crate::MCLBN_FR_UNIT_SIZE],
+    pub d: [u64; crate::MCLBN_FR_UNIT_SIZE],
 }
 impl Fr {
     pub fn get_order() -> String {
-        mlc_methods::get_curve_order()
+        mcl_methods::get_curve_order()
     }
 }
 common_impl![Fr, mclBnFr_isEqual, mclBnFr_isZero];
 is_valid_impl![Fr, mclBnFr_isValid];
 serialize_impl![
     Fr,
-    mlc_methods::mclBn_getFrByteSize(),
+    mcl_methods::mclBn_getFrByteSize(),
     mclBnFr_serialize,
     mclBnFr_deserialize
 ];
