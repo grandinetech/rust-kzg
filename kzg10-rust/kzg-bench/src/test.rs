@@ -541,7 +541,7 @@ fn fft_settings_make_zero_poly_mul_leaf_should_return_exact_result_given_known_i
     let indices = vec![1, 3, 7, 8, 9, 10, 12, 13];
 
     //Act
-    settings.make_zero_poly_mul_leaf(&mut from_direct, &indices, 1);
+    settings.make_zero_poly_mul_leaf(&mut from_direct, &indices);
     
     // Assert
     let expected = vec![
@@ -570,7 +570,7 @@ fn fft_settings_reduce_leaves_should_return_exact_result_given_known_input() {
     let mut leaves = vec![vec![Fr::default(); 3]; 4];
     let leaf_indices = vec![vec![1, 3], vec![7, 8], vec![9, 10], vec![12, 13]];
     for i in 0..4 {
-        settings.make_zero_poly_mul_leaf(&mut leaves[i], &leaf_indices[i], 1);
+        settings.make_zero_poly_mul_leaf(&mut leaves[i], &leaf_indices[i]);
     }
     let mut scratch = vec![Fr::default(); 16 * 3];
     // Act
@@ -613,7 +613,7 @@ fn fft_settings_zero_poly_scaled_test() {
         .collect();
     
     // Act
-    let (_, zero_poly_coeff) = fs.zero_poly_via_multiplication(&indices, indices.len());
+    let (_, zero_poly_coeff) = fs.zero_poly_via_multiplication(&indices, exists.len());
     let zero_poly = Polynomial::from_fr(zero_poly_coeff);
 
     // Assert
