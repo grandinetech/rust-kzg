@@ -9,7 +9,7 @@ pub type P2 = blst::blst_p2;
 pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
+pub type G1 = blst::blst_p1;
+pub type G2 = blst::blst_p2;
 
 pub mod finite;
-
-
