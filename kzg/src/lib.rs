@@ -1,4 +1,4 @@
-pub type Pairing = blst::Pairing;
+/*pub type Pairing = blst::Pairing;
 pub type Fp = blst::blst_fp;
 pub type Fp12 = blst::blst_fp12;
 pub type Fp6 = blst::blst_fp6;
@@ -9,7 +9,7 @@ pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 pub type G1 = blst::blst_p1;
-pub type G2 = blst::blst_p2;
+pub type G2 = blst::blst_p2;*/
 
 pub trait Fr: Clone {
     fn default() -> Self;
@@ -45,8 +45,6 @@ pub trait Fr: Clone {
     // fn pow(&self, n: usize) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
-
-    fn destroy(&self);
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone where Coeff: Sized {
