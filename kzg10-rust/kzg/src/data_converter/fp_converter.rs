@@ -6,7 +6,7 @@ pub fn fp_from_blst(fp: BlstFp) -> Fp {
     for i in 0..4 {
         result.d[i] = fp.l[i];
     }
-    return result;
+    return result;*/
 }
 
 pub fn fp_to_blst(fp: Fp) -> BlstFp {
