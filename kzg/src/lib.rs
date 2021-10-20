@@ -48,10 +48,14 @@ pub trait Fr: Clone {
 
     fn equals(&self, b: &Self) -> bool;
 
+    fn from_scalar(scalar: &Scalar) -> Self;
+
     fn destroy(&self);
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {
+    fn default() -> Self;
+
     fn new(scale: usize) -> Result<Self, String>;
 
     fn get_max_width(&self) -> usize;

@@ -17,7 +17,6 @@ use blst::{blst_p1_add_or_double,
            blst_final_exp,
            blst_fp12_is_one,
 };
-
 use crate::poly_utils::{new_poly_div};
 use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr};
 use crate::utils::{is_power_of_two, log_2_byte};
@@ -77,7 +76,7 @@ pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZG
     return Ok(out);
 }
 
-fn g1_mul(out: &mut G1, a: &G1, b: &FsFr) {
+pub fn g1_mul(out: &mut G1, a: &G1, b: &FsFr) {
     let mut scalar: blst_scalar = blst_scalar::default();
     unsafe {
         blst_scalar_from_fr(&mut scalar, &b.0);
@@ -168,7 +167,7 @@ fn g1_linear_combination(out: &mut G1, p: &Vec<G1>, coeffs: &Vec<FsFr>, len: usi
 }
 
 
-pub fn check_proof_multi(commitment: &G1, proof: &G1, x: &FsFr, ys: &[FsFr], n: usize, kzg_settings: FsKZGSettings) -> Result<bool, String> {
+pub fn check_proof_multi(commitment: &G1, proof: &G1, x: &FsFr, ys: &[FsFr], n: usize, kzg_settings: &FsKZGSettings) -> Result<bool, String> {
     if !is_power_of_two(n) {
         return Err(String::from("n is not a power of two")); // fix to error
     }
