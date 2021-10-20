@@ -1,6 +1,4 @@
 use crate::data_types::fr::Fr;
-use crate::data_types::fp::Fp;
-use crate::data_types::fp2::Fp2;
 use crate::data_types::g1::G1;
 use crate::data_types::g2::G2;
 use crate::data_types::gt::GT;

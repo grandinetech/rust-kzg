@@ -2,7 +2,7 @@ use crate::data_types::gt::GT;
 use crate::BlstFp12;
 use crate::data_converter::fp_converter::*;
 
-pub fn gtFromBlst(fp12: BlstFp12) -> GT {
+pub fn gt_from_blst(fp12: BlstFp12) -> GT {
     let mut result = GT::default();
     
     for i in 0..2 {
@@ -16,7 +16,7 @@ pub fn gtFromBlst(fp12: BlstFp12) -> GT {
     return result;
 }
 
-pub fn gtToBlst(fp12: GT) -> BlstFp12 {
+pub fn gt_to_blst(fp12: GT) -> BlstFp12 {
     let mut result = BlstFp12::default();
     
     for i in 0..2 {
