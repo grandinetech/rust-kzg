@@ -1,5 +1,4 @@
 use std::vec;
-use mcl_rust::old::*;
 use mcl_rust::kzg10::*;
 use mcl_rust::data_types::fr::Fr;
 use mcl_rust::CurveType;

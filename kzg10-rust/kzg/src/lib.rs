@@ -25,7 +25,7 @@ const MCLBN_FR_UNIT_SIZE: usize = 4;
 const MCLBN_COMPILED_TIME_VAR: c_int = MCLBN_FR_UNIT_SIZE as c_int * 10 + MCLBN_FP_UNIT_SIZE as c_int;
 
 
-#[macro_escape] pub mod init_def;
+#[macro_use] pub mod init_def;
 pub mod mcl_methods;
 pub mod utilities;
 pub mod data_types {
@@ -46,6 +46,7 @@ pub mod data_converter {
 }
 pub mod kzg10;
 pub mod fk20_fft;
+pub mod fk20_matrix;
+pub mod das;
 pub mod zero_poly;
-
-pub mod old;
+pub mod data_recovery;

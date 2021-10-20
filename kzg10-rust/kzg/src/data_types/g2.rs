@@ -1,9 +1,6 @@
 use crate::data_types::fr::Fr;
-use crate::data_types::fp::Fp;
 use crate::data_types::fp2::Fp2;
 use std::ops::{Add, AddAssign};
-use std::ops::{Div, DivAssign};
-use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::mem::MaybeUninit;
 use std::os::raw::c_int;

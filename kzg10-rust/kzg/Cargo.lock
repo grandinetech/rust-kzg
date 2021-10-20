@@ -35,6 +35,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "kzg"
+version = "0.1.0"
+dependencies = [
+ "blst",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -46,6 +53,7 @@ version = "0.0.1"
 dependencies = [
  "blst",
  "cc",
+ "kzg",
 ]
 
 [[package]]

@@ -1,8 +1,3 @@
-use std::usize;
-use std::os::raw::c_int;
-use std::mem::MaybeUninit;
-use crate::data_types::fr::Fr;
-
 macro_rules! common_impl {
     ($t:ty, $is_equal_fn:ident, $is_zero_fn:ident) => {
         impl PartialEq for $t {

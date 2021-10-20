@@ -1,17 +1,10 @@
-use std::{cmp::min, iter, ops, usize, vec};
-
-use crate::data_types::fr::Fr;
-use crate::data_types::fp::Fp;
-use crate::data_types::fp2::Fp2;
-use crate::data_types::g1::G1;
+use std::iter;
 use crate::data_types::g1::mclBnG1_mulVec;
-use crate::data_types::g2::G2;
-use crate::data_types::gt::GT;
-use crate::mcl_methods::*;
+use crate::data_types::g1::G1;
+use crate::data_types::fr::Fr;
 use crate::utilities::*;
 use crate::kzg10::*;
 use crate::fk20_fft::*;
-
 
 // KZG Settings + FK20 Settings + FFTSettings?
 pub struct FK20Matrix {
@@ -280,141 +273,5 @@ impl Polynomial {
             .collect();
         
         return FK20Matrix::fft_g1(&matrix.fft_settings, &h);
-    }
-}
-
-// DAS
-impl FFTSettings {
-    pub fn das_fft_extension(&self, values: &mut Vec<Fr>) {
-        if (values.len() << 1) > self.max_width {
-            panic!("ftt_settings max width too small!");
-        }
-
-        self._das_fft_extension(values, 1);
-        
-        // just dividing every value by 1/(2**depth) aka length
-        // TODO: what's faster, maybe vec[x] * vec[x], ask herumi to implement?
-        let inv_length = Fr::from_int(values.len() as i32).get_inv();
-        for i in 0..values.len() {
-            values[i] *= &inv_length;
-        }
-    }
-
-    fn _das_fft_extension(&self, values: &mut [Fr], stride: usize) {
-        if values.len() == 2 {
-            let (x, y) = FFTSettings::_calc_add_and_sub(&values[0], &values[1]);
-
-            let temp = &y * &self.exp_roots_of_unity[stride];
-            values[0] = &x + &temp;
-            values[1] = &x - &temp;
-            return;
-        }
-
-        let length = values.len();
-        let half = length >> 1;
-        
-        // let ab_half_0s = ab[..quarter];
-        // let ab_half_1s = ab[quarter..];
-        for i in 0..half {
-            let (add, sub) = FFTSettings::_calc_add_and_sub(&values[i], &values[half + i]);
-            values[half + i] = &sub * &self.exp_roots_of_unity_rev[(i << 1) * stride];
-            values[i] = add;
-        }
-
-        // left
-        self._das_fft_extension(&mut values[..half], stride << 1);
-        // right
-        self._das_fft_extension(&mut values[half..], stride << 1);
-
-        for i in 0..half {
-            let root = &self.exp_roots_of_unity[((i << 1) + 1) * stride];
-            let y_times_root = &values[half + i] * root;
-
-            let (add, sub) = FFTSettings::_calc_add_and_sub(&values[i], &y_times_root);
-            values[i] = add;
-            values[i + half] = sub;
-        }
-    }
-
-    fn _calc_add_and_sub(a: &Fr, b: &Fr) -> (Fr, Fr) {
-        return (a + b, a - b);
-    }
-}
-
-// Data recovery
-
-impl Polynomial {
-    pub fn shift_in_place(&mut self) {
-        self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT));
-    }
-
-    pub fn unshift_in_place(&mut self) {
-        self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT).get_inv());
-    }
-
-    //TODO, use precalculated tables for factors?
-    fn _shift_in_place(&mut self, factor: &Fr){
-        let mut factor_to_power = Fr::one();
-        for i in 0..self.order() {
-            self.coeffs[i] *= &factor_to_power;
-            factor_to_power *= factor;
-        }
-    }
-
-    pub fn recover_from_samples(fft_settings: FFTSettings, samples: &[Option<Fr>]) -> Polynomial {
-        let missing_data_indices: Vec<usize> = samples.iter()
-            .enumerate()
-            .filter(|(_, ex)| ex.is_none())
-            .map(|(ix, _)| ix)
-            .collect();
-
-        let (zero_eval, zero_poly_coeffs) = fft_settings.zero_poly_via_multiplication(&missing_data_indices, samples.len());
-
-        // TODO: possible optimization, remove clone()
-        let poly_evals_with_zero: Vec<Fr> = samples.iter()
-            .zip(zero_eval)
-            .map(|(x, eval)| {
-                if x.is_none() {
-                    return Fr::zero();
-                }
-                return &x.clone().unwrap() * &eval;
-            }).collect();
-
-        // for val in poly_evals_with_zero {
-        //     println!("{}", val.get_str(10));
-        // }
-
-        let poly_with_zero_coeffs = fft_settings.fft(&poly_evals_with_zero, true);
-        let mut poly_with_zero = Polynomial::from_fr(poly_with_zero_coeffs);
-        poly_with_zero.shift_in_place();
-
-        let mut zero_poly = Polynomial::from_fr(zero_poly_coeffs);
-        zero_poly.shift_in_place();
-
-        let eval_shifted_poly_with_zero = fft_settings.fft(&poly_with_zero.coeffs, false);
-        let eval_shifted_zero_poly = fft_settings.fft(&zero_poly.coeffs, false);
-        
-    
-        let eval_shifted_reconstructed_poly: Vec<Fr> = eval_shifted_poly_with_zero.iter()
-            .zip(eval_shifted_zero_poly)
-            .map(|(a, b)| a / &b)
-            .collect();
-
-        let shifted_reconstructed_poly_coeffs = fft_settings.fft(&eval_shifted_reconstructed_poly, true);
-        let mut shifted_reconstructed_poly = Polynomial::from_fr(shifted_reconstructed_poly_coeffs);
-        shifted_reconstructed_poly.unshift_in_place();
-
-        let reconstructed_data = fft_settings.fft(&shifted_reconstructed_poly.coeffs, false);
-        
-        return Polynomial::from_fr(reconstructed_data);
-    }
-
-    pub fn unwrap_default(values: &Vec<Option<Fr>>) -> Vec<Fr> {
-        return values.iter().map(|x| {
-            if x.is_none() {
-                return Fr::zero()
-            }
-            return x.clone().unwrap();
-        }).collect();
     }
 }

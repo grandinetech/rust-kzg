@@ -1,5 +1,4 @@
 use std::{cmp::min};
-use crate::old::*;
 use crate::utilities::next_pow_of_2;
 use crate::kzg10::Polynomial;
 use crate::data_types::{fr::*};
