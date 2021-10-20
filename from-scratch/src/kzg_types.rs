@@ -1,6 +1,19 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr, blst_scalar_from_fr, blst_scalar};
-use kzg::{G1, G2, FFTSettings, Fr, Poly};
+use blst::{
+    blst_fr_add,
+    blst_fr_cneg,
+    blst_fr_from_uint64,
+    blst_fr_inverse, blst_fr_mul,
+    blst_uint64_from_fr,
+    blst_fr_sqr,
+    blst_fr_sub,
+    blst_fr_eucl_inverse,
+    blst_fr,
+    blst_scalar_from_fr,
+    blst_scalar,
+    blst_fr_from_scalar
+};
+use kzg::{G1, G2, FFTSettings, Fr, Poly, Scalar};
 
 pub struct FsFr(pub blst::blst_fr);
 
@@ -170,6 +183,16 @@ impl Fr for FsFr {
             && val_a[3] == val_b[3];
     }
 
+    fn from_scalar(scalar: &Scalar) -> Self {
+        let mut fr = blst_fr::default();
+        unsafe {
+            blst_fr_from_scalar(&mut fr, scalar);
+        }
+        let mut ret = Self::default();
+        ret.0 = fr;
+        ret
+    }
+
     fn destroy(&self) {}
 }
 
@@ -266,6 +289,10 @@ pub struct FsFFTSettings {
 }
 
 impl FFTSettings<FsFr> for FsFFTSettings {
+    fn default() -> Self {
+        Self::new(0).unwrap()
+    }
+
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
     fn new(scale: usize) -> Result<FsFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
@@ -328,4 +355,43 @@ pub struct FsKZGSettings {
     // Both secret_g1 and secret_g2 have the same number of elements
     pub secret_g1: Vec<G1>,
     pub secret_g2: Vec<G2>,
+}
+
+impl FsKZGSettings {
+
+    pub fn default() -> Self {
+        let output = Self {
+            secret_g1: Vec::default(),
+            secret_g2: Vec::default(),
+            fs: FsFFTSettings::default()
+        };
+        output
+    }
+
+    pub fn new(secret_g1: &Vec<G1>, secret_g2: &Vec<G2>, length: usize, fft_settings: &FsFFTSettings) -> Self {
+        let mut kzg_settings = Self::default(); 
+
+        // CHECK(length >= fs->max_width);
+        // assert_eq!(secret_g1.len(), secret_g2.len());
+        assert!(secret_g1.len() >= fft_settings.max_width);
+        assert!(secret_g2.len() >= fft_settings.max_width);
+        assert!(length >= fft_settings.max_width);
+
+        // ks->length = length;
+
+        // Allocate space for the secrets
+        // TRY(new_g1_array(&ks->secret_g1, ks->length));
+        // TRY(new_g2_array(&ks->secret_g2, ks->length));
+
+        // Populate the secrets
+        for i in 0..length {
+            kzg_settings.secret_g1.push(secret_g1[i]);
+            kzg_settings.secret_g2.push(secret_g2[i]);
+
+            // kzg_settings.secret_g1[i] = secret_g1[i];
+            // kzg_settings.secret_g2[i] = secret_g2[i];
+        }
+        kzg_settings.fs = fft_settings.clone();
+        kzg_settings
+    }
 }

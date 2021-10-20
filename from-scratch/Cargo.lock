@@ -28,7 +28,7 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 [[package]]
 name = "blst"
 version = "0.3.6"
-source = "git+https://github.com/supranational/blst.git#75decd699aa057b4ba9f253676cb6520c5a60c08"
+source = "git+https://github.com/supranational/blst.git#66395da5af64de676a714559e8f7e8d2b6cc0859"
 dependencies = [
  "cc",
  "glob",
