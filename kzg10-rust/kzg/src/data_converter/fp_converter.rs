@@ -7,8 +7,8 @@ pub fn fp_from_blst(fp: BlstFp) -> Fp {
     unsafe{
         blst::blst_uint64_from_fp(&mut int_value, &fp_blst)
     }
-    let i32_value = intValue as i32;
-    return Fp::from_int(i32Value);
+    let i32_value = int_value as i32;
+    return Fp::from_int(i32_value);
 
     /*
     let mut result = Fp::default();
