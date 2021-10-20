@@ -1,7 +1,7 @@
 use crate::data_types::fr::Fr;
 use crate::BlstFr;
 
-pub fn frFromBlst(fr: BlstFr) -> Fr {
+pub fn fr_from_blst(fr: BlstFr) -> Fr {
     let mut intValue: u64 = 0;
     let frBlst = fr;
     unsafe {
@@ -17,7 +17,7 @@ pub fn frFromBlst(fr: BlstFr) -> Fr {
     // return result;
 }
 
-pub fn frToBlst(fr: Fr) -> BlstFr {
+pub fn fr_to_blst(fr: Fr) -> BlstFr {
     let mut result = BlstFr::default();
     for i in 0..4 {
         result.l[i] = fr.d[i];

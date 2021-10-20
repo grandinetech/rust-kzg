@@ -8,66 +8,60 @@ use mcl_rust::mcl_methods::init;
 use mcl_rust::CurveType;
 
 #[test]
-fn convertBlstFrCorrectZero() {
-    let blstZero = BlstFr::default();
-    let converted = frFromBlst(blstZero);
+fn convert_blst_fr_zero() {
+    let blst_zero = BlstFr::default();
+    let converted = fr_from_blst(blst_zero);
 
     assert_eq!(converted, Fr::default());
 }
 
 #[test]
-fn convertBlstFrCorrectRandomInts() {
+fn convert_blst_fr_random_ints() {
     assert!(init(CurveType::BLS12_381));
     for i in 1..6 {
         let coef: i32 = i * (i * 3);
-        let mut coefU64: u64 = 0;
-        unsafe {
-            coefU64 = coef as u64;
-        }
+        let coef_u64: u64 = coef as u64;
         
-        let mut blstFr: BlstFr = BlstFr::default();
+        let mut blst_fr: BlstFr = BlstFr::default();
         unsafe {
-            blst::blst_fr_from_uint64(&mut blstFr, &coefU64);
+            blst::blst_fr_from_uint64(&mut blst_fr, &coef_u64);
         }
-        let converted = frFromBlst(blstFr);
+        let converted = fr_from_blst(blst_fr);
 
         assert_eq!(converted, Fr::from_int(coef));
     }
 }
 
 #[test]
-fn convertToBlstFrCorrectZero() {
-    let frZero = Fr::default();
-    let converted = frToBlst(frZero);
+fn convert_to_blst_fr_zero() {
+    let fr_zero = Fr::default();
+    let converted = fr_to_blst(fr_zero);
 
     assert_eq!(converted, BlstFr::default());
 }
 
 #[test]
-fn convertToBlstFrCorrectRandomInts() {
+fn convert_to_blst_fr_random_ints() {
     assert!(init(CurveType::BLS12_381));
     for i in 1..6 {
         let coef: i32 = i * (i * 3);
-        let mut coefU64: u64 = 0;
+        let coef_u64: u64 = coef as u64;
+        
+        let mut blst_fr: BlstFr = BlstFr::default();
         unsafe {
-            coefU64 = coef as u64;
+            blst::blst_fr_from_uint64(&mut blst_fr, &coef_u64);
         }
 
-        let mut blstFr: BlstFr = BlstFr::default();
-        unsafe {
-            blst::blst_fr_from_uint64(&mut blstFr, &coefU64);
-        }
+        let converted = fr_to_blst(Fr::from_int(coef));
 
-        let converted = frToBlst(Fr::from_int(coef));
-
-        assert_eq!(blstFr, converted);
+        assert_eq!(blst_fr, converted);
     }
 }
 
 #[test]
-fn convertBlstFpCorrectZero() {
-    let blstZero = BlstFp::default();
-    let converted = fpFromBlst(blstZero);
+fn convert_blst_fp_zero() {
+    let blst_zero = BlstFp::default();
+    let converted = fp_from_blst(blst_zero);
 
     assert_eq!(converted, Fp::default());
 }

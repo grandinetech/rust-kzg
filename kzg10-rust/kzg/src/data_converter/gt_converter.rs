@@ -8,7 +8,7 @@ pub fn gtFromBlst(fp12: BlstFp12) -> GT {
     for i in 0..2 {
         for j in 0..3 {
             for k in 0..2 {
-                result.d[i*6+j*3+k] = fpFromBlst(fp12.fp6[i].fp2[j].fp[k]);
+                result.d[i*6+j*3+k] = fp_from_blst(fp12.fp6[i].fp2[j].fp[k]);
             }
         }
     }
@@ -22,7 +22,7 @@ pub fn gtToBlst(fp12: GT) -> BlstFp12 {
     for i in 0..2 {
         for j in 0..3 {
             for k in 0..2 {
-                result.fp6[i].fp2[j].fp[k] = fpToBlst(fp12.d[i*6+j*3+k].clone()); //probably should implement clone
+                result.fp6[i].fp2[j].fp[k] = fp_to_blst(fp12.d[i*6+j*3+k].clone()); //probably should implement clone
             }
         }
     }

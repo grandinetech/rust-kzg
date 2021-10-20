@@ -1,5 +1,5 @@
 
-#[macro_escape] mod test_macro;
+#[macro_use] mod test_macro;
 mod test;
 mod poly;
 mod fft_common;
