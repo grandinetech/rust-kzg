@@ -1,149 +1,217 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr};
-use kzg::{Fr, G1, G2};
+use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr};
+use kzg::{G1, G2, FFTSettings, Fr, Poly};
 
-pub fn fr_is_one(fr: &Fr) -> bool {
-    let mut val: [u64; 4] = [0; 4];
-    unsafe {
-        blst_uint64_from_fr(val.as_mut_ptr(), fr);
-    }
-    return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
-}
+pub struct FsFr(blst::blst_fr);
 
-pub fn fr_is_zero(fr: &Fr) -> bool {
-    let mut val: [u64; 4] = [0; 4];
-    unsafe {
-        blst_uint64_from_fr(val.as_mut_ptr(), fr);
-    }
-    return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
-}
-
-pub fn create_fr_u64(val: u64) -> Fr {
-    let mut ret: Fr = Fr::default();
-    unsafe {
-        blst_fr_from_uint64(&mut ret, [val, 0, 0, 0].as_ptr());
+impl Fr for FsFr {
+    fn default() -> Self {
+        Self(blst_fr::default())
     }
 
-    ret
-}
+    fn zero() -> Self {
+        Self::from_u64(0)
+    }
 
-pub fn fr_pow(a: &Fr, n: usize) -> Result<Fr, String> {
-    //fr_t tmp = *a;
-    let mut tmp: Fr = *a;
-    
-    //*out = fr_one;
-    let mut out = create_fr_one();
-    let mut n2 = n;
+    fn one() -> Self {
+        Self::from_u64(1)
+    }
 
-    unsafe {
-        loop {
-            if n2 & 1 == 1 {
-                blst_fr_mul(&mut out, &out, &tmp);
-            }
-            n2 = n2 >> 1;
-            if n == 0 {
-                break;
-            }
-            blst_fr_sqr(&mut tmp, &tmp);
+    fn rand() -> Self {
+        let val: [u64; 4] = rand::random();
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_from_uint64(&mut ret.0, val.as_ptr());
         }
+
+        ret
     }
 
-    Ok(out)
-}
+    fn from_u64_arr(u: &[u64; 4]) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_from_uint64(&mut ret.0, u.as_ptr());
+        }
 
-pub fn create_fr_zero() -> Fr {
-    create_fr_u64(0)
-}
-
-pub fn create_fr_one() -> Fr {
-    create_fr_u64(1)
-}
-
-pub fn fr_are_equal(a: &Fr, b: &Fr) -> bool {
-    let mut val_a: [u64; 4] = [0; 4];
-    let mut val_b: [u64; 4] = [0; 4];
-
-    unsafe {
-        blst_uint64_from_fr(val_a.as_mut_ptr(), a);
-        blst_uint64_from_fr(val_b.as_mut_ptr(), b);
+        ret
     }
 
-    return val_a[0] == val_b[0]
-        && val_a[1] == val_b[1]
-        && val_a[2] == val_b[2]
-        && val_a[3] == val_b[3];
-}
-
-pub fn create_fr_rand() -> Fr {
-    let val: [u64; 4] = rand::random();
-    let mut ret: Fr = Fr::default();
-    unsafe {
-        blst_fr_from_uint64(&mut ret, val.as_ptr());
+    fn from_u64(val: u64) -> Self {
+        Self::from_u64_arr(&[val, 0, 0, 0])
     }
 
-    ret
-}
-
-pub fn negate_fr(ret: &mut Fr, val: &Fr) {
-    unsafe {
-        blst_fr_cneg(ret, val, true);
+    fn is_one(&self) -> bool {
+        let mut val: [u64; 4] = [0; 4];
+        unsafe {
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
+        }
+        return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
-}
 
-pub struct Poly {
-    pub coeffs: Vec<Fr>,
-}
+    fn is_zero(&self) -> bool {
+        let mut val: [u64; 4] = [0; 4];
+        unsafe {
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
+        }
+        return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
+    }
 
-impl Poly {
-    pub fn scale(&mut self) {
-        let mut scale_factor: Fr = Fr::default();
-        let mut inv_factor: Fr = Fr::default();
+    fn sqr(&self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_sqr(&mut ret.0, &self.0);
+        }
+
+        ret
+    }
+
+    fn pow(&self, n: usize) -> Self {
+        todo!("double check implementation");
+        //fr_t tmp = *a;
+        let mut tmp = self.clone();
+
+        //*out = fr_one;
+        let mut out = Self::one();
+        let mut n2 = n;
 
         unsafe {
-            blst_fr_from_uint64(&mut scale_factor, [SCALE_FACTOR, 0, 0, 0].as_ptr());
-            blst_fr_inverse(&mut inv_factor, &scale_factor);
-        }
-
-        let mut factor_power = create_fr_one();
-        for i in 0..self.coeffs.len() {
-            unsafe {
-                blst_fr_mul(&mut factor_power, &factor_power, &inv_factor);
-                blst_fr_mul(&mut self.coeffs[i], &self.coeffs[i], &factor_power);
+            loop {
+                if n2 & 1 == 1 {
+                    blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                }
+                n2 = n2 >> 1;
+                if n == 0 {
+                    break;
+                }
+                blst_fr_sqr(&mut out.0, &tmp.0);
             }
         }
+
+        out
     }
 
-    pub fn unscale(&mut self) {
-        let mut scale_factor: Fr = Fr::default();
+    fn mul(&self, b: &Self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_mul(&mut ret.0, &self.0, &b.0);
+        }
+
+        ret
+    }
+
+    fn add(&self, b: &Self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_add(&mut ret.0, &self.0, &b.0);
+        }
+
+        ret
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_sub(&mut ret.0, &self.0, &b.0);
+        }
+
+        ret
+    }
+
+    fn eucl_inverse(&self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_eucl_inverse(&mut ret.0, &self.0);
+        }
+
+        return ret;
+    }
+
+    fn negate(&self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_cneg(&mut ret.0, &self.0, true);
+        }
+
+        ret
+    }
+
+    fn inverse(&self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_inverse(&mut ret.0, &self.0);
+        }
+
+        ret
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        let mut val_a: [u64; 4] = [0; 4];
+        let mut val_b: [u64; 4] = [0; 4];
 
         unsafe {
-            blst_fr_from_uint64(&mut scale_factor, [SCALE_FACTOR, 0, 0, 0].as_ptr());
+            blst_uint64_from_fr(val_a.as_mut_ptr(), &self.0);
+            blst_uint64_from_fr(val_b.as_mut_ptr(), &b.0);
         }
 
-        let mut factor_power = create_fr_one();
-        for i in 0..self.coeffs.len() {
-            unsafe {
-                blst_fr_mul(&mut factor_power, &factor_power, &scale_factor);
-                blst_fr_mul(&mut self.coeffs[i], &self.coeffs[i], &factor_power);
-            }
-        }
+        return val_a[0] == val_b[0]
+            && val_a[1] == val_b[1]
+            && val_a[2] == val_b[2]
+            && val_a[3] == val_b[3];
     }
 
-    pub fn eval(&self, x: &Fr) -> Fr {
+    fn destroy(&mut self) {}
+}
+
+impl Clone for FsFr {
+    fn clone(&self) -> Self {
+        FsFr(self.0.clone())
+    }
+}
+
+impl Copy for FsFr {}
+
+pub struct FsPoly {
+    pub coeffs: Vec<FsFr>,
+}
+
+impl Poly<FsFr> for FsPoly {
+    fn default() -> Result<Self, String> {
+        todo!()
+    }
+
+    fn new(size: usize) -> Result<Self, String> {
+        Ok(Self { coeffs: vec![FsFr::default(); size] })
+    }
+
+    fn get_coeff_at(&self, i: usize) -> FsFr {
+        self.coeffs[i]
+    }
+
+    fn set_coeff_at(&mut self, i: usize, x: &FsFr) {
+        self.coeffs[i] = x.clone()
+    }
+
+    fn get_coeffs(&self) -> &[FsFr] {
+        &self.coeffs
+    }
+
+    fn len(&self) -> usize {
+        self.coeffs.len()
+    }
+
+    fn eval(&self, x: &FsFr) -> FsFr {
         if self.coeffs.len() == 0 {
-            return create_fr_zero();
-        } else if fr_is_zero(x) {
+            return FsFr::zero();
+        } else if x.is_zero() {
             return self.coeffs[0].clone();
         }
 
-        let mut ret = self.coeffs[self.coeffs.len() - 1];
+        let mut ret = self.coeffs[self.coeffs.len() - 1].clone();
         let mut i = self.coeffs.len() - 2;
         loop {
-            let mut temp = Fr::default();
-            unsafe {
-                blst_fr_mul(&mut temp, &ret, x);
-                blst_fr_add(&mut ret, &temp, &self.coeffs[i]);
-            }
+            let temp = ret.mul(&x);
+            ret = temp.add(&self.coeffs[i]);
+
             if i == 0 {
                 break;
             }
@@ -152,52 +220,102 @@ impl Poly {
 
         return ret;
     }
+
+    fn scale(&mut self) {
+        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
+        let inv_factor = scale_factor.inverse();
+
+        let mut factor_power = FsFr::one();
+        for i in 0..self.coeffs.len() {
+            factor_power = factor_power.mul(&inv_factor);
+            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
+        }
+    }
+
+    fn unscale(&mut self) {
+        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
+
+        let mut factor_power = FsFr::one();
+        for i in 0..self.coeffs.len() {
+            factor_power = factor_power.mul(&scale_factor);
+            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
+        }
+    }
+
+    fn inverse(&mut self) -> Result<(), String> {
+        todo!()
+    }
+
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
+        todo!()
+    }
+
+    fn destroy(&mut self) {}
 }
 
-impl Clone for Poly {
+impl Clone for FsPoly {
     fn clone(&self) -> Self {
-        Poly { coeffs: self.coeffs.clone() }
+        FsPoly { coeffs: self.coeffs.clone() }
     }
 }
 
-pub struct FFTSettings {
+pub struct FsFFTSettings {
     pub max_width: usize,
-    pub root_of_unity: Fr,
-    pub expanded_roots_of_unity: Vec<Fr>,
-    pub reverse_roots_of_unity: Vec<Fr>,
+    pub root_of_unity: FsFr,
+    pub expanded_roots_of_unity: Vec<FsFr>,
+    pub reverse_roots_of_unity: Vec<FsFr>,
 }
 
-impl FFTSettings {
+impl FFTSettings<FsFr> for FsFFTSettings {
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
-    pub fn from_scale(max_scale: usize) -> Result<FFTSettings, String> {
-        if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
+    fn new(scale: usize) -> Result<FsFFTSettings, String> {
+        if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from("Scale is expected to be within root of unity matrix row size"));
         }
 
         // max_width = 2 ^ max_scale
-        let max_width: usize = 1 << max_scale;
-        let mut root_of_unity: Fr = Fr::default();
-        unsafe {
-            blst_fr_from_uint64(&mut root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale].as_ptr());
-        }
+        let max_width: usize = 1 << scale;
+        let root_of_unity = FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
         // create max_width of roots & store them reversed as well
         let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
-        Ok(FFTSettings {
+        Ok(FsFFTSettings {
             max_width,
             root_of_unity,
             expanded_roots_of_unity,
             reverse_roots_of_unity,
         })
     }
+
+    fn get_max_width(&self) -> usize {
+        self.max_width
+    }
+
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.expanded_roots_of_unity[i]
+    }
+
+    fn get_expanded_roots_of_unity(&self) -> &[FsFr] {
+        &self.expanded_roots_of_unity
+    }
+
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.reverse_roots_of_unity[i]
+    }
+
+    fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
+        &self.reverse_roots_of_unity
+    }
+
+    fn destroy(&mut self) {}
 }
 
-impl Clone for FFTSettings {
+impl Clone for FsFFTSettings {
     fn clone(&self) -> Self {
-        let mut output = FFTSettings::from_scale(0).unwrap();
+        let mut output = FsFFTSettings::new(0).unwrap();
         output.max_width = self.max_width;
         output.root_of_unity = self.root_of_unity.clone();
         output.expanded_roots_of_unity = self.expanded_roots_of_unity.clone();
@@ -206,8 +324,8 @@ impl Clone for FFTSettings {
     }
 }
 
-pub struct KZGSettings {
-    pub fs: FFTSettings,
+pub struct FsKZGSettings {
+    pub fs: FsFFTSettings,
     // Both secret_g1 and secret_g2 have the same number of elements
     pub secret_g1: Vec<G1>,
     pub secret_g2: Vec<G2>,

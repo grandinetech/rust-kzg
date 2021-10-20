@@ -1,7 +1,7 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use kzg::Fr;
 use kzg_from_scratch::fft_fr::fft_fr;
-use kzg_from_scratch::kzg_types::{create_fr_rand, FFTSettings};
+use kzg_from_scratch::kzg_types::{create_fr_rand, FsFFTSettings};
 
 fn bench_fft_fr(c: &mut Criterion) {
     for scale in 4..16 {
@@ -10,7 +10,7 @@ fn bench_fft_fr(c: &mut Criterion) {
 }
 
 fn _fft_fr(scale: u8, c: &mut Criterion) {
-    let fft_settings = FFTSettings::from_scale(scale as usize).unwrap();
+    let fft_settings = FsFFTSettings::from_scale(scale as usize).unwrap();
     let mut data: Vec<Fr> = vec![create_fr_rand(); fft_settings.max_width];
     let mut cache: Vec<Fr> = vec![Fr::default(); fft_settings.max_width];
     let id = format!("bench_fft_fr scale: '{}'", scale);
