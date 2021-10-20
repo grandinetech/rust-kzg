@@ -84,7 +84,7 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
 }
 
 pub trait Poly<Coeff: Fr>: Clone {
-    fn default() -> Result<Self, String>;
+    fn default() -> Self;
 
     fn new(size: usize) -> Result<Self, String>;
 
