@@ -2,14 +2,14 @@ use crate::data_types::fp::Fp;
 use crate::BlstFp;
 
 pub fn fp_from_blst(fp: BlstFp) -> Fp {
-    let mut intValue: u64 = 0;
-    let fpblst = fp;
+    let mut int_value: u64 = 0;
+    let fp_blst = fp;
     unsafe{
-        blst::blst_uint64_from_fp(&mut intValue, &fpblst)
+        blst::blst_uint64_from_fp(&mut int_value, &fp_blst)
     }
-    let i32Value = intValue as i32;
+    let i32_value = intValue as i32;
     return Fp::from_int(i32Value);
-    
+
     /*
     let mut result = Fp::default();
     for i in 0..4 {
