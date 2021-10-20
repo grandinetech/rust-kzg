@@ -102,7 +102,7 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn unscale(&mut self);
 
-    fn inverse(&mut self) -> Result<(), String>;
+    fn inverse(&mut self, new_len: usize) -> Result<Self, String>;
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
 
