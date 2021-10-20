@@ -48,6 +48,7 @@ pub trait Fr: Clone {
 
     fn equals(&self, b: &Self) -> bool;
 
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
 
@@ -80,6 +81,7 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
 
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
 
@@ -106,5 +108,6 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
 
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
