@@ -242,7 +242,7 @@ impl Poly<FsFr> for FsPoly {
         }
     }
 
-    fn inverse(&mut self) -> Result<(), String> {
+    fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
         todo!()
     }
 
