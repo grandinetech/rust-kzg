@@ -48,13 +48,12 @@ pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
     p.set_coeff_at(0, &TFr::one());
     p.set_coeff_at(1, &TFr::one());
     p.set_coeff_at(1, &TFr::negate(&p.get_coeff_at(1)));
-    let mut q = TPoly::new(d).unwrap();
-    let result = q.inverse(&mut p);
+    let result = p.inverse(d);
     assert!(result.is_ok());
+    let mut q = result.unwrap();
     for i in 0..d {
         assert!(q.get_coeff_at(i).is_one());
     }
-    p.destroy();
     q.destroy();
 }
 
@@ -64,9 +63,9 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut p = TPoly::new(2).unwrap();
     p.set_coeff_at(0, &TFr::one());
     p.set_coeff_at(1, &TFr::one());
-    let mut q = TPoly::new(d).unwrap();
-    let result = q.inverse(&mut p);
+    let result = p.inverse(d);
     assert!(result.is_ok());
+    let mut q = result.unwrap();
     for i in 0..d {
         let mut tmp = q.get_coeff_at(i);
         if i & 1 != 0 {
@@ -74,6 +73,5 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
         }
         assert!(tmp.is_one());
     }
-    p.destroy();
     q.destroy();
 }

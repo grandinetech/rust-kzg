@@ -72,10 +72,14 @@ impl Poly<BlstFr> for KzgPoly {
         todo!()
     }
 
-    fn inverse(&mut self, p: *mut Self) -> Result<(), String> {
+    fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
+        let mut poly = KzgPoly::new(new_len).unwrap();
         unsafe {
-            return match poly_inverse(self, p) {
-                KzgRet::KzgOk => Ok(()),
+            return match poly_inverse(&mut poly, self) {
+                KzgRet::KzgOk => {
+                    self.destroy();
+                    Ok(poly)
+                },
                 e => Err(format!("An error has occurred in \"Poly::inverse\" ==> {:?}", e))
             }
         }
@@ -86,7 +90,7 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match new_poly_div(&mut poly, self, x) {
                 KzgRet::KzgOk => {
-                    self.destroy(); // don't leak memory??
+                    self.destroy(); // TODO: do not double free, see `Poly::inverse` usage
                     Ok(poly)
                 },
                 e => Err(format!("An error has occurred in \"Poly::div\" ==> {:?}", e))
