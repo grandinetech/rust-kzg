@@ -42,7 +42,9 @@ pub trait Fr: Clone {
 
     fn inverse(&self) -> Self;
 
-    // fn pow(&self, n: usize) -> Self;
+    fn pow(&self, n: usize) -> Self;
+
+    fn get_scalar(&self) -> Scalar;
 
     fn equals(&self, b: &Self) -> bool;
 

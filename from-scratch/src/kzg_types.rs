@@ -1,8 +1,8 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr};
+use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr, blst_scalar_from_fr, blst_scalar};
 use kzg::{G1, G2, FFTSettings, Fr, Poly};
 
-pub struct FsFr(blst::blst_fr);
+pub struct FsFr(pub blst::blst_fr);
 
 impl Fr for FsFr {
     fn default() -> Self {
@@ -66,29 +66,31 @@ impl Fr for FsFr {
     }
 
     // TODO: double-check implementation
-    // fn pow(&self, n: usize) -> Self {
-    //     //fr_t tmp = *a;
-    //     let mut tmp: Fr = self.clone();
-    //
-    //     //*out = fr_one;
-    //     let mut out = Fr::one();
-    //     let mut n2 = n;
-    //
-    //     unsafe {
-    //         loop {
-    //             if n2 & 1 == 1 {
-    //                 blst_fr_mul(&out as *const Fr as *mut blst_fr, &out as *const Fr as *mut blst_fr, &tmp as *const Fr as *mut blst_fr);
-    //             }
-    //             n2 = n2 >> 1;
-    //             if n == 0 {
-    //                 break;
-    //             }
-    //             blst_fr_sqr(&tmp as *const Fr as *mut blst_fr, &tmp as *const Fr as *mut blst_fr);
-    //         }
-    //     }
-    //
-    //     out
-    // }
+    fn pow(&self, n: usize) -> Self {
+        //fr_t tmp = *a;
+        let mut tmp = self.clone();
+    
+        //*out = fr_one;
+        let mut out = Self::one();
+        let mut n2 = n;
+    
+        //unsafe {
+            loop {
+                if n2 & 1 == 1 {
+                    // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                    out = out.mul(&tmp);
+                }
+                n2 = n2 >> 1;
+                if n == 0 {
+                    break;
+                }
+                // blst_fr_sqr(&mut tmp.0, &tmp.0);
+                tmp = tmp.sqr();
+            }
+        //}
+    
+        out
+    }
 
     fn mul(&self, b: &Self) -> Self {
         let mut ret = Self::default();
@@ -142,6 +144,15 @@ impl Fr for FsFr {
         }
 
         ret
+    }
+
+    fn get_scalar(&self) -> blst_scalar {
+        let mut scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &self.0);
+        }
+
+        scalar
     }
 
     fn equals(&self, b: &Self) -> bool {
