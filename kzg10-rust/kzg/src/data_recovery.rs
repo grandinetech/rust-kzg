@@ -2,13 +2,6 @@ use crate::kzg10::*;
 use crate::fk20_fft::*;
 use crate::data_types::fr::Fr;
 
-// use crate::mcl_methods::*;
-// use crate::utilities::*;
-// 
-// 
-// use crate::fk20_matrix::*;
-
-
 // Data recovery
 
 impl Polynomial {
