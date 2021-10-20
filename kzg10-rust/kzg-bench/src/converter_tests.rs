@@ -9,6 +9,7 @@ use mcl_rust::CurveType;
 
 #[test]
 fn convert_blst_fr_zero() {
+    assert!(init(CurveType::BLS12_381));
     let blst_zero = BlstFr::default();
     let converted = fr_from_blst(blst_zero);
 
@@ -34,6 +35,7 @@ fn convert_blst_fr_random_ints() {
 
 #[test]
 fn convert_to_blst_fr_zero() {
+    assert!(init(CurveType::BLS12_381));
     let fr_zero = Fr::default();
     let converted = fr_to_blst(fr_zero);
 
@@ -60,6 +62,7 @@ fn convert_to_blst_fr_random_ints() {
 
 #[test]
 fn convert_blst_fp_zero() {
+    assert!(init(CurveType::BLS12_381));
     let blst_zero = BlstFp::default();
     let converted = fp_from_blst(blst_zero);
 
