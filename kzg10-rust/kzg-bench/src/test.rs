@@ -127,7 +127,7 @@ fn curve_new_g1_points_should_have_exact_values_given_specific_params() {
         "1 3252002729706195882623612396123269947851274285378019889513328537606104266375911074185178476483143881219657281907365 2744825182574836694639045426047274581117055175119425124924870369929899567807025339868314937727954579104158715615767",
         "1 3105530220482690203381088120196667002396187280376878591204985144810501655541159693720070013410365841734894244215545 2515128161348588248190794853040865399542397670879510720694265058064715843238549344693260209850633864871507776822678"
         ];
-    
+
     assert_eq!(expected.len(), strs.len());
     let all_values_equal = expected.iter().zip(strs.iter()).all(|(a, b)| a == b);
     assert!(all_values_equal);
@@ -141,7 +141,7 @@ fn polynomial_generate_proof_at_should_have_a_specific_value_given_exact_inputs(
     let poly = Polynomial::from_i32(&coefficients);
     let secret = Fr::from_str("1927409816240961209460912649124", 10);
     let curve = Curve::new(&secret.unwrap(), poly.order());
-    
+
     let point = Fr::from_int(17);
     // Act
     let proof = poly.gen_proof_at(&curve.g1_points, &point);
@@ -200,10 +200,10 @@ fn proof_loop_works_with_random_points() {
         let y = poly.eval_at(&x);
         let proof = poly.gen_proof_at(&curve.g1_points, &x);
         let commitment = poly.commit(&curve.g1_points);
-    
+
         // Act
         let is_valid = curve.is_proof_valid(&commitment, &proof, &x, &y);
-    
+
         // Assert
         assert!(is_valid);
 }
@@ -219,13 +219,13 @@ fn fk20matrix_new_builds_valid_settings() {
     let n = chunk_len * chunk_count;
     let secret = Fr::from_str("1927409816240961209460912649124", 10).unwrap();
     let kzg_curve = Curve::new(&secret, n * 2);
-    
+
     // Act
     let matrix = FK20Matrix::new(kzg_curve, n * 2, chunk_len, 10);
 
     // Assert
     // Correctness can be implied from first few values (16 in this case), they should already fail if the math is wrong
-    
+
     let expected = vec! [
         vec![
             "1 2690832516741773119369730195519233968670522532392277474918267333033611475380645539270351007440482196987183887535296 3175213108544898085235166650679988026781072495712618074575168602254234390929160150851454512872056164806990780792922",
@@ -278,10 +278,10 @@ fn get_next_power_of_two_returns_correct_values() {
         510,
         1023
     ];
-    
+
     // Act
     let x_next_pows: Vec<usize> = xs.iter().map(|x| next_pow_of_2(x.clone())).collect();
-    
+
     // Assert
     let expected = [
         2, 4, 8, 16, 16, 32, 64, 64, 128, 256, 512, 1024
@@ -310,7 +310,7 @@ fn dau_using_fk20_multi_generates_exact_values_given_known_inputs() {
     // Act
     let proofs = matrix.dau_using_fk20_multi(&polynomial);
     // Assert
-    
+
     let expected = vec![
         "1 3049109670073243942711931801211551991977350609702786082875404381705054902889931096164119150944119739492900124336718 3803822584037975486135926890961136037182668503033554406702973802744799509630262359817965611370864159333294931292175",
         "1 658235374988622731991675177666095672656291387756593365624244986468346518201077057409039732423968458648837994174735 170658666960408025187423476299064494998912902640258589264830794057063295972343916527776401279871390447819757126953",
@@ -395,7 +395,7 @@ fn fr_fft_works_on_extended_data() {
     let kzg_curve = Curve::new(&secret, n * 2);
     let matrix = FK20Matrix::new(kzg_curve, n * 2, chunk_len, 10);
     let polynomial = build_protolambda_poly(chunk_count, chunk_len, n);
-    
+
     // Act
     let extended_poly = polynomial.get_extended(n * 2);
     let mut extended_data = matrix.fft_settings.fft(&extended_poly.coeffs, false);
@@ -423,7 +423,7 @@ fn fk20_multi_proof_full_circle_fixed_value() {
     let commitment = polynomial.commit(&matrix.curve.g1_points);
     let mut extended_data = matrix.fft_settings.fft(&extended_poly.coeffs, false);
     order_by_rev_bit_order(&mut extended_data);
-    
+
     // Act
     let domain_stride = matrix.fft_settings.max_width / n2;
     for pos in 0..(chunk_count * 2) {
@@ -471,7 +471,7 @@ fn fk20_multi_proof_full_circle_random_secret() {
     let commitment = polynomial.commit(&matrix.curve.g1_points);
     let mut extended_data = matrix.fft_settings.fft(&extended_poly.coeffs, false);
     order_by_rev_bit_order(&mut extended_data);
-    
+
     // Act
     let domain_stride = matrix.fft_settings.max_width / n2;
     for pos in 0..(chunk_count * 2) {
@@ -542,7 +542,7 @@ fn fft_settings_make_zero_poly_mul_leaf_should_return_exact_result_given_known_i
 
     //Act
     settings.make_zero_poly_mul_leaf(&mut from_direct, &indices, 1);
-    
+
     // Assert
     let expected = vec![
         "38476778329304481878022718993882556548812578500290864179952442003245540347252",
@@ -555,7 +555,7 @@ fn fft_settings_make_zero_poly_mul_leaf_should_return_exact_result_given_known_i
         "25696713417412289524464508181164949761159459522454271153855924766367832676326",
         "1"
         ];
-        
+
     assert_eq!(expected.len(), from_direct.len());
     for i in 0..from_direct.len() {
         assert_eq!(expected[i], from_direct[i].get_str(10));
@@ -577,7 +577,7 @@ fn fft_settings_reduce_leaves_should_return_exact_result_given_known_input() {
     let result = settings.reduce_leaves(&mut scratch, &leaves, 16);
     let from_tree_reduction = &result[..9];
     // Assert
-    
+
     let expected = vec![
         "38476778329304481878022718993882556548812578500290864179952442003245540347252",
         "50186564627255281608660935680706646713107687550024192139838955039448154181749",
@@ -589,7 +589,7 @@ fn fft_settings_reduce_leaves_should_return_exact_result_given_known_input() {
         "25696713417412289524464508181164949761159459522454271153855924766367832676326",
         "1"
         ];
-        
+
     assert_eq!(expected.len(), from_tree_reduction.len());
     for i in 0..from_tree_reduction.len() {
         assert_eq!(expected[i], from_tree_reduction[i].get_str(10));
@@ -611,7 +611,7 @@ fn fft_settings_zero_poly_scaled_test() {
         .filter(|(_, ex)| !(*ex))
         .map(|(ix, _)| ix)
         .collect();
-    
+
     // Act
     let (_, zero_poly_coeff) = fs.zero_poly_via_multiplication(&indices, exists.len());
     let zero_poly = Polynomial::from_fr(zero_poly_coeff);
@@ -641,10 +641,10 @@ fn fft_settings_zero_poly_via_multi_should_return_exact_values_for_eval_given_kn
         .filter(|(_, ex)| !(*ex))
         .map(|(ix, _)| ix)
         .collect();
-    
+
     // Act
     let (zero_eval, _) = settings.zero_poly_via_multiplication(&indices, exists.len());
-    
+
     // Assert
     let expected_eval = vec![
         "14588039771402811141309184187446855981335438080893546259057924963590957391610",
@@ -688,10 +688,10 @@ fn fft_settings_zero_poly_via_multi_should_return_exact_values_for_poly_given_kn
         .filter(|(_, ex)| !(*ex))
         .map(|(ix, _)| ix)
         .collect();
-    
+
     // Act
     let (_, zero_poly) = settings.zero_poly_via_multiplication(&indices, exists.len());
-    
+
     // Assert
     let expected_poly = vec![
 		"16624801632831727463500847948913128838752380757508923660793891075002624508302",
@@ -766,7 +766,7 @@ fn polynomial_recover_from_samples_should_recover_all_values_given_less_than_hal
 //     }
 
 //     let zero_poly = vec![Fr::default(); fs.max_width];
-    
+
 //     let zero_eval = fs.zero_poly_via_multiplication(&missing, fs.max_width);
 // }
 
