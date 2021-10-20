@@ -1,8 +1,29 @@
-//! This module provides an implementation of polinomials over bls12_381::Scalar
+//! This module provides an implementation of polinomials over bls12_381::blsScalar
 
+use crate::ZkFr;
 use super::BlsScalar;
-use bls12_381::Scalar as blsScalar; 
+pub struct blsScalar(bls12_381::Scalar);
+//use bls12_381::Scalar as blsScalar; 
 
+
+impl ZkFr for blsScalar {
+	fn default() -> Self {
+		Self(BlsScalar::default())
+	}
+	
+	fn from_u64(val: u64) -> Self{
+		Self::from(val)
+	
+	}
+	
+	fn destroy(&self) {}
+}
+
+impl Clone for blsScalar {
+    fn clone(&self) -> Self {
+        blsScalar(self.0.clone())
+    }
+}
 
 /// A polinomial with bls12_381::blsScalar factors
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -419,28 +440,3 @@ fn test_lagrange_multi() {
     let l = Poly::lagrange(&points);
     points.iter().for_each(|p| assert_eq!(l.eval(&p.0), p.1));
 }
-
-// //use crate::ZkFr;
-// use super::BlsScalar;
-// // pub struct blsScalar(bls12_381::Scalar);
-// use bls12_381::Scalar as blsScalar; 
-
-
-// // impl ZkFr for blsScalar {
-	// // fn default() -> Self {
-		// // Self(BlsScalar::default())
-	// // }
-	
-	// // fn from_u64(val: u64) -> Self{
-		// // Self::from(val)
-	
-	// // }
-	
-	// // fn destroy(&self) {}
-// // }
-
-// // impl Clone for blsScalar {
-    // // fn clone(&self) -> Self {
-        // // blsScalar(self.0.clone())
-    // // }
-// // }

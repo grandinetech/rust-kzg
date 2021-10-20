@@ -19,11 +19,10 @@ pub type BlsScalar = bls12_381::Scalar;
 pub use crate::kzg::{Commitment, Kzg, Proof};
 pub use poly::Poly;
 
-// pub trait ZkFr: Clone {
-    // fn default() -> Self;
+pub trait ZkFr: Clone {
+    fn default() -> Self;
 
-    // fn from_u64(u: u64) -> Self;
+    fn from_u64(u: u64) -> Self;
 
-    // fn destroy(&self);
-// }
-
+    fn destroy(&self);
+}
