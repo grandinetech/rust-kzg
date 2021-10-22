@@ -1,10 +1,10 @@
 use mcl_rust::*;
 use criterion::{criterion_group, criterion_main, Criterion};
-use mcl_rust::fr::Fr;
-use mcl_rust::g1::G1;
-use mcl_rust::implem::Curve;
+use mcl_rust::data_types::fr::Fr;
+use mcl_rust::data_types::g1::G1;
+use mcl_rust::kzg10::Curve;
 use mcl_rust::mcl_methods::init;
-use mcl_rust::implem::FFTSettings;
+use mcl_rust::fk20_fft::FFTSettings;
 
 fn bench_fft_fr(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
