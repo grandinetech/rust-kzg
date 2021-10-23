@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::finite::sum_of_two_zeros_is_zero;
+    use kzg_bench::tests::finite::sum_of_two_zeros_is_zero;
     use kzg_bindings::finite::BlstFr;
 
     #[test]

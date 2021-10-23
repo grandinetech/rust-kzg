@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::poly::{create_poly_of_length_ten, poly_eval_check, poly_eval_0_check,
-                          poly_eval_nil_check, poly_inverse_simple_0, poly_inverse_simple_1};
+    use kzg_bench::tests::poly::{create_poly_of_length_ten, poly_eval_0_check, poly_eval_check,
+                                 poly_eval_nil_check, poly_inverse_simple_0, poly_inverse_simple_1};
     use kzg_bindings::finite::BlstFr;
     use kzg_bindings::poly::KzgPoly;
 
