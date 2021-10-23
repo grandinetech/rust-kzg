@@ -1,12 +1,15 @@
-use super::{Error, Fr, G1, Poly};
+use kzg::{Fr, FFTSettings};
+use crate::poly::KzgPoly;
+use crate::finite::BlstFr;
+use crate::common::KzgRet;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct FFTSettings {
+pub struct KzgFFTSettings {
     pub max_width: usize,
-    pub root_of_unity: Fr,
-    pub expanded_roots_of_unity: *mut Fr,
-    pub reverse_roots_of_unity: *mut Fr
+    pub root_of_unity: BlstFr,
+    pub expanded_roots_of_unity: *mut BlstFr,
+    pub reverse_roots_of_unity: *mut BlstFr
 }
 
 #[repr(C)]
@@ -37,6 +40,7 @@ pub struct BlstP1 {
     pub z: BlstFp
 }
 
+/*
 const G1_GENERATOR: G1 = G1 {
     x: BlstFp {
         l: [0x5cb38790fd530c16,
@@ -66,19 +70,21 @@ const G1_GENERATOR: G1 = G1 {
         ]
     }
 };
+*/
 
 extern "C" {
-    fn new_fft_settings(settings: *mut FFTSettings, max_scale: u32) -> Error;
-    fn free_fft_settings(settings: *mut FFTSettings);
-    fn fft_fr(output: *mut Fr, input: *const Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Error;
-    fn fft_g1(output: *mut G1, input: *const G1, inverse: bool, n: u64, fs: *const FFTSettings) -> Error;
-    fn poly_mul(output: *mut Poly, a: *const Poly, b: *const Poly, fs: *const FFTSettings) -> Error;
+    fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
+    fn free_fft_settings(settings: *mut KzgFFTSettings);
+    fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    //fn fft_g1(output: *mut G1, input: *const G1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    fn poly_mul(output: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *const KzgFFTSettings) -> KzgRet;
     // Blst
-    fn g1_add_or_dbl(out: *mut G1, a: *const G1, b: *const G1);
-    fn g1_equal(a: *const G1, b: *const G1) -> bool;
-    fn g1_mul(out: *mut G1, a: *const G1, b: *const Fr);
+    //fn g1_add_or_dbl(out: *mut G1, a: *const G1, b: *const G1);
+    //fn g1_equal(a: *const G1, b: *const G1) -> bool;
+    //fn g1_mul(out: *mut G1, a: *const G1, b: *const BlstFr);
 }
 
+/*
 impl G1 {
     pub fn rand() -> G1 {
         let mut ret = G1::default();
@@ -103,9 +109,10 @@ impl G1 {
         out
     }
 }
+*/
 
-impl FFTSettings {
-    pub fn default() -> Self {
+impl FFTSettings<BlstFr> for KzgFFTSettings {
+    fn default() -> Self {
         Self {
             max_width: 16,
             root_of_unity: Fr::default(),
@@ -114,25 +121,47 @@ impl FFTSettings {
         }
     }
 
-    pub fn new(max_scale: u32) -> Result<Self, Error> {
+    fn new(scale: usize) -> Result<Self, String> {
         let mut settings = FFTSettings::default();
         unsafe {
-            return match new_fft_settings(&mut settings, max_scale) {
-                Error::KzgOk => Ok(settings),
-                e => {
-                    println!("Error in \"FFTSettings::new\" ==> {:?}", e);
-                    Err(e)
-                }
+            return match new_fft_settings(&mut settings, scale as u32) {
+                KzgRet::KzgOk => Ok(settings),
+                e => Err(format!("An error has occurred in \"FFTSettings::new\" ==> {:?}", e))
             }
         }
     }
 
-    pub fn destroy(&mut self) {
+    fn get_max_width(&self) -> usize {
+        self.max_width
+    }
+
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
+        unsafe {
+            return *self.expanded_roots_of_unity.offset(i as isize) as BlstFr;
+        }
+    }
+
+    fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {
+        todo!()
+    }
+
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> BlstFr {
+        unsafe {
+            return *self.reverse_roots_of_unity.offset(i as isize) as BlstFr;
+        }
+    }
+
+    fn get_reversed_roots_of_unity(&self) -> &[BlstFr] {
+        todo!()
+    }
+
+    fn destroy(&mut self) {
         unsafe {
             free_fft_settings(self);
         }
     }
 
+    /*
     pub fn fft_fr(&self, input: &mut Vec<Fr>, inverse: bool) -> Vec<Fr> {
         let output = match FFTSettings::_fft_fr(input.as_mut_ptr(), inverse, input.len() as u64, self) {
             Ok(fr) => fr,
@@ -232,5 +261,5 @@ impl FFTSettings {
         }
         fs.fft_g1(&mut data, false);
         fs.destroy();
-    }
+    }*/
 }

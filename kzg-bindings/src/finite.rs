@@ -3,13 +3,14 @@ use kzg::Fr;
 
 #[link(name = "blst", kind = "static")]
 extern "C" {
-    fn blst_fr_add(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn fr_from_uint64(out: *mut BlstFr, n: u64);
     fn fr_from_uint64s(out: *mut BlstFr, vals: *const u64);
     fn fr_is_zero(p: *const BlstFr) -> bool;
     fn fr_is_one(p: *const BlstFr) -> bool;
     fn fr_equal(aa: *const BlstFr, bb: *const BlstFr) -> bool;
     fn fr_negate(out: *mut BlstFr, in_: *const BlstFr);
+    fn blst_fr_add(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
+    fn blst_fr_mul(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
 }
 
 #[repr(C)]
@@ -75,7 +76,11 @@ impl Fr for BlstFr {
     }
 
     fn mul(&self, b: &Self) -> Self {
-        todo!()
+        let mut ret = Fr::default();
+        unsafe {
+            blst_fr_mul(&mut ret, self, b);
+        }
+        ret
     }
 
     fn add(&self, b: &Self) -> Self {
