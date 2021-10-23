@@ -1,4 +1,4 @@
-use kzg::{Fr, FFTSettings};
+use kzg::{Fr, FFTSettings, FFTFr};
 use crate::poly::KzgPoly;
 use crate::finite::BlstFr;
 use crate::common::KzgRet;
@@ -162,24 +162,6 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     /*
-    pub fn fft_fr(&self, input: &mut Vec<Fr>, inverse: bool) -> Vec<Fr> {
-        let output = match FFTSettings::_fft_fr(input.as_mut_ptr(), inverse, input.len() as u64, self) {
-            Ok(fr) => fr,
-            Err(e) => panic!("Error in \"FFTSettings::fft_fr\" ==> {:?}", e)
-        };
-        output
-    }
-
-    fn _fft_fr(input: *const Fr, inverse: bool, n: u64, fs: *const FFTSettings) -> Result<Vec<Fr>, Error> {
-        let mut output = vec![Fr::default(); n as usize];
-        unsafe {
-            return match fft_fr(output.as_mut_ptr(), input, inverse, n, fs) {
-                Error::KzgOk => Ok(output),
-                e => Err(e)
-            }
-        }
-    }
-
     pub fn fft_g1(&self, input: &mut Vec<G1>, inverse: bool) -> Vec<G1> {
         let output = match FFTSettings::_fft_g1(input.as_mut_ptr(), inverse, input.len() as u64, self) {
             Ok(g) => g,
@@ -262,4 +244,23 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
         fs.fft_g1(&mut data, false);
         fs.destroy();
     }*/
+}
+
+impl FFTFr<BlstFr> for KzgFFTSettings {
+    fn fft_fr(&self, data: &mut [BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
+        return match _fft_fr(data.as_mut_ptr(), inverse, data.len() as u64, self) {
+            Ok(fr) => Ok(fr),
+            Err(e) => Err(format!("An error has occurred in \"FFTFr::fft_fr\" ==> {:?}", e))
+        };
+    }
+}
+
+fn _fft_fr(input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> Result<Vec<BlstFr>, KzgRet> {
+    let mut output = vec![Fr::default(); n as usize];
+    unsafe {
+        return match fft_fr(output.as_mut_ptr(), input, inverse, n, fs) {
+            KzgRet::KzgOk => Ok(output),
+            e => Err(e)
+        }
+    }
 }

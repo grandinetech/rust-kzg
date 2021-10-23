@@ -11,6 +11,7 @@ extern "C" {
     fn fr_negate(out: *mut BlstFr, in_: *const BlstFr);
     fn blst_fr_add(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_mul(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
+    fn blst_fr_from_uint64(ret: *mut BlstFr, a: *const u64);
 }
 
 #[repr(C)]
@@ -48,7 +49,11 @@ impl Fr for BlstFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        todo!()
+        let mut ret = Fr::default();
+        unsafe {
+            blst_fr_from_uint64(&mut ret, u.as_ptr());
+        }
+        ret
     }
 
     fn from_u64(u: u64) -> Self {
