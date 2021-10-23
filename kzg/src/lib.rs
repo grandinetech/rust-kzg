@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 pub type Pairing = blst::Pairing;
 pub type Fp = blst::blst_fp;
 pub type Fp12 = blst::blst_fp12;
@@ -11,7 +13,7 @@ pub type Uniq = blst::blst_uniq;
 pub type G1 = blst::blst_p1;
 pub type G2 = blst::blst_p2;
 
-pub trait Fr: Clone {
+pub trait Fr: Clone + Debug {
     // Assume that Fr can't fail on creation
 
     fn default() -> Self; // -> Result<Self, String>;
@@ -83,7 +85,7 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
     fn destroy(&mut self);
 }
 
-pub trait Poly<Coeff: Fr>: Clone {
+pub trait Poly<Coeff: Fr>: Clone + Debug{
     fn default() -> Result<Self, String>;
 
     fn new(size: usize) -> Result<Self, String>;

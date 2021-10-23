@@ -1,10 +1,11 @@
 use crate::data_types::fr::Fr;
-use crate::fk20_fft::{FFTSettings, SCALE_2_ROOT_OF_UNITY};
+use crate::fk20_fft::{FFTSettings, SCALE_2_ROOT_OF_UNITY,     init_globals};
 use kzg::FFTSettings as CommonFFTSettings;
 
 impl CommonFFTSettings<Fr> for FFTSettings {
     fn new(scale: usize) -> Result<FFTSettings, String> {
         unsafe {
+            init_globals();
             if scale >= SCALE_2_ROOT_OF_UNITY.len() {
                 return Err(String::from(
                     "Scale is expected to be within root of unity matrix row size",

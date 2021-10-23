@@ -21,11 +21,18 @@ impl CommonFr for Fr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        todo!()
+        let mut res = Fr::zero();
+        for i in 0..4 {
+            res.d[i] = u[i];
+        }
+        res
     }
 
     fn from_u64(val: u64) -> Self {
-        todo!()
+        // let mut res = Fr::zero();
+        // res.d[0] = val;
+        // res
+        Fr::from_int(val as i32)
     }
 
     fn is_one(&self) -> bool {
@@ -81,7 +88,7 @@ impl CommonFr for Fr {
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        Fr::eq(self, b)
     }
 
     fn destroy(&mut self) {}

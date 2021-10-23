@@ -12,4 +12,7 @@ mod test;
 #[cfg(test)]
 mod shared_tests {
     mod zero_poly;
+    mod fft_fr;
+    mod das;
+    mod consts;
 }
