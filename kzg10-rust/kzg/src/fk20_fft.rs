@@ -66,6 +66,7 @@ pub fn expand_root_of_unity(root: &Fr) -> Vec<Fr> {
     return root_z;
 }
 
+#[derive(Clone)]
 pub struct FFTSettings {
     pub max_width: usize,
     pub root_of_unity: Fr,
@@ -169,6 +170,20 @@ impl FFTSettings {
 
         return self.inplace_fft(&values_copy, inv);
     }
+
+    pub fn fft_from_slice(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
+        let n = next_pow_of_2(values.len());
+        
+        let diff = n - values.len();
+        let tail= iter::repeat(Fr::zero()).take(diff);
+        let values_copy: Vec<Fr> = values.iter()
+            .map(|x| x.clone())
+            .chain(tail)
+            .collect();
+
+        return self.inplace_fft(&values_copy, inv);
+    }
+
 
     pub fn fft_g1(&self, values: &Vec<G1>) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?

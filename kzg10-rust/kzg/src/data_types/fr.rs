@@ -1,10 +1,10 @@
+use crate::mcl_methods;
+use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
-use std::mem::MaybeUninit;
 use std::os::raw::c_int;
-use crate::mcl_methods;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -40,7 +40,7 @@ extern "C" {
     fn mclBnFr_squareRoot(y: *mut Fr, x: *const Fr) -> i32;
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct Fr {
     pub d: [u64; crate::MCLBN_FR_UNIT_SIZE],
