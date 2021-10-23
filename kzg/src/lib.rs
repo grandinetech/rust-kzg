@@ -69,6 +69,8 @@ pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {
+    fn default() -> Self;
+
     fn new(scale: usize) -> Result<Self, String>;
 
     fn get_max_width(&self) -> usize;
