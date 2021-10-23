@@ -126,7 +126,7 @@ pub fn pad(input: &Vec<blsScalar>, n_in: usize, n_out: usize) -> Result<Vec<blsS
     Ok(output)
 }
 
-pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly, fs_: Option<&FFTSettings> ) -> Result<ZPoly, String> {
+pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly, fs_: Option<FFTSettings> ) -> Result<ZPoly, String> {
 
     // Truncate a and b so as not to do excess work for the number of coefficients required.
     let a_len = min_u64(a.coeffs.len(), out).unwrap();
@@ -136,7 +136,7 @@ pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly, fs_: Option<&FFTSettings> 
     // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
     let mut fs = FFTSettings::new(0).unwrap(); //FFTSettings::new(0).unwrap();
     match fs_ {
-		Some(x) => fs = *x.clone(),
+		Some(x) => fs = x.clone(),
 		None => {
 			let scale: usize = log2_pow2(length);
 			fs = new_fft_settings(scale);

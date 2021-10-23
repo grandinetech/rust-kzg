@@ -40,17 +40,6 @@ impl PolyForTests {
 
 }
 
-#[test]
-    fn create_poly_of_length_ten() {
-        let mut poly = match PolyForTests::new(10) {
-            p => p,
-            _ => PolyForTests::default()
-        };
-        assert_eq!(poly.length, 10);
-        poly.destroy();
-    }
-
-
 
 impl Default for Poly {
     #[inline]
