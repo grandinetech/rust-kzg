@@ -1,29 +1,184 @@
-//! This module provides an implementation of polinomials over bls12_381::blsScalar
+//! This module provides an implementation of polinomials over bls12_381::Scalar
+use super::{Fr, ZPoly, BlsScalar};
+use crate::zkfr::blsScalar; 
+use crate::FrFunc;
+use crate::utils::*;
+use crate::fftsettings::{FFTSettings, new_fft_settings};
+use crate::consts::*;
+use crate::fft_fr::*;
 
-use crate::ZkFr;
-use super::BlsScalar;
-pub struct blsScalar(bls12_381::Scalar);
-//use bls12_381::Scalar as blsScalar; 
 
-
-impl ZkFr for blsScalar {
-	fn default() -> Self {
-		Self(BlsScalar::default())
-	}
-	
-	fn from_u64(val: u64) -> Self{
-		Self::from(val)
-	
-	}
-	
-	fn destroy(&self) {}
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct KzgPoly {
+    pub coeffs: Vec<blsScalar>,
+    pub length: u64
 }
 
-impl Clone for blsScalar {
-    fn clone(&self) -> Self {
-        blsScalar(self.0.clone())
+impl ZPoly {
+    pub fn default() -> Self {
+        Self {
+            coeffs: vec![blsScalar::default(); 4],
+            length: 4
+        }
     }
+	fn get_coeff_at(&self, i: usize) -> blsScalar {
+		self.coeffs[i]
+	}
+
+    fn set_coeff_at(&mut self, i: usize, x: &blsScalar) {
+		self.coeffs[i] = x.clone()
+	}
+
+    fn get_coeffs(&self) -> &[blsScalar] {
+		&self.coeffs
+	}
+
+    fn len(&self) -> usize {
+		self.coeffs.len()
+	}
+
+	fn length(&self) -> usize {
+		self.coeffs.len()
+	}
+	
+    fn eval(&self, x: &blsScalar) -> blsScalar {
+		if self.coeffs.len() == 0 {
+            return blsScalar::zero();
+        } else if x.is_zero() {
+            return self.coeffs[0].clone();
+        }
+
+        let mut ret = self.coeffs[self.coeffs.len() - 1].clone();
+        let mut i = self.coeffs.len() - 2;
+        loop {
+            let temp = ret.mul(&x);
+            ret = temp.add(&self.coeffs[i]);
+
+            if i == 0 {
+                break;
+            }
+            i -= 1;
+        }
+
+        return ret; 
+	
+	}
+
+    fn scale(&mut self) {
+        let scale_factor = blsScalar::from(SCALE_FACTOR);
+        let inv_factor = scale_factor.inverse();
+
+        let mut factor_power = blsScalar::one();
+        for i in 0..self.coeffs.len() {
+            factor_power = factor_power.mul(&inv_factor);
+            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
+        }
+    }
+
+    fn unscale(&mut self) {
+        let scale_factor = blsScalar::from(SCALE_FACTOR);
+
+        let mut factor_power = blsScalar::one();
+        for i in 0..self.coeffs.len() {
+            factor_power = factor_power.mul(&scale_factor);
+            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
+        }
+    }
+
+    fn destroy(&self) {}
 }
+
+
+
+pub fn poly_norm(p: &ZPoly) -> Result<ZPoly, String> {
+    let mut ret = p.clone();
+    let mut temp_len: usize = ret.coeffs.len();
+    while temp_len > 0 && ret.coeffs[temp_len - 1].is_zero() {
+        temp_len -= 1;
+    }
+    if temp_len == 0 {
+        ret.coeffs = Vec::default();
+    }
+
+    Ok(ret)
+}
+
+pub fn poly_quotient_length(dividend: &ZPoly, divisor: &ZPoly) -> Result<usize, String> {
+    if dividend.coeffs.len() >= divisor.coeffs.len() {
+        return Ok(dividend.coeffs.len() - divisor.coeffs.len() + 1);
+    }
+	else{
+		Ok(0)
+	}
+}
+
+pub fn pad(input: &Vec<blsScalar>, n_in: usize, n_out: usize) -> Result<Vec<blsScalar>, String> {
+    // uint64_t num = min_u64(n_in, n_out);
+    let num: usize = min_u64(n_in, n_out).unwrap();
+    let mut output: Vec<blsScalar> = Vec::default();
+    for i in 0..num {
+        output[i] = input[i].clone();
+    }
+    for i in num..n_out {
+        output[i] = blsScalar::zero();
+    }
+    Ok(output)
+}
+
+pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly, fs_: Option<&FFTSettings> ) -> Result<ZPoly, String> {
+
+    // Truncate a and b so as not to do excess work for the number of coefficients required.
+    let a_len = min_u64(a.coeffs.len(), out).unwrap();
+    let b_len = min_u64(b.coeffs.len(), out).unwrap();
+    let length = next_power_of_two(a_len + b_len - 1);
+
+    // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
+    let mut fs = FFTSettings::new(0).unwrap(); //FFTSettings::new(0).unwrap();
+    match fs_ {
+		Some(x) => fs = *x.clone(),
+		None => {
+			let scale: usize = log2_pow2(length);
+			fs = new_fft_settings(scale);
+	
+        
+		} 
+    }
+	assert!(length <= fs.max_width);
+
+	let mut a_pad: Vec<blsScalar> = Vec::default();
+	let mut b_pad: Vec<blsScalar> = Vec::default(); 
+	let mut a_fft: Vec<blsScalar> = Vec::default(); 
+	let mut b_fft: Vec<blsScalar> = Vec::default();
+	
+	a_pad = pad(&a.coeffs, a_len, length).unwrap();
+    b_pad = pad(&b.coeffs, b_len, length).unwrap();
+	
+    a_fft = fft_fr(&a_pad, false, &fs).unwrap();
+    b_fft = fft_fr(&b_pad, false, &fs).unwrap();
+
+    
+	
+	let mut ab_fft: Vec<blsScalar> = a_pad.clone();
+	
+    for i in 0..length {
+		ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+    }
+	// pratesti
+    let ab = &fft_fr(&ab_fft, true, &fs).unwrap();
+
+    // Copy result to output
+    let mut output = ZPoly::default(); // {coeffs: Vec::default() };
+	let data_len = min_u64(out, length).unwrap(); // ar tikrai geri kintamieji?
+	
+	for i in 0..data_len {
+        output.coeffs.push(ab[i]);
+    }
+
+    return Ok(output);
+}
+
+
 
 /// A polinomial with bls12_381::blsScalar factors
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -31,46 +186,6 @@ pub struct Poly(pub(crate) Vec<blsScalar>);
 
 
 // Testing if polynomial is suitable for tests
-#[derive(Debug, Clone, Default)]
-pub struct PolyForTests {
-	pub coeffs: Vec<blsScalar>,
-    pub length: u64
-	
-}
-
-impl PolyForTests {
-
-	pub fn default() -> Self {
-        Self {
-            coeffs: vec![blsScalar::default(); 4],
-            length: 4
-        }
-    }
-	
-	pub fn new(size: usize) -> Self {
-        Self{
-		coeffs: vec![blsScalar::default(); size],
-		length: size as u64
-		}
-    }
-	
-	
-	
-	pub fn destroy(&self) {}
-	
-
-}
-
-#[test]
-    fn create_poly_of_length_ten() {
-        let mut poly = match PolyForTests::new(10) {
-            p => p,
-            _ => PolyForTests::default()
-        };
-        assert_eq!(poly.length, 10);
-        poly.destroy();
-    }
-
 
 
 impl Default for Poly {
@@ -124,7 +239,7 @@ impl Poly {
     /// see https://en.wikipedia.org/wiki/Lagrange_polynomial
     /// # Examples
     /// ```
-    ///    use crate::kzg::{Poly, BlsScalar};
+    ///    use crate::zkcrypto::{Poly, BlsScalar};
     ///    // f(x)=x is a polinomial that fits in (1,1), (2,2) points
     ///    assert_eq!(
     ///      Poly::lagrange(&vec![
@@ -153,7 +268,7 @@ impl Poly {
     /// Evals the polinomial at the desired point
     /// # Examples
     /// ```
-    ///    use crate::kzg::{Poly, BlsScalar};
+    ///    use crate::zkcrypto::{Poly, BlsScalar};
     ///    // check that (x^2+2x+1)(2) = 9
     ///    assert_eq!(
     ///      Poly::from(&[1, 2, 1]).eval(&BlsScalar::from(2)),
@@ -186,7 +301,7 @@ impl Poly {
     /// Normalizes the coefficients, removing ending zeroes
     /// # Examples
     /// ```
-    ///    use crate::kzg::Poly;
+    ///    use crate::zkcrypto::Poly;
     ///    let mut p1 = Poly::from(&[1, 0, 0, 0]);
     ///    p1.normalize();
     ///    assert_eq!(p1, Poly::from(&[1]));
@@ -217,7 +332,7 @@ impl Poly {
     /// Sets the `i`-th coefficient to the selected `p` value
     /// # Examples
     /// ``
-    ///   use crate::kzg::{Poly, BlsScalar};
+    ///   use crate::zkcrypto::{Poly, BlsScalar};
     ///   let mut p007 = Poly::zero();
     ///   p007.set(2, blsScalar::from(7));
     ///   assert_eq!(p007, Poly::from(&[0, 0, 7]));
@@ -233,7 +348,7 @@ impl Poly {
     /// Returns the `i`-th coefficient
     /// # Examples
     /// ```
-    ///   use crate::kzg::{Poly, BlsScalar};
+    ///   use crate::zkcrypto::{Poly, BlsScalar};
     ///   let mut p007 = Poly::zero();
     ///   p007.set(2, BlsScalar::from(7));
     ///   assert_eq!(p007.get(2), Some(&BlsScalar::from(7)));
@@ -438,5 +553,30 @@ fn test_lagrange_multi() {
         (blsScalar::from(483838), blsScalar::from(444444)),
     ];
     let l = Poly::lagrange(&points);
-    points.iter().for_each(|p| assert_eq!(l.eval(&p.0), p.1));
+    points.iter().for_each(|p| assert_eq!(l.eval(&p.0), p.1)); // was ..(&p.0), p.1));
 }
+
+// //use crate::ZkFr;
+// use super::BlsScalar;
+// // pub struct blsScalar(bls12_381::Scalar);
+// use bls12_381::Scalar as blsScalar; 
+
+
+// // impl ZkFr for blsScalar {
+	// // fn default() -> Self {
+		// // Self(BlsScalar::default())
+	// // }
+	
+	// // fn from_u64(val: u64) -> Self{
+		// // Self::from(val)
+	
+	// // }
+	
+	// // fn destroy(&self) {}
+// // }
+
+// // impl Clone for blsScalar {
+    // // fn clone(&self) -> Self {
+        // // blsScalar(self.0.clone())
+    // // }
+// // }

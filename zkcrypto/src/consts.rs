@@ -1,26 +1,10 @@
-pub type Pairing = blst::Pairing;
-pub type Fp = blst::blst_fp;
-pub type Fp12 = blst::blst_fp12;
-pub type Fp6 = blst::blst_fp6;
-pub type Fr = blst::blst_fr;
-pub type P1 = blst::blst_p1;
-pub type P1Affine = blst::blst_p1_affine;
-pub type P2 = blst::blst_p2;
-pub type P2Affine = blst::blst_p2_affine;
-pub type Scalar = blst::blst_scalar;
-pub type Uniq = blst::blst_uniq;
+use crate::zkfr::blsScalar;
+use blst::blst_fr as BlstFr;
+use blst::{blst_fr_from_uint64, blst_fr_mul};
+use crate::FrFunc;
 
-pub mod finite;
-pub mod utils;
-pub mod poly;
-pub mod kzg;
-pub mod fftsettings;
 
-pub type BlsScalar = bls12_381::Scalar;
-pub use crate::kzg::{Commitment, Kzg, Proof};
-pub use poly::Poly;
-
-pub (crate) const scale2_root_of_unity: [[u64; 4]; 32] = [
+pub (crate) const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000],
     [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48],
     [0x0001000000000000, 0xec03000276030000, 0x8d51ccce760304d0, 0x0000000000000000],
@@ -54,11 +38,39 @@ pub (crate) const scale2_root_of_unity: [[u64; 4]; 32] = [
     [0x694341f608c9dd56, 0xed3a181fabb30adc, 0x1339a815da8b398f, 0x2c6d4e4511657e1e],
     [0x63e7cb4906ffc93f, 0xf070bb00e28a193d, 0xad1715b02e5713b5, 0x4b5371495990693f]];
 
-// pub trait ZkFr: Clone [
-    // fn default() -> Self;
+pub const SCALE_FACTOR: u64 = 5;
 
-    // fn from_u64(u: u64) -> Self;
+pub const NUM_ROOTS: usize = 32;
 
-    // fn destroy(&self);
-// ]
+pub fn expand_root_of_unity(root: &blsScalar, width: usize) -> Result<Vec<blsScalar>, String> {
+    let mut ret = blsScalar::default();
+	let mut generated_powers = vec![ret, root.clone()];
+
+    while !(generated_powers.last().unwrap().is_one()) {
+        if generated_powers.len() > width {
+            return Err(String::from("Root of unity multiplied for too long"));
+        }
+        generated_powers.push(generated_powers.last().unwrap().mul(&root));
+    }
+
+    Ok(generated_powers)
+}
+
+// pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, String> {
+    // let mut ret = BlstFr::default();
+	// //let OneBlstFr = 
+	// blst_fr_from_uint64(&mut ret, [1, 0, 0, 0].as_ptr());
+	// let mut generated_powers = vec![ret, root.clone()];
+
+    // while !(generated_powers.last().unwrap() == &ret) {
+        // if generated_powers.len() > width {
+            // return Err(String::from("Root of unity multiplied for too long"));
+        // }
+		// let mut Fr = BlstFr::default();
+		// blst_fr_mul(&mut Fr,generated_powers.last().unwrap(), &*root);
+        // generated_powers.push(Fr);
+    // }
+
+    // Ok(generated_powers)
+// }
 

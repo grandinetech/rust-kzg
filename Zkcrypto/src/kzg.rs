@@ -3,7 +3,7 @@
 use super::poly::Poly;
 use bls12_381::*;
 use rand::Rng;
-pub type blsScalar = bls12_381::Scalar;
+pub type blsScalar = crate::curve::scalar::Scalar;
 
 /// KZG polinomial commitments on Bls12-381. This structure contains the trusted setup.
 pub struct Kzg {
@@ -105,7 +105,7 @@ impl Kzg {
     /// Verifies that `points` exists in `proof`
     /// # Example
     /// ```
-    /// use crate::kzg::{BlsScalar, Kzg};
+    /// use crate::zkcrypto::{BlsScalar, Kzg};
     /// // Create a trustd setup that allows maximum 4 points (degree+1)
     /// let kzg = Kzg::trusted_setup(5);
     ///

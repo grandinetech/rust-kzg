@@ -1,5 +1,5 @@
 [package]
-name = "kzg"
+name = "zkcrypto"
 version = "0.1.0"
 edition = "2018"
 
@@ -10,9 +10,17 @@ edition = "2018"
 
 
 [dependencies]
+kzg = { path = "../kzg"}
 # bls12_381 = {'git' = 'https://github.com/dfaranha/bls12_381.git'}
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 pairing = "0.21.0"
 bls12_381 = "0.6.0"
 num-bigint = "0.4"
 rand = "0.8"
+rand_core = "0.6"
+subtle = "2.2.1"
+#ff = "0.11.0"
+
+[dependencies.ff]
+version = "0.11"
+default-features = false
