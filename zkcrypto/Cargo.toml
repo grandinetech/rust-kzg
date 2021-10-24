@@ -13,6 +13,8 @@ edition = "2018"
 kzg = { path = "../kzg"}
 # bls12_381 = {'git' = 'https://github.com/dfaranha/bls12_381.git'}
 blst = {'git' = 'https://github.com/supranational/blst.git'}
+kzg = { path = "../kzg" }
+kzg-bench = { path = "../kzg-bench" }
 pairing = "0.21.0"
 bls12_381 = "0.6.0"
 num-bigint = "0.4"
