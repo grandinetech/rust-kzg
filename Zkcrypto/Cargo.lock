@@ -338,3 +338,18 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[package]]
+name = "zkcrypto"
+version = "0.1.0"
+dependencies = [
+ "bls12_381",
+ "blst",
+ "ff",
+ "kzg",
+ "num-bigint",
+ "pairing",
+ "rand",
+ "rand_core",
+ "subtle",
+]
