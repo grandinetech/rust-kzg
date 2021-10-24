@@ -19,10 +19,10 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-    - uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: --path kzg-bindings
+    #- uses: actions-rs/cargo@v1
+    #  with:
+    #    command: install
+    #    args: --path kzg-bindings
 
     - uses: actions-rs/cargo@v1
       with:
