@@ -3,6 +3,7 @@ use crate::consts::{BlstP1, G1_GENERATOR};
 use crate::poly::KzgPoly;
 use crate::finite::BlstFr;
 use crate::common::KzgRet;
+use std::slice;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -31,8 +32,27 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
         }
     }
 
+    fn with_max_width(max_width: usize) -> Self {
+        Self {
+            max_width: max_width,
+            root_of_unity: Fr::default(),
+            expanded_roots_of_unity: &mut Fr::default(),
+            reverse_roots_of_unity: &mut Fr::default()
+        }
+    }
+
     fn new(scale: usize) -> Result<Self, String> {
         let mut settings = FFTSettings::default();
+        unsafe {
+            return match new_fft_settings(&mut settings, scale as u32) {
+                KzgRet::KzgOk => Ok(settings),
+                e => Err(format!("An error has occurred in \"FFTSettings::new\" ==> {:?}", e))
+            }
+        }
+    }
+
+    fn new_with_max_width(scale: usize, max_width: usize) -> Result<Self, String> {
+        let mut settings = FFTSettings::with_max_width(max_width);
         unsafe {
             return match new_fft_settings(&mut settings, scale as u32) {
                 KzgRet::KzgOk => Ok(settings),
@@ -52,7 +72,9 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {
-        todo!()
+        unsafe {
+            return slice::from_raw_parts(self.expanded_roots_of_unity, 1);
+        }
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> BlstFr {
@@ -62,7 +84,9 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn get_reversed_roots_of_unity(&self) -> &[BlstFr] {
-        todo!()
+        unsafe {
+            return slice::from_raw_parts(self.reverse_roots_of_unity, 1);
+        }
     }
 
     fn destroy(&mut self) {
