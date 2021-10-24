@@ -19,7 +19,6 @@ pub mod fftsettings;
 pub mod consts;
 pub mod zkfr;
 pub mod fft_fr;
-pub mod polytests;
 
 #[macro_use]
 pub mod curve {
