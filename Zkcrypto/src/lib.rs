@@ -47,7 +47,7 @@ pub trait FrFunc : Clone {
 
     fn is_zero(&self) -> bool;
 
-    // fn sqr(&self) -> Self;
+    fn sqr(&self) -> Self;
 
     fn mul(&self, b: &Self) -> Self;
 
@@ -61,7 +61,7 @@ pub trait FrFunc : Clone {
 
     fn inverse(&self) -> Self;
 
-    // fn pow(&self, n: usize) -> Self;
+    fn pow(&self, n: usize) -> Self;
 
     // fn get_scalar(&self) -> Scalar;
 

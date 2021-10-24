@@ -23,8 +23,6 @@ impl FrFunc for blsScalar {
 	fn one() -> Self {
 		blsScalar::one()
 	}
-	
-	
 
     fn rand() -> Self {
 		let val: [u64; 4] = rand::random();
@@ -55,25 +53,41 @@ impl FrFunc for blsScalar {
 
     fn mul(&self, b: &Self) -> Self {
 		let mut ret = Self::default(); // is this needed?
-		// unsafe {
 			blsScalar::mul(&self, &b) // &b.0 or &ret.0?
-		// }
-	
 	}
 	
 	fn add(&self, b: &Self) -> Self {
 		let mut ret = Self::default(); // is this needed?
-		// unsafe {
 			blsScalar::add(&self, &b)
-		// }
-	
 	}
 	fn sub(&self, b: &Self) -> Self {
 		let mut ret = Self::default(); // is this needed?
-		// unsafe {
-			blsScalar::sub(&self, &b)
-		// }
+			blsScalar::sub(&self, &b) // for this
+	}
 	
+	fn sqr(&self) -> Self {
+		blsScalar::square(&self)
+		
+	}
+	
+	fn pow(&self, n: usize) -> Self {
+	
+        let mut tmp = self.clone();
+        let mut out = Self::one();
+        let mut n2 = n;
+    
+            loop {
+                if n2 & 1 == 1 {
+                    out = out.mul(&tmp);
+                }
+                n2 = n2 >> 1;
+                if n == 0 {
+                    break;
+                }
+                tmp = tmp.sqr();
+            }
+    
+        out
 	}
 
 	fn negate(&self) -> Self {
@@ -81,9 +95,8 @@ impl FrFunc for blsScalar {
 	}
 	
 	fn inverse(&self) -> Self {
-	let mut ret = Self::default();
-	blsScalar::invert(&ret).unwrap()
-	
+		let mut ret = Self::default();
+		blsScalar::invert(&ret).unwrap()
 	}
 	fn equals(&self, other: &Self) -> bool {
 		self.eq(other)
@@ -92,18 +105,9 @@ impl FrFunc for blsScalar {
 	fn destroy(&self) {}
 }
 
-
-
-
 pub fn fr_div(a: &blsScalar, b: &blsScalar) -> Result<blsScalar, String> {
-    // let mut tmp = FsFr::default();
-    // let mut out = FsFr::default();
 
     let tmp = b.inverse();
     let out = a.mul(&tmp);
-    // unsafe {
-    //     blst_fr_eucl_inverse(&mut tmp as *mut blst_fr, b.0);
-    //     blst_fr_mul(&mut out, a, &tmp);
-    // }
     Ok(out)
 }

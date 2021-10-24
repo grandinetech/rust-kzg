@@ -1,3 +1,5 @@
+// gonna have to change FFTSettings to something different, because of lib.rs trait 'FFTSettings'
+
 use blst::blst_fr as BlstFr;
 use crate::consts::*;
 use crate::zkfr::blsScalar;
