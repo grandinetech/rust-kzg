@@ -2,7 +2,7 @@
 
 pub use super::{Fr, ZPoly, BlsScalar};
 pub use crate::curve::scalar::Scalar as blsScalar; 
-pub use crate::{FrFunc};
+//pub use crate::{Fr};
 
 // pub struct ZkFr(pub bls12_381::Scalar);
 
@@ -12,10 +12,12 @@ pub use crate::{FrFunc};
     // }
 // }
 
-impl FrFunc for blsScalar {
+impl Fr for blsScalar {
+
 	// fn default() -> Self {
 		// blsScalar::default()
 	// }
+	
 	fn zero() -> Self {
 		blsScalar::zero()
 	}
@@ -34,6 +36,11 @@ impl FrFunc for blsScalar {
         // }  
 	}
 	
+	fn from_u64_arr(u: &[u64; 4]) -> Self {
+		blsScalar::from_raw(*u)
+		
+	}
+	
 	fn from_u64(val: u64) -> Self{
 		blsScalar::from(val)
 	}
@@ -50,7 +57,12 @@ impl FrFunc for blsScalar {
         return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 	
-
+	fn sqr(&self) -> Self {
+		blsScalar::square(&self)
+		
+	
+	}
+	
     fn mul(&self, b: &Self) -> Self {
 		let mut ret = Self::default(); // is this needed?
 			blsScalar::mul(&self, &b) // &b.0 or &ret.0?
@@ -62,12 +74,12 @@ impl FrFunc for blsScalar {
 	}
 	fn sub(&self, b: &Self) -> Self {
 		let mut ret = Self::default(); // is this needed?
-			blsScalar::sub(&self, &b) // for this
+		blsScalar::sub(&self, &b) // for this
 	}
 	
-	fn sqr(&self) -> Self {
-		blsScalar::square(&self)
-		
+	fn eucl_inverse(&self) -> Self { 
+		let mut ret = Self::default();
+		blsScalar::invert(&ret).unwrap()
 	}
 	
 	fn pow(&self, n: usize) -> Self {
@@ -102,7 +114,7 @@ impl FrFunc for blsScalar {
 		self.eq(other)
 	}
 	
-	fn destroy(&self) {}
+	fn destroy(&mut self) {}
 }
 
 pub fn fr_div(a: &blsScalar, b: &blsScalar) -> Result<blsScalar, String> {

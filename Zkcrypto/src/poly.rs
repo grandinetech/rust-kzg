@@ -1,7 +1,7 @@
 //! This module provides an implementation of polinomials over bls12_381::Scalar
-use super::{Fr, ZPoly, BlsScalar};
+pub use super::{Poly, ZPoly, BlsScalar};
 use crate::zkfr::{blsScalar, fr_div}; 
-use crate::FrFunc;
+use crate::Fr;
 use crate::utils::*;
 use crate::fftsettings::{FFTSettings, new_fft_settings};
 use crate::consts::*;
@@ -11,17 +11,19 @@ use crate::fft_fr::*;
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct KzgPoly {
-    pub coeffs: Vec<blsScalar>,
-    pub length: u64
+    pub coeffs: Vec<blsScalar>
 }
 
-impl ZPoly {
-    pub fn default() -> Self {
+impl Poly<blsScalar> for ZPoly {
+    fn default() -> Self {
         Self {
-            coeffs: vec![blsScalar::default(); 4],
-            length: 4
+            coeffs: vec![blsScalar::default(); 4]
         }
     }
+	fn new(size: usize) -> Result<Self, String> {
+        Ok(Self{coeffs: vec![blsScalar::default(); size]})
+    }
+	
 	fn get_coeff_at(&self, i: usize) -> blsScalar {
 		self.coeffs[i]
 	}
@@ -38,9 +40,9 @@ impl ZPoly {
 		self.coeffs.len()
 	}
 
-	fn length(&self) -> usize {
-		self.coeffs.len()
-	}
+	// fn length(&self) -> usize {
+		// self.coeffs.len()
+	// }
 	
     fn eval(&self, x: &blsScalar) -> blsScalar {
 		if self.coeffs.len() == 0 {
@@ -86,7 +88,17 @@ impl ZPoly {
         }
     }
 
-    fn destroy(&self) {}
+	fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
+		todo!()
+		
+	}
+
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
+		todo!()
+		
+	}
+	
+    fn destroy(&mut self) {}
 }
 
 pub fn poly_long_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String> {
@@ -382,6 +394,8 @@ pub fn poly_mul(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly, String
     let fft_settings = FFTSettings::new(0).unwrap();
     return poly_mul_(&a, &b, &fft_settings, output_len);
 }
+
+/*
 
 /// A polinomial with bls12_381::blsScalar factors
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -755,28 +769,4 @@ fn test_lagrange_multi() {
     let l = Poly::lagrange(&points);
     points.iter().for_each(|p| assert_eq!(l.eval(&p.0), p.1)); // was ..(&p.0), p.1));
 }
-
-// //use crate::ZkFr;
-// use super::BlsScalar;
-// // pub struct blsScalar(bls12_381::Scalar);
-// use bls12_381::Scalar as blsScalar; 
-
-
-// // impl ZkFr for blsScalar {
-	// // fn default() -> Self {
-		// // Self(BlsScalar::default())
-	// // }
-	
-	// // fn from_u64(val: u64) -> Self{
-		// // Self::from(val)
-	
-	// // }
-	
-	// // fn destroy(&self) {}
-// // }
-
-// // impl Clone for blsScalar {
-    // // fn clone(&self) -> Self {
-        // // blsScalar(self.0.clone())
-    // // }
-// // }
+*/

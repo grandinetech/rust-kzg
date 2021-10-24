@@ -7,6 +7,7 @@ edition = "2018"
 
 [dependencies]
 kzg = { path = '../kzg' }
+zkcrypto = { path = '../zkcrypto' }
 
 [dev-dependencies]
 criterion = "0.3.5"

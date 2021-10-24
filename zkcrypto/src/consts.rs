@@ -1,7 +1,7 @@
 use crate::zkfr::blsScalar;
 use blst::blst_fr as BlstFr;
 use blst::{blst_fr_from_uint64, blst_fr_mul};
-use crate::FrFunc;
+use crate::Fr;
 
 
 pub (crate) const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [

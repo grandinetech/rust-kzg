@@ -11,6 +11,7 @@ pub struct Kzg {
     pub pow_tau_g2: Vec<G2Projective>,
 }
 
+
 pub type Proof = G1Projective;
 pub type Commitment = G1Projective;
 

@@ -1,21 +1,20 @@
 use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
 //use poly::blsScalar as Fr;
-use crate::curve::scalar::Scalar as Fr;
+use crate::curve::scalar::Scalar as Fr; // Gal naudot crate::zkfr::blsScalar;?
 use bls12_381::*;
-use super::{Fr as BlstFr, P1, P2, P1Affine};
+use super::{P1, P2, P1Affine};
+use blst::blst_fr as BlstFr;
 use std::fmt;
 use super::*;
 
-//use super::ZPoly as Poly;
-use crate::poly::Poly;
-
+use crate::poly::ZPoly as Poly;
+// use crate::poly::Poly;
 
 use pairing::Engine;
 
 pub struct polydata {
     coeffs: Vec<BlstFr>,
 }
-
 
 pub fn blst_poly_into_zk_poly(pd: polydata) -> Result<Poly, fmt::Error> {
 	//use bls12_381::Scalar as Fr;
@@ -24,14 +23,14 @@ pub fn blst_poly_into_zk_poly(pd: polydata) -> Result<Poly, fmt::Error> {
         poly.push(Fr::from(x.l[0]))
     }
 
-    let p = Poly(poly);
+    let p = Poly {coeffs: poly}; // Poly(poly)
     Ok(p)
 }
 
 pub(crate) fn pc_poly_into_blst_poly(poly: Poly) -> Result<polydata, fmt::Error> {
         let mut bls_pol = polydata { coeffs: Vec::new() };
 		
-        for x in poly.0 {
+        for x in poly.coeffs { // poly.0
             bls_pol.coeffs.push(BlstFr{l:x.0});
         }
 
