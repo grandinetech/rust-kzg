@@ -128,13 +128,8 @@ impl Fr for BlstFr {
         todo!()
     }
 
-    fn pow(&self, a: &Self, n: u64) -> Self {
-        let mut ret = Fr::default();
-
-        unsafe {
-            fr_pow(&mut ret, a, n);
-        }
-        ret
+    fn pow(&self, n: usize) -> Self {
+        todo!()
     }
 
     fn equals(&self, b: &Self) -> bool {

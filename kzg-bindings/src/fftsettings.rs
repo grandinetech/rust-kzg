@@ -20,8 +20,8 @@ extern "C" {
     fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn poly_mul(output: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *const KzgFFTSettings) -> KzgRet;
-    fn fft_ft_slow(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
-    fn fft_ft_fast(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
+    //fn fft_ft_slow(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
+    //fn fft_ft_fast(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
 }
 
 impl FFTSettings<BlstFr> for KzgFFTSettings {
@@ -34,27 +34,8 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
         }
     }
 
-    fn with_max_width(max_width: usize) -> Self {
-        Self {
-            max_width: max_width,
-            root_of_unity: Fr::default(),
-            expanded_roots_of_unity: &mut Fr::default(),
-            reverse_roots_of_unity: &mut Fr::default()
-        }
-    }
-
     fn new(scale: usize) -> Result<Self, String> {
         let mut settings = FFTSettings::default();
-        unsafe {
-            return match new_fft_settings(&mut settings, scale as u32) {
-                KzgRet::KzgOk => Ok(settings),
-                e => Err(format!("An error has occurred in \"FFTSettings::new\" ==> {:?}", e))
-            }
-        }
-    }
-
-    fn new_with_max_width(scale: usize, max_width: usize) -> Result<Self, String> {
-        let mut settings = FFTSettings::with_max_width(max_width);
         unsafe {
             return match new_fft_settings(&mut settings, scale as u32) {
                 KzgRet::KzgOk => Ok(settings),
