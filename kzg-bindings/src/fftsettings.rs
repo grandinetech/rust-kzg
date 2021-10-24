@@ -20,8 +20,8 @@ extern "C" {
     fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn poly_mul(output: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *const KzgFFTSettings) -> KzgRet;
-    fn fft_ft_slow(output: *mut BlstFt, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
-    fn fft_ft_fast(output: *mut BlstFt, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
+    fn fft_ft_slow(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
+    fn fft_ft_fast(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
 }
 
 impl FFTSettings<BlstFr> for KzgFFTSettings {
@@ -75,7 +75,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
 
     fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {
         unsafe {
-            return slice::from_raw_parts(self.expanded_roots_of_unity, &self.max_width);
+            return slice::from_raw_parts(self.expanded_roots_of_unity, self.max_width);
         }
     }
 
@@ -87,7 +87,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
 
     fn get_reversed_roots_of_unity(&self) -> &[BlstFr] {
         unsafe {
-            return slice::from_raw_parts(self.reverse_roots_of_unity, &self.max_width);
+            return slice::from_raw_parts(self.reverse_roots_of_unity, self.max_width);
         }
     }
 
