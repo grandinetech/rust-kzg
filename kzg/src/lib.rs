@@ -8,7 +8,6 @@ pub type P2 = blst::blst_p2;
 pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
-pub type G1 = blst::blst_p1;
 pub type G2 = blst::blst_p2;*/
 
 pub trait Fr: Clone {
@@ -45,6 +44,19 @@ pub trait Fr: Clone {
     fn inverse(&self) -> Self;
 
     fn pow(&self, n: usize) -> Self;
+
+    fn equals(&self, b: &Self) -> bool;
+
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
+    fn destroy(&mut self);
+}
+
+pub trait G1: Clone {
+    fn default() -> Self;
+
+    fn rand() -> Self;
+
+    fn add_or_double(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
 
