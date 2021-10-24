@@ -22,14 +22,14 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: install
-        args: --path from-scratch
+        args: --path kzg-bindings
 
     - uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --manifest-path from-scratch
+        args: --manifest-path kzg-bindings
 
     - uses: actions-rs/cargo@v1
       with:
         command: bench
-        args: --manifest-path from-scratch
+        args: --manifest-path kzg-bindings
