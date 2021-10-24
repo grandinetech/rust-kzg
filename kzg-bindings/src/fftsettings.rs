@@ -12,104 +12,13 @@ pub struct KzgFFTSettings {
     pub reverse_roots_of_unity: *mut BlstFr
 }
 
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-pub struct BlstFp {
-    pub l: [u64; 6]
-}
-
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-pub struct BlstFp2 {
-    pub fp: [BlstFp; 2]
-}
-
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone)]
-pub struct BlstP2 {
-    pub x: BlstFp2,
-    pub y: BlstFp2,
-    pub z: BlstFp2
-}
-
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone)]
-pub struct BlstP1 {
-    pub x: BlstFp,
-    pub y: BlstFp,
-    pub z: BlstFp
-}
-
-/*
-const G1_GENERATOR: G1 = G1 {
-    x: BlstFp {
-        l: [0x5cb38790fd530c16,
-            0x7817fc679976fff5,
-            0x154f95c7143ba1c1,
-            0xf0ae6acdf3d0e747,
-            0xedce6ecc21dbf440,
-            0x120177419e0bfb75
-        ]
-    },
-    y: BlstFp {
-        l: [0xbaac93d50ce72271,
-            0x8c22631a7918fd8e,
-            0xdd595f13570725ce,
-            0x51ac582950405194,
-            0x0e1c8c3fad0059c0,
-            0x0bbc3efc5008a26a
-        ]
-    },
-    z: BlstFp {
-        l: [0x760900000002fffd,
-            0xebf4000bc40c0002,
-            0x5f48985753c758ba,
-            0x77ce585370525745,
-            0x5c071a97a256ec6d,
-            0x15f65ec3fa80e493
-        ]
-    }
-};
-*/
-
 extern "C" {
     fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
     fn free_fft_settings(settings: *mut KzgFFTSettings);
     fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     //fn fft_g1(output: *mut G1, input: *const G1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn poly_mul(output: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *const KzgFFTSettings) -> KzgRet;
-    // Blst
-    //fn g1_add_or_dbl(out: *mut G1, a: *const G1, b: *const G1);
-    //fn g1_equal(a: *const G1, b: *const G1) -> bool;
-    //fn g1_mul(out: *mut G1, a: *const G1, b: *const BlstFr);
 }
-
-/*
-impl G1 {
-    pub fn rand() -> G1 {
-        let mut ret = G1::default();
-        let random = Fr::rand();
-        unsafe {
-            g1_mul(&mut ret, &G1_GENERATOR, &random);
-        }
-        ret
-    }
-
-    pub fn is_equal(first: *const G1, second: *const G1) -> bool {
-        unsafe {
-            return g1_equal(first, second);
-        }
-    }
-
-    fn add_or_dbl(a: G1, b: *const G1) -> G1 {
-        let mut out = G1::default();
-        unsafe {
-            g1_add_or_dbl(&mut out, &a, b);
-        }
-        out
-    }
-}
-*/
 
 impl FFTSettings<BlstFr> for KzgFFTSettings {
     fn default() -> Self {
