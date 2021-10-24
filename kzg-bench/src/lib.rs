@@ -1,3 +1,1 @@
-mod finite;
-mod poly;
-mod fftsettings;
+pub mod tests;
