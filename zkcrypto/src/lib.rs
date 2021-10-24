@@ -10,13 +10,11 @@ pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
-
 pub type ZPoly = poly::KzgPoly;
 
 pub mod finite;
 pub mod utils;
 pub mod poly;
-//pub mod kzg;
 pub mod fftsettings;
 pub mod consts;
 pub mod zkfr;
@@ -28,9 +26,6 @@ pub mod curve {
 	pub mod scalar;	
 }
 pub type BlsScalar = curve::scalar::Scalar;
-// pub type ZkFr = poly::blsScalar;
-//pub use crate::kzg::{Commitment, Kzg, Proof};
-//pub use poly::Poly;
 
 pub trait Fr : Clone {
     // Assume that Fr can't fail on creation
@@ -71,40 +66,6 @@ pub trait Fr : Clone {
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
-
-    // fn zero() -> Self;
-
-    // fn one() -> Self;
-
-    // fn rand() -> Self;
-
-    // fn from_u64(u: u64) -> Self;
-
-    // fn is_one(&self) -> bool;
-
-    // fn is_zero(&self) -> bool;
-
-    // fn sqr(&self) -> Self;
-
-    // fn mul(&self, b: &Self) -> Self;
-
-    // fn add(&self, b: &Self) -> Self;
-
-    // fn sub(&self, b: &Self) -> Self;
-
-    // // fn eucl_inverse(&self) -> Self;
-
-    // fn negate(&self) -> Self;
-
-    // fn inverse(&self) -> Self;
-
-    // fn pow(&self, n: usize) -> Self;
-
-    // // fn get_scalar(&self) -> Scalar;
-
-    // fn equals(&self, b: &Self) -> bool;
-
-    // fn destroy(&self);
 }
 
 // pub trait FFTSettings<Coeff: ZkFr>: Clone {
