@@ -10,7 +10,6 @@ pub type P2 = blst::blst_p2;
 pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
-pub type G1 = blst::blst_p1;
 pub type G2 = blst::blst_p2;
 
 pub trait Fr: Clone + Debug {
@@ -50,11 +49,27 @@ pub trait Fr: Clone + Debug {
 
     fn equals(&self, b: &Self) -> bool;
 
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
+    fn destroy(&mut self);
+}
+
+pub trait G1: Clone {
+    fn default() -> Self;
+
+    fn add_or_double(&mut self, b: &Self) -> Self;
+
+    fn equals(&self, b: &Self) -> bool;
+
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
 
 pub trait FFTFr<Coeff: Fr> {
-    fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
+    fn fft_fr(&self, data: &mut [Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
+}
+
+pub trait FFTG1<Coeff: G1> {
+    fn fft_g1(&self, data: &mut [Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
 pub trait DAS<Coeff: Fr> {
@@ -70,6 +85,8 @@ pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {
+    fn default() -> Self;
+
     fn new(scale: usize) -> Result<Self, String>;
 
     fn get_max_width(&self) -> usize;
@@ -82,11 +99,12 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
 
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
 
-pub trait Poly<Coeff: Fr>: Clone + Debug{
-    fn default() -> Result<Self, String>;
+pub trait Poly<Coeff: Fr>: Clone  + Debug{
+    fn default() -> Self;
 
     fn new(size: usize) -> Result<Self, String>;
 
@@ -108,5 +126,6 @@ pub trait Poly<Coeff: Fr>: Clone + Debug{
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
 
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }

@@ -41,10 +41,6 @@ impl Polynomial {
                 return &x.clone().unwrap() * &eval;
             }).collect();
 
-        // for val in poly_evals_with_zero {
-        //     println!("{}", val.get_str(10));
-        // }
-
         let poly_with_zero_coeffs = fft_settings.fft(&poly_evals_with_zero, true);
         let mut poly_with_zero = Polynomial::from_fr(poly_with_zero_coeffs);
         poly_with_zero.shift_in_place();

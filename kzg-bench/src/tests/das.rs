@@ -21,10 +21,15 @@ pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TF
         evens.push(temp);
     }
 
+
     let odds = fft_settings.das_fft_extension(&mut evens).unwrap();
+    // println!("{:?}", expected_u);
+    // println!("{:?}", evens);
+    // println!("{:?}", odds);
 
     for i in 0..expected_u.len() {
         let expected = TFr::from_u64_arr(&expected_u[i]);
+        // println!("{:?}, {:?}", expected, &odds[i]);
         assert!(expected.equals(&odds[i]));
     }
 }
@@ -55,7 +60,7 @@ pub fn das_extension_test_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<T
                 data.push(odds[i / 2].clone());
             }
 
-            let coeffs = fft_settings.fft_fr(&data, true).unwrap();
+            let coeffs = fft_settings.fft_fr(&mut data, true).unwrap();
 
             for i in (width / 2)..(width) {
                 assert!(coeffs[i].is_zero());

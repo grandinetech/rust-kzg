@@ -1,10 +1,10 @@
 use crate::data_types::fr::Fr;
-use kzg::Poly;
 use crate::kzg10::Polynomial;
+use kzg::Poly;
 
 impl Poly<Fr> for Polynomial {
-    fn default() -> Result<Self, String> {
-        Ok(Polynomial { coeffs: vec![] })
+    fn default() -> Self {
+        Polynomial { coeffs: vec![] }
     }
 
     fn new(size: usize) -> Result<Self, String> {

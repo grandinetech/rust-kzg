@@ -76,18 +76,18 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
         // Pad all partial polynomials to same length, compute their FFT and multiply them together
         let mut padded_partial = pad_poly(&partials[0], domain_size)?;
-        let mut eval_result = self.fft_fr(&padded_partial, false)?;
+        let mut eval_result = self.fft_fr(&mut padded_partial, false)?;
 
         for i in 1..(partials.len()) {
             padded_partial = pad_poly(&partials[i], domain_size)?;
-            let evaluated_partial = self.fft_fr(&padded_partial, false)?;
+            let evaluated_partial = self.fft_fr(&mut padded_partial, false)?;
             for j in 0..domain_size {
                 eval_result[j] = eval_result[j].mul(&evaluated_partial[j]);
             }
         }
 
         // Apply an inverse FFT to produce a new poly. Limit its size to out_degree + 1
-        let coeffs = self.fft_fr(&eval_result, true)?;
+        let coeffs = self.fft_fr(&mut eval_result, true)?;
         let ret = FsPoly { coeffs: coeffs[..(out_degree + 1)].to_vec() };
 
         Ok(ret)
@@ -200,7 +200,8 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         }
 
         // Evaluate calculated poly
-        zero_eval = self.fft_fr(&zero_poly.coeffs, false)?;
+        let mut coeffs = zero_poly.coeffs.to_vec();
+        zero_eval = self.fft_fr(&mut coeffs, false)?;
 
         Ok((zero_eval, zero_poly))
     }

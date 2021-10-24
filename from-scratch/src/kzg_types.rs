@@ -1,7 +1,8 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr};
-use kzg::{G1, G2, FFTSettings, Fr, Poly};
+use kzg::{G1 as CG1, G2, FFTSettings, Fr, Poly};
 
+#[derive(Debug)]
 pub struct FsFr(blst::blst_fr);
 
 impl Fr for FsFr {
@@ -170,12 +171,13 @@ impl Clone for FsFr {
 
 impl Copy for FsFr {}
 
+#[derive(Debug)]
 pub struct FsPoly {
     pub coeffs: Vec<FsFr>,
 }
 
 impl Poly<FsFr> for FsPoly {
-    fn default() -> Result<Self, String> {
+    fn default() -> Self {
         todo!()
     }
 
@@ -277,6 +279,9 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         let max_width: usize = 1 << scale;
         let root_of_unity = FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
+        println!("scale: {}, {:?}",scale,  &SCALE2_ROOT_OF_UNITY[scale]);
+        println!("{:?}",  FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]));
+        println!("{:?}", &root_of_unity);
         // create max_width of roots & store them reversed as well
         let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
@@ -288,6 +293,9 @@ impl FFTSettings<FsFr> for FsFFTSettings {
             expanded_roots_of_unity,
             reverse_roots_of_unity,
         })
+    }
+    fn default() -> Self {
+        todo!()
     }
 
     fn get_max_width(&self) -> usize {
@@ -323,6 +331,8 @@ impl Clone for FsFFTSettings {
         output
     }
 }
+
+pub struct G1 (pub blst::blst_p1);
 
 pub struct FsKZGSettings {
     pub fs: FsFFTSettings,

@@ -73,11 +73,13 @@ pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() 
     let scale = 21;
     let width: usize = 1 << scale;
 
-    let fft_settings = TFFTSettings::new(scale).unwrap();
+    let mut fft_settings = TFFTSettings::new(scale).unwrap();
     assert_eq!(fft_settings.get_max_width(), width);
 
     for i in 0..width {
         let prod = fft_settings.get_expanded_roots_of_unity_at(i).mul(&fft_settings.get_reverse_roots_of_unity_at(i));
         assert!(prod.is_one());
     }
+
+    fft_settings.destroy();
 }
