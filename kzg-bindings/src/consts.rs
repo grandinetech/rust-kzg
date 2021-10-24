@@ -1,4 +1,4 @@
-use kzg::{Fr, G1};
+use kzg::Fr;
 use crate::finite::BlstFr;
 
 #[repr(C)]

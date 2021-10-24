@@ -147,21 +147,12 @@ impl G1 for BlstP1 {
         G1_IDENTITY
     }
 
-    fn rand() -> Self {
-        let mut ret = G1::default();
-        let random = Fr::rand();
+    fn add_or_double(&mut self, b: &Self) -> Self {
+        let out = self;
         unsafe {
-            g1_mul(&mut ret, &G1_GENERATOR, &random);
+            g1_add_or_dbl(out, b, &G1_GENERATOR);
         }
-        ret
-    }
-
-    fn add_or_double(&self, b: &Self) -> Self {
-        let mut out = G1::default();
-        unsafe {
-            g1_add_or_dbl(&mut out, self, b);
-        }
-        out
+        *out
     }
 
     fn equals(&self, b: &Self) -> bool {
