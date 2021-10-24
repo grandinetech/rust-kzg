@@ -43,7 +43,7 @@ pub trait Fr: Clone {
 
     fn inverse(&self) -> Self;
 
-    fn pow(&self, n: usize) -> Self;
+    fn pow(&self, a: &Self, n: u64) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
 
