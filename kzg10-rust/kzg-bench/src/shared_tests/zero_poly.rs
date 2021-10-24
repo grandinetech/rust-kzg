@@ -10,21 +10,39 @@ pub mod tests {
     use mcl_rust::mcl_methods::init;
     use mcl_rust::CurveType;
 
-    #[test]
-    fn test_reduce_partials_() {
-        assert!(init(CurveType::BLS12_381));
-        test_reduce_partials::<Fr, FFTSettings, Polynomial>();
-    }
+    // #[test]
+    // fn test_reduce_partials_() {
+    //     assert!(init(CurveType::BLS12_381));
+    //     test_reduce_partials::<Fr, FFTSettings, Polynomial>();
+    // }
 
-    #[test]
-    fn reduce_partials_random_() {
-        assert!(init(CurveType::BLS12_381));
-        reduce_partials_random::<Fr, FFTSettings, Polynomial>();
-    }
+    // #[test]
+    // fn reduce_partials_random_() {
+    //     assert!(init(CurveType::BLS12_381));
+    //     reduce_partials_random::<Fr, FFTSettings, Polynomial>();
+    // }
 
     #[test]
     fn check_test_data_() {
         assert!(init(CurveType::BLS12_381));
+
+        // let arr: [u64; 4] = [
+        //     0xffffffff00000000,
+        //     0x53bda402fffe5bfe,
+        //     0x3339d80809a1d805,
+        //     0x73eda753299d7d48,
+        // ];
+        // let from_arr = Fr::from_u64_arr(&arr);
+        // let from_str = Fr::from_str(
+        //     "52435875175126190479447740508185965837690552500527637822603658699938581184512",
+        //     10,
+        // )
+        // .unwrap();
+
+        // //52435875175126190479447740508185965837690552500527637822603658699938581184512
+        // // println!("{:?}", &expected_poly);
+        // println!("{:?}", &from_arr);
+        // println!("{:?}", &from_str);
         check_test_data::<Fr, FFTSettings, Polynomial>();
     }
 

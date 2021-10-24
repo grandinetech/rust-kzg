@@ -1,10 +1,12 @@
 use crate::mcl_methods;
+use primitive_types::{U128, U256};
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
+use std::str::from_utf8;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -48,6 +50,19 @@ pub struct Fr {
 impl Fr {
     pub fn get_order() -> String {
         mcl_methods::get_curve_order()
+    }
+
+    pub fn from_u64_arr(u: &[u64; 4]) -> Self {
+        let r64: U256 = U256([0, 1, 0, 0]); //2^64
+        let r128: U256 = U256([0, 0, 1, 0]); //2^128
+        let r192: U256 = U256([0, 0, 0, 1]); //2^192
+        let a = U256([u[0], 0, 0, 0]);
+        let b = U256([u[1], 0, 0, 0]);
+        let c = U256([u[2], 0, 0, 0]);
+        let d = U256([u[3], 0, 0, 0]);
+
+        let res = a + b * r64 + c * r128 + d * r192;
+        Fr::from_str(&res.to_string(), 10).unwrap()
     }
 }
 common_impl![Fr, mclBnFr_isEqual, mclBnFr_isZero];
