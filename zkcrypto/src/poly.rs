@@ -1,10 +1,10 @@
 //! This module provides an implementation of polinomials over bls12_381::Scalar
 pub use super::{ZPoly, BlsScalar};
-pub use kzg::{Poly, Fr};
+pub use kzg::{Poly, Fr, FFTSettings};
 use crate::zkfr::{blsScalar, fr_div}; 
 //use crate::Fr;
 use crate::utils::*;
-use crate::fftsettings::{FFTSettings, new_fft_settings};
+use crate::fftsettings::{ZkFFTSettings, new_fft_settings};
 use crate::consts::*;
 use crate::fft_fr::*;
 
@@ -18,11 +18,11 @@ pub struct KzgPoly {
 impl Poly<blsScalar> for ZPoly {
     fn default() -> Self {
         Self {
-            coeffs: vec![Default::default(); 4] // blsScalar::default()
+            coeffs: vec![<blsScalar as Fr>::default(); 4] // blsScalar::default()
         }
     }
 	fn new(size: usize) -> Result<Self, String> {
-        Ok(Self{coeffs: vec![Default::default(); size]}) // blsScalar::default()
+        Ok(Self{coeffs: vec![<blsScalar as Fr>::default(); size]}) // blsScalar::default()
     }
 	
 	fn get_coeff_at(&self, i: usize) -> blsScalar {
@@ -90,6 +90,17 @@ impl Poly<blsScalar> for ZPoly {
     }
 
 	fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
+		// let mut poly = ZPoly::new(new_len).unwrap();
+        // unsafe {
+            // return match poly_inverse(self, new_len) {
+                // _ => {
+                    // self.destroy();
+                    // Ok(poly)
+                // },
+                // e => Err(format!("An error has occurred in \"Poly::inverse\" ==> {:?}", e))
+            // }
+        // }
+		
 		poly_inverse(self, new_len)
 		
 	}
@@ -161,10 +172,10 @@ pub fn poly_inverse(b: &ZPoly, output_len: usize) -> Result<ZPoly, String> {
     assert!(b.coeffs.len() > 0);
     assert!(!b.coeffs[0].is_zero());
 
-    let mut output = ZPoly::default(); // { coeffs: Vec::default() };
+    let mut output = ZPoly {coeffs: Vec::default()};// ZPoly::new(output_len); // { coeffs: Vec::default() };
     // If the input polynomial is constant, the remainder of the series is zero
     if b.coeffs.len() == 1 {
-        
+        // is this right?
         output.coeffs[0] = b.coeffs[0].inverse();
         for i in 1..output_len {
             output.coeffs[i] = blsScalar::zero(); // not sure if this is right
@@ -176,10 +187,12 @@ pub fn poly_inverse(b: &ZPoly, output_len: usize) -> Result<ZPoly, String> {
 
     let scale: usize = log2_pow2(next_power_of_two(2 * output_len - 1));
 
-    let fs = FFTSettings::new(scale).unwrap();
+    //let fs: ZkFFTSettings = ZkFFTSettings::new(scale).unwrap();
+    let fs: ZkFFTSettings = ZkFFTSettings::from_scale(scale).unwrap();
 
-    let mut tmp0 = ZPoly::default(); // { coeffs: Vec::default() };
-    let mut tmp1 = ZPoly::default(); // { coeffs: Vec::default() };
+
+    let mut tmp0 = ZPoly { coeffs: Vec::default() }; // { coeffs: Vec::default() };
+    let mut tmp1 = ZPoly { coeffs: Vec::default() }; // { coeffs: Vec::default() };
 
     output.coeffs[0] = b.coeffs[0].inverse();
 
@@ -204,6 +217,8 @@ pub fn poly_inverse(b: &ZPoly, output_len: usize) -> Result<ZPoly, String> {
             tmp0.coeffs[i] = cloned_fr.negate();
         }
         let fr_two = blsScalar::from_u64(2);
+		
+		// is this good?
         tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
 
         tmp1 = poly_mul_(&output, &tmp0, &fs, d + 1).unwrap();
@@ -215,6 +230,71 @@ pub fn poly_inverse(b: &ZPoly, output_len: usize) -> Result<ZPoly, String> {
     assert!(d + 1 == output_len);
     Ok(output)
 }
+
+// pub fn poly_inverse(b: &ZPoly, out: &ZPoly) -> Result<ZPoly, String> {
+    // assert!(b.coeffs.len() > 0);
+    // assert!(!b.coeffs[0].is_zero());
+	// assert!(out.coeffs.len() > 0);
+
+    // let mut output = ZPoly {coeffs: Vec::default()}; // { coeffs: Vec::default() };
+    // // If the input polynomial is constant, the remainder of the series is zero
+    // if b.coeffs.len() == 1 {
+        // // is this right?
+        // output.coeffs[0] = b.coeffs[0].inverse();
+        // for i in 1..output_len {
+            // output.coeffs[i] = blsScalar::zero(); // not sure if this is right
+        // }
+        // return Ok(output);
+    // }
+
+    // let maxd = output_len - 1;
+
+    // let scale: usize = log2_pow2(next_power_of_two(2 * output_len - 1));
+
+    // //let fs: ZkFFTSettings = ZkFFTSettings::new(scale).unwrap();
+    // let fs: ZkFFTSettings = ZkFFTSettings::from_scale(scale).unwrap();
+
+
+    // let mut tmp0 = ZPoly { coeffs: Vec::default() }; // { coeffs: Vec::default() };
+    // let mut tmp1 = ZPoly { coeffs: Vec::default() }; // { coeffs: Vec::default() };
+
+    // output.coeffs[0] = b.coeffs[0].inverse();
+
+    // let mut d: usize = 0;
+
+    // let mut mask: usize = 1 << log2_u64(maxd);
+    // while mask != 0 {
+        // d = 2 * d + (if (maxd & mask) != 0 { 1 } else { 0 });
+        // mask = mask >> 1;
+
+        // let len_temp;
+        // if d + 1 < b.coeffs.len() + output_len - 1 {
+            // len_temp = d + 1;
+        // } else {
+            // len_temp = b.coeffs.len() + output_len - 1
+        // }
+
+        // tmp0 = poly_mul_(&b, &output, &fs, len_temp).unwrap();
+
+        // for i in 0..tmp0.coeffs.len() {
+            // let cloned_fr = tmp0.coeffs[i].clone();
+            // tmp0.coeffs[i] = cloned_fr.negate();
+        // }
+        // let fr_two = blsScalar::from_u64(2);
+		
+		// // is this good?
+        // tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
+
+        // tmp1 = poly_mul_(&output, &tmp0, &fs, d + 1).unwrap();
+
+        // for i in 0..tmp1.coeffs.len() {
+            // output.coeffs.push(tmp1.coeffs[i]);
+        // }
+    // }
+    // assert!(d + 1 == output_len);
+    // Ok(output)
+// }
+
 
 pub fn poly_fast_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String> {
 
@@ -312,14 +392,14 @@ pub fn pad(input: &Vec<blsScalar>, n_in: usize, n_out: usize) -> Result<Vec<blsS
     }
     Ok(output)
 }
-// fs_ Option<&FFTSettings> ar reikia & ar ne?
-pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly, fs_: Option<FFTSettings> ) -> Result<ZPoly, String> {
+// fs_ Option<&ZkFFTSettings> ar reikia & ar ne?
+pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly, fs_: Option<ZkFFTSettings> ) -> Result<ZPoly, String> {
 
     let a_len = min_u64(a.coeffs.len(), out).unwrap();
     let b_len = min_u64(b.coeffs.len(), out).unwrap();
     let length = next_power_of_two(a_len + b_len - 1);
 
-    let mut fs = FFTSettings::new(0).unwrap(); //FFTSettings::new(0).unwrap();
+    let mut fs = ZkFFTSettings::new(0).unwrap(); //ZkFFTSettings::new(0).unwrap();
     match fs_ {
 		Some(x) => fs = x.clone(),
 		None => {
@@ -383,7 +463,7 @@ pub fn poly_mul_direct(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly,
     Ok(output)
 }
 
-pub fn poly_mul_(a: &ZPoly, b: &ZPoly, fs: &FFTSettings, output_len: usize) -> Result<ZPoly, String> {
+pub fn poly_mul_(a: &ZPoly, b: &ZPoly, fs: &ZkFFTSettings, output_len: usize) -> Result<ZPoly, String> {
     if a.coeffs.len() < 64 || b.coeffs.len() < 64 || output_len < 128 { // Tunable parameter
         return poly_mul_direct(&a, &b, output_len);
     } else {
@@ -392,7 +472,7 @@ pub fn poly_mul_(a: &ZPoly, b: &ZPoly, fs: &FFTSettings, output_len: usize) -> R
 }
 
 pub fn poly_mul(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly, String> {
-    let fft_settings = FFTSettings::new(0).unwrap();
+    let fft_settings = ZkFFTSettings::new(0).unwrap();
     return poly_mul_(&a, &b, &fft_settings, output_len);
 }
 

@@ -1,4 +1,4 @@
-use crate::fftsettings::{FFTSettings, new_fft_settings};
+use crate::fftsettings::{ZkFFTSettings, new_fft_settings};
 use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
 // use crate::Fr;
@@ -25,7 +25,7 @@ pub fn fft_fr_fast(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roo
 }
 
 /// Fast Fourier Transform for finite field elements
-pub fn fft_fr(data: &[blsScalar], inverse: bool, fft_settings: &FFTSettings) -> Result<Vec<blsScalar>, String> {
+pub fn fft_fr(data: &[blsScalar], inverse: bool, fft_settings: &ZkFFTSettings) -> Result<Vec<blsScalar>, String> {
     if data.len() > fft_settings.max_width {
         return Err(String::from("Supplied list is longer than the available max width"));
     } else if !is_power_of_two(data.len()) {

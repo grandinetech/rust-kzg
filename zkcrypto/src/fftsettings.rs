@@ -1,50 +1,63 @@
-// gonna have to change FFTSettings to something different, because of lib.rs trait 'FFTSettings'
+// gonna have to change ZkFFTSettings to something different, because of lib.rs trait 'ZkFFTSettings'
 
 use blst::blst_fr as BlstFr;
 use crate::consts::*;
 use crate::zkfr::blsScalar;
 use blst::blst_fr_from_uint64;
-
+use kzg::FFTSettings;
 
 #[derive(Clone)]
-pub struct FFTSettings {
+pub struct ZkFFTSettings {
     pub max_width: usize,
     pub root_of_unity: blsScalar,
     pub expanded_roots_of_unity: Vec<blsScalar>,
     pub reverse_roots_of_unity: Vec<blsScalar>,
 }
 
-impl Default for FFTSettings {
-    fn default() -> FFTSettings {
-        FFTSettings {
+impl ZkFFTSettings {
+	pub fn from_scale(max_scale: usize) -> Result<ZkFFTSettings, String> {
+        if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
+            return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+        }
+        let max_width: usize = 1 << max_scale;
+
+        Ok(ZkFFTSettings {
+            max_width: max_width,
+            ..FFTSettings::default()
+        })
+    }
+
+}
+
+
+impl FFTSettings<blsScalar> for ZkFFTSettings {
+
+	fn default() -> ZkFFTSettings {
+        ZkFFTSettings {
             max_width: 0,
             root_of_unity: blsScalar ( [0, 0, 0, 0] ),
             expanded_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
         }
     }
-}
-
-
-impl FFTSettings {
-
-	pub fn new(scale: usize) -> Result<FFTSettings, String> {
+	
+	fn new(scale: usize) -> Result<ZkFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from("Scale is expected to be within root of unity matrix row size"));
         }
 
         // max_width = 2 ^ max_scale
         let max_width: usize = 1 << scale;
-		let mut ret = blsScalar::default();
-		blsScalar::from_raw(SCALE2_ROOT_OF_UNITY[scale]);
-        let root_of_unity = ret;
+		//let mut ret = blsScalar::default();
+		//blsScalar::from_raw(SCALE2_ROOT_OF_UNITY[scale]);
+        let root_of_unity = blsScalar::from_raw(SCALE2_ROOT_OF_UNITY[scale]);
 
         // create max_width of roots & store them reversed as well
         let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
-        Ok(FFTSettings {
+        Ok(ZkFFTSettings {
             max_width,
             root_of_unity,
             expanded_roots_of_unity,
@@ -52,17 +65,17 @@ impl FFTSettings {
         })
     }
 	
-    pub fn from_scale(max_scale: usize) -> Result<FFTSettings, String> {
-        if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from("Scale is expected to be within root of unity matrix row size"));
-        }
-        let max_width: usize = 1 << max_scale;
+    // fn from_scale(max_scale: usize) -> Result<ZkFFTSettings, String> {
+        // if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
+            // return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+        // }
+        // let max_width: usize = 1 << max_scale;
 
-        Ok(FFTSettings {
-            max_width: max_width,
-            ..Default::default()
-        })
-    }
+        // Ok(ZkFFTSettings {
+            // max_width: max_width,
+            // ..Default::default()
+        // })
+    // }
 	fn get_max_width(&self) -> usize {
         self.max_width
     }
@@ -83,32 +96,32 @@ impl FFTSettings {
         &self.reverse_roots_of_unity
     }
 
-    fn destroy(&self) {}
+    fn destroy(&mut self) {}
 	
 }
 
 
-pub fn new_fft_settings(max_scale: usize) -> FFTSettings {
-    FFTSettings::default()
+pub fn new_fft_settings(max_scale: usize) -> ZkFFTSettings {
+    ZkFFTSettings::default()
 }
 
-//Code for FFTSettings with blst_fr
+//Code for ZkFFTSettings with blst_fr
 
 // use blst::blst_fr as BlstFr;
 // use crate::consts::*;
 // use crate::zkfr::blsScalar;
 // use blst::blst_fr_from_uint64;
 
-// pub struct FFTSettings {
+// pub struct ZkFFTSettings {
     // pub max_width: usize,
     // pub root_of_unity: BlstFr,
     // pub expanded_roots_of_unity: Vec<BlstFr>,
     // pub reverse_roots_of_unity: Vec<BlstFr>,
 // }
 
-// impl Default for FFTSettings {
-    // fn default() -> FFTSettings {
-        // FFTSettings {
+// impl Default for ZkFFTSettings {
+    // fn default() -> ZkFFTSettings {
+        // ZkFFTSettings {
             // max_width: 0,
             // root_of_unity: BlstFr { l: [0, 0, 0, 0] },
             // expanded_roots_of_unity: Vec::new(),
@@ -117,9 +130,9 @@ pub fn new_fft_settings(max_scale: usize) -> FFTSettings {
     // }
 // }
 
-// impl FFTSettings {
+// impl ZkFFTSettings {
 
-	// pub fn new(scale: usize) -> Result<FFTSettings, String> {
+	// pub fn new(scale: usize) -> Result<ZkFFTSettings, String> {
         // if scale >= SCALE2_ROOT_OF_UNITY.len() {
             // return Err(String::from("Scale is expected to be within root of unity matrix row size"));
         // }
@@ -135,7 +148,7 @@ pub fn new_fft_settings(max_scale: usize) -> FFTSettings {
         // let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         // reverse_roots_of_unity.reverse();
 
-        // Ok(FFTSettings {
+        // Ok(ZkFFTSettings {
             // max_width,
             // root_of_unity,
             // expanded_roots_of_unity,
@@ -143,13 +156,13 @@ pub fn new_fft_settings(max_scale: usize) -> FFTSettings {
         // })
     // }
 	
-    // pub fn from_scale(max_scale: usize) -> Result<FFTSettings, String> {
+    // pub fn from_scale(max_scale: usize) -> Result<ZkFFTSettings, String> {
         // if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
             // return Err(String::from("Scale is expected to be within root of unity matrix row size"));
         // }
         // let max_width: usize = 1 << max_scale;
 
-        // Ok(FFTSettings {
+        // Ok(ZkFFTSettings {
             // max_width: max_width,
             // ..Default::default()
         // })
@@ -179,6 +192,6 @@ pub fn new_fft_settings(max_scale: usize) -> FFTSettings {
 // }
 
 
-// pub fn new_fft_settings(max_scale: usize) -> FFTSettings {
-    // FFTSettings::default()
+// pub fn new_fft_settings(max_scale: usize) -> ZkFFTSettings {
+    // ZkFFTSettings::default()
 // }

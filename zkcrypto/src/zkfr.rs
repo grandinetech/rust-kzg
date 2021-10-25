@@ -47,21 +47,22 @@ impl Fr for blsScalar {
 	}
 	
 	fn is_one(&self) -> bool {
-		let mut val: [u64; 4] = [0; 4];		
-		blsScalar::from_raw(val);
-		return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
+		self.eq(&blsScalar::one())
+		// let mut val: [u64; 4] = [0; 4];		
+		// blsScalar::from_raw(val);
+		// return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
 	}
 
     fn is_zero(&self) -> bool{
-        let mut val: [u64; 4] = [0; 4];	
-		blsScalar::from_raw(val);
-        return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
+		self.eq(&blsScalar::zero())
+	
+        // let mut val: [u64; 4] = [0; 4];	
+		// <blsScalar as From<u64>>::from(val.as_mut_ptr());
+        // return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 	
 	fn sqr(&self) -> Self {
 		blsScalar::square(&self)
-		
-	
 	}
 	
     fn mul(&self, b: &Self) -> Self {
