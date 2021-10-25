@@ -63,7 +63,7 @@ pub trait G1: Clone {
 }
 
 pub trait FFTFr<Coeff: Fr> {
-    fn fft_fr(&self, data: &mut [Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
+    fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
 pub trait FFTG1<Coeff: G1> {
