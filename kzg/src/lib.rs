@@ -1,15 +1,3 @@
-pub type Pairing = blst::Pairing;
-pub type Fp = blst::blst_fp;
-pub type Fp12 = blst::blst_fp12;
-pub type Fp6 = blst::blst_fp6;
-pub type P1 = blst::blst_p1;
-pub type P1Affine = blst::blst_p1_affine;
-pub type P2 = blst::blst_p2;
-pub type P2Affine = blst::blst_p2_affine;
-pub type Scalar = blst::blst_scalar;
-pub type Uniq = blst::blst_uniq;
-pub type G2 = blst::blst_p2;
-
 pub trait Fr: Clone {
     // Assume that Fr can't fail on creation
 
@@ -60,6 +48,10 @@ pub trait G1: Clone {
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
+}
+
+pub trait G2: Clone {
+    // TODO: populate with needed fns
 }
 
 pub trait FFTFr<Coeff: Fr> {
