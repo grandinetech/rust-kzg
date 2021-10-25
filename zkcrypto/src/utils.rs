@@ -2,7 +2,7 @@ use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
 //use poly::blsScalar as Fr;
 use crate::curve::scalar::Scalar as Fr; // Gal naudot crate::zkfr::blsScalar;?
 use bls12_381::*;
-use super::{P1, P2, P1Affine};
+// use kzg::{P1, P2, P1Affine};
 use blst::blst_fr as BlstFr;
 use std::fmt;
 use super::*;
@@ -10,7 +10,7 @@ use super::*;
 use crate::poly::ZPoly as Poly;
 // use crate::poly::Poly;
 
-use pairing::Engine;
+//use pairing::Engine;
 
 pub struct polydata {
     coeffs: Vec<BlstFr>,

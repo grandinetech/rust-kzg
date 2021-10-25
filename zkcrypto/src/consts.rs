@@ -1,7 +1,8 @@
 use crate::zkfr::blsScalar;
 use blst::blst_fr as BlstFr;
 use blst::{blst_fr_from_uint64, blst_fr_mul};
-use crate::Fr;
+// use crate::Fr;
+use kzg::Fr;
 
 
 pub (crate) const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
@@ -43,7 +44,7 @@ pub const SCALE_FACTOR: u64 = 5;
 pub const NUM_ROOTS: usize = 32;
 
 pub fn expand_root_of_unity(root: &blsScalar, width: usize) -> Result<Vec<blsScalar>, String> {
-    let mut ret = blsScalar::default();
+    let mut ret = Default::default(); // blsScalar::default()
 	let mut generated_powers = vec![ret, root.clone()];
 
     while !(generated_powers.last().unwrap().is_one()) {

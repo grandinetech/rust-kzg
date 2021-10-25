@@ -1,6 +1,7 @@
 // Adds implementation for blsScalar (Fr)
 
-pub use super::{Fr, ZPoly, BlsScalar};
+pub use super::{ZPoly, BlsScalar};
+use kzg::Fr;
 pub use crate::curve::scalar::Scalar as blsScalar; 
 //pub use crate::{Fr};
 
@@ -14,9 +15,9 @@ pub use crate::curve::scalar::Scalar as blsScalar;
 
 impl Fr for blsScalar {
 
-	// fn default() -> Self {
-		// blsScalar::default()
-	// }
+	fn default() -> Self {
+		<blsScalar as Default>::default()
+	}
 	
 	fn zero() -> Self {
 		blsScalar::zero()
@@ -64,21 +65,21 @@ impl Fr for blsScalar {
 	}
 	
     fn mul(&self, b: &Self) -> Self {
-		let mut ret = Self::default(); // is this needed?
+		let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
 			blsScalar::mul(&self, &b) // &b.0 or &ret.0?
 	}
 	
 	fn add(&self, b: &Self) -> Self {
-		let mut ret = Self::default(); // is this needed?
+		let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
 			blsScalar::add(&self, &b)
 	}
 	fn sub(&self, b: &Self) -> Self {
-		let mut ret = Self::default(); // is this needed?
+		let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
 		blsScalar::sub(&self, &b) // for this
 	}
 	
 	fn eucl_inverse(&self) -> Self { 
-		let mut ret = Self::default();
+		let mut ret = Default::default(); //Self::default()
 		blsScalar::invert(&ret).unwrap()
 	}
 	
@@ -107,7 +108,7 @@ impl Fr for blsScalar {
 	}
 	
 	fn inverse(&self) -> Self {
-		let mut ret = Self::default();
+		let mut ret = Default::default(); // Self::default()
 		blsScalar::invert(&ret).unwrap()
 	}
 	fn equals(&self, other: &Self) -> bool {

@@ -1,7 +1,8 @@
 //! This module provides an implementation of polinomials over bls12_381::Scalar
-pub use super::{Poly, ZPoly, BlsScalar};
+pub use super::{ZPoly, BlsScalar};
+pub use kzg::{Poly, Fr};
 use crate::zkfr::{blsScalar, fr_div}; 
-use crate::Fr;
+//use crate::Fr;
 use crate::utils::*;
 use crate::fftsettings::{FFTSettings, new_fft_settings};
 use crate::consts::*;
@@ -17,11 +18,11 @@ pub struct KzgPoly {
 impl Poly<blsScalar> for ZPoly {
     fn default() -> Self {
         Self {
-            coeffs: vec![blsScalar::default(); 4]
+            coeffs: vec![Default::default(); 4] // blsScalar::default()
         }
     }
 	fn new(size: usize) -> Result<Self, String> {
-        Ok(Self{coeffs: vec![blsScalar::default(); size]})
+        Ok(Self{coeffs: vec![Default::default(); size]}) // blsScalar::default()
     }
 	
 	fn get_coeff_at(&self, i: usize) -> blsScalar {
@@ -89,7 +90,7 @@ impl Poly<blsScalar> for ZPoly {
     }
 
 	fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
-		todo!()
+		poly_inverse(self, new_len)
 		
 	}
 
@@ -122,7 +123,7 @@ pub fn poly_long_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String>
     }
 
     
-    let mut a = vec![blsScalar::default(); dividend.coeffs.len()];
+    let mut a = vec![Default::default(); dividend.coeffs.len()];// blsScalar::default()
     for i in 0..dividend.coeffs.len() {
     
         a.push(dividend.coeffs[i]);

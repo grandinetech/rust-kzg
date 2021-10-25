@@ -1,8 +1,8 @@
 use crate::fftsettings::{FFTSettings, new_fft_settings};
 use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
-use crate::Fr;
-//use kzg::Fr;
+// use crate::Fr;
+use kzg::{Fr, FFTFr};
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roots: &[blsScalar], roots_stride: usize) {
@@ -34,7 +34,7 @@ pub fn fft_fr(data: &[blsScalar], inverse: bool, fft_settings: &FFTSettings) -> 
 
     // In case more roots are provided with fft_settings, use a larger stride
     let stride = fft_settings.max_width / data.len();
-    let mut ret = vec![blsScalar::default(); data.len()];
+    let mut ret = vec![Fr::default(); data.len()]; // blsScalar::default()
 
     // Inverse is same as regular, but all constants are reversed and results are divided by n
     // This is a property of the DFT matrix
