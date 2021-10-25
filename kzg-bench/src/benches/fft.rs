@@ -1,4 +1,4 @@
-use criterion::{Criterion};
+use criterion::Criterion;
 use kzg::{FFTFr, FFTSettings, Fr};
 
 pub fn bench_fft_fr<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(c: &mut Criterion) {

@@ -18,8 +18,20 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     let mut out1 = vec![TFr::default(); fft_settings.get_max_width()];
 
     // Compare fast and slow FFT approach
-    fft_fr_slow(&mut out0, &data, 1, &fft_settings.get_expanded_roots_of_unity(), 1);
-    fft_fr_fast(&mut out1, &data, 1, &fft_settings.get_expanded_roots_of_unity(), 1);
+    fft_fr_slow(
+        &mut out0,
+        &data,
+        1,
+        &fft_settings.get_expanded_roots_of_unity(),
+        1,
+    );
+    fft_fr_fast(
+        &mut out1,
+        &data,
+        1,
+        &fft_settings.get_expanded_roots_of_unity(),
+        1,
+    );
 
     for i in 0..fft_settings.get_max_width() {
         assert!(out0[i].equals(&out1[i]));
@@ -48,6 +60,7 @@ pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
 
 /// Check the inverse FFT operation on precomputed values
 pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
+    #[rustfmt::skip]
     let inv_fft_expected: [[u64; 4]; 16] =
         [
             [0x7fffffff80000008, 0xa9ded2017fff2dff, 0x199cec0404d0ec02, 0x39f6d3a994cebea4],

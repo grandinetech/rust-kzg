@@ -1,6 +1,10 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr, blst_fp, blst_p1, blst_p2, blst_fp2};
-use kzg::{G1, FFTSettings, Fr, Poly};
+use blst::{
+    blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
+    blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
+    blst_uint64_from_fr,
+};
+use kzg::{FFTSettings, Fr, Poly, G1};
 
 pub struct FsFr(blst::blst_fr);
 
@@ -223,7 +227,9 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn new(size: usize) -> Result<Self, String> {
-        Ok(Self { coeffs: vec![FsFr::default(); size] })
+        Ok(Self {
+            coeffs: vec![FsFr::default(); size],
+        })
     }
 
     fn get_coeff_at(&self, i: usize) -> FsFr {
@@ -298,7 +304,9 @@ impl Poly<FsFr> for FsPoly {
 
 impl Clone for FsPoly {
     fn clone(&self) -> Self {
-        FsPoly { coeffs: self.coeffs.clone() }
+        FsPoly {
+            coeffs: self.coeffs.clone(),
+        }
     }
 }
 
@@ -317,7 +325,9 @@ impl FFTSettings<FsFr> for FsFFTSettings {
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
     fn new(scale: usize) -> Result<FsFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+            return Err(String::from(
+                "Scale is expected to be within root of unity matrix row size",
+            ));
         }
 
         // max_width = 2 ^ max_scale

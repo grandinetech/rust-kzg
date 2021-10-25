@@ -28,3 +28,13 @@ jobs:
       with:
         command: bench
         args: --manifest-path from-scratch/Cargo.toml
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path from-scratch/Cargo.toml
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path kzg-bench/Cargo.toml

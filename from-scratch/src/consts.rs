@@ -1,6 +1,6 @@
-use blst::{blst_fp2, blst_fp, blst_p2};
-use kzg::Fr;
 use crate::kzg_types::{FsFr, FsG1, FsG2};
+use blst::{blst_fp, blst_fp2, blst_p2};
+use kzg::Fr;
 
 // pub static G1_IDENTITY: FsG1 = FsG1::from_xyz(
 //     blst_fp { l: [0, 0, 0, 0, 0, 0] },
@@ -12,6 +12,7 @@ pub const SCALE_FACTOR: u64 = 5;
 
 pub const NUM_ROOTS: usize = 32;
 /// The roots of unity. Every root_i equals 1 when raised to the power of (2 ^ i)
+#[rustfmt::skip]
 pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000],
     [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48],

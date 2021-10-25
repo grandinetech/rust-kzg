@@ -1,4 +1,4 @@
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 use kzg::Fr;
 use kzg_bench::benches::fft::bench_fft_fr;
 use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr};

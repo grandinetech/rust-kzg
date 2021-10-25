@@ -1,2 +1,2 @@
-pub mod tests;
 pub mod benches;
+pub mod tests;

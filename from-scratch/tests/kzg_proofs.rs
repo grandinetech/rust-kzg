@@ -61,7 +61,6 @@ mod tests {
     //     // Initialise the secrets and data structures
     //     generate_trusted_setup(s1, s2, &secret, secrets_len); //TODO: create this function
 
-
     //     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs1, 4)); // ln_2 of coeffs.len()
     //     TEST_CHECK(C_KZG_OK == new_kzg_settings(&kzgSettings_1, s1, s2, secrets_len, &fs1));
 

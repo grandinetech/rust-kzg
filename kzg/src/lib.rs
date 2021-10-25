@@ -67,11 +67,20 @@ pub trait DAS<Coeff: Fr> {
 }
 
 pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<Polynomial, String>;
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
+        -> Result<Polynomial, String>;
 
-    fn reduce_partials(&self, domain_size: usize, partials: &[Polynomial]) -> Result<Polynomial, String>;
+    fn reduce_partials(
+        &self,
+        domain_size: usize,
+        partials: &[Polynomial],
+    ) -> Result<Polynomial, String>;
 
-    fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<Coeff>, Polynomial), String>;
+    fn zero_poly_via_multiplication(
+        &self,
+        domain_size: usize,
+        idxs: &[usize],
+    ) -> Result<(Vec<Coeff>, Polynomial), String>;
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {

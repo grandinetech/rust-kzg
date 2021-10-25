@@ -1,7 +1,8 @@
-use kzg::{FFTSettings, Fr, DAS, FFTFr};
+use kzg::{FFTFr, FFTSettings, Fr, DAS};
 
 /// Check if DAS FFT creates odds that match precomputed values
 pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TFr>>() {
+    #[rustfmt::skip]
     let expected_u: [[u64; 4]; 8] = [
         [0xa0c43757db972d7d, 0x79d15a1e0677962c, 0xf678865c0c95fa6a, 0x4e85fd4814f96825, ],
         [0xad9f844939f2705d, 0x319e440c9f3b0325, 0x4cbd29a60e160a28, 0x665961d85d90c4c0, ],
@@ -32,7 +33,10 @@ pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TF
 /// Check that DAS extension produces correct odds.
 /// Verify this by checking that the second half of the inverse FFT coefficients of odd-even interpolated vector results in zeros.
 
-pub fn das_extension_test_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TFr> + FFTFr<TFr>>() {
+pub fn das_extension_test_random<
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + DAS<TFr> + FFTFr<TFr>,
+>() {
     let max_scale: usize = 15;
 
     let fft_settings = TFFTSettings::new(max_scale).unwrap();
