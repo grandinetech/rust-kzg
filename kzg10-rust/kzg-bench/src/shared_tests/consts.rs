@@ -1,10 +1,6 @@
 #[cfg(test)]
-pub mod tests {
-    use kzg_bench::tests::consts::{
-        expand_roots_is_plausible_slice, new_fft_settings_is_plausible,
-        roots_of_unity_are_plausible_slice, roots_of_unity_out_of_bounds_fails,
-    };
-
+pub mod consts_tests {
+    use kzg_bench::tests::consts::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::fk20_fft::{
         expand_root_of_unity, init_globals, FFTSettings, SCALE_2_ROOT_OF_UNITY,

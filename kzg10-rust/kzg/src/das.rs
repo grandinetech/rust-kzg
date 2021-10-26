@@ -17,23 +17,6 @@ impl FFTSettings {
         }
     }
 
-    pub fn das_fft_extension_from_slice(&self, values: &[Fr]) -> Vec<Fr>{
-        if (values.len() << 1) > self.max_width {
-            panic!("ftt_settings max width too small!");
-        }
-        let mut values = values.to_vec();
-        self._das_fft_extension(&mut values, 1);
-        
-        // just dividing every value by 1/(2**depth) aka length
-        // TODO: what's faster, maybe vec[x] * vec[x], ask herumi to implement?
-        let inv_length = Fr::from_int(values.len() as i32).get_inv();
-        for i in 0..values.len() {
-            values[i] *= &inv_length;
-        }
-        values
-    }
-
-
     fn _das_fft_extension(&self, values: &mut [Fr], stride: usize) {
         if values.len() == 2 {
             let (x, y) = FFTSettings::_calc_add_and_sub(&values[0], &values[1]);

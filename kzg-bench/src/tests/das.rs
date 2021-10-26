@@ -23,13 +23,8 @@ pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TF
 
 
     let odds = fft_settings.das_fft_extension(&mut evens).unwrap();
-    // println!("{:?}", expected_u);
-    // println!("{:?}", evens);
-    // println!("{:?}", odds);
-
     for i in 0..expected_u.len() {
         let expected = TFr::from_u64_arr(&expected_u[i]);
-        // println!("{:?}, {:?}", expected, &odds[i]);
         assert!(expected.equals(&odds[i]));
     }
 }

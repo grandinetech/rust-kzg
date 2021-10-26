@@ -1,5 +1,5 @@
 use std::iter;
-use crate::data_types::{fr::*, g1::*};
+use crate::data_types::{fr::*, g1::*, fp::*};
 use crate::utilities::next_pow_of_2;
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
@@ -72,12 +72,36 @@ pub const SCALE_2_ROOT_OF_UNITY_PR7_STRINGS: [&str; 32] = [ "1",
 /* k=30         r=1073741824 */ "3811138593988695298394477416060533432572377403639180677141944665584601642504",
 /* k=31         r=2147483648 */ "43599901455287962219281063402626541872197057165786841304067502694013639882090",];
 
+pub const G1_GENERATOR: G1 = G1 {
+    x: Fp { d: [0x5cb38790fd530c16, 0x7817fc679976fff5, 0x154f95c7143ba1c1, 0xf0ae6acdf3d0e747, 0xedce6ecc21dbf440, 0x120177419e0bfb75] },
+    y: Fp { d: [0xbaac93d50ce72271, 0x8c22631a7918fd8e, 0xdd595f13570725ce, 0x51ac582950405194, 0x0e1c8c3fad0059c0, 0x0bbc3efc5008a26a] },
+    z: Fp { d: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493] },
+};
 
+pub const G1_NEGATIVE_GENERATOR: G1 = G1 {
+    x: Fp { d: [0x5cb38790fd530c16, 0x7817fc679976fff5, 0x154f95c7143ba1c1, 0xf0ae6acdf3d0e747, 0xedce6ecc21dbf440, 0x120177419e0bfb75] },
+    y: Fp { d: [0xff526c2af318883a, 0x92899ce4383b0270, 0x89d7738d9fa9d055, 0x12caf35ba344c12a, 0x3cff1b76964b5317, 0x0e44d2ede9774430] },
+    z: Fp { d: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493] },
+};
 
 pub static mut SCALE_2_ROOT_OF_UNITY: Vec<Fr> = vec![];
 pub static mut GLOBALS_INITIALIZED: bool = false;
 pub static mut DEFAULT_GLOBALS_INITIALIZED: bool = false;
 pub const PRIMITIVE_ROOT: i32 = 5;
+
+
+pub fn make_data(n: usize) -> Vec<G1> {
+  // Multiples of g1_gen
+    if n == 0 {
+        return vec![];
+    }
+    let mut data: Vec<G1> = vec![G1_GENERATOR.clone()];
+    for _ in 1..n {
+        let g1 = data.last().unwrap() + &G1_GENERATOR.clone();
+        data.push(g1);
+    }
+    data
+}
 
 pub unsafe fn init_globals() {
     if GLOBALS_INITIALIZED && DEFAULT_GLOBALS_INITIALIZED {
@@ -248,7 +272,6 @@ impl FFTSettings {
         return self.inplace_fft(&values_copy, inv);
     }
 
-
     pub fn fft_g1(&self, values: &Vec<G1>) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
         let vals_copy = values.clone();
@@ -262,6 +285,30 @@ impl FFTSettings {
         let mut out = vec![G1::zero(); values.len()];
 
         FFTSettings::_fft_g1(&self, &vals_copy, 0, 1, &root_z, stride, &mut out);
+
+        return out;
+    }
+
+    //just copied of for fk20_matrix
+    pub fn fft_g1_inv(&self, values: &Vec<G1>) -> Vec<G1> {
+        // TODO: check if copy can be removed, opt?
+        let vals_copy = values.clone();
+        
+        let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter()
+            .take(self.max_width)
+            .map(|x| x.clone())
+            .collect();
+
+        let stride = self.max_width /  values.len();
+        let mut out = vec![G1::zero(); values.len()];
+
+        FFTSettings::_fft_g1(&self, &vals_copy, 0, 1, &root_z, stride, &mut out);
+        
+        let inv_len = Fr::from_int(values.len() as i32).get_inv();
+        for i in 0..out.len() {
+            let tmp = &out[i] * &inv_len;
+            out[i] = tmp;
+        }
 
         return out;
     }

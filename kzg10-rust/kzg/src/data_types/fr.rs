@@ -1,12 +1,11 @@
 use crate::mcl_methods;
-use primitive_types::{U128, U256};
+use primitive_types::U256;
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
-use std::str::from_utf8;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -50,6 +49,12 @@ pub struct Fr {
 impl Fr {
     pub fn get_order() -> String {
         mcl_methods::get_curve_order()
+    }
+
+    pub fn inverse(&self) -> Self {
+        let mut res = Fr::zero();
+        Fr::inv(&mut res, self);
+        res
     }
 
     pub fn from_u64_arr(u: &[u64; 4]) -> Self {

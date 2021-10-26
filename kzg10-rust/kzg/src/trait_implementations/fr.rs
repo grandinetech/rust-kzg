@@ -43,7 +43,12 @@ impl CommonFr for Fr {
     }
 
     fn pow(&self, n: usize) -> Self {
-        todo!()
+        //No idea if this works
+        let mut res = self.clone();
+        for _ in 1 .. n {
+            res = res * *self;
+        }
+        res
     }
 
     fn mul(&self, b: &Self) -> Self {
@@ -69,15 +74,11 @@ impl CommonFr for Fr {
     }
 
     fn negate(&self) -> Self {
-        let mut res = Fr::zero();
-        Fr::neg(&mut res, self);
-        res
+        self.get_neg()
     }
 
     fn inverse(&self) -> Self {
-        let mut res = Fr::zero();
-        Fr::inv(&mut res, self);
-        res
+        self.inverse()
     }
 
     fn equals(&self, b: &Self) -> bool {

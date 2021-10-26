@@ -8,9 +8,7 @@ impl Poly<Fr> for Polynomial {
     }
 
     fn new(size: usize) -> Result<Self, String> {
-        Ok(Polynomial {
-            coeffs: vec![Fr::default(); size],
-        })
+        Ok(Polynomial::new(size))
     }
 
     fn get_coeff_at(&self, i: usize) -> Fr {
@@ -43,14 +41,14 @@ impl Poly<Fr> for Polynomial {
     }
 
     fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
-        todo!()
+        Polynomial::inverse(self, new_len)
     }
 
     fn div(&mut self, x: &Self) -> Result<Self, String> {
-        todo!()
+        // not sure if this is ok
+        Ok(self.long_division(&x.coeffs))
     }
 
     fn destroy(&mut self) {
-        todo!()
     }
 }

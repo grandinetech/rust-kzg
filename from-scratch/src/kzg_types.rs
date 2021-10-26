@@ -279,9 +279,6 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         let max_width: usize = 1 << scale;
         let root_of_unity = FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
-        println!("scale: {}, {:?}",scale,  &SCALE2_ROOT_OF_UNITY[scale]);
-        println!("{:?}",  FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]));
-        println!("{:?}", &root_of_unity);
         // create max_width of roots & store them reversed as well
         let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();

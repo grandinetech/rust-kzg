@@ -91,7 +91,7 @@ impl FK20Matrix {
         return out;
     }
 
- 
+    //possible remove self, merge this methods with the ones in fft_settings
     pub fn fft_g1_inv(&self, values: &Vec<G1>) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
         let vals_copy = values.clone();
@@ -234,6 +234,9 @@ impl FK20Matrix {
 
 impl Polynomial {
     pub fn extend(vec: &Vec<Fr>, size: usize) -> Vec<Fr> {
+        if size < vec.len() {
+            return vec.to_owned();
+        }
         let to_pad = size - vec.len();
         let tail = iter::repeat(Fr::zero()).take(to_pad);
         let result: Vec<Fr> = vec.iter().map(|x| x.clone()).chain(tail).collect();

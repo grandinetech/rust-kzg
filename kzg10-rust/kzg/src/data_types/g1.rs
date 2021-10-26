@@ -5,6 +5,7 @@ use std::ops::{Sub, SubAssign};
 use std::mem::MaybeUninit;
 use std::os::raw::c_int;
 use crate::mcl_methods;
+use crate::utilities::arr64_6_to_g1_sum;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -55,3 +56,13 @@ ec_impl![
     mclBnG1_normalize,
     mclBnG1_hashAndMapTo
 ];
+
+impl G1 {
+    pub fn from_arr_64(u: &[[u64; 6]; 3]) -> G1 {
+        let mut g1 = G1::default();
+        g1.x.set_str(&arr64_6_to_g1_sum(&u[0]).to_string(), 10);
+        g1.y.set_str(&arr64_6_to_g1_sum(&u[1]).to_string(), 10);
+        g1.z.set_str(&arr64_6_to_g1_sum(&u[2]).to_string(), 10);
+        return g1;
+    }
+}

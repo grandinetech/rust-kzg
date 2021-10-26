@@ -13,6 +13,8 @@ mod test;
 mod shared_tests {
     mod zero_poly;
     mod fft_fr;
+    mod fft_g1;
     mod das;
     mod consts;
+    mod poly;
 }

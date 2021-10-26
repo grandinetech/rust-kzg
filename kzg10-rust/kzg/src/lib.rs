@@ -48,10 +48,12 @@ pub mod data_converter {
 pub mod trait_implementations {
     pub mod das;
     pub mod fft_fr;
+    pub mod fft_g1;
     pub mod fft_settings;
     pub mod fr;
     pub mod poly;
     pub mod zero_poly;
+    pub mod g1;
 }
 pub mod das;
 pub mod data_recovery;
