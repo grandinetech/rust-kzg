@@ -1,17 +1,17 @@
-name: CI Build 
-  
-on: [push] 
- 
-jobs: 
-  ci: 
- 
+name: CI Build
+
+on: [push]
+
+jobs:
+  ci:
+
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-11]
+        os: [ubuntu-latest, macos-11]
 
-    steps: 
-    - uses: actions/checkout@v2 
+    steps:
+    - uses: actions/checkout@v2
 
     - uses: actions-rs/toolchain@v1
       with:
@@ -19,10 +19,16 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-    #- uses: actions-rs/cargo@v1
-    #  with:
-    #    command: install
-    #    args: --path kzg-bindings
+    - name: Build native libs (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        bash ci/unix.sh $(which sed)
+
+    - name: Build native libs (MacOS)
+      if: matrix.os == 'macos-11'
+      run: |
+        brew install gnu-sed
+        bash ci/unix.sh $(which gsed)
 
     - uses: actions-rs/cargo@v1
       with:
