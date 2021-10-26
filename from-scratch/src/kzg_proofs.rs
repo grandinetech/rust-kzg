@@ -197,7 +197,7 @@ pub fn check_proof_multi(commitment: &G1, proof: &G1, x: &Fr, ys: &[Fr], n: usiz
 
     // Interpolate at a coset.
     //TRY(new_poly(&interp, n));
-    // new_fr_array(&interp, n); // init Fr of len n 
+    // new_fr_array(&interp, n); // init Fr of len n
 
     //TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
     interp.coeffs = fft_fr(ys, true, &kzg_settings.fs).unwrap();

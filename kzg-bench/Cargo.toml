@@ -9,18 +9,4 @@ edition = "2018"
 kzg = { path = '../kzg' }
 #blst = { 'git' = 'https://github.com/supranational/blst.git' }
 rand = "0.8.4"
-
-[dev-dependencies]
 criterion = "0.3.5"
-
-[[bench]]
-name = "finite"
-harness = false
-
-# [[bench]]
-# name = "poly"
-# harness = false
-
-# [[bench]]
-# name = "fftsettings"
-# harness = false

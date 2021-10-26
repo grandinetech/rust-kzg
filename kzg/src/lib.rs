@@ -1,15 +1,3 @@
-/*pub type Pairing = blst::Pairing;
-pub type Fp = blst::blst_fp;
-pub type Fp12 = blst::blst_fp12;
-pub type Fp6 = blst::blst_fp6;
-pub type P1 = blst::blst_p1;
-pub type P1Affine = blst::blst_p1_affine;
-pub type P2 = blst::blst_p2;
-pub type P2Affine = blst::blst_p2_affine;
-pub type Scalar = blst::blst_scalar;
-pub type Uniq = blst::blst_uniq;
-pub type G2 = blst::blst_p2;*/
-
 pub trait Fr: Clone {
     // Assume that Fr can't fail on creation
 
@@ -62,8 +50,12 @@ pub trait G1: Clone {
     fn destroy(&mut self);
 }
 
+pub trait G2: Clone {
+    // TODO: populate with needed fns
+}
+
 pub trait FFTFr<Coeff: Fr> {
-    fn fft_fr(&self, data: &mut [Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
+    fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
 pub trait FFTG1<Coeff: G1> {
@@ -75,11 +67,20 @@ pub trait DAS<Coeff: Fr> {
 }
 
 pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<Polynomial, String>;
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
+        -> Result<Polynomial, String>;
 
-    fn reduce_partials(&self, domain_size: usize, partials: &[Polynomial]) -> Result<Polynomial, String>;
+    fn reduce_partials(
+        &self,
+        domain_size: usize,
+        partials: &[Polynomial],
+    ) -> Result<Polynomial, String>;
 
-    fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<Coeff>, Polynomial), String>;
+    fn zero_poly_via_multiplication(
+        &self,
+        domain_size: usize,
+        idxs: &[usize],
+    ) -> Result<(Vec<Coeff>, Polynomial), String>;
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {

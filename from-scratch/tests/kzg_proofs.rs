@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    
-    use kzg::{Fr, G1, G2};
-    use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, create_fr_u64};
-    use kzg_from_scratch::kzg_proofs::{commit_to_poly, compute_proof_multi, check_proof_multi};
-    use blst::{
-        blst_fr_mul,
-    };
+
+    // use kzg::{Fr, G1, G2};
+    // use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, create_fr_u64};
+    // use kzg_from_scratch::kzg_proofs::{commit_to_poly, compute_proof_multi, check_proof_multi};
+    // use blst::{
+    //     blst_fr_mul,
+    // };
 
     // #[test]
     // fn proof_multi() {
@@ -23,7 +23,7 @@ mod tests {
     //     let kzgSettings_2: KZGSettings = KZGSettings::from_scale(coeffs.len()).unwrap();
 
     //     let mut p: Poly = Poly { coeffs: vec![Fr::default(); 16]};
-        
+
     //     // g1_t commitment, proof;
     //     let commitment: G1;
     //     let proof: G1;
@@ -60,7 +60,6 @@ mod tests {
 
     //     // Initialise the secrets and data structures
     //     generate_trusted_setup(s1, s2, &secret, secrets_len); //TODO: create this function
-
 
     //     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs1, 4)); // ln_2 of coeffs.len()
     //     TEST_CHECK(C_KZG_OK == new_kzg_settings(&kzgSettings_1, s1, s2, secrets_len, &fs1));

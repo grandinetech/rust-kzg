@@ -1,16 +1,17 @@
 use kzg::{FFTFr, FFTSettings, Fr, Poly, ZeroPoly};
-use rand::seq::SliceRandom;
-use rand::{RngCore, SeedableRng, thread_rng};
 use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
+use rand::{thread_rng, RngCore, SeedableRng};
 
-
+#[rustfmt::skip]
 const EXISTS: [bool; 16] = [
     true, false, false, true,
     false, true, true, false,
     false, false, true, true,
-    false, true, false, true
+    false, true, false, true,
 ];
 
+#[rustfmt::skip]
 const EXPECTED_EVAL_U64: [[u64; 4]; 16] = [
     [0xfd5a5130b97ce0c3, 0xb4748a4cb0f90e6d, 0x12a1ab34b25b18c1, 0x5a5ac0c81c9f7ea8],
     [0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000],
@@ -29,6 +30,7 @@ const EXPECTED_EVAL_U64: [[u64; 4]; 16] = [
     [0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000],
     [0x7ef1f59bb1677685, 0x33a637296680e8ce, 0xaaf62b3f6e016709, 0x454a299178a4dba9]];
 
+#[rustfmt::skip]
 const EXPECTED_POLY_U64: [[u64; 4]; 16] = [
     [0xac159e2688bd4333, 0x3bfef0f00df2ec88, 0x561dcd0fd4d314d9, 0x533bd8c1e977024e],
     [0x18bc6eedc010ef8d, 0xc731a3eb4ea2ab70, 0x5c2589357ae121a8, 0x04f9108d308f7016],
@@ -50,14 +52,20 @@ const EXPECTED_POLY_U64: [[u64; 4]; 16] = [
 /// First, create polynomials that evaluate to zero at given roots.
 /// Check that multiplying them together (via reduce_partials) equals
 /// constructing a polynomial that evaluates to zero at all given roots.
-pub fn test_reduce_partials<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>, TPoly: Poly<TFr>>() {
+pub fn test_reduce_partials<
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>,
+    TPoly: Poly<TFr>,
+>() {
     let fft_settings = TFFTSettings::new(4).unwrap();
 
     let partial_idxs: [[usize; 2]; 4] = [[1, 3], [7, 8], [9, 10], [12, 13]];
     let mut poly_partials = Vec::new();
 
     for i in 0..4 {
-        let temp = fft_settings.do_zero_poly_mul_partial(&partial_idxs[i], 1).unwrap();
+        let temp = fft_settings
+            .do_zero_poly_mul_partial(&partial_idxs[i], 1)
+            .unwrap();
         poly_partials.push(temp);
     }
 
@@ -67,14 +75,20 @@ pub fn test_reduce_partials<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<T
     let from_direct = fft_settings.do_zero_poly_mul_partial(&idxs, 1).unwrap();
 
     for i in 0..9 {
-        from_tree_reduction.get_coeff_at(i).equals(&from_direct.get_coeff_at(i));
+        from_tree_reduction
+            .get_coeff_at(i)
+            .equals(&from_direct.get_coeff_at(i));
     }
 }
 
 /// Create random partial polynomials that equal 0 at given roots.
 /// Check that multiplying them together (via reduce_partials) equals
 /// constructing a polynomial that evaluates to zero at all given roots.
-pub fn reduce_partials_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>, TPoly: Poly<TFr>>() {
+pub fn reduce_partials_random<
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>,
+    TPoly: Poly<TFr>,
+>() {
     for scale in 5..13 {
         for ii in 1..8 {
             let missing_ratio = 0.1 * ii as f32;
@@ -97,23 +111,37 @@ pub fn reduce_partials_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly
             let mut partials = Vec::new();
             for i in 0..partial_count {
                 let start = i * missing_per_partial;
-                let end = if start + missing_per_partial > missing_count { missing_count } else { start + missing_per_partial };
+                let end = if start + missing_per_partial > missing_count {
+                    missing_count
+                } else {
+                    start + missing_per_partial
+                };
 
                 let partial_size = end - start;
                 for j in 0..partial_size {
                     idxs[j] = missing[i * missing_per_partial + j];
                 }
 
-                let partial = fft_settings.do_zero_poly_mul_partial(&idxs[..partial_size], 1).unwrap();
+                let partial = fft_settings
+                    .do_zero_poly_mul_partial(&idxs[..partial_size], 1)
+                    .unwrap();
                 partials.push(partial);
             }
 
-            let from_tree_reduction = fft_settings.reduce_partials(point_count, &partials).unwrap();
-            let from_direct = fft_settings.do_zero_poly_mul_partial(
-                &missing[..missing_count], fft_settings.get_max_width() / point_count).unwrap();
+            let from_tree_reduction = fft_settings
+                .reduce_partials(point_count, &partials)
+                .unwrap();
+            let from_direct = fft_settings
+                .do_zero_poly_mul_partial(
+                    &missing[..missing_count],
+                    fft_settings.get_max_width() / point_count,
+                )
+                .unwrap();
 
             for i in 0..(missing_count + 1) {
-                from_tree_reduction.get_coeff_at(i).equals(&from_direct.get_coeff_at(i));
+                from_tree_reduction
+                    .get_coeff_at(i)
+                    .equals(&from_direct.get_coeff_at(i));
             }
         }
     }
@@ -143,7 +171,9 @@ pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPo
         assert!(tmp.is_zero());
     }
 
-    let tmp_poly = fft_settings.fft_fr(&expected_eval.get_coeffs(), true).unwrap();
+    let tmp_poly = fft_settings
+        .fft_fr(&expected_eval.get_coeffs(), true)
+        .unwrap();
 
     for i in 0..16 {
         assert!(tmp_poly[i].equals(&expected_poly.get_coeff_at(i)));
@@ -151,7 +181,11 @@ pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPo
 }
 
 /// Check if zero polynomial is calculated and evaluated as expected against precomputed values
-pub fn zero_poly_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>, TPoly: Poly<TFr>>() {
+pub fn zero_poly_known<
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>,
+    TPoly: Poly<TFr>,
+>() {
     let fft_settings = TFFTSettings::new(4).unwrap();
 
     let mut missing_idxs = Vec::new();
@@ -167,17 +201,24 @@ pub fn zero_poly_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, T
         }
     }
 
-    let (zero_eval, zero_poly) =
-        fft_settings.zero_poly_via_multiplication(16, &missing_idxs).unwrap();
+    let (zero_eval, zero_poly) = fft_settings
+        .zero_poly_via_multiplication(16, &missing_idxs)
+        .unwrap();
 
     for i in 0..expected_eval.len() {
         assert!(expected_eval.get_coeff_at(i).equals(&zero_eval[i]));
-        assert!(expected_poly.get_coeff_at(i).equals(&zero_poly.get_coeff_at(i)));
+        assert!(expected_poly
+            .get_coeff_at(i)
+            .equals(&zero_poly.get_coeff_at(i)));
     }
 }
 
 /// Generate random series of missing indices and check if they are multiplied correctly
-pub fn zero_poly_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>, TPoly: Poly<TFr>>() {
+pub fn zero_poly_random<
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
+>() {
     for its in 0..8 {
         let mut rng = StdRng::seed_from_u64(its);
         for scale in 3..13 {
@@ -194,11 +235,13 @@ pub fn zero_poly_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, 
                 continue;
             }
 
-            let (zero_eval, zero_poly) =
-                fft_settings.zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs).unwrap();
+            let (zero_eval, zero_poly) = fft_settings
+                .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs)
+                .unwrap();
 
             for i in 0..missing_idxs.len() {
-                let out = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idxs[i]));
+                let out =
+                    zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idxs[i]));
                 assert!(out.is_zero());
             }
 
@@ -217,7 +260,11 @@ pub fn zero_poly_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, 
 
 /// Check that roots of unity loop correctly and the first value equals the last one
 /// by evaluating a polynomial created to equal zero for the last value
-pub fn zero_poly_all_but_one<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>, TPoly: Poly<TFr>>() {
+pub fn zero_poly_all_but_one<
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
+>() {
     let fft_settings = TFFTSettings::new(8).unwrap();
 
     let mut missing_idxs = Vec::new();
@@ -225,8 +272,9 @@ pub fn zero_poly_all_but_one<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<
         missing_idxs.push(i + 1);
     }
 
-    let (zero_eval, zero_poly) = fft_settings.zero_poly_via_multiplication(
-        fft_settings.get_max_width(), &missing_idxs).unwrap();
+    let (zero_eval, zero_poly) = fft_settings
+        .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs)
+        .unwrap();
 
     for i in 0..missing_idxs.len() {
         let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idxs[i]));
@@ -245,7 +293,11 @@ pub fn zero_poly_all_but_one<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<
 }
 
 /// Check an edge case where 252 is missing with width 8
-pub fn zero_poly_252<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>, TPoly: Poly<TFr>>() {
+pub fn zero_poly_252<
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
+>() {
     let fft_settings = TFFTSettings::new(8).unwrap();
 
     let mut missing_idxs = Vec::new();
@@ -253,8 +305,12 @@ pub fn zero_poly_252<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPo
         missing_idxs.push(i);
     }
 
-    let (zero_eval, zero_poly) = fft_settings.zero_poly_via_multiplication(
-        fft_settings.get_max_width(), &missing_idxs[..missing_idxs.len()]).unwrap();
+    let (zero_eval, zero_poly) = fft_settings
+        .zero_poly_via_multiplication(
+            fft_settings.get_max_width(),
+            &missing_idxs[..missing_idxs.len()],
+        )
+        .unwrap();
 
     for i in 0..252 {
         let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idxs[i]));
