@@ -18,6 +18,21 @@ jobs:
         profile: minimal
         toolchain: stable
         components: clippy, rustfmt
+        
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: -- --test-threads 1 --manifest-path kzg10-rust/kzg-bench/Cargo.toml
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml
 
     - uses: actions-rs/cargo@v1
       with:
@@ -39,17 +54,4 @@ jobs:
         command: fmt
         args: --manifest-path kzg-bench/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml
