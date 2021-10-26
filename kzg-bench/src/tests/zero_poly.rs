@@ -143,7 +143,8 @@ pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPo
         assert!(tmp.is_zero());
     }
 
-    let tmp_poly = fft_settings.fft_fr(&expected_eval.get_coeffs(), true).unwrap();
+    let mut coeffs = expected_eval.get_coeffs().to_vec();
+    let tmp_poly = fft_settings.fft_fr(&mut coeffs, true).unwrap();
 
     for i in 0..16 {
         assert!(tmp_poly[i].equals(&expected_poly.get_coeff_at(i)));
@@ -194,7 +195,7 @@ pub fn zero_poly_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, 
                 continue;
             }
 
-            let (zero_eval, zero_poly) =
+            let (mut zero_eval, zero_poly) =
                 fft_settings.zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs).unwrap();
 
             for i in 0..missing_idxs.len() {
@@ -202,7 +203,7 @@ pub fn zero_poly_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, 
                 assert!(out.is_zero());
             }
 
-            let zero_eval_fft = fft_settings.fft_fr(&zero_eval, true).unwrap();
+            let zero_eval_fft = fft_settings.fft_fr(&mut zero_eval, true).unwrap();
 
             for i in 0..zero_poly.len() {
                 assert!(zero_poly.get_coeff_at(i).equals(&zero_eval_fft[i]));
@@ -225,7 +226,7 @@ pub fn zero_poly_all_but_one<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<
         missing_idxs.push(i + 1);
     }
 
-    let (zero_eval, zero_poly) = fft_settings.zero_poly_via_multiplication(
+    let (mut zero_eval, zero_poly) = fft_settings.zero_poly_via_multiplication(
         fft_settings.get_max_width(), &missing_idxs).unwrap();
 
     for i in 0..missing_idxs.len() {
@@ -233,7 +234,7 @@ pub fn zero_poly_all_but_one<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<
         assert!(ret.is_zero());
     }
 
-    let zero_eval_fft = fft_settings.fft_fr(&zero_eval, true).unwrap();
+    let zero_eval_fft = fft_settings.fft_fr(&mut zero_eval, true).unwrap();
 
     for i in 0..zero_poly.len() {
         assert!(zero_poly.get_coeff_at(i).equals(&zero_eval_fft[i]));
@@ -253,7 +254,7 @@ pub fn zero_poly_252<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPo
         missing_idxs.push(i);
     }
 
-    let (zero_eval, zero_poly) = fft_settings.zero_poly_via_multiplication(
+    let (mut zero_eval, zero_poly) = fft_settings.zero_poly_via_multiplication(
         fft_settings.get_max_width(), &missing_idxs[..missing_idxs.len()]).unwrap();
 
     for i in 0..252 {
@@ -261,7 +262,7 @@ pub fn zero_poly_252<TFr: Fr, TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPo
         assert!(ret.is_zero());
     }
 
-    let zero_eval_fft = fft_settings.fft_fr(&zero_eval, true).unwrap();
+    let zero_eval_fft = fft_settings.fft_fr(&mut zero_eval, true).unwrap();
 
     for i in 0..zero_poly.len() {
         assert!(zero_poly.get_coeff_at(i).equals(&zero_eval_fft[i]));

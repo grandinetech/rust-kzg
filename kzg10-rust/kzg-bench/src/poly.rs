@@ -1,15 +1,15 @@
-use std::vec;
-use mcl_rust::kzg10::*;
+
 use mcl_rust::data_types::fr::Fr;
-use mcl_rust::CurveType;
+use mcl_rust::kzg10::*;
 use mcl_rust::mcl_methods::init;
+use mcl_rust::CurveType;
+use std::vec;
 
 #[test]
 fn polynomial_new_works_with_valid_params() {
     // Arrange
     assert!(init(CurveType::BLS12_381));
     let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
-    
     // Act
     // Assert
     let _poly = Polynomial::from_i32(&coefficients);
@@ -17,16 +17,16 @@ fn polynomial_new_works_with_valid_params() {
 
 #[test]
 fn polynomial_eval_at_should_specific_value_given_exact_inputs() {
-        // Arrange
-        assert!(init(CurveType::BLS12_381));
-        let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
-        let poly = Polynomial::from_i32(&coefficients);
-        // Act
-        let value = poly.eval_at(&Fr::from_int(17));
-        // Assert
-        let expected = "39537218396363405614";
-        let actual = value.get_str(10);
-        assert_eq!(expected, actual);
+    // Arrange
+    assert!(init(CurveType::BLS12_381));
+    let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    let poly = Polynomial::from_i32(&coefficients);
+    // Act
+    let value = poly.eval_at(&Fr::from_int(17));
+    // Assert
+    let expected = "39537218396363405614";
+    let actual = value.get_str(10);
+    assert_eq!(expected, actual);
 }
 
 #[test]
@@ -34,13 +34,12 @@ fn extend_poly_appends_fr_zero() {
     // Arrange
     assert!(init(CurveType::BLS12_381));
     let poly = Polynomial::from_i32(&vec![1, 2, 3, 4]);
-    
     // Act
     let extended = poly.get_extended(8);
 
     // Assert
-    let expected = vec![ "1", "2", "3", "4", "0", "0", "0", "0" ];
-    for i in 0..8  {
+    let expected = vec!["1", "2", "3", "4", "0", "0", "0", "0"];
+    for i in 0..8 {
         assert_eq!(expected[i], extended.coeffs[i].get_str(10));
     }
 }
@@ -73,7 +72,12 @@ fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
     let vec_0_2: Vec<Fr> = vec![Fr::from_int(-1), Fr::from_int(1)];
 
     // (12x^3 - 11x^2 + 9x + 18) / (4x + 3) = 3x^2 - 5x + 6
-    let vec_1_0: Vec<Fr> = vec![Fr::from_int(18), Fr::from_int(9), Fr::from_int(-11), Fr::from_int(12)];
+    let vec_1_0: Vec<Fr> = vec![
+        Fr::from_int(18),
+        Fr::from_int(9),
+        Fr::from_int(-11),
+        Fr::from_int(12),
+    ];
     let vec_1_1: Vec<Fr> = vec![Fr::from_int(3), Fr::from_int(4)];
     let vec_1_2: Vec<Fr> = vec![Fr::from_int(6), Fr::from_int(-5), Fr::from_int(3)];
 
@@ -82,7 +86,11 @@ fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
     let vec_2_1: Vec<Fr> = vec![Fr::from_int(-1), Fr::from_int(0), Fr::from_int(2)];
     let vec_2_2: Vec<Fr> = vec![];
 
-    let data: [[Vec<Fr>; 3]; 3] = [[vec_0_0, vec_0_1, vec_0_2], [vec_1_0, vec_1_1, vec_1_2], [vec_2_0, vec_2_1, vec_2_2]];
+    let data: [[Vec<Fr>; 3]; 3] = [
+        [vec_0_0, vec_0_1, vec_0_2],
+        [vec_1_0, vec_1_1, vec_1_2],
+        [vec_2_0, vec_2_1, vec_2_2],
+    ];
 
     return data[first][second].clone();
 }
@@ -121,7 +129,7 @@ since in current implementation it simply panics*/
 fn poly_div_by_zero() {
     //Arrange
     assert!(init(CurveType::BLS12_381));
-    let dividend_vec: Vec<i32> = vec![1 ,1];
+    let dividend_vec: Vec<i32> = vec![1, 1];
     let divisor: Vec<Fr> = vec![Fr::default()];
     let dividend = Polynomial::from_i32(&dividend_vec);
 

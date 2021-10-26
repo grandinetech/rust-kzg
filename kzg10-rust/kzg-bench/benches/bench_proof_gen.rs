@@ -1,9 +1,9 @@
 use mcl_rust::*;
 use criterion::{criterion_group, criterion_main, Criterion};
-use mcl_rust::implem::FK20Matrix;
-use mcl_rust::implem::Polynomial;
-use mcl_rust::implem::Curve;
-use mcl_rust::fr::Fr;
+use mcl_rust::fk20_matrix::FK20Matrix;
+use mcl_rust::kzg10::Polynomial;
+use mcl_rust::kzg10::Curve;
+use mcl_rust::data_types::fr::Fr;
 use mcl_rust::mcl_methods::init;
 
 fn bench_simple_proof_gen(c: &mut Criterion) {

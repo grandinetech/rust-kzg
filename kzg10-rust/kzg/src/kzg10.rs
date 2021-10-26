@@ -3,6 +3,8 @@ use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::{BlstFr};
 use crate::data_converter::fr_converter::*;
 use crate::mcl_methods::{pairing, final_exp, mclBn_FrEvaluatePolynomial};
+use crate::utilities::{next_pow_of_2, log_2};
+use crate::fk20_fft::FFTSettings;
 
 const G1_GEN_X: &str = "3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507";
 const G1_GEN_Y: &str = "1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569";
@@ -27,6 +29,8 @@ impl G1 {
 
         return gt;
     }
+
+  
 }
 
 impl ops::Mul<&Fr> for &G1 {
@@ -167,6 +171,16 @@ impl ops::Sub<Fr> for Fr {
     }
 }
 
+impl ops::Add<Fr> for Fr {
+    type Output = Fr;
+    fn add(self, rhs: Fr) -> Self::Output {
+        let mut result = Fr::default();
+        Fr::add(&mut result, &self, &rhs);
+
+        return result;
+    }
+}
+
 // KZG 10 Impl
 
 #[derive(Debug, Clone)]
@@ -184,6 +198,16 @@ pub struct Curve {
 }
 
 impl Polynomial {
+    pub fn default() -> Self {
+        Self {
+            coeffs: vec![]
+        }
+    }
+    pub fn new(size: usize) -> Self {
+        Polynomial {
+            coeffs: vec![Fr::default(); size],
+        }
+    }
 
     pub fn from_fr(data: Vec<Fr>) -> Self {
         Self {
@@ -202,8 +226,8 @@ impl Polynomial {
     }
 
     pub fn eval_at_blst(&self, point: &BlstFr) -> BlstFr {
-        let pointFromBlst = fr_from_blst(*point);
-        return fr_to_blst(self.eval_at(&pointFromBlst));
+        let point_from_blst = fr_from_blst(*point);
+        return fr_to_blst(self.eval_at(&point_from_blst));
     }
 
     pub fn eval_at(&self, point: &Fr) -> Fr {
@@ -246,7 +270,7 @@ impl Polynomial {
         };
     }
 
-    pub fn commit(& self, g1_points: &Vec<G1>) -> G1 {
+    pub fn commit(&self, g1_points: &Vec<G1>) -> G1 {
         let mut result = G1::default();
         unsafe {
             mclBnG1_mulVec(&mut result, g1_points.as_ptr(), self.coeffs.as_ptr(), min(g1_points.len(), self.order()))
@@ -263,6 +287,92 @@ impl Polynomial {
         return Polynomial {
             coeffs
         };
+    }
+
+    pub fn mul(&self, b: &Self, _ft: &FFTSettings, len: usize) -> Result<Polynomial, String> {
+        //if the polynomials are large, we should use fft multiplication, for now it's not implemented
+        Polynomial::mul_direct(self, b, len)
+    }
+
+    pub fn mul_direct(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
+        let mut coeffs: Vec<Fr> = vec![];
+        for _ in 0..len {
+            coeffs.push(Fr::zero());
+        }
+
+        for i in 0..self.order() {
+            for j in 0..b.order() {
+
+                let temp = self.coeffs[i] * b.coeffs[j];
+                coeffs[i + j] = coeffs[i + j] + temp;
+            }
+        }
+        return Ok(Polynomial::from_fr(coeffs));
+    }
+
+    pub fn inverse(&self, new_length: usize) -> Result<Polynomial, String> { 
+        let self_length = self.order();
+        if self_length == 0 || new_length == 0 {
+            return Ok(Polynomial::default());
+        }
+        if self.coeffs[0].is_zero() {
+            return Err(String::from("The constant term of self must be nonzero."));
+        }
+
+        // If the input polynomial is constant, the remainder of the series is zero
+        if self_length == 1 {
+            let mut coeffs = vec![self.coeffs[0].inverse()];
+            for _ in 1..new_length {
+                coeffs.push(Fr::zero());
+            }
+            return Ok(Polynomial::from_fr(coeffs));
+        }
+
+        let maxd = new_length - 1;
+        let mut d = 0;
+
+        // Max space for multiplications is (2 * length - 1)
+        //use a more efficent log_2?
+        let scale = log_2(next_pow_of_2(2 * new_length - 1));
+        
+        //check if scale actually always fits in u8
+        //fftsettings to be used, if multiplacation is done with fft
+        let fs = FFTSettings::new(scale as u8);
+        let coeffs = vec![self.coeffs[0].clone().inverse()];
+        let mut out = Polynomial::from_fr(coeffs);
+
+        let mut mask = 1 << log_2(maxd);
+        
+        let mut poly_temp_0: Polynomial;
+        let mut poly_temp_1: Polynomial;
+        while mask != 0 {
+            d = 2 * d + ((maxd & mask) != 0) as usize;
+            mask >>= 1;
+
+            // b.c -> tmp0 (we're using out for c)
+            let temp_0_len = min(d + 1, self.order() + &out.order() - 1);
+            poly_temp_0 = self.mul(&out, &fs, temp_0_len).unwrap();
+
+             // 2 - b.c -> tmp0
+            for i in 0..temp_0_len {
+                poly_temp_0.coeffs[i] = poly_temp_0.coeffs[i].get_neg();
+            }
+
+            let fr_two = Fr::from_int(2);
+            poly_temp_0.coeffs[0] = poly_temp_0.coeffs[0] + fr_two;
+
+            // c.(2 - b.c) -> tmp1;
+            let temp_1_len = d + 1;
+            poly_temp_1 = out.mul(&poly_temp_0, &fs, temp_1_len).unwrap();
+
+            out = Polynomial::from_fr(poly_temp_1.coeffs.clone());
+        }
+
+        if d + 1 != new_length {
+            return Err(String::from("d + 1 != new_length"));
+        }
+
+        return Ok(out);
     }
 }
 

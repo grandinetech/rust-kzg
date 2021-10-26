@@ -1,8 +1,8 @@
 use mcl_rust::*;
 use criterion::{criterion_group, criterion_main, Criterion};
 use mcl_rust::mcl_methods::init;
-use mcl_rust::implem::FFTSettings;
-use mcl_rust::fr::Fr;
+use mcl_rust::fk20_fft::FFTSettings;
+use mcl_rust::data_types::fr::Fr;
 
 fn bench_das_fft_extension(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
