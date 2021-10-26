@@ -11,7 +11,7 @@ extern "C" {
     fn fr_is_one(p: *const BlstFr) -> bool;
     fn fr_equal(aa: *const BlstFr, bb: *const BlstFr) -> bool;
     fn fr_negate(out: *mut BlstFr, in_: *const BlstFr);
-    fn fr_pow(out: *mut BlstFr, a: *const BlstFr, n: u64);
+    //fn fr_pow(out: *mut BlstFr, a: *const BlstFr, n: u64);
     fn blst_fr_add(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_sqr(ret: *mut BlstFr, a: *const BlstFr);
     fn blst_fr_mul(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
@@ -19,7 +19,7 @@ extern "C" {
     // G1
     fn g1_add_or_dbl(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_equal(a: *const BlstP1, b: *const BlstP1) -> bool;
-    fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
+    //fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
 }
 
 #[repr(C)]
@@ -108,7 +108,7 @@ impl Fr for BlstFr {
         sum
     }
 
-    fn sub(&self, b: &Self) -> Self {
+    fn sub(&self, _b: &Self) -> Self {
         todo!()
     }
 
@@ -128,7 +128,7 @@ impl Fr for BlstFr {
         todo!()
     }
 
-    fn pow(&self, n: usize) -> Self {
+    fn pow(&self, _n: usize) -> Self {
         todo!()
     }
 
