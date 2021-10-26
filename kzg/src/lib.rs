@@ -42,6 +42,8 @@ pub trait Fr: Clone {
 pub trait G1: Clone {
     fn default() -> Self;
 
+    fn rand() -> Self;
+
     fn add_or_double(&mut self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;

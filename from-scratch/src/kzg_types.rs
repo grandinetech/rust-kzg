@@ -187,6 +187,10 @@ impl G1 for FsG1 {
         todo!()
     }
 
+    fn rand() -> Self {
+        todo!()
+    }
+
     fn add_or_double(&mut self, b: &Self) -> Self {
         todo!()
     }
