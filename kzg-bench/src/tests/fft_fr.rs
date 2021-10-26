@@ -18,8 +18,20 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     let mut out1 = vec![TFr::default(); fft_settings.get_max_width()];
 
     // Compare fast and slow FFT approach
-    fft_fr_slow(&mut out0, &data, 1, &fft_settings.get_expanded_roots_of_unity(), 1);
-    fft_fr_fast(&mut out1, &data, 1, &fft_settings.get_expanded_roots_of_unity(), 1);
+    fft_fr_slow(
+        &mut out0,
+        &data,
+        1,
+        &fft_settings.get_expanded_roots_of_unity(),
+        1,
+    );
+    fft_fr_fast(
+        &mut out1,
+        &data,
+        1,
+        &fft_settings.get_expanded_roots_of_unity(),
+        1,
+    );
 
     for i in 0..fft_settings.get_max_width() {
         assert!(out0[i].equals(&out1[i]));
@@ -40,8 +52,8 @@ pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     }
 
     // Forward and inverse FFT
-    let mut forward_result = fft_settings.fft_fr(&mut starting_data, false).unwrap();
-    let inverse_result = fft_settings.fft_fr(&mut forward_result, true).unwrap();
+    let forward_result = fft_settings.fft_fr(&starting_data, false).unwrap();
+    let inverse_result = fft_settings.fft_fr(&forward_result, true).unwrap();
 
     for i in 0..fft_settings.get_max_width() {
         assert!(starting_data[i].equals(&inverse_result[i]));
@@ -52,6 +64,7 @@ pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
 
 /// Check the inverse FFT operation on precomputed values
 pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
+    #[rustfmt::skip]
     let inv_fft_expected: [[u64; 4]; 16] =
         [
             [0x7fffffff80000008, 0xa9ded2017fff2dff, 0x199cec0404d0ec02, 0x39f6d3a994cebea4],
@@ -79,7 +92,7 @@ pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
         data[i] = TFr::from_u64(i as u64);
     }
 
-    let forward_result = fft_settings.fft_fr(&mut data, true).unwrap();
+    let forward_result = fft_settings.fft_fr(&data, true).unwrap();
 
     assert_eq!(inv_fft_expected.len(), fft_settings.get_max_width());
     for i in 0..inv_fft_expected.len() {
@@ -105,8 +118,8 @@ pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
         data[i] = TFr::from_u64(i as u64);
     }
 
-    let result1 = fft_settings1.fft_fr(&mut data, false).unwrap();
-    let result2 = fft_settings2.fft_fr(&mut data, false).unwrap();
+    let result1 = fft_settings1.fft_fr(&data, false).unwrap();
+    let result2 = fft_settings2.fft_fr(&data, false).unwrap();
 
     for i in 0..width {
         assert!(result1[i].equals(&result2[i]));

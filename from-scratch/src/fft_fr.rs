@@ -1,18 +1,29 @@
 use crate::kzg_types::FsFFTSettings;
-use crate::utils::is_power_of_two;
 use crate::kzg_types::FsFr;
+use crate::utils::is_power_of_two;
 use kzg::{FFTFr, Fr};
 
-
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
-pub fn fft_fr_fast(ret: &mut [FsFr], data: &[FsFr], stride: usize, roots: &[FsFr], roots_stride: usize) {
+pub fn fft_fr_fast(
+    ret: &mut [FsFr],
+    data: &[FsFr],
+    stride: usize,
+    roots: &[FsFr],
+    roots_stride: usize,
+) {
     let half: usize = ret.len() / 2;
     if half > 0 {
         // Recurse
         // Offsetting data by stride = 1 on the first iteration forces the even members to the first half
         // and the odd members to the second half
         fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
-        fft_fr_fast(&mut ret[half..], &data[stride..], stride * 2, roots, roots_stride * 2);
+        fft_fr_fast(
+            &mut ret[half..],
+            &data[stride..],
+            stride * 2,
+            roots,
+            roots_stride * 2,
+        );
         for i in 0..half {
             let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
             ret[i + half] = ret[i].sub(&y_times_root);
@@ -28,7 +39,9 @@ impl FFTFr<FsFr> for FsFFTSettings {
     /// Fast Fourier Transform for finite field elements
     fn fft_fr(&self, data: &[FsFr], inverse: bool) -> Result<Vec<FsFr>, String> {
         if data.len() > self.max_width {
-            return Err(String::from("Supplied list is longer than the available max width"));
+            return Err(String::from(
+                "Supplied list is longer than the available max width",
+            ));
         } else if !is_power_of_two(data.len()) {
             return Err(String::from("A list with power-of-two length expected"));
         }
@@ -39,7 +52,11 @@ impl FFTFr<FsFr> for FsFFTSettings {
 
         // Inverse is same as regular, but all constants are reversed and results are divided by n
         // This is a property of the DFT matrix
-        let roots = if inverse { &self.reverse_roots_of_unity } else { &self.expanded_roots_of_unity };
+        let roots = if inverse {
+            &self.reverse_roots_of_unity
+        } else {
+            &self.expanded_roots_of_unity
+        };
         fft_fr_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
@@ -55,7 +72,13 @@ impl FFTFr<FsFr> for FsFFTSettings {
 }
 
 /// Simplified Discrete Fourier Transform, mainly used for testing
-pub fn fft_fr_slow(ret: &mut [FsFr], data: &[FsFr], stride: usize, roots: &[FsFr], roots_stride: usize) {
+pub fn fft_fr_slow(
+    ret: &mut [FsFr],
+    data: &[FsFr],
+    stride: usize,
+    roots: &[FsFr],
+    roots_stride: usize,
+) {
     for i in 0..data.len() {
         // Evaluate first member at 1
         ret[i] = data[0].mul(&roots[0]);
