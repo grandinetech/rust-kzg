@@ -29,11 +29,11 @@ pub fn log_2_byte(b: u8) -> usize {
 
 pub fn log2_pow2(n: usize) -> usize {
     let bytes: [usize; 5] = [0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000];
-    let mut r: usize = if (n & bytes[0]) != 0 {1} else {0};
-    r |= if (n & bytes[1]) != 0 {1} else {0} << 1;
-    r |= if (n & bytes[2]) != 0 {1} else {0} << 2;
-    r |= if (n & bytes[3]) != 0 {1} else {0} << 3;
-    r |= if (n & bytes[4]) != 0 {1} else {0} << 4;
+    let mut r: usize = if (n & bytes[0]) != 0 { 1 } else { 0 };
+    r |= if (n & bytes[1]) != 0 { 1 } else { 0 } << 1;
+    r |= if (n & bytes[2]) != 0 { 1 } else { 0 } << 2;
+    r |= if (n & bytes[3]) != 0 { 1 } else { 0 } << 3;
+    r |= if (n & bytes[4]) != 0 { 1 } else { 0 } << 4;
     r
 }
 
@@ -48,5 +48,5 @@ pub fn log2_u64(n: usize) -> usize {
 }
 
 pub fn min_u64(a: usize, b: usize) -> Result<usize, String> {
-    return if a < b {Ok(a)} else {Ok(b)};
+    return if a < b { Ok(a) } else { Ok(b) };
 }

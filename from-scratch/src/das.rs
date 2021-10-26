@@ -1,7 +1,7 @@
 use crate::kzg_types::FsFFTSettings;
-use crate::utils::is_power_of_two;
 use crate::kzg_types::FsFr;
-use kzg::{DAS, Fr};
+use crate::utils::is_power_of_two;
+use kzg::{Fr, DAS};
 
 // TODO: explain algo
 impl FsFFTSettings {
@@ -53,7 +53,9 @@ impl DAS<FsFr> for FsFFTSettings {
         } else if !is_power_of_two(evens.len()) {
             return Err(String::from("A list with power-of-two length expected"));
         } else if evens.len() * 2 > self.max_width {
-            return Err(String::from("Supplied list is longer than the available max width"));
+            return Err(String::from(
+                "Supplied list is longer than the available max width",
+            ));
         }
 
         // In case more roots are provided with fft_settings, use a larger stride

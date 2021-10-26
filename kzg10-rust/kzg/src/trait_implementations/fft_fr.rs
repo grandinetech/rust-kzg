@@ -3,7 +3,7 @@ use crate::fk20_fft::{FFTSettings};
 use kzg::FFTFr;
 
 impl FFTFr<Fr> for FFTSettings {
-    fn fft_fr(&self, data: &mut [Fr], inverse: bool) -> Result<Vec<Fr>, String>{
+    fn fft_fr(&self, data: &[Fr], inverse: bool) -> Result<Vec<Fr>, String>{
         Ok(FFTSettings::fft_from_slice(self, data, inverse))
     }
 }

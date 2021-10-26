@@ -134,9 +134,6 @@ dependencies = [
 [[package]]
 name = "kzg"
 version = "0.1.0"
-dependencies = [
- "blst",
-]
 
 [[package]]
 name = "libc"
