@@ -1,7 +1,7 @@
-use kzg::{FFTG1, FFTSettings, Fr, G1};
+use kzg::{FFTSettings, Fr, FFTG1, G1};
 
 pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
-    make_data: &dyn Fn(usize) -> Vec<TG1>
+    make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size: usize = 10;
     let mut fs = TFFTSettings::new(size).unwrap();
@@ -26,11 +26,15 @@ pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG
 }
 
 pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
-    make_data: &dyn Fn(usize) -> Vec<TG1>
+    make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size1: usize = 9;
     let size2: usize = 12;
-    let width: u64 = if size1 < size2 { 1 << size1 } else { 1 << size2 };
+    let width: u64 = if size1 < size2 {
+        1 << size1
+    } else {
+        1 << size2
+    };
 
     let mut fs1 = TFFTSettings::new(size1).unwrap();
     assert_eq!(fs1.get_max_width(), 2 << size1 - 1);
