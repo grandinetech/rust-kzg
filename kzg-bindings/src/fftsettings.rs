@@ -90,34 +90,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
             }
         }
     }
-
-    // Used only for benchmarks
-    pub fn bench_fft_fr(scale: u64) {
-        let mut fs = match FFTSettings::new(scale as u32) {
-            Ok(s) => s,
-            Err(_) => FFTSettings::default()
-        };
-        let mut data = vec![Fr::default(); fs.max_width];
-        for i in 0..fs.max_width {
-            data[i] = Fr::rand();
-        }
-        fs.fft_fr(&mut data, false);
-        fs.destroy();
-    }
-
-    // Used only for benchmarks
-    pub fn bench_fft_g1(scale: u64) {
-        let mut fs = match FFTSettings::new(scale as u32) {
-            Ok(s) => s,
-            Err(_) => FFTSettings::default()
-        };
-        let mut data = vec![G1::default(); fs.max_width];
-        for i in 0..fs.max_width {
-            data[i] = G1::rand();
-        }
-        fs.fft_g1(&mut data, false);
-        fs.destroy();
-    }*/
+    */
 }
 
 impl FFTFr<BlstFr> for KzgFFTSettings {

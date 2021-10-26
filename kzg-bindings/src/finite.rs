@@ -19,7 +19,7 @@ extern "C" {
     // G1
     fn g1_add_or_dbl(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_equal(a: *const BlstP1, b: *const BlstP1) -> bool;
-    //fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
+    fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
 }
 
 #[repr(C)]
@@ -146,6 +146,15 @@ impl Fr for BlstFr {
 impl G1 for BlstP1 {
     fn default() -> Self {
         G1_IDENTITY
+    }
+
+    fn rand() -> Self {
+        let mut ret = G1::default();
+        let random = Fr::rand();
+        unsafe {
+            g1_mul(&mut ret, &G1_GENERATOR, &random);
+        }
+        ret
     }
 
     fn add_or_double(&mut self, b: &Self) -> Self {
