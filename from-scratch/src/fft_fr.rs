@@ -26,7 +26,7 @@ pub fn fft_fr_fast(ret: &mut [FsFr], data: &[FsFr], stride: usize, roots: &[FsFr
 
 impl FFTFr<FsFr> for FsFFTSettings {
     /// Fast Fourier Transform for finite field elements
-    fn fft_fr(&self, data: &mut [FsFr], inverse: bool) -> Result<Vec<FsFr>, String> {
+    fn fft_fr(&self, data: &[FsFr], inverse: bool) -> Result<Vec<FsFr>, String> {
         if data.len() > self.max_width {
             return Err(String::from("Supplied list is longer than the available max width"));
         } else if !is_power_of_two(data.len()) {
