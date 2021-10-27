@@ -1,6 +1,10 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{blst_fr_add, blst_fr_cneg, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_uint64_from_fr, blst_fr_sqr, blst_fr_sub, blst_fr_eucl_inverse, blst_fr};
-use kzg::{G1, G2, FFTSettings, Fr, Poly};
+use blst::{
+    blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
+    blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
+    blst_uint64_from_fr,
+};
+use kzg::{FFTSettings, Fr, Poly, G1};
 
 pub struct FsFr(blst::blst_fr);
 
@@ -65,31 +69,6 @@ impl Fr for FsFr {
         ret
     }
 
-    fn pow(&self, n: usize) -> Self {
-        todo!("double check implementation");
-        //fr_t tmp = *a;
-        let mut tmp = self.clone();
-
-        //*out = fr_one;
-        let mut out = Self::one();
-        let mut n2 = n;
-
-        unsafe {
-            loop {
-                if n2 & 1 == 1 {
-                    blst_fr_mul(&mut out.0, &out.0, &tmp.0);
-                }
-                n2 = n2 >> 1;
-                if n == 0 {
-                    break;
-                }
-                blst_fr_sqr(&mut out.0, &tmp.0);
-            }
-        }
-
-        out
-    }
-
     fn mul(&self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -144,6 +123,31 @@ impl Fr for FsFr {
         ret
     }
 
+    fn pow(&self, n: usize) -> Self {
+        todo!("double check implementation");
+        //fr_t tmp = *a;
+        let mut tmp = self.clone();
+
+        //*out = fr_one;
+        let mut out = Self::one();
+        let mut n2 = n;
+
+        unsafe {
+            loop {
+                if n2 & 1 == 1 {
+                    blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                }
+                n2 = n2 >> 1;
+                if n == 0 {
+                    break;
+                }
+                blst_fr_sqr(&mut out.0, &tmp.0);
+            }
+        }
+
+        out
+    }
+
     fn equals(&self, b: &Self) -> bool {
         let mut val_a: [u64; 4] = [0; 4];
         let mut val_b: [u64; 4] = [0; 4];
@@ -170,17 +174,66 @@ impl Clone for FsFr {
 
 impl Copy for FsFr {}
 
+pub struct FsG1(blst::blst_p1);
+
+impl FsG1 {
+    pub(crate) fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
+        FsG1(blst_p1 { x, y, z })
+    }
+}
+
+impl G1 for FsG1 {
+    fn default() -> Self {
+        todo!()
+    }
+
+    fn rand() -> Self {
+        todo!()
+    }
+
+    fn add_or_double(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        todo!()
+    }
+
+    fn destroy(&mut self) {
+        todo!()
+    }
+}
+
+impl Clone for FsG1 {
+    fn clone(&self) -> Self {
+        todo!()
+    }
+}
+
+impl Copy for FsG1 {}
+
+pub struct FsG2(blst::blst_p2);
+
+impl FsG2 {
+    pub(crate) fn from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
+        FsG2(blst_p2 { x, y, z })
+    }
+}
+
 pub struct FsPoly {
     pub coeffs: Vec<FsFr>,
 }
 
 impl Poly<FsFr> for FsPoly {
-    fn default() -> Result<Self, String> {
-        todo!()
+    fn default() -> Self {
+        // Not perfect, but shouldn't fail
+        Self::new(0).unwrap()
     }
 
     fn new(size: usize) -> Result<Self, String> {
-        Ok(Self { coeffs: vec![FsFr::default(); size] })
+        Ok(Self {
+            coeffs: vec![FsFr::default(); size],
+        })
     }
 
     fn get_coeff_at(&self, i: usize) -> FsFr {
@@ -255,7 +308,9 @@ impl Poly<FsFr> for FsPoly {
 
 impl Clone for FsPoly {
     fn clone(&self) -> Self {
-        FsPoly { coeffs: self.coeffs.clone() }
+        FsPoly {
+            coeffs: self.coeffs.clone(),
+        }
     }
 }
 
@@ -267,10 +322,16 @@ pub struct FsFFTSettings {
 }
 
 impl FFTSettings<FsFr> for FsFFTSettings {
+    fn default() -> Self {
+        todo!()
+    }
+
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
     fn new(scale: usize) -> Result<FsFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+            return Err(String::from(
+                "Scale is expected to be within root of unity matrix row size",
+            ));
         }
 
         // max_width = 2 ^ max_scale
@@ -327,6 +388,6 @@ impl Clone for FsFFTSettings {
 pub struct FsKZGSettings {
     pub fs: FsFFTSettings,
     // Both secret_g1 and secret_g2 have the same number of elements
-    pub secret_g1: Vec<G1>,
-    pub secret_g2: Vec<G2>,
+    pub secret_g1: Vec<FsG1>,
+    pub secret_g2: Vec<FsG2>,
 }
