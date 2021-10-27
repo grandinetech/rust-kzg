@@ -8,9 +8,6 @@ use std::fmt;
 use super::*;
 
 use crate::poly::ZPoly as Poly;
-// use crate::poly::Poly;
-
-//use pairing::Engine;
 
 pub struct polydata {
     coeffs: Vec<BlstFr>,

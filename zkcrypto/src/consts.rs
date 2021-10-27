@@ -56,22 +56,3 @@ pub fn expand_root_of_unity(root: &blsScalar, width: usize) -> Result<Vec<blsSca
 
     Ok(generated_powers)
 }
-
-// pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, String> {
-    // let mut ret = BlstFr::default();
-	// //let OneBlstFr = 
-	// blst_fr_from_uint64(&mut ret, [1, 0, 0, 0].as_ptr());
-	// let mut generated_powers = vec![ret, root.clone()];
-
-    // while !(generated_powers.last().unwrap() == &ret) {
-        // if generated_powers.len() > width {
-            // return Err(String::from("Root of unity multiplied for too long"));
-        // }
-		// let mut Fr = BlstFr::default();
-		// blst_fr_mul(&mut Fr,generated_powers.last().unwrap(), &*root);
-        // generated_powers.push(Fr);
-    // }
-
-    // Ok(generated_powers)
-// }
-

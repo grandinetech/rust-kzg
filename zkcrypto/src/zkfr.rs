@@ -3,15 +3,6 @@
 pub use super::{ZPoly, BlsScalar};
 use kzg::Fr;
 pub use crate::curve::scalar::Scalar as blsScalar; 
-//pub use crate::{Fr};
-
-// pub struct ZkFr(pub bls12_381::Scalar);
-
-// impl Clone for ZkFr {
-    // fn clone(&self) -> Self {
-        // ZkFr(self.0.clone())
-    // }
-// }
 
 impl Fr for blsScalar {
 
@@ -47,7 +38,9 @@ impl Fr for blsScalar {
 	}
 	
 	fn is_one(&self) -> bool {
+		// assert!(self.eq(&blsScalar::one()));
 		self.eq(&blsScalar::one())
+		// self == blsScalar::one()
 		// let mut val: [u64; 4] = [0; 4];		
 		// blsScalar::from_raw(val);
 		// return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
@@ -55,7 +48,7 @@ impl Fr for blsScalar {
 
     fn is_zero(&self) -> bool{
 		self.eq(&blsScalar::zero())
-	
+		// self == blsScalar::zero()
         // let mut val: [u64; 4] = [0; 4];	
 		// <blsScalar as From<u64>>::from(val.as_mut_ptr());
         // return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
@@ -80,8 +73,8 @@ impl Fr for blsScalar {
 	}
 	
 	fn eucl_inverse(&self) -> Self { 
-		let mut ret = Default::default(); //Self::default()
-		blsScalar::invert(&ret).unwrap()
+		//let mut ret = Default::default(); //Self::default()
+		blsScalar::invert(&self).unwrap()
 	}
 	
 	fn pow(&self, n: usize) -> Self {
@@ -105,12 +98,13 @@ impl Fr for blsScalar {
 	}
 
 	fn negate(&self) -> Self {
-		blsScalar::neg(&self)
+		//blsScalar::neg(&self)
+		self.neg()
 	}
 	
 	fn inverse(&self) -> Self {
-		let mut ret = Default::default(); // Self::default()
-		blsScalar::invert(&ret).unwrap()
+		//let mut ret = Default::default(); // Self::default()
+		blsScalar::invert(&self).unwrap()
 	}
 	fn equals(&self, other: &Self) -> bool {
 		self.eq(other)
