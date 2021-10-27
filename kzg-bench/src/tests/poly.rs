@@ -1,6 +1,6 @@
 use kzg::{Fr, Poly};
 use rand::rngs::StdRng;
-use rand::{thread_rng, RngCore, SeedableRng};
+use rand::{RngCore, SeedableRng};
 use std::convert::TryInto;
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
@@ -146,7 +146,7 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let mut dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
+        let dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
         let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
@@ -217,7 +217,7 @@ pub fn poly_mul_fft_test<TFr: Fr, TPoly: Poly<TFr>>() {
 
 pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut rng = StdRng::seed_from_u64(0);
-    for k in 0..256 {
+    for _ in 0..256 {
         let multiplicand_length: usize = (1 + (rng.next_u64() % 1000)).try_into().unwrap();
         let multiplier_length: usize = (1 + (rng.next_u64() % 1000)).try_into().unwrap();
         let out_length: usize = (1 + (rng.next_u64() % 1000)).try_into().unwrap();

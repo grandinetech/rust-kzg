@@ -35,6 +35,8 @@ pub trait Fr: Clone {
 
     fn equals(&self, b: &Self) -> bool;
 
+    fn div(&self, b: &Self) -> Result<Self, String>;
+
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
@@ -127,11 +129,17 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn div(&self, x: &Self) -> Result<Self, String>;
 
+    fn div_long(&self, x: &Self) -> Result<Self, String>;
+
+    fn div_fast(&self, x: &Self) -> Result<Self, String>;
+
     fn mul(&self, x: &Self, output_len: usize) -> Result<Self, String>;
 
     fn mul_direct(&self, x: &Self, output_len: usize) -> Result<Self, String>;
 
     fn mul_fft(&self, x: &Self, output_len: usize) -> Result<Self, String>;
+
+    fn flip(&self) -> Result<Self, String>;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
