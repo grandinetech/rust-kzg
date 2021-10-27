@@ -41,4 +41,10 @@ pub mod poly_tests {
         assert!(init(CurveType::BLS12_381));
         poly_inverse_simple_1::<Fr, Polynomial>();
     }
+
+    #[test]
+    fn poly_mul_direct_test_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_mul_direct_test::<Fr, Polynomial>();
+    }
 }

@@ -348,15 +348,12 @@ dependencies = [
 [[package]]
 name = "kzg"
 version = "0.1.0"
-dependencies = [
- "blst",
-]
 
 [[package]]
 name = "kzg-bench"
 version = "0.1.0"
 dependencies = [
- "blst",
+ "criterion",
  "kzg",
  "rand 0.8.4",
 ]
