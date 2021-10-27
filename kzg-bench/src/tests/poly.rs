@@ -97,6 +97,31 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &[i32], len: usize) -> TPoly
     p
 }
 
+pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
+
+    //Should be improved with more test data as in C version
+    let coeffs: [i32; 3] = [-1, 0, 1];
+    let mut dividend: TPoly = new_test_poly(&coeffs, 3);
+
+    let coeffs: [i32; 2] = [1, 1];
+    let divisor: TPoly = new_test_poly(&coeffs, 2);
+
+    let coeffs: [i32; 2] = [-1, 1];
+    let expected: TPoly = new_test_poly(&coeffs, 2);
+
+    let result = dividend.div(&divisor);
+    assert!(result.is_ok());
+    let actual = result.unwrap();
+
+    assert_eq!(expected.len(), actual.len());
+    for i in 0..actual.len() {
+        assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+    }
+
+    dividend.destroy();
+
+}
+
 pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     let coeffs0: [i32; 2] = [3, 4];
     let mut multiplicand: TPoly = new_test_poly(&coeffs0, 2);
@@ -107,29 +132,29 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     let coeffs2: [i32; 4] = [18, 9, -11, 12];
     let expected: TPoly = new_test_poly(&coeffs2, 4);
 
-
     let result0 = multiplicand.mul_direct(&multiplier, 4);
     assert!(result0.is_ok());
     let actual = result0.unwrap();
-    assert!(expected.get_coeff_at(0).equals(&actual.get_coeff_at(0)));
-    assert!(expected.get_coeff_at(1).equals(&actual.get_coeff_at(1)));
-    assert!(expected.get_coeff_at(2).equals(&actual.get_coeff_at(2)));
-    assert!(expected.get_coeff_at(3).equals(&actual.get_coeff_at(3)));
+
+    for i in 0..actual.len() {
+        assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+    }
 
     //Check commutativity
     let result1 = multiplier.mul_direct(&multiplicand, 4);
     assert!(result1.is_ok());
     let actual = result1.unwrap();
-    assert!(expected.get_coeff_at(0).equals(&actual.get_coeff_at(0)));
-    assert!(expected.get_coeff_at(1).equals(&actual.get_coeff_at(1)));
-    assert!(expected.get_coeff_at(2).equals(&actual.get_coeff_at(2)));
-    assert!(expected.get_coeff_at(3).equals(&actual.get_coeff_at(3)));
+
+    for i in 0..actual.len() {
+        assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+    }
 
     multiplicand.destroy();
     multiplier.destroy();
 }
 
-// pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>>() {
+//NOT FINISHED, only to be used if there would be Direct and FFT multiplications
+// pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>() {
 //     let mut rng = StdRng::seed_from_u64(0);
 //     for k in 0..256 {
 //         let multiplicand_length: usize = 1 + (rng.next_u64() % 1000);
