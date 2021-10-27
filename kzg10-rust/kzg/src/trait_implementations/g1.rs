@@ -5,6 +5,10 @@ impl CommonG1 for G1 {
     fn default() -> Self {
         G1::zero()
     }
+    
+    fn rand() -> Self {
+        G1::random()
+    }
 
     fn add_or_double(&mut self, b: &Self) -> Self {
         let mut g1 = G1::zero();

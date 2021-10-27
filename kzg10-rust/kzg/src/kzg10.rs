@@ -4,7 +4,7 @@ use crate::{BlstFr};
 use crate::data_converter::fr_converter::*;
 use crate::mcl_methods::{pairing, final_exp, mclBn_FrEvaluatePolynomial};
 use crate::utilities::{next_pow_of_2, log_2};
-use crate::fk20_fft::FFTSettings;
+use crate::fk20_fft::{FFTSettings, G1_GENERATOR};
 
 const G1_GEN_X: &str = "3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507";
 const G1_GEN_Y: &str = "1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569";
@@ -30,7 +30,11 @@ impl G1 {
         return gt;
     }
 
-  
+    pub fn random() -> G1 {
+        let fr = Fr::random();
+        let g1 = &G1_GENERATOR * &fr;
+        g1
+    }
 }
 
 impl ops::Mul<&Fr> for &G1 {
