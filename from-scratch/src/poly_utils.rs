@@ -7,9 +7,8 @@ use crate::kzg_types::{FsFFTSettings, FsPoly, FsFr};
 //     blst_fr_add,
 //     blst_fr
 // };
-use kzg::{Fr, FFTSettings};
+use kzg::{Fr, FFTSettings, FFTFr};
 use crate::utils::{next_power_of_two, log2_pow2, log2_u64, min_u64};
-use crate::fft_fr::fft_fr;
 
 pub fn fr_div(a: &FsFr, b: &FsFr) -> Result<FsFr, String> {
     // let mut tmp = FsFr::default();
@@ -372,8 +371,10 @@ pub fn poly_mul_fft(a: &FsPoly, b: &FsPoly, fs_: Option<&FsFFTSettings>, output_
     // TRY(new_fr_array(&b_fft, length));
     // TRY(fft_fr(a_fft, a_pad, false, length, fs_p));
     // TRY(fft_fr(b_fft, b_pad, false, length, fs_p));
-    a_fft = fft_fr(&a_pad, false, &fs).unwrap();
-    b_fft = fft_fr(&b_pad, false, &fs).unwrap();
+    //a_fft = fft_fr(&a_pad, false, &fs).unwrap();
+    a_fft = fs.fft_fr(&a_pad, false).unwrap();
+    //b_fft = fft_fr(&b_pad, false, &fs).unwrap();
+    b_fft = fs.fft_fr(&b_pad, false).unwrap();
 
     // fr_t *ab_fft = a_pad; // reuse the a_pad array
     // fr_t *ab = b_pad;     // reuse the b_pad array
@@ -387,7 +388,8 @@ pub fn poly_mul_fft(a: &FsPoly, b: &FsPoly, fs_: Option<&FsFFTSettings>, output_
         }
     //}
     // TRY(fft_fr(ab, ab_fft, true, length, fs_p));
-    let ab = &fft_fr(&ab_fft, true, &fs).unwrap();
+    // let ab = &fft_fr(&ab_fft, true, &fs).unwrap();
+    let ab = fs.fft_fr(&ab_fft, true).unwrap();
 
     // Copy result to output
     // uint64_t data_len = min_u64(out->length, length);
