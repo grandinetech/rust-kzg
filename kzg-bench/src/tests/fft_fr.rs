@@ -7,7 +7,7 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
 ) {
     let size: usize = 12;
 
-    let fft_settings = TFFTSettings::new(size).unwrap();
+    let mut fft_settings = TFFTSettings::new(size).unwrap();
 
     let mut data = vec![TFr::default(); fft_settings.get_max_width()];
     for i in 0..fft_settings.get_max_width() {
@@ -36,13 +36,15 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     for i in 0..fft_settings.get_max_width() {
         assert!(out0[i].equals(&out1[i]));
     }
+
+    fft_settings.destroy();
 }
 
 /// Check that computing FFT and inverse FFT results in the starting data
 pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     let size: usize = 12;
 
-    let fft_settings = TFFTSettings::new(size).unwrap();
+    let mut fft_settings = TFFTSettings::new(size).unwrap();
 
     let mut starting_data = vec![TFr::default(); fft_settings.get_max_width()];
     for i in 0..fft_settings.get_max_width() {
@@ -56,6 +58,8 @@ pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     for i in 0..fft_settings.get_max_width() {
         assert!(starting_data[i].equals(&inverse_result[i]));
     }
+
+    fft_settings.destroy();
 }
 
 /// Check the inverse FFT operation on precomputed values
@@ -81,7 +85,7 @@ pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
             [0x10d6917f04735dea, 0x7e04a13731049a48, 0x42cbd9ab89d7b1f7, 0x60546bd624850b42]
         ];
 
-    let fft_settings = TFFTSettings::new(4).unwrap();
+    let mut fft_settings = TFFTSettings::new(4).unwrap();
 
     let mut data = vec![TFr::default(); fft_settings.get_max_width()];
     for i in 0..fft_settings.get_max_width() {
@@ -95,6 +99,8 @@ pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
         let expected = TFr::from_u64_arr(&inv_fft_expected[i]);
         assert!(expected.equals(&forward_result[i]));
     }
+
+    fft_settings.destroy();
 }
 
 /// Check that stride is normalized when roots of different precision are used
@@ -104,8 +110,8 @@ pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
 
     let width: usize = 1 << size1;
 
-    let fft_settings1 = TFFTSettings::new(size1).unwrap();
-    let fft_settings2 = TFFTSettings::new(size2).unwrap();
+    let mut fft_settings1 = TFFTSettings::new(size1).unwrap();
+    let mut fft_settings2 = TFFTSettings::new(size2).unwrap();
 
     let mut data = vec![TFr::default(); width];
     for i in 0..width {
@@ -118,4 +124,7 @@ pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     for i in 0..width {
         assert!(result1[i].equals(&result2[i]));
     }
+
+    fft_settings1.destroy();
+    fft_settings2.destroy();
 }
