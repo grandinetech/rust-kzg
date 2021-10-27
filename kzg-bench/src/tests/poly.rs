@@ -78,7 +78,51 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     q.destroy();
 }
 
-fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &[i32], len: usize) -> TPoly {
+fn test_data(a: usize, b: usize) -> Vec<i32> {
+    // (x^2 - 1) / (x + 1) = x - 1
+    let test_0_0: Vec<i32> = vec![-1, 0, 1];
+    let test_0_1: Vec<i32> = vec![1, 1];
+    let test_0_2: Vec<i32> = vec![-1, 1];
+
+    // (12x^3 - 11x^2 + 9x + 18) / (4x + 3) = 3x^2 - 5x + 6
+    let test_1_0: Vec<i32> = vec![18, 9, -11, 12];
+    let test_1_1: Vec<i32> = vec![3, 4];
+    let test_1_2: Vec<i32> = vec![6, -5, 3];
+
+    // (x + 1) / (x^2 - 1) = nil
+    let test_2_0: Vec<i32> = vec![1, 1];
+    let test_2_1: Vec<i32> = vec![-1, 0, 2];
+    let test_2_2: Vec<i32> = vec![];
+
+    // (10x^2 + 20x + 30) / 10 = x^2 + 2x + 3
+    let test_3_0: Vec<i32> = vec![30, 20, 10];
+    let test_3_1: Vec<i32> = vec![10];
+    let test_3_2: Vec<i32> = vec![3, 2, 1];
+
+    // (x^2 + x) / (x + 1) = x
+    let test_4_0: Vec<i32> = vec![0, 1, 1];
+    let test_4_1: Vec<i32> = vec![1, 1];
+    let test_4_2: Vec<i32> = vec![0, 1];
+
+    // (x^2 + x + 1) / 1 = x^2 + x + 1
+    let test_5_0: Vec<i32> = vec![1, 1, 1];
+    let test_5_1: Vec<i32> = vec![1];
+    let test_5_2: Vec<i32> = vec![1, 1, 1];
+
+    // (x^2 + x + 1) / (0x + 1) = x^2 + x + 1
+    let test_6_0: Vec<i32> = vec![1, 1, 1];
+    let test_6_1: Vec<i32> = vec![1, 0]; // The highest coefficient is zero
+    let test_6_2: Vec<i32> = vec![1, 1, 1];
+
+    let test_data: [[Vec<i32>; 3]; 7] = [[test_0_0, test_0_1, test_0_2], [test_1_0, test_1_1, test_1_2],
+        [test_2_0, test_2_1, test_2_2], [test_3_0, test_3_1, test_3_2], [test_4_0, test_4_1, test_4_2],
+        [test_5_0, test_5_1, test_5_2], [test_6_0, test_6_1, test_6_2]];
+
+    test_data[a][b].clone()
+}
+
+
+fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TPoly {
     let mut p = TPoly::new(len).unwrap();
 
     for i in 0..len {
@@ -99,37 +143,33 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &[i32], len: usize) -> TPoly
 
 pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
 
-    //Should be improved with more test data as in C version
-    let coeffs: [i32; 3] = [-1, 0, 1];
-    let mut dividend: TPoly = new_test_poly(&coeffs, 3);
+    for i in 0..7 {
+        let divided_data = test_data(i, 0);
+        let divisor_data = test_data(i, 1);
+        let expected_data = test_data(i, 2);
+        let mut dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
+        let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
+        let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
-    let coeffs: [i32; 2] = [1, 1];
-    let divisor: TPoly = new_test_poly(&coeffs, 2);
+        let result = dividend.div(&divisor);
+        assert!(result.is_ok());
+        let actual = result.unwrap();
 
-    let coeffs: [i32; 2] = [-1, 1];
-    let expected: TPoly = new_test_poly(&coeffs, 2);
-
-    let result = dividend.div(&divisor);
-    assert!(result.is_ok());
-    let actual = result.unwrap();
-
-    assert_eq!(expected.len(), actual.len());
-    for i in 0..actual.len() {
-        assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+        assert_eq!(expected.len(), actual.len());
+        for i in 0..actual.len() {
+            assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+        }
     }
-
-    dividend.destroy();
-
 }
 
 pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
-    let coeffs0: [i32; 2] = [3, 4];
+    let coeffs0: Vec<i32> = vec![3, 4];
     let mut multiplicand: TPoly = new_test_poly(&coeffs0, 2);
 
-    let coeffs1: [i32; 3] = [6, -5, 3];
+    let coeffs1: Vec<i32> = vec![6, -5, 3];
     let mut multiplier: TPoly = new_test_poly(&coeffs1, 3);
 
-    let coeffs2: [i32; 4] = [18, 9, -11, 12];
+    let coeffs2: Vec<i32> = vec![18, 9, -11, 12];
     let expected: TPoly = new_test_poly(&coeffs2, 4);
 
     let result0 = multiplicand.mul_direct(&multiplier, 4);

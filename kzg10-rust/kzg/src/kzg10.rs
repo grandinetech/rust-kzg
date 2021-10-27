@@ -253,7 +253,7 @@ impl Polynomial {
         let mut poly_copy = self.clone();
         let mut copy_pos = poly_copy.order() - 1;
 
-        let mut result = vec![Fr::default(); poly_copy.order() - divisor.len() + 1];
+        let mut result = vec![Fr::default(); poly_copy.order() - divisor.len() + 1];//here
         
         for r_i in (0 .. result.len()).rev() {
             result[r_i] = &poly_copy.coeffs[copy_pos] / &divisor.last().unwrap();
@@ -262,7 +262,7 @@ impl Polynomial {
                 poly_copy.coeffs[r_i + d_i] -= &(&result[r_i] * &divisor[d_i]);
             }
 
-            copy_pos -= 1;
+            copy_pos -= 1;//here
         }
 
         return Polynomial {
