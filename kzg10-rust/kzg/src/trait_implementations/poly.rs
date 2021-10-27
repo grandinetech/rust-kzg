@@ -49,6 +49,10 @@ impl Poly<Fr> for Polynomial {
         Ok(self.long_division(&x.coeffs))
     }
 
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        Polynomial::mul_direct(self, x, len)
+    }
+
     fn destroy(&mut self) {
     }
 }
