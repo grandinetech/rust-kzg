@@ -78,41 +78,40 @@ macro_rules! field_test {
 }
 
 macro_rules! ec_test {
-    ($t:ty, $f:ty, $P:expr) => {
-        #[allow(non_snake_case)]
-        assert!($P.is_valid());
-        assert!(!$P.is_zero());
-        let mut P1 = <$t>::zero();
-        assert!(P1.is_zero());
-        assert_ne!(P1, $P);
-        <$t>::neg(&mut P1, &$P);
+    ($t:ty, $f:ty, $p:expr) => {
+        assert!($p.is_valid());
+        assert!(!$p.is_zero());
+        let mut p1 = <$t>::zero();
+        assert!(p1.is_zero());
+        assert_ne!(p1, $p);
+        <$t>::neg(&mut p1, &$p);
         let mut x: $f = unsafe { <$f>::uninit() };
-        <$f>::neg(&mut x, &P1.y);
-        assert_eq!(&x, &$P.y);
+        <$f>::neg(&mut x, &p1.y);
+        assert_eq!(&x, &$p.y);
 
-        <$t>::dbl(&mut P1, &$P);
-        let mut P2: $t = unsafe { <$t>::uninit() };
-        let mut P3: $t = unsafe { <$t>::uninit() };
-        <$t>::add(&mut P2, &$P, &$P);
-        assert_eq!(P2, P1);
-        <$t>::add(&mut P3, &P2, &$P);
-        assert_eq!(P3, (&P2 + &$P));
-        assert_eq!(P2, (&P3 - &$P));
+        <$t>::dbl(&mut p1, &$p);
+        let mut p2: $t = unsafe { <$t>::uninit() };
+        let mut p3: $t = unsafe { <$t>::uninit() };
+        <$t>::add(&mut p2, &$p, &$p);
+        assert_eq!(p2, p1);
+        <$t>::add(&mut p3, &p2, &$p);
+        assert_eq!(p3, (&p2 + &$p));
+        assert_eq!(p2, (&p3 - &$p));
         let mut y: Fr = Fr::from_int(1);
-        <$t>::mul(&mut P2, &$P, &y);
-        assert_eq!(P2, $P);
+        <$t>::mul(&mut p2, &$p, &y);
+        assert_eq!(p2, $p);
         y.set_int(2);
-        <$t>::mul(&mut P2, &$P, &y);
-        assert_eq!(P2, P1);
+        <$t>::mul(&mut p2, &$p, &y);
+        assert_eq!(p2, p1);
         y.set_int(3);
-        <$t>::mul(&mut P2, &$P, &y);
-        assert_eq!(P2, P3);
-        P2 = P1.clone();
-        P2 += &$P;
-        assert_eq!(P2, P3);
+        <$t>::mul(&mut p2, &$p, &y);
+        assert_eq!(p2, p3);
+        p2 = p1.clone();
+        p2 += &$p;
+        assert_eq!(p2, p3);
 
-        P2 -= &$P;
-        assert_eq!(P2, P1);
+        p2 -= &$p;
+        assert_eq!(p2, p1);
     };
 }
 

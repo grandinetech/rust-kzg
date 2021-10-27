@@ -1,6 +1,6 @@
 use kzg::{Fr, Poly};
-use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
+// use rand::rngs::StdRng;
+// use rand::seq::SliceRandom;
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut poly = TPoly::new(10).unwrap();
