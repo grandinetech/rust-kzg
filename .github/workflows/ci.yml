@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-11]
 
     steps: 
     - uses: actions/checkout@v2 
@@ -19,35 +19,10 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
         
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml -- --test-threads 1 
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path kzg10-rust/kzg-bench/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path from-scratch/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path from-scratch/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path from-scratch/Cargo.toml
+    - name: Run mcl-kzg10-rust tests
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo test --manifest-path kzg10-rust/kzg-bench/Cargo.toml -- --test-threads 1 
 
     - uses: actions-rs/cargo@v1
       with:
