@@ -47,6 +47,6 @@ pub fn log2_u64(n: usize) -> usize {
     r
 }
 
-pub fn min_u64(a: usize, b: usize) -> Result<usize, String> {
-    return if a < b { Ok(a) } else { Ok(b) };
+pub fn min_u64(a: usize, b: usize) -> usize {
+    return if a < b { a } else { b };
 }

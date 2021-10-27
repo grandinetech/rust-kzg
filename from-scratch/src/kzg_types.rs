@@ -4,7 +4,9 @@ use blst::{
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
     blst_uint64_from_fr,
 };
-use kzg::{FFTSettings, Fr, Poly, G1};
+use kzg::{FFTSettings, Fr, Poly, G1, FFTFr};
+use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
+use crate::zero_poly::pad_poly;
 
 pub struct FsFr(blst::blst_fr);
 
@@ -295,12 +297,146 @@ impl Poly<FsFr> for FsPoly {
         }
     }
 
-    fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
+    // TODO: analyze how algo works
+    fn inverse(&self, output_len: usize) -> Result<Self, String> {
+        if self.coeffs.len() == 0 {
+            return Err(String::from("Can't inverse a zero-length poly"));
+        } else if self.coeffs[0].is_zero() {
+            return Err(String::from("First coefficient of polynomial mustn't be zero"));
+        }
+
+        let mut ret = FsPoly { coeffs: vec![Fr::default(); output_len] };
+        // If the input polynomial is constant, the remainder of the series is zero
+        if self.coeffs.len() == 1 {
+            ret.coeffs[0] = self.coeffs[0].eucl_inverse();
+
+            for i in 1..output_len {
+                ret.coeffs[i] = Fr::zero();
+            }
+
+            return Ok(ret);
+        }
+
+        let maxd = output_len - 1;
+
+        // Max space for multiplications is (2 * length - 1)
+        let scale: usize = log2_pow2(next_power_of_two(2 * output_len - 1));
+        let fs = FsFFTSettings::new(scale).unwrap();
+
+        // To store intermediate results
+        let mut tmp0 = FsPoly { coeffs: vec![Fr::default(); output_len] };
+        let mut tmp1 = FsPoly { coeffs: vec![Fr::default(); output_len] };
+
+        // Base case for d == 0
+        ret.coeffs[0] = self.coeffs[0].eucl_inverse();
+        let mut d: usize = 0;
+        let mut mask: usize = 1 << log2_u64(maxd);
+        while mask != 0 {
+            d = 2 * d + (if (maxd & mask) != 0 { 1 } else { 0 });
+            mask = mask >> 1;
+
+            // b.c -> tmp0 (we're using out for c)
+            // tmp0.length = min_u64(d + 1, b->length + output->length - 1);
+            let len_temp = min_u64(d + 1, self.coeffs.len() + output_len - 1);
+            tmp0 = self.mul(&ret, len_temp).unwrap();
+
+            // 2 - b.c -> tmp0
+            for i in 0..tmp0.coeffs.len() {
+                tmp0.coeffs[i] = tmp0.coeffs[i].negate();
+            }
+            let fr_two = Fr::from_u64(2);
+            tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
+
+            // c.(2 - b.c) -> tmp1;
+            tmp1 = ret.mul(&tmp0, d + 1).unwrap();
+
+            // output->length = tmp1.length;
+            for i in 0..tmp1.coeffs.len() {
+                ret.coeffs.push(tmp1.coeffs[i]);
+            }
+        }
+
+        if d + 1 != output_len {
+            return Err(String::from(""));
+        }
+
+        Ok(ret)
+    }
+
+    fn div(&self, x: &Self) -> Result<Self, String> {
         todo!()
     }
 
-    fn div(&mut self, x: &Self) -> Result<Self, String> {
-        todo!()
+    fn mul_direct(&self, x: &Self, output_len: usize) -> Result<Self, String> {
+        let a_degree: usize = self.coeffs.len() - 1;
+        let b_degree: usize = x.coeffs.len() - 1;
+        let mut ret = FsPoly { coeffs: Vec::default() };
+
+        for _ in 0..output_len {
+            ret.coeffs.push(Fr::zero());
+        }
+
+        // Truncate the output to the length of the output polynomial
+        for i in 0..(a_degree + 1) {
+            let mut j: usize = 0;
+            while j <= b_degree && (i + j) < ret.coeffs.len() {
+                let tmp = self.coeffs[i].mul(&x.coeffs[j]);
+                ret.coeffs[i + j] = ret.coeffs[i + j].add(&tmp);
+
+                j += 1;
+            }
+        }
+
+        Ok(ret)
+    }
+
+    fn mul_fft(&self, x: &Self, output_len: usize) -> Result<Self, String> {
+        // Poly mul fft
+
+        // Truncate a and b so as not to do excess work for the number of coefficients required.
+        let a_len = min_u64(self.len(), output_len);
+        let b_len = min_u64(x.len(), output_len);
+        let length = next_power_of_two(a_len + b_len - 1);
+
+        let scale: usize = log2_pow2(length);
+        let fs = FsFFTSettings::new(scale).unwrap();
+
+        if length > fs.max_width {
+            return Err(String::from("Length too long"));
+        }
+
+        let a_pad = pad_poly(&self, length).unwrap();
+        let b_pad = pad_poly(&x, length).unwrap();
+        let a_fft = fs.fft_fr(&a_pad, false).unwrap();
+        let b_fft = fs.fft_fr(&b_pad, false).unwrap();
+
+        let mut ab_fft = a_pad;
+        for i in 0..length {
+            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+        }
+        let ab = fs.fft_fr(&ab_fft, true).unwrap();
+
+        // Copy result to output
+        // uint64_t data_len = min_u64(out->length, length);
+        let mut ret = FsPoly { coeffs: Vec::default() };
+        let data_len = min_u64(output_len, length);
+        for i in 0..data_len {
+            ret.coeffs.push(ab[i]);
+        }
+        for _ in data_len..output_len {
+            ret.coeffs.push(FsFr::zero());
+        }
+
+        Ok(ret)
+    }
+
+    fn mul(&self, x: &Self, output_len: usize) -> Result<Self, String> {
+        return if self.coeffs.len() < 64 || x.coeffs.len() < 64 || output_len < 128 { // Tunable parameter
+            // Poly mul direct
+            self.mul_direct(x, output_len)
+        } else {
+            self.mul_fft(x, output_len)
+        };
     }
 
     fn destroy(&mut self) {}

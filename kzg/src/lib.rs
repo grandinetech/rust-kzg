@@ -70,7 +70,7 @@ pub trait DAS<Coeff: Fr> {
 
 pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
-        -> Result<Polynomial, String>;
+                                -> Result<Polynomial, String>;
 
     fn reduce_partials(
         &self,
@@ -123,9 +123,15 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn unscale(&mut self);
 
-    fn inverse(&mut self, new_len: usize) -> Result<Self, String>;
+    fn inverse(&self, output_len: usize) -> Result<Self, String>;
 
-    fn div(&mut self, x: &Self) -> Result<Self, String>;
+    fn div(&self, x: &Self) -> Result<Self, String>;
+
+    fn mul(&self, x: &Self, output_len: usize) -> Result<Self, String>;
+
+    fn mul_direct(&self, x: &Self, output_len: usize) -> Result<Self, String>;
+
+    fn mul_fft(&self, x: &Self, output_len: usize) -> Result<Self, String>;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
