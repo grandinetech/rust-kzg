@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     
-    use kzg::{Fr, G1, G2, FFTSettings, Poly};
-    use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, FsFr};
+    use kzg::{Fr, G1, FFTSettings, Poly};
+    use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, FsFr, FsG1, FsG2};
     use kzg_from_scratch::consts::{TRUSTED_SETUP_GENERATOR};
     use kzg_from_scratch::utils::{generate_trusted_setup};
     use kzg_from_scratch::kzg_proofs::{
@@ -23,8 +23,8 @@ mod tests {
         let coset_len = 1 << coset_scale;
 
         // FsFFTSettings fs1, fs2;
-        let fs1 = FsFFTSettings::new(4/* ?????? */).unwrap();
-        let fs2 = FsFFTSettings::new(coset_scale).unwrap();
+        // let fs1 = FsFFTSettings::new(4/* ?????? */).unwrap();
+        // let fs2 = FsFFTSettings::new(coset_scale).unwrap();
 
         //FsKZGSettings ks1, ks2;
         // let kzgSettings_1 = FsKZGSettings::new(coeffs.len());
@@ -33,13 +33,13 @@ mod tests {
         let mut p = FsPoly { coeffs: vec![Fr::default(); 16]};
         
         // g1_t commitment, proof;
-        let mut commitment = G1::default();
+        let mut commitment = FsG1::default();
         //let proof: G1;
 
         // fr_t x, tmp;
         // let mut x: Fr = FsFr::default();
         let mut tmp = FsFr::default();
-        let result: bool;
+        // let result: bool;
 
         // fr_t y[coset_len];
         let mut y: Vec<FsFr> = Vec::default();
@@ -50,8 +50,8 @@ mod tests {
 
         //g1_t s1[secrets_len];
         //g2_t s2[secrets_len];
-        let mut secret1: Vec<G1> = Vec::default();
-        let mut secret2: Vec<G2> = Vec::default();
+        let mut secret1: Vec<FsG1> = Vec::default();
+        let mut secret2: Vec<FsG2> = Vec::default();
 
         // Create the polynomial
         //new_poly(&p, coeffs.len());

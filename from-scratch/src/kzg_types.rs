@@ -2,7 +2,7 @@ use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use blst::{
     blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
-    blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr
+    blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_affine, blst_p2_affine
 };
 use kzg::{FFTSettings, Fr, Poly, G1, Scalar};
 
@@ -205,7 +205,7 @@ impl FsG1 {
 
 impl G1 for FsG1 {
     fn default() -> Self {
-        todo!()
+        Self(blst_p1::default())
     }
 
     fn add_or_double(&mut self, b: &Self) -> Self {
@@ -235,7 +235,20 @@ impl FsG2 {
     pub(crate) fn from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
         FsG2(blst_p2 { x, y, z })
     }
+
+    pub fn default() -> Self {
+        Self(blst_p2::default())
+    }
+    
 }
+
+impl Clone for FsG2 {
+    fn clone(&self) -> Self {
+        todo!()
+    }
+}
+
+impl Copy for FsG2 {}
 
 pub struct FsPoly {
     pub coeffs: Vec<FsFr>,

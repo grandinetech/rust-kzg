@@ -1,22 +1,25 @@
-use kzg::{G1, P1Affine, Fp, P2Affine, Fr, FFTFr};
+use kzg::{G1, Fr, FFTFr};
 use blst::{blst_p1_add_or_double,
-           blst_p1s_to_affine,
-           blst_scalar,
-           blst_scalar_from_fr,
-           blst_p1_mult,
-           blst_p1s_mult_pippenger,
-           blst_p2_mult,
-           blst_p1_cneg,
-           blst_p2_cneg,
-           blst_p2_add_or_double,
-           blst_fp12,
-           blst_p1_to_affine,
-           blst_p2_to_affine,
-           blst_miller_loop,
-           blst_fp12_mul,
-           blst_final_exp,
-           blst_fp12_is_one,
-           blst_p1
+            blst_p1s_to_affine,
+            blst_scalar,
+            blst_scalar_from_fr,
+            blst_p1_mult,
+            blst_p1s_mult_pippenger,
+            blst_p2_mult,
+            blst_p1_cneg,
+            blst_p2_cneg,
+            blst_p2_add_or_double,
+            blst_fp12,
+            blst_p1_to_affine,
+            blst_p2_to_affine,
+            blst_miller_loop,
+            blst_fp12_mul,
+            blst_final_exp,
+            blst_fp12_is_one,
+            blst_p1,
+            blst_p1_affine,
+            blst_p2_affine,
+            blst_fp
 };
 use crate::poly_utils::{new_poly_div};
 use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2};
@@ -91,9 +94,9 @@ pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
     if i == 0 {
         let g1_identity: FsG1 = FsG1 {
             0: blst_p1 {
-                x: Fp { l: [0u64; 6] },
-                y: Fp { l: [0u64; 6] },
-                z: Fp { l: [0u64; 6] },
+                x: blst_fp { l: [0u64; 6] },
+                y: blst_fp { l: [0u64; 6] },
+                z: blst_fp { l: [0u64; 6] },
             }
         };
         *out = g1_identity;
@@ -114,9 +117,9 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
 
         let g1_identity: FsG1 = FsG1 {
             0: blst_p1 {
-                x: Fp { l: [0u64; 6] },
-                y: Fp { l: [0u64; 6] },
-                z: Fp { l: [0u64; 6] },
+                x: blst_fp { l: [0u64; 6] },
+                y: blst_fp { l: [0u64; 6] },
+                z: blst_fp { l: [0u64; 6] },
             }
         };
 
@@ -132,18 +135,18 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
 
         // Blst's implementation of the Pippenger method
         //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
-        let mut p_affine = vec![P1Affine::default(); len];
+        let mut p_affine = vec![blst_p1_affine::default(); len];
         //blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
         let mut scalars = vec![blst_scalar::default(); len];
 
         // Transform the points to affine representation
         //const blst_p1 *p_arg[2] = {p, NULL};
         // let p_arg: const* = {p, null}
-        let p_arg: [*const FsG1; 2] = [&p[0], &FsG1::default()];
+        let p_arg: [*const blst_p1; 2] = [&p[0].0, &blst_p1::default()];
         //p_arg[0] = &p;
 
         unsafe {
-            blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.0.as_ptr(), len);
+            blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
         }
 
         // Transform the field elements to 256-bit scalars
@@ -159,7 +162,7 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
         //scalars_arg[0] = &scalars;
 
         //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-        let points_arg: [*const P1Affine; 2] = [p_affine.as_ptr(), &P1Affine::default()];
+        let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), &blst_p1_affine::default()];
         //points_arg[0] = &p_affine;
 
         //void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
@@ -257,17 +260,17 @@ pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr],
 
 fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> Result<bool, String> {
     //blst_fp12 loop0, loop1, gt_point;
-    let mut loop0: blst_fp12 = blst_fp12::default();
-    let mut loop1: blst_fp12 = blst_fp12::default();
-    let mut gt_point: blst_fp12 = blst_fp12::default();
+    let mut loop0:blst_fp12 =blst_fp12::default();
+    let mut loop1:blst_fp12 =blst_fp12::default();
+    let mut gt_point:blst_fp12 =blst_fp12::default();
 
     // blst_p1_affine aa1, bb1;
-    let mut aa1: P1Affine = P1Affine::default();
-    let mut bb1: P1Affine = P1Affine::default();
+    let mut aa1 = blst_p1_affine::default();
+    let mut bb1 = blst_p1_affine::default();
 
     //blst_p2_affine aa2, bb2;
-    let mut aa2: P2Affine = P2Affine::default();
-    let mut bb2: P2Affine = P2Affine::default();
+    let mut aa2 = blst_p2_affine::default();
+    let mut bb2 = blst_p2_affine::default();
 
     // As an optimisation, we want to invert one of the pairings,
     // so we negate one of the points.
