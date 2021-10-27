@@ -20,8 +20,5 @@ impl CommonG1 for G1 {
         G1::eq(self, b)
     }
 
-    fn rand() -> Self {
-        todo!()
-    }
     fn destroy(&mut self) {}
 }

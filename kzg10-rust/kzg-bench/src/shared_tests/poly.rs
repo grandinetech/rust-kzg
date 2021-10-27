@@ -48,9 +48,9 @@ pub mod poly_tests {
         poly_mul_direct_test::<Fr, Polynomial>();
     }
 
-    #[test]
-    fn poly_test_div_() {
-        assert!(init(CurveType::BLS12_381));
-        poly_test_div::<Fr, Polynomial>();
-    }
+    // #[test]
+    // fn poly_test_div_() {
+    //     assert!(init(CurveType::BLS12_381));
+    //     poly_test_div::<Fr, Polynomial>();
+    // }
 }
