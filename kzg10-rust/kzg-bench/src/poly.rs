@@ -108,7 +108,7 @@ fn poly_test_div() {
         let dividend = Polynomial::from_fr(first);
         let expected = Polynomial::from_fr(third);
 
-        let result = dividend.long_division(&second);
+        let result = dividend.long_division(&second).unwrap();
 
         let expected_len: usize;
         let result_len: usize;
@@ -134,7 +134,7 @@ fn poly_div_by_zero() {
     let dividend = Polynomial::from_i32(&dividend_vec);
 
     //Act
-    let dummy = std::panic::catch_unwind(|| dividend.long_division(&divisor));
+    let dummy = dividend.long_division(&divisor);
 
     //Assert
     assert!(dummy.is_err());

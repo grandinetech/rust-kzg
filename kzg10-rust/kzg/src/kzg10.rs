@@ -244,7 +244,7 @@ impl Polynomial {
 
     pub fn gen_proof_at(&self, g1_points: &Vec<G1>, point: &Fr) -> G1 {
         let divisor = vec![point.get_neg(), Fr::one()];
-        let quotient_poly = self.long_division(&divisor);
+        let quotient_poly = self.long_division(&divisor).unwrap();
 
         let mut result = G1::default();
         unsafe {
@@ -253,25 +253,47 @@ impl Polynomial {
         return result;
     }
 
-    pub fn long_division(&self, divisor: &Vec<Fr>) -> Polynomial {
-        let mut poly_copy = self.clone();
-        let mut copy_pos = poly_copy.order() - 1;
+    pub fn poly_quotient_length(dividend: &[Fr], divisor: &[Fr]) -> usize {
+        if dividend.len() >= divisor.len() { dividend.len() - divisor.len() + 1} else { 0 }
+    }
+    
 
-        let mut result = vec![Fr::default(); poly_copy.order() - divisor.len() + 1];//here
-        
-        for r_i in (0 .. result.len()).rev() {
-            result[r_i] = &poly_copy.coeffs[copy_pos] / &divisor.last().unwrap();
-
-            for d_i in (0 .. divisor.len()).rev() {
-                poly_copy.coeffs[r_i + d_i] -= &(&result[r_i] * &divisor[d_i]);
-            }
-
-            copy_pos -= 1;//here
+    pub fn long_division(&self, divisor: &Vec<Fr>) -> Result<Polynomial, String> {
+        if divisor.len() == 0 {
+            return Err(String::from("Dividing by zero is undefined"));
         }
 
-        return Polynomial {
-            coeffs: result
-        };
+        if divisor.last().unwrap().is_zero() {
+            return Err(String::from("The divisor's highest coefficient must be non-zero"));
+        }
+
+        let out_length = Polynomial::poly_quotient_length(&self.coeffs, divisor);
+
+        if out_length == 0 {
+            return Ok(Polynomial::default());
+        }
+
+        let mut a_pos = self.order() - 1;
+        let b_pos = divisor.len() - 1;
+        let mut diff = a_pos - b_pos;
+
+        let mut a = self.coeffs.clone();
+        let mut out_coeffs = vec![Fr::default(); out_length];
+
+        while diff > 0 {
+            out_coeffs[diff] = a[a_pos] / divisor[b_pos];
+
+            for i in 0..b_pos {
+                // a[diff + i] -= b[i] * quot
+                let tmp = out_coeffs[diff] * divisor[i];
+                a[diff + i] = a[diff + i] - tmp;
+            }
+
+            a_pos = a_pos - 1;
+            diff = diff - 1;
+        }
+        out_coeffs[0] = a[a_pos] / divisor[b_pos];
+        return Ok(Polynomial::from_fr(out_coeffs)); 
     }
 
     pub fn commit(&self, g1_points: &Vec<G1>) -> G1 {

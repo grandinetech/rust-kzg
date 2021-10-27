@@ -121,7 +121,6 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
     test_data[a][b].clone()
 }
 
-
 fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TPoly {
     let mut p = TPoly::new(len).unwrap();
 
@@ -152,13 +151,18 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
         let result = dividend.div(&divisor);
-        assert!(result.is_ok());
-        let actual = result.unwrap();
-
-        assert_eq!(expected.len(), actual.len());
-        for i in 0..actual.len() {
-            assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+        if *divisor_data.last().unwrap() == 0 {
+            assert!(result.is_err());
+        } else {
+            assert!(result.is_ok());
+            let actual = result.unwrap();
+    
+            assert_eq!(expected.len(), actual.len());
+            for i in 0..actual.len() {
+                assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+            }
         }
+    
     }
 }
 
@@ -193,7 +197,7 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     multiplier.destroy();
 }
 
-//NOT FINISHED, only to be used if there would be Direct and FFT multiplications
+// // NOT FINISHED, only to be used if there would be Direct and FFT multiplications
 // pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>() {
 //     let mut rng = StdRng::seed_from_u64(0);
 //     for k in 0..256 {
@@ -215,12 +219,12 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
 //         }
 
 //         //Ensure that the polynomials' orders corresponds to their lengths
-//         if (multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero()) {
+//         if multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero() {
 //             let fr_one = Fr::one();
 //             multiplicand.set_coeff_at(multiplicand.len() - 1, &fr_one);
 //         }
 
-//         if (multiplier.get_coeff_at(multiplier.len() - 1).is_zero()) {
+//         if multiplier.get_coeff_at(multiplier.len() - 1).is_zero() {
 //             let fr_one = Fr::one();
 //             multiplier.set_coeff_at(multiplier.len() - 1, &fr_one);
 //         }
