@@ -1,4 +1,6 @@
 use kzg::{Fr, Poly};
+use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut poly = TPoly::new(10).unwrap();
@@ -75,3 +77,94 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     }
     q.destroy();
 }
+
+fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &[i32], len: usize) -> TPoly {
+    let mut p = TPoly::new(len).unwrap();
+
+    for i in 0..len {
+        let coeff: i32 = coeffs[i];
+        if coeff >= 0 {
+            let c = TFr::from_u64(coeff as u64);
+            p.set_coeff_at(i, &c);
+        }
+        else {
+            let c = TFr::from_u64((-coeff) as u64);
+            let negc = c.negate();
+            p.set_coeff_at(i, &negc);
+        }
+    }
+
+    p
+}
+
+pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
+    let coeffs0: [i32; 2] = [3, 4];
+    let mut multiplicand0: TPoly = new_test_poly(&coeffs0, 2);
+    let multiplicand1: TPoly = new_test_poly(&coeffs0, 2);
+
+    let coeffs1: [i32; 3] = [6, -5, 2];
+    let mut multiplier: TPoly = new_test_poly(&coeffs1, 3);
+
+    let coeffs2: [i32; 4] = [18, 9, -11, 12];
+    let expected: TPoly = new_test_poly(&coeffs2, 4);
+
+
+    let result0 = multiplicand0.mul_direct(&multiplier);
+    assert!(result0.is_ok());
+    assert!(expected.get_coeff_at(0).equals(&multiplicand0.get_coeff_at(0)));
+    assert!(expected.get_coeff_at(1).equals(&multiplicand0.get_coeff_at(1)));
+    assert!(expected.get_coeff_at(2).equals(&multiplicand0.get_coeff_at(2)));
+    assert!(expected.get_coeff_at(3).equals(&multiplicand0.get_coeff_at(3)));
+
+    //Check commutativity
+    let result1 = multiplier.mul_direct(&multiplicand1);
+    assert!(result1.is_ok());
+    assert!(expected.get_coeff_at(0).equals(&multiplier.get_coeff_at(0)));
+    assert!(expected.get_coeff_at(1).equals(&multiplier.get_coeff_at(1)));
+    assert!(expected.get_coeff_at(2).equals(&multiplier.get_coeff_at(2)));
+    assert!(expected.get_coeff_at(3).equals(&multiplier.get_coeff_at(3)));
+
+    // multiplicand0.destroy();
+    // multiplicand1.destroy();
+    // multiplier.destroy();
+    // expected.destroy();
+    // result0.destroy();
+    // result1.destroy();
+}
+
+// pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>>() {
+//     let mut rng = StdRng::seed_from_u64(0);
+//     for k in 0..256 {
+//         let multiplicand_length: usize = 1 + (rng.next_u64() % 1000);
+//         let multiplier_length: usize = 1 + (rng.next_u64() % 1000);
+//         let out_length: usize = 1 + (rng.next_u64() % 1000);
+
+//         let multiplicand = TPoly::new(multiplicand_length).unwrap();
+//         let multiplier = TPoly::new(multiplier_length).unwrap();
+
+//         for i in 0..multiplicand_length {
+//             let coef = TFr::rand();
+//             multiplicand.set_coeff_at(i, &coef);
+//         }
+
+//         for i in 0..multiplier_length {
+//             let coef = TFr::rand();
+//             multiplier.set_coeff_at(i, &coef);
+//         }
+
+//         //Ensure that the polynomials' orders corresponds to their lengths
+//         if (multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero()) {
+//             let fr_one = Fr::one();
+//             multiplicand.set_coeff_at(multiplicand.len() - 1, &fr_one);
+//         }
+
+//         if (multiplier.get_coeff_at(multiplier.len() - 1).is_zero()) {
+//             let fr_one = Fr::one();
+//             multiplier.set_coeff_at(multiplier.len() - 1, &fr_one);
+//         }
+
+//         let q0 = TPoly::new(out_length);
+//         let result0 = multiplicand.mul(&multiplier);
+//         assert!(result0.is_ok());
+//     }
+// }

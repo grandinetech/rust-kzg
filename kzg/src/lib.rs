@@ -42,6 +42,8 @@ pub trait Fr: Clone {
 pub trait G1: Clone {
     fn default() -> Self;
 
+    fn rand() -> Self;
+
     fn add_or_double(&mut self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
@@ -59,7 +61,7 @@ pub trait FFTFr<Coeff: Fr> {
 }
 
 pub trait FFTG1<Coeff: G1> {
-    fn fft_g1(&self, data: &mut [Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
+    fn fft_g1(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
 pub trait DAS<Coeff: Fr> {
@@ -124,6 +126,8 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn inverse(&mut self, new_len: usize) -> Result<Self, String>;
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
