@@ -99,38 +99,34 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &[i32], len: usize) -> TPoly
 
 pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     let coeffs0: [i32; 2] = [3, 4];
-    let mut multiplicand0: TPoly = new_test_poly(&coeffs0, 2);
-    let multiplicand1: TPoly = new_test_poly(&coeffs0, 2);
+    let mut multiplicand: TPoly = new_test_poly(&coeffs0, 2);
 
-    let coeffs1: [i32; 3] = [6, -5, 2];
+    let coeffs1: [i32; 3] = [6, -5, 3];
     let mut multiplier: TPoly = new_test_poly(&coeffs1, 3);
 
     let coeffs2: [i32; 4] = [18, 9, -11, 12];
     let expected: TPoly = new_test_poly(&coeffs2, 4);
 
 
-    let result0 = multiplicand0.mul_direct(&multiplier, 4);
-    // assert!(result0.is_ok());
-    // let c = multiplicand0.get_coeff_at(0);
-    // assert!(expected.get_coeff_at(0).equals(&c));
-    // assert!(expected.get_coeff_at(1).equals(&multiplicand0.get_coeff_at(1)));
-    // assert!(expected.get_coeff_at(2).equals(&multiplicand0.get_coeff_at(2)));
-    // assert!(expected.get_coeff_at(3).equals(&multiplicand0.get_coeff_at(3)));
+    let result0 = multiplicand.mul_direct(&multiplier, 4);
+    assert!(result0.is_ok());
+    let actual = result0.unwrap();
+    assert!(expected.get_coeff_at(0).equals(&actual.get_coeff_at(0)));
+    assert!(expected.get_coeff_at(1).equals(&actual.get_coeff_at(1)));
+    assert!(expected.get_coeff_at(2).equals(&actual.get_coeff_at(2)));
+    assert!(expected.get_coeff_at(3).equals(&actual.get_coeff_at(3)));
 
-    // //Check commutativity
-    // let result1 = multiplier.mul_direct(&multiplicand1, 4);
-    // assert!(result1.is_ok());
-    // assert!(expected.get_coeff_at(0).equals(&multiplier.get_coeff_at(0)));
-    // assert!(expected.get_coeff_at(1).equals(&multiplier.get_coeff_at(1)));
-    // assert!(expected.get_coeff_at(2).equals(&multiplier.get_coeff_at(2)));
-    // assert!(expected.get_coeff_at(3).equals(&multiplier.get_coeff_at(3)));
+    //Check commutativity
+    let result1 = multiplier.mul_direct(&multiplicand, 4);
+    assert!(result1.is_ok());
+    let actual = result1.unwrap();
+    assert!(expected.get_coeff_at(0).equals(&actual.get_coeff_at(0)));
+    assert!(expected.get_coeff_at(1).equals(&actual.get_coeff_at(1)));
+    assert!(expected.get_coeff_at(2).equals(&actual.get_coeff_at(2)));
+    assert!(expected.get_coeff_at(3).equals(&actual.get_coeff_at(3)));
 
-    // multiplicand0.destroy();
-    // multiplicand1.destroy();
-    // multiplier.destroy();
-    // expected.destroy();
-    // result0.destroy();
-    // result1.destroy();
+    multiplicand.destroy();
+    multiplier.destroy();
 }
 
 // pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>>() {

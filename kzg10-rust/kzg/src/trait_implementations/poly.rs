@@ -50,7 +50,7 @@ impl Poly<Fr> for Polynomial {
     }
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        self.mul_direct(&x, len)
+        Polynomial::mul_direct(self, x, len)
     }
 
     fn destroy(&mut self) {
