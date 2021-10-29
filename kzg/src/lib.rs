@@ -32,6 +32,8 @@ pub trait Fr: Clone {
     fn inverse(&self) -> Self;
 
     fn pow(&self, n: usize) -> Self;
+	
+	fn div(&self, b: &Self) -> Result<Self, String>;
 
     fn equals(&self, b: &Self) -> bool;
 

@@ -4,6 +4,10 @@ use crate::zkfr::blsScalar;
 // use crate::Fr;
 use kzg::{Fr, FFTFr};
 
+
+
+
+
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roots: &[blsScalar], roots_stride: usize) {
     let half: usize = ret.len() / 2;

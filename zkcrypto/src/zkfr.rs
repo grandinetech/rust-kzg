@@ -2,6 +2,7 @@
 
 pub use super::{ZPoly, BlsScalar};
 use kzg::Fr;
+use crate::utils::*;
 pub use crate::curve::scalar::Scalar as blsScalar; 
 
 impl Fr for blsScalar {
@@ -33,7 +34,7 @@ impl Fr for blsScalar {
 		
 	}
 	
-	fn from_u64(val: u64) -> Self{
+	fn from_u64(val: u64) -> Self {
 		blsScalar::from(val)
 	}
 	
@@ -74,28 +75,38 @@ impl Fr for blsScalar {
 	
 	fn eucl_inverse(&self) -> Self { 
 		//let mut ret = Default::default(); //Self::default()
-		blsScalar::invert(&self).unwrap()
+		// blsScalar::invert(&self).unwrap()
+		// self.invert().unwrap()
+
+		let mut ret = blst::blst_fr::default();
+		let ToBlst = zk_fr_into_blst_fr(self);
+		unsafe {
+			blst::blst_fr_eucl_inverse(&mut ret, &ToBlst);
+		}
+		let output = blst_fr_into_zk_fr(&ret);
+		output
 	}
 	
 	fn pow(&self, n: usize) -> Self {
-	
-        let mut tmp = self.clone();
-        let mut out = Self::one();
-        let mut n2 = n;
+	// unfinished. bls12_381 scalar has pow method. 
+	// also for i in 1..n out.sqr();
+    let mut tmp = self.clone();
+    let mut out = Self::one();
+    let mut n2 = n;
     
-            loop {
-                if n2 & 1 == 1 {
-                    out = out.mul(&tmp);
-                }
-                n2 = n2 >> 1;
-                if n == 0 {
-                    break;
-                }
-                tmp = tmp.sqr();
+        loop {
+            if n2 & 1 == 1 {
+                out.mul(&tmp);
             }
+            n2 = n2 >> 1;
+            if n2 == 0 {
+                break;
+            }
+            out.sqr();
+        }
     
-        out
-	}
+    out
+}
 
 	fn negate(&self) -> Self {
 		//blsScalar::neg(&self)
@@ -103,9 +114,26 @@ impl Fr for blsScalar {
 	}
 	
 	fn inverse(&self) -> Self {
-		//let mut ret = Default::default(); // Self::default()
-		blsScalar::invert(&self).unwrap()
+		//let mut ret = <blsScalar as Fr>::default(); // Self::default()
+		// Self::invert(&self).unwrap()
+		
+		// self.invert().unwrap()
+		
+		let mut ret = blst::blst_fr::default();
+		let ToBlst = zk_fr_into_blst_fr(self);
+		unsafe {
+			blst::blst_fr_inverse(&mut ret, &ToBlst);
+		}
+		let output = blst_fr_into_zk_fr(&ret);
+		output
 	}
+	
+	fn div(&self, b: &Self) -> Result<Self, String> {
+		let tmp = b.eucl_inverse();
+		let out = self.mul(&tmp);
+		Ok(out)
+	}
+	
 	fn equals(&self, other: &Self) -> bool {
 		self.eq(other)
 	}

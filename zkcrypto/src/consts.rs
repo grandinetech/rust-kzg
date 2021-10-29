@@ -5,7 +5,7 @@ use blst::{blst_fr_from_uint64, blst_fr_mul};
 use kzg::Fr;
 
 
-pub (crate) const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
+pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000],
     [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48],
     [0x0001000000000000, 0xec03000276030000, 0x8d51ccce760304d0, 0x0000000000000000],

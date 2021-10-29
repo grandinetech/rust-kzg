@@ -1,8 +1,7 @@
 use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
-//use poly::blsScalar as Fr;
-use crate::curve::scalar::Scalar as Fr; // Gal naudot crate::zkfr::blsScalar;?
+use crate::zkfr::blsScalar; // Gal naudot crate::zkfr::blsScalar;?
 use bls12_381::*;
-// use kzg::{P1, P2, P1Affine};
+use kzg::Fr;
 use blst::blst_fr as BlstFr;
 use std::fmt;
 use super::*;
@@ -14,17 +13,17 @@ pub struct polydata {
 }
 
 pub fn blst_poly_into_zk_poly(pd: polydata) -> Result<Poly, fmt::Error> {
-	//use bls12_381::Scalar as Fr;
+	//use bls12_381::Scalar as blsScalar;
     let mut poly = Vec::new();
     for x in pd.coeffs {
-        poly.push(Fr::from(x.l[0]))
+        poly.push(blsScalar::from(x.l[0]))
     }
 
     let p = Poly {coeffs: poly}; // Poly(poly)
     Ok(p)
 }
 
-pub(crate) fn pc_poly_into_blst_poly(poly: Poly) -> Result<polydata, fmt::Error> {
+pub fn pc_poly_into_blst_poly(poly: Poly) -> Result<polydata, fmt::Error> {
         let mut bls_pol = polydata { coeffs: Vec::new() };
 		
         for x in poly.coeffs { // poly.0
@@ -34,12 +33,27 @@ pub(crate) fn pc_poly_into_blst_poly(poly: Poly) -> Result<polydata, fmt::Error>
         Ok(bls_pol)
 }
 
-pub fn zk_fr_into_blst_fr(fr: Fr) -> BlstFr {
-        BlstFr { l: fr.0 }
+pub fn zk_fr_into_blst_fr(fr: &blsScalar) -> BlstFr {
+	// BlstFr::from_u64_arr(&fr.0);
+	let mut ret = blst::blst_fr::default();
+	unsafe {
+		blst::blst_fr_from_uint64(&mut ret, fr.0.as_ptr());
+	}
+	let temp = blst::blst_fr { l: fr.0};
+	// BlstFr(temp)
+	return temp;
+	// BlstFr { l: fr.0 }
 }
 
-pub fn blst_fr_into_zk_fr(fr: BlstFr) -> Fr { 
-	Fr::from_raw(fr.l) 
+pub fn blst_fr_into_zk_fr(fr: &BlstFr) -> blsScalar { 
+	let mut size: [u64; 4] = [0; 4];
+	unsafe {
+		blst::blst_uint64_from_fr(size.as_mut_ptr(), fr);
+	}
+	// // blst::blst_uint64_from_fr
+	
+	let ZkFr = blsScalar::from_u64_arr(&size);
+	return ZkFr;
 }
 
 
