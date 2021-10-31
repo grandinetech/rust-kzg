@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fft_fr::{roundtrip_fft, inverse_fft, stride_fft, compare_sft_fft};
-    use kzg_bindings::fftsettings::{KzgFFTSettings, _fft_fr_slow, _fft_fr_fast};
+    use kzg_bindings::fftsettings::{KzgFFTSettings, bound_fft_fr_slow, bound_fft_fr_fast};
     use kzg_bindings::finite::BlstFr;
 
     #[test]
@@ -21,6 +21,6 @@ mod tests {
 
     #[test]
     fn test_compare_sft_fft() {
-        compare_sft_fft::<BlstFr, KzgFFTSettings>(&_fft_fr_slow, &_fft_fr_fast);
+        compare_sft_fft::<BlstFr, KzgFFTSettings>(&bound_fft_fr_slow, &bound_fft_fr_fast);
     }
 }

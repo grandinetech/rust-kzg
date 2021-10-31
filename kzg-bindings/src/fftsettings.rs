@@ -144,7 +144,7 @@ pub fn make_data(n: usize) -> Vec<BlstP1> {
     out_val
 }
 
-pub fn _fft_fr_fast(
+pub fn bound_fft_fr_fast(
     ret: &mut [BlstFr],
     data: &[BlstFr],
     stride: usize,
@@ -153,11 +153,11 @@ pub fn _fft_fr_fast(
 ) {
     unsafe {
         fft_fr_fast(ret.as_mut_ptr(), data.as_ptr(), stride as u64,
-                    roots.as_ptr(), roots_stride as u64, 16);
+                    roots.as_ptr(), roots_stride as u64, 4096);
     }
 }
 
-pub fn _fft_fr_slow(
+pub fn bound_fft_fr_slow(
     ret: &mut [BlstFr],
     data: &[BlstFr],
     stride: usize,
@@ -166,6 +166,6 @@ pub fn _fft_fr_slow(
 ) {
     unsafe {
         fft_fr_slow(ret.as_mut_ptr(), data.as_ptr(), stride as u64,
-                    roots.as_ptr(), roots_stride as u64, 16);
+                    roots.as_ptr(), roots_stride as u64, 4096);
     }
 }
