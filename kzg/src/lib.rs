@@ -1,13 +1,11 @@
 pub trait Fr: Clone {
-    // Assume that Fr can't fail on creation
+    fn default() -> Self;
 
-    fn default() -> Self; // -> Result<Self, String>;
+    fn zero() -> Self;
 
-    fn zero() -> Self; // -> Result<Self, String>;
+    fn one() -> Self;
 
-    fn one() -> Self; // -> Result<Self, String>;
-
-    fn rand() -> Self; // -> Result<Self, String>;
+    fn rand() -> Self;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
 
