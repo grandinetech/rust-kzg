@@ -319,6 +319,7 @@ impl Polynomial {
         //if the polynomials are large, we should use fft multiplication, for now it's not implemented
         Polynomial::mul_direct(self, b, len)
     }
+    
 
     pub fn mul_direct(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
         let mut coeffs: Vec<Fr> = vec![];
