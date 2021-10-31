@@ -5,7 +5,7 @@ print_msg () {
 }
 
 print_msg "Removing old libs"
-rm -rf kzg-bindings/lib/*
+rm -rf ckzg/lib/*
 
 print_msg "Cloning blst"
 git clone https://github.com/supranational/blst.git
@@ -30,7 +30,7 @@ eval "$("$1" -i 's/KZG_CFLAGS =/KZG_CFLAGS = -fPIE/' Makefile)"
 print_msg "Building c-kzg"
 make lib
 
-print_msg "Preparing kzg-bindings's crate"
+print_msg "Preparing ckzg crate"
 cd ../../
-cp c-kzg/lib/libblst.a kzg-bindings/lib/
-cp c-kzg/src/libckzg.a kzg-bindings/lib/
+cp c-kzg/lib/libblst.a ckzg/lib/
+cp c-kzg/src/libckzg.a ckzg/lib/
