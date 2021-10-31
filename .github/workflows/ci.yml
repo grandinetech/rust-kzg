@@ -34,18 +34,18 @@ jobs:
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: test
-        args: --manifest-path kzg-bindings/Cargo.toml
+        args: --manifest-path ckzg/Cargo.toml
 
     - uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: bench
-        args: --manifest-path kzg-bindings/Cargo.toml
+        args: --manifest-path ckzg/Cargo.toml
 
     - uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --manifest-path kzg-bindings/Cargo.toml
+        args: --manifest-path ckzg/Cargo.toml
 
     - uses: actions-rs/cargo@v1
       with:
