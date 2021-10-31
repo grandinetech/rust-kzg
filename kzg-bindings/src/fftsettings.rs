@@ -19,8 +19,8 @@ extern "C" {
     fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     //fn poly_mul(output: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *const KzgFFTSettings) -> KzgRet;
-    fn fft_fr_slow(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
-    fn fft_fr_fast(output: *mut BlstFr, input: *mut BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
+    fn fft_fr_fast(output: *mut BlstFr, input: *const BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
+    fn fft_fr_slow(output: *mut BlstFr, input: *const BlstFr, stride: u64, roots: *const BlstFr, roots_stride: u64, n: u64);
 }
 
 impl FFTSettings<BlstFr> for KzgFFTSettings {
@@ -142,4 +142,30 @@ pub fn make_data(n: usize) -> Vec<BlstP1> {
         }
     }
     out_val
+}
+
+pub fn _fft_fr_fast(
+    ret: &mut [BlstFr],
+    data: &[BlstFr],
+    stride: usize,
+    roots: &[BlstFr],
+    roots_stride: usize,
+) {
+    unsafe {
+        fft_fr_fast(ret.as_mut_ptr(), data.as_ptr(), stride as u64,
+                    roots.as_ptr(), roots_stride as u64, 16);
+    }
+}
+
+pub fn _fft_fr_slow(
+    ret: &mut [BlstFr],
+    data: &[BlstFr],
+    stride: usize,
+    roots: &[BlstFr],
+    roots_stride: usize,
+) {
+    unsafe {
+        fft_fr_slow(ret.as_mut_ptr(), data.as_ptr(), stride as u64,
+                    roots.as_ptr(), roots_stride as u64, 16);
+    }
 }
