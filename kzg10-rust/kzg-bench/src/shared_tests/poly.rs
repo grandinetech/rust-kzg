@@ -53,4 +53,10 @@ pub mod poly_tests {
         assert!(init(CurveType::BLS12_381));
         poly_test_div::<Fr, Polynomial>();
     }
+
+    #[test]
+    fn poly_div_by_zero_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_div_by_zero::<Fr, Polynomial>();
+    }
 }

@@ -166,6 +166,22 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
+pub fn poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
+    //Arrange
+    let coeffs: Vec<i32> = vec![1,1];
+    let mut dividend: TPoly = new_test_poly(&coeffs, 2);
+    let divisor = TPoly::new(0).unwrap();
+
+    //Act
+    let result = dividend.div(&divisor);
+    
+    //Assert
+    assert!(result.is_err());
+
+    //After
+    dividend.destroy();
+}
+
 pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     let coeffs0: Vec<i32> = vec![3, 4];
     let mut multiplicand: TPoly = new_test_poly(&coeffs0, 2);
