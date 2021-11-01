@@ -379,9 +379,17 @@ impl Polynomial {
         };
     }
 
-    pub fn mul(&self, b: &Self, _ft: &FFTSettings, len: usize) -> Result<Polynomial, String> {
-        //if the polynomials are large, we should use fft multiplication, for now it's not implemented
-        Polynomial::mul_direct(self, b, len)
+    pub fn mul_(&self, b: &Self, ft: Option<&FFTSettings>, len: usize) -> Result<Polynomial, String> {
+        if self.order() < 64 || b.order() < 64 || len < 128 { // Tunable parameter
+            Polynomial::mul_direct(self, b, len)
+        } else {
+            Polynomial::mul_fft(self, b, ft, len)
+        }
+    }
+    
+
+    pub fn mul(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
+        Polynomial::mul_(self, b, None, len)
     }
 
 
@@ -403,13 +411,21 @@ impl Polynomial {
         Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
     }
 
-    pub fn mul_fft(&self, b: &Self, len: usize, ft: &FFTSettings) -> Result<Polynomial, String> {
+    pub fn mul_fft(&self, b: &Self, ft: Option<&FFTSettings>, len: usize) -> Result<Polynomial, String> {
         // Truncate a and b so as not to do excess work for the number of coefficients required.
         let a_len = min(self.order(), len);
         let b_len = min(b.order(), len);
         let length = next_pow_of_2(a_len + b_len + 1);
 
-        // TODO only good up to length < 32 bits
+        let fft_settings;
+        //TO DO remove temp_fft, can't find a nice way to declare fft and only use it as ref
+        let temp_fft = FFTSettings::new(log_2(length) as u8);
+        match ft {
+            Some(x) => fft_settings = x,
+            None    => fft_settings = &temp_fft,
+        }
+        let ft = fft_settings;
+        
         if length <= ft.max_width {
             return Err(String::from("Mul fft only good up to length < 32 bits"));
         }
@@ -492,7 +508,7 @@ impl Polynomial {
 
             // b.c -> tmp0 (we're using out for c)
             let temp_0_len = min(d + 1, self.order() + &out.order() - 1);
-            poly_temp_0 = self.mul(&out, &fs, temp_0_len).unwrap();
+            poly_temp_0 = self.mul_(&out, Some(&fs), temp_0_len).unwrap();
 
              // 2 - b.c -> tmp0
             for i in 0..temp_0_len {
@@ -504,7 +520,7 @@ impl Polynomial {
 
             // c.(2 - b.c) -> tmp1;
             let temp_1_len = d + 1;
-            poly_temp_1 = out.mul(&poly_temp_0, &fs, temp_1_len).unwrap();
+            poly_temp_1 = out.mul_(&poly_temp_0, Some(&fs), temp_1_len).unwrap();
 
             out = Polynomial::from_fr(poly_temp_1.coeffs.clone());
         }

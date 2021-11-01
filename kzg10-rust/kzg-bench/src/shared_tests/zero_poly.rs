@@ -22,13 +22,13 @@ pub mod zero_poly_tests {
     #[test]
     fn check_test_data_() {
         assert!(init(CurveType::BLS12_381));
-        check_test_data::<Fr, FFTSettings, Polynomial>();
+        check_test_data::<Fr, FFTSettings, FFTSettings, Polynomial>();
     }
 
     #[test]
     fn zero_poly_known_() {
         assert!(init(CurveType::BLS12_381));
-        zero_poly_known::<Fr, FFTSettings, Polynomial>();
+        zero_poly_known::<Fr, FFTSettings, FFTSettings, Polynomial>();
     }
 
     //fails for some reason, leaving for part 2
@@ -48,6 +48,6 @@ pub mod zero_poly_tests {
     #[test]
     fn zero_poly_252_() {
         assert!(init(CurveType::BLS12_381));
-        zero_poly_252::<Fr, FFTSettings, Polynomial>();
+        zero_poly_252::<Fr, FFTSettings, FFTSettings, Polynomial>();
     }
 }

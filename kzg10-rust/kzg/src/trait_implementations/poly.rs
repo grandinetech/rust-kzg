@@ -1,8 +1,9 @@
 use crate::data_types::fr::Fr;
 use crate::kzg10::Polynomial;
 use kzg::Poly;
+use crate::fk20_fft::FFTSettings;
 
-impl Poly<Fr> for Polynomial {
+impl Poly<Fr, FFTSettings> for Polynomial {
     fn default() -> Self {
         Polynomial { coeffs: vec![] }
     }
@@ -50,6 +51,10 @@ impl Poly<Fr> for Polynomial {
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
         Polynomial::mul_direct(self, x, len)
+    }
+
+    fn mul_fft(&mut self, x: &Self, len: usize, fs: Option<&FFTSettings>) -> Result<Self, String> {
+        Polynomial::mul_fft(self, x, fs, len)
     }
 
     fn destroy(&mut self) {
