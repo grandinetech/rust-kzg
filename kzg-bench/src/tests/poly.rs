@@ -114,9 +114,15 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
     let test_6_1: Vec<i32> = vec![1, 0]; // The highest coefficient is zero
     let test_6_2: Vec<i32> = vec![1, 1, 1];
 
-    let test_data: [[Vec<i32>; 3]; 7] = [[test_0_0, test_0_1, test_0_2], [test_1_0, test_1_1, test_1_2],
-        [test_2_0, test_2_1, test_2_2], [test_3_0, test_3_1, test_3_2], [test_4_0, test_4_1, test_4_2],
-        [test_5_0, test_5_1, test_5_2], [test_6_0, test_6_1, test_6_2]];
+    let test_data: [[Vec<i32>; 3]; 7] = [
+        [test_0_0, test_0_1, test_0_2],
+        [test_1_0, test_1_1, test_1_2],
+        [test_2_0, test_2_1, test_2_2],
+        [test_3_0, test_3_1, test_3_2],
+        [test_4_0, test_4_1, test_4_2],
+        [test_5_0, test_5_1, test_5_2],
+        [test_6_0, test_6_1, test_6_2],
+    ];
 
     test_data[a][b].clone()
 }
@@ -129,8 +135,7 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TP
         if coeff >= 0 {
             let c = TFr::from_u64(coeff as u64);
             p.set_coeff_at(i, &c);
-        }
-        else {
+        } else {
             let c = TFr::from_u64((-coeff) as u64);
             let negc = c.negate();
             p.set_coeff_at(i, &negc);
@@ -141,7 +146,6 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TP
 }
 
 pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
-
     for i in 0..7 {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
@@ -151,18 +155,14 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
         let result = dividend.div(&divisor);
-        if *divisor_data.last().unwrap() == 0 {
-            assert!(result.is_err());
-        } else {
-            assert!(result.is_ok());
-            let actual = result.unwrap();
-    
-            assert_eq!(expected.len(), actual.len());
-            for i in 0..actual.len() {
-                assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
-            }
+
+        assert!(result.is_ok());
+        let actual = result.unwrap();
+
+        assert_eq!(expected.len(), actual.len());
+        for i in 0..actual.len() {
+            assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
         }
-    
     }
 }
 

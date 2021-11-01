@@ -45,7 +45,7 @@ impl Poly<Fr> for Polynomial {
     }
 
     fn div(&mut self, x: &Self) -> Result<Self, String> {
-        self.long_division(&x.coeffs)
+        Polynomial::div(self, &x.coeffs)
     }
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {

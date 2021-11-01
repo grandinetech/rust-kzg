@@ -256,22 +256,19 @@ impl Polynomial {
     pub fn poly_quotient_length(dividend: &[Fr], divisor: &[Fr]) -> usize {
         if dividend.len() >= divisor.len() { dividend.len() - divisor.len() + 1} else { 0 }
     }
-    
 
     pub fn long_division(&self, divisor: &Vec<Fr>) -> Result<Polynomial, String> {
         if divisor.len() == 0 {
             return Err(String::from("Dividing by zero is undefined"));
         }
-
         if divisor.last().unwrap().is_zero() {
             return Err(String::from("The divisor's highest coefficient must be non-zero"));
         }
-
         let out_length = Polynomial::poly_quotient_length(&self.coeffs, divisor);
-
         if out_length == 0 {
             return Ok(Polynomial::default());
         }
+        println!("out len long div{}", out_length);
 
         let mut a_pos = self.order() - 1;
         let b_pos = divisor.len() - 1;
@@ -293,7 +290,74 @@ impl Polynomial {
             diff = diff - 1;
         }
         out_coeffs[0] = a[a_pos] / divisor[b_pos];
+        println!("out out_coeffs length long div{}", out_coeffs.len());
         return Ok(Polynomial::from_fr(out_coeffs)); 
+    }
+
+    pub fn fast_div(&self, divisor: &Vec<Fr>) -> Result<Polynomial, String> {
+        if divisor.len() == 0 {
+            return Err(String::from("Dividing by zero is undefined"));
+        }
+        if divisor.last().unwrap().is_zero() {
+            return Err(String::from("The divisor's highest coefficient must be non-zero"));
+        }
+        let mut out_length = Polynomial::poly_quotient_length(&self.coeffs, divisor);
+        if out_length == 0 {
+            return Ok(Polynomial::default());
+        }
+
+        let mut out_coeffs: Vec<Fr> = vec![];
+
+        // Special case for divisor.length == 1 (it's a constant)
+        if divisor.len() == 1 {
+            out_length = self.order();
+            for i in 0..out_length {
+                out_coeffs.push(self.coeffs[i] / divisor[0]);
+            }
+            return Ok(Polynomial::from_fr(out_coeffs));  
+        }
+
+        let a_flip = Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs));
+        let b_flip = Polynomial::from_fr(Polynomial::flip_coeffs(divisor));
+        let inv_b_flip = b_flip.inverse(out_length).unwrap();
+        let q_flip = a_flip.mul_direct(&inv_b_flip, out_length).unwrap();
+
+        return Ok(q_flip.flip());
+    }
+
+    fn normalise_coeffs(coeffs: &Vec<Fr>) -> Vec<Fr> {
+        let mut ret_length = coeffs.len();
+        while ret_length > 0 && coeffs[ret_length - 1].is_zero() {
+            ret_length = ret_length - 1;
+        }
+        coeffs[0..ret_length].to_vec()
+    }
+
+    fn normalise(&self) -> Polynomial {
+        Polynomial::from_fr(Polynomial::normalise_coeffs(&self.coeffs))
+    }
+
+    fn flip_coeffs(coeffs: &Vec<Fr>) -> Vec<Fr> {
+        let mut result: Vec<Fr> = vec![];
+        for i in (0..coeffs.len()).rev() {
+            result.push(coeffs[i]);
+        }
+        result
+    }
+
+    fn flip(&self) -> Polynomial { 
+        Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs))
+    }
+
+    pub fn div(&self, _divisor: &Vec<Fr>) -> Result<Polynomial, String> {
+        let dividend = self.normalise();
+        let divisor = Polynomial::normalise_coeffs(_divisor);
+
+        if divisor.len() >= dividend.order() || divisor.len() < 128 { // Tunable paramter
+            return self.long_division(&divisor);
+        } else {
+            return self.fast_div(&divisor);
+        }
     }
 
     pub fn commit(&self, g1_points: &Vec<G1>) -> G1 {
@@ -327,10 +391,11 @@ impl Polynomial {
         }
 
         for i in 0..self.order() {
-            for j in 0..b.order() {
-
+            let mut j = 0;
+            while j < b.order() && i + j < len {
                 let temp = self.coeffs[i] * b.coeffs[j];
                 coeffs[i + j] = coeffs[i + j] + temp;
+                j = j + 1;
             }
         }
         return Ok(Polynomial::from_fr(coeffs));
@@ -364,7 +429,7 @@ impl Polynomial {
         //check if scale actually always fits in u8
         //fftsettings to be used, if multiplacation is done with fft
         let fs = FFTSettings::new(scale as u8);
-        let coeffs = vec![self.coeffs[0].clone().inverse()];
+        let coeffs = vec![self.coeffs[0].inverse()];
         let mut out = Polynomial::from_fr(coeffs);
 
         let mut mask = 1 << log_2(maxd);
