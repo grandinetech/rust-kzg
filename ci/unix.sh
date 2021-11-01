@@ -34,3 +34,7 @@ print_msg "Preparing ckzg crate"
 cd ../../
 cp c-kzg/lib/libblst.a ckzg/lib/
 cp c-kzg/src/libckzg.a ckzg/lib/
+
+print_msg "Cleaning up"
+rm -rf blst/
+rm -rf c-kzg/
