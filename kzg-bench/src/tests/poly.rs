@@ -1,14 +1,15 @@
-use kzg::{Fr, Poly, FFTSettings};
-// use rand::rngs::StdRng;
+use kzg::{Fr, Poly, FFTSettings, FFTSettingsPoly};
+use rand::rngs::StdRng;
+use rand::{RngCore, SeedableRng};
 // use rand::seq::SliceRandom;
 
-pub fn create_poly_of_length_ten<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut poly = TPoly::new(10).unwrap();
     assert_eq!(poly.len(), 10);
     poly.destroy();
 }
 
-pub fn poly_eval_check<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 10;
     let mut poly = TPoly::new(n).unwrap();
     for i in 0..n {
@@ -21,7 +22,7 @@ pub fn poly_eval_check<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, 
     poly.destroy();
 }
 
-pub fn poly_eval_0_check<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 7;
     let a: usize = 597;
     let mut poly = TPoly::new(n).unwrap();
@@ -35,7 +36,7 @@ pub fn poly_eval_0_check<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr
     poly.destroy();
 }
 
-pub fn poly_eval_nil_check<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_eval_nil_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 0;
     let mut poly = TPoly::new(n).unwrap();
     let actual = poly.eval(&TFr::one());
@@ -43,7 +44,7 @@ pub fn poly_eval_nil_check<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<T
     poly.destroy();
 }
 
-pub fn poly_inverse_simple_0<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
     // 1 / (1 - x) = 1 + x + x^2 + ...
     let d: usize = 16;
     let mut p = TPoly::new(2).unwrap();
@@ -59,7 +60,7 @@ pub fn poly_inverse_simple_0<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly
     q.destroy();
 }
 
-pub fn poly_inverse_simple_1<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     // 1 / (1 + x) = 1 - x + x^2 - ...
     let d: usize = 16;
     let mut p = TPoly::new(2).unwrap();
@@ -127,7 +128,7 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
     test_data[a][b].clone()
 }
 
-fn new_test_poly<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>(coeffs: &Vec<i32>, len: usize) -> TPoly {
+fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TPoly {
     let mut p = TPoly::new(len).unwrap();
 
     for i in 0..len {
@@ -145,7 +146,7 @@ fn new_test_poly<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSe
     p
 }
 
-pub fn poly_test_div<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
 
     for i in 0..7 {
         let divided_data = test_data(i, 0);
@@ -167,7 +168,7 @@ pub fn poly_test_div<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TF
     }
 }
 
-pub fn poly_div_by_zero<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
     //Arrange
     let coeffs: Vec<i32> = vec![1,1];
     let mut dividend: TPoly = new_test_poly(&coeffs, 2);
@@ -183,7 +184,7 @@ pub fn poly_div_by_zero<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr,
     dividend.destroy();
 }
 
-pub fn poly_mul_direct_test<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     let coeffs0: Vec<i32> = vec![3, 4];
     let mut multiplicand: TPoly = new_test_poly(&coeffs0, 2);
 
@@ -214,7 +215,12 @@ pub fn poly_mul_direct_test<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<
     multiplier.destroy();
 }
 
-pub fn poly_mul_fft_test<TFr: Fr,  TFTTSettings: FFTSettings<TFr>, TPoly: Poly<TFr, TFTTSettings>>() {
+pub fn poly_mul_fft_test<
+    TFr: Fr,
+    TPoly: Poly<TFr>,
+    TFTTSettings: FFTSettings<TFr>,
+    TFFTSettingsPoly: FFTSettingsPoly<TFr, TPoly, TFTTSettings>
+>() {
     let coeffs: Vec<i32> = vec![3, 4];
     let mut multiplicand: TPoly = new_test_poly(&coeffs, 2);
 
@@ -224,7 +230,7 @@ pub fn poly_mul_fft_test<TFr: Fr,  TFTTSettings: FFTSettings<TFr>, TPoly: Poly<T
     let coeffs: Vec<i32> = vec![18, 9, -11, 12];
     let expected: TPoly = new_test_poly(&coeffs, 4);
 
-    let result = multiplicand.mul_fft(&multiplier, 4, None);
+    let result = TFFTSettingsPoly::poly_mul_fft(&multiplicand, &multiplier, 4, None);
     assert!(result.is_ok());
     let actual = result.unwrap();
 
@@ -233,7 +239,7 @@ pub fn poly_mul_fft_test<TFr: Fr,  TFTTSettings: FFTSettings<TFr>, TPoly: Poly<T
     }
 
     //Check commutativity
-    let result = multiplier.mul_fft(&multiplicand, 4, None);
+    let result = TFFTSettingsPoly::poly_mul_fft(&multiplier, &multiplicand, 4, None);
     assert!(result.is_ok());
     let actual = result.unwrap();
 
@@ -245,40 +251,100 @@ pub fn poly_mul_fft_test<TFr: Fr,  TFTTSettings: FFTSettings<TFr>, TPoly: Poly<T
     multiplier.destroy();
 }
 
-// // NOT FINISHED, only to be used if there would be Direct and FFT multiplications
-// pub fn poly_mul_random<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
-//     let mut rng = StdRng::seed_from_u64(0);
-//     for k in 0..256 {
-//         let multiplicand_length: usize = 1 + (rng.next_u64() % 1000);
-//         let multiplier_length: usize = 1 + (rng.next_u64() % 1000);
-//         let out_length: usize = 1 + (rng.next_u64() % 1000);
+pub fn poly_mul_random<
+    TFr: Fr,
+    TPoly: Poly<TFr>,
+    TFTTSettings: FFTSettings<TFr>,
+    TFFTSettingsPoly: FFTSettingsPoly<TFr, TPoly, TFTTSettings>
+>() {
+    let mut rng = StdRng::seed_from_u64(0);
+    for _k in 0..256 {
+        let multiplicand_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
+        let multiplier_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
+        let out_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
 
-//         let multiplicand = TPoly::new(multiplicand_length).unwrap();
-//         let multiplier = TPoly::new(multiplier_length).unwrap();
+        let mut multiplicand = TPoly::new(multiplicand_length).unwrap();
+        let mut multiplier = TPoly::new(multiplier_length).unwrap();
 
-//         for i in 0..multiplicand_length {
-//             let coef = TFr::rand();
-//             multiplicand.set_coeff_at(i, &coef);
-//         }
+        for i in 0..multiplicand_length {
+            let coef = TFr::rand();
+            multiplicand.set_coeff_at(i, &coef);
+        }
 
-//         for i in 0..multiplier_length {
-//             let coef = TFr::rand();
-//             multiplier.set_coeff_at(i, &coef);
-//         }
+        for i in 0..multiplier_length {
+            let coef = TFr::rand();
+            multiplier.set_coeff_at(i, &coef);
+        }
 
-//         //Ensure that the polynomials' orders corresponds to their lengths
-//         if multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero() {
-//             let fr_one = Fr::one();
-//             multiplicand.set_coeff_at(multiplicand.len() - 1, &fr_one);
-//         }
+        //Ensure that the polynomials' orders corresponds to their lengths
+        if multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            multiplicand.set_coeff_at(multiplicand.len() - 1, &fr_one);
+        }
 
-//         if multiplier.get_coeff_at(multiplier.len() - 1).is_zero() {
-//             let fr_one = Fr::one();
-//             multiplier.set_coeff_at(multiplier.len() - 1, &fr_one);
-//         }
+        if multiplier.get_coeff_at(multiplier.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            multiplier.set_coeff_at(multiplier.len() - 1, &fr_one);
+        }
 
-//         let q0 = TPoly::new(out_length);
-//         let result0 = multiplicand.mul(&multiplier);
-//         assert!(result0.is_ok());
-//     }
-// }
+        let result0 = multiplicand.mul_direct(&multiplier, out_length);
+        assert!(result0.is_ok());
+        let result1 = TFFTSettingsPoly::poly_mul_fft(&multiplicand, &multiplier, out_length, None);
+        assert!(result1.is_ok());
+
+        let actual0 = result0.unwrap();
+        let actual1 = result1.unwrap();
+
+        assert_eq!(actual0.len(), actual1.len());
+
+        for i in 0..actual0.len() {
+            assert!(actual0.get_coeff_at(i).equals(&actual1.get_coeff_at(i)));
+        }
+    }
+}
+
+pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
+    let mut rng = StdRng::seed_from_u64(0);
+    for _k in 0..256 {
+        let dividend_length: usize = (2 + (rng.next_u64() % 1000)) as usize;
+        let divisor_length: usize = 1 + ((rng.next_u64() as usize) % dividend_length);
+
+        let mut dividend = TPoly::new(dividend_length).unwrap();
+        let mut divisor = TPoly::new(divisor_length).unwrap();
+
+        for i in 0..dividend_length {
+            let coef = TFr::rand();
+            dividend.set_coeff_at(i, &coef);
+        }
+
+        for i in 0..divisor_length {
+            let coef = TFr::rand();
+            divisor.set_coeff_at(i, &coef);
+        }
+
+        //Ensure that the polynomials' orders corresponds to their lengths
+        if dividend.get_coeff_at(dividend.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            dividend.set_coeff_at(dividend.len() - 1, &fr_one);
+        }
+
+        if divisor.get_coeff_at(divisor.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            divisor.set_coeff_at(divisor.len() - 1, &fr_one);
+        }
+
+        let result0 = dividend.div(&divisor);
+        assert!(result0.is_ok());
+        let result1 = dividend.fast_div(&divisor);
+        assert!(result1.is_ok());
+
+        let actual0 = result0.unwrap();
+        let actual1 = result1.unwrap();
+
+        assert_eq!(actual0.len(), actual1.len());
+
+        for i in 0..actual0.len() {
+            assert!(actual0.get_coeff_at(i).equals(&actual1.get_coeff_at(i)));
+        }
+    }
+}

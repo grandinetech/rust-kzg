@@ -68,7 +68,7 @@ pub trait DAS<Coeff: Fr> {
     fn das_fft_extension(&self, evens: &[Coeff]) -> Result<Vec<Coeff>, String>;
 }
 
-pub trait ZeroPoly<Coeff: Fr, Settings: FFTSettings<Coeff>, Polynomial: Poly<Coeff, Settings>> {
+pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
         -> Result<Polynomial, String>;
 
@@ -104,7 +104,11 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
     fn destroy(&mut self);
 }
 
-pub trait Poly<Coeff: Fr, Settings: FFTSettings<Coeff>>: Clone {
+pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
+    fn poly_mul_fft(a: &Polynomial, b: &Polynomial, len: usize, fs: Option<&FSettings>) -> Result<Polynomial, String>;
+}
+
+pub trait Poly<Coeff: Fr>: Clone {
     fn default() -> Self;
 
     fn new(size: usize) -> Result<Self, String>;
@@ -127,9 +131,9 @@ pub trait Poly<Coeff: Fr, Settings: FFTSettings<Coeff>>: Clone {
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
 
-    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String>;
 
-    fn mul_fft(&mut self, x: &Self, len: usize, fs: Option<&Settings>) -> Result<Self, String>;
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
