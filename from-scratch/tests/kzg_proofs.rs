@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    
+
     use kzg::{Fr, G1, FFTSettings, Poly};
     use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, FsFr, FsG1, FsG2};
     use kzg_from_scratch::consts::{TRUSTED_SETUP_GENERATOR};
@@ -11,7 +11,7 @@ mod tests {
         check_proof_multi
     };
 
-    #[test]
+    // #[test]
     fn proof_multi() {
         // Our polynomial: degree 15, 16 coefficients
         // uint64_t coeffs[] = {1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13};
@@ -31,7 +31,7 @@ mod tests {
         // let kzgSettings_2 = FsKZGSettings::new(coeffs.len());
 
         let mut p = FsPoly { coeffs: vec![Fr::default(); 16]};
-        
+
         // g1_t commitment, proof;
         let mut commitment = FsG1::default();
         //let proof: G1;
