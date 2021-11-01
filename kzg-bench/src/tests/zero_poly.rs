@@ -230,7 +230,7 @@ pub fn zero_poly_random<
                     missing_idxs.push(i);
                 }
             }
-            
+
             if missing_idxs.len() == fft_settings.get_max_width() {
                 continue;
             }
