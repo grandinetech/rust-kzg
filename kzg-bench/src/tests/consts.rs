@@ -18,7 +18,10 @@ pub fn roots_of_unity_are_plausible<TFr: Fr>(roots: &[[u64; 4]; 32]) {
 }
 
 /// Check if expanded root members follow symmetry and symmetrically multiply to produce a 1.
-pub fn expand_roots_is_plausible<TFr: Fr>(roots: &[[u64; 4]; 32], expand_root_of_unity: &dyn Fn(&TFr, usize) -> Result<Vec<TFr>, String>) {
+pub fn expand_roots_is_plausible<TFr: Fr>(
+    roots: &[[u64; 4]; 32],
+    expand_root_of_unity: &dyn Fn(&TFr, usize) -> Result<Vec<TFr>, String>,
+) {
     let scale = 15;
     let width: usize = 1 << scale;
 
@@ -40,11 +43,15 @@ pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() 
     let scale = 21;
     let width: usize = 1 << scale;
 
-    let fft_settings = TFFTSettings::new(scale).unwrap();
+    let mut fft_settings = TFFTSettings::new(scale).unwrap();
     assert_eq!(fft_settings.get_max_width(), width);
 
     for i in 0..width {
-        let prod = fft_settings.get_expanded_roots_of_unity_at(i).mul(&fft_settings.get_reverse_roots_of_unity_at(i));
+        let prod = fft_settings
+            .get_expanded_roots_of_unity_at(i)
+            .mul(&fft_settings.get_reverse_roots_of_unity_at(i));
         assert!(prod.is_one());
     }
+
+    fft_settings.destroy();
 }

@@ -1,19 +1,10 @@
 use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use blst::{
-    blst_fr_add,
-    blst_fr_cneg,
-    blst_fr_from_uint64,
-    blst_fr_inverse, blst_fr_mul,
-    blst_uint64_from_fr,
-    blst_fr_sqr,
-    blst_fr_sub,
-    blst_fr_eucl_inverse,
-    blst_fr,
-    blst_scalar_from_fr,
-    blst_scalar,
-    blst_fr_from_scalar
+    blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
+    blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
+    blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_affine, blst_p2_affine
 };
-use kzg::{G1, G2, FFTSettings, Fr, Poly, Scalar};
+use kzg::{FFTSettings, Fr, Poly, G1, Scalar};
 
 pub struct FsFr(pub blst::blst_fr);
 
@@ -159,8 +150,8 @@ impl Fr for FsFr {
         ret
     }
 
-    fn get_scalar(&self) -> blst_scalar {
-        let mut scalar = blst_scalar::default();
+    fn get_scalar(&self) -> Scalar {
+        let mut scalar = Scalar::default();
         unsafe {
             blst_scalar_from_fr(&mut scalar, &self.0);
         }
@@ -193,7 +184,7 @@ impl Fr for FsFr {
         ret
     }
 
-    fn destroy(&self) {}
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFr {
@@ -204,13 +195,75 @@ impl Clone for FsFr {
 
 impl Copy for FsFr {}
 
+pub struct FsG1(pub blst::blst_p1);
+
+impl FsG1 {
+    pub(crate) fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
+        FsG1(blst_p1 { x, y, z })
+    }
+}
+
+impl G1 for FsG1 {
+    fn default() -> Self {
+        Self(blst_p1::default())
+    }
+
+    fn add_or_double(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        todo!()
+    }
+
+    fn destroy(&mut self) {
+        todo!()
+    }
+}
+
+impl Clone for FsG1 {
+    fn clone(&self) -> Self {
+        todo!()
+    }
+}
+
+impl Copy for FsG1 {}
+
+pub struct FsG2(pub blst::blst_p2);
+
+impl FsG2 {
+    pub(crate) fn from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
+        FsG2(blst_p2 { x, y, z })
+    }
+
+    pub fn default() -> Self {
+        Self(blst_p2::default())
+    }
+    
+}
+
+impl Clone for FsG2 {
+    fn clone(&self) -> Self {
+        todo!()
+    }
+}
+
+impl Copy for FsG2 {}
+
 pub struct FsPoly {
     pub coeffs: Vec<FsFr>,
 }
 
 impl Poly<FsFr> for FsPoly {
-    fn new(size: usize) -> Self {
-        Self { coeffs: vec![FsFr::default(); size] }
+    fn default() -> Self {
+        // Not perfect, but shouldn't fail
+        Self::new(0).unwrap()
+    }
+
+    fn new(size: usize) -> Result<Self, String> {
+        Ok(Self {
+            coeffs: vec![FsFr::default(); size],
+        })
     }
 
     fn get_coeff_at(&self, i: usize) -> FsFr {
@@ -272,12 +325,22 @@ impl Poly<FsFr> for FsPoly {
         }
     }
 
-    fn destroy(&self) {}
+    fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
+        todo!()
+    }
+
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
+        todo!()
+    }
+
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsPoly {
     fn clone(&self) -> Self {
-        FsPoly { coeffs: self.coeffs.clone() }
+        FsPoly {
+            coeffs: self.coeffs.clone(),
+        }
     }
 }
 
@@ -296,7 +359,9 @@ impl FFTSettings<FsFr> for FsFFTSettings {
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
     fn new(scale: usize) -> Result<FsFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+            return Err(String::from(
+                "Scale is expected to be within root of unity matrix row size",
+            ));
         }
 
         // max_width = 2 ^ max_scale
@@ -336,7 +401,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         &self.reverse_roots_of_unity
     }
 
-    fn destroy(&self) {}
+    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFFTSettings {
@@ -353,8 +418,8 @@ impl Clone for FsFFTSettings {
 pub struct FsKZGSettings {
     pub fs: FsFFTSettings,
     // Both secret_g1 and secret_g2 have the same number of elements
-    pub secret_g1: Vec<G1>,
-    pub secret_g2: Vec<G2>,
+    pub secret_g1: Vec<FsG1>,
+    pub secret_g2: Vec<FsG2>,
 }
 
 impl FsKZGSettings {
@@ -368,7 +433,7 @@ impl FsKZGSettings {
         output
     }
 
-    pub fn new(secret_g1: &Vec<G1>, secret_g2: &Vec<G2>, length: usize, fft_settings: &FsFFTSettings) -> Self {
+    pub fn new(secret_g1: &Vec<FsG1>, secret_g2: &Vec<FsG2>, length: usize, fft_settings: &FsFFTSettings) -> Self {
         let mut kzg_settings = Self::default(); 
 
         // CHECK(length >= fs->max_width);

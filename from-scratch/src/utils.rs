@@ -1,5 +1,5 @@
-use kzg::{G1, G2, Scalar, Fr};
-use crate::kzg_types::{FsFr};
+use kzg::{G1, Scalar, Fr};
+use crate::kzg_types::{FsFr, FsG2, FsG1};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::kzg_proofs::{g1_mul};
 use blst::{blst_scalar_from_fr, blst_p2_mult};
@@ -35,11 +35,11 @@ pub fn log_2_byte(b: u8) -> usize {
 
 pub fn log2_pow2(n: usize) -> usize {
     let bytes: [usize; 5] = [0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000];
-    let mut r: usize = if (n & bytes[0]) != 0 {1} else {0};
-    r |= if (n & bytes[1]) != 0 {1} else {0} << 1;
-    r |= if (n & bytes[2]) != 0 {1} else {0} << 2;
-    r |= if (n & bytes[3]) != 0 {1} else {0} << 3;
-    r |= if (n & bytes[4]) != 0 {1} else {0} << 4;
+    let mut r: usize = if (n & bytes[0]) != 0 { 1 } else { 0 };
+    r |= if (n & bytes[1]) != 0 { 1 } else { 0 } << 1;
+    r |= if (n & bytes[2]) != 0 { 1 } else { 0 } << 2;
+    r |= if (n & bytes[3]) != 0 { 1 } else { 0 } << 3;
+    r |= if (n & bytes[4]) != 0 { 1 } else { 0 } << 4;
     r
 }
 
@@ -57,7 +57,7 @@ pub fn min_u64(a: usize, b: usize) -> Result<usize, String> {
     return if a < b {Ok(a)} else {Ok(b)};
 }
 
-pub fn generate_trusted_setup(s1: &mut Vec<G1>, s2: &mut Vec<G2>, secret: &Scalar, n: usize) {
+pub fn generate_trusted_setup(s1: &mut Vec<FsG1>, s2: &mut Vec<FsG2>, secret: &Scalar, n: usize) {
     // fr_t s_pow, s;
     // fr_from_scalar(&s, secret);
     // s_pow = fr_one;
@@ -82,12 +82,12 @@ pub fn generate_trusted_setup(s1: &mut Vec<G1>, s2: &mut Vec<G2>, secret: &Scala
     }
 }
 
-fn g2_mul(a: &G2, b: &FsFr) -> G2 {
+fn g2_mul(a: &FsG2, b: &FsFr) -> FsG2 {
     let mut scalar = Scalar::default();
-    let mut out = G2::default();
+    let mut out = FsG2::default();
     unsafe {
         blst_scalar_from_fr(&mut scalar, &b.0);
-        blst_p2_mult(&mut out, a, scalar.b.as_ptr() as *const u8, 8 * std::mem::size_of::<Scalar>());
+        blst_p2_mult(&mut out.0, &a.0, scalar.b.as_ptr() as *const u8, 8 * std::mem::size_of::<Scalar>());
     }
     out
 }
