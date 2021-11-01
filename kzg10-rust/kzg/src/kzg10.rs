@@ -384,6 +384,56 @@ impl Polynomial {
         Polynomial::mul_direct(self, b, len)
     }
 
+
+    // @param[in]  n_in  The number of elements of @p in to take
+    // @param[in]  n_out The length of @p out
+    fn pad_coeffs(coeffs: &Vec<Fr>, n_in: usize, n_out: usize) -> Vec<Fr> {
+        let num = min(n_in, n_out);
+        let mut ret_coeffs: Vec<Fr> = vec![];
+        for i in 0..num {
+            ret_coeffs.push(coeffs[i].clone());
+        }
+        for _ in num..n_out {
+            ret_coeffs.push(Fr::zero());
+        }
+        ret_coeffs
+    }
+
+    fn pad(&self, n_in: usize, n_out: usize) -> Polynomial { 
+        Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
+    }
+
+    pub fn mul_fft(&self, b: &Self, len: usize, ft: &FFTSettings) -> Result<Polynomial, String> {
+        // Truncate a and b so as not to do excess work for the number of coefficients required.
+        let a_len = min(self.order(), len);
+        let b_len = min(b.order(), len);
+        let length = next_pow_of_2(a_len + b_len + 1);
+
+        // TODO only good up to length < 32 bits
+        if length <= ft.max_width {
+            return Err(String::from("Mul fft only good up to length < 32 bits"));
+        }
+        let a_pad = self.pad(a_len, length);
+        let b_pad = self.pad(b_len, length);
+        let a_fft = ft.fft(&a_pad.coeffs, false);
+        let b_fft = ft.fft(&b_pad.coeffs, false);
+        let mut ab_fft: Vec<Fr> = vec![];
+        for i in 0..length {
+            ab_fft.push(a_fft[i] * b_fft[i]);
+        }
+        let ab = ft.fft(&ab_fft, true);
+
+        let data_len = min(len, length);
+        let mut ret_coeffs: Vec<Fr> = vec![];
+        for i in 0..data_len {
+            ret_coeffs.push(ab[i]);
+        }
+        for i in data_len..length {
+            ret_coeffs.push(ab[i]);
+        }
+        Ok(Polynomial::from_fr(ret_coeffs))
+    }
+
     pub fn mul_direct(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
         let mut coeffs: Vec<Fr> = vec![];
         for _ in 0..len {
