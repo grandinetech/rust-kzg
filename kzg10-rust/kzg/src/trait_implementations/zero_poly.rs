@@ -3,7 +3,7 @@ use crate::fk20_fft::FFTSettings;
 use crate::kzg10::Polynomial;
 use kzg::ZeroPoly;
 
-impl ZeroPoly<Fr, FFTSettings, Polynomial> for FFTSettings {
+impl ZeroPoly<Fr, Polynomial> for FFTSettings {
     fn do_zero_poly_mul_partial(&self, _idxs: &[usize], _stride: usize) -> Result<Polynomial, String> {
         todo!("I'm not sure this is applicable for our team")
     }

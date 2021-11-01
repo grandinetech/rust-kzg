@@ -54,9 +54,8 @@ const EXPECTED_POLY_U64: [[u64; 4]; 16] = [
 /// constructing a polynomial that evaluates to zero at all given roots.
 pub fn test_reduce_partials<
     TFr: Fr,
-    Settings: FFTSettings<TFr>,
-    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, Settings, TPoly>,
-    TPoly: Poly<TFr, Settings>,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>,
+    TPoly: Poly<TFr>,
 >() {
     let fft_settings = TFFTSettings::new(4).unwrap();
 
@@ -87,9 +86,8 @@ pub fn test_reduce_partials<
 /// constructing a polynomial that evaluates to zero at all given roots.
 pub fn reduce_partials_random<
     TFr: Fr,
-    Settings: FFTSettings<TFr>,
-    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, Settings, TPoly>,
-    TPoly: Poly<TFr, Settings>,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>,
+    TPoly: Poly<TFr>,
 >() {
     for scale in 5..13 {
         for ii in 1..8 {
@@ -150,7 +148,7 @@ pub fn reduce_partials_random<
 }
 
 /// Check that polynomial evaluation works against precomputed values
-pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, Settings: FFTSettings<TFr>, TPoly: Poly<TFr, Settings>>() {
+pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPoly: Poly<TFr>>() {
     let mut expected_eval = TPoly::new(16).unwrap();
     let mut expected_poly = TPoly::new(16).unwrap();
 
@@ -185,9 +183,8 @@ pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, Set
 /// Check if zero polynomial is calculated and evaluated as expected against precomputed values
 pub fn zero_poly_known<
     TFr: Fr,
-    Settings: FFTSettings<TFr>,
-    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, Settings, TPoly>,
-    TPoly: Poly<TFr, Settings>,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly>,
+    TPoly: Poly<TFr>,
 >() {
     let fft_settings = TFFTSettings::new(4).unwrap();
 
@@ -219,9 +216,8 @@ pub fn zero_poly_known<
 /// Generate random series of missing indices and check if they are multiplied correctly
 pub fn zero_poly_random<
     TFr: Fr,
-    Settings: FFTSettings<TFr>,
-    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, Settings, TPoly> + FFTFr<TFr>,
-    TPoly: Poly<TFr, Settings>,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
 >() {
     for its in 0..8 {
         let mut rng = StdRng::seed_from_u64(its);
@@ -265,9 +261,8 @@ pub fn zero_poly_random<
 /// by evaluating a polynomial created to equal zero for the last value
 pub fn zero_poly_all_but_one<
     TFr: Fr,
-    Settings: FFTSettings<TFr>,
-    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, Settings, TPoly> + FFTFr<TFr>,
-    TPoly: Poly<TFr, Settings>,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
 >() {
     let fft_settings = TFFTSettings::new(8).unwrap();
 
@@ -299,9 +294,8 @@ pub fn zero_poly_all_but_one<
 /// Check an edge case where 252 is missing with width 8
 pub fn zero_poly_252<
     TFr: Fr,
-    Settings: FFTSettings<TFr>,
-    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, Settings, TPoly> + FFTFr<TFr>,
-    TPoly: Poly<TFr, Settings>,
+    TFFTSettings: FFTSettings<TFr> + ZeroPoly<TFr, TPoly> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
 >() {
     let fft_settings = TFFTSettings::new(8).unwrap();
 
