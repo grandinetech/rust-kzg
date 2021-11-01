@@ -49,6 +49,11 @@ impl Poly<Fr, FFTSettings> for Polynomial {
         self.long_division(&x.coeffs)
     }
 
+    //PLACEHOLDER
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
+        self.long_division(&x.coeffs) //TO BE IMPLEMENTED
+    }
+
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
         Polynomial::mul_direct(self, x, len)
     }

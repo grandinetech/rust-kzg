@@ -1,5 +1,6 @@
 use kzg::{Fr, Poly, FFTSettings};
-// use rand::rngs::StdRng;
+use rand::rngs::StdRng;
+use rand::{thread_rng, RngCore, SeedableRng};
 // use rand::seq::SliceRandom;
 
 pub fn create_poly_of_length_ten<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
@@ -244,40 +245,95 @@ pub fn poly_mul_fft_test<TFr: Fr,  TFTTSettings: FFTSettings<TFr>, TPoly: Poly<T
     multiplier.destroy();
 }
 
-// // NOT FINISHED, only to be used if there would be Direct and FFT multiplications
-// pub fn poly_mul_random<TFr: Fr, TFTTSettings: FFTSettings<TFr>,TPoly: Poly<TFr, TFTTSettings>>() {
-//     let mut rng = StdRng::seed_from_u64(0);
-//     for k in 0..256 {
-//         let multiplicand_length: usize = 1 + (rng.next_u64() % 1000);
-//         let multiplier_length: usize = 1 + (rng.next_u64() % 1000);
-//         let out_length: usize = 1 + (rng.next_u64() % 1000);
+pub fn poly_mul_random<TFr: Fr, TFTTSettings: FFTSettings<TFr>, TPoly: Poly<TFr, TFTTSettings>>() {
+    let mut rng = StdRng::seed_from_u64(0);
+    for k in 0..256 {
+        let multiplicand_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
+        let multiplier_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
+        let out_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
 
-//         let multiplicand = TPoly::new(multiplicand_length).unwrap();
-//         let multiplier = TPoly::new(multiplier_length).unwrap();
+        let mut multiplicand = TPoly::new(multiplicand_length).unwrap();
+        let mut multiplier = TPoly::new(multiplier_length).unwrap();
 
-//         for i in 0..multiplicand_length {
-//             let coef = TFr::rand();
-//             multiplicand.set_coeff_at(i, &coef);
-//         }
+        for i in 0..multiplicand_length {
+            let coef = TFr::rand();
+            multiplicand.set_coeff_at(i, &coef);
+        }
 
-//         for i in 0..multiplier_length {
-//             let coef = TFr::rand();
-//             multiplier.set_coeff_at(i, &coef);
-//         }
+        for i in 0..multiplier_length {
+            let coef = TFr::rand();
+            multiplier.set_coeff_at(i, &coef);
+        }
 
-//         //Ensure that the polynomials' orders corresponds to their lengths
-//         if multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero() {
-//             let fr_one = Fr::one();
-//             multiplicand.set_coeff_at(multiplicand.len() - 1, &fr_one);
-//         }
+        //Ensure that the polynomials' orders corresponds to their lengths
+        if multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            multiplicand.set_coeff_at(multiplicand.len() - 1, &fr_one);
+        }
 
-//         if multiplier.get_coeff_at(multiplier.len() - 1).is_zero() {
-//             let fr_one = Fr::one();
-//             multiplier.set_coeff_at(multiplier.len() - 1, &fr_one);
-//         }
+        if multiplier.get_coeff_at(multiplier.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            multiplier.set_coeff_at(multiplier.len() - 1, &fr_one);
+        }
 
-//         let q0 = TPoly::new(out_length);
-//         let result0 = multiplicand.mul(&multiplier);
-//         assert!(result0.is_ok());
-//     }
-// }
+        let result0 = multiplicand.mul_direct(&multiplier, out_length);
+        assert!(result0.is_ok());
+        let result1 = multiplicand.mul_fft(&multiplier, out_length, &TFTTSettings::default());
+        assert!(result1.is_ok());
+
+        let actual0 = result0.unwrap();
+        let actual1 = result1.unwrap();
+
+        assert_eq!(actual0.len(), actual1.len());
+
+        for i in 0..actual0.len() {
+            assert!(actual0.get_coeff_at(i).equals(&actual1.get_coeff_at(i)));
+        }
+    }
+}
+
+pub fn poly_div_random<TFr: Fr, TFTTSettings: FFTSettings<TFr>, TPoly: Poly<TFr, TFTTSettings>>() {
+    let mut rng = StdRng::seed_from_u64(0);
+    for k in 0..256 {
+        let dividend_length: usize = (2 + (rng.next_u64() % 1000)) as usize;
+        let divisor_length: usize = 1 + ((rng.next_u64() as usize) % dividend_length);
+
+        let mut dividend = TPoly::new(dividend_length).unwrap();
+        let mut divisor = TPoly::new(divisor_length).unwrap();
+
+        for i in 0..dividend_length {
+            let coef = TFr::rand();
+            dividend.set_coeff_at(i, &coef);
+        }
+
+        for i in 0..divisor_length {
+            let coef = TFr::rand();
+            divisor.set_coeff_at(i, &coef);
+        }
+
+        //Ensure that the polynomials' orders corresponds to their lengths
+        if dividend.get_coeff_at(dividend.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            dividend.set_coeff_at(dividend.len() - 1, &fr_one);
+        }
+
+        if divisor.get_coeff_at(divisor.len() - 1).is_zero() {
+            let fr_one = Fr::one();
+            divisor.set_coeff_at(divisor.len() - 1, &fr_one);
+        }
+
+        let result0 = dividend.div(&divisor);
+        assert!(result0.is_ok());
+        let result1 = dividend.fast_div(&divisor);
+        assert!(result1.is_ok());
+
+        let actual0 = result0.unwrap();
+        let actual1 = result1.unwrap();
+
+        assert_eq!(actual0.len(), actual1.len());
+
+        for i in 0..actual0.len() {
+            assert!(actual0.get_coeff_at(i).equals(&actual1.get_coeff_at(i)));
+        }
+    }
+}

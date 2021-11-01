@@ -127,6 +127,8 @@ pub trait Poly<Coeff: Fr, Settings: FFTSettings<Coeff>>: Clone {
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
 
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String>;
+
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
 
     fn mul_fft(&mut self, x: &Self, len: usize, _fs: &Settings) -> Result<Self, String>;
