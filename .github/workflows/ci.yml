@@ -25,11 +25,13 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         bash ci/unix.sh $(which sed)
+
     - name: Build native libs (MacOS)
       if: matrix.os == 'macos-11'
       run: |
         brew install gnu-sed
         bash ci/unix.sh $(which gsed)
+
 # 3rd team #########################################################
 
     - uses: actions-rs/cargo@v1
@@ -65,6 +67,24 @@ jobs:
       with:
         command: fmt
         args: --manifest-path ckzg/Cargo.toml
+
+# 5th team ###########################################################
+
+    - name: Run mcl-kzg10-rust tests
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo test --manifest-path kzg10-rust/kzg-bench/Cargo.toml -- --test-threads 1 
+        
+    - name: Run mcl-kzg10-rust benches
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo bench --manifest-path kzg10-rust/kzg-bench/Cargo.toml
+        
+    - name: Run mcl-kzg10-rust fmt
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo fmt --manifest-path kzg10-rust/kzg-bench/Cargo.toml
+        
 
 # Common ###########################################################
 
