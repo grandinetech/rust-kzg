@@ -1,0 +1,20 @@
+[package]
+name = "kzg-bindings"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+kzg = { path = "../kzg" }
+kzg-bench = { path = "../kzg-bench" }
+rand = "0.4"
+
+[dev-dependencies]
+criterion = "0.3.5"
+
+[[bench]]
+name = "fft"
+harness = false
+
+[[bench]]
+name = "poly"
+harness = false
