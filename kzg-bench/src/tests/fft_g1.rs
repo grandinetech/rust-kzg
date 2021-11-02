@@ -1,6 +1,31 @@
 use kzg::{FFTSettings, Fr, FFTG1, G1};
 
-pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
+pub fn compare_ft_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTG1<TFr, TG1>>(
+    fft_g1_slow: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize),
+    fft_g1_fast: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize),
+    make_data: &dyn Fn(usize) -> Vec<TG1>
+) {
+    let size: usize = 6;
+    let mut fs = TFFTSettings::new(size).unwrap();
+    assert_eq!(fs.get_max_width(), 2 << size - 1);
+
+    let data = make_data(fs.get_max_width());
+    let stride = fs.get_max_width() / data.len();
+
+    let mut fast = vec![TG1::default(); data.len()];
+    let mut slow = vec![TG1::default(); data.len()];
+
+    fft_g1_fast(&mut fast, &data, 1, fs.get_expanded_roots_of_unity(), stride);
+    fft_g1_slow(&mut slow, &data, 1, fs.get_expanded_roots_of_unity(), stride);
+
+    for i in 0..fs.get_max_width() {
+        assert!(fast[i].equals(&slow[i]));
+    }
+
+    fs.destroy();
+}
+
+pub fn roundtrip_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTG1<TFr, TG1>>(
     make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size: usize = 10;
@@ -25,7 +50,7 @@ pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG
     fs.destroy();
 }
 
-pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
+pub fn stride_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTG1<TFr, TG1>>(
     make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size1: usize = 9;

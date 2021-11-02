@@ -1,10 +1,10 @@
-use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{
-    blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
-    blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
-    blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_affine, blst_p2_affine
-};
 use kzg::{FFTSettings, Fr, Poly, G1, Scalar};
+use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR, G1_IDENTITY, G1_GENERATOR};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
+           blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
+           blst_uint64_from_fr, blst_p1_add_or_double, blst_p1_is_equal, blst_scalar, blst_scalar_from_fr,
+           blst_p1_mult, blst_p1_cneg, blst_fr_from_scalar};
+use crate::utils::log_2_byte;
 
 pub struct FsFr(pub blst::blst_fr);
 
@@ -73,11 +73,11 @@ impl Fr for FsFr {
     fn pow(&self, n: usize) -> Self {
         //fr_t tmp = *a;
         let mut tmp = self.clone();
-    
+
         //*out = fr_one;
         let mut out = Self::one();
         let mut n2 = n;
-    
+
         //unsafe {
             loop {
                 if n2 & 1 == 1 {
@@ -92,7 +92,7 @@ impl Fr for FsFr {
                 tmp = tmp.sqr();
             }
         //}
-    
+
         out
     }
 
@@ -198,22 +198,68 @@ impl Copy for FsFr {}
 pub struct FsG1(pub blst::blst_p1);
 
 impl FsG1 {
-    pub(crate) fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
+    pub(crate) const fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
         FsG1(blst_p1 { x, y, z })
     }
 }
 
-impl G1 for FsG1 {
+impl G1<FsFr> for FsG1 {
     fn default() -> Self {
-        Self(blst_p1::default())
+       Self(blst_p1::default())
     }
 
-    fn add_or_double(&mut self, b: &Self) -> Self {
-        todo!()
+    fn rand() -> Self {
+        let result = G1_GENERATOR;
+        result.mul(&FsFr::rand())
+    }
+
+    fn add_or_double(&self, b: &Self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
+        }
+        ret
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        unsafe {
+            return blst_p1_is_equal(&self.0, &b.0);
+        }
+    }
+
+    fn mul(&self, b: &FsFr) -> Self {
+        let mut scalar: blst_scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &b.0);
+        }
+
+        // Count the number of bytes to be multiplied.
+        let mut i = scalar.b.len();// std::mem::size_of::<blst_scalar>();
+        while i != 0 && scalar.b[i - 1] == 0 {
+            i -= 1;
+        }
+        let mut ret = Self::default();
+        return if i == 0 {
+            G1_IDENTITY
+        } else if i == 1 && scalar.b[0] == 1 {
+            *self
+        } else {
+            // Count the number of bits to be multiplied.
+            unsafe {
+                blst_p1_mult(&mut ret.0, &self.0, &(scalar.b[0]), 8 * i - 7 + log_2_byte(scalar.b[i - 1]));
+            }
+            ret
+        }
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        let mut b_negative: FsG1 = *b;
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_cneg(&mut b_negative.0, true);
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b_negative.0);
+            ret
+        }
     }
 
     fn destroy(&mut self) {
@@ -223,7 +269,7 @@ impl G1 for FsG1 {
 
 impl Clone for FsG1 {
     fn clone(&self) -> Self {
-        todo!()
+        FsG1(self.0.clone())
     }
 }
 
@@ -239,7 +285,7 @@ impl FsG2 {
     pub fn default() -> Self {
         Self(blst_p2::default())
     }
-    
+
 }
 
 impl Clone for FsG2 {
@@ -434,7 +480,7 @@ impl FsKZGSettings {
     }
 
     pub fn new(secret_g1: &Vec<FsG1>, secret_g2: &Vec<FsG2>, length: usize, fft_settings: &FsFFTSettings) -> Self {
-        let mut kzg_settings = Self::default(); 
+        let mut kzg_settings = Self::default();
 
         // CHECK(length >= fs->max_width);
         // assert_eq!(secret_g1.len(), secret_g2.len());

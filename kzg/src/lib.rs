@@ -45,12 +45,18 @@ pub trait Fr: Clone {
     fn destroy(&mut self);
 }
 
-pub trait G1: Clone {
+pub trait G1<Coeff: Fr>: Clone {
     fn default() -> Self;
 
-    fn add_or_double(&mut self, b: &Self) -> Self;
+    fn rand() -> Self;
+
+    fn add_or_double(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
+
+    fn mul(&self, b: &Coeff) -> Self;
+
+    fn sub(&self, b: &Self) -> Self;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
@@ -64,7 +70,7 @@ pub trait FFTFr<Coeff: Fr> {
     fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
-pub trait FFTG1<Coeff: G1> {
+pub trait FFTG1<TFr: Fr, Coeff: G1<TFr>> {
     fn fft_g1(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 

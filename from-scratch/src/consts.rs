@@ -2,11 +2,11 @@ use crate::kzg_types::{FsFr, FsG1, FsG2};
 use blst::{blst_fp, blst_fp2, blst_p1, blst_p2};
 use kzg::{Fr, Scalar};
 
-// pub static G1_IDENTITY: FsG1 = FsG1::from_xyz(
-//     blst_fp { l: [0, 0, 0, 0, 0, 0] },
-//     blst_fp { l: [0, 0, 0, 0, 0, 0] },
-//     blst_fp { l: [0, 0, 0, 0, 0, 0] },
-// );
+pub const G1_IDENTITY: FsG1 = FsG1::from_xyz(
+    blst_fp { l: [0; 6] },
+    blst_fp { l: [0; 6] },
+    blst_fp { l: [0; 6] },
+);
 
 pub const SCALE_FACTOR: u64 = 5;
 
@@ -124,7 +124,7 @@ pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2 {
         },
     }
 };
-    
+
 pub const TRUSTED_SETUP_GENERATOR: Scalar = Scalar { b: [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
     0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
