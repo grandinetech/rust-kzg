@@ -104,4 +104,12 @@ impl Poly<BlstFr> for KzgPoly {
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
         todo!()
     }
+
+    fn long_div(&mut self, x: &Self) -> Result<Self, String> {
+        todo!()
+    }
+
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String>  {
+        todo!()
+    }
 }

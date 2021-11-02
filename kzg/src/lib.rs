@@ -102,6 +102,10 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
     fn destroy(&mut self);
 }
 
+pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
+    fn poly_mul_fft(a: &Polynomial, b: &Polynomial, len: usize, fs: Option<&FSettings>) -> Result<Polynomial, String>;
+}
+
 pub trait Poly<Coeff: Fr>: Clone {
     fn default() -> Self;
 
@@ -124,6 +128,10 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn inverse(&mut self, new_len: usize) -> Result<Self, String>;
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
+
+    fn long_div(&mut self, x: &Self) -> Result<Self, String>;
+
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String>;
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
 

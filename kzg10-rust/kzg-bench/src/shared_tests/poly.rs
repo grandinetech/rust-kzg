@@ -5,6 +5,7 @@ pub mod poly_tests {
     use mcl_rust::kzg10::Polynomial;
     use mcl_rust::mcl_methods::init;
     use mcl_rust::CurveType;
+    use mcl_rust::fk20_fft::FFTSettings;
 
     #[test]
     fn create_poly_of_length_ten_() {
@@ -52,5 +53,29 @@ pub mod poly_tests {
     fn poly_test_div_() {
         assert!(init(CurveType::BLS12_381));
         poly_test_div::<Fr, Polynomial>();
+    }
+
+    #[test]
+    fn poly_div_by_zero_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_div_by_zero::<Fr, Polynomial>();
+    }
+
+    #[test]
+    fn poly_mul_fft_test_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_mul_fft_test::<Fr, Polynomial, FFTSettings, Polynomial>();
+    }
+
+    #[test]
+    fn poly_mul_random_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_mul_random::<Fr, Polynomial, FFTSettings, Polynomial>();
+    }
+
+    #[test]
+    fn poly_div_random_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_div_random::<Fr, Polynomial>();
     }
 }
