@@ -1,4 +1,4 @@
-use kzg::{G1, Fr, FFTFr};
+use kzg::{G1, Fr, FFTFr, Poly};
 use blst::{blst_p1_add_or_double,
             blst_p1s_to_affine,
             blst_scalar,
@@ -21,7 +21,6 @@ use blst::{blst_p1_add_or_double,
             blst_p2_affine,
             blst_fp
 };
-use crate::poly_utils::{new_poly_div};
 use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2};
 use crate::utils::{is_power_of_two, log_2_byte};
 use crate::consts::{G2_GENERATOR};
@@ -68,7 +67,7 @@ pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZG
     //TRY(new_poly_div(&q, p, &divisor));
 
 
-    let result = new_poly_div(&p, &divisor);
+    let result = p.div(&divisor);
     assert!(result.is_ok());
     q = result.unwrap();
 

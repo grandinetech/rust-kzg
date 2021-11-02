@@ -23,6 +23,8 @@ pub trait Fr: Clone {
 
     fn mul(&self, b: &Self) -> Self;
 
+    fn div(&self, b: &Self) -> Result<Self, String>;
+
     fn add(&self, b: &Self) -> Self;
 
     fn sub(&self, b: &Self) -> Self;
@@ -48,9 +50,13 @@ pub trait Fr: Clone {
 pub trait G1: Clone {
     fn default() -> Self;
 
+    fn rand() -> Self;
+
     fn add_or_double(&mut self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
+
+    fn div(&self, b: &Self) -> Result<Self, String>;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
@@ -74,7 +80,7 @@ pub trait DAS<Coeff: Fr> {
 
 pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
-        -> Result<Polynomial, String>;
+                                -> Result<Polynomial, String>;
 
     fn reduce_partials(
         &self,
@@ -127,9 +133,21 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn unscale(&mut self);
 
-    fn inverse(&mut self, new_len: usize) -> Result<Self, String>;
+    fn inverse(&mut self, output_len: usize) -> Result<Self, String>;
 
-    fn div(&mut self, x: &Self) -> Result<Self, String>;
+    fn div(&self, x: &Self) -> Result<Self, String>;
+
+    fn div_long(&self, x: &Self) -> Result<Self, String>;
+
+    fn div_fast(&self, x: &Self) -> Result<Self, String>;
+
+    fn mul(&self, x: &Self, output_len: usize) -> Result<Self, String>;
+
+    fn mul_direct(&self, x: &Self, output_len: usize) -> Result<Self, String>;
+
+    fn mul_fft(&self, x: &Self, output_len: usize) -> Result<Self, String>;
+
+    fn flip(&self) -> Result<Self, String>;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);

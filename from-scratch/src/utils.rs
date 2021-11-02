@@ -53,8 +53,8 @@ pub fn log2_u64(n: usize) -> usize {
     r
 }
 
-pub fn min_u64(a: usize, b: usize) -> Result<usize, String> {
-    return if a < b {Ok(a)} else {Ok(b)};
+pub fn min_u64(a: usize, b: usize) -> usize {
+    return if a < b {a} else {b};
 }
 
 pub fn generate_trusted_setup(s1: &mut Vec<FsG1>, s2: &mut Vec<FsG2>, secret: &Scalar, n: usize) {
