@@ -25,7 +25,7 @@ pub fn compare_ft_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FF
     fs.destroy();
 }
 
-pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
+pub fn roundtrip_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTG1<TFr, TG1>>(
     make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size: usize = 10;
@@ -50,7 +50,7 @@ pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG
     fs.destroy();
 }
 
-pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
+pub fn stride_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTG1<TFr, TG1>>(
     make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size1: usize = 9;
