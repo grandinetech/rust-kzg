@@ -268,7 +268,6 @@ impl Polynomial {
         if out_length == 0 {
             return Ok(Polynomial::default());
         }
-        println!("out len long div{}", out_length);
 
         let mut a_pos = self.order() - 1;
         let b_pos = divisor.len() - 1;
@@ -290,7 +289,6 @@ impl Polynomial {
             diff = diff - 1;
         }
         out_coeffs[0] = a[a_pos] / divisor[b_pos];
-        println!("out out_coeffs length long div{}", out_coeffs.len());
         return Ok(Polynomial::from_fr(out_coeffs)); 
     }
 
@@ -392,7 +390,6 @@ impl Polynomial {
         Polynomial::mul_(self, b, None, len)
     }
 
-
     // @param[in]  n_in  The number of elements of @p in to take
     // @param[in]  n_out The length of @p out
     fn pad_coeffs(coeffs: &Vec<Fr>, n_in: usize, n_out: usize) -> Vec<Fr> {
@@ -447,7 +444,7 @@ impl Polynomial {
         for _ in data_len..len {
             ret_coeffs.push(Fr::zero());
         }
-        
+
         Ok(Polynomial::from_fr(ret_coeffs))
     }
 
