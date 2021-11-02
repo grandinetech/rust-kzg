@@ -130,3 +130,38 @@ pub trait Poly<Coeff: Fr>: Clone {
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
+
+pub trait KZGSettings<
+    Coeff1: Fr,
+    Coeff2: G1,
+    Coeff3: G2,
+    Fs: FFTSettings<Coeff1>,
+    Polynomial: Poly<Coeff1>,
+>: Clone
+{
+    fn default() -> Self;
+
+    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: Fs) -> Self;
+
+    fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
+
+    fn compute_proof_single(&self, p: &Polynomial, x: &Coeff1) -> Coeff2;
+
+    fn check_proof_single(&self, com: &Coeff2, proof: &Coeff2, x: &Coeff1, value: &Coeff1) -> bool;
+
+    fn compute_proof_multi(&self, p: &Polynomial, x: &Coeff1, n: usize) -> Coeff2;
+
+    fn check_proof_multi(
+        &self,
+        com: &Coeff2,
+        proof: &Coeff2,
+        x: &Coeff1,
+        values: &Vec<Coeff1>,
+        n: usize,
+    ) -> bool;
+
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
+
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
+    fn destroy(&mut self);
+}
