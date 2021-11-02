@@ -1,7 +1,6 @@
 use kzg::{Fr, Poly, FFTSettings, FFTSettingsPoly};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
-// use rand::seq::SliceRandom;
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut poly = TPoly::new(10).unwrap();
@@ -333,7 +332,7 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
             divisor.set_coeff_at(divisor.len() - 1, &fr_one);
         }
 
-        let result0 = dividend.div(&divisor);
+        let result0 = dividend.long_div(&divisor);
         assert!(result0.is_ok());
         let result1 = dividend.fast_div(&divisor);
         assert!(result1.is_ok());

@@ -1,4 +1,4 @@
-use std::{cmp::min, ops, iter};
+use std::{cmp::min,  ops, iter};
 use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::{BlstFr};
 use crate::data_converter::fr_converter::*;
@@ -304,10 +304,9 @@ impl Polynomial {
             return Ok(Polynomial::default());
         }
 
-        let mut out_coeffs: Vec<Fr> = vec![];
-
         // Special case for divisor.length == 1 (it's a constant)
         if divisor.len() == 1 {
+            let mut out_coeffs: Vec<Fr> = vec![];
             out_length = self.order();
             for i in 0..out_length {
                 out_coeffs.push(self.coeffs[i] / divisor[0]);
@@ -496,6 +495,7 @@ impl Polynomial {
         let coeffs = vec![self.coeffs[0].inverse()];
         let mut out = Polynomial::from_fr(coeffs);
 
+        //if new length is 1, max d is 0
         let mut mask = 1 << log_2(maxd);
         
         let mut poly_temp_0: Polynomial;
