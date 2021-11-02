@@ -1,17 +1,17 @@
-name: CI Build
-
-on: [push]
-
-jobs:
-  ci:
-
+name: CI Build 
+  
+on: [push] 
+ 
+jobs: 
+  ci: 
+ 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-11]
 
-    steps:
-    - uses: actions/checkout@v2
+    steps: 
+    - uses: actions/checkout@v2 
 
     - uses: actions-rs/toolchain@v1
       with:
@@ -19,21 +19,6 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-# Prerequisites ####################################################
-
-    - name: Build native libs (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        bash ci/unix.sh $(which sed)
-
-    - name: Build native libs (MacOS)
-      if: matrix.os == 'macos-11'
-      run: |
-        brew install gnu-sed
-        bash ci/unix.sh $(which gsed)
-
-# 3rd team #########################################################
-
     - uses: actions-rs/cargo@v1
       with:
         command: test
@@ -48,27 +33,6 @@ jobs:
       with:
         command: fmt
         args: --manifest-path from-scratch/Cargo.toml
-
-# 4th team #########################################################
-
-    - uses: actions-rs/cargo@v1
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      with:
-        command: test
-        args: --manifest-path ckzg/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      with:
-        command: bench
-        args: --manifest-path ckzg/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path ckzg/Cargo.toml
-
-# Common ###########################################################
 
     - uses: actions-rs/cargo@v1
       with:
@@ -89,4 +53,3 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         cargo fmt --manifest-path kzg10-rust/kzg-bench/Cargo.toml
-        
