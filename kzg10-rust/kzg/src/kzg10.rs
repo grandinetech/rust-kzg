@@ -415,7 +415,7 @@ impl Polynomial {
         // Truncate a and b so as not to do excess work for the number of coefficients required.
         let a_len = min(self.order(), len);
         let b_len = min(b.order(), len);
-        let length = next_pow_of_2(a_len + b_len + 1);
+        let length = next_pow_of_2(a_len + b_len - 1);
 
         let fft_settings;
         //TO DO remove temp_fft, can't find a nice way to declare fft and only use it as ref
@@ -425,12 +425,12 @@ impl Polynomial {
             None    => fft_settings = &temp_fft,
         }
         let ft = fft_settings;
-        
-        if length <= ft.max_width {
+        if length > ft.max_width {
             return Err(String::from("Mul fft only good up to length < 32 bits"));
         }
+
         let a_pad = self.pad(a_len, length);
-        let b_pad = self.pad(b_len, length);
+        let b_pad = b.pad(b_len, length);
         let a_fft = ft.fft(&a_pad.coeffs, false);
         let b_fft = ft.fft(&b_pad.coeffs, false);
         let mut ab_fft: Vec<Fr> = vec![];
@@ -444,9 +444,10 @@ impl Polynomial {
         for i in 0..data_len {
             ret_coeffs.push(ab[i]);
         }
-        for i in data_len..length {
-            ret_coeffs.push(ab[i]);
+        for _ in data_len..len {
+            ret_coeffs.push(Fr::zero());
         }
+        
         Ok(Polynomial::from_fr(ret_coeffs))
     }
 

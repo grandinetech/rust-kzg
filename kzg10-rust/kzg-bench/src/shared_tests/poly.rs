@@ -72,4 +72,10 @@ pub mod poly_tests {
         assert!(init(CurveType::BLS12_381));
         poly_mul_random::<Fr, Polynomial, FFTSettings, Polynomial>();
     }
+
+    #[test]
+    fn poly_div_random_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_div_random::<Fr, Polynomial>();
+    }
 }
