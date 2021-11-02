@@ -11,9 +11,10 @@ pub fn kzg_proof<
         TG2: G2,
         TPoly: Poly<TFr>,
         TFFTSettings: FFTSettings<TFr>,
-        TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+        TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
         generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+        c: &mut Criterion
 ) {     
         for scale in 1..15 {
         let mut fs = TFFTSettings::new(scale as usize).unwrap();
