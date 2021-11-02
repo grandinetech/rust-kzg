@@ -96,7 +96,7 @@ fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
 }
 
 #[test]
-fn poly_test_div() {
+fn poly_test_long_division() {
     assert!(init(CurveType::BLS12_381));
     const SIZE: usize = 2; //should be <= size of test data in get_test_vec()
 
@@ -109,7 +109,6 @@ fn poly_test_div() {
         let expected = Polynomial::from_fr(third);
 
         let result = dividend.long_division(&second).unwrap();
-
         let expected_len: usize;
         let result_len: usize;
 

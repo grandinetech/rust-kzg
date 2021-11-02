@@ -1,7 +1,6 @@
 use kzg::{Fr, Poly, FFTSettings, FFTSettingsPoly};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
-// use rand::seq::SliceRandom;
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut poly = TPoly::new(10).unwrap();
@@ -115,9 +114,15 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
     let test_6_1: Vec<i32> = vec![1, 0]; // The highest coefficient is zero
     let test_6_2: Vec<i32> = vec![1, 1, 1];
 
-    let test_data: [[Vec<i32>; 3]; 7] = [[test_0_0, test_0_1, test_0_2], [test_1_0, test_1_1, test_1_2],
-        [test_2_0, test_2_1, test_2_2], [test_3_0, test_3_1, test_3_2], [test_4_0, test_4_1, test_4_2],
-        [test_5_0, test_5_1, test_5_2], [test_6_0, test_6_1, test_6_2]];
+    let test_data: [[Vec<i32>; 3]; 7] = [
+        [test_0_0, test_0_1, test_0_2],
+        [test_1_0, test_1_1, test_1_2],
+        [test_2_0, test_2_1, test_2_2],
+        [test_3_0, test_3_1, test_3_2],
+        [test_4_0, test_4_1, test_4_2],
+        [test_5_0, test_5_1, test_5_2],
+        [test_6_0, test_6_1, test_6_2],
+    ];
 
     test_data[a][b].clone()
 }
@@ -130,8 +135,7 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TP
         if coeff >= 0 {
             let c = TFr::from_u64(coeff as u64);
             p.set_coeff_at(i, &c);
-        }
-        else {
+        } else {
             let c = TFr::from_u64((-coeff) as u64);
             let negc = c.negate();
             p.set_coeff_at(i, &negc);
@@ -152,18 +156,14 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
         let result = dividend.div(&divisor);
-        if *divisor_data.last().unwrap() == 0 {
-            assert!(result.is_err());
-        } else {
-            assert!(result.is_ok());
-            let actual = result.unwrap();
-    
-            assert_eq!(expected.len(), actual.len());
-            for i in 0..actual.len() {
-                assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
-            }
+
+        assert!(result.is_ok());
+        let actual = result.unwrap();
+
+        assert_eq!(expected.len(), actual.len());
+        for i in 0..actual.len() {
+            assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
         }
-    
     }
 }
 
@@ -229,7 +229,7 @@ pub fn poly_mul_fft_test<
     let coeffs: Vec<i32> = vec![18, 9, -11, 12];
     let expected: TPoly = new_test_poly(&coeffs, 4);
 
-    let result = TFFTSettingsPoly::poly_mul_fft(&multiplicand, &multiplier, 4, &TFTTSettings::default());
+    let result = TFFTSettingsPoly::poly_mul_fft(&multiplicand, &multiplier, 4, None);
     assert!(result.is_ok());
     let actual = result.unwrap();
 
@@ -238,7 +238,7 @@ pub fn poly_mul_fft_test<
     }
 
     //Check commutativity
-    let result = TFFTSettingsPoly::poly_mul_fft(&multiplier, &multiplicand, 4, &TFTTSettings::default());
+    let result = TFFTSettingsPoly::poly_mul_fft(&multiplier, &multiplicand, 4, None);
     assert!(result.is_ok());
     let actual = result.unwrap();
 
@@ -288,7 +288,7 @@ pub fn poly_mul_random<
 
         let result0 = multiplicand.mul_direct(&multiplier, out_length);
         assert!(result0.is_ok());
-        let result1 = TFFTSettingsPoly::poly_mul_fft(&multiplicand, &multiplier, out_length, &TFTTSettings::default());
+        let result1 = TFFTSettingsPoly::poly_mul_fft(&multiplicand, &multiplier, out_length, None);
         assert!(result1.is_ok());
 
         let actual0 = result0.unwrap();
@@ -332,7 +332,7 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
             divisor.set_coeff_at(divisor.len() - 1, &fr_one);
         }
 
-        let result0 = dividend.div(&divisor);
+        let result0 = dividend.long_div(&divisor);
         assert!(result0.is_ok());
         let result1 = dividend.fast_div(&divisor);
         assert!(result1.is_ok());
