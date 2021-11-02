@@ -1,12 +1,12 @@
-use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use blst::{
-    blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
-    blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
-    blst_uint64_from_fr,
-};
 use kzg::{FFTSettings, Fr, Poly, G1};
+use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR, G1_IDENTITY, G1_GENERATOR};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
+           blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
+           blst_uint64_from_fr, blst_p1_add_or_double, blst_p1_is_equal, blst_scalar, blst_scalar_from_fr,
+           blst_p1_mult, blst_p1_cneg, blst_fr_from_scalar};
+use crate::utils::log_2_byte;
 
-pub struct FsFr(blst::blst_fr);
+pub struct FsFr(pub blst::blst_fr);
 
 impl Fr for FsFr {
     fn default() -> Self {
@@ -69,6 +69,33 @@ impl Fr for FsFr {
         ret
     }
 
+    // TODO: double-check implementation
+    fn pow(&self, n: usize) -> Self {
+        //fr_t tmp = *a;
+        let mut tmp = self.clone();
+
+        //*out = fr_one;
+        let mut out = Self::one();
+        let mut n2 = n;
+
+        //unsafe {
+            loop {
+                if n2 & 1 == 1 {
+                    // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                    out = out.mul(&tmp);
+                }
+                n2 = n2 >> 1;
+                if n == 0 {
+                    break;
+                }
+                // blst_fr_sqr(&mut tmp.0, &tmp.0);
+                tmp = tmp.sqr();
+            }
+        //}
+
+        out
+    }
+
     fn mul(&self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -123,30 +150,14 @@ impl Fr for FsFr {
         ret
     }
 
-    fn pow(&self, n: usize) -> Self {
-        todo!("double check implementation");
-        //fr_t tmp = *a;
-        let mut tmp = self.clone();
-
-        //*out = fr_one;
-        let mut out = Self::one();
-        let mut n2 = n;
-
-        unsafe {
-            loop {
-                if n2 & 1 == 1 {
-                    blst_fr_mul(&mut out.0, &out.0, &tmp.0);
-                }
-                n2 = n2 >> 1;
-                if n == 0 {
-                    break;
-                }
-                blst_fr_sqr(&mut out.0, &tmp.0);
-            }
-        }
-
-        out
-    }
+    // fn get_scalar(&self) -> Scalar {
+    //     let mut scalar = Scalar::default();
+    //     unsafe {
+    //         blst_scalar_from_fr(&mut scalar, &self.0);
+    //     }
+    //
+    //     scalar
+    // }
 
     fn equals(&self, b: &Self) -> bool {
         let mut val_a: [u64; 4] = [0; 4];
@@ -163,6 +174,16 @@ impl Fr for FsFr {
             && val_a[3] == val_b[3];
     }
 
+    // fn from_scalar(scalar: &Scalar) -> Self {
+    //     let mut fr = blst_fr::default();
+    //     unsafe {
+    //         blst_fr_from_scalar(&mut fr, scalar);
+    //     }
+    //     let mut ret = Self::default();
+    //     ret.0 = fr;
+    //     ret
+    // }
+
     fn destroy(&mut self) {}
 }
 
@@ -174,29 +195,71 @@ impl Clone for FsFr {
 
 impl Copy for FsFr {}
 
-pub struct FsG1(blst::blst_p1);
+pub struct FsG1(pub blst::blst_p1);
 
 impl FsG1 {
-    pub(crate) fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
+    pub(crate) const fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
         FsG1(blst_p1 { x, y, z })
     }
 }
 
-impl G1 for FsG1 {
+impl G1<FsFr> for FsG1 {
     fn default() -> Self {
-        todo!()
+       Self(blst_p1::default())
     }
 
     fn rand() -> Self {
-        todo!()
+        let result = G1_GENERATOR;
+        result.mul(&FsFr::rand())
     }
 
-    fn add_or_double(&mut self, b: &Self) -> Self {
-        todo!()
+    fn add_or_double(&self, b: &Self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
+        }
+        ret
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        unsafe {
+            return blst_p1_is_equal(&self.0, &b.0);
+        }
+    }
+
+    fn mul(&self, b: &FsFr) -> Self {
+        let mut scalar: blst_scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &b.0);
+        }
+
+        // Count the number of bytes to be multiplied.
+        let mut i = scalar.b.len();// std::mem::size_of::<blst_scalar>();
+        while i != 0 && scalar.b[i - 1] == 0 {
+            i -= 1;
+        }
+        let mut ret = Self::default();
+        return if i == 0 {
+            G1_IDENTITY
+        } else if i == 1 && scalar.b[0] == 1 {
+            *self
+        } else {
+            // Count the number of bits to be multiplied.
+            unsafe {
+                blst_p1_mult(&mut ret.0, &self.0, &(scalar.b[0]), 8 * i - 7 + log_2_byte(scalar.b[i - 1]));
+            }
+            ret
+        }
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        let mut b_negative: FsG1 = *b;
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_cneg(&mut b_negative.0, true);
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b_negative.0);
+            ret
+        }
     }
 
     fn destroy(&mut self) {
@@ -206,19 +269,32 @@ impl G1 for FsG1 {
 
 impl Clone for FsG1 {
     fn clone(&self) -> Self {
-        todo!()
+        FsG1(self.0.clone())
     }
 }
 
 impl Copy for FsG1 {}
 
-pub struct FsG2(blst::blst_p2);
+pub struct FsG2(pub blst::blst_p2);
 
 impl FsG2 {
     pub(crate) fn from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
         FsG2(blst_p2 { x, y, z })
     }
+
+    pub fn default() -> Self {
+        Self(blst_p2::default())
+    }
+
 }
+
+impl Clone for FsG2 {
+    fn clone(&self) -> Self {
+        todo!()
+    }
+}
+
+impl Copy for FsG2 {}
 
 pub struct FsPoly {
     pub coeffs: Vec<FsFr>,
@@ -323,7 +399,7 @@ pub struct FsFFTSettings {
 
 impl FFTSettings<FsFr> for FsFFTSettings {
     fn default() -> Self {
-        todo!()
+        Self::new(0).unwrap()
     }
 
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
@@ -390,4 +466,43 @@ pub struct FsKZGSettings {
     // Both secret_g1 and secret_g2 have the same number of elements
     pub secret_g1: Vec<FsG1>,
     pub secret_g2: Vec<FsG2>,
+}
+
+impl FsKZGSettings {
+
+    pub fn default() -> Self {
+        let output = Self {
+            secret_g1: Vec::default(),
+            secret_g2: Vec::default(),
+            fs: FsFFTSettings::default()
+        };
+        output
+    }
+
+    pub fn new(secret_g1: &Vec<FsG1>, secret_g2: &Vec<FsG2>, length: usize, fft_settings: &FsFFTSettings) -> Self {
+        let mut kzg_settings = Self::default();
+
+        // CHECK(length >= fs->max_width);
+        // assert_eq!(secret_g1.len(), secret_g2.len());
+        assert!(secret_g1.len() >= fft_settings.max_width);
+        assert!(secret_g2.len() >= fft_settings.max_width);
+        assert!(length >= fft_settings.max_width);
+
+        // ks->length = length;
+
+        // Allocate space for the secrets
+        // TRY(new_g1_array(&ks->secret_g1, ks->length));
+        // TRY(new_g2_array(&ks->secret_g2, ks->length));
+
+        // Populate the secrets
+        for i in 0..length {
+            kzg_settings.secret_g1.push(secret_g1[i]);
+            kzg_settings.secret_g2.push(secret_g2[i]);
+
+            // kzg_settings.secret_g1[i] = secret_g1[i];
+            // kzg_settings.secret_g2[i] = secret_g2[i];
+        }
+        kzg_settings.fs = fft_settings.clone();
+        kzg_settings
+    }
 }
