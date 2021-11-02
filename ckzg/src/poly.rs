@@ -100,4 +100,8 @@ impl Poly<BlstFr> for KzgPoly {
             free_poly(self);
         }
     }
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        todo!()
+    }
 }
