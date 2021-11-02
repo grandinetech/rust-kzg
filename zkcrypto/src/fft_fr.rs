@@ -1,8 +1,8 @@
-use crate::fftsettings::{ZkFFTSettings, new_fft_settings};
+use crate::fftsettings::{ZkFFTSettings};
 use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
 // use crate::Fr;
-use kzg::{Fr, FFTFr};
+use kzg::{Fr};
 
 
 

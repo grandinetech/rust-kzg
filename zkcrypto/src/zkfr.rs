@@ -2,10 +2,17 @@
 
 pub use super::{ZPoly, BlsScalar};
 use kzg::Fr;
+// use ff::{Field, PrimeField};
+
+use std::convert::TryInto;
+
+// use ff::{FieldBits, PrimeFieldBits};
+
 use crate::utils::*;
 pub use crate::curve::scalar::Scalar as blsScalar; 
 
 impl Fr for blsScalar {
+	// type ReprBits = [u64; 4];
 
 	fn default() -> Self {
 		<blsScalar as Default>::default()
@@ -34,9 +41,25 @@ impl Fr for blsScalar {
 		
 	}
 	
+	fn to_u64_arr(&self) -> [u64; 4] {
+		let bytes = self.to_bytes();
+
+        let limbs = [
+            u64::from_le_bytes(bytes[0..8].try_into().unwrap()),
+            u64::from_le_bytes(bytes[8..16].try_into().unwrap()),
+            u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
+            u64::from_le_bytes(bytes[24..32].try_into().unwrap()),
+        ];
+		
+		limbs
+
+	}
+	
 	fn from_u64(val: u64) -> Self {
 		blsScalar::from(val)
 	}
+	
+	
 	
 	fn is_one(&self) -> bool {
 		// assert!(self.eq(&blsScalar::one()));
@@ -60,16 +83,16 @@ impl Fr for blsScalar {
 	}
 	
     fn mul(&self, b: &Self) -> Self {
-		let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
+		// let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
 			blsScalar::mul(&self, &b) // &b.0 or &ret.0?
 	}
 	
 	fn add(&self, b: &Self) -> Self {
-		let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
+		// let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
 			blsScalar::add(&self, &b)
 	}
 	fn sub(&self, b: &Self) -> Self {
-		let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
+		// let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
 		blsScalar::sub(&self, &b) // for this
 	}
 	
@@ -79,9 +102,9 @@ impl Fr for blsScalar {
 		// self.invert().unwrap()
 
 		let mut ret = blst::blst_fr::default();
-		let ToBlst = zk_fr_into_blst_fr(self);
+		let to_blst = zk_fr_into_blst_fr(self);
 		unsafe {
-			blst::blst_fr_eucl_inverse(&mut ret, &ToBlst);
+			blst::blst_fr_eucl_inverse(&mut ret, &to_blst);
 		}
 		let output = blst_fr_into_zk_fr(&ret);
 		output
@@ -120,9 +143,9 @@ impl Fr for blsScalar {
 		// self.invert().unwrap()
 		
 		let mut ret = blst::blst_fr::default();
-		let ToBlst = zk_fr_into_blst_fr(self);
+		let to_blst = zk_fr_into_blst_fr(self);
 		unsafe {
-			blst::blst_fr_inverse(&mut ret, &ToBlst);
+			blst::blst_fr_inverse(&mut ret, &to_blst);
 		}
 		let output = blst_fr_into_zk_fr(&ret);
 		output

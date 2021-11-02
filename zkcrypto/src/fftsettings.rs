@@ -1,12 +1,12 @@
 // gonna have to change ZkFFTSettings to something different, because of lib.rs trait 'ZkFFTSettings'
 
-use blst::blst_fr as BlstFr;
+// use blst::blst_fr as BlstFr;
 use crate::consts::*;
 use crate::zkfr::blsScalar;
 use crate::fft_fr::*;
 use crate::utils::is_power_of_two;
 
-use blst::blst_fr_from_uint64;
+// use blst::blst_fr_from_uint64;
 use kzg::{Fr, FFTFr, FFTSettings};
 
 #[derive(Clone)]

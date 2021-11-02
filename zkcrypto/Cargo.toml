@@ -20,7 +20,6 @@ num-bigint = "0.4"
 rand = "0.8"
 rand_core = "0.6"
 subtle = "2.2.1"
-#ff = "0.11.0"
 
 [dependencies.ff]
 version = "0.11"

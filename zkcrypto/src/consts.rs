@@ -1,6 +1,6 @@
 use crate::zkfr::blsScalar;
-use blst::blst_fr as BlstFr;
-use blst::{blst_fr_from_uint64, blst_fr_mul};
+// use blst::blst_fr as BlstFr;
+// use blst::{blst_fr_from_uint64, blst_fr_mul};
 // use crate::Fr;
 use kzg::Fr;
 

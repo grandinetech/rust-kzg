@@ -4,9 +4,9 @@ pub use kzg::{FFTFr, Poly, Fr, FFTSettings};
 use crate::zkfr::{blsScalar, fr_div}; 
 //use crate::Fr;
 use crate::utils::*;
-use crate::fftsettings::{ZkFFTSettings, new_fft_settings};
+use crate::fftsettings::{ZkFFTSettings};
 use crate::consts::*;
-use crate::fft_fr::*;
+// use crate::fft_fr::*;
 
 
 #[repr(C)]
@@ -16,7 +16,7 @@ pub struct KzgPoly {
 }
 
 impl ZPoly {
-	fn newPoly (size: usize) -> Self {
+	fn new_poly (size: usize) -> Self {
 		Self {coeffs: vec![<blsScalar as Fr>::default(); size]}
 	}
 
@@ -49,10 +49,6 @@ impl Poly<blsScalar> for ZPoly {
 		self.coeffs.len()
 	}
 
-	// fn length(&self) -> usize {
-		// self.coeffs.len()
-	// }
-	
     fn eval(&self, x: &blsScalar) -> blsScalar {
 		if self.coeffs.len() == 0 {
             return blsScalar::zero();
@@ -171,8 +167,20 @@ impl Poly<blsScalar> for ZPoly {
 
     fn div(&mut self, x: &Self) -> Result<Self, String> {
 		todo!()
-		
 	}
+	
+	fn long_div(&mut self, x: &Self) -> Result<Self, String> {
+		todo!()
+	}
+
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String>{
+		todo!()
+	}
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>{
+		todo!()
+	}
+    
 	
     fn destroy(&mut self) {}
 }
@@ -259,8 +267,8 @@ pub fn poly_inverse(b: &ZPoly, out: &mut ZPoly) -> Result<ZPoly, String> {
     // let fs: ZkFFTSettings = ZkFFTSettings::from_scale(scale).unwrap();
 
 
-    let mut tmp0 = ZPoly::newPoly(out.coeffs.len()); //{ coeffs: Vec::default() };
-    let mut tmp1 = ZPoly::newPoly(out.coeffs.len()); //{ coeffs: Vec::default() }; 
+    let mut tmp0 = ZPoly::new_poly(out.coeffs.len()); //{ coeffs: Vec::default() };
+    let mut tmp1 = ZPoly::new_poly(out.coeffs.len()); //{ coeffs: Vec::default() }; 
 	
 	let mut val1 = ZPoly { coeffs: vec![<blsScalar as Fr>::default(); out.coeffs.len()] };
 
@@ -333,7 +341,7 @@ pub fn poly_fast_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String>
     a_flip = poly_flip(&dividend).unwrap();
     b_flip = poly_flip(&divisor).unwrap();
 
-    let mut inv_b_flip = ZPoly::newPoly(m - n + 1); // { coeffs: Vec::default() };
+    let mut inv_b_flip = ZPoly::new_poly(m - n + 1); // { coeffs: Vec::default() };
     inv_b_flip = poly_inverse(&b_flip, &mut inv_b_flip).unwrap();
 
     let mut q_flip = ZPoly::default(); // { coeffs: Vec::default() };
@@ -389,7 +397,7 @@ pub fn poly_quotient_length(dividend: &ZPoly, divisor: &ZPoly) -> Result<usize, 
 }
 
 pub fn pad(input: &ZPoly, n_in: usize, n_out: usize) -> Result<Vec<blsScalar>, String> {
-    let num: usize = min_u64(n_in, n_out).unwrap();
+    // let num: usize = min_u64(n_in, n_out).unwrap();
     //let mut output: Vec<blsScalar> = Vec::default();
 	let mut output = input.coeffs.to_vec();
     // for i in 0..num {
@@ -410,9 +418,9 @@ pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly) -> Result<ZPoly, String> {
     let b_len = min_u64(b.coeffs.len(), out).unwrap();
     let length = next_power_of_two(a_len + b_len - 1);
 
-	let ftSize: usize = log2_pow2(length);
+	let ft_size: usize = log2_pow2(length);
 	
-    let mut fs = ZkFFTSettings::new(ftSize).unwrap(); //ZkFFTSettings::new(0).unwrap();
+    let mut fs = ZkFFTSettings::new(ft_size).unwrap(); //ZkFFTSettings::new(0).unwrap();
     // match fs_ {
 		// Some(x) => fs = x.clone(),
 		// None => {
@@ -468,7 +476,7 @@ pub fn poly_mul_direct(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly,
     let b_degree: usize = b.coeffs.len() - 1;
     let mut output = ZPoly { coeffs: Vec::default() };
 
-    for k in 0..output_len {
+    for _ in 0..output_len {
         output.coeffs.push(blsScalar::zero());
 		// output.set_coeff_at(k, &blsScalar::zero());
     }

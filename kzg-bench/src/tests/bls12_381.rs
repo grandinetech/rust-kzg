@@ -1,13 +1,12 @@
-use kzg::Fr;
-	
-	
-// pub fn log_2_byte_works () {
-	// assert_eq!(0, log_2_byte(0x01));
-	// assert_eq!(7, log_2_byte(0x80));
-	// assert_eq!(7, log_2_byte(0xff));
-	// assert_eq!(4, log_2_byte(0x10));
-	
-// }
+use kzg::{Fr, G1_, G2_};	
+use std::convert::TryInto;
+
+pub fn log_2_byte_works (log_2_byte: &dyn Fn(u8) -> usize) {
+	assert_eq!(0, log_2_byte(0x01));
+	assert_eq!(7, log_2_byte(0x80));
+	assert_eq!(7, log_2_byte(0xff));
+	assert_eq!(4, log_2_byte(0x10));
+}
 
 pub fn fr_is_zero_works<TFr: Fr>() {
     let zero = TFr::from_u64(0);
@@ -20,12 +19,6 @@ pub fn fr_is_one_works<TFr: Fr>() {
 	
 	assert!(one.is_one());
 }
-
-// void fr_is_null_works(void) {
-    // TEST_CHECK(fr_is_null(&fr_null));
-    // TEST_CHECK(!fr_is_null(&fr_zero));
-    // TEST_CHECK(!fr_is_null(&fr_one));
-// }
 
 pub fn fr_from_uint64_works<TFr: Fr>() {
     let a = TFr::from_u64(1);
@@ -67,13 +60,11 @@ pub fn fr_negate_works<TFr: Fr>() {
 
 pub fn fr_pow_works<TFr: Fr>() {
     // // a^pow
-	
 	let pow: u64 = 123456;
 	let a = TFr::from_u64(197);
 	
     // // Do it the slow way
     let expected = TFr::one();
-	
 	for _ in 0..pow {
 		expected.mul(&a);
 	}
@@ -105,162 +96,129 @@ pub fn fr_div_by_zero<TFr: Fr>() {
 	assert!(tmp.is_zero());
 }
 
-// // pub fn fr_uint64s_roundtrip<TFr: Fr>() {
-    // // fr_t fr;
-    // // uint64_t expected[4] = {1, 2, 3, 4};
-    // // uint64_t actual[4];
+pub fn fr_uint64s_roundtrip<TFr: Fr>() {
+	let expected: [u64; 4] = [1, 2, 3, 4];
+	
+	let fr = TFr::from_u64_arr(&expected);
+	let actual = TFr::to_u64_arr(&fr);
+
+	assert_eq!(expected[0], actual[0]);
+	assert_eq!(expected[1], actual[1]);
+	assert_eq!(expected[2], actual[2]);
+	assert_eq!(expected[3], actual[3]);	
+}
+
+pub fn p1_mul_works<TFr: Fr, TG1: G1_<TFr>>(g1_generator: &TG1, g1_negative_generator: &TG1) {
+	let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
+	let minus1 = TFr::from_u64_arr(&m1);	
+	let res = TG1::mul(&g1_generator, &minus1);
+
+	assert!(res.equals(&g1_negative_generator));	
+}
+
+pub fn p1_sub_works<TFr: Fr, TG1: G1_<TFr>>(g1_generator: &TG1, g1_negative_generator: &TG1) {
+	
+	let tmp = TG1::dbl(&g1_generator);
+	let res = TG1::sub(&g1_generator, &g1_negative_generator);
+	
+	assert!(tmp.equals(&res));	
+}
+
+pub fn p2_add_or_dbl_works<TFr: Fr, TG2: G2_<TFr>>(g2_generator: &TG2) {
+	let expected = TG2::dbl(&g2_generator);
+	let actual = TG2::add_or_double(&g2_generator, &g2_generator);
+	
+	assert!(expected.equals(&actual));
+}
+
+pub fn p2_mul_works<TFr: Fr, TG2: G2_<TFr>>(g2_generator: &TG2, g2_negative_generator: &TG2) {
+	let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
+
+	let minus1 = TFr::from_u64_arr(&m1);
+	let res = TG2::mul(&g2_generator, &minus1);
+	
+	assert!(res.equals(&g2_negative_generator));
+}
+
+pub fn p2_sub_works<TFr: Fr, TG2: G2_<TFr>>(g2_generator: &TG2, g2_negative_generator: &TG2) {
+	
+	let tmp = TG2::dbl(&g2_generator);
+	let res = TG2::sub(&g2_generator, &g2_negative_generator);
+	
+	assert!(tmp.equals(&res));
+}
+
+pub fn g1_identity_is_infinity<TFr: Fr, TG1: G1_<TFr>>(g1_identity: &TG1) {
+
+	assert!(TG1::is_inf(&g1_identity));
+}
+
+pub fn g1_identity_is_identity<TFr: Fr, TG1: G1_<TFr>>(g1_identity: &TG1, g1_generator: &TG1) {
+	let actual = TG1::add_or_double(&g1_generator, &g1_identity);
+	
+	assert!(actual.equals(&g1_generator));
+}
+
+pub fn g1_make_linear_combination<TFr: Fr, TG1: G1_<TFr> + Copy>(g1_generator: TG1, g1_linear_combination: &dyn Fn (&mut TG1, &Vec<TG1>, &Vec<TFr>, usize)) {
+
+	let len: usize = 255;
+	let mut coeffs = vec![TFr::default(); len];
+	
+	let mut p = vec![TG1::default(); len];
 	
 	
+	for i in 0..len {
+		coeffs[i] = TFr::from_u64((i+1).try_into().unwrap());
+		p[i] = g1_generator;
+	}
 	
+	let tmp = TFr::from_u64((len * (len + 1) / 2).try_into().unwrap());
+	let exp = TG1::mul(&g1_generator, &tmp);
 	
-	// let mut fr = TFr::default();
-	// let expected: [u64; 4] = {1, 2, 3, 4};
+	let mut res = TG1::default();
 	
-    // // fr_from_uint64s(&fr, expected);
-    // // fr_to_uint64s(actual, &fr);
-
-	// let fr = TFr::from_u64_arr(expected);
-	// let actual = TFr::from_u64_arr(&fr);
-
-    // // TEST_CHECK(expected[0] == actual[0]);
-    // // TEST_CHECK(expected[1] == actual[1]);
-    // // TEST_CHECK(expected[2] == actual[2]);
-    // // TEST_CHECK(expected[3] == actual[3]);
-// // }
-
-// pub fn p1_mul_works<TFr: Fr, TG1: G1>() {
-    // fr_t minus1;
-    // g1_t res;
+	g1_linear_combination(&mut res, &p, &coeffs, len);
 	
-	// pub const G1_GENERATOR: TG1 = TG1 {
-    // x: blst_fp { l: [0x5cb38790fd530c16, 0x7817fc679976fff5, 0x154f95c7143ba1c1, 0xf0ae6acdf3d0e747, 0xedce6ecc21dbf440, 0x120177419e0bfb75] },
-    // y: blst_fp { l: [0xbaac93d50ce72271, 0x8c22631a7918fd8e, 0xdd595f13570725ce, 0x51ac582950405194, 0x0e1c8c3fad0059c0, 0x0bbc3efc5008a26a] },
-    // z: blst_fp { l: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493] },
-	// };
+	assert!(exp.equals(&res));
+}
+
+pub fn g1_random_linear_combination<TFr: Fr, TG1: G1_<TFr> + Copy>(g1_generator: TG1, g1_identity: &TG1, g1_linear_combination: &dyn Fn (&mut TG1, &Vec<TG1>, &Vec<TFr>, usize)) {
+	let len: usize = 8192;
+	let mut coeffs = vec![TFr::default(); len];
+	let mut p = vec![TG1::default(); len];
+	let mut p1tmp = g1_generator;
 	
-	// let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
-	// let minus1 = TFr::from_u64_arr(&m1);
+	for i in 0..len {
+		coeffs[i] = TFr::rand();
+		p[i] = p1tmp;
+		p1tmp.dbl();
+	}
 	
+	let exp = g1_identity;
+	for i in 0..len {
+		p1tmp = TG1::mul(&p[i], &coeffs[i]);
+		exp.add_or_double(&p1tmp);	
+	}
 	
+	let mut res = TG1::default();
+	g1_linear_combination(&mut res, &p, &coeffs, len);
 	
-	// let res = TG1::mul(&G1_GENERATOR, &minus1);
+	assert!(exp.equals(&res));
+}
 
-	// assert!(TG1.equal
-
-    // // Multiply the generator by minus one (the second root of unity)
-    // fr_from_uint64s(&minus1, m1);
-    // g1_mul(&res, &g1_generator, &minus1);
-
-    // // We should end up with negative the generator
-    // TEST_CHECK(g1_equal(&res, &g1_negative_generator));
-// }
-
-// void p1_sub_works(void) {
-    // g1_t tmp, res;
-
-    // // 2 * g1_gen = g1_gen - g1_gen_neg
-    // g1_dbl(&tmp, &g1_generator);
-    // g1_sub(&res, &g1_generator, &g1_negative_generator);
-
-    // TEST_CHECK(g1_equal(&tmp, &res));
-// }
-
-// void p2_add_or_dbl_works(void) {
-    // g2_t expected, actual;
-
-    // g2_dbl(&expected, &g2_generator);
-    // g2_add_or_dbl(&actual, &g2_generator, &g2_generator);
-
-    // TEST_CHECK(g2_equal(&expected, &actual));
-// }
-
-// void p2_mul_works(void) {
-    // fr_t minus1;
-    // g2_t res;
-
-    // // Multiply the generator by minus one (the second root of unity)
-    // fr_from_uint64s(&minus1, m1);
-    // g2_mul(&res, &g2_generator, &minus1);
-
-    // TEST_CHECK(g2_equal(&res, &g2_negative_generator));
-// }
-
-// void p2_sub_works(void) {
-    // g2_t tmp, res;
-
-    // // 2 * g2_gen = g2_gen - g2_gen_neg
-    // g2_dbl(&tmp, &g2_generator);
-    // g2_sub(&res, &g2_generator, &g2_negative_generator);
-
-    // TEST_CHECK(g2_equal(&tmp, &res));
-// }
-
-// void g1_identity_is_infinity(void) {
-    // TEST_CHECK(g1_is_inf(&g1_identity));
-// }
-
-// void g1_identity_is_identity(void) {
-    // g1_t actual;
-    // g1_add_or_dbl(&actual, &g1_generator, &g1_identity);
-    // TEST_CHECK(g1_equal(&g1_generator, &actual));
-// }
-
-// void g1_make_linear_combination(void) {
-    // int len = 255;
-    // fr_t coeffs[len], tmp;
-    // g1_t p[len], res, exp;
-    // for (int i = 0; i < len; i++) {
-        // fr_from_uint64(coeffs + i, i + 1);
-        // p[i] = g1_generator;
-    // }
-
-    // // Expected result
-    // fr_from_uint64(&tmp, len * (len + 1) / 2);
-    // g1_mul(&exp, &g1_generator, &tmp);
-
-    // // Test result
-    // g1_linear_combination(&res, p, coeffs, len);
-    // TEST_CHECK(g1_equal(&exp, &res));
-// }
-
-// void g1_random_linear_combination(void) {
-    // int len = 8192;
-    // fr_t coeffs[len];
-    // g1_t p[len], p1tmp = g1_generator;
-    // for (int i = 0; i < len; i++) {
-        // coeffs[i] = rand_fr();
-        // p[i] = p1tmp;
-        // g1_dbl(&p1tmp, &p1tmp);
-    // }
-
-    // // Expected result
-    // g1_t exp = g1_identity;
-    // for (uint64_t i = 0; i < len; i++) {
-        // g1_mul(&p1tmp, &p[i], &coeffs[i]);
-        // g1_add_or_dbl(&exp, &exp, &p1tmp);
-    // }
-
-    // // Test result
-    // g1_t res;
-    // g1_linear_combination(&res, p, coeffs, len);
-    // TEST_CHECK(g1_equal(&exp, &res));
-// }
-
-// void pairings_work(void) {
+pub fn pairings_work<TFr: Fr, TG1: G1_<TFr>, TG2: G2_<TFr>>(g1_generator: &TG1, g2_generator: &TG2, pairings_verify: &dyn Fn(&TG1, &TG2, &TG1, &TG2) -> bool) {
     // // Verify that e([3]g1, [5]g2) = e([5]g1, [3]g2)
-    // fr_t three, five;
-    // g1_t g1_3, g1_5;
-    // g2_t g2_3, g2_5;
-
-    // // Set up
-    // fr_from_uint64(&three, 3);
-    // fr_from_uint64(&five, 5);
-    // g1_mul(&g1_3, &g1_generator, &three);
-    // g1_mul(&g1_5, &g1_generator, &five);
-    // g2_mul(&g2_3, &g2_generator, &three);
-    // g2_mul(&g2_5, &g2_generator, &five);
-
-    // // Verify the pairing
-    // TEST_CHECK(true == pairings_verify(&g1_3, &g2_5, &g1_5, &g2_3));
-    // TEST_CHECK(false == pairings_verify(&g1_3, &g2_3, &g1_5, &g2_5));
-// }
+	
+	let three = TFr::from_u64(3);
+	let five = TFr::from_u64(5);
+	
+	let g1_3 = TG1::mul(&g1_generator, &three);
+	let g1_5 = TG1::mul(&g1_generator, &five);
+	
+	let g2_3 = TG2::mul(&g2_generator, &three);
+	let g2_5 = TG2::mul(&g2_generator, &five);	
+	
+	assert_eq!(true, pairings_verify(&g1_3, &g2_5, &g1_5, &g2_3));
+	assert_eq!(false, pairings_verify(&g1_3, &g2_3, &g1_5, &g2_5));
+	
+}

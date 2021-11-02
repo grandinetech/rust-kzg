@@ -6,7 +6,7 @@ use super::fp6::Fp6;
 use super::g1::{G1Affine, G1Projective};
 use super::g2::{G2Affine, G2Projective};
 use super::scalar::Scalar;
-use bls12_381::multi_miller_loop;
+// use bls12_381::multi_miller_loop;
 
 use core::borrow::Borrow;
 use core::fmt;
@@ -690,7 +690,7 @@ impl Group for Gt {
     }
 }
 
-#[cfg(feature = "alloc")]
+// #[cfg(feature = "alloc")]
 // #[cfg_attr(docsrs, doc(cfg(all(feature = "pairings", feature = "alloc"))))]
 #[derive(Clone, Debug)]
 /// This structure contains cached computations pertaining to a $\mathbb{G}_2$
@@ -706,7 +706,7 @@ pub struct G2Prepared {
     coeffs: Vec<(Fp2, Fp2, Fp2)>,
 }
 
-#[cfg(feature = "alloc")]
+// #[cfg(feature = "alloc")]
 impl From<G2Affine> for G2Prepared {
     fn from(q: G2Affine) -> G2Prepared {
         struct Adder {
@@ -751,8 +751,8 @@ impl From<G2Affine> for G2Prepared {
     }
 }
 
-#[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "pairings", feature = "alloc"))))]
+// #[cfg(feature = "alloc")]
+// #[cfg_attr(docsrs, doc(cfg(all(feature = "pairings", feature = "alloc"))))]
 /// Computes $$\sum_{i=1}^n \textbf{ML}(a_i, b_i)$$ given a series of terms
 /// $$(a_1, b_1), (a_2, b_2), ..., (a_n, b_n).$$
 ///

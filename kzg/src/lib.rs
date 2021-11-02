@@ -1,17 +1,17 @@
 pub trait Fr: Clone {
-    // Assume that Fr can't fail on creation
+    fn default() -> Self;
 
-    fn default() -> Self; // -> Result<Self, String>;
+    fn zero() -> Self;
 
-    fn zero() -> Self; // -> Result<Self, String>;
+    fn one() -> Self;
 
-    fn one() -> Self; // -> Result<Self, String>;
-
-    fn rand() -> Self; // -> Result<Self, String>;
+    fn rand() -> Self;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
-
-    fn from_u64(u: u64) -> Self;
+	
+	fn from_u64(u: u64) -> Self;
+	
+	fn to_u64_arr(&self) -> [u64; 4]; 
 
     fn is_one(&self) -> bool;
 
@@ -43,8 +43,29 @@ pub trait Fr: Clone {
 
 pub trait G1: Clone {
     fn default() -> Self;
-
+	
+	fn rand() -> Self;
+	
     fn add_or_double(&mut self, b: &Self) -> Self;
+	
+    fn equals(&self, b: &Self) -> bool;
+
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
+    fn destroy(&mut self);
+}
+
+pub trait G1_<Fr>: Clone {
+    fn default() -> Self;
+
+    fn add_or_double(&self, b: &Self) -> Self;
+	
+	fn is_inf(&self) -> bool;
+	
+	fn mul(&self, b: &Fr) -> Self;
+	
+	fn dbl(&self) -> Self;
+	
+	fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
 
@@ -55,6 +76,25 @@ pub trait G1: Clone {
 pub trait G2: Clone {
     // TODO: populate with needed fns
 }
+
+pub trait G2_<Fr>: Clone {
+
+    fn default() -> Self;
+
+    fn add_or_double(&self, b: &Self) -> Self;
+	
+	fn mul(&self, b: &Fr) -> Self;
+	
+	fn dbl(&self) -> Self;
+	
+	fn sub(&self, b: &Self) -> Self;
+
+    fn equals(&self, b: &Self) -> bool;
+
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
+    fn destroy(&mut self);
+}
+
 
 pub trait FFTFr<Coeff: Fr> {
     fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
@@ -69,11 +109,20 @@ pub trait DAS<Coeff: Fr> {
 }
 
 pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<Polynomial, String>;
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
+        -> Result<Polynomial, String>;
 
-    fn reduce_partials(&self, domain_size: usize, partials: &[Polynomial]) -> Result<Polynomial, String>;
+    fn reduce_partials(
+        &self,
+        domain_size: usize,
+        partials: &[Polynomial],
+    ) -> Result<Polynomial, String>;
 
-    fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<Coeff>, Polynomial), String>;
+    fn zero_poly_via_multiplication(
+        &self,
+        domain_size: usize,
+        idxs: &[usize],
+    ) -> Result<(Vec<Coeff>, Polynomial), String>;
 }
 
 pub trait FFTSettings<Coeff: Fr>: Clone {
@@ -93,6 +142,10 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
+}
+
+pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
+    fn poly_mul_fft(a: &Polynomial, b: &Polynomial, len: usize, fs: Option<&FSettings>) -> Result<Polynomial, String>;
 }
 
 pub trait Poly<Coeff: Fr>: Clone {
@@ -118,6 +171,12 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
 
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
+    fn long_div(&mut self, x: &Self) -> Result<Self, String>;
+
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String>;
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
+    
+	// Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
