@@ -311,34 +311,31 @@ impl Poly<FsFr> for FsPoly {
 
     // TODO: analyze how algo works
     fn inverse(&self, output_len: usize) -> Result<Self, String> {
-        todo!();
-        if self.coeffs.len() == 0 {
+        if output_len == 0 {
+            return Err(String::from("Can't produce a zero-length result"));
+        } else if self.coeffs.len() == 0 {
             return Err(String::from("Can't inverse a zero-length poly"));
         } else if self.coeffs[0].is_zero() {
             return Err(String::from("First coefficient of polynomial mustn't be zero"));
         }
 
-        let mut ret = FsPoly { coeffs: vec![Fr::default(); output_len] };
+        let mut ret = FsPoly { coeffs: vec![FsFr::zero(); output_len] };
         // If the input polynomial is constant, the remainder of the series is zero
         if self.coeffs.len() == 1 {
             ret.coeffs[0] = self.coeffs[0].eucl_inverse();
 
-            for i in 1..output_len {
-                ret.coeffs[i] = Fr::zero();
-            }
-
             return Ok(ret);
         }
 
+        let mut out_length = output_len;
         let maxd = output_len - 1;
 
         // Max space for multiplications is (2 * length - 1)
+        // Don't need the following as its recalculated inside
         // let scale: usize = log2_pow2(next_power_of_two(2 * output_len - 1));
         // let fft_settings = FsFFTSettings::new(scale).unwrap();
 
         // To store intermediate results
-        let mut tmp0 = FsPoly { coeffs: vec![Fr::default(); output_len] };
-        let mut tmp1 = FsPoly { coeffs: vec![Fr::default(); output_len] };
 
         // Base case for d == 0
         ret.coeffs[0] = self.coeffs[0].eucl_inverse();
@@ -346,49 +343,47 @@ impl Poly<FsFr> for FsPoly {
         let mut mask: usize = 1 << log2_u64(maxd);
         while mask != 0 {
             d = 2 * d + (if (maxd & mask) != 0 { 1 } else { 0 });
-            mask = mask >> 1;
+            mask >>= 1;
 
             // b.c -> tmp0 (we're using out for c)
             // tmp0.length = min_u64(d + 1, b->length + output->length - 1);
-            let len_temp = min_u64(d + 1, self.coeffs.len() + output_len - 1);
-            tmp0 = self.mul(&ret, len_temp).unwrap();
+            let len_temp = min_u64(d + 1, self.len() + output_len - 1);
+            let mut tmp0 = self.mul(&ret, len_temp).unwrap();
 
             // 2 - b.c -> tmp0
-            for i in 0..tmp0.coeffs.len() {
+            for i in 0..tmp0.len() {
                 tmp0.coeffs[i] = tmp0.coeffs[i].negate();
             }
             let fr_two = Fr::from_u64(2);
             tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
 
             // c.(2 - b.c) -> tmp1;
-            tmp1 = ret.mul(&tmp0, d + 1).unwrap();
+            let mut tmp1 = ret.mul(&tmp0, d + 1).unwrap();
 
-            // output->length = tmp1.length;
-            for i in 0..tmp1.coeffs.len() {
-                ret.coeffs.push(tmp1.coeffs[i]);
+            out_length = tmp1.len();
+            for i in 0..tmp1.len() {
+                ret.coeffs[i] = tmp1.coeffs[i];
             }
         }
 
         if d + 1 != output_len {
-            return Err(String::from(""));
+            return Err(String::from("D + 1 must be equal to output_len"));
         }
 
         Ok(ret)
     }
 
-    fn div(&self, multiplier: &Self) -> Result<Self, String> {
-        todo!();
-        return if self.coeffs.len() >= multiplier.coeffs.len() || self.coeffs.len() < 128 { // Tunable paramter
-            self.div_long(&multiplier)
+    fn div(&self, divisor: &Self) -> Result<Self, String> {
+        return if divisor.len() >= self.len() || divisor.len() < 128 { // Tunable parameter
+            self.div_long(&divisor)
         } else {
-            self.div_fast(&multiplier)
+            self.div_fast(&divisor)
         };
     }
 
     fn div_long(&self, divisor: &Self) -> Result<Self, String> {
-        todo!();
         if divisor.coeffs.len() == 0 {
-            return Err(String::from("Cant divide by zero"));
+            return Err(String::from("Can't divide by zero"));
         } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
             return Err(String::from("Highest coefficient must be non-zero"));
         }
@@ -404,8 +399,8 @@ impl Poly<FsFr> for FsPoly {
         let mut diff = a_pos - b_pos;
 
         let mut a = vec![FsFr::default(); self.len()];
-        for i in 0..self.len() {
-            a.push(self.coeffs[i]);
+        for i in 0..a.len() {
+            a[i] = self.coeffs[i];
         }
 
         while diff > 0 {
@@ -413,39 +408,39 @@ impl Poly<FsFr> for FsPoly {
 
             for i in 0..(b_pos + 1) {
                 let tmp = out.coeffs[diff].mul(&divisor.coeffs[i]);
-                a[diff + i] = a[diff + i].sub(&tmp);
+                let tmp = a[diff + i].sub(&tmp);
+                a[diff + i] = tmp;
             }
 
             diff -= 1;
             a_pos -= 1;
         }
 
-        out.coeffs[0] = a[a_pos].div(&self.coeffs[b_pos]).unwrap();
+        out.coeffs[0] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
 
         Ok(out)
     }
 
     fn div_fast(&self, divisor: &Self) -> Result<Self, String> {
-        todo!();
         if divisor.coeffs.len() == 0 {
             return Err(String::from("Cant divide by zero"));
         } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
             return Err(String::from("Highest coefficient must be non-zero"));
         }
 
-        let m: usize = self.coeffs.len() - 1;
-        let n: usize = divisor.coeffs.len() - 1;
+        let m: usize = self.len() - 1;
+        let n: usize = divisor.len() - 1;
 
         // If the divisor is larger than the dividend, the result is zero-length
         if n > m {
-            return Ok(FsPoly { coeffs: Vec::default() });
+            return Ok(FsPoly { coeffs: Vec::new() });
         }
 
         // Special case for divisor.length == 1 (it's a constant)
         if divisor.len() == 1 {
-            let mut out = FsPoly { coeffs: Vec::default() };
-            for i in 0..divisor.len() {
-                out.coeffs.push(self.coeffs[i].div(&divisor.coeffs[0])?);
+            let mut out = FsPoly { coeffs: vec![FsFr::zero(); self.len()] };
+            for i in 0..out.len() {
+                out.coeffs[i] = self.coeffs[i].div(&divisor.coeffs[0]).unwrap();
             }
             return Ok(out);
         }
@@ -522,13 +517,12 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn flip(&self) -> Result<FsPoly, String> {
-        todo!();
-        let mut output = FsPoly { coeffs: Vec::new() };
-        for i in 0..self.coeffs.len() {
-            output.coeffs.push(self.coeffs[self.coeffs.len() - i - 1]);
+        let mut ret = FsPoly { coeffs: vec![FsFr::default(); self.len()] };
+        for i in 0..self.len() {
+            ret.coeffs[i] = self.coeffs[self.coeffs.len() - i - 1]
         }
 
-        Ok(output)
+        Ok(ret)
     }
 
     fn destroy(&mut self) {}
@@ -553,11 +547,7 @@ impl FsPoly {
     }
 
     fn poly_quotient_length(&self, divisor: &Self) -> usize {
-        if self.len() >= divisor.len() {
-            return self.len() - divisor.len() + 1;
-        }
-
-        0
+        return if self.len() >= divisor.len() { self.len() - divisor.len() + 1 } else { 0 };
     }
 
     fn pad(&self, out_length: usize) -> Vec<FsFr> {

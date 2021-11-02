@@ -115,9 +115,15 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
     let test_6_1: Vec<i32> = vec![1, 0]; // The highest coefficient is zero
     let test_6_2: Vec<i32> = vec![1, 1, 1];
 
-    let test_data: [[Vec<i32>; 3]; 7] = [[test_0_0, test_0_1, test_0_2], [test_1_0, test_1_1, test_1_2],
-        [test_2_0, test_2_1, test_2_2], [test_3_0, test_3_1, test_3_2], [test_4_0, test_4_1, test_4_2],
-        [test_5_0, test_5_1, test_5_2], [test_6_0, test_6_1, test_6_2]];
+    let test_data: [[Vec<i32>; 3]; 7] = [
+        [test_0_0, test_0_1, test_0_2],
+        [test_1_0, test_1_1, test_1_2],
+        [test_2_0, test_2_1, test_2_2],
+        [test_3_0, test_3_1, test_3_2],
+        [test_4_0, test_4_1, test_4_2],
+        [test_5_0, test_5_1, test_5_2],
+        [test_6_0, test_6_1, test_6_2]
+    ];
 
     test_data[a][b].clone()
 }
@@ -143,6 +149,11 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TP
 
 pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
     for i in 0..7 {
+        // Tests are designed to throw an exception when last member is 0
+        if i == 6 {
+            continue;
+        }
+
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
@@ -150,15 +161,25 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
-        let result = dividend.div(&divisor);
-        assert!(result.is_ok());
-        let actual = result.unwrap();
+        let actual = dividend.div(&divisor).unwrap();
 
         assert_eq!(expected.len(), actual.len());
         for i in 0..actual.len() {
             assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
         }
     }
+}
+
+pub fn test_poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
+    let mut dividend = TPoly::new(2).unwrap();
+
+    dividend.set_coeff_at(0, &TFr::from_u64(1));
+    dividend.set_coeff_at(1, &TFr::from_u64(1));
+
+    let divisor = TPoly::new(0).unwrap();
+
+    let dummy = dividend.div(&divisor);
+    assert!(dummy.is_err());
 }
 
 pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
@@ -288,11 +309,10 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
             divisor.set_coeff_at(divisor.len() - 1, &Fr::one());
         }
 
-        let result0 = dividend.div(&divisor).unwrap();
+        let result0 = dividend.div_long(&divisor).unwrap();
         let result1 = dividend.div_fast(&divisor).unwrap();
 
         assert_eq!(result0.len(), result1.len());
-
         for i in 0..result0.len() {
             assert!(result0.get_coeff_at(i).equals(&result1.get_coeff_at(i)));
         }
