@@ -1,18 +1,24 @@
 use crate::kzg_types::{FsFFTSettings, FsFr, FsG1};
-use kzg::{G1, Fr, FFTG1};
 use crate::utils::is_power_of_two;
+use kzg::{Fr, FFTG1, G1};
 
 pub fn fft_g1_fast(
     ret: &mut [FsG1],
     data: &[FsG1],
     stride: usize,
     roots: &[FsFr],
-    roots_stride: usize) {
-
+    roots_stride: usize,
+) {
     let half = ret.len() / 2;
     if half > 0 {
         fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
-        fft_g1_fast(&mut ret[half..] , &data[stride..], stride * 2, roots, roots_stride * 2);
+        fft_g1_fast(
+            &mut ret[half..],
+            &data[stride..],
+            stride * 2,
+            roots,
+            roots_stride * 2,
+        );
         for i in 0..half {
             let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
             ret[i + half] = ret[i].sub(&y_times_root);
@@ -25,12 +31,12 @@ pub fn fft_g1_fast(
 
 // Used for testing
 pub fn fft_g1_slow(
-    ret: &mut[FsG1],
+    ret: &mut [FsG1],
     data: &[FsG1],
     stride: usize,
     roots: &[FsFr],
-    roots_stride: usize) {
-
+    roots_stride: usize,
+) {
     for i in 0..data.len() {
         // Evaluate first member at 1
         ret[i] = data[0].mul(&roots[0]);
@@ -57,7 +63,11 @@ impl FFTG1<FsFr, FsG1> for FsFFTSettings {
         let stride = self.max_width / data.len();
         let mut ret = vec![FsG1::default(); data.len()];
 
-        let roots = if inverse { &self.reverse_roots_of_unity } else { &self.expanded_roots_of_unity };
+        let roots = if inverse {
+            &self.reverse_roots_of_unity
+        } else {
+            &self.expanded_roots_of_unity
+        };
         fft_g1_fast(&mut ret, data, 1, roots, stride);
         if inverse {
             let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
@@ -68,6 +78,4 @@ impl FFTG1<FsFr, FsG1> for FsFFTSettings {
         }
         return Ok(ret);
     }
-
 }
-

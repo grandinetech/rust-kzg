@@ -1,15 +1,11 @@
 #[cfg(test)]
 mod tests {
 
-    use kzg::{Fr, G1, FFTSettings, Poly};
-    use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, FsFr, FsG1, FsG2};
-    use kzg_from_scratch::consts::{TRUSTED_SETUP_GENERATOR};
-    use kzg_from_scratch::utils::{generate_trusted_setup};
-    use kzg_from_scratch::kzg_proofs::{
-        commit_to_poly,
-        compute_proof_multi,
-        check_proof_multi
-    };
+    use kzg::{FFTSettings, Fr, Poly, G1};
+    use kzg_from_scratch::consts::TRUSTED_SETUP_GENERATOR;
+    use kzg_from_scratch::kzg_proofs::{check_proof_multi, commit_to_poly, compute_proof_multi};
+    use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr, FsG1, FsG2, FsKZGSettings, FsPoly};
+    use kzg_from_scratch::utils::generate_trusted_setup;
 
     // #[test]
     fn proof_multi() {
@@ -30,7 +26,9 @@ mod tests {
         // let kzgSettings_1 = FsKZGSettings::new(coeffs.len());
         // let kzgSettings_2 = FsKZGSettings::new(coeffs.len());
 
-        let mut p = FsPoly { coeffs: vec![Fr::default(); 16]};
+        let mut p = FsPoly {
+            coeffs: vec![Fr::default(); 16],
+        };
 
         // g1_t commitment, proof;
         let mut commitment = FsG1::default();
@@ -46,7 +44,11 @@ mod tests {
         // must be a vec
 
         // uint64_t secrets_len = coeffs.len() > coset_len ? coeffs.len() + 1 : coset_len + 1;
-        let secrets_len: usize = if coeffs.len() > coset_len {coeffs.len() + 1} else {coset_len + 1};
+        let secrets_len: usize = if coeffs.len() > coset_len {
+            coeffs.len() + 1
+        } else {
+            coset_len + 1
+        };
 
         //g1_t s1[secrets_len];
         //g2_t s2[secrets_len];
@@ -63,7 +65,12 @@ mod tests {
         }
 
         // Initialise the secrets and data structures
-        generate_trusted_setup(&mut secret1, &mut secret2, &TRUSTED_SETUP_GENERATOR, secrets_len);
+        generate_trusted_setup(
+            &mut secret1,
+            &mut secret2,
+            &TRUSTED_SETUP_GENERATOR,
+            secrets_len,
+        );
 
         // TEST_CHECK(C_KZG_OK == new_fft_settings(&fs1, 4)); // ln_2 of coeffs.len()
         let fs1 = FsFFTSettings::new(4).unwrap();
@@ -110,7 +117,7 @@ mod tests {
 
         // Change a value and check that the proof fails
         //fr_add(y + coset_len / 2, y + coset_len / 2, &fr_one);
-        y[coset_len/2] = y[coset_len / 2].add(&Fr::one());
+        y[coset_len / 2] = y[coset_len / 2].add(&Fr::one());
 
         //TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &kzgSettings_2));
         let result = check_proof_multi(&commitment, &proof, &x, &y, coset_len, &kzg_settings_2); //return through params mayb?

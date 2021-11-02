@@ -1,10 +1,14 @@
-use kzg::{FFTSettings, Fr, Poly, G1, Scalar};
-use crate::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR, G1_IDENTITY, G1_GENERATOR};
-use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
-           blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
-           blst_uint64_from_fr, blst_p1_add_or_double, blst_p1_is_equal, blst_scalar, blst_scalar_from_fr,
-           blst_p1_mult, blst_p1_cneg, blst_fr_from_scalar};
+use crate::consts::{
+    expand_root_of_unity, G1_GENERATOR, G1_IDENTITY, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR,
+};
 use crate::utils::log_2_byte;
+use blst::{
+    blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
+    blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr,
+    blst_fr_sub, blst_p1, blst_p1_add_or_double, blst_p1_cneg, blst_p1_is_equal, blst_p1_mult,
+    blst_p2, blst_scalar, blst_scalar_from_fr, blst_uint64_from_fr,
+};
+use kzg::{FFTSettings, Fr, Poly, Scalar, G1};
 
 pub struct FsFr(pub blst::blst_fr);
 
@@ -79,18 +83,18 @@ impl Fr for FsFr {
         let mut n2 = n;
 
         //unsafe {
-            loop {
-                if n2 & 1 == 1 {
-                    // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
-                    out = out.mul(&tmp);
-                }
-                n2 = n2 >> 1;
-                if n == 0 {
-                    break;
-                }
-                // blst_fr_sqr(&mut tmp.0, &tmp.0);
-                tmp = tmp.sqr();
+        loop {
+            if n2 & 1 == 1 {
+                // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                out = out.mul(&tmp);
             }
+            n2 = n2 >> 1;
+            if n == 0 {
+                break;
+            }
+            // blst_fr_sqr(&mut tmp.0, &tmp.0);
+            tmp = tmp.sqr();
+        }
         //}
 
         out
@@ -205,7 +209,7 @@ impl FsG1 {
 
 impl G1<FsFr> for FsG1 {
     fn default() -> Self {
-       Self(blst_p1::default())
+        Self(blst_p1::default())
     }
 
     fn rand() -> Self {
@@ -234,7 +238,7 @@ impl G1<FsFr> for FsG1 {
         }
 
         // Count the number of bytes to be multiplied.
-        let mut i = scalar.b.len();// std::mem::size_of::<blst_scalar>();
+        let mut i = scalar.b.len(); // std::mem::size_of::<blst_scalar>();
         while i != 0 && scalar.b[i - 1] == 0 {
             i -= 1;
         }
@@ -246,10 +250,15 @@ impl G1<FsFr> for FsG1 {
         } else {
             // Count the number of bits to be multiplied.
             unsafe {
-                blst_p1_mult(&mut ret.0, &self.0, &(scalar.b[0]), 8 * i - 7 + log_2_byte(scalar.b[i - 1]));
+                blst_p1_mult(
+                    &mut ret.0,
+                    &self.0,
+                    &(scalar.b[0]),
+                    8 * i - 7 + log_2_byte(scalar.b[i - 1]),
+                );
             }
             ret
-        }
+        };
     }
 
     fn sub(&self, b: &Self) -> Self {
@@ -285,7 +294,6 @@ impl FsG2 {
     pub fn default() -> Self {
         Self(blst_p2::default())
     }
-
 }
 
 impl Clone for FsG2 {
@@ -469,17 +477,21 @@ pub struct FsKZGSettings {
 }
 
 impl FsKZGSettings {
-
     pub fn default() -> Self {
         let output = Self {
             secret_g1: Vec::default(),
             secret_g2: Vec::default(),
-            fs: FsFFTSettings::default()
+            fs: FsFFTSettings::default(),
         };
         output
     }
 
-    pub fn new(secret_g1: &Vec<FsG1>, secret_g2: &Vec<FsG2>, length: usize, fft_settings: &FsFFTSettings) -> Self {
+    pub fn new(
+        secret_g1: &Vec<FsG1>,
+        secret_g2: &Vec<FsG2>,
+        length: usize,
+        fft_settings: &FsFFTSettings,
+    ) -> Self {
         let mut kzg_settings = Self::default();
 
         // CHECK(length >= fs->max_width);

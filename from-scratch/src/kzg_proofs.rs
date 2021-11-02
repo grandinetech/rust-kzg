@@ -1,48 +1,50 @@
-use kzg::{G1, Fr, FFTFr};
-use blst::{blst_p1_add_or_double,
-            blst_p1s_to_affine,
-            blst_scalar,
-            blst_scalar_from_fr,
-            blst_p1_mult,
-            blst_p1s_mult_pippenger,
-            blst_p2_mult,
-            blst_p1_cneg,
-            blst_p2_cneg,
-            blst_p2_add_or_double,
-            blst_fp12,
-            blst_p1_to_affine,
-            blst_p2_to_affine,
-            blst_miller_loop,
-            blst_fp12_mul,
-            blst_final_exp,
-            blst_fp12_is_one,
-            blst_p1,
-            blst_p1_affine,
-            blst_p2_affine,
-            blst_fp
-};
-use crate::poly_utils::{new_poly_div};
-use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2};
+use crate::consts::G2_GENERATOR;
+use crate::kzg_types::{FsFr, FsG1, FsG2, FsKZGSettings, FsPoly};
+use crate::poly_utils::new_poly_div;
 use crate::utils::{is_power_of_two, log_2_byte};
-use crate::consts::{G2_GENERATOR};
+use blst::{
+    blst_final_exp, blst_fp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1,
+    blst_p1_add_or_double, blst_p1_affine, blst_p1_cneg, blst_p1_mult, blst_p1_to_affine,
+    blst_p1s_mult_pippenger, blst_p1s_to_affine, blst_p2_add_or_double, blst_p2_affine,
+    blst_p2_cneg, blst_p2_mult, blst_p2_to_affine, blst_scalar, blst_scalar_from_fr,
+};
+use kzg::{FFTFr, Fr, G1};
 
-pub fn commit_to_poly(out: &mut FsG1, poly: &FsPoly, kzg_settings: &FsKZGSettings) -> Result<(), String> {
+pub fn commit_to_poly(
+    out: &mut FsG1,
+    poly: &FsPoly,
+    kzg_settings: &FsKZGSettings,
+) -> Result<(), String> {
     if poly.coeffs.len() > kzg_settings.secret_g1.len() {
         return Err(String::from("Polynomial is longer than secret g1"));
     }
 
-    g1_linear_combination(out, &kzg_settings.secret_g1, &poly.coeffs, poly.coeffs.len());
+    g1_linear_combination(
+        out,
+        &kzg_settings.secret_g1,
+        &poly.coeffs,
+        poly.coeffs.len(),
+    );
 
     return Ok(());
 }
 
-pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZGSettings) -> Result<FsG1, String> {
+pub fn compute_proof_multi(
+    p: &FsPoly,
+    x0: &FsFr,
+    n: usize,
+    kzg_settings: &FsKZGSettings,
+) -> Result<FsG1, String> {
     //CHECK(is_power_of_two(n));
     assert!(is_power_of_two(n));
     //poly divisor, q;
     //let mut divisor = Poly::default();
-    let mut divisor: FsPoly = FsPoly { coeffs: Vec::default() };
-    let mut q: FsPoly = FsPoly { coeffs: Vec::default() };
+    let mut divisor: FsPoly = FsPoly {
+        coeffs: Vec::default(),
+    };
+    let mut q: FsPoly = FsPoly {
+        coeffs: Vec::default(),
+    };
 
     // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
     // TRY(new_poly(&divisor, n + 1));
@@ -66,7 +68,6 @@ pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZG
 
     // Calculate q = p / (x^n - x0^n)
     //TRY(new_poly_div(&q, p, &divisor));
-
 
     let result = new_poly_div(&p, &divisor);
     assert!(result.is_ok());
@@ -97,7 +98,7 @@ pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
                 x: blst_fp { l: [0u64; 6] },
                 y: blst_fp { l: [0u64; 6] },
                 z: blst_fp { l: [0u64; 6] },
-            }
+            },
         };
         *out = g1_identity;
     } else if i == 1 && scalar.b[0] == 1 {
@@ -105,13 +106,19 @@ pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
     } else {
         // Count the number of bits to be multiplied.
         unsafe {
-            blst_p1_mult(&mut out.0, &a.0, &(scalar.b[0]), 8 * i - 7 + log_2_byte(scalar.b[i - 1]));
+            blst_p1_mult(
+                &mut out.0,
+                &a.0,
+                &(scalar.b[0]),
+                8 * i - 7 + log_2_byte(scalar.b[i - 1]),
+            );
         }
     }
 }
 
 fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len: usize) {
-    if len < 8 { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+    if len < 8 {
+        // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
         // Direct approach
         let mut tmp: FsG1 = FsG1::default();
 
@@ -120,7 +127,7 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
                 x: blst_fp { l: [0u64; 6] },
                 y: blst_fp { l: [0u64; 6] },
                 z: blst_fp { l: [0u64; 6] },
-            }
+            },
         };
 
         *out = g1_identity;
@@ -132,7 +139,6 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
             }
         }
     } else {
-
         // Blst's implementation of the Pippenger method
         //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
         let mut p_affine = vec![blst_p1_affine::default(); len];
@@ -162,25 +168,41 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
         //scalars_arg[0] = &scalars;
 
         //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-        let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), &blst_p1_affine::default()];
+        let points_arg: [*const blst_p1_affine; 2] =
+            [p_affine.as_ptr(), &blst_p1_affine::default()];
         //points_arg[0] = &p_affine;
 
         //void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
         let mut scratch: u64 = u64::default();
         //blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
         unsafe {
-            blst_p1s_mult_pippenger(&mut out.0, points_arg.as_ptr(), len, scalars_arg.as_ptr() as *const *const u8, 256, &mut scratch);
+            blst_p1s_mult_pippenger(
+                &mut out.0,
+                points_arg.as_ptr(),
+                len,
+                scalars_arg.as_ptr() as *const *const u8,
+                256,
+                &mut scratch,
+            );
         }
     }
 }
 
-
-pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr], n: usize, kzg_settings: &FsKZGSettings) -> Result<bool, String> {
+pub fn check_proof_multi(
+    commitment: &FsG1,
+    proof: &FsG1,
+    x: &FsFr,
+    ys: &[FsFr],
+    n: usize,
+    kzg_settings: &FsKZGSettings,
+) -> Result<bool, String> {
     if !is_power_of_two(n) {
         return Err(String::from("n is not a power of two")); // fix to error
     }
     //poly interp;
-    let mut interp: FsPoly = FsPoly { coeffs: Vec::default() };
+    let mut interp: FsPoly = FsPoly {
+        coeffs: Vec::default(),
+    };
     //interp.length = n;
     //fr_t inv_x, inv_x_pow, x_pow;
     // let mut inv_x: FsFr = FsFr::default();
@@ -213,12 +235,12 @@ pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr],
     let inv_x = x.eucl_inverse();
     let mut inv_x_pow = inv_x.clone();
     //unsafe {
-        for i in 1..n {
-            // blst_fr_mul(&mut interp.coeffs[i] as *mut blst_fr, &interp.coeffs[i] as blst_fr, &inv_x_pow as blst_fr);
-            // blst_fr_mul(&mut inv_x_pow as *mut blst_fr, &inv_x_pow as blst_fr, &inv_x as blst_fr);
-            interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
-            inv_x_pow = inv_x_pow.mul(&inv_x_pow);
-        }
+    for i in 1..n {
+        // blst_fr_mul(&mut interp.coeffs[i] as *mut blst_fr, &interp.coeffs[i] as blst_fr, &inv_x_pow as blst_fr);
+        // blst_fr_mul(&mut inv_x_pow as *mut blst_fr, &inv_x_pow as blst_fr, &inv_x as blst_fr);
+        interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
+        inv_x_pow = inv_x_pow.mul(&inv_x_pow);
+    }
     //}
 
     // [x^n]_2
@@ -232,7 +254,12 @@ pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr],
     let scalar: blst_scalar = x_pow.get_scalar();
     unsafe {
         // blst_scalar_from_fr(&mut scalar, &x_pow as blst_fr);
-        blst_p2_mult(&mut xn2.0, &G2_GENERATOR.0, scalar.b.as_ptr() as *const u8, 8 * std::mem::size_of::<blst_scalar>());
+        blst_p2_mult(
+            &mut xn2.0,
+            &G2_GENERATOR.0,
+            scalar.b.as_ptr() as *const u8,
+            8 * std::mem::size_of::<blst_scalar>(),
+        );
     }
 
     // [s^n - x^n]_2
@@ -240,7 +267,11 @@ pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr],
     let mut b_negative: FsG2 = xn2.clone();
     unsafe {
         blst_p2_cneg(&mut b_negative.0, true);
-        blst_p2_add_or_double(&mut xn_minus_yn.0, &kzg_settings.secret_g2[n].0, &b_negative.0);
+        blst_p2_add_or_double(
+            &mut xn_minus_yn.0,
+            &kzg_settings.secret_g2[n].0,
+            &b_negative.0,
+        );
     }
 
     // [interpolation_polynomial(s)]_1
@@ -260,9 +291,9 @@ pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr],
 
 fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> Result<bool, String> {
     //blst_fp12 loop0, loop1, gt_point;
-    let mut loop0:blst_fp12 =blst_fp12::default();
-    let mut loop1:blst_fp12 =blst_fp12::default();
-    let mut gt_point:blst_fp12 =blst_fp12::default();
+    let mut loop0: blst_fp12 = blst_fp12::default();
+    let mut loop1: blst_fp12 = blst_fp12::default();
+    let mut gt_point: blst_fp12 = blst_fp12::default();
 
     // blst_p1_affine aa1, bb1;
     let mut aa1 = blst_p1_affine::default();
