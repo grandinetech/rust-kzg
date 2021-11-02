@@ -17,7 +17,7 @@ bash build.sh
 cd ..
 
 print_msg "Cloning c-kzg"
-git clone https://github.com/benjaminion/c-kzg
+git clone https://github.com/tesa4436/c-kzg
 
 print_msg "Copying files from blst to c-kzg"
 cp -r blst/* c-kzg/lib/
@@ -34,3 +34,7 @@ print_msg "Preparing ckzg crate"
 cd ../../
 cp c-kzg/lib/libblst.a ckzg/lib/
 cp c-kzg/src/libckzg.a ckzg/lib/
+
+print_msg "Cleaning up"
+rm -rf blst/
+rm -rf c-kzg/
