@@ -125,6 +125,8 @@ pub trait Poly<Coeff: Fr>: Clone {
 
     fn div(&mut self, x: &Self) -> Result<Self, String>;
 
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
+
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }

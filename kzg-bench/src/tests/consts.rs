@@ -17,6 +17,17 @@ pub fn roots_of_unity_are_plausible<TFr: Fr>(roots: &[[u64; 4]; 32]) {
     }
 }
 
+pub fn roots_of_unity_are_plausible_slice<TFr: Fr>(roots: &[TFr]) {
+    for i in 0..roots.len() {
+        let mut r = roots[i].clone();
+        for _j in 0..i {
+            r = r.sqr();
+        }
+
+        assert!(r.is_one());
+    }
+}
+
 /// Check if expanded root members follow symmetry and symmetrically multiply to produce a 1.
 pub fn expand_roots_is_plausible<TFr: Fr>(
     roots: &[[u64; 4]; 32],
@@ -27,6 +38,26 @@ pub fn expand_roots_is_plausible<TFr: Fr>(
 
     let root = TFr::from_u64_arr(&roots[scale]);
     let expanded = expand_root_of_unity(&root, width).unwrap();
+
+    assert!(expanded[0].is_one());
+    assert!(expanded[width].is_one());
+
+    // Multiply symmetrically and check if the result is 1
+    for i in 0..(width / 2 + 1) {
+        let prod = expanded[i].mul(&expanded[width - i]);
+        assert!(prod.is_one());
+    }
+}
+
+pub fn expand_roots_is_plausible_slice<TFr: Fr>(
+    roots: &[TFr],
+    expand_root_of_unity: &dyn Fn(&TFr) -> Vec<TFr>,
+) {
+    let scale = 15;
+    let width: usize = 1 << scale;
+
+    let root = &roots[scale];
+    let expanded = expand_root_of_unity(&root);
 
     assert!(expanded[0].is_one());
     assert!(expanded[width].is_one());

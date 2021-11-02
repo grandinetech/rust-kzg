@@ -303,6 +303,10 @@ impl Poly<FsFr> for FsPoly {
         todo!()
     }
 
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        todo!()
+    }
+
     fn destroy(&mut self) {}
 }
 
