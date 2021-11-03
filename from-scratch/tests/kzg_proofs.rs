@@ -9,7 +9,7 @@ mod tests {
     use blst::{blst_p1_is_equal, blst_fp, blst_p1};
 
     // #[test]
-    fn proof_single() {
+    fn _proof_single() {
         // Our polynomial: degree 15, 16 coefficients
         const POLY_LEN: usize = 16;
         let coeffs: [u64; POLY_LEN] = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
@@ -52,7 +52,7 @@ mod tests {
     }
 
     // #[test]
-    fn proof_multi() {
+    fn _proof_multi() {
         // Our polynomial: degree 15, 16 coefficients
         let coeffs: [u64; 16usize] = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
 

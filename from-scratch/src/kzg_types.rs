@@ -289,7 +289,7 @@ impl G1<FsFr> for FsG1 {
         todo!()
     }
 
-    fn div(&self, b: &Self) -> Result<Self, String> {
+    fn div(&self, _b: &Self) -> Result<Self, String> {
         todo!()
     }
 }
@@ -305,7 +305,7 @@ impl Copy for FsG1 {}
 pub struct FsG2(pub blst::blst_p2);
 
 impl FsG2 {
-    pub(crate) fn from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
+    pub(crate) fn _from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
         FsG2(blst_p2 { x, y, z })
     }
 
@@ -415,7 +415,6 @@ impl Poly<FsFr> for FsPoly {
             return Ok(ret);
         }
 
-        let mut out_length = output_len;
         let maxd = output_len - 1;
 
         // Max space for multiplications is (2 * length - 1)
@@ -448,7 +447,6 @@ impl Poly<FsFr> for FsPoly {
             // c.(2 - b.c) -> tmp1;
             let tmp1 = ret.mul(&tmp0, d + 1).unwrap();
 
-            out_length = tmp1.len();
             for i in 0..tmp1.len() {
                 ret.coeffs[i] = tmp1.coeffs[i];
             }
@@ -533,11 +531,11 @@ impl Poly<FsFr> for FsPoly {
             return Ok(out);
         }
 
-        let mut a_flip = self.flip().unwrap();
+        let a_flip = self.flip().unwrap();
         let mut b_flip = divisor.flip().unwrap();
 
-        let mut inv_b_flip = b_flip.inverse(m - n + 1).unwrap();
-        let mut q_flip = a_flip.mul(&inv_b_flip, m - n + 1).unwrap();
+        let inv_b_flip = b_flip.inverse(m - n + 1).unwrap();
+        let q_flip = a_flip.mul(&inv_b_flip, m - n + 1).unwrap();
 
         let out = q_flip.flip().unwrap();
         Ok(out)
@@ -617,7 +615,7 @@ impl Poly<FsFr> for FsPoly {
 }
 
 impl FsPoly {
-    fn poly_norm(&self) -> Self {
+    fn _poly_norm(&self) -> Self {
         let mut ret = self.clone();
 
         let mut temp_len: usize = ret.coeffs.len();

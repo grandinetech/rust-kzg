@@ -100,7 +100,6 @@ pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZG
 
     // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
     let mut divisor: FsPoly = FsPoly { coeffs: Vec::default() };
-    let mut q: FsPoly = FsPoly { coeffs: Vec::default() };
 
     // -(x0^n)
     let x_pow_n = x0.pow(n);
@@ -118,7 +117,7 @@ pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZG
     // Calculate q = p / (x^n - x0^n)
     let result = p.div(&divisor);
     assert!(result.is_ok());
-    q = result.unwrap();
+    let q: FsPoly = result.unwrap();
 
     let mut out = FsG1::default();
     commit_to_poly(&mut out, &q, &kzg_settings).unwrap();
