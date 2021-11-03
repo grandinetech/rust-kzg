@@ -1,8 +1,8 @@
-use kzg::{G1, Scalar, Fr};
-use crate::kzg_types::{FsFr, FsG2, FsG1};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-use crate::kzg_proofs::{g1_mul};
-use blst::{blst_scalar_from_fr, blst_p2_mult};
+use crate::kzg_proofs::g1_mul;
+use crate::kzg_types::{FsFr, FsG1, FsG2};
+use blst::{blst_p2_mult, blst_scalar_from_fr};
+use kzg::{Fr, Scalar, G1};
 
 pub fn is_power_of_two(x: usize) -> bool {
     (x != 0) && ((x & (x - 1)) == 0)
@@ -89,7 +89,12 @@ fn g2_mul(a: &FsG2, b: &FsFr) -> FsG2 {
     let mut out = FsG2::default();
     unsafe {
         blst_scalar_from_fr(&mut scalar, &b.0);
-        blst_p2_mult(&mut out.0, &a.0, scalar.b.as_ptr() as *const u8, 8 * std::mem::size_of::<Scalar>());
+        blst_p2_mult(
+            &mut out.0,
+            &a.0,
+            scalar.b.as_ptr() as *const u8,
+            8 * std::mem::size_of::<Scalar>(),
+        );
     }
     out
 }

@@ -64,7 +64,11 @@ mod tests {
 
         let mut commitment = FsG1::default();
 
-        let secrets_len: usize = if coeffs.len() > coset_len {coeffs.len() + 1} else {coset_len + 1};
+        let secrets_len: usize = if coeffs.len() > coset_len {
+            coeffs.len() + 1
+        } else {
+            coset_len + 1
+        };
 
         let mut secret1: Vec<FsG1> = Vec::default();
         let mut secret2: Vec<FsG2> = Vec::default();
@@ -73,7 +77,12 @@ mod tests {
         }
 
         // Initialise the secrets and data structures
-        generate_trusted_setup(&mut secret1, &mut secret2, &TRUSTED_SETUP_GENERATOR, secrets_len);
+        generate_trusted_setup(
+            &mut secret1,
+            &mut secret2,
+            &TRUSTED_SETUP_GENERATOR,
+            secrets_len,
+        );
 
         let fs1 = FsFFTSettings::new(4).unwrap();
         let kzg_settings_1 = FsKZGSettings::new(&secret1, &secret2, secrets_len, &fs1);

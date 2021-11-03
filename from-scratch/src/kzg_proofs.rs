@@ -26,12 +26,21 @@ use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2};
 use crate::utils::{is_power_of_two, log_2_byte};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 
-pub fn commit_to_poly(out: &mut FsG1, poly: &FsPoly, kzg_settings: &FsKZGSettings) -> Result<(), String> {
+pub fn commit_to_poly(
+    out: &mut FsG1,
+    poly: &FsPoly,
+    kzg_settings: &FsKZGSettings,
+) -> Result<(), String> {
     if poly.coeffs.len() > kzg_settings.secret_g1.len() {
         return Err(String::from("Polynomial is longer than secret g1"));
     }
 
-    g1_linear_combination(out, &kzg_settings.secret_g1, &poly.coeffs, poly.coeffs.len());
+    g1_linear_combination(
+        out,
+        &kzg_settings.secret_g1,
+        &poly.coeffs,
+        poly.coeffs.len(),
+    );
 
     return Ok(());
 }
@@ -135,7 +144,7 @@ pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
                 x: blst_fp { l: [0u64; 6] },
                 y: blst_fp { l: [0u64; 6] },
                 z: blst_fp { l: [0u64; 6] },
-            }
+            },
         };
         *out = g1_identity;
     } else if i == 1 && scalar.b[0] == 1 {
@@ -143,13 +152,19 @@ pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
     } else {
         // Count the number of bits to be multiplied.
         unsafe {
-            blst_p1_mult(&mut out.0, &a.0, &(scalar.b[0]), 8 * i - 7 + log_2_byte(scalar.b[i - 1]));
+            blst_p1_mult(
+                &mut out.0,
+                &a.0,
+                &(scalar.b[0]),
+                8 * i - 7 + log_2_byte(scalar.b[i - 1]),
+            );
         }
     }
 }
 
 fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len: usize) {
-    if len < 8 { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+    if len < 8 {
+        // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
         // Direct approach
         let mut tmp: FsG1 = FsG1::default();
 
@@ -158,7 +173,7 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
                 x: blst_fp { l: [0u64; 6] },
                 y: blst_fp { l: [0u64; 6] },
                 z: blst_fp { l: [0u64; 6] },
-            }
+            },
         };
 
         *out = g1_identity;
@@ -170,7 +185,6 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
             }
         }
     } else {
-
         // Blst's implementation of the Pippenger method
         //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
         let mut p_affine = vec![blst_p1_affine::default(); len];
@@ -218,8 +232,14 @@ fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len:
     }
 }
 
-
-pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr], n: usize, kzg_settings: &FsKZGSettings) -> Result<bool, String> {
+pub fn check_proof_multi(
+    commitment: &FsG1,
+    proof: &FsG1,
+    x: &FsFr,
+    ys: &[FsFr],
+    n: usize,
+    kzg_settings: &FsKZGSettings,
+) -> Result<bool, String> {
     if !is_power_of_two(n) {
         return Err(String::from("n is not a power of two"));
     }
@@ -257,7 +277,11 @@ pub fn check_proof_multi(commitment: &FsG1, proof: &FsG1, x: &FsFr, ys: &[FsFr],
     let mut b_negative: FsG2 = xn2.clone();
     unsafe {
         blst_p2_cneg(&mut b_negative.0, true);
-        blst_p2_add_or_double(&mut xn_minus_yn.0, &kzg_settings.secret_g2[n].0, &b_negative.0);
+        blst_p2_add_or_double(
+            &mut xn_minus_yn.0,
+            &kzg_settings.secret_g2[n].0,
+            &b_negative.0,
+        );
     }
 
     // [interpolation_polynomial(s)]_1

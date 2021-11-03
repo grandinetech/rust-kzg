@@ -1,44 +1,81 @@
-// use kzg::{G1, Fr};
+use crate::kzg_types::{FsFFTSettings, FsFr, FsG1};
+use crate::utils::is_power_of_two;
+use kzg::{Fr, FFTG1, G1};
 
-// pub fn fft_g1_fast(output: &G1, input: *G1, stride: u64, roots: *Fr, roots_stride: u64,
-//         n: u64) {
-//     let half = n / 2;
-//     if half > 0 {
-//         // fft_g1_fast(output, input, stride * 2, roots, roots_stride * 2, half);
-//         // fft_g1_fast(output + half, input + stride, stride * 2, roots, roots_stride * 2, half);
-//         // for i in 0..half {
-//         //    let y_times_root: G1;
-//         //
-//         // }
-//     }
-// }
+pub fn fft_g1_fast(
+    ret: &mut [FsG1],
+    data: &[FsG1],
+    stride: usize,
+    roots: &[FsFr],
+    roots_stride: usize,
+) {
+    let half = ret.len() / 2;
+    if half > 0 {
+        fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
+        fft_g1_fast(
+            &mut ret[half..],
+            &data[stride..],
+            stride * 2,
+            roots,
+            roots_stride * 2,
+        );
+        for i in 0..half {
+            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
+            ret[i + half] = ret[i].sub(&y_times_root);
+            ret[i] = ret[i].add_or_double(&y_times_root);
+        }
+    } else {
+        ret[0] = data[0].clone();
+    }
+}
 
-// fn fast_log_2_byte(mut b: byte) -> i32 {
-//     let shift: i32;
-//     let mut r: i32;
-//
-//     r = ((b > 0xF) as i32) << 2;
-//     b >>= r;
-//     shift = ((b > 0x3) as i32) << 1;
-//     b >>= shift + 1;
-//     r |= shift | b as i32;
-//     return r;
-// }
-//
-// pub unsafe fn g1_mul(output: &mut G1, group_element: &G1, multiplier: &Fr) {
-//     let mut scalar: Scalar = Default::default();
-//     blst_scalar_from_fr(&mut scalar, multiplier);
-//
-//     let mut i = size_of::<Scalar>();
-//     while i != 0 && scalar.b[i - 1] == 0 {
-//         println!("{}", scalar.b[i-1]);
-//         i -= 1;
-//     }
-//     if i == 0 {
-//         *output = G1_IDENTITY;
-//     } else if i == 1 && scalar.b[0] == 1 {
-//         *output = *group_element;
-//     } else {
-//         blst_p1_mult(output, group_element, scalar.b.as_ptr(), (8 * (i as i32) - 7 + fast_log_2_byte(scalar.b[i - 1])) as usize)
-//     }
-// }
+// Used for testing
+pub fn fft_g1_slow(
+    ret: &mut [FsG1],
+    data: &[FsG1],
+    stride: usize,
+    roots: &[FsFr],
+    roots_stride: usize,
+) {
+    for i in 0..data.len() {
+        // Evaluate first member at 1
+        ret[i] = data[0].mul(&roots[0]);
+
+        // Evaluate the rest of members using a step of (i * J) % data.len() over the roots
+        // This distributes the roots over correct x^n members and saves on multiplication
+        for j in 1..data.len() {
+            let v = data[j * stride].mul(&roots[((i * j) % data.len()) * roots_stride]);
+            ret[i] = ret[i].add_or_double(&v);
+        }
+    }
+}
+
+impl FFTG1<FsFr, FsG1> for FsFFTSettings {
+    fn fft_g1(&self, data: &[FsG1], inverse: bool) -> Result<Vec<FsG1>, String> {
+        if data.len() > self.max_width {
+            return Err(String::from(
+                "Supplied list is longer than the available max width",
+            ));
+        } else if !is_power_of_two(data.len()) {
+            return Err(String::from("A list with power-of-two length expected"));
+        }
+
+        let stride = self.max_width / data.len();
+        let mut ret = vec![FsG1::default(); data.len()];
+
+        let roots = if inverse {
+            &self.reverse_roots_of_unity
+        } else {
+            &self.expanded_roots_of_unity
+        };
+        fft_g1_fast(&mut ret, data, 1, roots, stride);
+        if inverse {
+            let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
+            inv_len = inv_len.inverse();
+            for i in 0..data.len() {
+                ret[i] = ret[i].mul(&inv_len);
+            }
+        }
+        return Ok(ret);
+    }
+}
