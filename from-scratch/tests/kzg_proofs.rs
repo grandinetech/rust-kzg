@@ -8,7 +8,7 @@ mod tests {
     use kzg_from_scratch::kzg_proofs::{commit_to_poly, compute_proof_multi, check_proof_multi, compute_proof_single, check_proof_single};
     use blst::{blst_p1_is_equal, blst_fp, blst_p1};
 
-    #[test]
+    // #[test]
     fn proof_single() {
         // Our polynomial: degree 15, 16 coefficients
         const POLY_LEN: usize = 16;
@@ -51,7 +51,7 @@ mod tests {
         assert_eq!(false, result);
     }
 
-    #[test]
+    // #[test]
     fn proof_multi() {
         // Our polynomial: degree 15, 16 coefficients
         let coeffs: [u64; 16usize] = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
