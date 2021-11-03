@@ -32,23 +32,6 @@ jobs:
         brew install gnu-sed
         bash ci/unix.sh $(which gsed)
 
-# 1st team #########################################################
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path Arkworks/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path Arkworks/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path Arkworks/Cargo.toml
-
 # 3rd team #########################################################
 
     - uses: actions-rs/cargo@v1
