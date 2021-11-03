@@ -20,6 +20,77 @@ impl ZPoly {
 		Self {coeffs: vec![<blsScalar as Fr>::default(); size]}
 	}
 
+	/// Checks if the given polynomial is zero.
+    	pub(crate) fn is_zero(&self) -> bool {
+        	self.coeffs.is_empty()
+            		|| self.coeffs.iter().all(|coeff| coeff == &BlsScalar::zero())
+    	}
+
+    	/// Constructs a new polynomial from a list of coefficients.
+    	///
+    	/// # Panics
+    	/// When the length of the coeffs is zero.
+    	pub(crate) fn from_coefficients_vec(coeffs: Vec<blsScalar>) -> Self {
+        	let mut result = Self { coeffs };
+        	// While there are zeros at the end of the coefficient vector, pop them
+        	// off.
+        	result.truncate_leading_zeros();
+        	// Check that either the coefficients vec is empty or that the last
+        	// coeff is non-zero.
+        	assert!(result
+            		.coeffs
+            		.last()
+            		.map_or(true, |coeff| coeff != &blsScalar::zero()));
+
+        	result
+    	}
+
+    	/// Returns the degree of the [`Polynomial`].
+    	pub(crate) fn degree(&self) -> usize {
+        	if self.is_zero() {
+            		return 0;
+        	}
+        	assert!(self
+            		.coeffs
+            		.last()
+            		.map_or(false, |coeff| coeff != &blsScalar::zero()));
+        	self.coeffs.len() - 1
+    	}
+
+    	fn truncate_leading_zeros(&mut self) {
+        	while self
+            		.coeffs
+            		.last()
+            		.map_or(false, |c| c == &blsScalar::zero())
+        	{
+            		self.coeffs.pop();
+        	}
+    	}
+
+    	/// Divides a [`Polynomial`] by x-z using Ruffinis method.
+    	pub fn ruffini(&self, z: blsScalar) -> KzgPoly {
+        	let mut quotient: Vec<blsScalar> = Vec::with_capacity(self.degree());
+        	let mut k = blsScalar::zero();
+
+        	// Reverse the results and use Ruffini's method to compute the quotient
+        	// The coefficients must be reversed as Ruffini's method
+        	// starts with the leading coefficient, while Polynomials
+        	// are stored in increasing order i.e. the leading coefficient is the
+        	// last element
+        	for coeff in self.coeffs.iter().rev() {
+            		let t = coeff + k;
+            		quotient.push(t);
+            		k = z * t;
+        	}
+
+        	// Pop off the last element, it is the remainder term
+        	// For PLONK, we only care about perfect factors
+        	quotient.pop();
+
+        	// Reverse the results for storage in the Polynomial struct
+        	quotient.reverse();
+        	KzgPoly::from_coefficients_vec(quotient)
+    	}
 }
 
 impl Poly<blsScalar> for ZPoly {
