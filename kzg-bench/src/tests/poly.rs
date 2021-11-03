@@ -146,7 +146,7 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>, len: usize) -> TP
     p
 }
 
-pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_div_long_test<TFr: Fr, TPoly: Poly<TFr>>() {
     for i in 0..7 {
         // Tests are designed to throw an exception when last member is 0
         if i == 6 {
@@ -160,7 +160,30 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
-        let actual = dividend.div(&divisor).unwrap();
+        let actual = dividend.div_long(&divisor).unwrap();
+
+        assert_eq!(expected.len(), actual.len());
+        for i in 0..actual.len() {
+            assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+        }
+    }
+}
+
+pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
+    for i in 0..7 {
+        // Tests are designed to throw an exception when last member is 0
+        if i == 6 {
+            continue;
+        }
+
+        let divided_data = test_data(i, 0);
+        let divisor_data = test_data(i, 1);
+        let expected_data = test_data(i, 2);
+        let dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
+        let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
+        let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
+
+        let actual = dividend.div_fast(&divisor).unwrap();
 
         assert_eq!(expected.len(), actual.len());
         for i in 0..actual.len() {
