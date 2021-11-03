@@ -5,7 +5,8 @@ use crate::utils::log_2_byte;
 use blst::{
     blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
-    blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr
+    blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg,
+    blst_p1_mult, blst_p1_is_equal, blst_scalar
 };
 use kzg::{FFTSettings, Fr, Poly, G1, FFTFr, Scalar};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};

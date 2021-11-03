@@ -58,6 +58,8 @@ pub trait G1<Coeff: Fr>: Clone {
 
     fn mul(&self, b: &Coeff) -> Self;
 
+    fn div(&self, b: &Self) -> Result<Self, String>;
+
     fn sub(&self, b: &Self) -> Self;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
