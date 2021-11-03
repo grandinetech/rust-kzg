@@ -18,19 +18,19 @@ pub fn kzg_proof<
 ) {     
         for scale in 1..15 {
         let mut fs = TFFTSettings::new(scale as usize).unwrap();
+        
+        let fssize = fs.get_max_width();
+        let (s1, s2) = generate_trusted_setup(fssize, SECRET);
+        let mut ks = TKZGSettings::new(&s1, &s2, fssize, fs);
 
-        let (s1, s2) = generate_trusted_setup(fs.get_max_width(), SECRET);
-        let mut ks = TKZGSettings::new(&s1, &s2, secrets_len, fs.get_max_width());
 
-
-        let mut poly = TPoly::new(fft_settings.get_max_width()).unwrap();
-        for i in 0..fft_settings.get_max_width() {
-            p.set_coeff_at(i, Fr::rand());
+        let mut poly = TPoly::new(fssize).unwrap();
+        for i in 0..fssize {
+            poly.set_coeff_at(i, &TFr::rand());
         }
         let id = format!("bench_kzg_proof scale: '{}'", scale);
         c.bench_function(&id, |b| b.iter(|| ks.commit_to_poly(&poly).unwrap()));
 
-        fs.destroy();
         ks.destroy();
         poly.destroy();
     }
