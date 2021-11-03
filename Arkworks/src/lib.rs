@@ -13,15 +13,11 @@ pub type Uniq = blst::blst_uniq;
 //pub mod finite;
 pub mod fft;
 pub mod fft_g1;
-pub mod fft_g1_tests;
 pub mod fft_tests;
 pub mod kzg_proofs;
-pub mod kzg_tests;
 pub mod poly;
-pub mod poly_tests;
 pub mod utils;
 pub mod zero_poly;
-pub mod zero_poly_tests;
 
 pub mod kzg_types;
 

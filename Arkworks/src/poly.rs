@@ -5,12 +5,12 @@ use super::utils::{
 };
 use crate::kzg_types::FsFr as BlstFr;
 use ark_bls12_381::Fr;
-use ark_std::{log2, test_rng, UniformRand};
-use kzg::{Fr as FrTrait, Poly, FFTSettings as FFTSettingsT, FFTFr};
-use merkle_light::merkle::{log2_pow2, next_pow2};
-use std::cmp::{min, max};
+use ark_std::{log2};
+use kzg::{Fr as FrTrait,/* Poly, FFTSettings as FFTSettingsT, FFTFr*/};
+// use merkle_light::merkle::{log2_pow2, next_pow2};
+use std::cmp::{min/*, max*/};
 use std::ops::Neg;
-use crate::zero_poly::pad_poly;
+// use crate::zero_poly::pad_poly;
 
 // pub(crate) fn from_u64(n: u64) -> BlstFr {
 //     pc_fr_into_blst_fr(Fr::from(n))

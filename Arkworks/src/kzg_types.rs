@@ -1,5 +1,3 @@
-use crate::utils::pc_poly_into_blst_poly;
-use crate::utils::blst_poly_into_pc_poly;
 use crate::fft::SCALE2_ROOT_OF_UNITY;
 use crate::kzg_proofs::{
     check_proof_single as check_single, commit_to_poly as commit,
