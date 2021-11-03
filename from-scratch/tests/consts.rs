@@ -2,10 +2,15 @@
 pub mod tests {
     use kzg_bench::tests::consts::{
         expand_roots_is_plausible, new_fft_settings_is_plausible, roots_of_unity_are_plausible,
-        roots_of_unity_out_of_bounds_fails,
+        roots_of_unity_out_of_bounds_fails, roots_of_unity_is_the_expected_size,
     };
     use kzg_from_scratch::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
     use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr};
+
+    #[test]
+    fn roots_of_unity_is_the_expected_size_ () {
+        roots_of_unity_is_the_expected_size(&SCALE2_ROOT_OF_UNITY);
+    }
 
     #[test]
     fn roots_of_unity_out_of_bounds_fails_() {
