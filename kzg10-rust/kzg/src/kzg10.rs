@@ -1,4 +1,4 @@
-use std::{cmp::min, ops, iter};
+use std::{cmp::min,  ops, iter};
 use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::{BlstFr};
 use crate::data_converter::fr_converter::*;
@@ -256,19 +256,15 @@ impl Polynomial {
     pub fn poly_quotient_length(dividend: &[Fr], divisor: &[Fr]) -> usize {
         if dividend.len() >= divisor.len() { dividend.len() - divisor.len() + 1} else { 0 }
     }
-    
 
     pub fn long_division(&self, divisor: &Vec<Fr>) -> Result<Polynomial, String> {
         if divisor.len() == 0 {
             return Err(String::from("Dividing by zero is undefined"));
         }
-
         if divisor.last().unwrap().is_zero() {
             return Err(String::from("The divisor's highest coefficient must be non-zero"));
         }
-
         let out_length = Polynomial::poly_quotient_length(&self.coeffs, divisor);
-
         if out_length == 0 {
             return Ok(Polynomial::default());
         }
@@ -296,6 +292,71 @@ impl Polynomial {
         return Ok(Polynomial::from_fr(out_coeffs)); 
     }
 
+    pub fn fast_div(&self, divisor: &Vec<Fr>) -> Result<Polynomial, String> {
+        if divisor.len() == 0 {
+            return Err(String::from("Dividing by zero is undefined"));
+        }
+        if divisor.last().unwrap().is_zero() {
+            return Err(String::from("The divisor's highest coefficient must be non-zero"));
+        }
+        let mut out_length = Polynomial::poly_quotient_length(&self.coeffs, divisor);
+        if out_length == 0 {
+            return Ok(Polynomial::default());
+        }
+
+        // Special case for divisor.length == 1 (it's a constant)
+        if divisor.len() == 1 {
+            let mut out_coeffs: Vec<Fr> = vec![];
+            out_length = self.order();
+            for i in 0..out_length {
+                out_coeffs.push(self.coeffs[i] / divisor[0]);
+            }
+            return Ok(Polynomial::from_fr(out_coeffs));  
+        }
+
+        let a_flip = Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs));
+        let b_flip = Polynomial::from_fr(Polynomial::flip_coeffs(divisor));
+        let inv_b_flip = b_flip.inverse(out_length).unwrap();
+        let q_flip = a_flip.mul_direct(&inv_b_flip, out_length).unwrap();
+
+        return Ok(q_flip.flip());
+    }
+
+    fn normalise_coeffs(coeffs: &Vec<Fr>) -> Vec<Fr> {
+        let mut ret_length = coeffs.len();
+        while ret_length > 0 && coeffs[ret_length - 1].is_zero() {
+            ret_length = ret_length - 1;
+        }
+        coeffs[0..ret_length].to_vec()
+    }
+
+    fn normalise(&self) -> Polynomial {
+        Polynomial::from_fr(Polynomial::normalise_coeffs(&self.coeffs))
+    }
+
+    fn flip_coeffs(coeffs: &Vec<Fr>) -> Vec<Fr> {
+        let mut result: Vec<Fr> = vec![];
+        for i in (0..coeffs.len()).rev() {
+            result.push(coeffs[i]);
+        }
+        result
+    }
+
+    fn flip(&self) -> Polynomial { 
+        Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs))
+    }
+
+    pub fn div(&self, _divisor: &Vec<Fr>) -> Result<Polynomial, String> {
+        let dividend = self.normalise();
+        let divisor = Polynomial::normalise_coeffs(_divisor);
+
+        if divisor.len() >= dividend.order() || divisor.len() < 128 { // Tunable paramter
+            return self.long_division(&divisor);
+        } else {
+            return self.fast_div(&divisor);
+        }
+    }
+
     pub fn commit(&self, g1_points: &Vec<G1>) -> G1 {
         let mut result = G1::default();
         unsafe {
@@ -315,9 +376,75 @@ impl Polynomial {
         };
     }
 
-    pub fn mul(&self, b: &Self, _ft: &FFTSettings, len: usize) -> Result<Polynomial, String> {
-        //if the polynomials are large, we should use fft multiplication, for now it's not implemented
-        Polynomial::mul_direct(self, b, len)
+    pub fn mul_(&self, b: &Self, ft: Option<&FFTSettings>, len: usize) -> Result<Polynomial, String> {
+        if self.order() < 64 || b.order() < 64 || len < 128 { // Tunable parameter
+            Polynomial::mul_direct(self, b, len)
+        } else {
+            Polynomial::mul_fft(self, b, ft, len)
+        }
+    }
+    
+
+    pub fn mul(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
+        Polynomial::mul_(self, b, None, len)
+    }
+
+    // @param[in]  n_in  The number of elements of @p in to take
+    // @param[in]  n_out The length of @p out
+    fn pad_coeffs(coeffs: &Vec<Fr>, n_in: usize, n_out: usize) -> Vec<Fr> {
+        let num = min(n_in, n_out);
+        let mut ret_coeffs: Vec<Fr> = vec![];
+        for i in 0..num {
+            ret_coeffs.push(coeffs[i].clone());
+        }
+        for _ in num..n_out {
+            ret_coeffs.push(Fr::zero());
+        }
+        ret_coeffs
+    }
+
+    fn pad(&self, n_in: usize, n_out: usize) -> Polynomial { 
+        Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
+    }
+
+    pub fn mul_fft(&self, b: &Self, ft: Option<&FFTSettings>, len: usize) -> Result<Polynomial, String> {
+        // Truncate a and b so as not to do excess work for the number of coefficients required.
+        let a_len = min(self.order(), len);
+        let b_len = min(b.order(), len);
+        let length = next_pow_of_2(a_len + b_len - 1);
+
+        let fft_settings;
+        //TO DO remove temp_fft, can't find a nice way to declare fft and only use it as ref
+        let temp_fft = FFTSettings::new(log_2(length) as u8);
+        match ft {
+            Some(x) => fft_settings = x,
+            None    => fft_settings = &temp_fft,
+        }
+        let ft = fft_settings;
+        if length > ft.max_width {
+            return Err(String::from("Mul fft only good up to length < 32 bits"));
+        }
+
+        let a_pad = self.pad(a_len, length);
+        let b_pad = b.pad(b_len, length);
+        let a_fft = ft.fft(&a_pad.coeffs, false);
+        let b_fft = ft.fft(&b_pad.coeffs, false);
+        let mut ab_fft: Vec<Fr> = vec![];
+        for i in 0..length {
+            ab_fft.push(a_fft[i] * b_fft[i]);
+        }
+        let ab = ft.fft(&ab_fft, true);
+
+        let data_len = min(len, length);
+        let mut ret_coeffs: Vec<Fr> = vec![];
+        for i in 0..data_len {
+            ret_coeffs.push(ab[i]);
+        }
+        for _ in data_len..len {
+            ret_coeffs.push(Fr::zero());
+        }
+
+        Ok(Polynomial::from_fr(ret_coeffs))
     }
 
     pub fn mul_direct(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
@@ -327,10 +454,11 @@ impl Polynomial {
         }
 
         for i in 0..self.order() {
-            for j in 0..b.order() {
-
+            let mut j = 0;
+            while j < b.order() && i + j < len {
                 let temp = self.coeffs[i] * b.coeffs[j];
                 coeffs[i + j] = coeffs[i + j] + temp;
+                j = j + 1;
             }
         }
         return Ok(Polynomial::from_fr(coeffs));
@@ -364,9 +492,10 @@ impl Polynomial {
         //check if scale actually always fits in u8
         //fftsettings to be used, if multiplacation is done with fft
         let fs = FFTSettings::new(scale as u8);
-        let coeffs = vec![self.coeffs[0].clone().inverse()];
+        let coeffs = vec![self.coeffs[0].inverse()];
         let mut out = Polynomial::from_fr(coeffs);
 
+        //if new length is 1, max d is 0
         let mut mask = 1 << log_2(maxd);
         
         let mut poly_temp_0: Polynomial;
@@ -377,7 +506,7 @@ impl Polynomial {
 
             // b.c -> tmp0 (we're using out for c)
             let temp_0_len = min(d + 1, self.order() + &out.order() - 1);
-            poly_temp_0 = self.mul(&out, &fs, temp_0_len).unwrap();
+            poly_temp_0 = self.mul_(&out, Some(&fs), temp_0_len).unwrap();
 
              // 2 - b.c -> tmp0
             for i in 0..temp_0_len {
@@ -389,7 +518,7 @@ impl Polynomial {
 
             // c.(2 - b.c) -> tmp1;
             let temp_1_len = d + 1;
-            poly_temp_1 = out.mul(&poly_temp_0, &fs, temp_1_len).unwrap();
+            poly_temp_1 = out.mul_(&poly_temp_0, Some(&fs), temp_1_len).unwrap();
 
             out = Polynomial::from_fr(poly_temp_1.coeffs.clone());
         }
