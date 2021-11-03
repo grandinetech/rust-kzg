@@ -19,6 +19,10 @@ criterion = "0.3"
 name = "shared_fft"
 harness = false
 
+[[bench]]
+name = "shared_poly"
+harness = false
+
 #[[bench]]
 #name = "bench_fft"
 #harness = false
