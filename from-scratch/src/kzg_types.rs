@@ -245,7 +245,7 @@ impl G1 for FsG1 {
 
 impl Clone for FsG1 {
     fn clone(&self) -> Self {
-        todo!()
+        FsG1(self.0.clone())
     }
 }
 
@@ -266,7 +266,7 @@ impl FsG2 {
 
 impl Clone for FsG2 {
     fn clone(&self) -> Self {
-        todo!()
+        FsG2(self.0.clone())
     }
 }
 

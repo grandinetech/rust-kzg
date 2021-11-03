@@ -5,117 +5,172 @@ mod tests {
     use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, FsFr, FsG1, FsG2};
     use kzg_from_scratch::consts::{TRUSTED_SETUP_GENERATOR};
     use kzg_from_scratch::utils::{generate_trusted_setup};
-    use kzg_from_scratch::kzg_proofs::{
-        commit_to_poly,
-        compute_proof_multi,
-        check_proof_multi
-    };
+    use kzg_from_scratch::kzg_proofs::{commit_to_poly, compute_proof_multi, check_proof_multi, compute_proof_single, check_proof_single};
+    use blst::{blst_p1_is_equal, blst_fp, blst_p1};
 
-    // #[test]
-    fn proof_multi() {
+    #[test]
+    fn proof_single() {
         // Our polynomial: degree 15, 16 coefficients
-        // uint64_t coeffs[] = {1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13};
-        let coeffs: [u64; 16usize] = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+        const POLY_LEN: usize = 16;
+        let coeffs: [u64; POLY_LEN] = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+        let secrets_len = POLY_LEN + 1;
 
-        // Compute proof at 2^coset_scale points
-        //int coset_scale = 3, coset_len = (1 << coset_scale);
-        let coset_scale = 3;
-        let coset_len = 1 << coset_scale;
+        // Create the polynomial
+        let mut p: FsPoly = Poly::new(POLY_LEN).unwrap();
+        for i in 0..POLY_LEN {
+            p.coeffs[i] = Fr::from_u64(coeffs[i]);
+        }
 
-        // FsFFTSettings fs1, fs2;
-        // let fs1 = FsFFTSettings::new(4/* ?????? */).unwrap();
-        // let fs2 = FsFFTSettings::new(coset_scale).unwrap();
-
-        //FsKZGSettings ks1, ks2;
-        // let kzgSettings_1 = FsKZGSettings::new(coeffs.len());
-        // let kzgSettings_2 = FsKZGSettings::new(coeffs.len());
-
-        let mut p = FsPoly { coeffs: vec![Fr::default(); 16]};
-
-        // g1_t commitment, proof;
-        let mut commitment = FsG1::default();
-        //let proof: G1;
-
-        // fr_t x, tmp;
-        // let mut x: Fr = FsFr::default();
-        let mut tmp = FsFr::default();
-        // let result: bool;
-
-        // fr_t y[coset_len];
-        let mut y: Vec<FsFr> = Vec::default();
-        // must be a vec
-
-        // uint64_t secrets_len = coeffs.len() > coset_len ? coeffs.len() + 1 : coset_len + 1;
-        let secrets_len: usize = if coeffs.len() > coset_len {coeffs.len() + 1} else {coset_len + 1};
-
-        //g1_t s1[secrets_len];
-        //g2_t s2[secrets_len];
         let mut secret1: Vec<FsG1> = Vec::default();
         let mut secret2: Vec<FsG2> = Vec::default();
 
-        // Create the polynomial
-        //new_poly(&p, coeffs.len());
+        // Initialise the secrets and data structures
+        generate_trusted_setup(&mut secret1, &mut secret2, &TRUSTED_SETUP_GENERATOR, secrets_len);
 
+        let fs = FsFFTSettings::new(4).unwrap();
+        let kzg_settings = FsKZGSettings::new(&secret1, &secret2, secrets_len, &fs);
+
+        // Compute the proof for x = 25
+        let x: FsFr = Fr::from_u64(25);
+        let mut commitment = G1::default();
+
+        let result = commit_to_poly(&mut commitment, &p, &kzg_settings);
+        assert!(result.is_ok());
+
+        let result = compute_proof_single(&p, &x, &kzg_settings);
+        assert!(result.is_ok());
+        let proof: FsG1 = result.unwrap();
+
+        let mut value: FsFr = p.eval(&x);
+
+        let result: bool = check_proof_single(&commitment, &proof, &x, &value, &kzg_settings);
+        assert!(result);
+
+        value = value.add(&FsFr::one());
+        let result: bool = check_proof_single(&commitment, &proof, &x, &value, &kzg_settings);
+        assert_eq!(false, result);
+    }
+
+    #[test]
+    fn proof_multi() {
+        // Our polynomial: degree 15, 16 coefficients
+        let coeffs: [u64; 16usize] = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+
+        // Compute proof at 2^coset_scale points
+        let coset_scale = 3;
+        let coset_len = 1 << coset_scale;
+
+        let mut p: FsPoly = Poly::new(coeffs.len()).unwrap();
+
+        let mut commitment = FsG1::default();
+
+        let secrets_len: usize = if coeffs.len() > coset_len {coeffs.len() + 1} else {coset_len + 1};
+
+        let mut secret1: Vec<FsG1> = Vec::default();
+        let mut secret2: Vec<FsG2> = Vec::default();
         for i in 0..coeffs.len() {
-            // fr_from_uint64(&p.coeffs[i], coeffs[i]);
-            // p.coeffs[i] = create_fr_u64(coeffs[i]);
             p.coeffs[i] = Fr::from_u64(coeffs[i]);
         }
 
         // Initialise the secrets and data structures
         generate_trusted_setup(&mut secret1, &mut secret2, &TRUSTED_SETUP_GENERATOR, secrets_len);
 
-        // TEST_CHECK(C_KZG_OK == new_fft_settings(&fs1, 4)); // ln_2 of coeffs.len()
         let fs1 = FsFFTSettings::new(4).unwrap();
-
-        // TEST_CHECK(C_KZG_OK == new_kzg_settings(&kzgSettings_1, s1, s2, secrets_len, &fs1));
         let kzg_settings_1 = FsKZGSettings::new(&secret1, &secret2, secrets_len, &fs1);
 
         // Commit to the polynomial
-        // TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks1));
         let result = commit_to_poly(&mut commitment, &p, &kzg_settings_1);
         assert!(result.is_ok());
 
-        // TEST_CHECK(C_KZG_OK == new_fft_settings(&fs2, coset_scale));
         let fs2 = FsFFTSettings::new(coset_scale).unwrap();
 
-        // TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks2, s1, s2, secrets_len, &fs2));
         let kzg_settings_2 = FsKZGSettings::new(&secret1, &secret2, secrets_len, &fs2);
 
         // Compute proof at the points [x * root_i] 0 <= i < coset_len
-        // fr_from_uint64(&x, 5431);
-        // x = create_fr_u64(5431);
         let x = Fr::from_u64(5431);
 
-        // TEST_CHECK(C_KZG_OK == compute_proof_multi(&proof, &p, &x, coset_len, &kzgSettings_2));
         let result = compute_proof_multi(&p, &x, coset_len, &kzg_settings_2);
         assert!(result.is_ok());
         let proof = result.unwrap();
 
+        let mut y: Vec<FsFr> = Vec::default();
         // y_i is the value of the polynomial at each x_i
         for i in 0..coset_len {
             // fr_mul(&tmp, &x, &kzgSettings_2.fs.expanded_roots_of_unity[i]);
-            //eval_poly(&y[i], &p, &tmp);
-            tmp = x.mul(&kzg_settings_2.fs.expanded_roots_of_unity[i]);
-            y[i] = p.eval(&tmp);
+            let tmp: FsFr = x.mul(&kzg_settings_2.fs.expanded_roots_of_unity[i]);
+            y.push(p.eval(&tmp));
         }
 
         // Verify the proof that the (unknown) polynomial has value y_i at x_i
-        // TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &kzgSettings_2));
-        let result = check_proof_multi(&commitment, &proof, &x, &y, coset_len, &kzg_settings_2); //return through params mayb?
+        let result = check_proof_multi(&commitment, &proof, &x, &y, coset_len, &kzg_settings_2);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), true);
 
-        //TEST_CHECK(true == result);
-
         // Change a value and check that the proof fails
-        //fr_add(y + coset_len / 2, y + coset_len / 2, &fr_one);
-        y[coset_len/2] = y[coset_len / 2].add(&Fr::one());
+        y[coset_len / 2] = y[coset_len / 2].add(&Fr::one());
 
-        //TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &kzgSettings_2));
-        let result = check_proof_multi(&commitment, &proof, &x, &y, coset_len, &kzg_settings_2); //return through params mayb?
-
-        //TEST_CHECK(false == result);
+        let result = check_proof_multi(&commitment, &proof, &x, &y, coset_len, &kzg_settings_2);
         assert_eq!(result.unwrap(), false);
+    }
+
+    #[test]
+    fn commit_to_too_long_poly() {
+        let try_fs = FsFFTSettings::new(4);
+        assert!(try_fs.is_ok());
+        let fs = try_fs.unwrap();
+
+        let secrets_len: usize = 16;
+        let poly_len: usize = 32;
+
+        let mut secret_g1: Vec<FsG1> = Vec::default();
+        let mut secret_g2: Vec<FsG2> = Vec::default();
+
+        let mut result = G1::default();
+
+        // Initialise the (arbitrary) secrets and data structures
+        generate_trusted_setup(&mut secret_g1, &mut secret_g2, &TRUSTED_SETUP_GENERATOR, secrets_len);
+
+        let kzg_settings = FsKZGSettings::new(&secret_g1, &secret_g2, secrets_len, &fs);
+        let a = Poly::new(poly_len).unwrap();
+        let status = commit_to_poly(&mut result, &a, &kzg_settings);
+        assert!(status.is_err());
+    }
+
+    #[test]
+    fn commit_to_nil_poly() {
+        let try_fs = FsFFTSettings::new(4);
+        assert!(try_fs.is_ok());
+        let fs = try_fs.unwrap();
+
+        let secrets_len: usize = 16;
+        let mut secret_g1: Vec<FsG1> = Vec::default();
+        let mut secret_g2: Vec<FsG2> = Vec::default();
+
+        let mut result = G1::default();
+
+        // Initialise the (arbitrary) secrets and data structures
+        generate_trusted_setup(&mut secret_g1, &mut secret_g2, &TRUSTED_SETUP_GENERATOR, secrets_len);
+
+        let kzg_settings = FsKZGSettings::new(&secret_g1, &secret_g2, secrets_len, &fs);
+
+        let a = Poly::new(0).unwrap();
+        let status = commit_to_poly(&mut result, &a, &kzg_settings);
+        assert!(status.is_ok());
+
+        let g1_identity: FsG1 = FsG1 {
+            0: blst_p1 {
+                x: blst_fp { l: [0u64; 6] },
+                y: blst_fp { l: [0u64; 6] },
+                z: blst_fp { l: [0u64; 6] },
+            }
+        };
+
+        assert!(g1_equal(&g1_identity, &result));
+    }
+
+    pub fn g1_equal(a: &FsG1, b: &FsG1) -> bool {
+        unsafe {
+            blst_p1_is_equal(&a.0, &b.0)
+        }
     }
 }

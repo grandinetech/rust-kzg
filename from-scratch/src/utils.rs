@@ -67,16 +67,18 @@ pub fn generate_trusted_setup(s1: &mut Vec<FsG1>, s2: &mut Vec<FsG2>, secret: &S
     let s = FsFr::from_scalar(secret);
     let mut s_pow = Fr::one();
 
-    for _ in 0..n {
+    for i in 0..n {
         // g1_mul(s1 + i, &g1_generator, &s_pow);
         // s1[i].mul(G1_GENERATOR, &s_pow);
         let mut tmp_g1 = G1::default();
         g1_mul(&mut tmp_g1, &G1_GENERATOR, &s_pow);
         s1.push(tmp_g1);
+        //s1[i] = tmp_g1;
         //g2_mul(s2 + i, &g2_generator, &s_pow);
         // s2[i].mul(G2_GENERATOR, &s_pow);
         let tmp_g2 = g2_mul(&G2_GENERATOR, &s_pow);
         s2.push(tmp_g2);
+        //s2[i] = tmp_g2;
         // fr_mul(&s_pow, &s_pow, &s);
         s_pow = s_pow.mul(&s);
     }
