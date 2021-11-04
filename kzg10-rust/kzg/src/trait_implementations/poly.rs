@@ -66,7 +66,7 @@ impl Poly<Fr> for Polynomial {
     }
 }
 
-impl FFTSettingsPoly<Fr, Polynomial, FFTSettings> for Polynomial {
+impl FFTSettingsPoly<Fr, Polynomial, FFTSettings> for FFTSettings {
     fn poly_mul_fft(a: &Polynomial, x: &Polynomial, len: usize, fs: Option<&FFTSettings>) -> Result<Self, String> {
         // Polynomial::mul(a, x, _fs, len)
         Polynomial::mul_fft(a, x, fs, len)
