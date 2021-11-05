@@ -9,6 +9,9 @@ use crate::poly::KzgPoly;
 extern "C" {
     fn new_kzg_settings(ks: *mut KzgKZGSettings, secret_g1: *const BlstP1, secret_g2: *const BlstP2, length: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn free_kzg_settings(ks: *mut KzgKZGSettings);
+    fn commit_to_poly(out: *mut BlstP1, p: *const KzgPoly, ks: *const KzgKZGSettings) -> KzgRet;
+    fn compute_proof_single(out: *mut BlstP1, p: *const KzgPoly, x0: *const BlstFr, ks: *const KzgKZGSettings) -> KzgRet;
+    fn check_proof_single(out: *mut bool, commitment: *const BlstP1, proof: *const BlstP1, x: *const BlstFr, y: *const BlstFr, ks: *const KzgKZGSettings) -> KzgRet;
     // Fr
     fn fr_from_scalar(out: *mut BlstFr, a: *const BlstScalar);
     // G1
@@ -74,15 +77,33 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     }
 
     fn commit_to_poly(&self, p: &KzgPoly) -> Result<BlstP1, String> {
-        todo!()
+        let mut ret = G1::default();
+        unsafe {
+            return match commit_to_poly(&mut ret, p, self) {
+                KzgRet::KzgOk => Ok(ret),
+                e => Err(format!("An error has occurred in \"KZGSettings::commit_to_poly\" ==> {:?}", e))
+            }
+        }
     }
 
-    fn compute_proof_single(&self, p: &KzgPoly, x: &BlstFr) -> BlstP1 {
-        todo!()
+    fn compute_proof_single(&self, p: &KzgPoly, x: &BlstFr) -> Result<BlstP1, String> {
+        let mut ret = G1::default();
+        unsafe {
+            return match compute_proof_single(&mut ret, p, x, self) {
+                KzgRet::KzgOk => Ok(ret),
+                e => Err(format!("An error has occurred in \"KZGSettings::compute_proof_single\" ==> {:?}", e))
+            }
+        }
     }
 
-    fn check_proof_single(&self, com: &BlstP1, proof: &BlstP1, x: &BlstFr, value: &BlstFr) -> bool {
-        todo!()
+    fn check_proof_single(&self, com: &BlstP1, proof: &BlstP1, x: &BlstFr, value: &BlstFr) -> Result<bool, String> {
+        let mut ret = false;
+        unsafe {
+            return match check_proof_single(&mut ret, com, proof, x, value, self) {
+                KzgRet::KzgOk => Ok(ret),
+                e => Err(format!("An error has occurred in \"KZGSettings::check_proof_single\" ==> {:?}", e))
+            }
+        }
     }
 
     fn compute_proof_multi(&self, p: &KzgPoly, x: &BlstFr, n: usize) -> BlstP1 {
