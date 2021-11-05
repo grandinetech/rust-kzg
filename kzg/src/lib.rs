@@ -8,10 +8,10 @@ pub trait Fr: Clone {
     fn rand() -> Self;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
-	
-	fn from_u64(u: u64) -> Self;
-	
-	fn to_u64_arr(&self) -> [u64; 4]; 
+
+    fn from_u64(u: u64) -> Self;
+
+    fn to_u64_arr(&self) -> [u64; 4]; 
 
     fn is_one(&self) -> bool;
 
@@ -32,8 +32,8 @@ pub trait Fr: Clone {
     fn inverse(&self) -> Self;
 
     fn pow(&self, n: usize) -> Self;
-	
-	fn div(&self, b: &Self) -> Result<Self, String>;
+
+    fn div(&self, b: &Self) -> Result<Self, String>;
 
     fn equals(&self, b: &Self) -> bool;
 
@@ -43,11 +43,11 @@ pub trait Fr: Clone {
 
 pub trait G1: Clone {
     fn default() -> Self;
-	
-	fn rand() -> Self;
-	
+
+    fn rand() -> Self;
+
     fn add_or_double(&mut self, b: &Self) -> Self;
-	
+
     fn equals(&self, b: &Self) -> bool;
 
     // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
@@ -58,14 +58,14 @@ pub trait G1_<Fr>: Clone {
     fn default() -> Self;
 
     fn add_or_double(&self, b: &Self) -> Self;
-	
-	fn is_inf(&self) -> bool;
-	
-	fn mul(&self, b: &Fr) -> Self;
-	
-	fn dbl(&self) -> Self;
-	
-	fn sub(&self, b: &Self) -> Self;
+
+    fn is_inf(&self) -> bool;
+
+    fn mul(&self, b: &Fr) -> Self;
+
+    fn dbl(&self) -> Self;
+
+    fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
 
@@ -78,16 +78,15 @@ pub trait G2: Clone {
 }
 
 pub trait G2_<Fr>: Clone {
-
     fn default() -> Self;
 
     fn add_or_double(&self, b: &Self) -> Self;
-	
-	fn mul(&self, b: &Fr) -> Self;
-	
-	fn dbl(&self) -> Self;
-	
-	fn sub(&self, b: &Self) -> Self;
+
+    fn mul(&self, b: &Fr) -> Self;
+
+    fn dbl(&self) -> Self;
+
+    fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
 
@@ -176,8 +175,8 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn fast_div(&mut self, x: &Self) -> Result<Self, String>;
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
-    
-	// Other teams, aside from the c-kzg bindings team, may as well leave its body empty
+
+    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
     fn destroy(&mut self);
 }
 
@@ -191,15 +190,15 @@ pub trait KZGSettings<
 {
     fn default() -> Self;
 
-    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: Fs) -> Self;
+    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: *const Fs) -> Result<Self, String>;
 
     fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
 
-    fn compute_proof_single(&self, p: &Polynomial, x: &Coeff1) -> Coeff2;
+    fn compute_proof_single(&self, p: &Polynomial, x: &Coeff1) -> Result<Coeff2, String>;
 
-    fn check_proof_single(&self, com: &Coeff2, proof: &Coeff2, x: &Coeff1, value: &Coeff1) -> bool;
+    fn check_proof_single(&self, com: &Coeff2, proof: &Coeff2, x: &Coeff1, value: &Coeff1) -> Result<bool, String>;
 
-    fn compute_proof_multi(&self, p: &Polynomial, x: &Coeff1, n: usize) -> Coeff2;
+    fn compute_proof_multi(&self, p: &Polynomial, x: &Coeff1, n: usize) -> Result<Coeff2, String>;
 
     fn check_proof_multi(
         &self,
@@ -208,7 +207,7 @@ pub trait KZGSettings<
         x: &Coeff1,
         values: &Vec<Coeff1>,
         n: usize,
-    ) -> bool;
+    ) -> Result<bool, String>;
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
 
