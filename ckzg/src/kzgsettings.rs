@@ -1,4 +1,4 @@
-use kzg::{FFTSettings, G1, G2, KZGSettings};
+use kzg::{FFTSettings, Fr, G1, G2, KZGSettings};
 
 use crate::common::KzgRet;
 use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2};
@@ -9,6 +9,20 @@ use crate::poly::KzgPoly;
 extern "C" {
     fn new_kzg_settings(ks: *mut KzgKZGSettings, secret_g1: *const BlstP1, secret_g2: *const BlstP2, length: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn free_kzg_settings(ks: *mut KzgKZGSettings);
+    // Fr
+    fn fr_from_scalar(out: *mut BlstFr, a: *const BlstScalar);
+    // G1
+    fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
+    fn blst_p1_generator() -> *const BlstP1;
+    // G2
+    fn g2_mul(out: *mut BlstP2, a: *const BlstP2, b: *const BlstFr);
+    fn blst_p2_generator() -> *const BlstP2;
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct BlstScalar {
+    pub b: [u8; 32],
 }
 
 #[repr(C)]
@@ -25,7 +39,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         Self {
             fs: &FFTSettings::default(),
             secret_g1: &mut G1::default(),
-            secret_g2: &mut BlstP2 { // TODO: need something like G2::default()
+            secret_g2: &mut BlstP2 { // TODO: G2::default()
                 x: BlstFp2 {
                     fp: [
                         BlstFp { l: [0, 0, 0, 0, 0, 0] },
@@ -49,8 +63,14 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         }
     }
 
-    fn new(secret_g1: &Vec<BlstP1>, secret_g2: &Vec<BlstP2>, length: usize, fs: KzgFFTSettings) -> Self {
-        todo!()
+    fn new(secret_g1: &Vec<BlstP1>, secret_g2: &Vec<BlstP2>, length: usize, fs: *const KzgFFTSettings) -> Result<Self, String> {
+        let mut settings = KZGSettings::default();
+        unsafe {
+            return match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, fs) {
+                KzgRet::KzgOk => Ok(settings),
+                e => Err(format!("An error has occurred in \"KZGSettings::new\" ==> {:?}", e))
+            }
+        }
     }
 
     fn commit_to_poly(&self, p: &KzgPoly) -> Result<BlstP1, String> {
@@ -82,4 +102,57 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
             free_kzg_settings(self);
         }
     }
+}
+
+pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>, Vec<BlstP2>) {
+    let mut blst_scalar = BlstScalar {
+        b: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    };
+    for i in 0..secret.len() {
+        blst_scalar.b[i] = secret[i];
+    }
+
+    let mut s_pow: BlstFr = Fr::one();
+    let mut s = Fr::default();
+    unsafe {
+        fr_from_scalar(&mut s, &blst_scalar)
+    };
+
+    let mut s1 = Vec::new();
+    let mut s2 = Vec::new();
+
+    for i in 0..len {
+        let mut g1_temp = G1::default();
+        let mut g2_temp = BlstP2 { // TODO: G2::default()
+            x: BlstFp2 {
+                fp: [
+                    BlstFp { l: [0, 0, 0, 0, 0, 0] },
+                    BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                ]
+            },
+            y: BlstFp2 {
+                fp: [
+                    BlstFp { l: [0, 0, 0, 0, 0, 0] },
+                    BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                ]
+            },
+            z: BlstFp2 {
+                fp: [
+                    BlstFp { l: [0, 0, 0, 0, 0, 0] },
+                    BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                ]
+            },
+        };
+        unsafe {
+            g1_mul(&mut g1_temp, blst_p1_generator(), &s_pow);
+            g2_mul(&mut g2_temp, blst_p2_generator(), &s_pow);
+        }
+        s1.push(g1_temp);
+        s2.push(g2_temp);
+        s_pow = s_pow.mul(&s);
+    }
+
+    (s1, s2)
 }
