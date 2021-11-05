@@ -64,13 +64,13 @@ pub mod poly_tests {
     #[test]
     fn poly_mul_fft_test_() {
         assert!(init(CurveType::BLS12_381));
-        poly_mul_fft_test::<Fr, Polynomial, FFTSettings, Polynomial>();
+        poly_mul_fft_test::<Fr, Polynomial, FFTSettings>();
     }
 
     #[test]
     fn poly_mul_random_() {
         assert!(init(CurveType::BLS12_381));
-        poly_mul_random::<Fr, Polynomial, FFTSettings, Polynomial>();
+        poly_mul_random::<Fr, Polynomial, FFTSettings>();
     }
 
     #[test]
