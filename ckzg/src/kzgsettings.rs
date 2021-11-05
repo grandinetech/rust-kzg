@@ -1,4 +1,4 @@
-use kzg::{FFTSettings, Fr, G1, G2, KZGSettings};
+use kzg::{FFTSettings, Fr, G1, KZGSettings};
 
 use crate::common::KzgRet;
 use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2};
@@ -12,6 +12,8 @@ extern "C" {
     fn commit_to_poly(out: *mut BlstP1, p: *const KzgPoly, ks: *const KzgKZGSettings) -> KzgRet;
     fn compute_proof_single(out: *mut BlstP1, p: *const KzgPoly, x0: *const BlstFr, ks: *const KzgKZGSettings) -> KzgRet;
     fn check_proof_single(out: *mut bool, commitment: *const BlstP1, proof: *const BlstP1, x: *const BlstFr, y: *const BlstFr, ks: *const KzgKZGSettings) -> KzgRet;
+    fn compute_proof_multi(out: *mut BlstP1, p: *const KzgPoly, x0: *const BlstFr, n: u64, ks: *const KzgKZGSettings) -> KzgRet;
+    fn check_proof_multi(out: *mut bool, commitment: *const BlstP1, proof: *const BlstP1, x: *const BlstFr, ys: *const BlstFr, n: u64, ks: *const KzgKZGSettings) -> KzgRet;
     // Fr
     fn fr_from_scalar(out: *mut BlstFr, a: *const BlstScalar);
     // G1
@@ -106,16 +108,31 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         }
     }
 
-    fn compute_proof_multi(&self, p: &KzgPoly, x: &BlstFr, n: usize) -> BlstP1 {
-        todo!()
+    fn compute_proof_multi(&self, p: &KzgPoly, x: &BlstFr, n: usize) -> Result<BlstP1, String> {
+        let mut ret = G1::default();
+        unsafe {
+            return match compute_proof_multi(&mut ret, p, x, n as u64, self) {
+                KzgRet::KzgOk => Ok(ret),
+                e => Err(format!("An error has occurred in \"KZGSettings::compute_proof_multi\" ==> {:?}", e))
+            }
+        }
     }
 
-    fn check_proof_multi(&self, com: &BlstP1, proof: &BlstP1, x: &BlstFr, values: &Vec<BlstFr>, n: usize) -> bool {
-        todo!()
+    fn check_proof_multi(&self, com: &BlstP1, proof: &BlstP1, x: &BlstFr, values: &Vec<BlstFr>, n: usize) -> Result<bool, String> {
+        let mut ret = false;
+        unsafe {
+            return match check_proof_multi(&mut ret, com, proof, x, values.as_ptr(), n as u64, self) {
+                KzgRet::KzgOk => Ok(ret),
+                e => Err(format!("An error has occurred in \"KZGSettings::check_proof_multi\" ==> {:?}", e))
+            }
+        }
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
-        todo!()
+        unsafe {
+            let ffs = *self.fs as KzgFFTSettings;
+            return ffs.get_expanded_roots_of_unity_at(i);
+        }
     }
 
     fn destroy(&mut self) {
@@ -144,7 +161,7 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>
     let mut s1 = Vec::new();
     let mut s2 = Vec::new();
 
-    for i in 0..len {
+    for _i in 0..len {
         let mut g1_temp = G1::default();
         let mut g2_temp = BlstP2 { // TODO: G2::default()
             x: BlstFp2 {

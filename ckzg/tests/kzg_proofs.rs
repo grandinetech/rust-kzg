@@ -21,4 +21,9 @@ mod tests {
     fn test_commit_to_too_long_poly() {
         commit_to_too_long_poly::<BlstFr, BlstP1, BlstP2, KzgPoly, KzgFFTSettings, KzgKZGSettings>(&generate_trusted_setup);
     }
+
+    #[test]
+    fn test_proof_multi() {
+        proof_multi::<BlstFr, BlstP1, BlstP2, KzgPoly, KzgFFTSettings, KzgKZGSettings>(&generate_trusted_setup);
+    }
 }
