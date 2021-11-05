@@ -1,9 +1,10 @@
-// Adds implementation for blsScalar (Fr)
 
 // pub use super::{ZPoly, BlsScalar};
 use kzg::G1_ as G1;
 use kzg::G2_ as G2;
 // use ff::{Field, PrimeField};
+
+use std::ptr;
 
 use std::ops::{Neg, Add};
 use std::convert::TryInto;
@@ -221,7 +222,13 @@ pub fn g1_linear_combination(out: &mut ZkG1Projective, p: &Vec<ZkG1Projective>, 
 	else {
 		// Blst's implementation of the Pippenger method
         //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
-        let mut p_affine = vec![P1Affine::default(); len];
+        
+		let mut scratch: blst::limb_t = blst::limb_t::default();
+		unsafe {
+			scratch = blst::blst_p1s_mult_pippenger_scratch_sizeof(len).try_into().unwrap();
+        }
+		
+		let mut p_affine = vec![P1Affine::default(); len];
         //blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
         let mut scalars = vec![blst_scalar::default(); len];
         // Transform the points to affine representation
@@ -231,7 +238,9 @@ pub fn g1_linear_combination(out: &mut ZkG1Projective, p: &Vec<ZkG1Projective>, 
 		let p_blst = zk_g1projective_into_blst_p1(p[0]).unwrap();
 		
         let p_arg: [*const P1; 2] = [&p_blst, &P1::default()];
-        // p_arg[0] = &p;
+        // let p_arg = p_blst;
+		// let p_arg: *const P1 = &p_blst;
+
         unsafe {
             blst::blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
 			//meta errora
@@ -252,16 +261,13 @@ pub fn g1_linear_combination(out: &mut ZkG1Projective, p: &Vec<ZkG1Projective>, 
         let points_arg: [*const P1Affine; 2] = [p_affine.as_ptr(), &P1Affine::default()];
         //points_arg[0] = &p_affine;
         //void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
-		let mut scratch: blst::limb_t = blst::limb_t::default();
-		unsafe {
-			scratch = blst::blst_p1s_mult_pippenger_scratch_sizeof(len).try_into().unwrap();
-        }
+		
 		//blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
 		
 		let mut out_blst = zk_g1projective_into_blst_p1(*out).unwrap();
 		
         unsafe {
-            blst::blst_p1s_mult_pippenger(&mut out_blst, points_arg.as_ptr(), len, scalars_arg.as_ptr() as *const *const u8, 256, &mut scratch);
+            // blst::blst_p1s_mult_pippenger(&mut out_blst, points_arg.as_ptr(), len, scalars_arg.as_ptr() as *const *const u8, 256, &mut scratch);
 		// meta errora. greiciausiai del tu [*const p1affine; 2]...
 		}
 	
