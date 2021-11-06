@@ -1,9 +1,9 @@
-use kzg::{KZGSettings, FFTSettings, Fr, G1, G2};
+use kzg::{KZGSettings, FFTSettings, Fr, G1, G2, G1Mul, G2Mul};
 
 use crate::common::KzgRet;
-use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2};
+use crate::consts::{BlstP1, BlstP2};
 use crate::fftsettings::KzgFFTSettings;
-use crate::finite::BlstFr;
+use crate::finite::{BlstFr};
 use crate::poly::KzgPoly;
 
 extern "C" {
@@ -16,10 +16,6 @@ extern "C" {
     fn check_proof_multi(out: *mut bool, commitment: *const BlstP1, proof: *const BlstP1, x: *const BlstFr, ys: *const BlstFr, n: u64, ks: *const KzgKZGSettings) -> KzgRet;
     // Fr
     fn fr_from_scalar(out: *mut BlstFr, a: *const BlstScalar);
-    // G1
-    fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
-    // G2
-    fn g2_mul(out: *mut BlstP2, a: *const BlstP2, b: *const BlstFr);
 }
 
 #[repr(C)]
@@ -42,26 +38,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         Self {
             fs: &FFTSettings::default(),
             secret_g1: &mut G1::default(),
-            secret_g2: &mut BlstP2 { // TODO: G2::default()
-                x: BlstFp2 {
-                    fp: [
-                        BlstFp { l: [0; 6] },
-                        BlstFp { l: [0; 6] }
-                    ]
-                },
-                y: BlstFp2 {
-                    fp: [
-                        BlstFp { l: [0; 6] },
-                        BlstFp { l: [0; 6] }
-                    ]
-                },
-                z: BlstFp2 {
-                    fp: [
-                        BlstFp { l: [0; 6] },
-                        BlstFp { l: [0; 6] }
-                    ]
-                },
-            },
+            secret_g2: &mut G2::default(),
             length: 0,
         }
     }
@@ -158,14 +135,10 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>
     let mut s2 = Vec::new();
 
     for _i in 0..len {
-        let mut g1_temp = G1::default();
-        let mut g2_temp = G2::default();
-        unsafe {
-            g1_mul(&mut g1_temp, &G1::generator(), &s_pow);
-            g2_mul(&mut g2_temp, &G2::generator(), &s_pow);
-        }
-        s1.push(g1_temp);
-        s2.push(g2_temp);
+        let g1_mul = G1Mul::mul(&G1::generator(), &s_pow);
+        let g2_mul = G2Mul::mul(&G2::generator(), &s_pow);
+        s1.push(g1_mul);
+        s2.push(g2_mul);
         s_pow = s_pow.mul(&s);
     }
 

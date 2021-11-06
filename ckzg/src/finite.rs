@@ -24,6 +24,7 @@ extern "C" {
     // G2
     fn blst_p2_generator() -> *const BlstP2;
     static g2_negative_generator: BlstP2;
+    fn g2_mul(out: *mut BlstP2, a: *const BlstP2, b: *const BlstFr);
 }
 
 #[repr(C)]
@@ -222,7 +223,11 @@ impl G1 for BlstP1 {
 
 impl G1Mul<BlstFr> for BlstP1 {
     fn mul(&self, b: &BlstFr) -> Self {
-        todo!()
+        let mut ret = G1::default();
+        unsafe {
+            g1_mul(&mut ret, self, b);
+        }
+        ret
     }
 }
 
@@ -268,6 +273,10 @@ impl G2 for BlstP2 {
 
 impl G2Mul<BlstFr> for BlstP2 {
     fn mul(&self, b: &BlstFr) -> Self {
-        todo!()
+        let mut ret = G2::default();
+        unsafe {
+            g2_mul(&mut ret, self, b);
+        }
+        ret
     }
 }
