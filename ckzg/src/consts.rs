@@ -30,9 +30,9 @@ pub struct BlstP1 {
 }
 
 pub static G1_IDENTITY: BlstP1 = BlstP1 {
-    x: BlstFp { l: [0, 0, 0, 0, 0, 0] },
-    y: BlstFp { l: [0, 0, 0, 0, 0, 0] },
-    z: BlstFp { l: [0, 0, 0, 0, 0, 0] },
+    x: BlstFp { l: [0; 6] },
+    y: BlstFp { l: [0; 6] },
+    z: BlstFp { l: [0; 6] },
 };
 
 pub const SCALE_FACTOR: u64 = 5;

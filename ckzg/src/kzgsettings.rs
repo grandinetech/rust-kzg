@@ -47,20 +47,20 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
             secret_g2: &mut BlstP2 { // TODO: G2::default()
                 x: BlstFp2 {
                     fp: [
-                        BlstFp { l: [0, 0, 0, 0, 0, 0] },
-                        BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                        BlstFp { l: [0; 6] },
+                        BlstFp { l: [0; 6] }
                     ]
                 },
                 y: BlstFp2 {
                     fp: [
-                        BlstFp { l: [0, 0, 0, 0, 0, 0] },
-                        BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                        BlstFp { l: [0; 6] },
+                        BlstFp { l: [0; 6] }
                     ]
                 },
                 z: BlstFp2 {
                     fp: [
-                        BlstFp { l: [0, 0, 0, 0, 0, 0] },
-                        BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                        BlstFp { l: [0; 6] },
+                        BlstFp { l: [0; 6] }
                     ]
                 },
             },
@@ -145,11 +145,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>, Vec<BlstP2>) {
-    let mut blst_scalar = BlstScalar {
-        b: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    };
+    let mut blst_scalar = BlstScalar { b: [0; 32] };
     for i in 0..secret.len() {
         blst_scalar.b[i] = secret[i];
     }
@@ -168,20 +164,20 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>
         let mut g2_temp = BlstP2 { // TODO: G2::default()
             x: BlstFp2 {
                 fp: [
-                    BlstFp { l: [0, 0, 0, 0, 0, 0] },
-                    BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                    BlstFp { l: [0; 6] },
+                    BlstFp { l: [0; 6] }
                 ]
             },
             y: BlstFp2 {
                 fp: [
-                    BlstFp { l: [0, 0, 0, 0, 0, 0] },
-                    BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                    BlstFp { l: [0; 6] },
+                    BlstFp { l: [0; 6] }
                 ]
             },
             z: BlstFp2 {
                 fp: [
-                    BlstFp { l: [0, 0, 0, 0, 0, 0] },
-                    BlstFp { l: [0, 0, 0, 0, 0, 0] }
+                    BlstFp { l: [0; 6] },
+                    BlstFp { l: [0; 6] }
                 ]
             },
         };
