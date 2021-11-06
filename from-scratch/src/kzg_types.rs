@@ -195,11 +195,35 @@ impl G1 for FsG1 {
         todo!()
     }
 
+    fn identity() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
     fn rand() -> Self {
         todo!()
     }
 
-    fn add_or_double(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn is_inf(&self) -> bool {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
         todo!()
     }
 
