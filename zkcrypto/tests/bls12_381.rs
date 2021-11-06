@@ -71,38 +71,38 @@ pub fn fr_uint64s_roundtrip_() {
 
 #[test]
 pub fn p1_mul_works_() {
-	p1_mul_works::<blsScalar, ZkG1Projective>(&G1_GENERATOR, &G1_NEGATIVE_GENERATOR);
+	p1_mul_works::<blsScalar, ZkG1Projective>();
 }
 
 #[test]
 pub fn p1_sub_works_() {
-	p1_sub_works::<blsScalar, ZkG1Projective>(&G1_GENERATOR, &G1_NEGATIVE_GENERATOR);
+	p1_sub_works::<blsScalar, ZkG1Projective>();
 }
 
 #[test]
 pub fn p2_add_or_dbl_works_() {
-	p2_add_or_dbl_works::<blsScalar, ZkG2Projective>(&G2_GENERATOR);
+	p2_add_or_dbl_works::<blsScalar, ZkG2Projective>();
 }
 
 #[test]
 pub fn p2_mul_works_() {
-	p2_mul_works::<blsScalar, ZkG2Projective>(&G2_GENERATOR, &G2_NEGATIVE_GENERATOR);
+	p2_mul_works::<blsScalar, ZkG2Projective>();
 
 }
 
 #[test]
 pub fn p2_sub_works_() {
-	p2_sub_works::<blsScalar, ZkG2Projective>(&G2_GENERATOR, &G2_NEGATIVE_GENERATOR);
+	p2_sub_works::<blsScalar, ZkG2Projective>();
 }
 
 #[test]
 pub fn g1_identity_is_infinity_() {
-	g1_identity_is_infinity::<blsScalar, ZkG1Projective>(&G1_IDENTITY);
+	g1_identity_is_infinity::<blsScalar, ZkG1Projective>();
 }
 
 #[test]
 pub fn g1_identity_is_identity_() {
-	g1_identity_is_identity::<blsScalar, ZkG1Projective>(&G1_IDENTITY, &G1_GENERATOR);
+	g1_identity_is_identity::<blsScalar, ZkG1Projective>();
 
 }
 
@@ -135,7 +135,7 @@ pub fn g1_identity_is_identity_() {
 
 #[test]
 pub fn pairings_work_() {
-	pairings_work::<blsScalar, ZkG1Projective, ZkG2Projective>(&G1_GENERATOR, &G2_GENERATOR, &pairings_verify);
+	pairings_work::<blsScalar, ZkG1Projective, ZkG2Projective>(&pairings_verify);
 
 }
 

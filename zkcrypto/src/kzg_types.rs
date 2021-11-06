@@ -1,7 +1,6 @@
 
 // pub use super::{ZPoly, BlsScalar};
-use kzg::G1_ as G1;
-use kzg::G2_ as G2;
+use kzg::{G1, G2, G1Mul, G2Mul};
 // use ff::{Field, PrimeField};
 
 use std::ptr;
@@ -91,13 +90,29 @@ pub const G2_NEGATIVE_GENERATOR: ZkG2Projective = ZkG2Projective {
 };
 	
 
-impl G1<blsScalar> for ZkG1Projective {
+impl G1 for ZkG1Projective {
 	
 	fn default() -> Self {
 		<ZkG1Projective as Default>::default()
 	}
 
-    fn add_or_double(&self, b: &Self) -> Self {
+	fn identity() -> Self {
+		G1_IDENTITY
+	}
+
+	fn generator() -> Self {
+		G1_GENERATOR
+	}
+
+	fn negative_generator() -> Self {
+		G1_NEGATIVE_GENERATOR
+	}
+
+	fn rand() -> Self {
+		todo!()
+	}
+
+	fn add_or_dbl(&self, b: &Self) -> Self {
 		if self.eq(b) {
 			self.dbl()
 		}
@@ -108,11 +123,7 @@ impl G1<blsScalar> for ZkG1Projective {
 		ret
 		}
 	}
-	
-	fn mul(&self, b: &blsScalar) -> Self {
-		self * b
-	}
-	
+
 	fn is_inf(&self) -> bool {
 		bool::from(self.is_identity())
 	}
@@ -135,24 +146,33 @@ impl G1<blsScalar> for ZkG1Projective {
 
 }
 
-impl G2<blsScalar> for ZkG2Projective {
+impl G1Mul<blsScalar> for ZkG1Projective {
+	fn mul(&self, b: &blsScalar) -> Self {
+		self * b
+	}
+}
+
+impl G2 for ZkG2Projective {
 	
 	fn default() -> Self {
 		<ZkG2Projective as Default>::default()
 	}
 
-    fn add_or_double(&self, b: &Self) -> Self {
+	fn generator() -> Self {
+		G2_GENERATOR
+	}
+
+	fn negative_generator() -> Self {
+		G2_NEGATIVE_GENERATOR
+	}
+
+	fn add_or_dbl(&self, b: &Self) -> Self {
 		if self.eq(&b) {
 			self.dbl()
 		}
 		else {self.add(&b)}
-		//todo!()
 	}
-	
-	fn mul(&self, b: &blsScalar) -> Self {
-		self * b
-	}
-	
+
 	fn dbl(&self) -> Self {
 		self.double()
 	}
@@ -171,6 +191,11 @@ impl G2<blsScalar> for ZkG2Projective {
 
 }
 
+impl G2Mul<blsScalar> for ZkG2Projective {
+	fn mul(&self, b: &blsScalar) -> Self {
+		self * b
+	}
+}
 
 pub fn pairings_verify(a1: &ZkG1Projective, a2: &ZkG2Projective, b1: &ZkG1Projective, b2: &ZkG2Projective) -> bool {
     // As an optimisation, we want to invert one of the pairings,
@@ -210,11 +235,11 @@ pub fn g1_linear_combination(out: &mut ZkG1Projective, p: &Vec<ZkG1Projective>, 
         // }       
 	
 	if len < 8 {
-		let mut tmp = <ZkG1Projective as G1<blsScalar>>::default();
+		let mut tmp = <ZkG1Projective as G1>::default();
 		*out = G1_IDENTITY;
 		for i in 0..len{
-			tmp = ZkG1Projective::mul(&p[i], &coeffs[i]);
-			out.add_or_double(&tmp);
+			tmp = G1Mul::mul(&p[i], &coeffs[i]);
+			out.add_or_dbl(&tmp);
 			// g1_mul(&tmp, &p[i], &coeffs[i]);
             // blst_p1_add_or_double(out, out, &tmp);
 		}	
