@@ -68,10 +68,10 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         }
     }
 
-    fn new(secret_g1: &Vec<BlstP1>, secret_g2: &Vec<BlstP2>, length: usize, fs: *const KzgFFTSettings) -> Result<Self, String> {
+    fn new(secret_g1: &Vec<BlstP1>, secret_g2: &Vec<BlstP2>, length: usize, fs: KzgFFTSettings) -> Result<Self, String> {
         let mut settings = KZGSettings::default();
         unsafe {
-            return match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, fs) {
+            return match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, &fs) {
                 KzgRet::KzgOk => Ok(settings),
                 e => Err(format!("An error has occurred in \"KZGSettings::new\" ==> {:?}", e))
             }
@@ -137,6 +137,8 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
 
     fn destroy(&mut self) {
         unsafe {
+            let mut ffs = *self.fs as KzgFFTSettings;
+            ffs.destroy();
             free_kzg_settings(self);
         }
     }
