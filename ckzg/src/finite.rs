@@ -1,6 +1,6 @@
+use kzg::{Fr, G1, G1Mul, G2, G2Mul};
 use rand::{Rng, thread_rng};
-use kzg::{Fr, G1, G2};
-use crate::consts::{BlstP1, BlstP2, G1_GENERATOR, G1_IDENTITY};
+use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2};
 
 extern "C" {
     // Fr
@@ -16,9 +16,14 @@ extern "C" {
     fn blst_fr_mul(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_from_uint64(ret: *mut BlstFr, a: *const u64);
     // G1
+    fn blst_p1_generator() -> *const BlstP1;
+    static g1_negative_generator: BlstP1;
     fn g1_add_or_dbl(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_equal(a: *const BlstP1, b: *const BlstP1) -> bool;
     fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
+    // G2
+    fn blst_p2_generator() -> *const BlstP2;
+    static g2_negative_generator: BlstP2;
 }
 
 #[repr(C)]
@@ -150,26 +155,38 @@ impl Fr for BlstFr {
 
 impl G1 for BlstP1 {
     fn default() -> Self {
-        G1_IDENTITY
+        Self {
+            x: BlstFp { l: [0; 6] },
+            y: BlstFp { l: [0; 6] },
+            z: BlstFp { l: [0; 6] },
+        }
     }
 
     fn identity() -> Self {
-        todo!()
+        Self {
+            x: BlstFp { l: [1; 6] },
+            y: BlstFp { l: [1; 6] },
+            z: BlstFp { l: [1; 6] },
+        }
     }
 
     fn generator() -> Self {
-        todo!()
+        unsafe {
+            return *blst_p1_generator();
+        }
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        unsafe {
+            g1_negative_generator
+        }
     }
 
     fn rand() -> Self {
         let mut ret = G1::default();
         let random = Fr::rand();
         unsafe {
-            g1_mul(&mut ret, &G1_GENERATOR, &random);
+            g1_mul(&mut ret, &G1::generator(), &random);
         }
         ret
     }
@@ -177,7 +194,7 @@ impl G1 for BlstP1 {
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let out = self;
         unsafe {
-            g1_add_or_dbl(out, b, &G1_GENERATOR);
+            g1_add_or_dbl(out, b, &G1::generator());
         }
         *out
     }
@@ -203,5 +220,54 @@ impl G1 for BlstP1 {
     fn destroy(&mut self) {}
 }
 
+impl G1Mul<BlstFr> for BlstP1 {
+    fn mul(&self, b: &BlstFr) -> Self {
+        todo!()
+    }
+}
+
 impl G2 for BlstP2 {
+    fn default() -> Self {
+        Self {
+            x: BlstFp2 { fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }] },
+            y: BlstFp2 { fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }] },
+            z: BlstFp2 { fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }] },
+        }
+    }
+
+    fn generator() -> Self {
+        unsafe {
+            return *blst_p2_generator();
+        }
+    }
+
+    fn negative_generator() -> Self {
+        unsafe {
+            g2_negative_generator
+        }
+    }
+
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        todo!()
+    }
+
+    fn destroy(&mut self) {}
+}
+
+impl G2Mul<BlstFr> for BlstP2 {
+    fn mul(&self, b: &BlstFr) -> Self {
+        todo!()
+    }
 }

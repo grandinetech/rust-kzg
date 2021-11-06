@@ -1,4 +1,4 @@
-use kzg::{FFTSettings, Fr, G1, KZGSettings};
+use kzg::{KZGSettings, FFTSettings, Fr, G1, G2};
 
 use crate::common::KzgRet;
 use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2};
@@ -18,10 +18,8 @@ extern "C" {
     fn fr_from_scalar(out: *mut BlstFr, a: *const BlstScalar);
     // G1
     fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
-    fn blst_p1_generator() -> *const BlstP1;
     // G2
     fn g2_mul(out: *mut BlstP2, a: *const BlstP2, b: *const BlstFr);
-    fn blst_p2_generator() -> *const BlstP2;
 }
 
 #[repr(C)]
@@ -161,29 +159,10 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>
 
     for _i in 0..len {
         let mut g1_temp = G1::default();
-        let mut g2_temp = BlstP2 { // TODO: G2::default()
-            x: BlstFp2 {
-                fp: [
-                    BlstFp { l: [0; 6] },
-                    BlstFp { l: [0; 6] }
-                ]
-            },
-            y: BlstFp2 {
-                fp: [
-                    BlstFp { l: [0; 6] },
-                    BlstFp { l: [0; 6] }
-                ]
-            },
-            z: BlstFp2 {
-                fp: [
-                    BlstFp { l: [0; 6] },
-                    BlstFp { l: [0; 6] }
-                ]
-            },
-        };
+        let mut g2_temp = G2::default();
         unsafe {
-            g1_mul(&mut g1_temp, blst_p1_generator(), &s_pow);
-            g2_mul(&mut g2_temp, blst_p2_generator(), &s_pow);
+            g1_mul(&mut g1_temp, &G1::generator(), &s_pow);
+            g2_mul(&mut g2_temp, &G2::generator(), &s_pow);
         }
         s1.push(g1_temp);
         s2.push(g2_temp);

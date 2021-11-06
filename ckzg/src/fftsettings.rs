@@ -1,5 +1,5 @@
 use kzg::{Fr, FFTSettings, FFTSettingsPoly, Poly, FFTFr, FFTG1, G1};
-use crate::consts::{BlstP1, G1_GENERATOR};
+use crate::consts::{BlstP1};
 use crate::poly::KzgPoly;
 use crate::finite::BlstFr;
 use crate::common::KzgRet;
@@ -147,7 +147,7 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
 }
 
 pub fn make_data(n: usize) -> Vec<BlstP1> {
-    let mut out_val = vec![G1_GENERATOR; n];
+    let mut out_val = vec![G1::generator(); n];
     let out_ptr: *mut BlstP1 = out_val.as_mut_ptr();
     // Multiples of g1_gen
     if n == 0 { return vec![G1::default(); 0]; }
