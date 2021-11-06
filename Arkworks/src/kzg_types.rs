@@ -305,8 +305,8 @@ impl Clone for LPoly {
     }
 }
 
-impl FFTSettingsPoly<FsFr, LPoly, LFFTSettings> for LPoly{
-    fn poly_mul_fft(a: &LPoly, x: &LPoly, len: usize, fs: Option<&LFFTSettings>) -> Result<Self, String> {        
+impl FFTSettingsPoly<FsFr, LPoly, LFFTSettings> for LFFTSettings {
+    fn poly_mul_fft(a: &LPoly, x: &LPoly, len: usize, fs: Option<&LFFTSettings>) -> Result<LPoly, String> {
         poly_mul_fft(a, x, fs, len)
     }
 }
@@ -385,28 +385,28 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         secret_g2: &Vec<ArkG2>,
         length: usize,
         fs: LFFTSettings,
-    ) -> LKZGSettings {
-        new_kzg_settings(secret_g1, secret_g2, length as u64, fs)
+    ) -> Result<LKZGSettings, String> {
+        Ok(new_kzg_settings(secret_g1, secret_g2, length as u64, fs))
     }
 
     fn commit_to_poly(&self, p: &LPoly) -> Result<ArkG1, String> {
         Ok(commit(p, self).unwrap())
     }
 
-    fn compute_proof_single(&self, p: &LPoly, x: &FsFr) -> ArkG1 {
-        compute_single(p, x, self)
+    fn compute_proof_single(&self, p: &LPoly, x: &FsFr) -> Result<ArkG1, String> {
+        Ok(compute_single(p, x, self))
     }
 
-    fn check_proof_single(&self, com: &ArkG1, proof: &ArkG1, x: &FsFr, value: &FsFr) -> bool {
-        check_single(com, proof, x, value, self)
+    fn check_proof_single(&self, com: &ArkG1, proof: &ArkG1, x: &FsFr, value: &FsFr) -> Result<bool, String> {
+        Ok(check_single(com, proof, x, value, self))
     }
 
-    fn compute_proof_multi(&self, p: &LPoly, x: &FsFr, n: usize) -> ArkG1 {
-        compute_multi(p, x, n, self)
+    fn compute_proof_multi(&self, p: &LPoly, x: &FsFr, n: usize) -> Result<ArkG1, String> {
+        Ok(compute_multi(p, x, n, self))
     }
 
-    fn check_proof_multi(&self, com: &ArkG1, proof: &ArkG1, x: &FsFr, values: &Vec<FsFr>, n: usize) -> bool {
-        check_multi(com, proof, x, values, n, self)
+    fn check_proof_multi(&self, com: &ArkG1, proof: &ArkG1, x: &FsFr, values: &Vec<FsFr>, n: usize) -> Result<bool, String> {
+        Ok(check_multi(com, proof, x, values, n, self))
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
@@ -422,6 +422,6 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
 impl Clone for LKZGSettings {
     fn clone(&self) -> Self {
-        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, self.fs.clone())
+        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, self.fs.clone()).unwrap()
     }
 }
