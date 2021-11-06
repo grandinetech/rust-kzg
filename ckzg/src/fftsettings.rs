@@ -153,7 +153,7 @@ pub fn make_data(n: usize) -> Vec<BlstP1> {
     if n == 0 { return vec![G1::default(); 0]; }
     for i in 1..n as isize {
         unsafe {
-            (*out_ptr.offset(i)).add_or_double(&*out_ptr.offset(i - 1));
+            (*out_ptr.offset(i)).add_or_dbl(&*out_ptr.offset(i - 1));
         }
     }
     out_val
