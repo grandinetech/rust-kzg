@@ -112,8 +112,8 @@ impl G1 for ZkG1Projective {
 		todo!()
 	}
 
-	fn add_or_dbl(&self, b: &Self) -> Self {
-		if self.eq(b) {
+	fn add_or_dbl(&mut self, b: &Self) -> Self {
+		if self.eq(&b) {
 			self.dbl()
 		}
 		else {
@@ -166,11 +166,11 @@ impl G2 for ZkG2Projective {
 		G2_NEGATIVE_GENERATOR
 	}
 
-	fn add_or_dbl(&self, b: &Self) -> Self {
+	fn add_or_dbl(&mut self, b: &Self) -> Self {
 		if self.eq(&b) {
 			self.dbl()
 		}
-		else {self.add(&b)}
+		else {self.add(b)}
 	}
 
 	fn dbl(&self) -> Self {

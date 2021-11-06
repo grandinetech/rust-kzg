@@ -34,7 +34,7 @@ impl G1 for ArkG1 {
         Self(blst_p1::default())
     }
 
-    fn add_or_dbl(&self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
             blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
@@ -120,7 +120,7 @@ impl G2 for ArkG2 {
         todo!()
     }
 
-    fn add_or_dbl(&self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
         todo!()
     }
 

@@ -22,7 +22,7 @@ impl CommonG1 for G1 {
         G1::random()
     }
 
-    fn add_or_dbl(&self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
         let mut g1 = G1::zero();
         G1::add(&mut g1, &self, &b);
         g1
