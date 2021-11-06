@@ -1,6 +1,6 @@
 use rand::{Rng, thread_rng};
-use kzg::{Fr, G1};
-use crate::consts::{BlstP1, G1_GENERATOR, G1_IDENTITY};
+use kzg::{Fr, G1, G2};
+use crate::consts::{BlstP1, BlstP2, G1_GENERATOR, G1_IDENTITY};
 
 #[link(name = "blst", kind = "static")]
 extern "C" {
@@ -72,6 +72,14 @@ impl Fr for BlstFr {
         fr
     }
 
+	fn to_u64_arr(&self) -> [u64; 4] {
+		todo!()
+	}
+	
+	fn div(&self, b: &Self) -> Result<Self, String>{
+		todo!()
+	}
+	
     fn is_one(&self) -> bool {
         unsafe {
             return fr_is_one(self);
@@ -174,4 +182,7 @@ impl G1 for BlstP1 {
     fn destroy(&mut self) {
         todo!()
     }
+}
+
+impl G2 for BlstP2 {
 }

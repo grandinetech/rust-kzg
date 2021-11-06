@@ -44,6 +44,14 @@ impl Fr for FsFr {
         Self::from_u64_arr(&[val, 0, 0, 0])
     }
 
+	fn to_u64_arr(&self) -> [u64; 4] {
+		todo!()
+	}
+	
+	fn div(&self, b: &Self) -> Result<Self, String>{
+		todo!()
+	}
+	
     fn is_one(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
