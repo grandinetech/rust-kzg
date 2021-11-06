@@ -18,7 +18,7 @@ use blst::{
     blst_p1_add_or_double, blst_uint64_from_fr
 };
 // use kzg::DAS;
-use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2, FFTSettingsPoly};
+use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2, FFTSettingsPoly, G1Mul, G2Mul};
 
 #[derive(Debug, PartialEq)]
 pub struct ArkG1(pub blst::blst_p1);
@@ -34,7 +34,7 @@ impl G1 for ArkG1 {
         Self(blst_p1::default())
     }
 
-    fn add_or_double(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
             blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
@@ -66,6 +66,36 @@ impl G1 for ArkG1 {
     }
 
     fn destroy(&mut self) {}
+
+    fn identity() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
+    fn is_inf(&self) -> bool {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        todo!()
+    }
+}
+
+impl G1Mul<FsFr> for ArkG1 {
+    fn mul(&self, b: &FsFr) -> Self {
+        todo!()
+    }
 }
 
 #[derive(Debug)]
@@ -77,7 +107,45 @@ impl Clone for ArkG2 {
     }
 }
 
-impl G2 for ArkG2 {}
+impl G2 for ArkG2 {
+    fn default() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        todo!()
+    }
+
+    fn destroy(&mut self) {
+        todo!()
+    }
+}
+
+impl G2Mul<FsFr> for ArkG1 {
+    fn mul(&self, b: &FsFr) -> Self {
+        todo!()
+    }
+}
 
 #[derive(Debug)]
 pub struct FsFr(pub blst::blst_fr);

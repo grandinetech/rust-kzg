@@ -156,6 +156,18 @@ impl G1 for BlstP1 {
         G1_IDENTITY
     }
 
+    fn identity() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
     fn rand() -> Self {
         let mut ret = G1::default();
         let random = Fr::rand();
@@ -165,12 +177,24 @@ impl G1 for BlstP1 {
         ret
     }
 
-    fn add_or_double(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
         let out = self;
         unsafe {
             g1_add_or_dbl(out, b, &G1_GENERATOR);
         }
         *out
+    }
+
+    fn is_inf(&self) -> bool {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        todo!()
     }
 
     fn equals(&self, b: &Self) -> bool {
