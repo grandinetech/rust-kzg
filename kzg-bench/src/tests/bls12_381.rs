@@ -171,7 +171,7 @@ pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_lin
         p1tmp.dbl();
     }
 
-    let exp = TG1::identity();
+    let mut exp = TG1::identity();
     for i in 0..len {
         p1tmp = p[i].mul(&coeffs[i]);
         exp.add_or_dbl(&p1tmp);

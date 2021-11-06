@@ -52,7 +52,7 @@ pub trait G1: Clone {
 
     fn rand() -> Self;
 
-    fn add_or_dbl(&self, b: &Self) -> Self;
+    fn add_or_dbl(&mut self, b: &Self) -> Self;
 
     fn is_inf(&self) -> bool;
 
@@ -77,7 +77,7 @@ pub trait G2: Clone {
 
     fn negative_generator() -> Self;
 
-    fn add_or_dbl(&self, b: &Self) -> Self;
+    fn add_or_dbl(&mut self, b: &Self) -> Self;
 
     fn dbl(&self) -> Self;
 
