@@ -72,6 +72,14 @@ impl Fr for BlstFr {
         fr
     }
 
+	fn to_u64_arr(&self) -> [u64; 4] {
+		todo!()
+	}
+	
+	fn div(&self, b: &Self) -> Result<Self, String>{
+		todo!()
+	}
+	
     fn is_one(&self) -> bool {
         unsafe {
             return fr_is_one(self);

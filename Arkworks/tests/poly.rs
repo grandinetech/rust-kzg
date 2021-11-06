@@ -58,12 +58,12 @@ pub mod tests {
 
     #[test]
     fn poly_mul_fft_test_() {
-        poly_mul_fft_test::<FsFr, PolyData, FFTSettings, PolyData>();
+        poly_mul_fft_test::<FsFr, PolyData, FFTSettings>();
     }
 
     #[test]
     fn poly_mul_random_() {
-        poly_mul_random::<FsFr, PolyData, FFTSettings, PolyData>();
+        poly_mul_random::<FsFr, PolyData, FFTSettings>();
     }
 
     #[test]
