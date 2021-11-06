@@ -67,7 +67,7 @@ pub fn make_data(data: usize) -> Vec<ArkG1> {
         vec.push(ArkG1(G1_GENERATOR));
         for i in 1..data as u64 {
             let mut temp = vec[(i - 1) as usize].clone();
-            vec.push(temp.add_or_double(&ArkG1(G1_GENERATOR)));
+            vec.push(temp.add_or_dbl(&ArkG1(G1_GENERATOR)));
         }
         vec
     }
