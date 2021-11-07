@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::kzg_proofs::*;
-    use kzg_bindings::kzgsettings::{KzgKZGSettings, generate_trusted_setup};
-    use kzg_bindings::fftsettings::{KzgFFTSettings};
-    use kzg_bindings::consts::{BlstP1, BlstP2};
-    use kzg_bindings::finite::BlstFr;
-    use kzg_bindings::poly::KzgPoly;
+    use ckzg::kzgsettings::{KzgKZGSettings, generate_trusted_setup};
+    use ckzg::fftsettings::KzgFFTSettings;
+    use ckzg::consts::{BlstP1, BlstP2};
+    use ckzg::finite::BlstFr;
+    use ckzg::poly::KzgPoly;
 
     #[test]
     fn test_proof_single() {
