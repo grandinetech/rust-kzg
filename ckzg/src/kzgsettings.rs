@@ -48,7 +48,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         unsafe {
             return match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, &fs) {
                 KzgRet::KzgOk => Ok(settings),
-                e => Err(format!("An error has occurred in \"KZGSettings::new\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in KZGSettings::new ==> {:?}", e))
             }
         }
     }
@@ -58,7 +58,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         unsafe {
             return match commit_to_poly(&mut ret, p, self) {
                 KzgRet::KzgOk => Ok(ret),
-                e => Err(format!("An error has occurred in \"KZGSettings::commit_to_poly\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in KZGSettings::commit_to_poly ==> {:?}", e))
             }
         }
     }
@@ -68,7 +68,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         unsafe {
             return match compute_proof_single(&mut ret, p, x, self) {
                 KzgRet::KzgOk => Ok(ret),
-                e => Err(format!("An error has occurred in \"KZGSettings::compute_proof_single\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in KZGSettings::compute_proof_single ==> {:?}", e))
             }
         }
     }
@@ -78,7 +78,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         unsafe {
             return match check_proof_single(&mut ret, com, proof, x, value, self) {
                 KzgRet::KzgOk => Ok(ret),
-                e => Err(format!("An error has occurred in \"KZGSettings::check_proof_single\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in KZGSettings::check_proof_single ==> {:?}", e))
             }
         }
     }
@@ -88,7 +88,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         unsafe {
             return match compute_proof_multi(&mut ret, p, x, n as u64, self) {
                 KzgRet::KzgOk => Ok(ret),
-                e => Err(format!("An error has occurred in \"KZGSettings::compute_proof_multi\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in KZGSettings::compute_proof_multi ==> {:?}", e))
             }
         }
     }
@@ -98,7 +98,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         unsafe {
             return match check_proof_multi(&mut ret, com, proof, x, values.as_ptr(), n as u64, self) {
                 KzgRet::KzgOk => Ok(ret),
-                e => Err(format!("An error has occurred in \"KZGSettings::check_proof_multi\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in KZGSettings::check_proof_multi ==> {:?}", e))
             }
         }
     }
@@ -131,8 +131,8 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>
         fr_from_scalar(&mut s, &blst_scalar)
     };
 
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
+    let mut s1 = vec![G1::default(); 0];
+    let mut s2 = vec![G2::default(); 0];
 
     for _i in 0..len {
         let g1_mul = G1Mul::mul(&G1::generator(), &s_pow);
