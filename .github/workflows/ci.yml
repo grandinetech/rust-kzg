@@ -55,32 +55,32 @@ jobs:
 
 # 4th team #########################################################
 
-    - name: [ckzg] Build native libs for Linux
+    - name: "[ckzg] Build native libs for Linux"
       if: matrix.os == 'ubuntu-latest'
       run: |
         cd ckzg && bash build.sh "$(which sed)"
 
-    - name: [ckzg] Build native libs for MacOS
+    - name: "[ckzg] Build native libs for MacOS"
       if: matrix.os == 'macos-11'
       run: |
         brew install gnu-sed
         cd ckzg && bash build.sh "$(which gsed)"
 
-    - name: [ckzg] Test
+    - name: "[ckzg] Test"
       uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: test
         args: --manifest-path ckzg/Cargo.toml
 
-    - name: [ckzg] Bench
+    - name: "[ckzg] Bench"
       uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: bench
         args: --manifest-path ckzg/Cargo.toml
 
-    - name: [ckzg] Fmt
+    - name: "[ckzg] Fmt"
       uses: actions-rs/cargo@v1
       with:
         command: fmt
