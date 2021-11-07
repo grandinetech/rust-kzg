@@ -49,7 +49,7 @@ pub fn fr_equal_works<TFr: Fr>() {
 pub fn fr_negate_works<TFr: Fr>() {
     let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
     let minus1 = TFr::from_u64_arr(&m1);
-    let res = TFr::negate(&minus1);
+    let res = minus1.negate();
     assert!(res.is_one());
 }
 
@@ -89,7 +89,7 @@ pub fn fr_uint64s_roundtrip<TFr: Fr>() {
     let expected: [u64; 4] = [1, 2, 3, 4];
 
     let fr = TFr::from_u64_arr(&expected);
-    let actual = TFr::to_u64_arr(&fr);
+    let actual = fr.to_u64_arr();
 
     assert_eq!(expected[0], actual[0]);
     assert_eq!(expected[1], actual[1]);
@@ -104,13 +104,13 @@ pub fn p1_mul_works<TFr: Fr, TG1: G1 + G1Mul<TFr>>() {
     assert!(res.equals(&TG1::negative_generator()));
 }
 
-pub fn p1_sub_works<TFr: Fr, TG1: G1 + G1Mul<TFr>>() {
+pub fn p1_sub_works<TG1: G1>() {
     let tmp = TG1::generator().dbl();
     let res = TG1::generator().sub(&TG1::negative_generator());
     assert!(tmp.equals(&res));
 }
 
-pub fn p2_add_or_dbl_works<TFr: Fr, TG2: G2 + G2Mul<TFr>>() {
+pub fn p2_add_or_dbl_works<TG2: G2>() {
     let expected = TG2::generator().dbl();
     let actual = TG2::generator().add_or_dbl(&TG2::generator());
     assert!(expected.equals(&actual));
@@ -124,17 +124,17 @@ pub fn p2_mul_works<TFr: Fr, TG2: G2 + G2Mul<TFr>>() {
     assert!(res.equals(&TG2::negative_generator()));
 }
 
-pub fn p2_sub_works<TFr: Fr, TG2: G2 + G2Mul<TFr>>() {
+pub fn p2_sub_works<TG2: G2>() {
     let tmp = TG2::generator().dbl();
     let res = TG2::generator().sub(&TG2::negative_generator());
     assert!(tmp.equals(&res));
 }
 
-pub fn g1_identity_is_infinity<TFr: Fr, TG1: G1>() {
+pub fn g1_identity_is_infinity<TG1: G1>() {
     assert!(TG1::is_inf(&TG1::identity()));
 }
 
-pub fn g1_identity_is_identity<TFr: Fr, TG1: G1>() {
+pub fn g1_identity_is_identity<TG1: G1>() {
     let actual = TG1::generator().add_or_dbl(&TG1::identity());
     assert!(actual.equals(&TG1::generator()));
 }
