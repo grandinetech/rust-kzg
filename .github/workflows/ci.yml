@@ -19,19 +19,6 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-# Prerequisites ####################################################
-
-    - name: [ckzg] Build native libs for Linux
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        bash ci/unix.sh $(which sed)
-
-    - name: [ckzg] Build native libs for MacOS
-      if: matrix.os == 'macos-11'
-      run: |
-        brew install gnu-sed
-        bash ci/unix.sh $(which gsed)
-
 # 2nd team #########################################################
 
     - uses: actions-rs/cargo@v1
@@ -67,6 +54,17 @@ jobs:
         args: --manifest-path from-scratch/Cargo.toml
 
 # 4th team #########################################################
+
+    - name: [ckzg] Build native libs for Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        bash ckzg/build.sh $(which sed)
+
+    - name: [ckzg] Build native libs for MacOS
+      if: matrix.os == 'macos-11'
+      run: |
+        brew install gnu-sed
+        bash ckzg/build.sh $(which gsed)
 
     - name: [ckzg] Test
       uses: actions-rs/cargo@v1
