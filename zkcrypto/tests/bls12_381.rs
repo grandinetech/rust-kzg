@@ -76,12 +76,12 @@ pub fn p1_mul_works_() {
 
 #[test]
 pub fn p1_sub_works_() {
-	p1_sub_works::<blsScalar, ZkG1Projective>();
+	p1_sub_works::<ZkG1Projective>();
 }
 
 #[test]
 pub fn p2_add_or_dbl_works_() {
-	p2_add_or_dbl_works::<blsScalar, ZkG2Projective>();
+	p2_add_or_dbl_works::<ZkG2Projective>();
 }
 
 #[test]
@@ -92,17 +92,17 @@ pub fn p2_mul_works_() {
 
 #[test]
 pub fn p2_sub_works_() {
-	p2_sub_works::<blsScalar, ZkG2Projective>();
+	p2_sub_works::<ZkG2Projective>();
 }
 
 #[test]
 pub fn g1_identity_is_infinity_() {
-	g1_identity_is_infinity::<blsScalar, ZkG1Projective>();
+	g1_identity_is_infinity::<ZkG1Projective>();
 }
 
 #[test]
 pub fn g1_identity_is_identity_() {
-	g1_identity_is_identity::<blsScalar, ZkG1Projective>();
+	g1_identity_is_identity::<ZkG1Projective>();
 
 }
 
