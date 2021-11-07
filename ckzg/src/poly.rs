@@ -33,7 +33,7 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match new_poly(&mut poly, size as u64) {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::new\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::new ==> {:?}", e))
             }
         }
     }
@@ -82,7 +82,7 @@ impl Poly<BlstFr> for KzgPoly {
                     self.destroy();
                     Ok(poly)
                 },
-                e => Err(format!("An error has occurred in \"Poly::inverse\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::inverse ==> {:?}", e))
             }
         }
     }
@@ -92,7 +92,7 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match new_poly_div(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::div\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::div ==> {:?}", e))
             }
         }
     }
@@ -102,7 +102,7 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match poly_long_div(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::long_div\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::long_div ==> {:?}", e))
             }
         }
     }
@@ -112,7 +112,7 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match poly_fast_div(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::fast_div\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::fast_div ==> {:?}", e))
             }
         }
     }
@@ -122,7 +122,7 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match poly_mul(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::mul_direct\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::mul_direct ==> {:?}", e))
             }
         }
     }

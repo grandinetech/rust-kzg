@@ -41,7 +41,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
         unsafe {
             return match new_fft_settings(&mut settings, scale as u32) {
                 KzgRet::KzgOk => Ok(settings),
-                e => Err(format!("An error has occurred in \"FFTSettings::new\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in FFTSettings::new ==> {:?}", e))
             }
         }
     }
@@ -85,7 +85,7 @@ impl FFTFr<BlstFr> for KzgFFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
         return match _fft_fr(data.as_ptr(), inverse, data.len() as u64, self) {
             Ok(fr) => Ok(fr),
-            Err(e) => Err(format!("An error has occurred in \"FFTFr::fft_fr\" ==> {:?}", e))
+            Err(e) => Err(format!("An error has occurred in FFTFr::fft_fr ==> {:?}", e))
         };
     }
 }
@@ -104,7 +104,7 @@ impl FFTG1<BlstP1> for KzgFFTSettings {
     fn fft_g1(&self, data: &[BlstP1], inverse: bool) -> Result<Vec<BlstP1>, String> {
         return match _fft_g1(data.as_ptr(), inverse, data.len() as u64, self) {
             Ok(g) => Ok(g),
-            Err(e) => Err(format!("An error has occurred in \"FFTG1::fft_g1\" ==> {:?}", e))
+            Err(e) => Err(format!("An error has occurred in FFTG1::fft_g1 ==> {:?}", e))
         };
     }
 }
@@ -140,7 +140,7 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
                     fft.destroy();
                     Ok(poly)
                 },
-                e => Err(format!("An error has occurred in \"FFTSettingsPoly::poly_mul_fft\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in FFTSettingsPoly::poly_mul_fft ==> {:?}", e))
             }
         }
     }
@@ -149,7 +149,6 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
 pub fn make_data(n: usize) -> Vec<BlstP1> {
     let mut out_val = vec![G1::generator(); n];
     let out_ptr: *mut BlstP1 = out_val.as_mut_ptr();
-    // Multiples of g1_gen
     if n == 0 { return vec![G1::default(); 0]; }
     for i in 1..n as isize {
         unsafe {

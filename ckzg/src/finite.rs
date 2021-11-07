@@ -77,9 +77,9 @@ impl Fr for BlstFr {
         fr
     }
 
-	fn to_u64_arr(&self) -> [u64; 4] {
-		todo!()
-	}
+    fn to_u64_arr(&self) -> [u64; 4] {
+        todo!()
+    }
 
     fn is_one(&self) -> bool {
         unsafe {
