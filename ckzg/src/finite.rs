@@ -141,7 +141,7 @@ impl Fr for BlstFr {
         todo!()
     }
 
-    fn div(&self, b: &Self) -> Result<Self, String>{
+    fn div(&self, b: &Self) -> Result<Self, String> {
         todo!()
     }
 
