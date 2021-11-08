@@ -87,13 +87,13 @@ impl G1 for ArkG1 {
         todo!()
     }
 
-    fn sub(&self, b: &Self) -> Self {
+    fn sub(&self, _b: &Self) -> Self {
         todo!()
     }
 }
 
 impl G1Mul<FsFr> for ArkG1 {
-    fn mul(&self, b: &FsFr) -> Self {
+    fn mul(&self, _b: &FsFr) -> Self {
         todo!()
     }
 }
@@ -120,7 +120,7 @@ impl G2 for ArkG2 {
         todo!()
     }
 
-    fn add_or_dbl(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, _b: &Self) -> Self {
         todo!()
     }
 
@@ -128,11 +128,11 @@ impl G2 for ArkG2 {
         todo!()
     }
 
-    fn sub(&self, b: &Self) -> Self {
+    fn sub(&self, _b: &Self) -> Self {
         todo!()
     }
 
-    fn equals(&self, b: &Self) -> bool {
+    fn equals(&self, _b: &Self) -> bool {
         todo!()
     }
 
@@ -142,7 +142,7 @@ impl G2 for ArkG2 {
 }
 
 impl G2Mul<FsFr> for ArkG1 {
-    fn mul(&self, b: &FsFr) -> Self {
+    fn mul(&self, _b: &FsFr) -> Self {
         todo!()
     }
 }
@@ -190,7 +190,7 @@ impl Fr for FsFr {
 		todo!()
 	}
 	
-	fn div(&self, b: &Self) -> Result<Self, String>{
+	fn div(&self, _b: &Self) -> Result<Self, String>{
 		todo!()
 	}
 	

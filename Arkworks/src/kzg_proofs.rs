@@ -3,28 +3,33 @@ use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_poly_commit::kzg10::{
     Commitment, Powers, Proof, Randomness, UniversalParams, VerifierKey, KZG10,
 };
+use std::collections::BTreeMap;
 use ark_poly_commit::*;
 use ark_std::UniformRand;
+use ark_ec::msm::{FixedBaseMSM, VariableBaseMSM};
+use ark_std::rand::RngCore;
+
 
 use super::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_poly_into_pc_poly, pc_fr_into_blst_fr,
     pc_g1projective_into_blst_p1, PolyData, blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2
 };
 use super::{/*Fp , Fr as BlstFr,*/ P2};
-use crate::fft_g1::G1_IDENTITY;
+use crate::fft_g1::{G1_IDENTITY, G1_GENERATOR};
 use crate::kzg_types::{FsFr as BlstFr, ArkG1, ArkG2};
 use ark_bls12_381::{g1, Bls12_381, Fr, g2};
-use ark_ec::msm::VariableBaseMSM;
 use ark_ec::{
     models::short_weierstrass_jacobian::GroupAffine, AffineCurve, PairingEngine, ProjectiveCurve,
+    models::short_weierstrass_jacobian::GroupProjective,
 };
-use ark_ff::{/*biginteger::BigInteger256, */Field, PrimeField};
+use ark_ff::{/*Field, */PrimeField};
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use ark_std::{marker::PhantomData, ops::Div, test_rng, vec, Zero, One};
 use blst::{blst_fp, blst_fp2};
 use kzg::{Fr as FrTrait, Poly, FFTSettings as FFTTrait, FFTFr};
 use rand::rngs::StdRng;
-use std::ops::{Neg, MulAssign};
+use std::ops::{/*Neg,*/ MulAssign};
+// use std::iter::FromIterator;
 
 use super::fft::SCALE2_ROOT_OF_UNITY;
 
@@ -148,6 +153,131 @@ where
     P: UVPolynomial<E::Fr, Point = E::Fr>,
     for<'a, 'b> &'a P: Div<&'b P, Output = P>,
 {
+    #![allow(non_camel_case_types)]
+    /// Constructs public parameters when given as input the maximum degree `degree`
+    /// for the polynomial commitment scheme.
+    pub fn setup<R: RngCore>(
+        max_degree: usize,
+        produce_g2_powers: bool,
+        rng: &mut R,
+    ) -> Result<(UniversalParams<Bls12_381>,Vec<GroupProjective<g1::Parameters>>, Vec<GroupProjective<g2::Parameters>>), Error> {
+        if max_degree < 1 {
+            return Err(Error::DegreeIsZero);
+        }
+
+        let mut ret = blst::blst_fr::default();
+
+        let secret = blst::blst_scalar{b:[0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
+                                0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]};
+
+        unsafe{
+            blst::blst_fr_from_scalar(&mut ret, &secret)
+        }
+
+        // let beta = Fr::rand(rng);
+        let beta = blst_fr_into_pc_fr(&BlstFr(ret));
+        // let g: GroupProjective<g1::Parameters> = GroupProjective::rand(rng);
+        let g = blst_p1_into_pc_g1projective(&G1_GENERATOR).unwrap();
+        let gamma_g: GroupProjective<g1::Parameters> = GroupProjective::rand(rng);
+        // let h: GroupProjective<g2::Parameters> = GroupProjective::rand(rng);
+        let h = blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
+        let (s1, s2) = generate_trusted_setup_test(max_degree, beta);
+
+        let mut powers_of_beta = vec![Fr::one()];
+
+        let mut cur = beta;
+        for _ in 0..max_degree {
+            powers_of_beta.push(cur);
+            cur *= &beta;
+        }
+
+        let window_size = FixedBaseMSM::get_mul_window_size(max_degree + 1);
+
+        let scalar_bits = Fr::size_in_bits();
+        let g_table = FixedBaseMSM::get_window_table(scalar_bits, window_size, g);
+        let mut powers_of_g = FixedBaseMSM::multi_scalar_mul::<GroupProjective<g1::Parameters>>(
+            scalar_bits,
+            window_size,
+            &g_table,
+            &powers_of_beta,
+        );
+        // println!("POWG: {:?}", powers_of_g[2]);
+        // let mut temp = g.clone();
+        // temp.mul_assign(powers_of_beta[2]);
+        // println!("POWG: {:?}", temp);
+        // println!("SECRET1: {:?}", s1[2]);
+        let gamma_g_table = FixedBaseMSM::get_window_table(scalar_bits, window_size, gamma_g);
+        let mut powers_of_gamma_g = FixedBaseMSM::multi_scalar_mul::<GroupProjective<g1::Parameters>>(
+            scalar_bits,
+            window_size,
+            &gamma_g_table,
+            &powers_of_beta,
+        );
+        // Add an additional power of gamma_g, because we want to be able to support
+        // up to D queries.
+        let temp: [u64; 4usize];
+        temp = beta.0.0;
+        powers_of_gamma_g.push(powers_of_gamma_g.last().unwrap().mul(temp));
+
+        powers_of_g = s1.clone();
+        let powers_of_g = GroupProjective::batch_normalization_into_affine(&powers_of_g);
+        let powers_of_gamma_g =
+            GroupProjective::batch_normalization_into_affine(&powers_of_gamma_g)
+                .into_iter()
+                .enumerate()
+                .collect();
+
+        let neg_powers_of_h = if produce_g2_powers {
+            let mut neg_powers_of_beta = vec![Fr::one()];
+            let mut cur = Fr::one() / &beta;
+            for _ in 0..max_degree {
+                neg_powers_of_beta.push(cur);
+                cur *= &beta;
+            }
+
+            let neg_h_table = FixedBaseMSM::get_window_table(scalar_bits, window_size, h);
+            let neg_powers_of_h = FixedBaseMSM::multi_scalar_mul::<GroupProjective<g2::Parameters>>(
+                scalar_bits,
+                window_size,
+                &neg_h_table,
+                &neg_powers_of_beta,
+            );
+
+            let neg_powers_of_h = s2.clone();
+            let affines = GroupProjective::batch_normalization_into_affine(&neg_powers_of_h);
+            let mut affines_map = BTreeMap::new();
+            affines.into_iter().enumerate().for_each(|(i, a)| {
+                affines_map.insert(i, a);
+            });
+            affines_map
+        } else {
+            BTreeMap::new()
+        };
+
+        let h = h.into_affine();
+        let beta_h = h.mul(beta).into_affine();
+        let prepared_h = h.into();
+        let prepared_beta_h = beta_h.into();
+
+        // let mut v = Vec::from_iter(neg_powers_of_h.clone());
+        // println!("neg_powers_of_h: {:?}", neg_powers_of_h[&2].into_projective());
+        // println!("POWGVVVVV: {:?}", v[2]);
+        // println!("SECRET1: {:?}", s2[2]);
+
+
+        let pp = UniversalParams {
+            powers_of_g,
+            powers_of_gamma_g,
+            h,
+            beta_h,
+            neg_powers_of_h,
+            prepared_h,
+            prepared_beta_h,
+        };
+        Ok((pp, s1, s2))
+    }
+
     pub fn open<'a>(
         powers: &Powers<Bls12_381>,
         p: &DensePoly<Fr>,
@@ -406,6 +536,23 @@ pub fn generate_trusted_setup(len: usize, _secret: [u8; 32usize]) -> (Vec<ArkG1>
     (s1, s2)
 }
 
+pub fn generate_trusted_setup_test(len: usize, s: Fr) -> (Vec<GroupProjective<g1::Parameters>>, Vec<GroupProjective<g2::Parameters>>) {
+    let mut s_pow = Fr::from(1);
+    let mut s1 = Vec::new();
+    let mut s2 = Vec::new();
+    for _i in 0..len{
+        let mut temp = blst_p1_into_pc_g1projective(&G1_GENERATOR).unwrap();
+        temp.mul_assign(s_pow);
+        s1.push(temp);
+        let mut temp =  blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
+        temp.mul_assign(s_pow);
+        s2.push(temp);
+        s_pow *= s;
+    }
+
+    (s1, s2)
+}
+
 // pub(crate) fn new_fft_settings(max_scale: u64) -> FFTSettings {
 //     FFTSettings::default()
 // }
@@ -416,7 +563,7 @@ pub(crate) fn new_kzg_settings(
     length: u64,
     fs: FFTSettings,
 ) -> KZGSettings {
-    let params = KZG_Bls12_381::setup(length as usize, true, &mut test_rng()).unwrap();
+    let (mut params, test, test2) = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, true, &mut test_rng()).unwrap();
     let mut temp = Vec::new();
     for i in 0..length{
         temp.push(blst_p1_into_pc_g1projective(&secret_g1[i as usize].0).unwrap().into_affine());
@@ -436,14 +583,36 @@ pub(crate) fn new_kzg_settings(
         s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
         s_pow *= s;
     }
-
-
     
+// println!("FIRST: {:?}", test[1]);
+// println!("SECOND: {:?}", params.powers_of_g[1].into_projective());
+
+    let mut temp = Vec::new();
+    for i in 0..length{
+        temp.push(pc_g1projective_into_blst_p1(test[i as usize]).unwrap());
+    }
+
+    let mut temp2 = Vec::new();
+    for i in 0..length{
+        temp2.push(pc_g2projective_into_blst_p2(test2[i as usize]).unwrap());
+    }
+
+    let mut temp3 = Vec::new();
+    for i in 0..length{
+        temp3.push(test[i as usize].into_affine());
+    }
+
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", test[6].into_affine().into_projective());
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", temp3[6].into_projective());
+    assert_eq!(test[6], temp3[6].into_projective());
+    println!("WWWWWWWWWWWWWWWWWWWWWWWWWW {:?}", temp3[6].into_projective().into_affine().into_projective());
+    params.powers_of_g = temp3;
+
     KZGSettings {
-        // secret_g1: secret_g1.clone(),
-        // secret_g2: secret_g2.clone(),
-        secret_g1: s1,
-        secret_g2: s2,
+        secret_g1: temp,
+        secret_g2: temp2,
+        // secret_g1: s1,
+        // secret_g2: s2,
         length: length,
         params: params,
         fs: fs,
@@ -472,6 +641,7 @@ pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, St
         Ok(G1_IDENTITY)
     } else {
         let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
+        // println!("THIRD: {:?}", powers.powers_of_g[1].into_projective());
         let (com, _rand) = KZG_Bls12_381::commit(
             &powers,
             &blst_poly_into_pc_poly(&p).unwrap(),
@@ -524,51 +694,27 @@ pub(crate) fn check_proof_single(
     .unwrap()
 }
 
-pub(crate) fn fr_add(x: &BlstFr, y: &BlstFr) -> BlstFr {
-    let pcx = blst_fr_into_pc_fr(x);
-    let pcy = blst_fr_into_pc_fr(y);
-    let sum = pcx + pcy;
-    pc_fr_into_blst_fr(sum)
-}
-
-// pub(crate) fn fr_mul(x: &BlstFr, roots: &BlstFr) -> BlstFr {
-//     let pcx = blst_fr_into_pc_fr(x);
-//     let PCroots = blst_fr_into_pc_fr(roots);
-//     let mul = pcx * PCroots;
-//     pc_fr_into_blst_fr(mul)
-// }
-
 pub(crate) fn compute_proof_multi(
     p: &PolyData,
     x: &BlstFr,
     n: usize,
     ks: &KZGSettings,
 ) -> ArkG1 {
-    let rng = &mut test_rng();
-    let mut pcdivisor = DensePoly::rand(n, rng);
+    let mut divisor = PolyData::new(n+1).unwrap();
+    let x_pow_n = x.pow(n);
 
-    let pcx = blst_fr_into_pc_fr(x);
+    divisor.set_coeff_at(0, &x_pow_n.negate());
 
-    let x_pow_n = pcx.pow(&[n as u64]);
-    let fr_neg = x_pow_n.neg();
-    let _temp = std::mem::replace(
-        &mut pcdivisor.coeffs[0],
-        blst_fr_into_pc_fr(&BlstFr::zero()),
-    );
-    for x in 1..n - 1 {
-        let _temp = std::mem::replace(&mut pcdivisor.coeffs[x as usize], fr_neg);
+    for i in 1..n {
+        divisor.set_coeff_at(i, &BlstFr::zero());
     }
-    let _temp = std::mem::replace(
-        &mut pcdivisor.coeffs[n],
-        blst_fr_into_pc_fr(&BlstFr::one()),
-    );
+    divisor.set_coeff_at(n, &BlstFr::one());
 
-    let q = &blst_poly_into_pc_poly(p).unwrap() / &pcdivisor;
+    let mut p = p.clone();
 
-    let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
-    let (com, _rand) = KZG_Bls12_381::commit(&powers, &q, None, None).unwrap();
+    let q = p.div(&divisor).unwrap();
 
-    pc_g1projective_into_blst_p1(com.0.into_projective()).unwrap()
+    commit_to_poly(&q, ks).unwrap()
 }
 
 pub(crate) fn check_proof_multi(
@@ -584,40 +730,40 @@ pub(crate) fn check_proof_multi(
     interp.coeffs = ks.fs.fft_fr(ys, true).unwrap();
 
     let inv_x = x.inverse();
-    let mut inv_x_pow = x.clone();
+    let mut inv_x_pow = inv_x.clone();
     for i in 1..n {
         interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
         inv_x_pow = inv_x_pow.mul(&inv_x);
     }
 
     let x_pow = inv_x_pow.inverse();
-    // let mut xn2 = blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
     let mut xn2 = ks.params.h.into_projective();
-    // let mut temp = ks.params.h.into_projective();
     xn2.mul_assign(blst_fr_into_pc_fr(&x_pow));
-    // println!("TEST1: {:?}", temp);
-    // println!("TEST2: {:?}", xn2);
+    println!("TEST1: {:?}", ks.secret_g1[6]);
+    println!("TEST2: {:?}", ks.params.powers_of_g[6].into_projective());
     // println!("TEST3: {:?}", blst_p2_into_pc_g2projective(&xn2.0));
 
     // let xn_minus_yn = pc_g2projective_into_blst_p2(blst_p2_into_pc_g2projective(&ks.secret_g2[n]).unwrap()- temp).unwrap();
-    let xn_minus_yn = ks.params.neg_powers_of_h[&n].neg().into_projective() - xn2;
+    // let xn_minus_yn = ks.params.neg_powers_of_h[&n].into_projective() - xn2;
+    let xn_minus_yn = blst_p2_into_pc_g2projective(&ks.secret_g2[n]).unwrap() - xn2;
+    // let xn_minus_yn = ks.params.beta_h.into_projective() - xn2;
 
 
     let is1 = blst_p1_into_pc_g1projective(&commit_to_poly(&interp, ks).unwrap().0).unwrap();
+    println!("TEST1: {:?}", is1);
+    println!("TEST2: {:?}", com);
 
     let commit_minus_interp = blst_p1_into_pc_g1projective(&com.0).unwrap() - is1;
-    // let temp = pc_g2projective_into_blst_p2(ks.params.h.into_projective()).unwrap();
-    let _test = pc_g2projective_into_blst_p2(ks.params.h.into_projective()).unwrap();
-    let _a1 = Bls12_381::pairing(commit_minus_interp, blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap());
-    let _a2 = Bls12_381::pairing(blst_p1_into_pc_g1projective(&proof.0).unwrap(), xn_minus_yn);
+    let a1 = Bls12_381::pairing(commit_minus_interp, ks.params.h);
+    let a2 = Bls12_381::pairing(blst_p1_into_pc_g1projective(&proof.0).unwrap(), xn_minus_yn);
+    println!("TEST1: {:?}", a1);
+    println!("TEST2: {:?}", a2);
     Bls12_381::product_of_pairings(&[
             // (commit_minus_interp.into_affine().into(), blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap().into_affine().into()),
             (commit_minus_interp.into_affine().into(), ks.params.h.into()),
             (blst_p1_into_pc_g1projective(&proof.0).unwrap().into_affine().into(), xn_minus_yn.into_affine().into()),
         ])
         .is_one()
-    // println!("TEST1: {:?}", a1);
-    // println!("TEST2: {:?}", a2);
 }
 
 

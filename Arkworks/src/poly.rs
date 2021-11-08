@@ -1,4 +1,4 @@
-use super::kzg_proofs::{fr_add, /*fr_one, fr_zero,*/ FFTSettings};
+use super::kzg_proofs::{/*fr_one, fr_zero,*/ FFTSettings};
 use super::utils::{
     blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_poly_into_blst_poly,
     PolyData,
@@ -68,7 +68,7 @@ pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, 
             tmp0.coeffs[i] = neg(cloned_fr);
         }
         let fr_two = pc_fr_into_blst_fr(Fr::from(2));
-        tmp0.coeffs[0] = fr_add(&tmp0.coeffs[0], &fr_two);
+        tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
 
         let p1 = blst_poly_into_pc_poly(&tmp0).unwrap();
         let p2 = blst_poly_into_pc_poly(&output).unwrap();
