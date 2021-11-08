@@ -59,9 +59,9 @@ pub fn fr_pow_works<TFr: Fr>() {
     let a = TFr::from_u64(197);
 
     // // Do it the slow way
-    let expected = TFr::one();
+    let mut expected = TFr::one();
     for _ in 0..pow {
-        expected.mul(&a);
+        expected = expected.mul(&a);
     }
 
     // // Do it the quick way
@@ -168,13 +168,13 @@ pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_lin
     for i in 0..len {
         coeffs[i] = TFr::rand();
         p[i] = p1tmp;
-        p1tmp.dbl();
+        p1tmp = p1tmp.dbl();
     }
 
     let mut exp = TG1::identity();
     for i in 0..len {
         p1tmp = p[i].mul(&coeffs[i]);
-        exp.add_or_dbl(&p1tmp);
+        exp = exp.add_or_dbl(&p1tmp);
     }
 
     let mut res = TG1::default();
