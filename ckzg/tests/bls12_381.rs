@@ -2,7 +2,7 @@
 mod tests {
     use kzg_bench::tests::bls12_381::*;
     use ckzg::consts::{BlstP1, BlstP2};
-    use ckzg::finite::BlstFr;
+    use ckzg::finite::{BlstFr, linear_combination_g1, verify_pairings};
     use ckzg::utils::log_2_byte;
 
     #[test]
@@ -88,5 +88,20 @@ mod tests {
     #[test]
     fn test_g1_identity_is_identity() {
         g1_identity_is_identity::<BlstP1>();
+    }
+
+    #[test]
+    fn test_g1_make_linear_combination() {
+        g1_make_linear_combination::<BlstFr, BlstP1>(&linear_combination_g1);
+    }
+
+    #[test]
+    fn test_g1_random_linear_combination() {
+        //g1_random_linear_combination::<BlstFr, BlstP1>(&linear_combination_g1);
+    }
+
+    #[test]
+    fn test_pairings_work() {
+        pairings_work::<BlstFr, BlstP1, BlstP2>(&verify_pairings);
     }
 }

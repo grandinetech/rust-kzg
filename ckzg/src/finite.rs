@@ -31,6 +31,9 @@ extern "C" {
     fn g2_add_or_dbl(out: *mut BlstP2, a: *const BlstP2, b: *const BlstP2);
     fn g2_equal(a: *const BlstP2, b: *const BlstP2) -> bool;
     fn g2_sub(out: *mut BlstP2, a: *const BlstP2, b: *const BlstP2);
+    // Regular functions
+    fn g1_linear_combination(out: *mut BlstP1, p: *const BlstP1, coeffs: *const BlstFr, len: u64);
+    fn pairings_verify(a1: *const BlstP1, a2: *const BlstP2, b1: *const BlstP1, b2: *const BlstP2) -> bool;
 }
 
 #[repr(C)]
@@ -312,5 +315,17 @@ impl G2Mul<BlstFr> for BlstP2 {
             g2_mul(&mut ret, self, b);
         }
         ret
+    }
+}
+
+pub fn linear_combination_g1(out: &mut BlstP1, p: &Vec<BlstP1>, coeffs: &Vec<BlstFr>, len: usize) {
+    unsafe {
+        g1_linear_combination(out, p.as_ptr(), coeffs.as_ptr(), len as u64);
+    }
+}
+
+pub fn verify_pairings(a1: &BlstP1, a2: &BlstP2, b1: &BlstP1, b2: &BlstP2) -> bool {
+    unsafe {
+        return pairings_verify(a1, a2, b1, b2);
     }
 }
