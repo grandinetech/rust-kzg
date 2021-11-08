@@ -1,5 +1,8 @@
 #!/bin/bash
 
+sed_linux="/usr/bin/sed"
+sed_macos="/usr/local/bin/gsed"
+
 print_msg () {
   echo "[*]" "$1"
 }
@@ -26,15 +29,19 @@ cp -r blst/bindings/*.h c-kzg/inc/
 
 print_msg "Preparing c-kzg's makefile"
 cd c-kzg/src/ || exit 1
-sed="$1"
-if [[ -z "$sed" ]]; then
-  if [[ "$(uname -o)" == "GNU/Linux" ]]; then
-    sed="sed"
-  else
-    echo "ERR: Bad arguments"
+sed=""
+case $(uname -s) in
+  "Linux")
+    sed=$(sed_linux)
+    ;;
+  "Darwin")
+    sed=$(sed_macos)
+    ;;
+  *)
+    echo "ERR: Unsupported OS"
     exit 1
-  fi
-fi
+    ;;
+esac
 eval "$("$sed" -i 's/KZG_CFLAGS =/KZG_CFLAGS = -fPIE/' Makefile)"
 
 print_msg "Building c-kzg"
