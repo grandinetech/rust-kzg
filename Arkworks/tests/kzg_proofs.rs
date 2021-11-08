@@ -19,7 +19,7 @@ pub mod tests {
         commit_to_too_long_poly::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(&generate_trusted_setup);
     }
 
-    // #[test]
+    #[test]
     fn proof_multi_() {
         proof_multi::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(&generate_trusted_setup);
     }
