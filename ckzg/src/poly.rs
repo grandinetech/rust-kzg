@@ -1,14 +1,16 @@
 use kzg::{Fr, Poly};
 use crate::finite::BlstFr;
-use crate::common::KzgRet;
+use crate::consts::KzgRet;
 
-#[link(name = "ckzg", kind = "static")]
 extern "C" {
     fn new_poly(out: *mut KzgPoly, length: u64) -> KzgRet;
     fn free_poly(p: *mut KzgPoly);
     fn new_poly_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
     fn eval_poly(out: *mut BlstFr, p: *const KzgPoly, x: *const BlstFr);
     fn poly_inverse(out: *mut KzgPoly, b: *mut KzgPoly) -> KzgRet;
+    fn poly_mul(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly) -> KzgRet;
+    fn poly_long_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
+    fn poly_fast_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
 }
 
 #[repr(C)]
@@ -31,7 +33,7 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match new_poly(&mut poly, size as u64) {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::new\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::new ==> {:?}", e))
             }
         }
     }
@@ -80,7 +82,7 @@ impl Poly<BlstFr> for KzgPoly {
                     self.destroy();
                     Ok(poly)
                 },
-                e => Err(format!("An error has occurred in \"Poly::inverse\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::inverse ==> {:?}", e))
             }
         }
     }
@@ -90,7 +92,37 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             return match new_poly_div(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in \"Poly::div\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in Poly::div ==> {:?}", e))
+            }
+        }
+    }
+
+    fn long_div(&mut self, x: &Self) -> Result<Self, String> {
+        let mut poly = Poly::new(self.len()).unwrap();
+        unsafe {
+            return match poly_long_div(&mut poly, self, x) {
+                KzgRet::KzgOk => Ok(poly),
+                e => Err(format!("An error has occurred in Poly::long_div ==> {:?}", e))
+            }
+        }
+    }
+
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
+        let mut poly = Poly::new(self.len()).unwrap();
+        unsafe {
+            return match poly_fast_div(&mut poly, self, x) {
+                KzgRet::KzgOk => Ok(poly),
+                e => Err(format!("An error has occurred in Poly::fast_div ==> {:?}", e))
+            }
+        }
+    }
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        let mut poly = Poly::new(len).unwrap();
+        unsafe {
+            return match poly_mul(&mut poly, self, x) {
+                KzgRet::KzgOk => Ok(poly),
+                e => Err(format!("An error has occurred in Poly::mul_direct ==> {:?}", e))
             }
         }
     }
@@ -99,17 +131,5 @@ impl Poly<BlstFr> for KzgPoly {
         unsafe {
             free_poly(self);
         }
-    }
-
-    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        todo!()
-    }
-
-    fn long_div(&mut self, x: &Self) -> Result<Self, String> {
-        todo!()
-    }
-
-    fn fast_div(&mut self, x: &Self) -> Result<Self, String>  {
-        todo!()
     }
 }
