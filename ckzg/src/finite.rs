@@ -1,6 +1,6 @@
 use kzg::{Fr, G1, G1Mul, G2, G2Mul};
 use rand::{Rng, thread_rng};
-use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2};
+use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2, G1_NEGATIVE_GENERATOR, G2_NEGATIVE_GENERATOR};
 
 extern "C" {
     // Fr
@@ -10,21 +10,27 @@ extern "C" {
     fn fr_is_one(p: *const BlstFr) -> bool;
     fn fr_equal(aa: *const BlstFr, bb: *const BlstFr) -> bool;
     fn fr_negate(out: *mut BlstFr, in_: *const BlstFr);
-    //fn fr_pow(out: *mut BlstFr, a: *const BlstFr, n: u64);
+    fn fr_pow(out: *mut BlstFr, a: *const BlstFr, n: u64);
+    fn fr_div(out: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_add(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_sqr(ret: *mut BlstFr, a: *const BlstFr);
     fn blst_fr_mul(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_from_uint64(ret: *mut BlstFr, a: *const u64);
     // G1
     fn blst_p1_generator() -> *const BlstP1;
-    static g1_negative_generator: BlstP1;
     fn g1_add_or_dbl(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_equal(a: *const BlstP1, b: *const BlstP1) -> bool;
     fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
+    fn g1_dbl(out: *mut BlstP1, a: *const BlstP1);
+    fn g1_sub(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
+    fn g1_is_inf(a: *const BlstP1) -> bool;
     // G2
     fn blst_p2_generator() -> *const BlstP2;
-    static g2_negative_generator: BlstP2;
     fn g2_mul(out: *mut BlstP2, a: *const BlstP2, b: *const BlstFr);
+    fn g2_dbl(out: *mut BlstP2, a: *const BlstP2);
+    fn g2_add_or_dbl(out: *mut BlstP2, a: *const BlstP2, b: *const BlstP2);
+    fn g2_equal(a: *const BlstP2, b: *const BlstP2) -> bool;
+    fn g2_sub(out: *mut BlstP2, a: *const BlstP2, b: *const BlstP2);
 }
 
 #[repr(C)]
@@ -78,7 +84,7 @@ impl Fr for BlstFr {
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
-        todo!()
+        self.l
     }
 
     fn is_one(&self) -> bool {
@@ -137,12 +143,20 @@ impl Fr for BlstFr {
         todo!()
     }
 
-    fn pow(&self, _n: usize) -> Self {
-        todo!()
+    fn pow(&self, n: usize) -> Self {
+        let mut ret = Fr::default();
+        unsafe {
+            fr_pow(&mut ret, self, n as u64);
+        }
+        ret
     }
 
     fn div(&self, b: &Self) -> Result<Self, String> {
-        todo!()
+        let mut ret = Fr::default();
+        unsafe {
+            fr_div(&mut ret, self, b);
+        }
+        Ok(ret)
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -165,9 +179,9 @@ impl G1 for BlstP1 {
 
     fn identity() -> Self {
         Self {
-            x: BlstFp { l: [1; 6] },
-            y: BlstFp { l: [1; 6] },
-            z: BlstFp { l: [1; 6] },
+            x: BlstFp { l: [0; 6] },
+            y: BlstFp { l: [0; 6] },
+            z: BlstFp { l: [0; 6] },
         }
     }
 
@@ -178,9 +192,7 @@ impl G1 for BlstP1 {
     }
 
     fn negative_generator() -> Self {
-        unsafe {
-            g1_negative_generator
-        }
+        G1_NEGATIVE_GENERATOR
     }
 
     fn rand() -> Self {
@@ -201,15 +213,25 @@ impl G1 for BlstP1 {
     }
 
     fn is_inf(&self) -> bool {
-        todo!()
+        unsafe {
+            return g1_is_inf(self);
+        }
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let mut ret = G1::default();
+        unsafe {
+            g1_dbl(&mut ret, self);
+        }
+        ret
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        let mut ret = G1::default();
+        unsafe {
+            g1_sub(&mut ret, self, b);
+        }
+        ret
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -247,25 +269,37 @@ impl G2 for BlstP2 {
     }
 
     fn negative_generator() -> Self {
-        unsafe {
-            g2_negative_generator
-        }
+        G2_NEGATIVE_GENERATOR
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        todo!()
+        let mut ret = G2::default();
+        unsafe {
+            g2_add_or_dbl(&mut ret, self, b);
+        }
+        ret
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let mut ret = G2::default();
+        unsafe {
+            g2_dbl(&mut ret, self);
+        }
+        ret
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        let mut ret = G2::default();
+        unsafe {
+            g2_sub(&mut ret, self, b);
+        }
+        ret
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        unsafe {
+            return g2_equal(self, b);
+        }
     }
 
     fn destroy(&mut self) {}
