@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_poly_mul_random() {
-        //poly_mul_random::<BlstFr, KzgPoly, KzgFFTSettings>();
+        poly_mul_random::<BlstFr, KzgPoly, KzgFFTSettings>();
     }
 
     #[test]

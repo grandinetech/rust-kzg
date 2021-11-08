@@ -3,6 +3,7 @@ use crate::consts::{BlstP1};
 use crate::poly::KzgPoly;
 use crate::finite::BlstFr;
 use crate::common::KzgRet;
+use std::{cmp::min};
 use std::slice;
 
 #[repr(C)]
@@ -130,10 +131,29 @@ fn log_2(x: usize) -> usize {
     num_bits::<usize>() as usize - (x.leading_zeros() as usize) - 1
 }
 
+fn is_power_of_2(n: usize) -> bool {
+    return n & (n - 1) == 0;
+}
+
+fn next_pow_of_2(x: usize) -> usize {
+    if x == 0 {
+        return 1;
+    }
+    if is_power_of_2(x) {
+        return x;
+    }
+    return 1 << (log_2(x) + 1);
+}
+
 impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
     fn poly_mul_fft(a: &KzgPoly, b: &KzgPoly, len: usize, _fs: Option<&KzgFFTSettings>) -> Result<KzgPoly, String> {
+        // Truncate a and b so as not to do excess work for the number of coefficients required
+        let a_len = min(a.len(), len);
+        let b_len = min(b.len(), len);
+        let length = next_pow_of_2(a_len + b_len - 1);
+
+        let mut fft = KzgFFTSettings::new(log_2(length)).unwrap();
         let mut poly = KzgPoly::new(len).unwrap();
-        let mut fft = KzgFFTSettings::new(log_2(len)).unwrap();
         unsafe {
             return match poly_mul_(&mut poly, a, b, &mut fft) {
                 KzgRet::KzgOk => {
