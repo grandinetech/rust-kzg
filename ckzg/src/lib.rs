@@ -1,4 +1,4 @@
-pub mod common;
+pub mod utils;
 pub mod consts;
 pub mod finite;
 pub mod poly;

@@ -1,6 +1,15 @@
 use kzg::Fr;
 use crate::finite::BlstFr;
 
+#[repr(u8)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum KzgRet {
+    KzgOk = 0,
+    KzgBadArgs = 1,
+    KzgError = 2,
+    KzgMalloc = 3
+}
+
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct BlstFp {

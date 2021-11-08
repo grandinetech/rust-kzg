@@ -1,7 +1,6 @@
 use kzg::{KZGSettings, FFTSettings, Fr, G1, G2, G1Mul, G2Mul};
 
-use crate::common::KzgRet;
-use crate::consts::{BlstP1, BlstP2};
+use crate::consts::{KzgRet, BlstP1, BlstP2};
 use crate::fftsettings::KzgFFTSettings;
 use crate::finite::{BlstFr};
 use crate::poly::KzgPoly;

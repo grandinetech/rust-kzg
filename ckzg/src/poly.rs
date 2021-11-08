@@ -1,6 +1,6 @@
 use kzg::{Fr, Poly};
 use crate::finite::BlstFr;
-use crate::common::KzgRet;
+use crate::consts::KzgRet;
 
 extern "C" {
     fn new_poly(out: *mut KzgPoly, length: u64) -> KzgRet;

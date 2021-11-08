@@ -1,8 +1,8 @@
 use kzg::{Fr, FFTSettings, FFTSettingsPoly, Poly, FFTFr, FFTG1, G1};
-use crate::consts::{BlstP1};
+use crate::utils::{log_2, next_pow_of_2};
+use crate::consts::{KzgRet, BlstP1};
 use crate::poly::KzgPoly;
 use crate::finite::BlstFr;
-use crate::common::KzgRet;
 use std::{cmp::min};
 use std::slice;
 
@@ -118,31 +118,6 @@ fn _fft_g1(input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSetting
             e => Err(e)
         }
     }
-}
-
-const fn num_bits<T>() -> usize {
-    std::mem::size_of::<T>() * 8
-}
-
-fn log_2(x: usize) -> usize {
-    if x == 0 {
-        return 0;
-    }
-    num_bits::<usize>() as usize - (x.leading_zeros() as usize) - 1
-}
-
-fn is_power_of_2(n: usize) -> bool {
-    return n & (n - 1) == 0;
-}
-
-fn next_pow_of_2(x: usize) -> usize {
-    if x == 0 {
-        return 1;
-    }
-    if is_power_of_2(x) {
-        return x;
-    }
-    return 1 << (log_2(x) + 1);
 }
 
 impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
