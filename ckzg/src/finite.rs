@@ -6,6 +6,7 @@ extern "C" {
     // Fr
     fn fr_from_uint64(out: *mut BlstFr, n: u64);
     fn fr_from_uint64s(out: *mut BlstFr, vals: *const u64);
+    fn fr_to_uint64s(out: *mut u64, fr: *const BlstFr);
     fn fr_is_zero(p: *const BlstFr) -> bool;
     fn fr_is_one(p: *const BlstFr) -> bool;
     fn fr_equal(aa: *const BlstFr, bb: *const BlstFr) -> bool;
@@ -15,7 +16,6 @@ extern "C" {
     fn blst_fr_add(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_sqr(ret: *mut BlstFr, a: *const BlstFr);
     fn blst_fr_mul(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
-    fn blst_fr_from_uint64(ret: *mut BlstFr, a: *const u64);
     // G1
     fn blst_p1_generator() -> *const BlstP1;
     fn g1_add_or_dbl(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
@@ -73,7 +73,7 @@ impl Fr for BlstFr {
     fn from_u64_arr(u: &[u64; 4]) -> Self {
         let mut ret = Fr::default();
         unsafe {
-            blst_fr_from_uint64(&mut ret, u.as_ptr());
+            fr_from_uint64s(&mut ret, u.as_ptr());
         }
         ret
     }
@@ -87,7 +87,11 @@ impl Fr for BlstFr {
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
-        self.l
+        let mut arr: [u64; 4] = [0; 4];
+        unsafe {
+            fr_to_uint64s(arr.as_mut_ptr(), self);
+        }
+        arr
     }
 
     fn is_one(&self) -> bool {

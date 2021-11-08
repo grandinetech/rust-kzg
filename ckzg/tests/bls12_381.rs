@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_fr_uint64s_roundtrip() {
-        //fr_uint64s_roundtrip::<BlstFr>();
+        fr_uint64s_roundtrip::<BlstFr>();
     }
 
     #[test]
