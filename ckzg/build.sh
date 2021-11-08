@@ -32,10 +32,10 @@ cd c-kzg/src/ || exit 1
 sed=""
 case $(uname -s) in
   "Linux")
-    sed=$(sed_linux)
+    sed=$sed_linux
     ;;
   "Darwin")
-    sed=$(sed_macos)
+    sed=$sed_macos
     ;;
   *)
     echo "ERR: Unsupported OS"
