@@ -1,19 +1,24 @@
 use crate::fft::SCALE2_ROOT_OF_UNITY;
+use ark_ec::ProjectiveCurve;
 use crate::kzg_proofs::{
     check_proof_single as check_single, commit_to_poly as commit,
     compute_proof_single as compute_single, default_kzg, eval_poly, expand_root_of_unity, compute_proof_multi as compute_multi,
-    new_kzg_settings, FFTSettings as LFFTSettings, KZGSettings as LKZGSettings, check_proof_multi as check_multi
+    new_kzg_settings, FFTSettings as LFFTSettings, KZGSettings as LKZGSettings, check_proof_multi as check_multi, G2_GENERATOR,
+    G2_NEGATIVE_GENERATOR
 };
+use crate::fft_g1::{G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY};
 use crate::poly::{poly_inverse, poly_fast_div, poly_mul_direct, poly_long_div, poly_mul_fft};
 use crate::utils::PolyData as LPoly;
 use ark_bls12_381::{Fr as ArkFr};
 use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use std::ops::Neg;
+use std::ops::MulAssign;
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 
 use ark_std::{UniformRand, One, Zero, test_rng};
-use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, blst_p1_into_pc_g1projective};
+use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, blst_p1_into_pc_g1projective,
+blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2};
 use blst::{
     blst_fr, blst_p1,
 };
@@ -53,23 +58,25 @@ impl G1 for ArkG1 {
     fn destroy(&mut self) {}
 
     fn identity() -> Self {
-        todo!()
+        G1_IDENTITY
     }
 
     fn generator() -> Self {
-        todo!()
+        ArkG1(G1_GENERATOR)
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        ArkG1(G1_NEGATIVE_GENERATOR)
     }
 
     fn is_inf(&self) -> bool {
-        todo!()
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        temp.z.is_zero()
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        pc_g1projective_into_blst_p1(temp.double()).unwrap()
     }
 
     fn sub(&self, b: &Self) -> Self {
@@ -78,8 +85,11 @@ impl G1 for ArkG1 {
 }
 
 impl G1Mul<FsFr> for ArkG1 {
-    fn mul(&self, _b: &FsFr) -> Self {
-        todo!()
+    fn mul(&self, b: &FsFr) -> Self {
+        let mut a = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        let b = blst_fr_into_pc_fr(b);
+        a.mul_assign(b);
+        pc_g1projective_into_blst_p1(a).unwrap()
     }
 }
 
@@ -98,27 +108,31 @@ impl G2 for ArkG2 {
     }
 
     fn generator() -> Self {
-        todo!()
+        G2_GENERATOR
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        G2_NEGATIVE_GENERATOR
     }
 
-    fn add_or_dbl(&mut self, _b: &Self) -> Self {
-        todo!()
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        let temp = blst_p2_into_pc_g2projective(self).unwrap()+blst_p2_into_pc_g2projective(b).unwrap();
+        let ret = pc_g2projective_into_blst_p2(temp).unwrap();
+        self.0 = ret.0;
+        ret
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let temp = blst_p2_into_pc_g2projective(self).unwrap();
+        pc_g2projective_into_blst_p2(temp.double()).unwrap()
     }
 
-    fn sub(&self, _b: &Self) -> Self {
-        todo!()
+    fn sub(&self, b: &Self) -> Self {
+        pc_g2projective_into_blst_p2(blst_p2_into_pc_g2projective(self).unwrap() - blst_p2_into_pc_g2projective(b).unwrap()).unwrap()
     }
 
-    fn equals(&self, _b: &Self) -> bool {
-        todo!()
+    fn equals(&self, b: &Self) -> bool {
+        self.0.eq(&b.0)
     }
 
     fn destroy(&mut self) {
@@ -126,9 +140,12 @@ impl G2 for ArkG2 {
     }
 }
 
-impl G2Mul<FsFr> for ArkG1 {
-    fn mul(&self, _b: &FsFr) -> Self {
-        todo!()
+impl G2Mul<FsFr> for ArkG2 {
+    fn mul(&self, b: &FsFr) -> Self {
+        let mut a = blst_p2_into_pc_g2projective(self).unwrap();
+        let b = blst_fr_into_pc_fr(b);
+        a.mul_assign(b);
+        pc_g2projective_into_blst_p2(a).unwrap()
     }
 }
 
@@ -164,11 +181,19 @@ impl Fr for FsFr {
     }
 
 	fn to_u64_arr(&self) -> [u64; 4] {
-		todo!()
+        let b = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
+        b.0
 	}
 	
-	fn div(&self, _b: &Self) -> Result<Self, String>{
-		todo!()
+	fn div(&self, b: &Self) -> Result<Self, String>{
+		let a = blst_fr_into_pc_fr(self);
+        let b = blst_fr_into_pc_fr(b);
+        let div = a/b;
+        if div.0.0.is_empty(){
+            Ok(FsFr::zero())
+        }else{
+            Ok(pc_fr_into_blst_fr(div))    
+        }
 	}
 	
     fn is_one(&self) -> bool {
@@ -185,7 +210,48 @@ impl Fr for FsFr {
     }
 
     fn pow(&self, n: usize) -> Self {
-        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow(&[n as u64]))
+        assert_eq!(ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(2), ArkFr::from(2).pow([4]));
+        println!("FIRSTL {:?}", ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(1));
+        println!("SECOND {:?}", ArkFr::from(2).pow([3]));
+        let t = pc_fr_into_blst_fr(ArkFr::from(2));
+        println!("THIRFD {:?}", t.mul(&t).mul(&t));
+        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
+        //         let mut tmp = self.clone();
+
+        // let mut out = Self::one();
+        // let mut k = n;
+
+        //     loop {
+        //         if k & 1 == 1 {
+        //             out = out.mul(&self);
+        //         }
+        //         k = k >> 1;
+        //         if k == 0 {
+        //             break;
+        //         }
+        //         out = self.sqr();
+        //     }
+        // out
+
+        // let mut tmp = self.clone();
+        // //*out = fr_one;
+        // let mut out = Self::one();
+        // let mut n2 = n;
+
+        // unsafe {
+        //     loop {
+        //         if n2 & 1 == 1 {
+        //             blst::blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+        //         }
+        //         n2 = n2 >> 1;
+        //         if n2 == 0 {
+        //             break;
+        //         }
+        //         blst::blst_fr_sqr(&mut out.0, &tmp.0);
+        //     }
+        // }
+
+        // out
     }
 
     fn mul(&self, b: &Self) -> Self {

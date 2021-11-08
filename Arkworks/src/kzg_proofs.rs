@@ -780,35 +780,71 @@ pub const G2_GENERATOR:ArkG2 = ArkG2(P2{x: blst_fp2{fp: [blst_fp{l: [0xf5f28fa20
                                     blst_fp{l:[0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
                                      0x0000000000000000, 0x0000000000000000]}]}});
 
-// fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1:&ArkG1, b2: &ArkG2) -> bool {
-//     let mut loop0: blst::blst_fp12 = blst::blst_fp12::default();
-//     let mut loop1: blst::blst_fp12 = blst::blst_fp12::default();
-//     let mut gt_point: blst::blst_fp12 = blst::blst_fp12::default();
-//     let mut aa1: blst::blst_p1_affine = blst::blst_p1_affine::default();
-//     let mut bb1: blst::blst_p1_affine = blst::blst_p1_affine::default();
-//     let mut aa2: blst::blst_p2_affine = blst::blst_p2_affine::default();
-//     let mut bb2: blst::blst_p2_affine = blst::blst_p2_affine::default();
+pub const G2_NEGATIVE_GENERATOR: ArkG2 = ArkG2(P2{
+    x: blst_fp2 {
+        fp: [
+            blst_fp { l: [0xf5f28fa202940a10, 0xb3f5fb2687b4961a, 0xa1a893b53e2ae580, 0x9894999d1a3caee9, 0x6f67b7631863366b, 0x058191924350bcd7] },
+            blst_fp { l: [0xa5a9c0759e23f606, 0xaaa0c59dbccd60c3, 0x3bb17e18e2867806, 0x1b1ab6cc8541b367, 0xc2b6ed0ef2158547, 0x11922a097360edf3] }
+        ]
+    },
+    y: blst_fp2 {
+        fp: [
+            blst_fp { l: [0x6d8bf5079fb65e61, 0xc52f05df531d63a5, 0x7f4a4d344ca692c9, 0xa887959b8577c95f, 0x4347fe40525c8734, 0x197d145bbaff0bb5] },
+            blst_fp { l: [0x0c3e036d209afa4e, 0x0601d8f4863f9e23, 0xe0832636bacc0a84, 0xeb2def362a476f84, 0x64044f659f0ee1e9, 0x0ed54f48d5a1caa7] }
+        ]
+    },
+    z: blst_fp2 {
+        fp: [
+            blst_fp { l: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493] },
+            blst_fp { l: [0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000] }
+        ]
+    },
+});
 
-//     // As an optimisation, we want to invert one of the pairings,
-//     // so we negate one of the points.
-//     let mut a1neg = a1.clone().0;
-//     unsafe{
-//         blst::blst_p1_cneg(&mut a1neg, true);
+pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1:&ArkG1, b2: &ArkG2) -> bool {
+    let mut loop0: blst::blst_fp12 = blst::blst_fp12::default();
+    let mut loop1: blst::blst_fp12 = blst::blst_fp12::default();
+    let mut gt_point: blst::blst_fp12 = blst::blst_fp12::default();
+    let mut aa1: blst::blst_p1_affine = blst::blst_p1_affine::default();
+    let mut bb1: blst::blst_p1_affine = blst::blst_p1_affine::default();
+    let mut aa2: blst::blst_p2_affine = blst::blst_p2_affine::default();
+    let mut bb2: blst::blst_p2_affine = blst::blst_p2_affine::default();
 
-//         blst::blst_p1_to_affine(&mut aa1, &a1neg);
-//         blst::blst_p1_to_affine(&mut bb1, &b1.0 as *const _);
-//         blst::blst_p2_to_affine(&mut aa2, &a2.0 as *const _);
-//         blst::blst_p2_to_affine(&mut bb2, &b2.0 as *const _);
+    // As an optimisation, we want to invert one of the pairings,
+    // so we negate one of the points.
+    let mut a1neg = a1.clone().0;
+    unsafe{
+        blst::blst_p1_cneg(&mut a1neg, true);
 
-//         blst::blst_miller_loop(&mut loop0, &aa2, &aa1);
-//         blst::blst_miller_loop(&mut loop1, &bb2, &bb1);
+        blst::blst_p1_to_affine(&mut aa1, &a1neg);
+        blst::blst_p1_to_affine(&mut bb1, &b1.0 as *const _);
+        blst::blst_p2_to_affine(&mut aa2, &a2.0 as *const _);
+        blst::blst_p2_to_affine(&mut bb2, &b2.0 as *const _);
 
-// // let b = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, false).into_projective();
+        blst::blst_miller_loop(&mut loop0, &aa2, &aa1);
+        blst::blst_miller_loop(&mut loop1, &bb2, &bb1);
 
-//         blst::blst_fp12_mul(&mut gt_point, &loop0, &loop1);
-//         blst::blst_final_exp(&mut gt_point, &gt_point);
-//                 println!("TEST1: {:?}", gt_point);
-//                 // println!("TEST1: {:?}", G2_GENERATOR);
-//         blst::blst_fp12_is_one(&gt_point as *const _)
-//     }
+// let b = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, false).into_projective();
+
+        blst::blst_fp12_mul(&mut gt_point, &loop0, &loop1);
+        blst::blst_final_exp(&mut gt_point, &gt_point);
+                println!("TEST1: {:?}", gt_point);
+                // println!("TEST1: {:?}", G2_GENERATOR);
+        blst::blst_fp12_is_one(&gt_point as *const _)
+    }
+}
+
+// pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1:&ArkG1, b2: &ArkG2) -> bool {
+//     let a1 = blst_p1_into_pc_g1projective(&a1.0).unwrap();
+//     let b1 = blst_p1_into_pc_g1projective(&b1.0).unwrap();
+//     let a2 = blst_p2_into_pc_g2projective(&a2).unwrap();
+//     let b2 = blst_p2_into_pc_g2projective(&b2).unwrap();
+
+
+//     Bls12_381::product_of_pairings(&[
+//             // (commit_minus_interp.into_affine().into(), blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap().into_affine().into()),
+//             (a1.into_affine().into(), a2.into_affine().into()),
+//             (b1.into_affine().into(), b2.into_affine().into()),
+//         ])
+//         .is_one()
 // }
