@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn test_fr_pow_works() {
-        //fr_pow_works::<BlstFr>();
+        fr_pow_works::<BlstFr>();
     }
 
     #[test]

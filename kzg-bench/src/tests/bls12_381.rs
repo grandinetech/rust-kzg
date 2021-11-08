@@ -59,9 +59,9 @@ pub fn fr_pow_works<TFr: Fr>() {
     let a = TFr::from_u64(197);
 
     // // Do it the slow way
-    let expected = TFr::one();
+    let mut expected = TFr::one();
     for _ in 0..pow {
-        expected.mul(&a);
+        expected = expected.mul(&a);
     }
 
     // // Do it the quick way
