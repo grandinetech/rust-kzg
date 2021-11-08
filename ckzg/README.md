@@ -10,5 +10,5 @@ bash build.sh
 
 ```bash
 brew install gnu-sed
-bash build.sh $(which gsed)
+bash build.sh
 ```
