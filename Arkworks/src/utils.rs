@@ -10,7 +10,6 @@ use ark_ec::{
 use ark_ff::{biginteger::BigInteger256, biginteger::BigInteger384, Fp2, Fp384};
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use ark_poly::UVPolynomial;
-use kzg::Fr as FrTrait;
 
 #[derive(Debug, PartialEq)]
 pub struct Error;
@@ -41,7 +40,6 @@ pub(crate) fn blst_poly_into_pc_poly(pd: &PolyData) -> Result<DensePoly<Fr>, Str
 }
 
 pub(crate) fn pc_fr_into_blst_fr(fr: Fr) -> BlstFr {
-    BlstFr::from_u64_arr(&fr.0 .0);
     let temp = blst::blst_fr { l: fr.0 .0 };
     BlstFr(temp)
 }

@@ -602,10 +602,10 @@ pub(crate) fn new_kzg_settings(
         temp3.push(test[i as usize].into_affine());
     }
 
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", test[6].into_affine().into_projective());
-    println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", temp3[6].into_projective());
+    // println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", test[6].into_affine().into_projective());
+    // println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", temp3[6].into_projective());
     assert_eq!(test[6], temp3[6].into_projective());
-    println!("WWWWWWWWWWWWWWWWWWWWWWWWWW {:?}", temp3[6].into_projective().into_affine().into_projective());
+    // println!("WWWWWWWWWWWWWWWWWWWWWWWWWW {:?}", temp3[6].into_projective().into_affine().into_projective());
     params.powers_of_g = temp3;
 
     KZGSettings {

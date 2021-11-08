@@ -2,7 +2,7 @@ use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::ArkG1;
 use crate::kzg_types::FsFr as BlstFr;
 use blst::{
-    blst_fp, blst_p1, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_scalar,
+    blst_fp, blst_p1, blst_p1_mult, blst_scalar,
     blst_scalar_from_fr,
 };
 use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
@@ -130,9 +130,7 @@ pub fn fft_g1_slow(
             jv = data[j * stride].clone();
             r = roots[((i * j) % data.len()) * roots_stride];
             v = g1_mul(&jv, &r);
-            unsafe {
-                blst_p1_add_or_double(&mut last.0, &last.0, &v.0);
-            }
+            last.add_or_dbl(&v);
             ret[i].0.x = last.0.x;
             ret[i].0.y = last.0.y;
             ret[i].0.z = last.0.z;
@@ -162,10 +160,8 @@ pub fn fft_g1_fast(
         );
         for i in 0..half {
             let y_times_root = g1_mul(&ret[i + half], &roots[i * roots_stride]);
-            ret[i + half] = g1_sub(&ret[i], &y_times_root);
-            unsafe {
-                blst_p1_add_or_double(&mut ret[i].0, &ret[i].0, &y_times_root.0);
-            }
+            ret[i + half] = ret[i].sub(&y_times_root);
+            ret[i].add_or_dbl(&y_times_root);
         }
     } else {
         for i in 0..ret.len() {
@@ -176,15 +172,15 @@ pub fn fft_g1_fast(
     }
 }
 
-pub fn g1_sub(a: &ArkG1, b: &ArkG1) -> ArkG1 {
-    let mut bneg = b.0;
-    let mut out = blst_p1::default();
-    unsafe {
-        blst_p1_cneg(&mut bneg, true);
-        blst_p1_add_or_double(&mut out, &a.0, &bneg);
-    }
-    ArkG1(out)
-}
+// pub fn g1_sub(a: &ArkG1, b: &ArkG1) -> ArkG1 {
+//     let mut bneg = b.0;
+//     let mut out = blst_p1::default();
+//     unsafe {
+//         blst_p1_cneg(&mut bneg, true);
+//         blst_p1_add_or_double(&mut out, &a.0, &bneg);
+//     }
+//     ArkG1(out)
+// }
 
 // Slower than Blst but it is using Ark functions and less lines
 // pub fn g1_mul( a: &ArkG1, b: &BlstFr) -> ArkG1 {
