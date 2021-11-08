@@ -212,11 +212,11 @@ impl G1 for BlstP1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let out = self;
+        let mut out = G1::default();
         unsafe {
-            g1_add_or_dbl(out, b, &G1::generator());
+            g1_add_or_dbl(&mut out, b, self);
         }
-        *out
+        out
     }
 
     fn is_inf(&self) -> bool {

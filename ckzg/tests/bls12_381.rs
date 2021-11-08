@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn test_g1_random_linear_combination() {
-        //g1_random_linear_combination::<BlstFr, BlstP1>(&linear_combination_g1);
+        g1_random_linear_combination::<BlstFr, BlstP1>(&linear_combination_g1);
     }
 
     #[test]
