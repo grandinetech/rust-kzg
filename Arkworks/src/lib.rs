@@ -18,6 +18,7 @@ pub mod poly;
 pub mod utils;
 pub mod zero_poly;
 pub mod das;
+pub mod recover;
 
 pub mod kzg_types;
 

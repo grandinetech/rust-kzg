@@ -8,6 +8,7 @@ use crate::kzg_proofs::{
 use crate::fft_g1::{G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY};
 use crate::poly::{poly_inverse, poly_fast_div, poly_mul_direct, poly_long_div, poly_mul_fft};
 use crate::utils::PolyData as LPoly;
+use crate::recover::{scale_poly, unscale_poly};
 use ark_bls12_381::{Fr as ArkFr};
 use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
@@ -292,24 +293,11 @@ impl Poly<FsFr> for LPoly {
     }
 
     fn scale(&mut self) {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-        let inv_factor = scale_factor.inverse();
-
-        let mut factor_power = FsFr::one();
-        for i in 0..self.coeffs.len() {
-            factor_power = factor_power.mul(&inv_factor);
-            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
-        }
+        scale_poly(self);
     }
 
     fn unscale(&mut self) {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-
-        let mut factor_power = FsFr::one();
-        for i in 0..self.coeffs.len() {
-            factor_power = factor_power.mul(&scale_factor);
-            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
-        }
+        unscale_poly(self);
     }
 
     fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
