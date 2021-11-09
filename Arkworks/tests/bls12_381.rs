@@ -1,15 +1,8 @@
 #[cfg(test)]
 pub mod tests {
 	use kzg_bench::tests::bls12_381::*;
-    use arkworks::kzg_types::FsFr;
-	use arkworks::kzg_types::ArkG1;
-	use arkworks::kzg_types::ArkG2;
-
-	// use arkworks::kzg_types::{G1_IDENTITY, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR, pairings_verify, g1_linear_combination};
-	// use zkcrypto::curve::fp::Fp as ZkFp;
-	// use kzg::Fr;
+	use arkworks::kzg_types::{FsFr, ArkG1, ArkG2};
 	use arkworks::fft_g1::log_2_byte;
-	use arkworks::utils::*;
     use arkworks::kzg_proofs::pairings_verify;
 	
 #[test]	
@@ -28,12 +21,6 @@ pub fn fr_is_one_works_() {
 	fr_is_one_works::<FsFr>();
 	
 }
-
-// pub fn fr_is_null_works(void) {
-    // TEST_CHECK(fr_is_null(&fr_null));
-    // TEST_CHECK(!fr_is_null(&fr_zero));
-    // TEST_CHECK(!fr_is_null(&fr_one));
-// }
 
 #[test]
 pub fn fr_from_uint64_works_() {
@@ -111,7 +98,6 @@ pub fn g1_identity_is_identity_() {
 // #[test]
 // pub fn g1_make_linear_combination_() {
 // 	g1_make_linear_combination::<FsFr, ArkG1>(G1_GENERATOR, &g1_linear_combination);
-
 // }
 
 

@@ -1,18 +1,13 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, Error};
-// use crate::zero_poly::from_u64_arr;
-// use crate::Fr as BlstFr;
 use crate::kzg_types::FsFr as BlstFr;
 use ark_bls12_381::Fr;
 use ark_poly::univariate::DensePolynomial as DensePoly;
-// use ark_poly::univariate::SparsePolynomial as SparsePoly;
 use ark_poly::EvaluationDomain;
 use ark_poly::Radix2EvaluationDomain;
 use ark_poly_commit::UVPolynomial;
 use ark_std::log2;
 use kzg::{FFTFr, Fr as FFr};
-// use kzg::Fr as FrTrait;
-
 
 pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [
@@ -271,14 +266,7 @@ pub fn fft_fr(data: &Vec<BlstFr>, inverse: bool, ffts: &FFTSettings) -> Result<V
     }
 
     let mut poly = DensePoly::from_coefficients_slice(&datafr);
-    // let poly = SparsePoly::from_coefficients_vec(datafr);
-    // if data.len() == 16{
-    //     println!("Elva part: {:?}", poly);
-    // }
     let domain = Radix2EvaluationDomain::<Fr>::new(width as usize).unwrap();
-    // let root = from_u64_arr(&SCALE2_ROOT_OF_UNITY[log2(width) as usize]);
-    // domain.group_gen = blst_fr_into_pc_fr(&root);
-    // println!("group gen : {:?}", domain.group_gen);
 
     if inverse {
         let len = poly.coeffs.len();
@@ -292,14 +280,7 @@ pub fn fft_fr(data: &Vec<BlstFr>, inverse: bool, ffts: &FFTSettings) -> Result<V
 
         Ok(dataeval)
     } else {
-        // let len = poly.coeffs.len();
-        // for x in 0..(data.len()-len) as u64 {
-        //     poly.coeffs.push(Fr::from(0));
-        // }
         let eval = domain.fft(&poly.coeffs);
-        if data.len() == 16 {
-            // println!("Elva part: {:?}", eval[10]);
-        }
         for x in eval {
             dataeval.push(pc_fr_into_blst_fr(x));
         }

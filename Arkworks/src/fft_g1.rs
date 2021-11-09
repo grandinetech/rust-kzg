@@ -1,6 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::ArkG1;
-use crate::kzg_types::FsFr as BlstFr;
+use crate::kzg_types::{ArkG1, FsFr as BlstFr};
 use blst::{
     blst_fp, blst_p1, blst_p1_mult, blst_scalar,
     blst_scalar_from_fr,

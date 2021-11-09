@@ -12,21 +12,9 @@ use std::cmp::{min/*, max*/};
 use std::ops::Neg;
 // use crate::zero_poly::pad_poly;
 
-// pub(crate) fn from_u64(n: u64) -> BlstFr {
-//     pc_fr_into_blst_fr(Fr::from(n))
-// }
-
 pub(crate) fn neg(n: BlstFr) -> BlstFr {
     pc_fr_into_blst_fr(blst_fr_into_pc_fr(&n).neg())
 }
-
-// pub(crate) fn inverse(n: PolyData, len: usize) -> Result<PolyData, Error> {
-//     Ok(n)
-// }
-
-// pub(crate) fn is_one(n: BlstFr) -> bool {
-//     n.equals(&BlstFr::one())
-// }
 
 pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
     assert!(b.coeffs.len() > 0);

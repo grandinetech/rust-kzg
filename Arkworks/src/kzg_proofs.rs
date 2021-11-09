@@ -3,18 +3,15 @@ use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_poly_commit::kzg10::{
     Commitment, Powers, Proof, Randomness, UniversalParams, VerifierKey, KZG10,
 };
-use std::collections::BTreeMap;
 use ark_poly_commit::*;
-use ark_std::UniformRand;
+use ark_std::{marker::PhantomData, ops::Div, test_rng, vec, Zero, One, UniformRand, rand::RngCore};
 use ark_ec::msm::{FixedBaseMSM, VariableBaseMSM};
-use ark_std::rand::RngCore;
-
 
 use super::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_poly_into_pc_poly, pc_fr_into_blst_fr,
     pc_g1projective_into_blst_p1, PolyData, blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2
 };
-use super::{/*Fp , Fr as BlstFr,*/ P2};
+use super::{P2};
 use crate::fft_g1::{G1_IDENTITY, G1_GENERATOR};
 use crate::kzg_types::{FsFr as BlstFr, ArkG1, ArkG2};
 use ark_bls12_381::{g1, Bls12_381, Fr, g2};
@@ -22,94 +19,17 @@ use ark_ec::{
     models::short_weierstrass_jacobian::GroupAffine, AffineCurve, PairingEngine, ProjectiveCurve,
     models::short_weierstrass_jacobian::GroupProjective,
 };
-use ark_ff::{/*Field, */PrimeField};
+use ark_ff::{PrimeField};
 use ark_poly::univariate::DensePolynomial as DensePoly;
-use ark_std::{marker::PhantomData, ops::Div, test_rng, vec, Zero, One};
 use blst::{blst_fp, blst_fp2};
 use kzg::{Fr as FrTrait, Poly, FFTSettings as FFTTrait, FFTFr};
 use rand::rngs::StdRng;
-use std::ops::{/*Neg,*/ MulAssign};
-// use std::iter::FromIterator;
-
+use std::ops::{Neg, MulAssign};
+use std::collections::BTreeMap;
 use super::fft::SCALE2_ROOT_OF_UNITY;
 
 type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
 type KZG_Bls12_381 = KZG10<Bls12_381, UniPoly_381>;
-
-// pub const G2_GENERATOR: P2 = P2 {
-//     x: blst_fp2 {
-//         fp: [
-//             blst_fp {
-//                 l: [
-//                     0xf5f28fa202940a10,
-//                     0xb3f5fb2687b4961a,
-//                     0xa1a893b53e2ae580,
-//                     0x9894999d1a3caee9,
-//                     0x6f67b7631863366b,
-//                     0x058191924350bcd7,
-//                 ],
-//             },
-//             blst_fp {
-//                 l: [
-//                     0xa5a9c0759e23f606,
-//                     0xaaa0c59dbccd60c3,
-//                     0x3bb17e18e2867806,
-//                     0x1b1ab6cc8541b367,
-//                     0xc2b6ed0ef2158547,
-//                     0x11922a097360edf3,
-//                 ],
-//             },
-//         ],
-//     },
-//     y: blst_fp2 {
-//         fp: [
-//             blst_fp {
-//                 l: [
-//                     0x4c730af860494c4a,
-//                     0x597cfa1f5e369c5a,
-//                     0xe7e6856caa0a635a,
-//                     0xbbefb5e96e0d495f,
-//                     0x07d3a975f0ef25a2,
-//                     0x0083fd8e7e80dae5,
-//                 ],
-//             },
-//             blst_fp {
-//                 l: [
-//                     0xadc0fc92df64b05d,
-//                     0x18aa270a2b1461dc,
-//                     0x86adac6a3be4eba0,
-//                     0x79495c4ec93da33a,
-//                     0xe7175850a43ccaed,
-//                     0x0b2bc2a163de1bf2,
-//                 ],
-//             },
-//         ],
-//     },
-//     z: blst_fp2 {
-//         fp: [
-//             blst_fp {
-//                 l: [
-//                     0x760900000002fffd,
-//                     0xebf4000bc40c0002,
-//                     0x5f48985753c758ba,
-//                     0x77ce585370525745,
-//                     0x5c071a97a256ec6d,
-//                     0x15f65ec3fa80e493,
-//                 ],
-//             },
-//             blst_fp {
-//                 l: [
-//                     0x0000000000000000,
-//                     0x0000000000000000,
-//                     0x0000000000000000,
-//                     0x0000000000000000,
-//                     0x0000000000000000,
-//                     0x0000000000000000,
-//                 ],
-//             },
-//         ],
-//     },
-// };
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
 Due to being private and, therefore, unreachable*/
@@ -146,7 +66,7 @@ pub struct KZG<E: PairingEngine, P: UVPolynomial<E::Fr>> {
 }
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
-Due to being private and, therefore, unreachable*/
+Due to being private and, therefore, unreachable and/or in need of modification*/
 impl<E, P> KZG<E, P>
 where
     E: PairingEngine,
@@ -165,24 +85,23 @@ where
             return Err(Error::DegreeIsZero);
         }
 
-        let mut ret = blst::blst_fr::default();
+        // let mut ret = blst::blst_fr::default();
 
-        let secret = blst::blst_scalar{b:[0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
-                                0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]};
+        // let secret = blst::blst_scalar{b:[0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
+        //                         0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        //                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]};
 
-        unsafe{
-            blst::blst_fr_from_scalar(&mut ret, &secret)
-        }
+        // unsafe{
+        //     blst::blst_fr_from_scalar(&mut ret, &secret)
+        // }
+        // let beta = blst_fr_into_pc_fr(&BlstFr(ret));
 
-        // let beta = Fr::rand(rng);
-        let beta = blst_fr_into_pc_fr(&BlstFr(ret));
+        let beta = Fr::rand(rng);
         // let g: GroupProjective<g1::Parameters> = GroupProjective::rand(rng);
         let g = blst_p1_into_pc_g1projective(&G1_GENERATOR).unwrap();
         let gamma_g: GroupProjective<g1::Parameters> = GroupProjective::rand(rng);
         // let h: GroupProjective<g2::Parameters> = GroupProjective::rand(rng);
         let h = blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
-        let (s1, s2) = generate_trusted_setup_test(max_degree, beta);
 
         let mut powers_of_beta = vec![Fr::one()];
 
@@ -196,17 +115,13 @@ where
 
         let scalar_bits = Fr::size_in_bits();
         let g_table = FixedBaseMSM::get_window_table(scalar_bits, window_size, g);
-        let mut powers_of_g = FixedBaseMSM::multi_scalar_mul::<GroupProjective<g1::Parameters>>(
+        let powers_of_g = FixedBaseMSM::multi_scalar_mul::<GroupProjective<g1::Parameters>>(
             scalar_bits,
             window_size,
             &g_table,
             &powers_of_beta,
         );
-        // println!("POWG: {:?}", powers_of_g[2]);
-        // let mut temp = g.clone();
-        // temp.mul_assign(powers_of_beta[2]);
-        // println!("POWG: {:?}", temp);
-        // println!("SECRET1: {:?}", s1[2]);
+
         let gamma_g_table = FixedBaseMSM::get_window_table(scalar_bits, window_size, gamma_g);
         let mut powers_of_gamma_g = FixedBaseMSM::multi_scalar_mul::<GroupProjective<g1::Parameters>>(
             scalar_bits,
@@ -220,7 +135,6 @@ where
         temp = beta.0.0;
         powers_of_gamma_g.push(powers_of_gamma_g.last().unwrap().mul(temp));
 
-        powers_of_g = s1.clone();
         let powers_of_g = GroupProjective::batch_normalization_into_affine(&powers_of_g);
         let powers_of_gamma_g =
             GroupProjective::batch_normalization_into_affine(&powers_of_gamma_g)
@@ -233,7 +147,7 @@ where
             let mut cur = Fr::one() / &beta;
             for _ in 0..max_degree {
                 neg_powers_of_beta.push(cur);
-                cur *= &beta;
+                cur /= &beta;
             }
 
             let neg_h_table = FixedBaseMSM::get_window_table(scalar_bits, window_size, h);
@@ -244,7 +158,6 @@ where
                 &neg_powers_of_beta,
             );
 
-            let neg_powers_of_h = s2.clone();
             let affines = GroupProjective::batch_normalization_into_affine(&neg_powers_of_h);
             let mut affines_map = BTreeMap::new();
             affines.into_iter().enumerate().for_each(|(i, a)| {
@@ -260,11 +173,7 @@ where
         let prepared_h = h.into();
         let prepared_beta_h = beta_h.into();
 
-        // let mut v = Vec::from_iter(neg_powers_of_h.clone());
-        // println!("neg_powers_of_h: {:?}", neg_powers_of_h[&2].into_projective());
-        // println!("POWGVVVVV: {:?}", v[2]);
-        // println!("SECRET1: {:?}", s2[2]);
-
+        let (s1, s2) = generate_trusted_setup_test(max_degree, beta);
 
         let pp = UniversalParams {
             powers_of_g,
@@ -360,19 +269,6 @@ fn convert_to_bigints<F: PrimeField>(p: &[F]) -> Vec<F::BigInt> {
     coeffs
 }
 
-// pub(crate) const fr_one = BlstFr{blst::blst_fr{
-//     l: [
-//         8589934590,
-//         6378425256633387010,
-//         11064306276430008309,
-//         1739710354780652911,
-//     ]
-// }};
-
-// pub(crate) const fr_zero: BlstFr = BlstFr {
-//     l: [0x0, 0x0, 0x0, 0x0],
-// };
-
 pub struct FFTSettings {
     pub max_width: usize,
     pub root_of_unity: BlstFr,
@@ -380,60 +276,6 @@ pub struct FFTSettings {
     pub reverse_roots_of_unity: Vec<BlstFr>,
     pub domain: Radix2EvaluationDomain<Fr>,
 }
-
-// impl Default for FFTSettings {
-//     fn default() -> FFTSettings {
-//         FFTSettings {
-//             max_width: 0,
-//             root_of_unity: BlstFr::zero(),
-//             expanded_roots_of_unity: Vec::new(),
-//             reverse_roots_of_unity: Vec::new(),
-//             domain: Radix2EvaluationDomain::<Fr>::new(0 as usize).unwrap(),
-//         }
-//     }
-// }
-
-/*This segment has been copied from https://github.com/arkworks-rs/algebra/blob/master/poly/src/domain/utils.rs,
-Due to being private and, therefore, unreachable*/
-// pub(crate) fn compute_powers_serial(size: usize, root: Fr) -> Vec<Fr> {
-//     compute_powers_and_mul_by_const_serial(size, root, blst_fr_into_pc_fr(&BlstFr::one()))
-// }
-
-// pub(crate) fn compute_powers_and_mul_by_const_serial(size: usize, root: Fr, c: Fr) -> Vec<Fr> {
-//     // let mut generated_powers = vec![c, root.clone()];
-//     // while !(generated_powers.last().unwrap().eq(c)) && generated_powers.len() <= size{
-//     //     generated_powers.push(generated_powers.last().unwrap().mul_assign(&root));
-//     // }
-//     // generated_powers;
-
-//     let mut value = c;
-//     let arr: Vec<Fr> = (0..size)
-//         .map(|_| {
-//             let old_value = value;
-//             value *= root;
-//             old_value
-//         })
-//         .collect();
-//     let mut i = 2;
-//     while i <= size && arr[i - 1] != c {
-//         i += 1;
-//     }
-//     arr[..i].to_vec()
-// }
-
-/*This segment has been copied from https://github.com/arkworks-rs/algebra/blob/master/poly/src/domain/radix2/fft.rs,
-Due to being private and, therefore, unreachable*/
-
-// pub(super) fn roots_of_unity(domain: &Radix2EvaluationDomain<Fr>, root: Fr) -> Vec<Fr> {
-//     compute_powers_serial(domain.size as usize, root)
-// }
-
-// pub fn expand_root_of_unity(root: &BlstFr, size: usize) -> Result<Vec<BlstFr>, String>{
-//     let first = compute_powers_serial(size, blst_fr_into_pc_fr(root));
-//     let second = DensePoly::from_coefficients_vec(first);
-
-//     Ok(pc_poly_into_blst_poly(second).unwrap().coeffs)
-// }
 
 pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, String> {
     let mut generated_powers = vec![BlstFr::one(), root.clone()];
@@ -458,12 +300,6 @@ impl FFTSettings {
         }
         let max_width: usize = 1 << max_scale;
         let domain = Radix2EvaluationDomain::<Fr>::new(max_width as usize).unwrap();
-
-        // let  roots = pc_poly_into_blst_poly(DensePoly::from_coefficients_vec(
-        //     roots_of_unity(&domain, domain.group_gen),
-        // ))
-        // .unwrap()
-        // .coeffs;
 
         let roots =
             expand_root_of_unity(&pc_fr_into_blst_fr(domain.group_gen), domain.size as usize)
@@ -553,10 +389,6 @@ pub fn generate_trusted_setup_test(len: usize, s: Fr) -> (Vec<GroupProjective<g1
     (s1, s2)
 }
 
-// pub(crate) fn new_fft_settings(max_scale: u64) -> FFTSettings {
-//     FFTSettings::default()
-// }
-
 pub(crate) fn new_kzg_settings(
     secret_g1: &Vec<ArkG1>,
     _secret_g2: &Vec<ArkG2>,
@@ -568,24 +400,6 @@ pub(crate) fn new_kzg_settings(
     for i in 0..length{
         temp.push(blst_p1_into_pc_g1projective(&secret_g1[i as usize].0).unwrap().into_affine());
     }
-    
-    
-    let mut s_pow = Fr::from(1);
-    let s = Fr::rand(&mut test_rng());
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
-    for _i in 0..length{
-        let mut temp = params.powers_of_g[0].into_projective();
-        temp.mul_assign(s_pow);
-        s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
-        let mut temp = params.h.into_projective();
-        temp.mul_assign(s_pow);
-        s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
-        s_pow *= s;
-    }
-    
-// println!("FIRST: {:?}", test[1]);
-// println!("SECOND: {:?}", params.powers_of_g[1].into_projective());
 
     let mut temp = Vec::new();
     for i in 0..length{
@@ -602,37 +416,17 @@ pub(crate) fn new_kzg_settings(
         temp3.push(test[i as usize].into_affine());
     }
 
-    // println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", test[6].into_affine().into_projective());
-    // println!("@@@@@@@@@@@@@@@@@@@@@@@@ {:?}", temp3[6].into_projective());
-    assert_eq!(test[6], temp3[6].into_projective());
-    // println!("WWWWWWWWWWWWWWWWWWWWWWWWWW {:?}", temp3[6].into_projective().into_affine().into_projective());
     params.powers_of_g = temp3;
 
     KZGSettings {
         secret_g1: temp,
         secret_g2: temp2,
-        // secret_g1: s1,
-        // secret_g2: s2,
         length: length,
         params: params,
         fs: fs,
         ..Default::default()
     }
 }
-
-// pub(crate) fn fr_from_uint64(num: u64) -> BlstFr {
-//     let fr = Fr::new(BigInteger256::from(num));
-//     pc_fr_into_blst_fr(fr)
-// }
-
-// pub(crate) fn new_poly(len: usize) -> PolyData {
-//     PolyData {
-//         coeffs: vec![BlstFr::zero(); len],
-//     }
-// }
-
-#[derive(Debug, PartialEq)]
-pub(crate) struct TooLongPoly;
 
 pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, String> {
     if p.coeffs.len() > ks.length as usize {
@@ -641,7 +435,6 @@ pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, St
         Ok(G1_IDENTITY)
     } else {
         let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
-        // println!("THIRD: {:?}", powers.powers_of_g[1].into_projective());
         let (com, _rand) = KZG_Bls12_381::commit(
             &powers,
             &blst_poly_into_pc_poly(&p).unwrap(),
@@ -667,7 +460,6 @@ pub(crate) fn compute_proof_single(p: &PolyData, x: &BlstFr, ks: &KZGSettings) -
 
 pub(crate) fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
     let poly = blst_poly_into_pc_poly(p).unwrap();
-    // println!("PC POLY {:?} AND BL<S POLY {:?}",poly, p);
     pc_fr_into_blst_fr(poly.evaluate(&blst_fr_into_pc_fr(x)))
 }
 
@@ -739,31 +531,13 @@ pub(crate) fn check_proof_multi(
     let x_pow = inv_x_pow.inverse();
     let mut xn2 = ks.params.h.into_projective();
     xn2.mul_assign(blst_fr_into_pc_fr(&x_pow));
-    println!("TEST1: {:?}", ks.secret_g1[6]);
-    println!("TEST2: {:?}", ks.params.powers_of_g[6].into_projective());
-    // println!("TEST3: {:?}", blst_p2_into_pc_g2projective(&xn2.0));
-
-    // let xn_minus_yn = pc_g2projective_into_blst_p2(blst_p2_into_pc_g2projective(&ks.secret_g2[n]).unwrap()- temp).unwrap();
-    // let xn_minus_yn = ks.params.neg_powers_of_h[&n].into_projective() - xn2;
     let xn_minus_yn = blst_p2_into_pc_g2projective(&ks.secret_g2[n]).unwrap() - xn2;
-    // let xn_minus_yn = ks.params.beta_h.into_projective() - xn2;
-
-
+   
     let is1 = blst_p1_into_pc_g1projective(&commit_to_poly(&interp, ks).unwrap().0).unwrap();
-    println!("TEST1: {:?}", is1);
-    println!("TEST2: {:?}", com);
 
     let commit_minus_interp = blst_p1_into_pc_g1projective(&com.0).unwrap() - is1;
-    let a1 = Bls12_381::pairing(commit_minus_interp, ks.params.h);
-    let a2 = Bls12_381::pairing(blst_p1_into_pc_g1projective(&proof.0).unwrap(), xn_minus_yn);
-    println!("TEST1: {:?}", a1);
-    println!("TEST2: {:?}", a2);
-    Bls12_381::product_of_pairings(&[
-            // (commit_minus_interp.into_affine().into(), blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap().into_affine().into()),
-            (commit_minus_interp.into_affine().into(), ks.params.h.into()),
-            (blst_p1_into_pc_g1projective(&proof.0).unwrap().into_affine().into(), xn_minus_yn.into_affine().into()),
-        ])
-        .is_one()
+    pairings_verify(&pc_g1projective_into_blst_p1(commit_minus_interp).unwrap(), &pc_g2projective_into_blst_p2(ks.params.h.into_projective()).unwrap(), 
+    proof, &pc_g2projective_into_blst_p2(xn_minus_yn).unwrap())
 }
 
 
@@ -802,49 +576,15 @@ pub const G2_NEGATIVE_GENERATOR: ArkG2 = ArkG2(P2{
 });
 
 pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1:&ArkG1, b2: &ArkG2) -> bool {
-    let mut loop0: blst::blst_fp12 = blst::blst_fp12::default();
-    let mut loop1: blst::blst_fp12 = blst::blst_fp12::default();
-    let mut gt_point: blst::blst_fp12 = blst::blst_fp12::default();
-    let mut aa1: blst::blst_p1_affine = blst::blst_p1_affine::default();
-    let mut bb1: blst::blst_p1_affine = blst::blst_p1_affine::default();
-    let mut aa2: blst::blst_p2_affine = blst::blst_p2_affine::default();
-    let mut bb2: blst::blst_p2_affine = blst::blst_p2_affine::default();
+    let ark_a1_neg = blst_p1_into_pc_g1projective(&a1.0).unwrap().neg().into_affine();
+    let ark_b1 = blst_p1_into_pc_g1projective(&b1.0).unwrap().into_affine();
+    let ark_a2 = blst_p2_into_pc_g2projective(a2).unwrap().into_affine();
+    let ark_b2 = blst_p2_into_pc_g2projective(b2).unwrap().into_affine();
 
-    // As an optimisation, we want to invert one of the pairings,
-    // so we negate one of the points.
-    let mut a1neg = a1.clone().0;
-    unsafe{
-        blst::blst_p1_cneg(&mut a1neg, true);
 
-        blst::blst_p1_to_affine(&mut aa1, &a1neg);
-        blst::blst_p1_to_affine(&mut bb1, &b1.0 as *const _);
-        blst::blst_p2_to_affine(&mut aa2, &a2.0 as *const _);
-        blst::blst_p2_to_affine(&mut bb2, &b2.0 as *const _);
-
-        blst::blst_miller_loop(&mut loop0, &aa2, &aa1);
-        blst::blst_miller_loop(&mut loop1, &bb2, &bb1);
-
-// let b = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, false).into_projective();
-
-        blst::blst_fp12_mul(&mut gt_point, &loop0, &loop1);
-        blst::blst_final_exp(&mut gt_point, &gt_point);
-                println!("TEST1: {:?}", gt_point);
-                // println!("TEST1: {:?}", G2_GENERATOR);
-        blst::blst_fp12_is_one(&gt_point as *const _)
-    }
+    Bls12_381::product_of_pairings(&[
+            (ark_a1_neg.into(), ark_a2.into()),
+            (ark_b1.into(), ark_b2.into()),
+        ])
+        .is_one()
 }
-
-// pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1:&ArkG1, b2: &ArkG2) -> bool {
-//     let a1 = blst_p1_into_pc_g1projective(&a1.0).unwrap();
-//     let b1 = blst_p1_into_pc_g1projective(&b1.0).unwrap();
-//     let a2 = blst_p2_into_pc_g2projective(&a2).unwrap();
-//     let b2 = blst_p2_into_pc_g2projective(&b2).unwrap();
-
-
-//     Bls12_381::product_of_pairings(&[
-//             // (commit_minus_interp.into_affine().into(), blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap().into_affine().into()),
-//             (a1.into_affine().into(), a2.into_affine().into()),
-//             (b1.into_affine().into(), b2.into_affine().into()),
-//         ])
-//         .is_one()
-// }

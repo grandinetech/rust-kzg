@@ -1,5 +1,4 @@
 use crate::fft::SCALE2_ROOT_OF_UNITY;
-use ark_ec::ProjectiveCurve;
 use crate::kzg_proofs::{
     check_proof_single as check_single, commit_to_poly as commit,
     compute_proof_single as compute_single, default_kzg, eval_poly, expand_root_of_unity, compute_proof_multi as compute_multi,
@@ -15,7 +14,7 @@ use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use std::ops::Neg;
 use std::ops::MulAssign;
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
-
+use ark_ec::ProjectiveCurve;
 use ark_std::{UniformRand, One, Zero, test_rng};
 use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, blst_p1_into_pc_g1projective,
 blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2};
@@ -210,48 +209,7 @@ impl Fr for FsFr {
     }
 
     fn pow(&self, n: usize) -> Self {
-        assert_eq!(ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(2), ArkFr::from(2).pow([4]));
-        println!("FIRSTL {:?}", ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(2)*ArkFr::from(1));
-        println!("SECOND {:?}", ArkFr::from(2).pow([3]));
-        let t = pc_fr_into_blst_fr(ArkFr::from(2));
-        println!("THIRFD {:?}", t.mul(&t).mul(&t));
         pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
-        //         let mut tmp = self.clone();
-
-        // let mut out = Self::one();
-        // let mut k = n;
-
-        //     loop {
-        //         if k & 1 == 1 {
-        //             out = out.mul(&self);
-        //         }
-        //         k = k >> 1;
-        //         if k == 0 {
-        //             break;
-        //         }
-        //         out = self.sqr();
-        //     }
-        // out
-
-        // let mut tmp = self.clone();
-        // //*out = fr_one;
-        // let mut out = Self::one();
-        // let mut n2 = n;
-
-        // unsafe {
-        //     loop {
-        //         if n2 & 1 == 1 {
-        //             blst::blst_fr_mul(&mut out.0, &out.0, &tmp.0);
-        //         }
-        //         n2 = n2 >> 1;
-        //         if n2 == 0 {
-        //             break;
-        //         }
-        //         blst::blst_fr_sqr(&mut out.0, &tmp.0);
-        //     }
-        // }
-
-        // out
     }
 
     fn mul(&self, b: &Self) -> Self {
