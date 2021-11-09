@@ -17,6 +17,7 @@ pub mod kzg_proofs;
 pub mod poly;
 pub mod utils;
 pub mod zero_poly;
+pub mod das;
 
 pub mod kzg_types;
 
