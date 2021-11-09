@@ -8,6 +8,16 @@ pub fn log_2_byte_works (log_2_byte: &dyn Fn(u8) -> usize) {
     assert_eq!(4, log_2_byte(0x10));
 }
 
+pub fn fr_is_null_works<TFr: Fr>() {
+    let one = TFr::from_u64(1);
+    let zero = TFr::zero();
+    let null = TFr::null();
+    assert!(!zero.is_null());
+    assert!(!one.is_null());
+    //println!("tttttttt {}", null.l[1]);
+    assert!(null.is_null());
+}
+
 pub fn fr_is_zero_works<TFr: Fr>() {
     let zero = TFr::from_u64(0);
     assert!(zero.is_zero());

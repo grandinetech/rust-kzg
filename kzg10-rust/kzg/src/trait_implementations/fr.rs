@@ -6,6 +6,10 @@ impl CommonFr for Fr {
         Fr::zero()
     }
 
+    fn null() -> Self {
+        Fr::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+    }
+
     fn zero() -> Self {
         Fr::zero()
     }
@@ -38,6 +42,10 @@ impl CommonFr for Fr {
 	
     fn is_one(&self) -> bool {
         Fr::is_one(self)
+    }
+
+    fn is_null(&self) -> bool {
+        todo!()
     }
 
     fn is_zero(&self) -> bool {

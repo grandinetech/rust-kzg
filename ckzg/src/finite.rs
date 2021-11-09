@@ -8,6 +8,7 @@ extern "C" {
     fn fr_from_uint64s(out: *mut BlstFr, vals: *const u64);
     fn fr_to_uint64s(out: *mut u64, fr: *const BlstFr);
     fn fr_is_zero(p: *const BlstFr) -> bool;
+    fn fr_is_null(p: *const BlstFr) -> bool;
     fn fr_is_one(p: *const BlstFr) -> bool;
     fn fr_equal(aa: *const BlstFr, bb: *const BlstFr) -> bool;
     fn fr_negate(out: *mut BlstFr, in_: *const BlstFr);
@@ -45,6 +46,10 @@ pub struct BlstFr {
 impl Fr for BlstFr {
     fn default() -> Self {
         Self { l: [0; 4] }
+    }
+
+    fn null() -> Self {
+        Self { l: [u64::MAX, u64::MAX ,u64::MAX, u64::MAX]}
     }
 
     fn zero() -> Self {
@@ -103,6 +108,12 @@ impl Fr for BlstFr {
     fn is_zero(&self) -> bool {
         unsafe {
             return fr_is_zero(self);
+        }
+    }
+
+    fn is_null(&self) -> bool {
+        unsafe {
+            return fr_is_null(self);
         }
     }
 

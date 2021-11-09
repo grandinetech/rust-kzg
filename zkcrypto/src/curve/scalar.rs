@@ -399,6 +399,11 @@ impl Scalar {
         R
     }
 
+    #[inline]
+    pub const fn null() -> Scalar {
+        Scalar([u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+    }
+
     /// Doubles this field element.
     #[inline]
     pub const fn double(&self) -> Scalar {

@@ -13,6 +13,10 @@ impl Fr for FsFr {
         Self(blst_fr::default())
     }
 
+    fn null() -> Self {
+        Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+    }
+
     fn zero() -> Self {
         Self::from_u64(0)
     }
@@ -51,7 +55,15 @@ impl Fr for FsFr {
 	fn div(&self, b: &Self) -> Result<Self, String>{
 		todo!()
 	}
-	
+
+    fn is_null(&self) -> bool {
+        let mut val: [u64; 4] = [0; 4];
+        unsafe {
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
+        }
+        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX&& val[3] == u64::MAX;
+    }
+
     fn is_one(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
