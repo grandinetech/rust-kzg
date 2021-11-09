@@ -128,13 +128,13 @@ impl Fr for blsScalar {
     
         loop {
             if n2 & 1 == 1 {
-                out.mul(&tmp);
+                out = out.mul(&tmp);
             }
             n2 = n2 >> 1;
             if n2 == 0 {
                 break;
             }
-            out.sqr();
+            tmp = tmp.sqr();
         }
     
     out
