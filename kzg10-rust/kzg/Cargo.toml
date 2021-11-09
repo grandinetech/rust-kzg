@@ -12,6 +12,8 @@ edition = "2018"
 cc = "1.0"
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 kzg = { path = "../../kzg" }
+rand = "0.8.4"
+rand_pcg = "0.3.1"
 primitive-types = "0.10.1"
 
 [build-dependencies]

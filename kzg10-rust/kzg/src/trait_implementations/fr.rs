@@ -1,5 +1,6 @@
 use crate::data_types::fr::Fr;
 use kzg::Fr as CommonFr;
+use rand::Rng;
 
 impl CommonFr for Fr {
     fn default() -> Self {
@@ -15,9 +16,22 @@ impl CommonFr for Fr {
     }
 
     fn rand() -> Self {
-        let mut fr = Fr::zero();
-        Fr::set_by_csprng(&mut fr);
-        fr
+        let mut rng = rand::thread_rng();
+        // let mut fr = Fr::zero();
+        // Fr::set_by_csprng(&mut fr);
+        // fr
+        //SHOULD BE CHANGED
+        //Fr::random()
+
+        //Pros: works with DAS test Cons: slower
+        //No clue why MCL one does not work with DAS test
+        let mut val: [u64; 4] = [0, 0, 0, 0];
+        for x in &mut val {
+            *x = rng.gen_range(0..1);
+        }
+        let ret = Self::from_u64_arr(&val);
+        ret
+        
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {

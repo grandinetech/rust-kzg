@@ -18,6 +18,9 @@ impl FFTSettings {
     }
 
     fn _das_fft_extension(&self, values: &mut [Fr], stride: usize) {
+        if values.len() < 2 {
+            return;
+        }
         if values.len() == 2 {
             let (x, y) = FFTSettings::_calc_add_and_sub(&values[0], &values[1]);
 
