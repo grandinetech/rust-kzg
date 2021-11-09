@@ -21,6 +21,11 @@ mod tests {
     }
 
     #[test]
+    fn test_fr_is_null_works() {
+        fr_is_null_works::<BlstFr>();
+    }
+
+    #[test]
     fn test_fr_from_uint64_works() {
         fr_from_uint64_works::<BlstFr>();
     }

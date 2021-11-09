@@ -1,6 +1,8 @@
 pub trait Fr: Clone {
     fn default() -> Self;
 
+    fn null() -> Self;
+
     fn zero() -> Self;
 
     fn one() -> Self;
@@ -16,6 +18,8 @@ pub trait Fr: Clone {
     fn is_one(&self) -> bool;
 
     fn is_zero(&self) -> bool;
+
+    fn is_null(&self) -> bool;
 
     fn sqr(&self) -> Self;
 
