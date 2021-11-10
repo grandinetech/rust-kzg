@@ -21,7 +21,7 @@ pub fn kzg_proof<
         
         let fssize = fs.get_max_width();
         let (s1, s2) = generate_trusted_setup(fssize, SECRET);
-        let mut ks = TKZGSettings::new(&s1, &s2, fssize, fs);
+        let mut ks = TKZGSettings::new(&s1, &s2, fssize, fs).unwrap();
 
 
         let mut poly = TPoly::new(fssize).unwrap();
