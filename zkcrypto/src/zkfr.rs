@@ -17,7 +17,11 @@ impl Fr for blsScalar {
 	fn default() -> Self {
 		<blsScalar as Default>::default()
 	}
-	
+
+	fn null() -> Self {
+		blsScalar::null()
+	}
+
 	fn zero() -> Self {
 		blsScalar::zero()
 	}
@@ -77,9 +81,14 @@ impl Fr for blsScalar {
 		// <blsScalar as From<u64>>::from(val.as_mut_ptr());
         // return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
-	
-	fn sqr(&self) -> Self {
-		blsScalar::square(&self)
+
+
+	fn is_null(&self) -> bool {
+		self.eq(&blsScalar::null())
+	}
+
+		fn sqr(&self) -> Self {
+			blsScalar::square(&self)
 	}
 	
     fn mul(&self, b: &Self) -> Self {
@@ -119,13 +128,13 @@ impl Fr for blsScalar {
     
         loop {
             if n2 & 1 == 1 {
-                out.mul(&tmp);
+                out = out.mul(&tmp);
             }
             n2 = n2 >> 1;
             if n2 == 0 {
                 break;
             }
-            out.sqr();
+            tmp = tmp.sqr();
         }
     
     out

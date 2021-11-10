@@ -51,7 +51,7 @@ pub fn fr_negate_works_() {
 
 #[test]
 pub fn fr_pow_works_() {
-	//fr_pow_works::<blsScalar>();
+	fr_pow_works::<blsScalar>();
 }
 
 #[test]

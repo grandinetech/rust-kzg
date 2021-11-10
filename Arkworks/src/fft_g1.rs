@@ -1,8 +1,7 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::ArkG1;
-use crate::kzg_types::FsFr as BlstFr;
+use crate::kzg_types::{ArkG1, FsFr as BlstFr};
 use blst::{
-    blst_fp, blst_p1, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_scalar,
+    blst_fp, blst_p1, blst_p1_mult, blst_scalar,
     blst_scalar_from_fr,
 };
 use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
@@ -12,8 +11,17 @@ use std::mem::size_of;
 //use crate::utils::{blst_p1_into_pc_g1projective, pc_g1projective_into_blst_p1, blst_fr_into_pc_fr};
 //use std::ops::MulAssign;
 
+pub const G1_NEGATIVE_GENERATOR: blst_p1 = blst_p1 {
+    x: blst_fp {
+        l: [0x5cb38790fd530c16, 0x7817fc679976fff5, 0x154f95c7143ba1c1, 0xf0ae6acdf3d0e747, 0xedce6ecc21dbf440, 0x120177419e0bfb75,] },
+    y: blst_fp {
+        l: [0xff526c2af318883a, 0x92899ce4383b0270, 0x89d7738d9fa9d055, 0x12caf35ba344c12a, 0x3cff1b76964b5317, 0x0e44d2ede9774430,] },
+    z: blst_fp {
+        l: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493,] },
+	};
+
 /** The G1 generator */
-pub(crate) const G1_GENERATOR: blst_p1 = blst_p1 {
+pub const G1_GENERATOR: blst_p1 = blst_p1 {
     x: blst_fp {
         l: [
             0x5cb38790fd530c16,
@@ -80,7 +88,7 @@ impl FFTG1<ArkG1> for FFTSettings {
         let stride: usize = self.max_width / data.len();
         let mut out = vec![ArkG1::default(); data.len()];
         if inverse {
-            let mut inv_len = BlstFr::default();
+            let mut inv_len:BlstFr;
             inv_len = Fr::from_u64(self.max_width as u64);
             inv_len = inv_len.inverse();
 
@@ -130,9 +138,7 @@ pub fn fft_g1_slow(
             jv = data[j * stride].clone();
             r = roots[((i * j) % data.len()) * roots_stride];
             v = g1_mul(&jv, &r);
-            unsafe {
-                blst_p1_add_or_double(&mut last.0, &last.0, &v.0);
-            }
+            last.add_or_dbl(&v);
             ret[i].0.x = last.0.x;
             ret[i].0.y = last.0.y;
             ret[i].0.z = last.0.z;
@@ -162,10 +168,8 @@ pub fn fft_g1_fast(
         );
         for i in 0..half {
             let y_times_root = g1_mul(&ret[i + half], &roots[i * roots_stride]);
-            ret[i + half] = g1_sub(&ret[i], &y_times_root);
-            unsafe {
-                blst_p1_add_or_double(&mut ret[i].0, &ret[i].0, &y_times_root.0);
-            }
+            ret[i + half] = ret[i].sub(&y_times_root);
+            ret[i].add_or_dbl(&y_times_root);
         }
     } else {
         for i in 0..ret.len() {
@@ -176,15 +180,15 @@ pub fn fft_g1_fast(
     }
 }
 
-pub fn g1_sub(a: &ArkG1, b: &ArkG1) -> ArkG1 {
-    let mut bneg = b.0;
-    let mut out = blst_p1::default();
-    unsafe {
-        blst_p1_cneg(&mut bneg, true);
-        blst_p1_add_or_double(&mut out, &a.0, &bneg);
-    }
-    ArkG1(out)
-}
+// pub fn g1_sub(a: &ArkG1, b: &ArkG1) -> ArkG1 {
+//     let mut bneg = b.0;
+//     let mut out = blst_p1::default();
+//     unsafe {
+//         blst_p1_cneg(&mut bneg, true);
+//         blst_p1_add_or_double(&mut out, &a.0, &bneg);
+//     }
+//     ArkG1(out)
+// }
 
 // Slower than Blst but it is using Ark functions and less lines
 // pub fn g1_mul( a: &ArkG1, b: &BlstFr) -> ArkG1 {
