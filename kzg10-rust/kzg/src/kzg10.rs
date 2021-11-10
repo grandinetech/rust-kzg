@@ -317,7 +317,7 @@ impl Polynomial {
         let a_flip = Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs));
         let b_flip = Polynomial::from_fr(Polynomial::flip_coeffs(divisor));
         let inv_b_flip = b_flip.inverse(out_length).unwrap();
-        let q_flip = a_flip.mul_direct(&inv_b_flip, out_length).unwrap();
+        let q_flip = a_flip.mul(&inv_b_flip, out_length).unwrap();
 
         return Ok(q_flip.flip());
     }
@@ -429,22 +429,25 @@ impl Polynomial {
         let b_pad = b.pad(b_len, length);
         let a_fft = ft.fft(&a_pad.coeffs, false);
         let b_fft = ft.fft(&b_pad.coeffs, false);
-        let mut ab_fft: Vec<Fr> = vec![];
+        let mut ab_fft = a_fft;
         for i in 0..length {
-            ab_fft.push(a_fft[i] * b_fft[i]);
+            ab_fft[i] = ab_fft[i] * b_fft[i];
         }
         let ab = ft.fft(&ab_fft, true);
 
-        let data_len = min(len, length);
-        let mut ret_coeffs: Vec<Fr> = vec![];
-        for i in 0..data_len {
-            ret_coeffs.push(ab[i]);
-        }
-        for _ in data_len..len {
-            ret_coeffs.push(Fr::zero());
-        }
+        let mut ret_coeffs: Vec<Fr> = ab;
 
-        Ok(Polynomial::from_fr(ret_coeffs))
+        //pad if too short, else take first len if too long
+        if len > length {
+            for _ in length..len {
+                ret_coeffs.push(Fr::zero());
+            }
+        } else {
+            unsafe {
+                ret_coeffs.set_len(len);
+            }
+        }
+        return Ok(Polynomial::from_fr(ret_coeffs));
     }
 
     pub fn mul_direct(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
@@ -498,9 +501,9 @@ impl Polynomial {
         //if new length is 1, max d is 0
         let mut mask = 1 << log_2(maxd);
         
-        let mut poly_temp_0: Polynomial;
-        let mut poly_temp_1: Polynomial;
         while mask != 0 {
+            let mut poly_temp_0: Polynomial;
+            let poly_temp_1: Polynomial;
             d = 2 * d + ((maxd & mask) != 0) as usize;
             mask >>= 1;
 
@@ -520,7 +523,7 @@ impl Polynomial {
             let temp_1_len = d + 1;
             poly_temp_1 = out.mul_(&poly_temp_0, Some(&fs), temp_1_len).unwrap();
 
-            out = Polynomial::from_fr(poly_temp_1.coeffs.clone());
+            out = Polynomial::from_fr(poly_temp_1.coeffs);
         }
 
         if d + 1 != new_length {
