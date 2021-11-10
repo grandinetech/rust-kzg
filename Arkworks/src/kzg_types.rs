@@ -2,22 +2,26 @@ use crate::fft::SCALE2_ROOT_OF_UNITY;
 use crate::kzg_proofs::{
     check_proof_single as check_single, commit_to_poly as commit,
     compute_proof_single as compute_single, default_kzg, eval_poly, expand_root_of_unity, compute_proof_multi as compute_multi,
-    new_kzg_settings, FFTSettings as LFFTSettings, KZGSettings as LKZGSettings, check_proof_multi as check_multi
+    new_kzg_settings, FFTSettings as LFFTSettings, KZGSettings as LKZGSettings, check_proof_multi as check_multi, G2_GENERATOR,
+    G2_NEGATIVE_GENERATOR
 };
+use crate::fft_g1::{G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY};
 use crate::poly::{poly_inverse, poly_fast_div, poly_mul_direct, poly_long_div, poly_mul_fft};
 use crate::utils::PolyData as LPoly;
+use crate::recover::{scale_poly, unscale_poly};
 use ark_bls12_381::{Fr as ArkFr};
-use ark_ff::Field;
+use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use std::ops::Neg;
+use std::ops::MulAssign;
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
-use ark_std::UniformRand;
-use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1};
+use ark_ec::ProjectiveCurve;
+use ark_std::{UniformRand, One, Zero, test_rng};
+use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, blst_p1_into_pc_g1projective,
+blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2};
 use blst::{
-    blst_fr, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_sqr, blst_p1, 
-    blst_p1_add_or_double, blst_uint64_from_fr
+    blst_fr, blst_p1,
 };
-// use kzg::DAS;
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2, FFTSettingsPoly, G1Mul, G2Mul};
 
 #[derive(Debug, PartialEq)]
@@ -35,10 +39,9 @@ impl G1 for ArkG1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
-        }
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()+blst_p1_into_pc_g1projective(&b.0).unwrap();
+        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
+        self.0 = ret.0;
         ret
     }
 
@@ -46,19 +49,6 @@ impl G1 for ArkG1 {
         self.0.eq(&b.0)
     }
 
-    // fn zero() -> ArkG1 {
-    //     ArkG1(blst_p1 {
-    //         x: blst_fp {
-    //             l: [0, 0, 0, 0, 0, 0],
-    //         },
-    //         y: blst_fp {
-    //             l: [0, 0, 0, 0, 0, 0],
-    //         },
-    //         z: blst_fp {
-    //             l: [0, 0, 0, 0, 0, 0],
-    //         },
-    //     })
-    // }
 
     fn rand() -> Self {
         let mut rng = ark_std::test_rng();
@@ -68,33 +58,38 @@ impl G1 for ArkG1 {
     fn destroy(&mut self) {}
 
     fn identity() -> Self {
-        todo!()
+        G1_IDENTITY
     }
 
     fn generator() -> Self {
-        todo!()
+        ArkG1(G1_GENERATOR)
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        ArkG1(G1_NEGATIVE_GENERATOR)
     }
 
     fn is_inf(&self) -> bool {
-        todo!()
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        temp.z.is_zero()
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        pc_g1projective_into_blst_p1(temp.double()).unwrap()
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        pc_g1projective_into_blst_p1(blst_p1_into_pc_g1projective(&self.0).unwrap() - blst_p1_into_pc_g1projective(&b.0).unwrap()).unwrap()
     }
 }
 
 impl G1Mul<FsFr> for ArkG1 {
     fn mul(&self, b: &FsFr) -> Self {
-        todo!()
+        let mut a = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        let b = blst_fr_into_pc_fr(b);
+        a.mul_assign(b);
+        pc_g1projective_into_blst_p1(a).unwrap()
     }
 }
 
@@ -113,27 +108,31 @@ impl G2 for ArkG2 {
     }
 
     fn generator() -> Self {
-        todo!()
+        G2_GENERATOR
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        G2_NEGATIVE_GENERATOR
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        todo!()
+        let temp = blst_p2_into_pc_g2projective(self).unwrap()+blst_p2_into_pc_g2projective(b).unwrap();
+        let ret = pc_g2projective_into_blst_p2(temp).unwrap();
+        self.0 = ret.0;
+        ret
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let temp = blst_p2_into_pc_g2projective(self).unwrap();
+        pc_g2projective_into_blst_p2(temp.double()).unwrap()
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        pc_g2projective_into_blst_p2(blst_p2_into_pc_g2projective(self).unwrap() - blst_p2_into_pc_g2projective(b).unwrap()).unwrap()
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        self.0.eq(&b.0)
     }
 
     fn destroy(&mut self) {
@@ -141,9 +140,12 @@ impl G2 for ArkG2 {
     }
 }
 
-impl G2Mul<FsFr> for ArkG1 {
+impl G2Mul<FsFr> for ArkG2 {
     fn mul(&self, b: &FsFr) -> Self {
-        todo!()
+        let mut a = blst_p2_into_pc_g2projective(self).unwrap();
+        let b = blst_fr_into_pc_fr(b);
+        a.mul_assign(b);
+        pc_g2projective_into_blst_p2(a).unwrap()
     }
 }
 
@@ -168,72 +170,56 @@ impl Fr for FsFr {
     }
 
     fn rand() -> Self {
-        let val: [u64; 4] = rand::random();
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_from_uint64(&mut ret.0, val.as_ptr());
-        }
-
-        ret
+        let mut rng = test_rng();
+        pc_fr_into_blst_fr(ArkFr::rand(&mut rng))
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_from_uint64(&mut ret.0, u.as_ptr());
-        }
-
-        ret
+        let b = ArkFr::from_repr(BigInteger256::new(u.clone())).unwrap();
+        pc_fr_into_blst_fr(b)
     }
 
     fn from_u64(val: u64) -> Self {
-        Self::from_u64_arr(&[val, 0, 0, 0])
+        let fr = ArkFr::from(val);
+        pc_fr_into_blst_fr(fr)
     }
 
 	fn to_u64_arr(&self) -> [u64; 4] {
-		todo!()
+        let b = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
+        b.0
 	}
 	
 	fn div(&self, b: &Self) -> Result<Self, String>{
-		todo!()
+		let a = blst_fr_into_pc_fr(self);
+        let b = blst_fr_into_pc_fr(b);
+        let div = a/b;
+        if div.0.0.is_empty(){
+            Ok(FsFr::zero())
+        }else{
+            Ok(pc_fr_into_blst_fr(div))    
+        }
 	}
 	
     fn is_one(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-        return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
+        blst_fr_into_pc_fr(self).is_one()
     }
 
     fn is_null(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
+        let val = self.to_u64_arr();
         return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX && val[3] == u64::MAX;
     }
 
     fn is_zero(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-        return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
-        // self.0.l[0] == 0 && self.0.l[1] == 0 && self.0.l[2] == 0 && self.0.l[3] == 0
+        blst_fr_into_pc_fr(self).is_zero()
     }
 
     fn sqr(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_sqr(&mut ret.0, &self.0);
-        }
-
-        ret
+        let temp = blst_fr_into_pc_fr(self);
+        pc_fr_into_blst_fr(temp.square())
     }
 
     fn pow(&self, n: usize) -> Self {
-        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow(&[n as u64]))
+        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
     }
 
     fn mul(&self, b: &Self) -> Self {
@@ -249,12 +235,13 @@ impl Fr for FsFr {
     }
 
     fn eucl_inverse(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_eucl_inverse(&mut ret.0, &self.0);
-        }
+        // let mut ret = Self::default();
+        // unsafe {
+        //     blst_fr_eucl_inverse(&mut ret.0, &self.0);
+        // }
 
-        return ret;
+        // return ret;
+        todo!()
     }
 
     fn negate(&self) -> Self {
@@ -262,27 +249,11 @@ impl Fr for FsFr {
     }
 
     fn inverse(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_inverse(&mut ret.0, &self.0);
-        }
-
-        ret
+        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).inverse().unwrap())
     }
 
     fn equals(&self, b: &Self) -> bool {
-        let mut val_a: [u64; 4] = [0; 4];
-        let mut val_b: [u64; 4] = [0; 4];
-
-        unsafe {
-            blst_uint64_from_fr(val_a.as_mut_ptr(), &self.0);
-            blst_uint64_from_fr(val_b.as_mut_ptr(), &b.0);
-        }
-
-        return val_a[0] == val_b[0]
-            && val_a[1] == val_b[1]
-            && val_a[2] == val_b[2]
-            && val_a[3] == val_b[3];
+        blst_fr_into_pc_fr(self) == blst_fr_into_pc_fr(b)
     }
 
     fn destroy(&mut self) {}
@@ -331,24 +302,11 @@ impl Poly<FsFr> for LPoly {
     }
 
     fn scale(&mut self) {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-        let inv_factor = scale_factor.inverse();
-
-        let mut factor_power = FsFr::one();
-        for i in 0..self.coeffs.len() {
-            factor_power = factor_power.mul(&inv_factor);
-            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
-        }
+        scale_poly(self);
     }
 
     fn unscale(&mut self) {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-
-        let mut factor_power = FsFr::one();
-        for i in 0..self.coeffs.len() {
-            factor_power = factor_power.mul(&scale_factor);
-            self.coeffs[i] = self.coeffs[i].mul(&factor_power);
-        }
+        unscale_poly(self);
     }
 
     fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
