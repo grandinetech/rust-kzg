@@ -44,6 +44,14 @@ impl Fr for FsFr {
         Self::from_u64_arr(&[val, 0, 0, 0])
     }
 
+	fn to_u64_arr(&self) -> [u64; 4] {
+		todo!()
+	}
+	
+	fn div(&self, b: &Self) -> Result<Self, String>{
+		todo!()
+	}
+	
     fn is_one(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
@@ -187,11 +195,35 @@ impl G1 for FsG1 {
         todo!()
     }
 
+    fn identity() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
     fn rand() -> Self {
         todo!()
     }
 
-    fn add_or_double(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn is_inf(&self) -> bool {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
         todo!()
     }
 

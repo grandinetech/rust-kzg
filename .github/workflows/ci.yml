@@ -19,18 +19,22 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-# Prerequisites ####################################################
+# 2nd team #########################################################
 
-    - name: Build native libs (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        bash ci/unix.sh $(which sed)
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path zkcrypto/Cargo.toml
 
-    - name: Build native libs (MacOS)
-      if: matrix.os == 'macos-11'
-      run: |
-        brew install gnu-sed
-        bash ci/unix.sh $(which gsed)
+    - uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path zkcrypto/Cargo.toml
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path zkcrypto/Cargo.toml
 
 # 3rd team #########################################################
 
@@ -51,19 +55,33 @@ jobs:
 
 # 4th team #########################################################
 
-    - uses: actions-rs/cargo@v1
+    - name: "[ckzg] Build native libs for Linux"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd ckzg && bash build.sh
+
+    - name: "[ckzg] Build native libs for MacOS"
+      if: matrix.os == 'macos-11'
+      run: |
+        brew install gnu-sed
+        cd ckzg && bash build.sh
+
+    - name: "[ckzg] Test"
+      uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: test
         args: --manifest-path ckzg/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[ckzg] Bench"
+      uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: bench
         args: --manifest-path ckzg/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[ckzg] Fmt"
+      uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --manifest-path ckzg/Cargo.toml

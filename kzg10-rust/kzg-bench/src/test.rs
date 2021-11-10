@@ -166,25 +166,25 @@ fn polynomial_commit_should_have_specific_value_given_exact_inputs() {
     assert_eq!(expected, actual);
 }
 
-#[test]
-fn curve_is_proof_valid_should_return_true_when_same_parameters_used_for_gen_are_passed() {
-    // Arrange
-    assert!(init(CurveType::BLS12_381));
-    let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
-    let poly = Polynomial::from_i32(&coefficients);
-    let secret = Fr::from_str("1927409816240961209460912649124", 10);
-    let curve = Curve::new(&secret.unwrap(), poly.order());
-    let x = Fr::from_int(17);
-    let y = poly.eval_at(&x);
-    let proof = poly.gen_proof_at(&curve.g1_points, &x);
-    let commitment = poly.commit(&curve.g1_points);
+// #[test]
+// fn curve_is_proof_valid_should_return_true_when_same_parameters_used_for_gen_are_passed() {
+//     // Arrange
+//     assert!(init(CurveType::BLS12_381));
+//     let coefficients = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+//     let poly = Polynomial::from_i32(&coefficients);
+//     let secret = Fr::from_str("1927409816240961209460912649124", 10);
+//     let curve = Curve::new(&secret.unwrap(), poly.order());
+//     let x = Fr::from_int(17);
+//     let y = poly.eval_at(&x);
+//     let proof = poly.gen_proof_at(&curve.g1_points, &x);
+//     let commitment = poly.commit(&curve.g1_points);
 
-    // Act
-    let is_valid = curve.is_proof_valid(&commitment, &proof, &x, &y);
+//     // Act
+//     let is_valid = curve.is_proof_valid(&commitment, &proof, &x, &y);
 
-    // Assert
-    assert!(is_valid);
-}
+//     // Assert
+//     assert!(is_valid);
+// }
 
 #[test]
 fn proof_loop_works_with_random_points() {

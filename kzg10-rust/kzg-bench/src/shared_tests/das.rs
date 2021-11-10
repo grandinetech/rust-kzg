@@ -13,9 +13,9 @@ pub mod das_tests {
     }
 
     //stack overflow here! 
-    // #[test]
-    // fn das_extension_test_random_() {
-    //     assert!(init(CurveType::BLS12_381));
-    //     das_extension_test_random::<Fr, FFTSettings>();
-    // }
+    #[test]
+    fn das_extension_test_random_() {
+        assert!(init(CurveType::BLS12_381));
+        das_extension_test_random::<Fr, FFTSettings>();
+    }
 }

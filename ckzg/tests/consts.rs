@@ -2,9 +2,9 @@
 mod tests {
     use kzg_bench::tests::consts::{roots_of_unity_out_of_bounds_fails, roots_of_unity_are_plausible,
                                    expand_roots_is_plausible, new_fft_settings_is_plausible};
-    use kzg_bindings::fftsettings::KzgFFTSettings;
-    use kzg_bindings::finite::BlstFr;
-    use kzg_bindings::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
+    use ckzg::fftsettings::KzgFFTSettings;
+    use ckzg::finite::BlstFr;
+    use ckzg::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
 
     #[test]
     fn test_roots_of_unity_out_of_bounds_fails() {
