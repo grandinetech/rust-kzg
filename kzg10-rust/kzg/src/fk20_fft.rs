@@ -195,13 +195,10 @@ impl FFTSettings {
         self._fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
 
         for i in 0..half {
-            let x = out[i].clone();
-            let y = out[i + half].clone();
             let root = &roots_of_unity[i * root_stride];
-
-            let y_times_root = &y * root;
-            out[i] = &x + &y_times_root;
-            out[i + half] = &x - &y_times_root;
+            let y_times_root = &out[i + half] * root;
+            out[i + half] = &out[i] - &y_times_root;
+            out[i] = &out[i] + &y_times_root;
         }
     }
 
