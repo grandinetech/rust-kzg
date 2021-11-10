@@ -24,17 +24,17 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --manifest-path arkworks/Cargo.toml
+        args: --manifest-path Arkworks/Cargo.toml
 
     - uses: actions-rs/cargo@v1
       with:
         command: bench
-        args: --manifest-path arkworks/Cargo.toml
+        args: --manifest-path Arkworks/Cargo.toml
 
     - uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --manifest-path arkworks/Cargo.toml
+        args: --manifest-path Arkworks/Cargo.toml
 
 # 2nd team #########################################################
 
