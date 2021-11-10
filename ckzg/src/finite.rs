@@ -49,7 +49,7 @@ impl Fr for BlstFr {
     }
 
     fn null() -> Self {
-        Self { l: [u64::MAX, u64::MAX ,u64::MAX, u64::MAX]}
+        Self { l: [u64::MAX; 4]}
     }
 
     fn zero() -> Self {

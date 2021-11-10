@@ -30,7 +30,7 @@ extern "C" {
 impl FFTSettings<BlstFr> for KzgFFTSettings {
     fn default() -> Self {
         Self {
-            max_width: 16,
+            max_width: 0,
             root_of_unity: Fr::default(),
             expanded_roots_of_unity: &mut Fr::default(),
             reverse_roots_of_unity: &mut Fr::default()

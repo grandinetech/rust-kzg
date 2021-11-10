@@ -24,7 +24,7 @@ impl Poly<BlstFr> for KzgPoly {
     fn default() -> Self {
         Self {
             coeffs: &mut Fr::default(),
-            length: 4
+            length: 0
         }
     }
 
