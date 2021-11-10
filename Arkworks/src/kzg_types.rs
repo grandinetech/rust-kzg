@@ -205,10 +205,7 @@ impl Fr for FsFr {
     }
 
     fn is_null(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
+        let val = self.to_u64_arr();
         return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX && val[3] == u64::MAX;
     }
 

@@ -19,6 +19,23 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
+# 1st team #########################################################
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path arkworks/Cargo.toml
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path arkworks/Cargo.toml
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path arkworks/Cargo.toml
+
 # 2nd team #########################################################
 
     - uses: actions-rs/cargo@v1
