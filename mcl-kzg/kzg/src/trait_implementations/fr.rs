@@ -51,7 +51,9 @@ impl CommonFr for Fr {
 	}
 	
 	fn div(&self, b: &Self) -> Result<Self, String>{
-		todo!()
+        let mut res = Fr::zero();
+        Fr::div(&mut res, self, b);
+        Ok(res)
 	}
 	
     fn is_one(&self) -> bool {

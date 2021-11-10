@@ -24,7 +24,11 @@ impl CommonG1 for G1 {
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let mut g1 = G1::zero();
-        G1::add(&mut g1, &self, &b);
+        if self == b {
+            G1::dbl(&mut g1, &self);
+        } else {
+            G1::add(&mut g1, &self, &b);
+        }
         g1
     }
 
@@ -33,11 +37,15 @@ impl CommonG1 for G1 {
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let mut g1 = G1::zero();
+        G1::dbl(&mut g1, &self);
+        g1
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        let mut g1 = G1::zero();
+        G1::sub(&mut g1, &self, &b);
+        g1
     }
 
     fn equals(&self, b: &Self) -> bool {
