@@ -273,7 +273,7 @@ impl Default for KZGSettings {
 }
 
 // This code was taken from 'https://github.com/adria0/a0kzg/blob/main/src/kzg.rs' and adapted
-pub(crate) fn generate_trusted_setup(n: usize, _secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
+pub fn generate_trusted_setup(n: usize, _secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
     let mut rng = rand::thread_rng();
     let rnd: [u64; 4] = [rng.gen(), rng.gen(), rng.gen(), rng.gen()];
     let tau = Scalar::from_raw(rnd);
