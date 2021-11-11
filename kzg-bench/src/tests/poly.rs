@@ -3,9 +3,8 @@ use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
-    let mut poly = TPoly::new(10).unwrap();
+    let poly = TPoly::new(10).unwrap();
     assert_eq!(poly.len(), 10);
-    poly.destroy();
 }
 
 pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
@@ -18,7 +17,6 @@ pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let expected = TFr::from_u64((n * (n + 1) / 2) as u64);
     let actual = poly.eval(&TFr::one());
     assert!(expected.equals(&actual));
-    poly.destroy();
 }
 
 pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
@@ -32,15 +30,13 @@ pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let expected = TFr::from_u64(a as u64);
     let actual = poly.eval(&TFr::zero());
     assert!(expected.equals(&actual));
-    poly.destroy();
 }
 
 pub fn poly_eval_nil_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 0;
-    let mut poly = TPoly::new(n).unwrap();
+    let poly = TPoly::new(n).unwrap();
     let actual = poly.eval(&TFr::one());
     assert!(actual.equals(&TFr::zero()));
-    poly.destroy();
 }
 
 pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
@@ -52,11 +48,10 @@ pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
     p.set_coeff_at(1, &TFr::negate(&p.get_coeff_at(1)));
     let result = p.inverse(d);
     assert!(result.is_ok());
-    let mut q = result.unwrap();
+    let q = result.unwrap();
     for i in 0..d {
         assert!(q.get_coeff_at(i).is_one());
     }
-    q.destroy();
 }
 
 pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
@@ -67,7 +62,7 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     p.set_coeff_at(1, &TFr::one());
     let result = p.inverse(d);
     assert!(result.is_ok());
-    let mut q = result.unwrap();
+    let q = result.unwrap();
     for i in 0..d {
         let mut tmp = q.get_coeff_at(i);
         if i & 1 != 0 {
@@ -75,7 +70,6 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
         }
         assert!(tmp.is_one());
     }
-    q.destroy();
 }
 
 fn test_data(a: usize, b: usize) -> Vec<i32> {
@@ -149,23 +143,18 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
         let mut dividend: TPoly = new_test_poly(&divided_data);
-        let mut divisor: TPoly = new_test_poly(&divisor_data);
-        let mut expected: TPoly = new_test_poly(&expected_data);
+        let divisor: TPoly = new_test_poly(&divisor_data);
+        let expected: TPoly = new_test_poly(&expected_data);
 
         let result = dividend.div(&divisor);
 
         assert!(result.is_ok());
-        let mut actual = result.unwrap();
+        let actual = result.unwrap();
 
         assert_eq!(expected.len(), actual.len());
         for i in 0..actual.len() {
             assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
         }
-
-        dividend.destroy();
-        divisor.destroy();
-        expected.destroy();
-        actual.destroy();
     }
 }
 
@@ -173,17 +162,13 @@ pub fn poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
     //Arrange
     let coeffs: Vec<i32> = vec![1,1];
     let mut dividend: TPoly = new_test_poly(&coeffs);
-    let mut divisor = TPoly::new(0).unwrap();
+    let divisor = TPoly::new(0).unwrap();
 
     //Act
     let result = dividend.div(&divisor);
 
     //Assert
     assert!(result.is_err());
-
-    //After
-    dividend.destroy();
-    divisor.destroy();
 }
 
 pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
@@ -194,11 +179,11 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut multiplier: TPoly = new_test_poly(&coeffs1);
 
     let coeffs2: Vec<i32> = vec![18, 9, -11, 12];
-    let mut expected: TPoly = new_test_poly(&coeffs2);
+    let expected: TPoly = new_test_poly(&coeffs2);
 
     let result0 = multiplicand.mul_direct(&multiplier, 4);
     assert!(result0.is_ok());
-    let mut actual0 = result0.unwrap();
+    let actual0 = result0.unwrap();
 
     for i in 0..actual0.len() {
         assert!(expected.get_coeff_at(i).equals(&actual0.get_coeff_at(i)))
@@ -207,17 +192,11 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     //Check commutativity
     let result1 = multiplier.mul_direct(&multiplicand, 4);
     assert!(result1.is_ok());
-    let mut actual1 = result1.unwrap();
+    let actual1 = result1.unwrap();
 
     for i in 0..actual1.len() {
         assert!(expected.get_coeff_at(i).equals(&actual1.get_coeff_at(i)))
     }
-
-    multiplicand.destroy();
-    multiplier.destroy();
-    expected.destroy();
-    actual0.destroy();
-    actual1.destroy();
 }
 
 pub fn poly_mul_fft_test<
@@ -226,17 +205,17 @@ pub fn poly_mul_fft_test<
     TFTTSettings: FFTSettings<TFr> + FFTSettingsPoly<TFr, TPoly, TFTTSettings>
 >() {
     let coeffs: Vec<i32> = vec![3, 4];
-    let mut multiplicand: TPoly = new_test_poly(&coeffs);
+    let multiplicand: TPoly = new_test_poly(&coeffs);
 
     let coeffs: Vec<i32> = vec![6, -5, 3];
-    let mut multiplier: TPoly = new_test_poly(&coeffs);
+    let multiplier: TPoly = new_test_poly(&coeffs);
 
     let coeffs: Vec<i32> = vec![18, 9, -11, 12];
-    let mut expected: TPoly = new_test_poly(&coeffs);
+    let expected: TPoly = new_test_poly(&coeffs);
 
     let result0 = TFTTSettings::poly_mul_fft(&multiplicand, &multiplier, 4, None);
     assert!(result0.is_ok());
-    let mut actual0 = result0.unwrap();
+    let actual0 = result0.unwrap();
 
     for i in 0..actual0.len() {
         assert!(expected.get_coeff_at(i).equals(&actual0.get_coeff_at(i)))
@@ -245,17 +224,11 @@ pub fn poly_mul_fft_test<
     //Check commutativity
     let result1 = TFTTSettings::poly_mul_fft(&multiplier, &multiplicand, 4, None);
     assert!(result1.is_ok());
-    let mut actual1 = result1.unwrap();
+    let actual1 = result1.unwrap();
 
     for i in 0..actual1.len() {
         assert!(expected.get_coeff_at(i).equals(&actual1.get_coeff_at(i)))
     }
-
-    multiplicand.destroy();
-    multiplier.destroy();
-    expected.destroy();
-    actual0.destroy();
-    actual1.destroy();
 }
 
 pub fn poly_mul_random<
@@ -298,19 +271,14 @@ pub fn poly_mul_random<
         let result1 = TFTTSettings::poly_mul_fft(&multiplicand, &multiplier, out_length, None);
         assert!(result1.is_ok());
 
-        let mut actual0 = result0.unwrap();
-        let mut actual1 = result1.unwrap();
+        let actual0 = result0.unwrap();
+        let actual1 = result1.unwrap();
 
         assert_eq!(actual0.len(), actual1.len());
 
         for i in 0..actual0.len() {
             assert!(actual0.get_coeff_at(i).equals(&actual1.get_coeff_at(i)));
         }
-
-        multiplicand.destroy();
-        multiplier.destroy();
-        actual0.destroy();
-        actual1.destroy();
     }
 }
 
@@ -349,18 +317,13 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
         let result1 = dividend.fast_div(&divisor);
         assert!(result1.is_ok());
 
-        let mut actual0 = result0.unwrap();
-        let mut actual1 = result1.unwrap();
+        let actual0 = result0.unwrap();
+        let actual1 = result1.unwrap();
 
         assert_eq!(actual0.len(), actual1.len());
 
         for i in 0..actual0.len() {
             assert!(actual0.get_coeff_at(i).equals(&actual1.get_coeff_at(i)));
         }
-
-        dividend.destroy();
-        divisor.destroy();
-        actual0.destroy();
-        actual1.destroy();
     }
 }
