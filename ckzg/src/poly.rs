@@ -14,7 +14,7 @@ extern "C" {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct KzgPoly {
     pub coeffs: *mut BlstFr,
     pub length: u64
@@ -24,7 +24,7 @@ impl Poly<BlstFr> for KzgPoly {
     fn default() -> Self {
         Self {
             coeffs: &mut Fr::default(),
-            length: 4
+            length: 0
         }
     }
 
@@ -128,6 +128,14 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn destroy(&mut self) {
+        //unsafe {
+        //    free_poly(self);
+        //}
+    }
+}
+
+impl Drop for KzgPoly {
+    fn drop(&mut self) {
         unsafe {
             free_poly(self);
         }

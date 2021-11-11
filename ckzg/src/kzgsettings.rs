@@ -24,7 +24,7 @@ pub struct BlstScalar {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct KzgKZGSettings {
     pub fs: *const KzgFFTSettings,
     pub secret_g1: *mut BlstP1, // G1
@@ -104,15 +104,20 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
         unsafe {
-            let ffs = *self.fs as KzgFFTSettings;
-            return ffs.get_expanded_roots_of_unity_at(i);
+            return (*self.fs).get_expanded_roots_of_unity_at(i);
         }
     }
 
     fn destroy(&mut self) {
+        //unsafe {
+        //    free_kzg_settings(self);
+        //}
+    }
+}
+
+impl Drop for KzgKZGSettings {
+    fn drop(&mut self) {
         unsafe {
-            //let mut ffs = *self.fs as KzgFFTSettings;
-            //ffs.destroy();
             free_kzg_settings(self);
         }
     }
