@@ -7,7 +7,7 @@ use std::{cmp::min};
 use std::slice;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct KzgFFTSettings {
     pub max_width: usize,
     pub root_of_unity: BlstFr,
@@ -76,8 +76,18 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn destroy(&mut self) {
+        //unsafe {
+        //    free_fft_settings(self);
+        //}
+    }
+}
+
+impl Drop for KzgFFTSettings {
+    fn drop(&mut self) {
         unsafe {
-            free_fft_settings(self);
+            if self.max_width > 0 && self.max_width < (1 << 32) {
+                free_fft_settings(self);
+            }
         }
     }
 }
