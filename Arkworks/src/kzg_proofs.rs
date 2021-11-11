@@ -1,4 +1,6 @@
 #![allow(non_camel_case_types)]
+
+use std::borrow::Borrow;
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_poly_commit::kzg10::{
     Commitment, Powers, Proof, Randomness, UniversalParams, VerifierKey, KZG10,
@@ -393,7 +395,7 @@ pub(crate) fn new_kzg_settings(
     secret_g1: &Vec<ArkG1>,
     _secret_g2: &Vec<ArkG2>,
     length: u64,
-    fs: FFTSettings,
+    ffs: &FFTSettings,
 ) -> KZGSettings {
     let (mut params, test, test2) = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, true, &mut test_rng()).unwrap();
     let mut temp = Vec::new();
@@ -423,7 +425,7 @@ pub(crate) fn new_kzg_settings(
         secret_g2: temp2,
         length: length,
         params: params,
-        fs: fs,
+        fs: ffs.borrow().clone(),
         ..Default::default()
     }
 }
