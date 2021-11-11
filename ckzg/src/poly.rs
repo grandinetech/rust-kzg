@@ -78,10 +78,7 @@ impl Poly<BlstFr> for KzgPoly {
         let mut poly = KzgPoly::new(new_len).unwrap();
         unsafe {
             return match poly_inverse(&mut poly, self) {
-                KzgRet::KzgOk => {
-                    self.destroy();
-                    Ok(poly)
-                },
+                KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in Poly::inverse ==> {:?}", e))
             }
         }
@@ -125,12 +122,6 @@ impl Poly<BlstFr> for KzgPoly {
                 e => Err(format!("An error has occurred in Poly::mul_direct ==> {:?}", e))
             }
         }
-    }
-
-    fn destroy(&mut self) {
-        //unsafe {
-        //    free_poly(self);
-        //}
     }
 }
 

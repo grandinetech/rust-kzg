@@ -107,12 +107,6 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
             return (*self.fs).get_expanded_roots_of_unity_at(i);
         }
     }
-
-    fn destroy(&mut self) {
-        //unsafe {
-        //    free_kzg_settings(self);
-        //}
-    }
 }
 
 impl Drop for KzgKZGSettings {
