@@ -182,8 +182,6 @@ impl Fr for FsFr {
             && val_a[2] == val_b[2]
             && val_a[3] == val_b[3];
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFr {
@@ -240,10 +238,6 @@ impl G1 for FsG1 {
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
-    }
-
-    fn destroy(&mut self) {
         todo!()
     }
 }
@@ -358,8 +352,6 @@ impl Poly<FsFr> for FsPoly {
     fn fast_div(&mut self, x: &Self) -> Result<Self, String>  {
         todo!()
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsPoly {
@@ -426,8 +418,6 @@ impl FFTSettings<FsFr> for FsFFTSettings {
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         &self.reverse_roots_of_unity
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFFTSettings {
