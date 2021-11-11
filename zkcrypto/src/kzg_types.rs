@@ -1,6 +1,6 @@
 
 // pub use super::{ZPoly, BlsScalar};
-use kzg::{G1, G2, G1Mul, G2Mul};
+use kzg::{G1, G2, G1Mul, G2Mul, KZGSettings};
 // use ff::{Field, PrimeField};
 
 use std::ptr;
@@ -318,7 +318,7 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
     	todo!()
     }
 
-	fn new(secret_g1: &Vec<ZkG1Projective>, secret_g2: &Vec<ZkG2Projective>, length: usize, fs: ZkFFTSettings) -> Result<LKZGSettings, String> {
+	fn new(secret_g1: &Vec<ZkG1Projective>, secret_g2: &Vec<ZkG2Projective>, length: usize, fs: &ZkFFTSettings) -> Result<LKZGSettings, String> {
         Ok(new_kzg_settings(secret_g1.to_vec(), secret_g2.to_vec(), length as u64, fs))
     }
 
@@ -351,6 +351,6 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
 
 impl Clone for LKZGSettings {
     fn clone(&self) -> Self {
-        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, self.fs.clone()).unwrap()
+        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, &self.fs.clone()).unwrap()
     }
 }
