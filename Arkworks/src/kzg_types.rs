@@ -422,7 +422,7 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         secret_g1: &Vec<ArkG1>,
         secret_g2: &Vec<ArkG2>,
         length: usize,
-        fs: LFFTSettings,
+        fs: &LFFTSettings,
     ) -> Result<LKZGSettings, String> {
         Ok(new_kzg_settings(secret_g1, secret_g2, length as u64, fs))
     }
@@ -460,6 +460,6 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
 impl Clone for LKZGSettings {
     fn clone(&self) -> Self {
-        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, self.fs.clone()).unwrap()
+        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, &self.fs.clone()).unwrap()
     }
 }
