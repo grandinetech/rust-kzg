@@ -150,11 +150,6 @@ impl G1 for ZkG1Projective {
     fn equals(&self, b: &Self) -> bool {
 		self.eq(b)
 	}
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self) {}
-
-
 }
 
 impl G1Mul<blsScalar> for ZkG1Projective {
@@ -195,11 +190,6 @@ impl G2 for ZkG2Projective {
     fn equals(&self, b: &Self) -> bool {
 		self.eq(b)
 	}
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self) {}
-
-
 }
 
 impl G2Mul<blsScalar> for ZkG2Projective {
@@ -345,8 +335,6 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> blsScalar {
     	todo!()
     }
-    
-    fn destroy(&mut self) {}
 }
 
 impl Clone for LKZGSettings {

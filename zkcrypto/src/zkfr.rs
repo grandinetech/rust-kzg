@@ -169,8 +169,6 @@ impl Fr for blsScalar {
 	fn equals(&self, other: &Self) -> bool {
 		self.eq(other)
 	}
-	
-	fn destroy(&mut self) {}
 }
 
 pub fn fr_div(a: &blsScalar, b: &blsScalar) -> Result<blsScalar, String> {
