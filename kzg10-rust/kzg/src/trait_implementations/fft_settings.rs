@@ -36,6 +36,4 @@ impl CommonFFTSettings<Fr> for FFTSettings {
     fn get_reversed_roots_of_unity(&self) -> &[Fr] {
         &self.exp_roots_of_unity_rev
     }
-
-    fn destroy(&mut self) {}
 }

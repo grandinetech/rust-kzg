@@ -43,6 +43,4 @@ impl CommonG1 for G1 {
     fn equals(&self, b: &Self) -> bool {
         G1::eq(self, b)
     }
-
-    fn destroy(&mut self) {}
 }
