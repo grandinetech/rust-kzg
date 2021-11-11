@@ -192,7 +192,7 @@ pub trait KZGSettings<
 {
     fn default() -> Self;
 
-    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: Fs) -> Result<Self, String>;
+    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: &Fs) -> Result<Self, String>;
 
     fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
 
