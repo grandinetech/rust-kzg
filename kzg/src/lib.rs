@@ -209,7 +209,7 @@ pub trait FK20SingleSettings<
 >: Clone {
     fn default() -> Self;
 
-    fn new(n2: usize, ks: &Ks) -> Result<Self, String>;
+    fn new(ks: &Ks, n2: usize) -> Result<Self, String>;
 
     fn data_availability(&self, p: &Polynomial) -> Result<Coeff2, String>;
 
@@ -226,7 +226,7 @@ pub trait FK20MultiSettings<
 >: Clone {
     fn default() -> Self;
 
-    fn new(n2: usize, chunk_len: usize, ks: &Ks) -> Result<Self, String>;
+    fn new(ks: &Ks, n2: usize, chunk_len: usize) -> Result<Self, String>;
 
     fn data_availability(&self, p: &Polynomial) -> Result<Coeff2, String>;
 }
