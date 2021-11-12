@@ -19,6 +19,8 @@ pub trait Fr: Clone {
 
     fn is_zero(&self) -> bool;
 
+    fn is_null(&self) -> bool;
+
     fn sqr(&self) -> Self;
 
     fn mul(&self, b: &Self) -> Self;
