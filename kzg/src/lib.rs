@@ -198,3 +198,35 @@ pub trait KZGSettings<
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
 }
+
+pub trait FK20SingleSettings<
+    Coeff1: Fr,
+    Coeff2: G1,
+    Coeff3: G2,
+    Fs: FFTSettings<Coeff1>,
+    Polynomial: Poly<Coeff1>,
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>
+>: Clone {
+    fn default() -> Self;
+
+    fn new(n2: usize, ks: &Ks) -> Result<Self, String>;
+
+    fn data_availability(&self, p: &Polynomial) -> Result<Coeff2, String>;
+
+    fn data_availability_optimized(&self, p: &Polynomial) -> Result<Coeff2, String>;
+}
+
+pub trait FK20MultiSettings<
+    Coeff1: Fr,
+    Coeff2: G1,
+    Coeff3: G2,
+    Fs: FFTSettings<Coeff1>,
+    Polynomial: Poly<Coeff1>,
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>
+>: Clone {
+    fn default() -> Self;
+
+    fn new(n2: usize, chunk_len: usize, ks: &Ks) -> Result<Self, String>;
+
+    fn data_availability(&self, p: &Polynomial) -> Result<Coeff2, String>;
+}
