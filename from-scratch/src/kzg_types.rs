@@ -8,14 +8,26 @@ use blst::{
     blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg,
     blst_p1_mult, blst_p1_is_equal, blst_scalar
 };
-use kzg::{FFTSettings, Fr, Poly, G1, FFTFr, Scalar};
+use kzg::{FFTSettings, Fr, Poly, G1, FFTFr};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
+
+pub struct Scalar(pub blst_scalar);
+
+pub trait Scalarized {
+    fn get_scalar(&self) -> Scalar;
+
+    fn from_scalar(scalar: &Scalar) -> Self;
+}
 
 pub struct FsFr(pub blst::blst_fr);
 
 impl Fr for FsFr {
     fn default() -> Self {
         Self(blst_fr::default())
+    }
+
+    fn null() -> Self {
+        Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
     }
 
     fn zero() -> Self {
@@ -53,6 +65,18 @@ impl Fr for FsFr {
 
     fn from_u64(val: u64) -> Self {
         Self::from_u64_arr(&[val, 0, 0, 0])
+    }
+
+	fn to_u64_arr(&self) -> [u64; 4] {
+		todo!()
+	}
+
+    fn is_null(&self) -> bool {
+        let mut val: [u64; 4] = [0; 4];
+        unsafe {
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
+        }
+        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX&& val[3] == u64::MAX;
     }
 
     fn is_one(&self) -> bool {
@@ -161,15 +185,6 @@ impl Fr for FsFr {
         ret
     }
 
-    fn get_scalar(&self) -> Scalar {
-        let mut scalar = Scalar::default();
-        unsafe {
-            blst_scalar_from_fr(&mut scalar, &self.0);
-        }
-
-        scalar
-    }
-
     fn equals(&self, b: &Self) -> bool {
         let mut val_a: [u64; 4] = [0; 4];
         let mut val_b: [u64; 4] = [0; 4];
@@ -185,24 +200,34 @@ impl Fr for FsFr {
             && val_a[3] == val_b[3];
     }
 
-    fn from_scalar(scalar: &Scalar) -> Self {
-        let mut fr = blst_fr::default();
-        unsafe {
-            blst_fr_from_scalar(&mut fr, scalar);
-        }
-        let mut ret = Self::default();
-        ret.0 = fr;
-        ret
-    }
-
     fn div(&self, b: &Self) -> Result<Self, String> {
         let tmp = b.eucl_inverse();
         let out = self.mul(&tmp);
 
         Ok(out)
     }
+}
 
-    fn destroy(&mut self) {}
+impl Scalarized for FsFr {
+    fn get_scalar(&self) -> Scalar {
+        let mut scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &self.0);
+        }
+
+        let result = Scalar(scalar);
+        result
+    }
+
+    fn from_scalar(scalar: &Scalar) -> Self {
+        let mut fr = blst_fr::default();
+        unsafe {
+            blst_fr_from_scalar(&mut fr, &scalar.0);
+        }
+        let mut ret = Self::default();
+        ret.0 = fr;
+        ret
+    }
 }
 
 impl Clone for FsFr {
@@ -226,17 +251,33 @@ impl G1<FsFr> for FsG1 {
         Self(blst_p1::default())
     }
 
+    fn identity() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
     fn rand() -> Self {
         let result = G1_GENERATOR;
         result.mul(&FsFr::rand())
     }
 
-    fn add_or_double(&self, b: &Self) -> Self {
+    fn add_or_dbl(&self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
             blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
         }
         ret
+    }
+
+    fn is_inf(&self) -> bool {
+        todo!()
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -285,7 +326,7 @@ impl G1<FsFr> for FsG1 {
         }
     }
 
-    fn destroy(&mut self) {
+    fn dbl(&self) -> Self {
         todo!()
     }
 
@@ -610,8 +651,6 @@ impl Poly<FsFr> for FsPoly {
 
         Ok(ret)
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl FsPoly {
@@ -711,8 +750,6 @@ impl FFTSettings<FsFr> for FsFFTSettings {
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         &self.reverse_roots_of_unity
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFFTSettings {
