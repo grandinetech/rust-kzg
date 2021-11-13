@@ -7,7 +7,7 @@ pub const SECRET: [u8; 32usize] = [0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xe
 /// Check that both FFT implementations produce the same results
 pub fn proof_single<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1<TFr>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
@@ -47,7 +47,7 @@ pub fn proof_single<
 
 pub fn commit_to_nil_poly<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1<TFr>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
@@ -73,7 +73,7 @@ pub fn commit_to_nil_poly<
 //#[should_panic(expected = "Poly given is too long")]
 pub fn commit_to_too_long_poly<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1<TFr>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
@@ -98,7 +98,7 @@ pub fn commit_to_too_long_poly<
 //It was not verified that this test works, use with caution
 pub fn proof_multi<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1<TFr>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,

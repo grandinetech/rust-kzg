@@ -6,7 +6,7 @@ pub fn compare_ft_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FF
     make_data: &dyn Fn(usize) -> Vec<TG1>
 ) {
     let size: usize = 6;
-    let mut fs = TFFTSettings::new(size).unwrap();
+    let fs = TFFTSettings::new(size).unwrap();
     assert_eq!(fs.get_max_width(), 2 << size - 1);
 
     let data = make_data(fs.get_max_width());
@@ -21,8 +21,6 @@ pub fn compare_ft_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FF
     for i in 0..fs.get_max_width() {
         assert!(fast[i].equals(&slow[i]));
     }
-
-    fs.destroy();
 }
 
 pub fn roundtrip_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTG1<TFr, TG1>>(
@@ -76,7 +74,7 @@ pub fn stride_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTG1<
     }
 }
 
-pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
+pub fn compare_sft_fft<TFr: Fr, TG1: G1<TFr>, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     fft_g1_slow: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize, usize),
     fft_g1_fast: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize, usize),
     make_data: &dyn Fn(usize) -> Vec<TG1>

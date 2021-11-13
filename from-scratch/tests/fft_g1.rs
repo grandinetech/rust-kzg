@@ -13,7 +13,7 @@ pub mod tests {
         let mut result: Vec<FsG1> = vec![FsG1::default(); n];
         result[0] = G1_GENERATOR;
         for i in 1..n {
-            result[i] = result[i - 1].add_or_double(&G1_GENERATOR)
+            result[i] = result[i - 1].add_or_dbl(&G1_GENERATOR)
         }
         return result;
     }

@@ -22,7 +22,7 @@ use blst::{blst_p1_add_or_double,
             blst_p2_affine,
             blst_fp
 };
-use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2};
+use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2, Scalarized};
 use crate::utils::{is_power_of_two, log_2_byte};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 
@@ -267,9 +267,9 @@ pub fn check_proof_multi(
     let x_pow = inv_x_pow.eucl_inverse();
 
     // g2_mul(&xn2, &g2_generator, &x_pow);
-    let scalar: blst_scalar = x_pow.get_scalar();
+    let scalar = x_pow.get_scalar();
     unsafe {
-        blst_p2_mult(&mut xn2.0, &G2_GENERATOR.0, scalar.b.as_ptr() as *const u8, 8 * std::mem::size_of::<blst_scalar>());
+        blst_p2_mult(&mut xn2.0, &G2_GENERATOR.0, scalar.0.b.as_ptr() as *const u8, 8 * std::mem::size_of::<blst_scalar>());
     }
 
     // [s^n - x^n]_2
