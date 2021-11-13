@@ -182,9 +182,6 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
     fn get_reversed_roots_of_unity(&self) -> &[blsScalar] {
         &self.reverse_roots_of_unity
     }
-
-    fn destroy(&mut self) {}
-	
 }
 
 

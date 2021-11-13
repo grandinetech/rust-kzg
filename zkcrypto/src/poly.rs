@@ -300,9 +300,6 @@ impl Poly<blsScalar> for ZPoly {
 		// return ret;
 		poly_mul_direct(self, x, len)
 	}
-    
-	
-    fn destroy(&mut self) {}
 }
 
 pub fn poly_long_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String> { // +

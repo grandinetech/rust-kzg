@@ -1,2 +1,9 @@
+# rust specific
 target
+Cargo.lock
+
+# code editors
 .idea
+
+# team specific
+ckzg/lib/

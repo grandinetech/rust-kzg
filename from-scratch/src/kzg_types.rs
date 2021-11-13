@@ -13,6 +13,10 @@ impl Fr for FsFr {
         Self(blst_fr::default())
     }
 
+    fn null() -> Self {
+        Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+    }
+
     fn zero() -> Self {
         Self::from_u64(0)
     }
@@ -42,6 +46,22 @@ impl Fr for FsFr {
 
     fn from_u64(val: u64) -> Self {
         Self::from_u64_arr(&[val, 0, 0, 0])
+    }
+
+	fn to_u64_arr(&self) -> [u64; 4] {
+		todo!()
+	}
+	
+	fn div(&self, b: &Self) -> Result<Self, String>{
+		todo!()
+	}
+
+    fn is_null(&self) -> bool {
+        let mut val: [u64; 4] = [0; 4];
+        unsafe {
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
+        }
+        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX&& val[3] == u64::MAX;
     }
 
     fn is_one(&self) -> bool {
@@ -162,8 +182,6 @@ impl Fr for FsFr {
             && val_a[2] == val_b[2]
             && val_a[3] == val_b[3];
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFr {
@@ -187,19 +205,39 @@ impl G1 for FsG1 {
         todo!()
     }
 
+    fn identity() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
     fn rand() -> Self {
         todo!()
     }
 
-    fn add_or_double(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn is_inf(&self) -> bool {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
         todo!()
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
-    }
-
-    fn destroy(&mut self) {
         todo!()
     }
 }
@@ -314,8 +352,6 @@ impl Poly<FsFr> for FsPoly {
     fn fast_div(&mut self, x: &Self) -> Result<Self, String>  {
         todo!()
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsPoly {
@@ -382,8 +418,6 @@ impl FFTSettings<FsFr> for FsFFTSettings {
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         &self.reverse_roots_of_unity
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFFTSettings {

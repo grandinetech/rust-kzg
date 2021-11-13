@@ -1,11 +1,13 @@
-use kzg::{Fr, FFTSettings, FFTFr, FFTG1, G1};
-use crate::consts::{BlstP1, G1_GENERATOR};
+use kzg::{Fr, FFTSettings, FFTSettingsPoly, Poly, FFTFr, FFTG1, G1};
+use crate::utils::{log_2, next_pow_of_2};
+use crate::consts::{KzgRet, BlstP1};
+use crate::poly::KzgPoly;
 use crate::finite::BlstFr;
-use crate::common::KzgRet;
+use std::{cmp::min};
 use std::slice;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct KzgFFTSettings {
     pub max_width: usize,
     pub root_of_unity: BlstFr,
@@ -18,7 +20,7 @@ extern "C" {
     fn free_fft_settings(settings: *mut KzgFFTSettings);
     fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
-    //fn poly_mul(output: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *const KzgFFTSettings) -> KzgRet;
+    fn poly_mul_(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *mut KzgFFTSettings) -> KzgRet;
     fn fft_fr_fast(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn fft_fr_slow(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn fft_g1_fast(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
@@ -28,7 +30,7 @@ extern "C" {
 impl FFTSettings<BlstFr> for KzgFFTSettings {
     fn default() -> Self {
         Self {
-            max_width: 16,
+            max_width: 0,
             root_of_unity: Fr::default(),
             expanded_roots_of_unity: &mut Fr::default(),
             reverse_roots_of_unity: &mut Fr::default()
@@ -40,7 +42,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
         unsafe {
             return match new_fft_settings(&mut settings, scale as u32) {
                 KzgRet::KzgOk => Ok(settings),
-                e => Err(format!("An error has occurred in \"FFTSettings::new\" ==> {:?}", e))
+                e => Err(format!("An error has occurred in FFTSettings::new ==> {:?}", e))
             }
         }
     }
@@ -72,34 +74,23 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
             return slice::from_raw_parts(self.reverse_roots_of_unity, self.max_width);
         }
     }
+}
 
-    fn destroy(&mut self) {
+impl Drop for KzgFFTSettings {
+    fn drop(&mut self) {
         unsafe {
-            free_fft_settings(self);
-        }
-    }
-
-    /*
-    pub fn poly_mul(a: *const Poly, b: *const Poly, fs: *const FFTSettings) -> Result<Poly, Error> {
-        let mut output = Poly::default();
-        unsafe {
-            return match poly_mul(&mut output, a, b, fs) {
-                Error::KzgOk => Ok(output),
-                e => {
-                    println!("Error in \"FFTSettings::poly_mul\" ==> {:?}", e);
-                    Err(e)
-                }
+            if self.max_width > 0 && self.max_width < (1 << 32) {
+                free_fft_settings(self);
             }
         }
     }
-    */
 }
 
 impl FFTFr<BlstFr> for KzgFFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
         return match _fft_fr(data.as_ptr(), inverse, data.len() as u64, self) {
             Ok(fr) => Ok(fr),
-            Err(e) => Err(format!("An error has occurred in \"FFTFr::fft_fr\" ==> {:?}", e))
+            Err(e) => Err(format!("An error has occurred in FFTFr::fft_fr ==> {:?}", e))
         };
     }
 }
@@ -118,7 +109,7 @@ impl FFTG1<BlstP1> for KzgFFTSettings {
     fn fft_g1(&self, data: &[BlstP1], inverse: bool) -> Result<Vec<BlstP1>, String> {
         return match _fft_g1(data.as_ptr(), inverse, data.len() as u64, self) {
             Ok(g) => Ok(g),
-            Err(e) => Err(format!("An error has occurred in \"FFTG1::fft_g1\" ==> {:?}", e))
+            Err(e) => Err(format!("An error has occurred in FFTG1::fft_g1 ==> {:?}", e))
         };
     }
 }
@@ -133,14 +124,31 @@ fn _fft_g1(input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSetting
     }
 }
 
+impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
+    fn poly_mul_fft(a: &KzgPoly, b: &KzgPoly, len: usize, _fs: Option<&KzgFFTSettings>) -> Result<KzgPoly, String> {
+        // Truncate a and b so as not to do excess work for the number of coefficients required
+        let a_len = min(a.len(), len);
+        let b_len = min(b.len(), len);
+        let length = next_pow_of_2(a_len + b_len - 1);
+
+        let mut fft = KzgFFTSettings::new(log_2(length)).unwrap();
+        let mut poly = KzgPoly::new(len).unwrap();
+        unsafe {
+            return match poly_mul_(&mut poly, a, b, &mut fft) {
+                KzgRet::KzgOk => Ok(poly),
+                e => Err(format!("An error has occurred in FFTSettingsPoly::poly_mul_fft ==> {:?}", e))
+            }
+        }
+    }
+}
+
 pub fn make_data(n: usize) -> Vec<BlstP1> {
-    let mut out_val = vec![G1_GENERATOR; n];
+    let mut out_val = vec![G1::generator(); n];
     let out_ptr: *mut BlstP1 = out_val.as_mut_ptr();
-    // Multiples of g1_gen
     if n == 0 { return vec![G1::default(); 0]; }
     for i in 1..n as isize {
         unsafe {
-            (*out_ptr.offset(i)).add_or_double(&*out_ptr.offset(i - 1));
+            (*out_ptr.offset(i)).add_or_dbl(&*out_ptr.offset(i - 1));
         }
     }
     out_val

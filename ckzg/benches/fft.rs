@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::fft::{bench_fft_fr, bench_fft_g1};
-use kzg_bindings::finite::BlstFr;
-use kzg_bindings::consts::BlstP1;
-use kzg_bindings::fftsettings::KzgFFTSettings;
+use ckzg::finite::BlstFr;
+use ckzg::consts::BlstP1;
+use ckzg::fftsettings::KzgFFTSettings;
 
 fn bench_fft_fr_(c: &mut Criterion) {
     bench_fft_fr::<BlstFr, KzgFFTSettings>(c);

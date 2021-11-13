@@ -85,7 +85,7 @@ pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() 
     let scale = 21;
     let width: usize = 1 << scale;
 
-    let mut fft_settings = TFFTSettings::new(scale).unwrap();
+    let fft_settings = TFFTSettings::new(scale).unwrap();
     assert_eq!(fft_settings.get_max_width(), width);
 
     for i in 0..width {
@@ -94,6 +94,4 @@ pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() 
             .mul(&fft_settings.get_reverse_roots_of_unity_at(i));
         assert!(prod.is_one());
     }
-
-    fft_settings.destroy();
 }

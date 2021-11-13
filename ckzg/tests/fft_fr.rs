@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fft_fr::{roundtrip_fft, inverse_fft, stride_fft, compare_sft_fft};
-    use kzg_bindings::fftsettings::{KzgFFTSettings, bound_fft_fr_slow, bound_fft_fr_fast};
-    use kzg_bindings::finite::BlstFr;
+    use ckzg::fftsettings::{KzgFFTSettings, bound_fft_fr_slow, bound_fft_fr_fast};
+    use ckzg::finite::BlstFr;
 
     #[test]
     fn test_roundtrip_fft() {
