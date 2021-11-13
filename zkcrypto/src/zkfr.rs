@@ -17,13 +17,16 @@ impl Fr for blsScalar {
 	fn default() -> Self {
 		<blsScalar as Default>::default()
 	}
-
+	
+	fn zero() -> Self {
+		blsScalar::zero()
+	}
 	fn null() -> Self {
 		blsScalar::null()
 	}
-
-	fn zero() -> Self {
-		blsScalar::zero()
+	
+	fn is_null(&self) -> bool {
+		self.eq(&blsScalar::null())
 	}
 	
 	fn one() -> Self {
@@ -85,14 +88,9 @@ impl Fr for blsScalar {
 		// <blsScalar as From<u64>>::from(val.as_mut_ptr());
         // return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
-
-
-	fn is_null(&self) -> bool {
-		self.eq(&blsScalar::null())
-	}
-
-		fn sqr(&self) -> Self {
-			blsScalar::square(&self)
+	
+	fn sqr(&self) -> Self {
+		blsScalar::square(&self)
 	}
 	
     fn mul(&self, b: &Self) -> Self {
@@ -122,8 +120,8 @@ impl Fr for blsScalar {
 	fn pow(&self, n: usize) -> Self {
 	// unfinished. bls12_381 scalar has pow method. 
 	// also for i in 1..n out.sqr();
-    let tmp = self.clone();
-    let out = Self::one(); // let mut out?
+    let mut tmp = self.clone();
+    let mut out = Self::one(); // let mut out?
     let mut n2 = n;
     
         loop {
@@ -166,6 +164,8 @@ impl Fr for blsScalar {
 	fn equals(&self, other: &Self) -> bool {
 		self.eq(other)
 	}
+	
+	// fn destroy(&mut self) {}
 }
 
 pub fn fr_div(a: &blsScalar, b: &blsScalar) -> Result<blsScalar, String> {
