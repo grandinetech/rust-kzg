@@ -9,7 +9,7 @@ use std::convert::TryInto;
 
 // use ff::{FieldBits, PrimeFieldBits};
 
-use crate::utils::*;
+// use crate::utils::*;
 pub use crate::curve::scalar::Scalar as blsScalar; 
 
 impl Fr for blsScalar {

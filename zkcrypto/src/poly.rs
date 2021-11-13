@@ -7,7 +7,7 @@ use crate::utils::*;
 use crate::fftsettings::{ZkFFTSettings};
 use crate::consts::*;
 // use crate::fft_fr::*;
-use std::convert::TryInto;
+// use std::convert::TryInto;
 
 #[repr(C)]
 #[derive(Debug, Clone)]
