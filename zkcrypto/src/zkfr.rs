@@ -2,6 +2,7 @@
 
 pub use super::{ZPoly, BlsScalar};
 use kzg::Fr;
+// use ff::Field;
 // use ff::{Field, PrimeField};
 
 use std::convert::TryInto;
@@ -12,7 +13,6 @@ use crate::utils::*;
 pub use crate::curve::scalar::Scalar as blsScalar; 
 
 impl Fr for blsScalar {
-	// type ReprBits = [u64; 4];
 
 	fn default() -> Self {
 		<blsScalar as Default>::default()
@@ -26,9 +26,13 @@ impl Fr for blsScalar {
 		blsScalar::one()
 	}
 
-    fn rand() -> Self {
+    fn rand() -> Self { // is this good?
 		let val: [u64; 4] = rand::random();
 		blsScalar::from_raw(val)
+		
+		// let ret = blsScalar::random(<blsScalar as Fr>::default());
+		// ret
+		
         // let mut ret = Self::default();
         // unsafe {
             // blsScalar::from_raw(val);
@@ -99,22 +103,18 @@ impl Fr for blsScalar {
 	fn eucl_inverse(&self) -> Self { 
 		//let mut ret = Default::default(); //Self::default()
 		// blsScalar::invert(&self).unwrap()
-		// self.invert().unwrap()
-
-		let mut ret = blst::blst_fr::default();
-		let to_blst = zk_fr_into_blst_fr(self);
-		unsafe {
-			blst::blst_fr_eucl_inverse(&mut ret, &to_blst);
-		}
-		let output = blst_fr_into_zk_fr(&ret);
-		output
+		
+		
+		let ret = self.invert().unwrap();
+		ret
+		
 	}
 	
 	fn pow(&self, n: usize) -> Self {
 	// unfinished. bls12_381 scalar has pow method. 
 	// also for i in 1..n out.sqr();
-    let mut tmp = self.clone();
-    let mut out = Self::one();
+    let tmp = self.clone();
+    let out = Self::one(); // let mut out?
     let mut n2 = n;
     
         loop {
@@ -140,18 +140,15 @@ impl Fr for blsScalar {
 		//let mut ret = <blsScalar as Fr>::default(); // Self::default()
 		// Self::invert(&self).unwrap()
 		
-		// self.invert().unwrap()
+		let ret = self.invert().unwrap();
+		ret
 		
-		let mut ret = blst::blst_fr::default();
-		let to_blst = zk_fr_into_blst_fr(self);
-		unsafe {
-			blst::blst_fr_inverse(&mut ret, &to_blst);
-		}
-		let output = blst_fr_into_zk_fr(&ret);
-		output
 	}
 	
 	fn div(&self, b: &Self) -> Result<Self, String> {
+		if <blsScalar as Fr>::is_zero(&b) {
+			return Ok(blsScalar::zero());
+		}
 		let tmp = b.eucl_inverse();
 		let out = self.mul(&tmp);
 		Ok(out)
@@ -165,8 +162,10 @@ impl Fr for blsScalar {
 }
 
 pub fn fr_div(a: &blsScalar, b: &blsScalar) -> Result<blsScalar, String> {
-
-    let tmp = b.inverse();
+	if b.is_zero() {
+		return Ok(blsScalar::zero());
+	}
+    let tmp = b.eucl_inverse();
     let out = a.mul(&tmp);
     Ok(out)
 }

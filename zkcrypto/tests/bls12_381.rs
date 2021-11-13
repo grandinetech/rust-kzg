@@ -5,11 +5,10 @@ pub mod tests {
 	use zkcrypto::kzg_types::ZkG1Projective;
 	use zkcrypto::kzg_types::ZkG2Projective;
 
-	use zkcrypto::kzg_types::{G1_IDENTITY, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR, pairings_verify, g1_linear_combination};
+	use zkcrypto::kzg_types::{G1_IDENTITY, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR, pairings_verify/*, g1_linear_combination*/};
 	// use zkcrypto::curve::fp::Fp as ZkFp;
 	// use kzg::Fr;
 	use zkcrypto::utils::log_2_byte;
-	use zkcrypto::utils::*;
 	
 #[test]	
 pub fn log_2_byte_works_() {

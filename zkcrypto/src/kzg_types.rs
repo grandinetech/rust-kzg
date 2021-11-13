@@ -4,18 +4,18 @@ use kzg::G1_ as G1;
 use kzg::G2_ as G2;
 // use ff::{Field, PrimeField};
 
-use std::ptr;
+// use std::ptr;
 
 use std::ops::{Neg, Add};
-use std::convert::TryInto;
+// use std::convert::TryInto;
 
-use blst::blst_p1_affine as P1Affine;
-use blst::blst_p1 as P1;
-use blst::blst_fr as BlstFr;
+// use blst::blst_p1_affine as P1Affine;
+// use blst::blst_p1 as P1;
+// use blst::blst_fr as BlstFr;
 
-use blst::blst_scalar;
+// use blst::blst_scalar;
 
-use crate::utils::*;
+// use crate::utils::*;
 
 // use crate::utils::*;
 pub use crate::curve::g1::G1Affine as ZkG1Affine; 
@@ -182,12 +182,12 @@ pub fn pairings_verify(a1: &ZkG1Projective, a2: &ZkG2Projective, b1: &ZkG1Projec
 	let aa2 = ZkG2Affine::from(a2);
 	let bb2 = ZkG2Affine::from(b2);
 	
-	let aa2Prepared = G2Prepared::from(aa2);
-	let bb2Prepared = G2Prepared::from(bb2);
+	let aa2_prepared = G2Prepared::from(aa2);
+	let bb2_prepared = G2Prepared::from(bb2);
 	
 	
-	let loop0 = multi_miller_loop(&[(&aa1, &aa2Prepared)]);
-	let loop1 = multi_miller_loop(&[(&bb1, &bb2Prepared)]);
+	let loop0 = multi_miller_loop(&[(&aa1, &aa2_prepared)]);
+	let loop1 = multi_miller_loop(&[(&bb1, &bb2_prepared)]);
 	
 	let gt_point = loop0.add(loop1);
 	
@@ -198,81 +198,81 @@ pub fn pairings_verify(a1: &ZkG1Projective, a2: &ZkG2Projective, b1: &ZkG1Projec
 	
 }
 
-pub fn g1_linear_combination(out: &mut ZkG1Projective, p: &Vec<ZkG1Projective>, coeffs: &Vec<blsScalar>, len: usize) {
+// pub fn g1_linear_combination(out: &mut ZkG1Projective, p: &Vec<ZkG1Projective>, coeffs: &Vec<blsScalar>, len: usize) {
 
-    // if (len < 8) { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
-        // // Direct approach
-        // g1_t tmp;
-        // *out = g1_identity;
-        // for (uint64_t i = 0; i < len; i++) {
-            // g1_mul(&tmp, &p[i], &coeffs[i]);
-            // blst_p1_add_or_double(out, out, &tmp);
-        // }       
+    // // if (len < 8) { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+        // // // Direct approach
+        // // g1_t tmp;
+        // // *out = g1_identity;
+        // // for (uint64_t i = 0; i < len; i++) {
+            // // g1_mul(&tmp, &p[i], &coeffs[i]);
+            // // blst_p1_add_or_double(out, out, &tmp);
+        // // }       
 	
-	if len < 8 {
-		let mut tmp = <ZkG1Projective as G1<blsScalar>>::default();
-		*out = G1_IDENTITY;
-		for i in 0..len{
-			tmp = ZkG1Projective::mul(&p[i], &coeffs[i]);
-			out.add_or_double(&tmp);
-			// g1_mul(&tmp, &p[i], &coeffs[i]);
-            // blst_p1_add_or_double(out, out, &tmp);
-		}	
-	}
-	else {
-		// Blst's implementation of the Pippenger method
-        //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
+	// if len < 8 {
+		// let mut tmp = <ZkG1Projective as G1<blsScalar>>::default();
+		// *out = G1_IDENTITY;
+		// for i in 0..len{
+			// tmp = ZkG1Projective::mul(&p[i], &coeffs[i]);
+			// out.add_or_double(&tmp);
+			// // g1_mul(&tmp, &p[i], &coeffs[i]);
+            // // blst_p1_add_or_double(out, out, &tmp);
+		// }	
+	// }
+	// else {
+		// // Blst's implementation of the Pippenger method
+        // //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
         
-		let mut scratch: blst::limb_t = blst::limb_t::default();
-		unsafe {
-			scratch = blst::blst_p1s_mult_pippenger_scratch_sizeof(len).try_into().unwrap();
-        }
+		// let mut scratch: blst::limb_t = blst::limb_t::default();
+		// unsafe {
+			// scratch = blst::blst_p1s_mult_pippenger_scratch_sizeof(len).try_into().unwrap();
+        // }
 		
-		let mut p_affine = vec![P1Affine::default(); len];
-        //blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
-        let mut scalars = vec![blst_scalar::default(); len];
-        // Transform the points to affine representation
-        //const blst_p1 *p_arg[2] = {p, NULL};
-        // let p_arg: const* = {p, null}
+		// let mut p_affine = vec![P1Affine::default(); len];
+        // //blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
+        // let mut scalars = vec![blst_scalar::default(); len];
+        // // Transform the points to affine representation
+        // //const blst_p1 *p_arg[2] = {p, NULL};
+        // // let p_arg: const* = {p, null}
 		
-		let p_blst = zk_g1projective_into_blst_p1(p[0]).unwrap();
+		// let p_blst = zk_g1projective_into_blst_p1(p[0]).unwrap();
 		
-        let p_arg: [*const P1; 2] = [&p_blst, &P1::default()];
-        // let p_arg = p_blst;
-		// let p_arg: *const P1 = &p_blst;
+        // let p_arg: [*const P1; 2] = [&p_blst, &P1::default()];
+        // // let p_arg = p_blst;
+		// // let p_arg: *const P1 = &p_blst;
 
-        unsafe {
-            blst::blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
-			//meta errora
-		}
-		// let coeffs_blst: [BlstFr; u64] = [ ;u64];
-        // Transform the field elements to 256-bit scalars
-        for i in 0..len {
-            unsafe {
-				let coeffs_blst = zk_fr_into_blst_fr(&coeffs[i]);
-                blst::blst_scalar_from_fr(&mut scalars[i], &coeffs_blst);
-            }
-        }
-        // Call the Pippenger implementation
-        //const byte *scalars_arg[2] = {(byte *)scalars, NULL};
-        let scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), &blst_scalar::default()];
-        //scalars_arg[0] = &scalars;
-        //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-        let points_arg: [*const P1Affine; 2] = [p_affine.as_ptr(), &P1Affine::default()];
-        //points_arg[0] = &p_affine;
-        //void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
+        // unsafe {
+            // blst::blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
+			// //meta errora
+		// }
+		// // let coeffs_blst: [BlstFr; u64] = [ ;u64];
+        // // Transform the field elements to 256-bit scalars
+        // for i in 0..len {
+            // unsafe {
+				// let coeffs_blst = zk_fr_into_blst_fr(&coeffs[i]);
+                // blst::blst_scalar_from_fr(&mut scalars[i], &coeffs_blst);
+            // }
+        // }
+        // // Call the Pippenger implementation
+        // //const byte *scalars_arg[2] = {(byte *)scalars, NULL};
+        // let scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), &blst_scalar::default()];
+        // //scalars_arg[0] = &scalars;
+        // //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
+        // let points_arg: [*const P1Affine; 2] = [p_affine.as_ptr(), &P1Affine::default()];
+        // //points_arg[0] = &p_affine;
+        // //void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
 		
-		//blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
+		// //blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
 		
-		let mut out_blst = zk_g1projective_into_blst_p1(*out).unwrap();
+		// let mut out_blst = zk_g1projective_into_blst_p1(*out).unwrap();
 		
-        unsafe {
-            // blst::blst_p1s_mult_pippenger(&mut out_blst, points_arg.as_ptr(), len, scalars_arg.as_ptr() as *const *const u8, 256, &mut scratch);
-		// meta errora. greiciausiai del tu [*const p1affine; 2]...
-		}
+        // unsafe {
+            // // blst::blst_p1s_mult_pippenger(&mut out_blst, points_arg.as_ptr(), len, scalars_arg.as_ptr() as *const *const u8, 256, &mut scratch);
+		// // meta errora. greiciausiai del tu [*const p1affine; 2]...
+		// }
 	
-	*out = blst_p1_into_zk_g1projective(&out_blst).unwrap();
+	// *out = blst_p1_into_zk_g1projective(&out_blst).unwrap();
 	
-	}
+	// }
 	
-}
+// }

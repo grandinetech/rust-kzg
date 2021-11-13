@@ -1,7 +1,7 @@
-use crate::fftsettings::{ZkFFTSettings, new_fft_settings};
+use crate::fftsettings::{ZkFFTSettings};
 use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
-use kzg::{Fr, FFTFr};
+use kzg::{Fr /*, FFTFr*/};
 
 pub fn fft_fr_slow(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roots: &[blsScalar], roots_stride: usize) {
     for i in 0..data.len() {
@@ -23,7 +23,7 @@ pub fn fft_fr(data: &[blsScalar], inverse: bool, fft_settings: &ZkFFTSettings) -
     }
 
     let stride = fft_settings.max_width / data.len();
-    let mut ret = vec![Fr::default(); data.len()];
+    let mut ret = vec![<blsScalar as Fr>::default(); data.len()];
 
     let roots = if inverse { &fft_settings.reverse_roots_of_unity } else { &fft_settings.expanded_roots_of_unity };
     fft_fr_fast(&mut ret, data, 1, roots, stride);

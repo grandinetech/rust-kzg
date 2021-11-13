@@ -44,8 +44,8 @@ pub const SCALE_FACTOR: u64 = 5;
 pub const NUM_ROOTS: usize = 32;
 
 pub fn expand_root_of_unity(root: &blsScalar, width: usize) -> Result<Vec<blsScalar>, String> {
-    let mut ret = Default::default(); // blsScalar::default()
-	let mut generated_powers = vec![ret, root.clone()];
+    // let ret = <blsScalar as Fr>::one(); // blsScalar::default()
+	let mut generated_powers = vec![blsScalar::one(), root.clone()];
 
     while !(generated_powers.last().unwrap().is_one()) {
         if generated_powers.len() > width {

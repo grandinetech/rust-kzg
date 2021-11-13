@@ -3,9 +3,9 @@
 // ================ util.rs ========================
 
 // #[cfg(feature = "groups")]
-const BLS_X: u64 = 0xd201_0000_0001_0000;
+// const BLS_X: u64 = 0xd201_0000_0001_0000;
 // #[cfg(feature = "groups")]
-const BLS_X_IS_NEGATIVE: bool = true;
+// const BLS_X_IS_NEGATIVE: bool = true;
 
 /// Compute a + b + carry, returning the result and the new carry over.
 #[inline(always)]
