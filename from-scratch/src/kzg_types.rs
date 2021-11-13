@@ -95,16 +95,6 @@ impl Fr for FsFr {
         return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 
-    fn is_null(&self) -> bool {
-        const null_fr: [u64; 4] = [0xffffffffffffffff; 4];
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-
-        return val[0] == null_fr[0] && val[1] == null_fr[1] && val[2] == null_fr[2] && val[3] == null_fr[3];
-    }
-
     fn sqr(&self) -> Self {
         let mut ret = Self::default();
         unsafe {
