@@ -1,4 +1,4 @@
-use kzg::{Fr, FFTSettings, FFTSettingsPoly, Poly, FFTFr, FFTG1, G1};
+use kzg::{Fr, FFTSettings, FFTSettingsPoly, Poly, ZeroPoly, FFTFr, FFTG1, G1};
 use crate::utils::{log_2, next_pow_of_2};
 use crate::consts::{KzgRet, BlstP1};
 use crate::poly::KzgPoly;
@@ -139,6 +139,20 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
                 e => Err(format!("An error has occurred in FFTSettingsPoly::poly_mul_fft ==> {:?}", e))
             }
         }
+    }
+}
+
+impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<KzgPoly, String> {
+        todo!()
+    }
+
+    fn reduce_partials(&self, domain_size: usize, partials: &[KzgPoly]) -> Result<KzgPoly, String> {
+        todo!()
+    }
+
+    fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<BlstFr>, KzgPoly), String> {
+        todo!()
     }
 }
 
