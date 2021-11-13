@@ -1,4 +1,4 @@
-use kzg::{FFTSettings, Fr, G1, G2, KZGSettings, Poly, FK20SingleSettings};
+use kzg::{FFTSettings, Fr, G1, G2, KZGSettings, Poly, FK20SingleSettings, FK20MultiSettings};
 
 pub const SECRET: [u8; 32usize] = [0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
     0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -48,4 +48,25 @@ pub fn fk_single_strided<
         let proof = &all_proofs[reverse_bits_limited(2 * poly_len - 1, i)];
         assert!(ks.check_proof_single(&commitment, &proof, &x, &y).unwrap());
     }
+}
+
+pub fn fk_multi_settings<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
+>(
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+) {
+    let n: usize = 5;
+    let secrets_len: usize = 33;
+
+    // Initialise the secrets and data structures
+    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let fs = TFFTSettings::new(n).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+    let _fk = TFK20MultiSettings::new(&ks, 32, 4).unwrap();
 }
