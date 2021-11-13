@@ -1,19 +1,20 @@
-pub type Scalar = blst::blst_scalar;
 
 pub trait Fr: Clone {
-    // Assume that Fr can't fail on creation
+    fn default() -> Self;
 
-    fn default() -> Self; // -> Result<Self, String>;
+    fn null() -> Self;
 
-    fn zero() -> Self; // -> Result<Self, String>;
+    fn zero() -> Self;
 
-    fn one() -> Self; // -> Result<Self, String>;
+    fn one() -> Self;
 
-    fn rand() -> Self; // -> Result<Self, String>;
+    fn rand() -> Self;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
 
     fn from_u64(u: u64) -> Self;
+
+    fn to_u64_arr(&self) -> [u64; 4]; 
 
     fn is_one(&self) -> bool;
 
@@ -40,36 +41,56 @@ pub trait Fr: Clone {
     fn pow(&self, n: usize) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
-
-    fn get_scalar(&self) -> Scalar;
-
-    fn from_scalar(scalar: &Scalar) -> Self;
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
 }
 
 pub trait G1<Coeff: Fr>: Clone {
     fn default() -> Self;
 
+    fn identity() -> Self;
+
+    fn generator() -> Self;
+
+    fn negative_generator() -> Self;
+
     fn rand() -> Self;
 
-    fn add_or_double(&self, b: &Self) -> Self;
+    fn add_or_dbl(&self, b: &Self) -> Self;
+
+    fn is_inf(&self) -> bool;
+
+    fn dbl(&self) -> Self;
+
+    fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
 
     fn mul(&self, b: &Coeff) -> Self;
 
     fn div(&self, b: &Self) -> Result<Self, String>;
+}
 
-    fn sub(&self, b: &Self) -> Self;
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
+pub trait G1Mul<Fr>: Clone {
+    fn mul(&self, b: &Fr) -> Self;
 }
 
 pub trait G2: Clone {
-    // TODO: populate with needed fns
+    fn default() -> Self;
+
+    fn generator() -> Self;
+
+    fn negative_generator() -> Self;
+
+    fn add_or_dbl(&mut self, b: &Self) -> Self;
+
+    fn dbl(&self) -> Self;
+
+    fn sub(&self, b: &Self) -> Self;
+
+    fn equals(&self, b: &Self) -> bool;
+}
+
+pub trait G2Mul<Fr>: Clone {
+    fn mul(&self, b: &Fr) -> Self;
 }
 
 pub trait FFTFr<Coeff: Fr> {
@@ -115,9 +136,10 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
+}
 
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
+pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
+    fn poly_mul_fft(a: &Polynomial, b: &Polynomial, len: usize, fs: Option<&FSettings>) -> Result<Polynomial, String>;
 }
 
 pub trait Poly<Coeff: Fr>: Clone {
@@ -154,7 +176,36 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn mul_fft(&self, x: &Self, output_len: usize) -> Result<Self, String>;
 
     fn flip(&self) -> Result<Self, String>;
+}
 
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
+pub trait KZGSettings<
+    Coeff1: Fr,
+    Coeff2: G1<Coeff1>,
+    Coeff3: G2,
+    Fs: FFTSettings<Coeff1>,
+    Polynomial: Poly<Coeff1>,
+>: Clone
+{
+    fn default() -> Self;
+
+    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: &Fs) -> Result<Self, String>;
+
+    fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
+
+    fn compute_proof_single(&self, p: &Polynomial, x: &Coeff1) -> Result<Coeff2, String>;
+
+    fn check_proof_single(&self, com: &Coeff2, proof: &Coeff2, x: &Coeff1, value: &Coeff1) -> Result<bool, String>;
+
+    fn compute_proof_multi(&self, p: &Polynomial, x: &Coeff1, n: usize) -> Result<Coeff2, String>;
+
+    fn check_proof_multi(
+        &self,
+        com: &Coeff2,
+        proof: &Coeff2,
+        x: &Coeff1,
+        values: &Vec<Coeff1>,
+        n: usize,
+    ) -> Result<bool, String>;
+
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
 }
