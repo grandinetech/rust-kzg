@@ -54,20 +54,20 @@ impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGS
         }
     }
 
-    fn data_availability(&self, p: &KzgPoly) -> Result<BlstP1, String> {
-        let mut ret = G1::default();
+    fn data_availability(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
+        let mut ret = vec![G1::default(); self.x_ext_fft_len as usize];
         unsafe {
-            return match da_using_fk20_single(&mut ret, p, self) {
+            return match da_using_fk20_single(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20SingleSettings::data_availability ==> {:?}", e))
             };
         }
     }
 
-    fn data_availability_optimized(&self, p: &KzgPoly) -> Result<BlstP1, String> {
-        let mut ret = G1::default();
+    fn data_availability_optimized(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
+        let mut ret = vec![G1::default(); self.x_ext_fft_len as usize];
         unsafe {
-            return match fk20_single_da_opt(&mut ret, p, self) {
+            return match fk20_single_da_opt(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20SingleSettings::data_availability_optimized ==> {:?}", e))
             };
@@ -78,7 +78,9 @@ impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGS
 impl Drop for KzgFK20SingleSettings {
     fn drop(&mut self) {
         unsafe {
-            free_fk20_single_settings(self);
+            if self.x_ext_fft_len > 0 {
+                free_fk20_single_settings(self);
+            }
         }
     }
 }
@@ -103,10 +105,10 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
         }
     }
 
-    fn data_availability(&self, p: &KzgPoly) -> Result<BlstP1, String> {
-        let mut ret = G1::default();
+    fn data_availability(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
+        let mut ret = vec![G1::default(); self.length as usize];
         unsafe {
-            return match da_using_fk20_multi(&mut ret, p, self) {
+            return match da_using_fk20_multi(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20MultiSettings::data_availability ==> {:?}", e))
             };
@@ -117,7 +119,9 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
 impl Drop for KzgFK20MultiSettings {
     fn drop(&mut self) {
         unsafe {
-            free_fk20_multi_settings(self);
+            if self.length > 0 || self.chunk_len > 0 {
+                free_fk20_multi_settings(self);
+            }
         }
     }
 }
