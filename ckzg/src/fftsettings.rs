@@ -25,6 +25,10 @@ extern "C" {
     fn fft_fr_slow(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn fft_g1_fast(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn fft_g1_slow(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
+    fn do_zero_poly_mul_partial(dst : *mut KzgPoly, indices: *const u64, len_indices: u64, stride: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    fn pad_p(out: *mut BlstFr, out_len: u64, p: *const KzgPoly) -> KzgRet;
+    fn reduce_partials(out: *mut KzgPoly, len_out: u64, scratch: *mut BlstFr, len_scratch: u64, partials: *const KzgPoly, partial_count: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    fn zero_polynomial_via_multiplication(zero_eval: *mut BlstFr, zero_poly: *mut KzgPoly, length: u64, missing_indices: *const u64, len_missing: u64, fs: *const KzgFFTSettings) -> KzgRet;
 }
 
 impl FFTSettings<BlstFr> for KzgFFTSettings {
