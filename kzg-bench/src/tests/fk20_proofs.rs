@@ -1,4 +1,4 @@
-use kzg::{FFTSettings, Fr, G1, G2, KZGSettings, Poly, FK20SingleSettings, FK20MultiSettings};
+use kzg::{FFTSettings, Fr, G1, G2, KZGSettings, Poly, FK20SingleSettings, FK20MultiSettings, FFTFr};
 
 pub const SECRET: [u8; 32usize] = [0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
     0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -17,7 +17,7 @@ pub fn fk_single<
     reverse_bits_limited: &dyn Fn(usize, usize) -> usize
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
-    let poly_len: usize = coeffs.len() as u64 as usize;
+    let poly_len: usize = coeffs.len();
     let n: usize = 5;
     let n_len: usize = 1 << n;
     let secrets_len = n_len + 1;
@@ -77,7 +77,7 @@ pub fn fk_single_strided<
     reverse_bits_limited: &dyn Fn(usize, usize) -> usize
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
-    let poly_len: usize = coeffs.len() as u64 as usize;
+    let poly_len: usize = coeffs.len();
     let n: usize = 8;
     let n_len: usize = 1 << n;
     let stride: usize = n_len / (2 * poly_len);
@@ -129,4 +129,162 @@ pub fn fk_multi_settings<
     let fs = TFFTSettings::new(n).unwrap();
     let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
     let _fk = TFK20MultiSettings::new(&ks, 32, 4).unwrap();
+}
+
+fn log2_pow2(n: u32) -> usize {
+    let b: [u32; 5] = [0xaaaaaaaa, 0xcccccccc, 0xf0f0f0f0, 0xff00ff00, 0xffff0000];
+    let mut r: u32 = u32::from((n & b[0]) != 0);
+    r |= u32::from((n & b[1]) != 0) << 1;
+    r |= u32::from((n & b[2]) != 0) << 2;
+    r |= u32::from((n & b[3]) != 0) << 3;
+    r |= u32::from((n & b[4]) != 0) << 4;
+    r as usize
+}
+
+// TODO: fix me
+fn fk_multi_case<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
+>(
+    chunk_len: usize, n: usize,
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
+    is_power_of_two: &dyn Fn(usize) -> bool
+) {
+    let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
+
+    assert!(is_power_of_two(n));
+    assert!(is_power_of_two(chunk_len));
+    assert_eq!(n % 16, 0);
+    assert!(n >= chunk_len);
+
+    let chunk_count: usize = n / chunk_len;
+    let secrets_len: usize = 2 * n;
+    let width: usize = log2_pow2(secrets_len as u32);
+
+    // Initialise the secrets and data structures
+    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let fs = TFFTSettings::new(width).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+    let fk = TFK20MultiSettings::new(&ks, n * 2, chunk_len).unwrap();
+
+    // Create a test polynomial of size n that's independent of chunk_len
+    let mut p = TPoly::new(n).unwrap();
+    for i in 0..chunk_count {
+        for j in 0..chunk_len {
+            let p_index = i * chunk_len + j;
+            let v_index = p_index % 16;
+            let mut v = vv[v_index];
+            let tmp: u64 = (i * chunk_len / 16) as u64;
+            if v_index == 3 { v += tmp; }
+            if v_index == 5 { v += tmp * tmp; }
+            p.set_coeff_at(p_index, &TFr::from_u64(v));
+            if v_index == 12 { p.set_coeff_at(p_index, &p.get_coeff_at(p_index).negate()); }
+            if v_index == 14 { p.set_coeff_at(p_index, &p.get_coeff_at(p_index).negate()); }
+        }
+    }
+
+    // Commit to the polynomial
+    let commitment = ks.commit_to_poly(&p).unwrap();
+
+    // Compute the multi proofs, assuming that the polynomial will be extended with zeros
+    let all_proofs = fk.data_availability(&p).unwrap();
+
+    // Now actually extend the polynomial with zeros
+    let mut extended_coeffs = vec![Fr::default(); 2 * n];
+    for i in 0..n {
+        extended_coeffs[i] = p.get_coeff_at(i);
+    }
+    for i in n..(2 * n) {
+        extended_coeffs[i] = TFr::zero();
+    }
+    let mut extended_coeffs_fft = fs.fft_fr(&extended_coeffs, false).unwrap();
+    extended_coeffs_fft.reverse(); // TODO: replace by `reverse_bit_order` ???
+
+    // Verify the proofs
+    let mut ys  = vec![Fr::default(); chunk_len];
+    let mut ys2 = vec![Fr::default(); chunk_len];
+    let domain_stride = fs.get_max_width() / (2 * n);
+    for pos in 0..(2 * chunk_count) {
+        let domain_pos = reverse_bits_limited(2 * chunk_count, pos);
+        let x = fs.get_expanded_roots_of_unity_at(domain_pos * domain_stride);
+
+        // The ys from the extended coeffients
+        for i in 0..chunk_len {
+            ys[i] = extended_coeffs_fft[chunk_len * pos + i].clone();
+        }
+        ys.reverse(); // TODO: replace by `reverse_bit_order` ???
+
+        // Now recreate the ys by evaluating the polynomial in the sub-domain range
+        let stride = fs.get_max_width() / chunk_len;
+        for i in 0..chunk_len {
+            let z = x.mul(&fs.get_expanded_roots_of_unity_at(i * stride));
+            ys2[i] = p.eval(&z);
+        }
+
+        // ys and ys2 should be equal
+        for i in 0..chunk_len {
+            assert!(ys[i].equals(&ys2[i]));
+        }
+
+        // Verify this proof
+        let result = ks.check_proof_multi(&commitment, &all_proofs[pos], &x, &ys, chunk_len).unwrap();
+        assert_eq!(result, true);
+    }
+}
+
+// TODO: doesn't work
+pub fn fk_multi_chunk_len_1_512<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
+>(
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
+    is_power_of_two: &dyn Fn(usize) -> bool
+) {
+    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(1, 512, &generate_trusted_setup, &reverse_bits_limited, &is_power_of_two);
+}
+
+// TODO: doesn't work
+pub fn fk_multi_chunk_len_16_512<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
+>(
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
+    is_power_of_two: &dyn Fn(usize) -> bool
+) {
+    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(16, 512, &generate_trusted_setup, &reverse_bits_limited, &is_power_of_two);
+}
+
+// TODO: doesn't work
+pub fn fk_multi_chunk_len_16_16<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
+>(
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
+    is_power_of_two: &dyn Fn(usize) -> bool
+) {
+    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(16, 16, &generate_trusted_setup, &reverse_bits_limited, &is_power_of_two);
 }
