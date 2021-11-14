@@ -9,7 +9,7 @@ pub fn log_2(x: usize) -> usize {
     num_bits::<usize>() as usize - (x.leading_zeros() as usize) - 1
 }
 
-fn is_power_of_2(n: usize) -> bool {
+pub fn is_power_of_2(n: usize) -> bool {
     return n & (n - 1) == 0;
 }
 

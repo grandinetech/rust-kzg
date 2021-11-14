@@ -8,7 +8,7 @@ mod tests {
     use ckzg::kzgsettings::{KzgKZGSettings, generate_trusted_setup};
     use ckzg::finite::BlstFr;
     use ckzg::poly::KzgPoly;
-    use ckzg::utils::reverse_bits_limited;
+    use ckzg::utils::{reverse_bits_limited, is_power_of_2};
 
     #[test]
     fn test_fk_single() {
@@ -23,5 +23,20 @@ mod tests {
     #[test]
     fn test_fk_multi_settings() {
         fk_multi_settings::<BlstFr, BlstP1, BlstP2, KzgPoly, KzgFFTSettings, KzgKZGSettings, KzgFK20MultiSettings>(&generate_trusted_setup);
+    }
+
+    #[test]
+    fn test_fk_multi_chunk_len_1_512() {
+        fk_multi_chunk_len_1_512::<BlstFr, BlstP1, BlstP2, KzgPoly, KzgFFTSettings, KzgKZGSettings, KzgFK20MultiSettings>(&generate_trusted_setup, &reverse_bits_limited, &is_power_of_2);
+    }
+
+    #[test]
+    fn test_fk_multi_chunk_len_16_512() {
+        fk_multi_chunk_len_16_512::<BlstFr, BlstP1, BlstP2, KzgPoly, KzgFFTSettings, KzgKZGSettings, KzgFK20MultiSettings>(&generate_trusted_setup, &reverse_bits_limited, &is_power_of_2);
+    }
+
+    #[test]
+    fn test_fk_multi_chunk_len_16_16() {
+        fk_multi_chunk_len_16_16::<BlstFr, BlstP1, BlstP2, KzgPoly, KzgFFTSettings, KzgKZGSettings, KzgFK20MultiSettings>(&generate_trusted_setup, &reverse_bits_limited, &is_power_of_2);
     }
 }
