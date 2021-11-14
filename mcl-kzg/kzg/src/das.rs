@@ -6,8 +6,9 @@ impl FFTSettings {
         if (values.len() << 1) > self.max_width {
             panic!("ftt_settings max width too small!");
         }
-
-        self._das_fft_extension(values, 1);
+        //larger stride if more roots fttsettings
+        let stride = self.max_width / (values.len() * 2);
+        self._das_fft_extension(values, stride);
         
         // just dividing every value by 1/(2**depth) aka length
         // TODO: what's faster, maybe vec[x] * vec[x], ask herumi to implement?
