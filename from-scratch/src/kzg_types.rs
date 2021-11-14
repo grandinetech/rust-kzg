@@ -71,14 +71,6 @@ impl Fr for FsFr {
 		todo!()
 	}
 
-    fn is_null(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX&& val[3] == u64::MAX;
-    }
-
     fn is_one(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
@@ -95,6 +87,14 @@ impl Fr for FsFr {
         return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 
+    fn is_null(&self) -> bool {
+        let mut val: [u64; 4] = [0; 4];
+        unsafe {
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
+        }
+        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX&& val[3] == u64::MAX;
+    }
+
     fn sqr(&self) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -104,33 +104,6 @@ impl Fr for FsFr {
         ret
     }
 
-    // TODO: double-check implementation
-    fn pow(&self, n: usize) -> Self {
-        //fr_t tmp = *a;
-        let mut tmp = self.clone();
-
-        //*out = fr_one;
-        let mut out = Self::one();
-        let mut n2 = n;
-
-        //unsafe {
-        loop {
-            if n2 & 1 == 1 {
-                // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
-                out = out.mul(&tmp);
-            }
-            n2 = n2 >> 1;
-            if n == 0 {
-                break;
-            }
-            // blst_fr_sqr(&mut tmp.0, &tmp.0);
-            tmp = tmp.sqr();
-        }
-        //}
-
-        out
-    }
-
     fn mul(&self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -138,6 +111,13 @@ impl Fr for FsFr {
         }
 
         ret
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let tmp = b.eucl_inverse();
+        let out = self.mul(&tmp);
+
+        Ok(out)
     }
 
     fn add(&self, b: &Self) -> Self {
@@ -185,6 +165,33 @@ impl Fr for FsFr {
         ret
     }
 
+    // TODO: double-check implementation
+    fn pow(&self, n: usize) -> Self {
+        //fr_t tmp = *a;
+        let mut tmp = self.clone();
+
+        //*out = fr_one;
+        let mut out = Self::one();
+        let mut n2 = n;
+
+        //unsafe {
+        loop {
+            if n2 & 1 == 1 {
+                // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
+                out = out.mul(&tmp);
+            }
+            n2 = n2 >> 1;
+            if n == 0 {
+                break;
+            }
+            // blst_fr_sqr(&mut tmp.0, &tmp.0);
+            tmp = tmp.sqr();
+        }
+        //}
+
+        out
+    }
+
     fn equals(&self, b: &Self) -> bool {
         let mut val_a: [u64; 4] = [0; 4];
         let mut val_b: [u64; 4] = [0; 4];
@@ -198,13 +205,6 @@ impl Fr for FsFr {
             && val_a[1] == val_b[1]
             && val_a[2] == val_b[2]
             && val_a[3] == val_b[3];
-    }
-
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let tmp = b.eucl_inverse();
-        let out = self.mul(&tmp);
-
-        Ok(out)
     }
 }
 
@@ -280,6 +280,20 @@ impl G1<FsFr> for FsG1 {
         todo!()
     }
 
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        let mut b_negative: FsG1 = *b;
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_cneg(&mut b_negative.0, true);
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b_negative.0);
+            ret
+        }
+    }
+
     fn equals(&self, b: &Self) -> bool {
         unsafe {
             return blst_p1_is_equal(&self.0, &b.0);
@@ -314,20 +328,6 @@ impl G1<FsFr> for FsG1 {
             }
             ret
         };
-    }
-
-    fn sub(&self, b: &Self) -> Self {
-        let mut b_negative: FsG1 = *b;
-        let mut ret = Self::default();
-        unsafe {
-            blst_p1_cneg(&mut b_negative.0, true);
-            blst_p1_add_or_double(&mut ret.0, &self.0, &b_negative.0);
-            ret
-        }
-    }
-
-    fn dbl(&self) -> Self {
-        todo!()
     }
 
     fn div(&self, _b: &Self) -> Result<Self, String> {
