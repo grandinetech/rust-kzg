@@ -7,6 +7,26 @@ pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
     assert_eq!(poly.len(), 10);
 }
 
+pub fn poly_pad_works_rand<TFr: Fr, TPoly: Poly<TFr>>() {
+    let mut rng = StdRng::seed_from_u64(0);
+
+    for _k in 0..256 {
+        let poly_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
+        let mut poly = TPoly::new(poly_length).unwrap();
+        for i in 0..poly.len() {
+            poly.set_coeff_at(i, &TFr::rand());
+        }
+
+        let padded_poly = poly.pad(1000);
+        for i in 0..poly_length {
+            assert!(padded_poly.get_coeff_at(i).equals(&poly.get_coeff_at(i)));
+        }
+        for i in poly_length..1000 {
+            assert!(padded_poly.get_coeff_at(i).equals(&Fr::zero()));
+        }
+    }
+}
+
 pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 10;
     let mut poly = TPoly::new(n).unwrap();
@@ -272,6 +292,7 @@ pub fn poly_mul_fft_test<TFr: Fr, TPoly: Poly<TFr>>() {
 
 pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>() {
     let mut rng = StdRng::seed_from_u64(0);
+
     for _k in 0..256 {
         let multiplicand_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
         let mut multiplicand = TPoly::new(multiplicand_length).unwrap();

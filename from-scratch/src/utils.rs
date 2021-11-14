@@ -12,14 +12,16 @@ pub fn next_power_of_two(v: usize) -> usize {
     let mut v = v;
 
     v -= 1;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v |= v >> 32;
+    v |= (v >> 1);
+    v |= (v >> 2);
+    v |= (v >> 4);
+    v |= (v >> 8);
+    v |= (v >> 16);
+    v |= (v >> 32);
     v += 1;
-    v += (v == 0) as usize;
+    if v == 0 {
+        v += 1
+    }
 
     v
 }
@@ -36,10 +38,10 @@ pub fn log_2_byte(b: u8) -> usize {
 pub fn log2_pow2(n: usize) -> usize {
     let bytes: [usize; 5] = [0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000];
     let mut r: usize = if (n & bytes[0]) != 0 { 1 } else { 0 };
-    r |= if (n & bytes[1]) != 0 { 1 } else { 0 } << 1;
-    r |= if (n & bytes[2]) != 0 { 1 } else { 0 } << 2;
-    r |= if (n & bytes[3]) != 0 { 1 } else { 0 } << 3;
-    r |= if (n & bytes[4]) != 0 { 1 } else { 0 } << 4;
+    r |= ((if (n & bytes[1]) != 0 { 1 } else { 0 }) << 1);
+    r |= ((if (n & bytes[2]) != 0 { 1 } else { 0 }) << 2);
+    r |= ((if (n & bytes[3]) != 0 { 1 } else { 0 }) << 3);
+    r |= ((if (n & bytes[4]) != 0 { 1 } else { 0 }) << 4);
     r
 }
 
@@ -54,7 +56,11 @@ pub fn log2_u64(n: usize) -> usize {
 }
 
 pub fn min_u64(a: usize, b: usize) -> usize {
-    return if a < b {a} else {b};
+    return if a < b { a } else { b };
+}
+
+pub fn max_u64(a: usize, b: usize) -> usize {
+    return if a < b { b } else { a };
 }
 
 pub fn generate_trusted_setup(s1: &mut Vec<FsG1>, s2: &mut Vec<FsG2>, secret: &Scalar, n: usize) {

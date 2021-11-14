@@ -176,6 +176,8 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn mul_fft(&self, x: &Self, output_len: usize) -> Result<Self, String>;
 
     fn flip(&self) -> Result<Self, String>;
+
+    fn pad(&self, output_len: usize) -> Self;
 }
 
 pub trait KZGSettings<

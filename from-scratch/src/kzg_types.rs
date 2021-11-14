@@ -647,23 +647,25 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn mul_fft(&self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
-        // Truncate a and b so as not to do excess work for the number of coefficients required.
-        let a_len = min_u64(self.len(), output_len);
-        let b_len = min_u64(multiplier.len(), output_len);
-        let length = next_power_of_two(a_len + b_len - 1);
+        let length = next_power_of_two(self.len() + multiplier.len() - 1);
 
-        let scale: usize = log2_pow2(length);
+        let scale = log2_pow2(length);
         let fft_settings = FsFFTSettings::new(scale).unwrap();
 
         let a_pad = self.pad(length);
         let b_pad = multiplier.pad(length);
-        let a_fft = fft_settings.fft_fr(&a_pad, false).unwrap();
-        let b_fft = fft_settings.fft_fr(&b_pad, false).unwrap();
+        // Convert Poly to values
+        let a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
+        let b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
 
+        // Multiply two value ranges
         let mut ab_fft = vec![FsFr::default(); length];
         for i in 0..length {
             ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+            assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
         }
+
+        // Convert value range multiplication to a resulting polynomial
         let ab = fft_settings.fft_fr(&ab_fft, true).unwrap();
 
         let mut ret = FsPoly { coeffs: vec![FsFr::zero(); output_len] };
@@ -681,6 +683,16 @@ impl Poly<FsFr> for FsPoly {
         }
 
         Ok(ret)
+    }
+
+    fn pad(&self, out_length: usize) -> Self {
+        let mut ret = Self { coeffs: vec![FsFr::zero(); out_length] };
+
+        for i in 0..min_u64(self.len(), out_length) {
+            ret.coeffs[i] = self.coeffs[i];
+        }
+
+        ret
     }
 }
 
@@ -704,16 +716,6 @@ impl FsPoly {
 
     fn poly_quotient_length(&self, divisor: &Self) -> usize {
         return if self.len() >= divisor.len() { self.len() - divisor.len() + 1 } else { 0 };
-    }
-
-    fn pad(&self, out_length: usize) -> Vec<FsFr> {
-        let mut ret = vec![FsFr::zero(); out_length];
-
-        for i in 0..min_u64(self.len(), out_length) {
-            ret[i] = self.coeffs[i];
-        }
-
-        ret
     }
 }
 
