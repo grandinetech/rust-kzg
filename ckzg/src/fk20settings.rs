@@ -15,6 +15,7 @@ extern "C" {
     // FK20 Multi
     fn new_fk20_multi_settings(fk: *mut KzgFK20MultiSettings, n2: u64, chunk_len: u64, ks: *const KzgKZGSettings) -> KzgRet;
     fn da_using_fk20_multi(out: *mut BlstP1, p: *const KzgPoly, fk: *const KzgFK20MultiSettings) -> KzgRet;
+    fn fk20_multi_da_opt(out: *mut BlstP1, p: *const KzgPoly, fk: *const KzgFK20MultiSettings) -> KzgRet;
     fn free_fk20_multi_settings(fk: *mut KzgFK20MultiSettings);
 }
 
@@ -111,6 +112,16 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
             return match da_using_fk20_multi(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20MultiSettings::data_availability ==> {:?}", e))
+            };
+        }
+    }
+
+    fn data_availability_optimized(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
+        let mut ret = vec![G1::default(); self.length as usize];
+        unsafe {
+            return match fk20_multi_da_opt(ret.as_mut_ptr(), p, self) {
+                KzgRet::KzgOk => Ok(ret),
+                e => Err(format!("An error has occurred in FK20MultiSettings::data_availability_optimized ==> {:?}", e))
             };
         }
     }
