@@ -6,9 +6,9 @@ use blst::{
     blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
     blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg,
-    blst_p1_mult, blst_p1_is_equal, blst_scalar
+    blst_p1_mult, blst_p1_is_equal, blst_scalar,
 };
-use kzg::{FFTSettings, Fr, Poly, G1, FFTFr};
+use kzg::{FFTSettings, Fr, Poly, G1, FFTFr, G2, G2Mul};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 
 pub struct Scalar(pub blst_scalar);
@@ -67,16 +67,13 @@ impl Fr for FsFr {
         Self::from_u64_arr(&[val, 0, 0, 0])
     }
 
-	fn to_u64_arr(&self) -> [u64; 4] {
-		todo!()
-	}
-
-    fn is_null(&self) -> bool {
+    fn to_u64_arr(&self) -> [u64; 4] {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
             blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
         }
-        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX&& val[3] == u64::MAX;
+
+        val
     }
 
     fn is_one(&self) -> bool {
@@ -95,6 +92,11 @@ impl Fr for FsFr {
         return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 
+    fn is_null(&self) -> bool {
+        let null = Self::null();
+        return null.equals(self);
+    }
+
     fn sqr(&self) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -104,33 +106,6 @@ impl Fr for FsFr {
         ret
     }
 
-    // TODO: double-check implementation
-    fn pow(&self, n: usize) -> Self {
-        //fr_t tmp = *a;
-        let mut tmp = self.clone();
-
-        //*out = fr_one;
-        let mut out = Self::one();
-        let mut n2 = n;
-
-        //unsafe {
-        loop {
-            if n2 & 1 == 1 {
-                // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
-                out = out.mul(&tmp);
-            }
-            n2 = n2 >> 1;
-            if n == 0 {
-                break;
-            }
-            // blst_fr_sqr(&mut tmp.0, &tmp.0);
-            tmp = tmp.sqr();
-        }
-        //}
-
-        out
-    }
-
     fn mul(&self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -138,6 +113,13 @@ impl Fr for FsFr {
         }
 
         ret
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let tmp = b.eucl_inverse();
+        let out = self.mul(&tmp);
+
+        Ok(out)
     }
 
     fn add(&self, b: &Self) -> Self {
@@ -185,6 +167,26 @@ impl Fr for FsFr {
         ret
     }
 
+    fn pow(&self, n: usize) -> Self {
+        let mut out = Self::one();
+
+        let mut temp = self.clone();
+        let mut n = n;
+        loop {
+            if (n & 1) == 1 {
+                out = out.mul(&temp);
+            }
+            n = n >> 1;
+            if n == 0 {
+                break;
+            }
+
+            temp = temp.sqr();
+        }
+
+        out
+    }
+
     fn equals(&self, b: &Self) -> bool {
         let mut val_a: [u64; 4] = [0; 4];
         let mut val_b: [u64; 4] = [0; 4];
@@ -198,13 +200,6 @@ impl Fr for FsFr {
             && val_a[1] == val_b[1]
             && val_a[2] == val_b[2]
             && val_a[3] == val_b[3];
-    }
-
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let tmp = b.eucl_inverse();
-        let out = self.mul(&tmp);
-
-        Ok(out)
     }
 }
 
@@ -280,6 +275,20 @@ impl G1<FsFr> for FsG1 {
         todo!()
     }
 
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        let mut b_negative: FsG1 = *b;
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_cneg(&mut b_negative.0, true);
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b_negative.0);
+            ret
+        }
+    }
+
     fn equals(&self, b: &Self) -> bool {
         unsafe {
             return blst_p1_is_equal(&self.0, &b.0);
@@ -316,20 +325,6 @@ impl G1<FsFr> for FsG1 {
         };
     }
 
-    fn sub(&self, b: &Self) -> Self {
-        let mut b_negative: FsG1 = *b;
-        let mut ret = Self::default();
-        unsafe {
-            blst_p1_cneg(&mut b_negative.0, true);
-            blst_p1_add_or_double(&mut ret.0, &self.0, &b_negative.0);
-            ret
-        }
-    }
-
-    fn dbl(&self) -> Self {
-        todo!()
-    }
-
     fn div(&self, _b: &Self) -> Result<Self, String> {
         todo!()
     }
@@ -344,6 +339,42 @@ impl Clone for FsG1 {
 impl Copy for FsG1 {}
 
 pub struct FsG2(pub blst::blst_p2);
+
+impl G2Mul<FsFr> for FsG2 {
+    fn mul(&self, b: &FsFr) -> Self {
+        todo!()
+    }
+}
+
+impl G2 for FsG2 {
+    fn default() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        todo!()
+    }
+}
 
 impl FsG2 {
     pub(crate) fn _from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
@@ -616,23 +647,25 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn mul_fft(&self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
-        // Truncate a and b so as not to do excess work for the number of coefficients required.
-        let a_len = min_u64(self.len(), output_len);
-        let b_len = min_u64(multiplier.len(), output_len);
-        let length = next_power_of_two(a_len + b_len - 1);
+        let length = next_power_of_two(self.len() + multiplier.len() - 1);
 
-        let scale: usize = log2_pow2(length);
+        let scale = log2_pow2(length);
         let fft_settings = FsFFTSettings::new(scale).unwrap();
 
         let a_pad = self.pad(length);
         let b_pad = multiplier.pad(length);
-        let a_fft = fft_settings.fft_fr(&a_pad, false).unwrap();
-        let b_fft = fft_settings.fft_fr(&b_pad, false).unwrap();
+        // Convert Poly to values
+        let a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
+        let b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
 
+        // Multiply two value ranges
         let mut ab_fft = vec![FsFr::default(); length];
         for i in 0..length {
             ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+            assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
         }
+
+        // Convert value range multiplication to a resulting polynomial
         let ab = fft_settings.fft_fr(&ab_fft, true).unwrap();
 
         let mut ret = FsPoly { coeffs: vec![FsFr::zero(); output_len] };
@@ -650,6 +683,16 @@ impl Poly<FsFr> for FsPoly {
         }
 
         Ok(ret)
+    }
+
+    fn pad(&self, out_length: usize) -> Self {
+        let mut ret = Self { coeffs: vec![FsFr::zero(); out_length] };
+
+        for i in 0..min_u64(self.len(), out_length) {
+            ret.coeffs[i] = self.coeffs[i];
+        }
+
+        ret
     }
 }
 
@@ -673,16 +716,6 @@ impl FsPoly {
 
     fn poly_quotient_length(&self, divisor: &Self) -> usize {
         return if self.len() >= divisor.len() { self.len() - divisor.len() + 1 } else { 0 };
-    }
-
-    fn pad(&self, out_length: usize) -> Vec<FsFr> {
-        let mut ret = vec![FsFr::zero(); out_length];
-
-        for i in 0..min_u64(self.len(), out_length) {
-            ret[i] = self.coeffs[i];
-        }
-
-        ret
     }
 }
 
