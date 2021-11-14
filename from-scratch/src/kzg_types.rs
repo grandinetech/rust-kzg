@@ -6,9 +6,9 @@ use blst::{
     blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
     blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg,
-    blst_p1_mult, blst_p1_is_equal, blst_scalar
+    blst_p1_mult, blst_p1_is_equal, blst_scalar,
 };
-use kzg::{FFTSettings, Fr, Poly, G1, FFTFr};
+use kzg::{FFTSettings, Fr, Poly, G1, FFTFr, G2, G2Mul};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 
 pub struct Scalar(pub blst_scalar);
@@ -67,9 +67,14 @@ impl Fr for FsFr {
         Self::from_u64_arr(&[val, 0, 0, 0])
     }
 
-	fn to_u64_arr(&self) -> [u64; 4] {
-		todo!()
-	}
+    fn to_u64_arr(&self) -> [u64; 4] {
+        let mut val: [u64; 4] = [0; 4];
+        unsafe {
+            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
+        }
+
+        val
+    }
 
     fn is_one(&self) -> bool {
         let mut val: [u64; 4] = [0; 4];
@@ -88,11 +93,8 @@ impl Fr for FsFr {
     }
 
     fn is_null(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX&& val[3] == u64::MAX;
+        let null = Self::null();
+        return null.equals(self);
     }
 
     fn sqr(&self) -> Self {
@@ -165,29 +167,22 @@ impl Fr for FsFr {
         ret
     }
 
-    // TODO: double-check implementation
     fn pow(&self, n: usize) -> Self {
-        //fr_t tmp = *a;
-        let mut tmp = self.clone();
-
-        //*out = fr_one;
         let mut out = Self::one();
-        let mut n2 = n;
 
-        //unsafe {
+        let mut temp = self.clone();
+        let mut n = n;
         loop {
-            if n2 & 1 == 1 {
-                // blst_fr_mul(&mut out.0, &out.0, &tmp.0);
-                out = out.mul(&tmp);
+            if (n & 1) == 1 {
+                out = out.mul(&temp);
             }
-            n2 = n2 >> 1;
+            n = n >> 1;
             if n == 0 {
                 break;
             }
-            // blst_fr_sqr(&mut tmp.0, &tmp.0);
-            tmp = tmp.sqr();
+
+            temp = temp.sqr();
         }
-        //}
 
         out
     }
@@ -344,6 +339,42 @@ impl Clone for FsG1 {
 impl Copy for FsG1 {}
 
 pub struct FsG2(pub blst::blst_p2);
+
+impl G2Mul<FsFr> for FsG2 {
+    fn mul(&self, b: &FsFr) -> Self {
+        todo!()
+    }
+}
+
+impl G2 for FsG2 {
+    fn default() -> Self {
+        todo!()
+    }
+
+    fn generator() -> Self {
+        todo!()
+    }
+
+    fn negative_generator() -> Self {
+        todo!()
+    }
+
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn dbl(&self) -> Self {
+        todo!()
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        todo!()
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        todo!()
+    }
+}
 
 impl FsG2 {
     pub(crate) fn _from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {

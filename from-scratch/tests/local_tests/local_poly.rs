@@ -3,7 +3,7 @@ use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
-    let mut poly = TPoly::new(10).unwrap();
+    let poly = TPoly::new(10).unwrap();
     assert_eq!(poly.len(), 10);
 }
 
@@ -34,7 +34,7 @@ pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
 
 pub fn poly_eval_nil_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 0;
-    let mut poly = TPoly::new(n).unwrap();
+    let poly = TPoly::new(n).unwrap();
     let actual = poly.eval(&TFr::one());
     assert!(actual.equals(&TFr::zero()));
 }
@@ -48,7 +48,7 @@ pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
     p.set_coeff_at(1, &TFr::negate(&p.get_coeff_at(1)));
     let result = p.inverse(d);
     assert!(result.is_ok());
-    let mut q = result.unwrap();
+    let q = result.unwrap();
     for i in 0..d {
         assert!(q.get_coeff_at(i).is_one());
     }
@@ -62,7 +62,7 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     p.set_coeff_at(1, &TFr::one());
     let result = p.inverse(d);
     assert!(result.is_ok());
-    let mut q = result.unwrap();
+    let q = result.unwrap();
     for i in 0..d {
         let mut tmp = q.get_coeff_at(i);
         if i & 1 != 0 {
@@ -225,17 +225,17 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
         let coeffs2 = test_data(i, 1);
         let coeffs3 = test_data(i, 0);
 
-        let mut multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
-        let mut multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
+        let multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
+        let multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
         let expected: TPoly = new_test_poly(&coeffs3, coeffs3.len());
 
-        let mut result0 = multiplicand.mul_direct(&multiplier, coeffs3.len()).unwrap();
+        let result0 = multiplicand.mul_direct(&multiplier, coeffs3.len()).unwrap();
         for j in 0..result0.len() {
             assert!(expected.get_coeff_at(j).equals(&result0.get_coeff_at(j)))
         }
 
         // Check commutativity
-        let mut result1 = multiplier.mul_direct(&multiplicand, coeffs3.len()).unwrap();
+        let result1 = multiplier.mul_direct(&multiplicand, coeffs3.len()).unwrap();
         for j in 0..result1.len() {
             assert!(expected.get_coeff_at(j).equals(&result1.get_coeff_at(j)))
         }
@@ -253,17 +253,17 @@ pub fn poly_mul_fft_test<TFr: Fr, TPoly: Poly<TFr>>() {
         let coeffs2 = test_data(i, 1);
         let coeffs3 = test_data(i, 0);
 
-        let mut multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
-        let mut multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
-        let mut expected: TPoly = new_test_poly(&coeffs3, coeffs3.len());
+        let multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
+        let multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
+        let expected: TPoly = new_test_poly(&coeffs3, coeffs3.len());
 
-        let mut result0 = multiplicand.mul_fft(&multiplier, coeffs3.len()).unwrap();
+        let result0 = multiplicand.mul_fft(&multiplier, coeffs3.len()).unwrap();
         for j in 0..result0.len() {
             assert!(expected.get_coeff_at(j).equals(&result0.get_coeff_at(j)))
         }
 
         // Check commutativity
-        let mut result1 = multiplier.mul_fft(&multiplicand, coeffs3.len()).unwrap();
+        let result1 = multiplier.mul_fft(&multiplicand, coeffs3.len()).unwrap();
         for j in 0..result1.len() {
             assert!(expected.get_coeff_at(j).equals(&result1.get_coeff_at(j)))
         }
@@ -294,8 +294,8 @@ pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>() {
         }
 
         let out_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
-        let mut q0 = multiplicand.mul_direct(&multiplier, out_length).unwrap();
-        let mut q1 = multiplicand.mul_fft(&multiplier, out_length).unwrap();
+        let q0 = multiplicand.mul_direct(&multiplier, out_length).unwrap();
+        let q1 = multiplicand.mul_fft(&multiplier, out_length).unwrap();
 
         assert_eq!(q0.len(), q1.len());
         for i in 0..q0.len() {

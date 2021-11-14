@@ -1,26 +1,26 @@
 use kzg::{G1, Fr, FFTFr, Poly};
 use blst::{blst_p1_add_or_double,
-            blst_p1s_to_affine,
-            blst_scalar,
-            blst_scalar_from_fr,
-            blst_p1_mult,
-            blst_p1s_mult_pippenger,
-            blst_p1s_mult_pippenger_scratch_sizeof,
-            blst_p2_mult,
-            blst_p1_cneg,
-            blst_p2_cneg,
-            blst_p2_add_or_double,
-            blst_fp12,
-            blst_p1_to_affine,
-            blst_p2_to_affine,
-            blst_miller_loop,
-            blst_fp12_mul,
-            blst_final_exp,
-            blst_fp12_is_one,
-            blst_p1,
-            blst_p1_affine,
-            blst_p2_affine,
-            blst_fp
+           blst_p1s_to_affine,
+           blst_scalar,
+           blst_scalar_from_fr,
+           blst_p1_mult,
+           blst_p1s_mult_pippenger,
+           blst_p1s_mult_pippenger_scratch_sizeof,
+           blst_p2_mult,
+           blst_p1_cneg,
+           blst_p2_cneg,
+           blst_p2_add_or_double,
+           blst_fp12,
+           blst_p1_to_affine,
+           blst_p2_to_affine,
+           blst_miller_loop,
+           blst_fp12_mul,
+           blst_final_exp,
+           blst_fp12_is_one,
+           blst_p1,
+           blst_p1_affine,
+           blst_p2_affine,
+           blst_fp,
 };
 use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2, Scalarized};
 use crate::utils::{is_power_of_two, log_2_byte};
@@ -91,8 +91,7 @@ pub fn check_proof_single(commitment: &FsG1, proof: &FsG1, x: &FsFr, y: &FsFr, k
 
     let commitment_minus_y: FsG1 = g1_sub(commitment, &y_g1);
 
-    let result = pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x);
-    result.unwrap()
+    return pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x);
 }
 
 pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZGSettings) -> Result<FsG1, String> {
@@ -161,7 +160,7 @@ pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
     }
 }
 
-fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len: usize) {
+pub fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len: usize) {
     if len < 8 {
         // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
         // Direct approach
@@ -293,10 +292,10 @@ pub fn check_proof_multi(
         blst_p1_cneg(&mut b_negative.0, true);
         blst_p1_add_or_double(&mut commit_minus_interp.0, &commitment.0, &b_negative.0);
     }
-    return Ok(pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn).unwrap());
+    return Ok(pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn));
 }
 
-fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> Result<bool, String> {
+pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
     let mut loop0 = blst_fp12::default();
     let mut loop1 = blst_fp12::default();
     let mut gt_point = blst_fp12::default();
@@ -325,6 +324,6 @@ fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> Result<bool, S
         blst_fp12_mul(&mut gt_point, &loop0, &loop1);
         blst_final_exp(&mut gt_point, &gt_point);
 
-        return Ok(blst_fp12_is_one(&gt_point));
+        return blst_fp12_is_one(&gt_point);
     }
 }

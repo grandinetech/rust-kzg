@@ -14,7 +14,6 @@ pub fn fr_is_null_works<TFr: Fr>() {
     let null = TFr::null();
     assert!(!zero.is_null());
     assert!(!one.is_null());
-    //println!("tttttttt {}", null.l[1]);
     assert!(null.is_null());
 }
 
