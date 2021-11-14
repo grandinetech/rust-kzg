@@ -229,4 +229,6 @@ pub trait FK20MultiSettings<
     fn new(ks: &Ks, n2: usize, chunk_len: usize) -> Result<Self, String>;
 
     fn data_availability(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
+
+    fn data_availability_optimized(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
 }
