@@ -148,7 +148,7 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
 
 impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<KzgPoly, String> {
-        let mut poly = KzgPoly::new(64).unwrap();
+        let mut poly = KzgPoly::new(idxs.len() + 1).unwrap();
 
         unsafe {
             return match do_zero_poly_mul_partial(&mut poly, idxs.as_ptr() as *const u64,
@@ -161,7 +161,7 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
     }
 
     fn reduce_partials(&self, domain_size: usize, partials: &[KzgPoly]) -> Result<KzgPoly, String> {
-        let mut poly = KzgPoly::new(64).unwrap();
+        let mut poly = KzgPoly::new(domain_size).unwrap();
         let scratch_len = domain_size * 3;
         let mut scratch = vec![BlstFr::zero(); scratch_len];
 
