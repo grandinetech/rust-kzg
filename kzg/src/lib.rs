@@ -182,6 +182,10 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn destroy(&mut self);
 }
 
+pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
+    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: FSettings) -> Polynomial;
+}
+
 pub trait KZGSettings<
     Coeff1: Fr,
     Coeff2: G1,

@@ -17,4 +17,5 @@ mod shared_tests {
     mod das;
     mod consts;
     mod poly;
+    mod recover;
 }

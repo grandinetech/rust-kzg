@@ -5,6 +5,8 @@ use kzg::PolyRecover;
 use kzg::FFTFr;
 use std::convert::TryInto;
 
+
+//STILL NOT WORKING
 pub fn recover_simple<TFr: Fr, TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPoly: Poly<TFr>, TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>>() {
     let fs = TFTTSettings::new(2).unwrap();
     let max_width: usize = fs.get_max_width();

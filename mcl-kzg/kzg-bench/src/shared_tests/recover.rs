@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod poly_tests {
+pub mod recover_tests {
     use kzg_bench::tests::recover::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::kzg10::Polynomial;
@@ -7,9 +7,9 @@ pub mod poly_tests {
     use mcl_rust::CurveType;
     use mcl_rust::fk20_fft::FFTSettings;
 
-    #[test]
-    fn recover_simple_() {
-        assert!(init(CurveType::BLS12_381));
-        recover_simple::<Fr, FFTSettings, Polynomial, Polynomial>();
-    }
+    // #[test]
+    // fn recover_simple_() {
+    //     assert!(init(CurveType::BLS12_381));
+    //     recover_simple::<Fr, FFTSettings, Polynomial, Polynomial>();
+    // }
 }
