@@ -55,8 +55,6 @@ impl G1 for ArkG1 {
         pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
     }
 
-    fn destroy(&mut self) {}
-
     fn identity() -> Self {
         G1_IDENTITY
     }
@@ -133,10 +131,6 @@ impl G2 for ArkG2 {
 
     fn equals(&self, b: &Self) -> bool {
         self.0.eq(&b.0)
-    }
-
-    fn destroy(&mut self) {
-        todo!()
     }
 }
 
@@ -255,8 +249,6 @@ impl Fr for FsFr {
     fn equals(&self, b: &Self) -> bool {
         blst_fr_into_pc_fr(self) == blst_fr_into_pc_fr(b)
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for FsFr {
@@ -331,8 +323,6 @@ impl Poly<FsFr> for LPoly {
     fn fast_div(&mut self, x: &Self) -> Result<Self, String>  {
         Ok(poly_fast_div(self, x).unwrap())
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for LPoly {
@@ -403,7 +393,6 @@ impl FFTSettings<FsFr> for LFFTSettings {
             domain: Radix2EvaluationDomain::<ArkFr>::new(0 as usize).unwrap(),
         }
     }
-    fn destroy(&mut self) {}
 }
 
 impl Clone for LFFTSettings {
@@ -422,7 +411,7 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         secret_g1: &Vec<ArkG1>,
         secret_g2: &Vec<ArkG2>,
         length: usize,
-        fs: LFFTSettings,
+        fs: &LFFTSettings,
     ) -> Result<LKZGSettings, String> {
         Ok(new_kzg_settings(secret_g1, secret_g2, length as u64, fs))
     }
@@ -454,12 +443,10 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
     fn default() -> Self {
         default_kzg()
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl Clone for LKZGSettings {
     fn clone(&self) -> Self {
-        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, self.fs.clone()).unwrap()
+        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, &self.fs.clone()).unwrap()
     }
 }

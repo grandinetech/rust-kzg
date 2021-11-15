@@ -1,3 +1,3 @@
 pub mod fft;
-pub mod kzg;
 pub mod poly;
+pub mod das;

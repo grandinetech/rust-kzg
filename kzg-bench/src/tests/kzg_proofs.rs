@@ -29,7 +29,7 @@ pub fn proof_single<
     // Initialise the secrets and data structures
     let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
     let fs = TFFTSettings::new(4).unwrap();
-    let mut ks = TKZGSettings::new(&s1, &s2, secrets_len, fs).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
 
     // Compute the proof for x = 25
     let x = TFr::from_u64(25);
@@ -43,9 +43,6 @@ pub fn proof_single<
     // Change the value and check that the proof fails
     value = value.add(&TFr::one());
     assert!(!ks.check_proof_single(&commitment, &proof, &x, &value).unwrap());
-
-    p.destroy();
-    ks.destroy();
 }
 
 pub fn commit_to_nil_poly<
@@ -64,14 +61,11 @@ pub fn commit_to_nil_poly<
         // Initialise the (arbitrary) secrets and data structures
         let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
         let fs = TFFTSettings::new(4).unwrap();
-        let mut ks = TKZGSettings::new(&s1, &s2, secrets_len, fs).unwrap();
+        let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
 
-        let mut a = TPoly::new(0).unwrap();
+        let a = TPoly::new(0).unwrap();
         let result = ks.commit_to_poly(&a).unwrap();
         assert!(result.equals(&TG1::default()));
-
-        ks.destroy();
-        a.destroy();
     }
 }
 
@@ -94,14 +88,10 @@ pub fn commit_to_too_long_poly<
         // Initialise the (arbitrary) secrets and data structures
         let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
         let fs = TFFTSettings::new(4).unwrap();
-        let mut ks = TKZGSettings::new(&s1, &s2, secrets_len, fs).unwrap();
+        let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
 
-        let mut a = TPoly::new(poly_len).unwrap();
-
+        let a = TPoly::new(poly_len).unwrap();
         let _result = ks.commit_to_poly(&a);
-
-        ks.destroy();
-        a.destroy();
     }
 }
 
@@ -142,13 +132,13 @@ pub fn proof_multi<
     // Initialise the secrets and data structures
     let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
     let fs1 = TFFTSettings::new(4).unwrap();
-    let mut ks1 = TKZGSettings::new(&s1, &s2, secrets_len, fs1).unwrap();
+    let ks1 = TKZGSettings::new(&s1, &s2, secrets_len, &fs1).unwrap();
 
     // Commit to the polynomial
     let commitment = ks1.commit_to_poly(&p).unwrap();
 
     let fs2 = TFFTSettings::new(coset_scale).unwrap();
-    let mut ks2 = TKZGSettings::new(&s1, &s2, secrets_len, fs2).unwrap();
+    let ks2 = TKZGSettings::new(&s1, &s2, secrets_len, &fs2).unwrap();
 
     // Compute proof at the points [x * root_i] 0 <= i < coset_len
     let x = TFr::from_u64(5431);
@@ -169,8 +159,4 @@ pub fn proof_multi<
     let _temp = std::mem::replace(&mut y[4], temp);
     let result = ks2.check_proof_multi(&commitment, &proof, &x, &y, coset_len).unwrap();
     assert_eq!(result, false);
-
-    p.destroy();
-    ks1.destroy();
-    ks2.destroy();
 }

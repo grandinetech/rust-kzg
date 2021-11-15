@@ -14,7 +14,7 @@ extern "C" {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct KzgPoly {
     pub coeffs: *mut BlstFr,
     pub length: u64
@@ -24,7 +24,7 @@ impl Poly<BlstFr> for KzgPoly {
     fn default() -> Self {
         Self {
             coeffs: &mut Fr::default(),
-            length: 4
+            length: 0
         }
     }
 
@@ -78,10 +78,7 @@ impl Poly<BlstFr> for KzgPoly {
         let mut poly = KzgPoly::new(new_len).unwrap();
         unsafe {
             return match poly_inverse(&mut poly, self) {
-                KzgRet::KzgOk => {
-                    self.destroy();
-                    Ok(poly)
-                },
+                KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in Poly::inverse ==> {:?}", e))
             }
         }
@@ -126,8 +123,10 @@ impl Poly<BlstFr> for KzgPoly {
             }
         }
     }
+}
 
-    fn destroy(&mut self) {
+impl Drop for KzgPoly {
+    fn drop(&mut self) {
         unsafe {
             free_poly(self);
         }

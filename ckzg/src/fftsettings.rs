@@ -7,7 +7,7 @@ use std::{cmp::min};
 use std::slice;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct KzgFFTSettings {
     pub max_width: usize,
     pub root_of_unity: BlstFr,
@@ -30,7 +30,7 @@ extern "C" {
 impl FFTSettings<BlstFr> for KzgFFTSettings {
     fn default() -> Self {
         Self {
-            max_width: 16,
+            max_width: 0,
             root_of_unity: Fr::default(),
             expanded_roots_of_unity: &mut Fr::default(),
             reverse_roots_of_unity: &mut Fr::default()
@@ -74,10 +74,14 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
             return slice::from_raw_parts(self.reverse_roots_of_unity, self.max_width);
         }
     }
+}
 
-    fn destroy(&mut self) {
+impl Drop for KzgFFTSettings {
+    fn drop(&mut self) {
         unsafe {
-            free_fft_settings(self);
+            if self.max_width > 0 && self.max_width < (1 << 32) {
+                free_fft_settings(self);
+            }
         }
     }
 }
@@ -131,10 +135,7 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
         let mut poly = KzgPoly::new(len).unwrap();
         unsafe {
             return match poly_mul_(&mut poly, a, b, &mut fft) {
-                KzgRet::KzgOk => {
-                    fft.destroy();
-                    Ok(poly)
-                },
+                KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in FFTSettingsPoly::poly_mul_fft ==> {:?}", e))
             }
         }

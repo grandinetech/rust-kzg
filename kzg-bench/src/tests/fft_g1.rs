@@ -4,7 +4,7 @@ pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG
     make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size: usize = 10;
-    let mut fs = TFFTSettings::new(size).unwrap();
+    let fs = TFFTSettings::new(size).unwrap();
     assert_eq!(fs.get_max_width(), 2 << size - 1);
 
     // Make data
@@ -21,8 +21,6 @@ pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG
     for i in 0..fs.get_max_width() {
         assert!(expected[i].equals(&data[i]));
     }
-
-    fs.destroy();
 }
 
 pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
@@ -36,9 +34,9 @@ pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>
         1 << size2
     };
 
-    let mut fs1 = TFFTSettings::new(size1).unwrap();
+    let fs1 = TFFTSettings::new(size1).unwrap();
     assert_eq!(fs1.get_max_width(), 2 << size1 - 1);
-    let mut fs2 = TFFTSettings::new(size2).unwrap();
+    let fs2 = TFFTSettings::new(size2).unwrap();
     assert_eq!(fs2.get_max_width(), 2 << size2 - 1);
 
     let data = make_data(width as usize);
@@ -51,9 +49,6 @@ pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>
     for i in 0..width {
         assert!(coeffs1[i as usize].equals(&coeffs2[i as usize]));
     }
-
-    fs1.destroy();
-    fs2.destroy();
 }
 
 pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
@@ -62,7 +57,7 @@ pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<
     make_data: &dyn Fn(usize) -> Vec<TG1>
 ) {
     let size: usize = 6;
-    let mut fft_settings = TFFTSettings::new(size).unwrap();
+    let fft_settings = TFFTSettings::new(size).unwrap();
     let mut slow = vec![TG1::default(); fft_settings.get_max_width()];
     let mut fast = vec![TG1::default(); fft_settings.get_max_width()];
     let data = make_data(fft_settings.get_max_width());
@@ -73,7 +68,5 @@ pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<
     for i in 0..fft_settings.get_max_width() {
         assert!(slow[i].equals(&fast[i]));
     }
-
-    fft_settings.destroy();
 }
 

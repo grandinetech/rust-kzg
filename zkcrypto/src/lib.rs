@@ -12,6 +12,7 @@ pub mod zkfr;
 pub mod fft_fr;
 pub mod kzg_types;
 pub mod kzg_proofs;
+pub mod das;
 #[macro_use]
 pub mod curve {
 	pub mod scalar;

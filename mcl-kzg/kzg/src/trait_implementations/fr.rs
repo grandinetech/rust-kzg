@@ -100,6 +100,4 @@ impl CommonFr for Fr {
     fn equals(&self, b: &Self) -> bool {
         Fr::eq(self, b)
     }
-
-    fn destroy(&mut self) {}
 }
