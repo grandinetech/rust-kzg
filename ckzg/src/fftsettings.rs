@@ -26,7 +26,7 @@ extern "C" {
     fn fft_g1_fast(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn fft_g1_slow(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn do_zero_poly_mul_partial(dst : *mut KzgPoly, indices: *const u64, len_indices: u64, stride: u64, fs: *const KzgFFTSettings) -> KzgRet;
-    fn pad_p(out: *mut BlstFr, out_len: u64, p: *const KzgPoly) -> KzgRet;
+    //fn pad_p(out: *mut BlstFr, out_len: u64, p: *const KzgPoly) -> KzgRet;
     fn reduce_partials(out: *mut KzgPoly, len_out: u64, scratch: *mut BlstFr, len_scratch: u64, partials: *const KzgPoly, partial_count: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn zero_polynomial_via_multiplication(zero_eval: *mut BlstFr, zero_poly: *mut KzgPoly, length: u64, missing_indices: *const u64, len_missing: u64, fs: *const KzgFFTSettings) -> KzgRet;
 }
@@ -148,15 +148,39 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
 
 impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<KzgPoly, String> {
-        todo!()
+        let mut poly = KzgPoly::new(64).unwrap();
+
+        unsafe {
+            return match do_zero_poly_mul_partial(&mut poly, idxs.as_ptr() as *const u64, idxs.len() as u64, stride as u64, self) {
+                KzgRet::KzgOk => Ok(poly),
+                e => Err(format!("An error has occurred in FFTSettingsPoly::do_zero_poly_mul_partial ==> {:?}", e))
+            }
+        }
     }
 
     fn reduce_partials(&self, domain_size: usize, partials: &[KzgPoly]) -> Result<KzgPoly, String> {
-        todo!()
+        let mut poly = KzgPoly::new(64).unwrap();
+        let scratch_len = poly.len() * 64;
+        let mut scratch = vec![BlstFr::zero(); domain_size];
+
+        unsafe {
+            return match reduce_partials(&mut poly, poly.len() as u64, scratch.as_mut_ptr(), scratch.len() as u64, partials.as_ptr(), partials.len() as u64, self) {
+                KzgRet::KzgOk => Ok(poly),
+                e => Err(format!("An error has occurred in FFTSettingsPoly:reduce_partials ==> {:?}", e))
+            }
+        }
     }
 
     fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<BlstFr>, KzgPoly), String> {
-        todo!()
+        let mut zero_poly = KzgPoly::new(64).unwrap();
+        let mut zero_eval = BlstFr::zero();
+
+        unsafe {
+            return match zero_polynomial_via_multiplication(&mut zero_eval, &mut zero_poly, zero_poly.len() as u64, idxs.as_ptr() as *const u64, idxs.len() as u64, self) {
+                KzgRet::KzgOk => Ok((vec!(zero_eval), zero_poly)),
+                e => Err(format!("An error has occurred in FFTSettingsPoly:zero_poly_via_multiplication ==> {:?}", e))
+            }
+        }
     }
 }
 
