@@ -31,7 +31,7 @@ impl CommonFr for Fr {
     }
 
 	fn to_u64_arr(&self) -> [u64; 4] {
-		todo!()
+        Fr::to_u64_arr(self)
 	}
 	
 	fn div(&self, b: &Self) -> Result<Self, String>{

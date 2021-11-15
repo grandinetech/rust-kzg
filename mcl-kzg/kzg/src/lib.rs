@@ -54,6 +54,7 @@ pub mod trait_implementations {
     pub mod poly;
     pub mod zero_poly;
     pub mod g1;
+    pub mod g2;
 }
 pub mod das;
 pub mod data_recovery;

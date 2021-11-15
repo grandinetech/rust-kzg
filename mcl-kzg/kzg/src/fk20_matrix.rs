@@ -228,7 +228,7 @@ impl FK20Matrix {
 
         let commit_minus_interp = commitment - &result;
 
-        return self.curve.verify_pairing(&commit_minus_interp, &self.curve.g2_gen, &proof, &&xn_minus_yn);
+        return Curve::verify_pairing(&commit_minus_interp, &self.curve.g2_gen, &proof, &&xn_minus_yn);
     }
 }
 

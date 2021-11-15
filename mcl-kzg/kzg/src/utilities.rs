@@ -18,6 +18,10 @@ pub fn is_power_of_2(n: usize) -> bool {
 
 const fn num_bits<T>() -> usize { std::mem::size_of::<T>() * 8 }
 
+pub fn log_2_byte(x: u8) -> usize {
+    log_2(x.into())
+}
+
 pub fn log_2(x: usize) -> usize {
     if x == 0 {
         return 0;

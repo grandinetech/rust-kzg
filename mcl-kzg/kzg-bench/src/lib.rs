@@ -17,4 +17,6 @@ mod shared_tests {
     mod das;
     mod consts;
     mod poly;
+    mod bls12_381;
+    mod kzg_proofs;
 }
