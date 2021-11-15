@@ -19,4 +19,5 @@ mod shared_tests {
     mod poly;
     mod bls12_381;
     mod kzg_proofs;
+    mod recover;
 }

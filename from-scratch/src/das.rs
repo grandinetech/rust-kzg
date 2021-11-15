@@ -66,7 +66,6 @@ impl DAS<FsFr> for FsFFTSettings {
         // TODO: explain why each odd member is multiplied by euclidean inverse of length
         let mut inv_len = FsFr::from_u64(odds.len() as u64);
         inv_len = inv_len.eucl_inverse();
-
         for i in 0..odds.len() {
             odds[i] = odds[i].mul(&inv_len);
         }

@@ -12,9 +12,9 @@ pub mod das_tests {
         das_extension_test_known::<Fr, FFTSettings>();
     }
 
-    // #[test]
-    // fn das_extension_test_random_() {
-    //     assert!(init(CurveType::BLS12_381));
-    //     das_extension_test_random::<Fr, FFTSettings>();
-    // }
+    #[test]
+    fn das_extension_test_random_() {
+        assert!(init(CurveType::BLS12_381));
+        das_extension_test_random::<Fr, FFTSettings>();
+    }
 }
