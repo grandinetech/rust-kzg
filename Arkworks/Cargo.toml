@@ -54,3 +54,7 @@ harness = false
 #[[bench]]
 #name = "poly"
 #harness = false
+
+[[bench]]
+name = "das"
+harness = false

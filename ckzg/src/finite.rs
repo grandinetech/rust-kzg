@@ -49,7 +49,7 @@ impl Fr for BlstFr {
     }
 
     fn null() -> Self {
-        Self { l: [u64::MAX, u64::MAX ,u64::MAX, u64::MAX]}
+        Self { l: [u64::MAX; 4]}
     }
 
     fn zero() -> Self {
@@ -182,8 +182,6 @@ impl Fr for BlstFr {
             return fr_equal(self, b);
         }
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl G1 for BlstP1 {
@@ -257,8 +255,6 @@ impl G1 for BlstP1 {
             return g1_equal(self, b);
         }
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl G1Mul<BlstFr> for BlstP1 {
@@ -319,8 +315,6 @@ impl G2 for BlstP2 {
             return g2_equal(self, b);
         }
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl G2Mul<BlstFr> for BlstP2 {

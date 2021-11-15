@@ -1,3 +1,4 @@
+use core::borrow::Borrow;
 use crate::zkfr::blsScalar as Scalar;
 use crate::poly::ZPoly as Poly;
 
@@ -273,7 +274,7 @@ impl Default for KZGSettings {
 }
 
 // This code was taken from 'https://github.com/adria0/a0kzg/blob/main/src/kzg.rs' and adapted
-pub(crate) fn generate_trusted_setup(n: usize, _secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
+pub fn generate_trusted_setup(n: usize, _secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
     let mut rng = rand::thread_rng();
     let rnd: [u64; 4] = [rng.gen(), rng.gen(), rng.gen(), rng.gen()];
     let tau = Scalar::from_raw(rnd);
@@ -301,9 +302,9 @@ pub(crate) fn generate_trusted_setup(n: usize, _secret: [u8; 32usize]) -> (Vec<G
     (pow_tau_g1, pow_tau_g2)
 }
 
-pub(crate) fn new_kzg_settings(_secret_g1: Vec<G1>, _secret_g2: Vec<G2>, secrets_len: u64, _fs: ZkFFTSettings) -> KZGSettings {
+pub(crate) fn new_kzg_settings(_secret_g1: Vec<G1>, _secret_g2: Vec<G2>, secrets_len: u64, _fs: &ZkFFTSettings) -> KZGSettings {
     KZGSettings {
-        fs: _fs,
+        fs: _fs.borrow().clone(),
         secret_g1: _secret_g1,
         secret_g2: _secret_g2,
         length: secrets_len,

@@ -24,7 +24,7 @@ pub struct BlstScalar {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct KzgKZGSettings {
     pub fs: *const KzgFFTSettings,
     pub secret_g1: *mut BlstP1, // G1
@@ -42,10 +42,10 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         }
     }
 
-    fn new(secret_g1: &Vec<BlstP1>, secret_g2: &Vec<BlstP2>, length: usize, fs: KzgFFTSettings) -> Result<Self, String> {
+    fn new(secret_g1: &Vec<BlstP1>, secret_g2: &Vec<BlstP2>, length: usize, fs: &KzgFFTSettings) -> Result<Self, String> {
         let mut settings = KZGSettings::default();
         unsafe {
-            return match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, &fs) {
+            return match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, fs) {
                 KzgRet::KzgOk => Ok(settings),
                 e => Err(format!("An error has occurred in KZGSettings::new ==> {:?}", e))
             }
@@ -104,15 +104,14 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
         unsafe {
-            let ffs = *self.fs as KzgFFTSettings;
-            return ffs.get_expanded_roots_of_unity_at(i);
+            return (*self.fs).get_expanded_roots_of_unity_at(i);
         }
     }
+}
 
-    fn destroy(&mut self) {
+impl Drop for KzgKZGSettings {
+    fn drop(&mut self) {
         unsafe {
-            let mut ffs = *self.fs as KzgFFTSettings;
-            ffs.destroy();
             free_kzg_settings(self);
         }
     }

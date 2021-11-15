@@ -40,9 +40,6 @@ pub trait Fr: Clone {
     fn div(&self, b: &Self) -> Result<Self, String>;
 
     fn equals(&self, b: &Self) -> bool;
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
 }
 
 pub trait G1: Clone {
@@ -65,9 +62,6 @@ pub trait G1: Clone {
     fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
 }
 
 pub trait G1Mul<Fr>: Clone {
@@ -88,9 +82,6 @@ pub trait G2: Clone {
     fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
 }
 
 pub trait G2Mul<Fr>: Clone {
@@ -140,9 +131,6 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
 }
 
 pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
@@ -177,9 +165,6 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn fast_div(&mut self, x: &Self) -> Result<Self, String>;
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>;
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
 }
 
 pub trait KZGSettings<
@@ -192,7 +177,7 @@ pub trait KZGSettings<
 {
     fn default() -> Self;
 
-    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: Fs) -> Result<Self, String>;
+    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: &Fs) -> Result<Self, String>;
 
     fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
 
@@ -212,7 +197,4 @@ pub trait KZGSettings<
     ) -> Result<bool, String>;
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
-
-    // Other teams, aside from the c-kzg bindings team, may as well leave its body empty
-    fn destroy(&mut self);
 }
