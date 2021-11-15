@@ -9,8 +9,8 @@ pub fn log_2(x: usize) -> usize {
     num_bits::<usize>() as usize - (x.leading_zeros() as usize) - 1
 }
 
-fn is_power_of_2(n: usize) -> bool {
-    n & (n - 1) == 0
+pub fn is_power_of_2(n: usize) -> bool {
+    return n & (n - 1) == 0;
 }
 
 pub fn next_pow_of_2(x: usize) -> usize {
@@ -21,4 +21,13 @@ pub fn next_pow_of_2(x: usize) -> usize {
         return x;
     }
     return 1 << (log_2(x) + 1);
+}
+
+pub fn log_2_byte(b: u8) -> usize {
+    let mut r = if b > 0xF { 1 } else { 0 } << 2;
+    let mut b = b >> r;
+    let shift = if b > 0x3 { 1 } else { 0 } << 1;
+    b >>= shift + 1;
+    r |= shift | b;
+    r.into()
 }
