@@ -151,7 +151,9 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
         let mut poly = KzgPoly::new(64).unwrap();
 
         unsafe {
-            return match do_zero_poly_mul_partial(&mut poly, idxs.as_ptr() as *const u64, idxs.len() as u64, stride as u64, self) {
+            return match do_zero_poly_mul_partial(&mut poly, idxs.as_ptr() as *const u64,
+                                                  idxs.len() as u64, stride as u64, self)
+            {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in FFTSettingsPoly::do_zero_poly_mul_partial ==> {:?}", e))
             }
@@ -160,11 +162,14 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
 
     fn reduce_partials(&self, domain_size: usize, partials: &[KzgPoly]) -> Result<KzgPoly, String> {
         let mut poly = KzgPoly::new(64).unwrap();
-        let scratch_len = poly.len() * 64;
-        let mut scratch = vec![BlstFr::zero(); domain_size];
+        let scratch_len = domain_size * 3;
+        let mut scratch = vec![BlstFr::zero(); scratch_len];
 
         unsafe {
-            return match reduce_partials(&mut poly, poly.len() as u64, scratch.as_mut_ptr(), scratch.len() as u64, partials.as_ptr(), partials.len() as u64, self) {
+            return match reduce_partials(&mut poly, domain_size as u64,
+                                         scratch.as_mut_ptr(), scratch_len as u64,
+                                         partials.as_ptr(), partials.len() as u64, self)
+            {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in FFTSettingsPoly:reduce_partials ==> {:?}", e))
             }
@@ -176,7 +181,10 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
         let mut zero_eval = BlstFr::zero();
 
         unsafe {
-            return match zero_polynomial_via_multiplication(&mut zero_eval, &mut zero_poly, zero_poly.len() as u64, idxs.as_ptr() as *const u64, idxs.len() as u64, self) {
+            return match zero_polynomial_via_multiplication(&mut zero_eval, &mut zero_poly, zero_poly.len() as u64,
+                                                            idxs.as_ptr() as *const u64,
+                                                            idxs.len() as u64, self)
+            {
                 KzgRet::KzgOk => Ok((vec!(zero_eval), zero_poly)),
                 e => Err(format!("An error has occurred in FFTSettingsPoly:zero_poly_via_multiplication ==> {:?}", e))
             }
