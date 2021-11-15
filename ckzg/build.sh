@@ -36,10 +36,15 @@ case $(uname -s) in
     sed=$sed_linux
     ;;
   "Darwin")
+    if [[ -z $(command -v "$sed_macos") ]]; then
+      echo "FAIL: gsed was not found"
+      echo "HELP: to fix this, run \"brew install gnu-sed\""
+      exit 1
+    fi
     sed=$sed_macos
     ;;
   *)
-    echo "ERR: Unsupported OS"
+    echo "FAIL: unsupported OS"
     exit 1
     ;;
 esac
