@@ -31,8 +31,3 @@ pub fn log_2_byte(b: u8) -> usize {
     r |= shift | b;
     r.into()
 }
-
-pub fn reverse_bits_limited(length: usize, value: usize) -> usize {
-    let unused_bits = length.leading_zeros();
-    value.reverse_bits() >> unused_bits
-}
