@@ -12,26 +12,26 @@ mod tests {
 
     #[test]
     fn test_reduce_partials_random() {
-        test_reduce_partials::<BlstFr, KzgFFTSettings, KzgPoly>();
+        reduce_partials_random::<BlstFr, KzgFFTSettings, KzgPoly>();
     }
 
     #[test]
     fn test_zero_poly_random() {
-        test_reduce_partials::<BlstFr, KzgFFTSettings, KzgPoly>();
+        zero_poly_random::<BlstFr, KzgFFTSettings, KzgPoly>();
     }
 
     #[test]
     fn test_zero_poly_known() {
-        test_reduce_partials::<BlstFr, KzgFFTSettings, KzgPoly>();
+        zero_poly_known::<BlstFr, KzgFFTSettings, KzgPoly>();
     }
 
     #[test]
     fn test_zero_poly_all_but_one() {
-        test_reduce_partials::<BlstFr, KzgFFTSettings, KzgPoly>();
+        zero_poly_all_but_one::<BlstFr, KzgFFTSettings, KzgPoly>();
     }
 
     #[test]
     fn test_zero_poly_252() {
-        test_reduce_partials::<BlstFr, KzgFFTSettings, KzgPoly>();
+        zero_poly_252::<BlstFr, KzgFFTSettings, KzgPoly>();
     }
 }

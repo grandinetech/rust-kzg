@@ -177,15 +177,15 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
     }
 
     fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<BlstFr>, KzgPoly), String> {
-        let mut zero_poly = KzgPoly::new(64).unwrap();
-        let mut zero_eval = BlstFr::zero();
+        let mut zero_poly = KzgPoly::new(domain_size).unwrap();
+        let mut zero_eval = vec![BlstFr::zero(); domain_size];
 
         unsafe {
-            return match zero_polynomial_via_multiplication(&mut zero_eval, &mut zero_poly, zero_poly.len() as u64,
+            return match zero_polynomial_via_multiplication(zero_eval.as_mut_ptr(), &mut zero_poly, domain_size as u64,
                                                             idxs.as_ptr() as *const u64,
                                                             idxs.len() as u64, self)
             {
-                KzgRet::KzgOk => Ok((vec!(zero_eval), zero_poly)),
+                KzgRet::KzgOk => Ok((zero_eval, zero_poly)),
                 e => Err(format!("An error has occurred in FFTSettingsPoly:zero_poly_via_multiplication ==> {:?}", e))
             }
         }
