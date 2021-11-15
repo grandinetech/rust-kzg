@@ -7,9 +7,9 @@ pub mod recover_tests {
     use mcl_rust::CurveType;
     use mcl_rust::fk20_fft::FFTSettings;
 
-    // #[test]
-    // fn recover_simple_() {
-    //     assert!(init(CurveType::BLS12_381));
-    //     recover_simple::<Fr, FFTSettings, Polynomial, Polynomial>();
-    // }
+    #[test]
+    fn recover_simple_() {
+        assert!(init(CurveType::BLS12_381));
+        recover_simple::<Fr, FFTSettings, Polynomial, Polynomial>();
+    }
 }

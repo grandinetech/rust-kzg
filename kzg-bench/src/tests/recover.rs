@@ -5,8 +5,6 @@ use kzg::PolyRecover;
 use kzg::FFTFr;
 use std::convert::TryInto;
 
-
-//STILL NOT WORKING
 pub fn recover_simple<TFr: Fr, TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPoly: Poly<TFr>, TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>>() {
     let fs = TFTTSettings::new(2).unwrap();
     let max_width: usize = fs.get_max_width();
@@ -17,17 +15,34 @@ pub fn recover_simple<TFr: Fr, TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
         poly[i] = TFr::from_u64(i.try_into().unwrap());
     }
 
-    // for i in max_width / 2..max_width {
+    //I think it is not needed, since vec! is set as Fr::zero(), but leaving just in case
+    // for i in (max_width / 2)..max_width {
     //     poly[i] = TFr::zero();
     // }
     
     let data = fs.fft_fr(&poly, false).unwrap();
     let sample: [Option<TFr>; 4] = [Some(data[0].clone()), None, None, Some(data[3].clone())];
 
-    let recovered = TPolyRecover::recover_poly_from_samples(&sample, fs);
+    let recovered = TPolyRecover::recover_poly_from_samples(&sample, fs.clone());
 
     //Check recovered data
     for i in 0..max_width {
-        assert!(poly[i].equals(&recovered.get_coeff_at(i)));
+        assert!(data[i].equals(&recovered.get_coeff_at(i)));
+    }
+
+    let mut recovered_vec: Vec<TFr> = vec![];
+
+    for i in 0..max_width {
+        recovered_vec.push(recovered.get_coeff_at(i));
+    }
+
+    //Also check against original coefficients
+    let back = fs.fft_fr(&recovered_vec, true).unwrap();
+    for i in 0..(max_width / 2) {
+        assert!(poly[i].equals(&back[i]));
+    }
+
+    for i in (max_width / 2)..max_width {
+        assert!(poly[i].is_zero());
     }
 }
