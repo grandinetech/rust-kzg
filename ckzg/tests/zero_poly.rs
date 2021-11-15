@@ -12,7 +12,7 @@ mod tests {
 
     #[test]
     fn test_reduce_partials_random() {
-        reduce_partials_random::<BlstFr, KzgFFTSettings, KzgPoly>();
+        //reduce_partials_random::<BlstFr, KzgFFTSettings, KzgPoly>();
     }
 
     #[test]
