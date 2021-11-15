@@ -4,6 +4,37 @@ pub const SECRET: [u8; 32usize] = [0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xe
     0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 
+fn is_power_of_two(n: usize) -> bool {
+    n & (n - 1) == 0
+}
+
+fn log2_pow2(n: u32) -> usize {
+    let b: [u32; 5] = [0xaaaaaaaa, 0xcccccccc, 0xf0f0f0f0, 0xff00ff00, 0xffff0000];
+    let mut r: u32 = u32::from((n & b[0]) != 0);
+    r |= u32::from((n & b[1]) != 0) << 1;
+    r |= u32::from((n & b[2]) != 0) << 2;
+    r |= u32::from((n & b[3]) != 0) << 3;
+    r |= u32::from((n & b[4]) != 0) << 4;
+    r as usize
+}
+
+fn reverse_bits_limited(length: usize, value: usize) -> usize {
+    let unused_bits = length.leading_zeros();
+    value.reverse_bits() >> unused_bits
+}
+
+fn reverse_bit_order<T>(vals: &mut Vec<T>) where T : Clone {
+    let unused_bit_len = vals.len().leading_zeros() + 1;
+    for i in 0..vals.len() - 1 {
+        let r = i.reverse_bits() >> unused_bit_len;
+        if r > i {
+            let tmp = vals[r].clone();
+            vals[r] = vals[i].clone();
+            vals[i] = tmp;
+        }
+    }
+}
+
 pub fn fk_single<
     TFr: Fr,
     TG1: G1,
@@ -14,7 +45,6 @@ pub fn fk_single<
     TFK20SingleSettings: FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-    reverse_bits_limited: &dyn Fn(usize, usize) -> usize
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
@@ -74,7 +104,6 @@ pub fn fk_single_strided<
     TFK20SingleSettings: FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-    reverse_bits_limited: &dyn Fn(usize, usize) -> usize
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
@@ -131,17 +160,6 @@ pub fn fk_multi_settings<
     let _fk = TFK20MultiSettings::new(&ks, 32, 4).unwrap();
 }
 
-fn log2_pow2(n: u32) -> usize {
-    let b: [u32; 5] = [0xaaaaaaaa, 0xcccccccc, 0xf0f0f0f0, 0xff00ff00, 0xffff0000];
-    let mut r: u32 = u32::from((n & b[0]) != 0);
-    r |= u32::from((n & b[1]) != 0) << 1;
-    r |= u32::from((n & b[2]) != 0) << 2;
-    r |= u32::from((n & b[3]) != 0) << 3;
-    r |= u32::from((n & b[4]) != 0) << 4;
-    r as usize
-}
-
-// TODO: fix me
 fn fk_multi_case<
     TFr: Fr,
     TG1: G1,
@@ -152,9 +170,7 @@ fn fk_multi_case<
     TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
 >(
     chunk_len: usize, n: usize,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
-    is_power_of_two: &dyn Fn(usize) -> bool
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>)
 ) {
     let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
@@ -204,21 +220,21 @@ fn fk_multi_case<
         extended_coeffs[i] = TFr::zero();
     }
     let mut extended_coeffs_fft = fs.fft_fr(&extended_coeffs, false).unwrap();
-    extended_coeffs_fft.reverse(); // TODO: replace by `reverse_bit_order` ???
+    reverse_bit_order(&mut extended_coeffs_fft);
 
     // Verify the proofs
     let mut ys  = vec![Fr::default(); chunk_len];
     let mut ys2 = vec![Fr::default(); chunk_len];
     let domain_stride = fs.get_max_width() / (2 * n);
     for pos in 0..(2 * chunk_count) {
-        let domain_pos = reverse_bits_limited(2 * chunk_count, pos);
+        let domain_pos = reverse_bits_limited(chunk_count, pos);
         let x = fs.get_expanded_roots_of_unity_at(domain_pos * domain_stride);
 
         // The ys from the extended coeffients
         for i in 0..chunk_len {
             ys[i] = extended_coeffs_fft[chunk_len * pos + i].clone();
         }
-        ys.reverse(); // TODO: replace by `reverse_bit_order` ???
+        reverse_bit_order(&mut ys);
 
         // Now recreate the ys by evaluating the polynomial in the sub-domain range
         let stride = fs.get_max_width() / chunk_len;
@@ -238,7 +254,6 @@ fn fk_multi_case<
     }
 }
 
-// TODO: doesn't work
 pub fn fk_multi_chunk_len_1_512<
     TFr: Fr,
     TG1: G1,
@@ -249,13 +264,10 @@ pub fn fk_multi_chunk_len_1_512<
     TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
-    is_power_of_two: &dyn Fn(usize) -> bool
 ) {
-    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(1, 512, &generate_trusted_setup, &reverse_bits_limited, &is_power_of_two);
+    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(1, 512, &generate_trusted_setup);
 }
 
-// TODO: doesn't work
 pub fn fk_multi_chunk_len_16_512<
     TFr: Fr,
     TG1: G1,
@@ -266,13 +278,10 @@ pub fn fk_multi_chunk_len_16_512<
     TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
-    is_power_of_two: &dyn Fn(usize) -> bool
 ) {
-    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(16, 512, &generate_trusted_setup, &reverse_bits_limited, &is_power_of_two);
+    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(16, 512, &generate_trusted_setup);
 }
 
-// TODO: doesn't work
 pub fn fk_multi_chunk_len_16_16<
     TFr: Fr,
     TG1: G1,
@@ -283,8 +292,6 @@ pub fn fk_multi_chunk_len_16_16<
     TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-    reverse_bits_limited: &dyn Fn(usize, usize) -> usize,
-    is_power_of_two: &dyn Fn(usize) -> bool
 ) {
-    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(16, 16, &generate_trusted_setup, &reverse_bits_limited, &is_power_of_two);
+    fk_multi_case::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(16, 16, &generate_trusted_setup);
 }
