@@ -1,6 +1,6 @@
 use crate::kzg_types::{FsFFTSettings, FsFr, FsG1};
 use crate::utils::is_power_of_two;
-use kzg::{Fr, FFTG1, G1};
+use kzg::{Fr, FFTG1, G1, G1Mul};
 
 pub fn fft_g1_fast(
     ret: &mut [FsG1],

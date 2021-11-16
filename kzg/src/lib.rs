@@ -63,8 +63,6 @@ pub trait G1<Coeff: Fr>: Clone {
 
     fn equals(&self, b: &Self) -> bool;
 
-    fn mul(&self, b: &Coeff) -> Self;
-
     fn div(&self, b: &Self) -> Result<Self, String>;
 }
 

@@ -1,4 +1,4 @@
-use kzg::{FFTFr, FFTG1, Fr, G1};
+use kzg::{FFTFr, FFTG1, Fr, G1, G1Mul};
 use crate::kzg_types::{FsFFTSettings, FsFr, FsG1, FsPoly};
 
 impl FsFFTSettings {
