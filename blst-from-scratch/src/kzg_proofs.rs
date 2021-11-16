@@ -96,7 +96,7 @@ pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
 }
 
 pub fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len: usize) {
-    if len < 8 {
+    if true {
         // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
         // Direct approach
         let mut tmp: FsG1 = FsG1::default();

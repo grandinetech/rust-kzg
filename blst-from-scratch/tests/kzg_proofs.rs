@@ -122,65 +122,9 @@ mod tests {
     // }
 
     #[test]
-    fn local_commit_to_too_long_poly() {
-        let try_fs = FsFFTSettings::new(4);
-        assert!(try_fs.is_ok());
-        let fs = try_fs.unwrap();
-
-        let secrets_len: usize = 16;
-        let poly_len: usize = 32;
-
-        let mut secret_g1: Vec<FsG1> = Vec::default();
-        let mut secret_g2: Vec<FsG2> = Vec::default();
-
-        // Initialise the (arbitrary) secrets and data structures
-        let (mut secret_g1, secret_g2) = generate_trusted_setup(secrets_len, TRUSTED_SETUP_GENERATOR);
-
-        let kzg_settings = FsKZGSettings::new(&secret_g1, &secret_g2, secrets_len, &fs).unwrap();
-        let a = Poly::new(poly_len).unwrap();
-        let result = kzg_settings.commit_to_poly(&a);
-        assert!(result.is_err());
+    pub fn test_proof_single() {
+        proof_single::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(&generate_trusted_setup);
     }
-
-    #[test]
-    fn local_commit_to_nil_poly() {
-        let try_fs = FsFFTSettings::new(4);
-        assert!(try_fs.is_ok());
-        let fs = try_fs.unwrap();
-
-        let secrets_len: usize = 16;
-        let mut secret_g1: Vec<FsG1> = Vec::default();
-        let mut secret_g2: Vec<FsG2> = Vec::default();
-
-        // Initialise the (arbitrary) secrets and data structures
-        let (mut secret_g1, mut secret_g2) = generate_trusted_setup(secrets_len, TRUSTED_SETUP_GENERATOR);
-
-        let kzg_settings = FsKZGSettings::new(&secret_g1, &secret_g2, secrets_len, &fs).unwrap();
-
-        let a = Poly::new(0).unwrap();
-        let result = kzg_settings.commit_to_poly(&a).unwrap();
-
-        let g1_identity: FsG1 = FsG1 {
-            0: blst_p1 {
-                x: blst_fp { l: [0u64; 6] },
-                y: blst_fp { l: [0u64; 6] },
-                z: blst_fp { l: [0u64; 6] },
-            }
-        };
-
-        assert!(g1_equal(&g1_identity, &result));
-    }
-
-    pub fn g1_equal(a: &FsG1, b: &FsG1) -> bool {
-        unsafe {
-            blst_p1_is_equal(&a.0, &b.0)
-        }
-    }
-
-    // #[test]
-    // pub fn test_proof_single() {
-    //     proof_single::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(&generate_trusted_setup);
-    // }
 
     #[test]
     pub fn test_commit_to_nil_poly() {
@@ -192,8 +136,8 @@ mod tests {
         commit_to_too_long_poly::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(&generate_trusted_setup);
     }
 
-    // #[test]
-    // pub fn test_proof_multi() {
-    //     proof_multi::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(&generate_trusted_setup);
-    // }
+    #[test]
+    pub fn test_proof_multi() {
+        proof_multi::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(&generate_trusted_setup);
+    }
 }

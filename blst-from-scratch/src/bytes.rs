@@ -1,12 +1,13 @@
 use crate::utils::log2_pow2;
 
-pub fn reverse_bit_order<T>(values: &mut Vec<T>) {
-    let unused_bit_len = 32 - log2_pow2(values.len());
-
-    for i in 0..values.len() {
+pub(crate) fn reverse_bit_order<T>(vals: &mut Vec<T>) where T: Clone {
+    let unused_bit_len = vals.len().leading_zeros() + 1;
+    for i in 0..vals.len() - 1 {
         let r = i.reverse_bits() >> unused_bit_len;
         if r > i {
-            values.swap(i, r);
+            let tmp = vals[r].clone();
+            vals[r] = vals[i].clone();
+            vals[i] = tmp;
         }
     }
 }

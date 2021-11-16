@@ -1,41 +1,53 @@
-use kzg::{FFTFr, FFTG1, Fr, G1, G1Mul};
+use kzg::{FFTFr, FFTG1, Fr, G1, G1Mul, Poly};
 use crate::kzg_types::{FsFFTSettings, FsFr, FsG1, FsPoly};
 
 impl FsFFTSettings {
     pub fn toeplitz_part_1(&self, x: &[FsG1]) -> Vec<FsG1> {
         let n = x.len();
         let n2 = n * 2;
-        let mut x_ext = vec![FsG1::default(); n2];
+        let mut x_ext = Vec::new();
         for i in 0..n {
-            x_ext[i] = x[i];
+            x_ext.push(x[i]);
         }
 
         for i in n..n2 {
-            x_ext[i] = FsG1::identity();
+            x_ext.push(FsG1::identity());
         }
 
         let ret = self.fft_g1(&x_ext, false).unwrap();
 
+        assert_eq!(ret.len(), n2);
+
         ret
     }
 
+    /// poly and x_ext_fft should be of same length
     pub fn toeplitz_part_2(&self, poly: &FsPoly, x_ext_fft: &[FsG1]) -> Vec<FsG1> {
+        assert_eq!(poly.len(), x_ext_fft.len());
+
         let coeffs_fft = self.fft_fr(&poly.coeffs, false).unwrap();
         let mut ret = Vec::new();
 
-        for i in 0..poly.coeffs.len() {
+        for i in 0..poly.len() {
             ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
         }
+
+        assert_eq!(ret.len(), poly.len());
 
         ret
     }
 
     pub fn toeplitz_part_3(&self, h_ext_fft: &[FsG1]) -> Vec<FsG1> {
+        let n2 = h_ext_fft.len();
+        let n = n2 / 2;
+
         let mut ret = self.fft_g1(&h_ext_fft, true).unwrap();
 
-        for i in (h_ext_fft.len() / 2)..(h_ext_fft.len()) {
+        for i in n..n2 {
             ret[i] = FsG1::identity();
         }
+
+        assert_eq!(ret.len(), n2);
 
         ret
     }
@@ -44,7 +56,7 @@ impl FsFFTSettings {
 
 impl FsPoly {
     pub fn toeplitz_coeffs_stride(&self, offset: usize, stride: usize) -> FsPoly {
-        let n = self.coeffs.len();
+        let n = self.len();
         let k = n / stride;
         let k2 = k * 2;
 
@@ -66,10 +78,16 @@ impl FsPoly {
             j += stride;
         }
 
+        assert_eq!(ret.len(), n * 2 / stride);
+
         ret
     }
 
     pub fn toeplitz_coeffs_step(&self) -> FsPoly {
-        self.toeplitz_coeffs_stride(0, 1)
+        let ret = self.toeplitz_coeffs_stride(0, 1);
+
+        assert_eq!(ret.len(), self.len() * 2);
+
+        ret
     }
 }

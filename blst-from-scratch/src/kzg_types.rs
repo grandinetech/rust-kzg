@@ -916,7 +916,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         // -(x0^n)
         let x_pow_n = x0.pow(n);
 
-        divisor.coeffs[0] = x_pow_n.negate();
+        divisor.coeffs.push(x_pow_n.negate());
 
         // Zeros
         for _ in 1..n {
@@ -940,61 +940,39 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         if !is_power_of_two(n) {
             return Err(String::from("n is not a power of two"));
         }
-        let mut interp: FsPoly = Poly::new(n).unwrap(); // { coeffs: Vec::default() };
-
-        let mut xn2: FsG2 = FsG2::default();
-        let mut xn_minus_yn: FsG2 = FsG2::default();
-
-        let mut is1: FsG1 = FsG1::default();
-        let mut commit_minus_interp: FsG1 = FsG1::default();
 
         // Interpolate at a coset.
+        let mut interp = FsPoly { coeffs: self.fs.fft_fr(ys, true)? };
 
-        //TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
-        // interp.coeffs = fft_fr(ys, true, &kzg_settings.fs).unwrap();
-        interp.coeffs = self.fs.fft_fr(ys, true).unwrap();
-
-        let inv_x = x.eucl_inverse();
+        let inv_x = x.inverse(); // Not euclidean?
         let mut inv_x_pow = inv_x.clone();
         for i in 1..n {
             interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
-            inv_x_pow = inv_x_pow.mul(&inv_x_pow);
+            inv_x_pow = inv_x_pow.mul(&inv_x);
         }
 
         // [x^n]_2
-        let x_pow = inv_x_pow.eucl_inverse();
+        let x_pow = inv_x_pow.inverse();
 
         // g2_mul(&xn2, &g2_generator, &x_pow);
-        let scalar = x_pow.to_scalar();
-        unsafe {
-            blst_p2_mult(&mut xn2.0, &G2_GENERATOR.0, scalar.as_ptr(), 8 * std::mem::size_of::<blst_scalar>());
-        }
+        let xn2 = g2_mul(&G2_GENERATOR, &x_pow);
 
         // [s^n - x^n]_2
-        let mut b_negative: FsG2 = xn2.clone();
-        unsafe {
-            blst_p2_cneg(&mut b_negative.0, true);
-            blst_p2_add_or_double(
-                &mut xn_minus_yn.0,
-                &self.secret_g2[n].0,
-                &b_negative.0,
-            );
-        }
+        let xn_minus_yn = self.secret_g2[n].sub(&xn2);
 
         // [interpolation_polynomial(s)]_1
-        let ret = self.commit_to_poly(&interp).unwrap();
+        let is1 = self.commit_to_poly(&interp).unwrap();
 
         // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
-        let mut b_negative: FsG1 = is1;
-        unsafe {
-            blst_p1_cneg(&mut b_negative.0, true);
-            blst_p1_add_or_double(&mut commit_minus_interp.0, &com.0, &b_negative.0);
-        }
-        return Ok(pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn));
+        let commit_minus_interp = com.sub(&is1);
+
+        let ret = pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn);
+
+        return Ok(ret);
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
-        todo!()
+        self.fs.get_expanded_roots_of_unity_at(i)
     }
 }
 
@@ -1138,8 +1116,9 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
             }
             x[k - 1] = FsG1::identity();
 
-            ext_fft_files[offset] = vec![FsG1::default(); 2 * k];
+            ext_fft_files[offset] = vec![FsG1::default(); k];
             ext_fft_files[offset] = ks.fs.toeplitz_part_1(&ext_fft_files[offset]);
+            ext_fft_files[offset].append(&mut vec![FsG1::default(); k]);
         }
 
         let ret = Self {
