@@ -8,7 +8,7 @@ pub fn fp_from_blst(fp: BlstFp) -> Fp {
         blst::blst_uint64_from_fp(&mut int_value, &fp_blst)
     }
     let i32_value = int_value as i32;
-    return Fp::from_int(i32_value);
+    Fp::from_int(i32_value)
 
     /*
     let mut result = Fp::default();
@@ -23,5 +23,5 @@ pub fn fp_to_blst(fp: Fp) -> BlstFp {
     for i in 0..4 {
         result.l[i] = fp.d[i];
     }
-    return result;
+    result
 }

@@ -63,7 +63,7 @@ impl G1 {
         g1.x.set_str(&arr64_6_to_g1_sum(&u[0]).to_string(), 10);
         g1.y.set_str(&arr64_6_to_g1_sum(&u[1]).to_string(), 10);
         g1.z.set_str(&arr64_6_to_g1_sum(&u[2]).to_string(), 10);
-        return g1;
+        g1
     }
     
     pub const G1_IDENTITY: G1 = G1 {

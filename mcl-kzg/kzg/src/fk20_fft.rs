@@ -103,6 +103,9 @@ pub fn make_data(n: usize) -> Vec<G1> {
     data
 }
 
+/// # Safety
+///
+/// use of mutable static is unsafe and requires unsafe function or block
 pub unsafe fn init_globals() {
     if GLOBALS_INITIALIZED && DEFAULT_GLOBALS_INITIALIZED {
         return;
@@ -115,6 +118,9 @@ pub unsafe fn init_globals() {
     DEFAULT_GLOBALS_INITIALIZED = true;
 }
 
+/// # Safety
+///
+/// use of mutable static is unsafe and requires unsafe function or block
 pub unsafe fn init_globals_custom(root_strings: [&str; 32]) {
     SCALE_2_ROOT_OF_UNITY = root_strings.iter()
     .map(|x| Fr::from_str(x, 10).unwrap())
@@ -125,14 +131,14 @@ pub unsafe fn init_globals_custom(root_strings: [&str; 32]) {
 }
 
 pub fn expand_root_of_unity(root: &Fr) -> Vec<Fr> {
-    let mut root_z = vec![Fr::one(), root.clone()];
+    let mut root_z = vec![Fr::one(), *root];
     let mut i = 1;
     while !root_z[i].is_one() {
-        let next = &root_z[i] * &root;
+        let next = &root_z[i] * root;
         root_z.push(next);
         i += 1;
     }
-    return root_z;
+    root_z
 }
 
 #[derive(Clone)]
@@ -145,11 +151,14 @@ pub struct FFTSettings {
 
 impl FFTSettings {
     //fix this mess
+    /// # Safety
+    ///
+    /// use of mutable static is unsafe and requires unsafe function or block
     pub fn new(max_scale: u8) -> FFTSettings {
         let root: Fr;
         unsafe {
             init_globals();
-            root = SCALE_2_ROOT_OF_UNITY[max_scale as usize].clone()
+            root = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
         }
         let root_z = expand_root_of_unity(&root);
         let mut root_z_rev = root_z.clone();
@@ -163,11 +172,14 @@ impl FFTSettings {
         }
     }
 
+    /// # Safety
+    ///
+    /// use of mutable static is unsafe and requires unsafe function or block
     pub fn new_custom_primitive_roots(max_scale: u8, root_strings: [&str; 32]) -> FFTSettings {
         let root: Fr;
         unsafe {
             init_globals_custom(root_strings);
-            root = SCALE_2_ROOT_OF_UNITY[max_scale as usize].clone()
+            root = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
         }
         let root_z = expand_root_of_unity(&root);
         let mut root_z_rev = root_z.clone();
@@ -181,7 +193,7 @@ impl FFTSettings {
         }
     }
 
-    fn _fft(&self, values: &[Fr], offset: usize, stride: usize, roots_of_unity: &Vec<Fr>, root_stride: usize, out: &mut [Fr]) {
+    fn _fft(&self, values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
         // check if correct value is checked in case of a bug!
         if out.len() <= 4 { // if the value count is small, run the unoptimized version instead. // TODO tune threshold.
             return self._simple_ftt(values, offset, stride, roots_of_unity, root_stride, out);
@@ -197,22 +209,22 @@ impl FFTSettings {
         for i in 0..half {
             let root = &roots_of_unity[i * root_stride];
             let y_times_root = &out[i + half] * root;
-            out[i + half] = &out[i] - &y_times_root;
-            out[i] = &out[i] + &y_times_root;
+            out[i + half] = out[i] - y_times_root;
+            out[i] = out[i] + y_times_root;
         }
     }
 
-    fn _simple_ftt(&self, values: &[Fr], offset: usize, stride: usize, roots_of_unity: &Vec<Fr>, root_stride: usize, out: &mut [Fr]) {
+    fn _simple_ftt(&self, values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
         let out_len = out.len();
-        let init_last = &values[offset] * &roots_of_unity[0];
+        let init_last = values[offset] * roots_of_unity[0];
 
         for i in 0..out_len {
-            let mut last = init_last.clone();
+            let mut last = init_last;
             for j in 1..out_len {
                 let jv = &values[offset + j * stride];
                 let r = &roots_of_unity[((i * j) % out_len) * root_stride];
                 // last += (jv * r)
-                last = &last.clone() + &(jv * r);
+                last = last + (jv * r);
             }
             out[i] = last;
         }
@@ -221,39 +233,38 @@ impl FFTSettings {
     pub fn inplace_fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
         
         if inv {
-            let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter().map(|x| x.clone()).take(self.max_width).collect();
+            let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter().copied().take(self.max_width).collect();
             let stride = self.max_width / values.len();
 
             let mut out = vec![Fr::default(); values.len()];
-            self._fft(&values, 0, 1, &root_z, stride, &mut out);
+            self._fft(values, 0, 1, &root_z, stride, &mut out);
 
             let inv_len = Fr::from_int(values.len() as i32).get_inv();
-            for i in 0..out.len() {
-                out[i] = &out[i].clone() * &inv_len;
+            for item in out.iter_mut() {
+                *item = *item * inv_len;
             }
-            return out;
+            out
         } else {
-            let root_z: Vec<Fr> = self.exp_roots_of_unity.iter().map(|x| x.clone()).take(self.max_width).collect();
+            let root_z: Vec<Fr> = self.exp_roots_of_unity.iter().copied().take(self.max_width).collect();
             let stride = self.max_width / values.len();
 
             let mut out = vec![Fr::default(); values.len()];
-            self._fft(&values, 0, 1, &root_z, stride, &mut out);
+            self._fft(values, 0, 1, &root_z, stride, &mut out);
 
-            return out;
+            out
         }
     }
 
-    pub fn fft(&self, values: &Vec<Fr>, inv: bool) -> Vec<Fr> {
+    pub fn fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
         let n = next_pow_of_2(values.len());
         
         let diff = n - values.len();
         let tail= iter::repeat(Fr::zero()).take(diff);
-        let values_copy: Vec<Fr> = values.iter()
-            .map(|x| x.clone())
+        let values_copy: Vec<Fr> = values.iter().copied()
             .chain(tail)
             .collect();
 
-        return self.inplace_fft(&values_copy, inv);
+        self.inplace_fft(&values_copy, inv)
     }
 
     pub fn fft_from_slice(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
@@ -261,56 +272,53 @@ impl FFTSettings {
         
         let diff = n - values.len();
         let tail= iter::repeat(Fr::zero()).take(diff);
-        let values_copy: Vec<Fr> = values.iter()
-            .map(|x| x.clone())
+        let values_copy: Vec<Fr> = values.iter().copied()
             .chain(tail)
             .collect();
 
-        return self.inplace_fft(&values_copy, inv);
+        self.inplace_fft(&values_copy, inv)
     }
 
-    pub fn fft_g1(&self, values: &Vec<G1>) -> Vec<G1> {
+    pub fn fft_g1(&self, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
-        let vals_copy = values.clone();
+        // let vals_copy = values.clone();
         
         let root_z: Vec<Fr> = self.exp_roots_of_unity.iter()
-            .take(self.max_width)
-            .map(|x| x.clone())
+            .take(self.max_width).copied()
             .collect();
 
         let stride = self.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FFTSettings::_fft_g1(&self, &vals_copy, 0, 1, &root_z, stride, &mut out);
+        FFTSettings::_fft_g1(self, values, 0, 1, &root_z, stride, &mut out);
 
-        return out;
+        out
     }
 
     //just copied of for fk20_matrix
-    pub fn fft_g1_inv(&self, values: &Vec<G1>) -> Vec<G1> {
+    pub fn fft_g1_inv(&self, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
-        let vals_copy = values.clone();
+        // let vals_copy = values.clone();
         
         let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter()
-            .take(self.max_width)
-            .map(|x| x.clone())
+            .take(self.max_width).copied()
             .collect();
 
         let stride = self.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FFTSettings::_fft_g1(&self, &vals_copy, 0, 1, &root_z, stride, &mut out);
+        FFTSettings::_fft_g1(self, values, 0, 1, &root_z, stride, &mut out);
         
         let inv_len = Fr::from_int(values.len() as i32).get_inv();
-        for i in 0..out.len() {
-            let tmp = &out[i] * &inv_len;
-            out[i] = tmp;
+        for item in out.iter_mut() {
+        // for i in 0..out.len() {
+            *item = &*item * &inv_len;
         }
 
-        return out;
+        out
     }
 
-    fn _fft_g1(fft_settings: &FFTSettings, values: &Vec<G1>, value_offset: usize, value_stride: usize, roots_of_unity: &Vec<Fr>, roots_stride: usize, out: &mut [G1]) {
+    fn _fft_g1(fft_settings: &FFTSettings, values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         //TODO: fine tune for opt, maybe resolve number dinamically based on experiments
         if out.len() <= 4 {
             return FFTSettings::_fft_g1_simple(values, value_offset, value_stride, roots_of_unity, roots_stride, out);
@@ -328,16 +336,16 @@ impl FFTSettings {
             let y = out[i + half].clone();
             let root = &roots_of_unity[i * roots_stride];
 
-            let y_times_root = &y * &root;
+            let y_times_root = &y * root;
             out[i] = &x + &y_times_root;
             out[i + half] = &x - &y_times_root;
         }
 
-        return;
+        
     }
     
 
-    fn _fft_g1_simple(values: &Vec<G1>, value_offset: usize, value_stride: usize, roots_of_unity: &Vec<Fr>, roots_stride: usize, out: &mut [G1]) {
+    fn _fft_g1_simple(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         let l = out.len();
         for i in 0..l {
             // TODO: check this logic with a working brain, there could be a simpler way to write this;

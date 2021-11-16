@@ -20,7 +20,7 @@ impl Poly<Fr> for Polynomial {
     }
 
     fn set_coeff_at(&mut self, i: usize, x: &Fr) {
-        self.coeffs[i] = x.clone();
+        self.coeffs[i] = *x;
     }
 
     fn get_coeffs(&self) -> &[Fr] {
@@ -73,6 +73,6 @@ impl FFTSettingsPoly<Fr, Polynomial, FFTSettings> for FFTSettings {
 
 impl PolyRecover<Fr, Polynomial, FFTSettings> for Polynomial {
     fn recover_poly_from_samples(samples: &[Option<Fr>], fs: FFTSettings) -> Self {
-        Polynomial::recover_from_samples(fs, &samples)
+        Polynomial::recover_from_samples(fs, samples)
     }
 }

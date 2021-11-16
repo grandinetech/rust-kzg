@@ -9,6 +9,9 @@ macro_rules! common_impl {
             pub fn zero() -> $t {
                 Default::default()
             }
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub unsafe fn uninit() -> $t {
                 std::mem::MaybeUninit::uninit().assume_init()
             }

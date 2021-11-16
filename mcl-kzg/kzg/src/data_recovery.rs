@@ -38,7 +38,7 @@ impl Polynomial {
                 if x.is_none() {
                     return Fr::zero();
                 }
-                return &x.clone().unwrap() * &eval;
+                (*x).unwrap() * eval
             }).collect();
 
         let poly_with_zero_coeffs = fft_settings.fft(&poly_evals_with_zero, true);
@@ -63,15 +63,15 @@ impl Polynomial {
 
         let reconstructed_data = fft_settings.fft(&shifted_reconstructed_poly.coeffs, false);
         
-        return Polynomial::from_fr(reconstructed_data);
+        Polynomial::from_fr(reconstructed_data)
     }
 
-    pub fn unwrap_default(values: &Vec<Option<Fr>>) -> Vec<Fr> {
+    pub fn unwrap_default(values: &[Option<Fr>]) -> Vec<Fr> {
         return values.iter().map(|x| {
             if x.is_none() {
                 return Fr::zero()
             }
-            return x.clone().unwrap();
+            (*x).unwrap()
         }).collect();
     }
 }

@@ -33,11 +33,12 @@ impl FFTSettings {
         let mut out_offset = 0;
         let mut leaves: Vec<Vec<Fr>> = vec![vec![]; leaf_count];
         let max = indices.len();
-        for i in 0..leaf_count {
+        // for i in 0..leaf_count {
+        for item in leaves.iter_mut().take(leaf_count) {
             let end = min(offset + per_leaf, max);
-            leaves[i] = out[out_offset..out_offset + per_leaf_poly].to_vec();
-            self.make_zero_poly_mul_leaf(&mut leaves[i], &indices[offset..end], stride);
-            let mut slice_copy = leaves[i].clone();
+            *item = out[out_offset..out_offset + per_leaf_poly].to_vec();
+            self.make_zero_poly_mul_leaf(item, &indices[offset..end], stride);
+            let mut slice_copy = item.clone();
             out.append(&mut slice_copy);
             offset += per_leaf;
             out_offset += per_leaf_poly;
@@ -73,53 +74,48 @@ impl FFTSettings {
         let zero_poly = Polynomial::extend(&leaves[0], length);
         let zero_eval = self.fft(&zero_poly, false);
 
-        return (zero_eval, zero_poly);
+        (zero_eval, zero_poly)
     }
 
 
     pub fn reduce_leaves(&self, scratch: &mut [Fr], ps: &[Vec<Fr>], n: usize) -> Vec<Fr> {
         let out_degree: usize = ps.iter()
             .map(|x| {
-                if x.len() == 0 { 
+                if x.is_empty() { 
                     return 0; 
                 } 
-                return x.len() - 1;
+                x.len() - 1
             }).sum();
         let (p_padded, rest) = scratch.split_at_mut(n);
         let (mul_eval_ps, p_eval) = rest.split_at_mut(n);
 
-        for i in 0..p_padded.len() {
-            p_padded[i] = Fr::zero();
+        for item in p_padded.iter_mut() {
+        // for i in 0..p_padded.len() {
+            *item = Fr::zero();
         }
         for (i, v) in ps.last().unwrap().iter().enumerate() {
-            p_padded[i] = v.clone();
+            p_padded[i] = *v;
         }
 
         //can optimize this, one alloc instead of three
-        let temp = self.inplace_fft(&p_padded, false);
-        for i in 0..n {
-            mul_eval_ps[i] = temp[i].clone();
-        }
+        let temp = self.inplace_fft(p_padded, false);
+        mul_eval_ps[..n].clone_from_slice(&temp[..n]);
 
         let last_index = ps.len() - 1;
-        for i in 0..last_index {
-            let p = &ps[i];
-            for j in 0..p.len() {
-                p_padded[j] = p[j].clone();
-            }
+        for item in ps.iter().take(last_index) {
+            let p = item;
+            p_padded[..p.len()].clone_from_slice(&p[..]);
             // p_eval = inplace_fft(p_padded);
-            let p_eval_result = self.inplace_fft(&p_padded, false);
-            for j in 0..n {
-                p_eval[j] = p_eval_result[j].clone();
-            }
+            let p_eval_result = self.inplace_fft(p_padded, false);
+            p_eval[..n].clone_from_slice(&p_eval_result[..n]);
 
             for j in 0..n {
                 mul_eval_ps[j] *= &p_eval[j];
             }
         }
 
-        let result = self.inplace_fft(&mul_eval_ps, true);
-        return result[..out_degree + 1].to_vec();
+        let result = self.inplace_fft(mul_eval_ps, true);
+        result[..out_degree + 1].to_vec()
     }
     
     pub fn make_zero_poly_mul_leaf(&self, dest: &mut Vec<Fr>, indices: &[usize], stride: usize) {
@@ -131,17 +127,18 @@ impl FFTSettings {
         
         for (i, v) in indices.iter().enumerate() {
             let neg_di = self.exp_roots_of_unity[v * stride].get_neg();
-            dest[i] = neg_di.clone();
+            dest[i] = neg_di;
             if i > 0 {
-                let temp = &dest[i] + &dest[i - 1];
+                let temp = dest[i] + dest[i - 1];
                 dest[i] = temp;
                 for j in (1..i).rev() {
                     dest[j] *= &neg_di;
-                    let temp = &dest[j] + &dest[j - 1];
+                    let temp = dest[j] + dest[j - 1];
                     dest[j] = temp;
                 }
                 dest[0] *= &neg_di;
             }
         }
     }
+
 }

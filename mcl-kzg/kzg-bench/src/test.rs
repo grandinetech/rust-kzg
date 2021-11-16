@@ -8,6 +8,7 @@ use mcl_rust::fk20_fft::*;
 use mcl_rust::fk20_matrix::*;
 
 #[test]
+#[allow(clippy::many_single_char_names)]
 fn mcl_test() {
     assert_eq!(mem::size_of::<Fr>(), 32);
     assert_eq!(mem::size_of::<Fp>(), 48);
@@ -220,7 +221,7 @@ fn fk20matrix_new_builds_valid_settings() {
     let kzg_curve = Curve::new(&secret, n * 2);
     
     // Act
-    let matrix = FK20Matrix::new(kzg_curve, n * 2, chunk_len, 10);
+    let _matrix = FK20Matrix::new(kzg_curve, n * 2, chunk_len, 10);
 
     // Assert
     // Correctness can be implied from first few values (16 in this case), they should already fail if the math is wrong
@@ -252,10 +253,10 @@ fn fk20matrix_new_builds_valid_settings() {
         ]
     ];
 
-    for i in 0.. 4 {
-        for j in 0..4 {
-            let str = matrix.x_ext_fft_files[i][j].get_str(10);
-            assert_eq!(expected[i][j], str);
+    for (_i, item) in expected.iter().enumerate().take(4) {
+        for (j, item2) in item.iter().enumerate().take(4) {
+            let str = *item2;
+            assert_eq!(item[j], str);
         }
     }
 }
@@ -279,7 +280,7 @@ fn get_next_power_of_two_returns_correct_values() {
     ];
     
     // Act
-    let x_next_pows: Vec<usize> = xs.iter().map(|x| next_pow_of_2(x.clone())).collect();
+    let x_next_pows: Vec<usize> = xs.iter().map(|x| next_pow_of_2(*x)).collect();
     
     // Assert
     let expected = [
@@ -291,7 +292,7 @@ fn get_next_power_of_two_returns_correct_values() {
     }
 
     expected.iter().zip(x_next_pows)
-        .for_each(|(a, b)| assert_eq_ints(a.clone(), b as i32));
+        .for_each(|(a, b)| assert_eq_ints(*a, b as i32));
 
 }
 
@@ -425,12 +426,11 @@ fn fk20_multi_proof_full_circle_fixed_value() {
     
     // Act
     let domain_stride = matrix.fft_settings.max_width / n2;
-    for pos in 0..(chunk_count * 2) {
+    for (pos, item) in proofs.iter().enumerate().take(chunk_count * 2) {
         let domain_pos = reverse_bits_limited(chunk_count, pos);
         let x = &matrix.fft_settings.exp_roots_of_unity[domain_pos * domain_stride];
 
-        let mut ys: Vec<Fr> = extended_data.iter()
-            .map(|x| x.clone())
+        let mut ys: Vec<Fr> = extended_data.iter().copied()
             .skip(chunk_len * pos).take(chunk_len)
             .collect();
         order_by_rev_bit_order(&mut ys);
@@ -446,8 +446,8 @@ fn fk20_multi_proof_full_circle_fixed_value() {
         for (a, b) in ys.iter().zip(ys2) {
             assert_eq!(a.get_str(10), b.get_str(10));
         }
-        let proof = &proofs[pos];
-        let valid = matrix.check_proof_multi(&commitment, proof, &x, &ys);
+        let proof = item;
+        let valid = matrix.check_proof_multi(&commitment, proof, x, &ys);
         assert!(valid);
     }
 }
@@ -473,12 +473,11 @@ fn fk20_multi_proof_full_circle_random_secret() {
     
     // Act
     let domain_stride = matrix.fft_settings.max_width / n2;
-    for pos in 0..(chunk_count * 2) {
+    for (pos, item) in proofs.iter().enumerate().take(chunk_count * 2) {
         let domain_pos = reverse_bits_limited(chunk_count, pos);
         let x = &matrix.fft_settings.exp_roots_of_unity[domain_pos * domain_stride];
 
-        let mut ys: Vec<Fr> = extended_data.iter()
-            .map(|x| x.clone())
+        let mut ys: Vec<Fr> = extended_data.iter().copied()
             .skip(chunk_len * pos).take(chunk_len)
             .collect();
         order_by_rev_bit_order(&mut ys);
@@ -494,8 +493,8 @@ fn fk20_multi_proof_full_circle_random_secret() {
         for (a, b) in ys.iter().zip(ys2) {
             assert_eq!(a.get_str(10), b.get_str(10));
         }
-        let proof = &proofs[pos];
-        let valid = matrix.check_proof_multi(&commitment, proof, &x, &ys);
+        let proof = item;
+        let valid = matrix.check_proof_multi(&commitment, proof, x, &ys);
         assert!(valid);
     }
 }
@@ -737,7 +736,7 @@ fn polynomial_recover_from_samples_should_recover_all_values_given_less_than_hal
             if ix % 4 == 0 {
                 return None::<Fr>;
             }
-            return Some(entry.clone());
+            Some(*entry)
         }).collect();
 
     // Act
@@ -745,8 +744,8 @@ fn polynomial_recover_from_samples_should_recover_all_values_given_less_than_hal
 
     // Assert
     assert_eq!(data.len(), recovered.order());
-    for i in 0..data.len() {
-        assert_eq!(data[i].get_str(10), recovered.coeffs[i].get_str(10));
+    for (i, item) in data.iter().enumerate() {
+        assert_eq!(item.get_str(10), recovered.coeffs[i].get_str(10));
     }
 }
 
@@ -781,11 +780,11 @@ fn build_protolambda_poly(chunk_count: usize, chunk_len: usize, n: usize) -> Pol
         for j in 0..base.len() {
             poly_vals[i * chunk_len + j] = Fr::from_int(base[j]);
         }
-        poly_vals[i * chunk_len + 12] = &Fr::zero() - &Fr::one();
-        poly_vals[i * chunk_len + 14] = &Fr::zero() - &v134;
+        poly_vals[i * chunk_len + 12] = Fr::zero() - Fr::one();
+        poly_vals[i * chunk_len + 14] = Fr::zero() - v134;
     }
 
-    let poly = Polynomial::from_fr(poly_vals);
+    
 
-    return poly;
+    Polynomial::from_fr(poly_vals)
 }
