@@ -48,30 +48,30 @@ impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGS
     fn new(ks: &KzgKZGSettings, n2: usize) -> Result<Self, String> {
         let mut settings = FK20SingleSettings::default();
         unsafe {
-            return match new_fk20_single_settings(&mut settings, n2 as u64, ks) {
+            match new_fk20_single_settings(&mut settings, n2 as u64, ks) {
                 KzgRet::KzgOk => Ok(settings),
                 e => Err(format!("An error has occurred in FK20SingleSettings::new ==> {:?}", e))
-            };
+            }
         }
     }
 
     fn data_availability(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
         let mut ret = vec![G1::default(); 2 * p.len() as usize];
         unsafe {
-            return match da_using_fk20_single(ret.as_mut_ptr(), p, self) {
+            match da_using_fk20_single(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20SingleSettings::data_availability ==> {:?}", e))
-            };
+            }
         }
     }
 
     fn data_availability_optimized(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
         let mut ret = vec![G1::default(); 2 * p.len() as usize];
         unsafe {
-            return match fk20_single_da_opt(ret.as_mut_ptr(), p, self) {
+            match fk20_single_da_opt(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20SingleSettings::data_availability_optimized ==> {:?}", e))
-            };
+            }
         }
     }
 }
@@ -99,30 +99,30 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
     fn new(ks: &KzgKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         let mut settings = FK20MultiSettings::default();
         unsafe {
-            return match new_fk20_multi_settings(&mut settings, n2 as u64, chunk_len as u64, ks) {
+            match new_fk20_multi_settings(&mut settings, n2 as u64, chunk_len as u64, ks) {
                 KzgRet::KzgOk => Ok(settings),
                 e => Err(format!("An error has occurred in FK20MultiSettings::new ==> {:?}", e))
-            };
+            }
         }
     }
 
     fn data_availability(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
         let mut ret = vec![G1::default(); 2 * p.len() as usize];
         unsafe {
-            return match da_using_fk20_multi(ret.as_mut_ptr(), p, self) {
+            match da_using_fk20_multi(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20MultiSettings::data_availability ==> {:?}", e))
-            };
+            }
         }
     }
 
     fn data_availability_optimized(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
         let mut ret = vec![G1::default(); 2 * p.len() as usize];
         unsafe {
-            return match fk20_multi_da_opt(ret.as_mut_ptr(), p, self) {
+            match fk20_multi_da_opt(ret.as_mut_ptr(), p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in FK20MultiSettings::data_availability_optimized ==> {:?}", e))
-            };
+            }
         }
     }
 }
