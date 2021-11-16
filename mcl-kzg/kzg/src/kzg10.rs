@@ -563,10 +563,10 @@ impl Curve {
         let secret_minus_x = &self.g2_points[1] - &(&self.g2_gen * x); // g2 * x to get x on g2
         let commitment_minus_y = commitment - &(&self.g1_gen * y);
 
-        return self.verify_pairing(&commitment_minus_y, &self.g2_gen, proof, &secret_minus_x);
+        return Curve::verify_pairing(&commitment_minus_y, &self.g2_gen, proof, &secret_minus_x);
     }
 
-    pub fn verify_pairing(&self, a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
+    pub fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
         let pairing1 = a1.pair(&a2).get_inv();
         let pairing2 = b1.pair(&b2);
 

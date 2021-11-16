@@ -46,6 +46,9 @@ extern "C" {
 pub struct Fr {
     pub d: [u64; crate::MCLBN_FR_UNIT_SIZE],
 }
+
+pub struct U2516([u64; 4]);
+
 impl Fr {
     pub fn get_order() -> String {
         mcl_methods::get_curve_order()
@@ -58,16 +61,18 @@ impl Fr {
     }
 
     pub fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let r64: U256 = U256([0, 1, 0, 0]); //2^64
-        let r128: U256 = U256([0, 0, 1, 0]); //2^128
-        let r192: U256 = U256([0, 0, 0, 1]); //2^192
-        let a = U256([u[0], 0, 0, 0]);
-        let b = U256([u[1], 0, 0, 0]);
-        let c = U256([u[2], 0, 0, 0]);
-        let d = U256([u[3], 0, 0, 0]);
-
-        let res = a + b * r64 + c * r128 + d * r192;
+        let res = U256([u[0], u[1], u[2], u[3]]);
         Fr::from_str(&res.to_string(), 10).unwrap()
+    }
+    
+    pub fn to_u64_arr(&self) -> [u64; 4] {
+        let string = self.get_str(10);
+        let num = U256::from_dec_str(&string).unwrap();
+        let a = num.0[0];
+        let b = num.0[1];
+        let c = num.0[2];
+        let d = num.0[3];
+        [a,b,c,d]
     }
 }
 common_impl![Fr, mclBnFr_isEqual, mclBnFr_isZero];
