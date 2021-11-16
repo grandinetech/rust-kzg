@@ -16,7 +16,7 @@ git clone https://github.com/supranational/blst.git
 cd blst || exit 1
 
 print_msg "Building blst"
-export CFLAGS="-O3 -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
+export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 bash build.sh
 unset CFLAGS
 cd ..
@@ -49,7 +49,7 @@ case $(uname -s) in
     ;;
 esac
 eval "$("$sed" -i 's/KZG_CFLAGS =/KZG_CFLAGS = -fPIE/' Makefile)"
-eval "$("$sed" -i 's/KZG_CFLAGS += -O/KZG_CFLAGS += -O3/' Makefile)"
+eval "$("$sed" -i 's/KZG_CFLAGS += -O/KZG_CFLAGS += -Ofast/' Makefile)"
 
 print_msg "Building c-kzg"
 make lib
