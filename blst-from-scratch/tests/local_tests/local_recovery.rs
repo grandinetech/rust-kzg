@@ -7,7 +7,7 @@ fn shuffle(a: &mut [usize], n: usize) {
     let mut i: u64 = n as u64;
     let mut j: usize;
     let mut tmp: usize;
-    
+
     let mut rng = StdRng::seed_from_u64(0);
     while i > 0 {
         j = (rng.next_u64() % i) as usize;
@@ -19,7 +19,7 @@ fn shuffle(a: &mut [usize], n: usize) {
 }
 
 fn random_missing<TFr: Fr>(with_missing: &mut [TFr], data: &[TFr], len_data: usize, known: usize) {
-    let mut missing_idx = Vec::default();
+    let mut missing_idx = Vec::new();
     for i in 0..len_data {
         missing_idx.push(i);
         with_missing[i] = data[i].clone();
@@ -54,7 +54,7 @@ pub fn recover_simple<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
     assert!(data_query.is_ok());
     let data = data_query.unwrap();
 
-    let mut sample = Vec::default();
+    let mut sample = Vec::new();
     sample.push(data[0].clone());
     sample.push(TFr::null());
     sample.push(TFr::null());
@@ -104,7 +104,7 @@ pub fn recover_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
     let data_query = fs.fft_fr(&poly.get_coeffs(), false);
     assert!(data_query.is_ok());
     let data = data_query.unwrap();
-    
+
     let mut samples = vec![TFr::default(); fs.get_max_width()]; // std::vec![TFr; fs.get_max_width()];
 
     for i in 0..10 {

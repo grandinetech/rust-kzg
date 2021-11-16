@@ -725,7 +725,7 @@ impl FsPoly {
         }
 
         if temp_len == 0 {
-            ret.coeffs = Vec::default();
+            ret.coeffs = Vec::new();
         } else {
             ret.coeffs = ret.coeffs[0..temp_len].to_vec();
         }
@@ -835,8 +835,8 @@ impl Clone for FsKZGSettings {
 impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     fn default() -> Self {
         let output = Self {
-            secret_g1: Vec::default(),
-            secret_g2: Vec::default(),
+            secret_g1: Vec::new(),
+            secret_g2: Vec::new(),
             fs: FsFFTSettings::default(),
         };
         output
