@@ -1,4 +1,4 @@
-use kzg::{G1};
+use kzg::{G1, G1Mul};
 use blst::{blst_p1_add_or_double,
            blst_p1s_to_affine,
            blst_scalar,
@@ -111,8 +111,7 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, 
 
         *out = g1_identity;
         for i in 0..len {
-            g1_mul(&mut tmp, &p[i], &coeffs[i]);
-            // g1_mul(&mut tmp, &p[i], &coeffs[i]);
+            tmp = p[i].mul(&coeffs[i]);
             unsafe {
                 blst_p1_add_or_double(&mut out.0, &out.0, &tmp.0);
             }
@@ -178,7 +177,6 @@ pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
 
     // As an optimisation, we want to invert one of the pairings,
     // so we negate one of the points.
-    // g1_t a1neg = *a1;
     let mut a1neg: FsG1 = *a1;
     unsafe {
         blst_p1_cneg(&mut a1neg.0, true);
