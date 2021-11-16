@@ -1,23 +1,9 @@
-use crate::consts::{
-    expand_root_of_unity, G1_GENERATOR, G1_IDENTITY, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR,
-};
-use crate::utils::log_2_byte;
-use blst::{
-    blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
-    blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2,
-    blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg,
-    blst_p1_mult, blst_p1_is_equal, blst_scalar,
-};
-use kzg::{FFTSettings, Fr, Poly, G1, FFTFr, G2, G2Mul};
+use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_IDENTITY, G2_GENERATOR, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
+use crate::utils::{is_power_of_two, log_2_byte};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double};
+use kzg::{FFTSettings, Fr, Poly, G1, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings};
+use crate::kzg_proofs::{g1_linear_combination, g1_mul, g1_sub, g2_mul, g2_sub, pairings_verify};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
-
-pub struct Scalar(pub blst_scalar);
-
-pub trait Scalarized {
-    fn get_scalar(&self) -> Scalar;
-
-    fn from_scalar(scalar: &Scalar) -> Self;
-}
 
 pub struct FsFr(pub blst::blst_fr);
 
@@ -203,21 +189,22 @@ impl Fr for FsFr {
     }
 }
 
-impl Scalarized for FsFr {
-    fn get_scalar(&self) -> Scalar {
+impl FsFr {
+    pub fn to_scalar(&self) -> [u8; 32usize] {
         let mut scalar = blst_scalar::default();
         unsafe {
             blst_scalar_from_fr(&mut scalar, &self.0);
         }
 
-        let result = Scalar(scalar);
-        result
+        scalar.b
     }
 
-    fn from_scalar(scalar: &Scalar) -> Self {
+    pub fn from_scalar(scalar: [u8; 32usize]) -> Self {
+        let mut bls_scalar = blst_scalar::default();
+        bls_scalar.b = scalar;
         let mut fr = blst_fr::default();
         unsafe {
-            blst_fr_from_scalar(&mut fr, &scalar.0);
+            blst_fr_from_scalar(&mut fr, &bls_scalar);
         }
         let mut ret = Self::default();
         ret.0 = fr;
@@ -803,8 +790,18 @@ pub struct FsKZGSettings {
     pub secret_g2: Vec<FsG2>,
 }
 
-impl FsKZGSettings {
-    pub fn default() -> Self {
+impl Clone for FsKZGSettings {
+    fn clone(&self) -> Self {
+        return Self {
+            fs: self.fs.clone(),
+            secret_g1: self.secret_g1.clone(),
+            secret_g2: self.secret_g2.clone(),
+        };
+    }
+}
+
+impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
+    fn default() -> Self {
         let output = Self {
             secret_g1: Vec::default(),
             secret_g2: Vec::default(),
@@ -813,12 +810,12 @@ impl FsKZGSettings {
         output
     }
 
-    pub fn new(
+    fn new(
         secret_g1: &Vec<FsG1>,
         secret_g2: &Vec<FsG2>,
         length: usize,
         fft_settings: &FsFFTSettings,
-    ) -> Self {
+    ) -> Result<Self, String> {
         let mut kzg_settings = Self::default();
 
         // CHECK(length >= fs->max_width);
@@ -842,6 +839,219 @@ impl FsKZGSettings {
             // kzg_settings.secret_g2[i] = secret_g2[i];
         }
         kzg_settings.fs = fft_settings.clone();
-        kzg_settings
+
+        Ok(kzg_settings)
+    }
+
+    fn commit_to_poly(&self, poly: &FsPoly) -> Result<FsG1, String> {
+        if poly.coeffs.len() > self.secret_g1.len() {
+            return Err(String::from("Polynomial is longer than secret g1"));
+        }
+
+        let mut out = FsG1::default();
+        g1_linear_combination(
+            &mut out,
+            &self.secret_g1,
+            &poly.coeffs,
+            poly.coeffs.len(),
+        );
+
+        return Ok(out);
+    }
+
+    fn compute_proof_single(&self, p: &FsPoly, x: &FsFr) -> Result<FsG1, String> {
+        self.compute_proof_multi(p, x, 1)
+    }
+
+    fn check_proof_single(&self, com: &FsG1, proof: &FsG1, x: &FsFr, y: &FsFr) -> Result<bool, String> {
+        let x_g2: FsG2 = g2_mul(&G2_GENERATOR, x);
+        let s_minus_x: FsG2 = g2_sub(&self.secret_g2[1], &x_g2);
+        let mut y_g1 = G1::default();
+        g1_mul(&mut y_g1, &G1_GENERATOR, y);
+
+        let commitment_minus_y: FsG1 = g1_sub(com, &y_g1);
+
+        return Ok(pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x));
+    }
+
+    fn compute_proof_multi(&self, p: &FsPoly, x0: &FsFr, n: usize) -> Result<FsG1, String> {
+        assert!(is_power_of_two(n));
+
+        // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
+        let mut divisor: FsPoly = FsPoly { coeffs: Vec::default() };
+
+        // -(x0^n)
+        let x_pow_n = x0.pow(n);
+
+        divisor.coeffs[0] = x_pow_n.negate();
+
+        // Zeros
+        for _ in 1..n {
+            divisor.coeffs.push(Fr::zero());
+        }
+
+        // x^n
+        divisor.coeffs.push(Fr::one());
+
+        // Calculate q = p / (x^n - x0^n)
+        let result = p.div(&divisor);
+        assert!(result.is_ok());
+        let q: FsPoly = result.unwrap();
+
+        let ret = self.commit_to_poly(&q).unwrap();
+
+        return Ok(ret);
+    }
+
+    fn check_proof_multi(&self, com: &FsG1, proof: &FsG1, x: &FsFr, ys: &Vec<FsFr>, n: usize) -> Result<bool, String> {
+        if !is_power_of_two(n) {
+            return Err(String::from("n is not a power of two"));
+        }
+        let mut interp: FsPoly = Poly::new(n).unwrap(); // { coeffs: Vec::default() };
+
+        let mut xn2: FsG2 = FsG2::default();
+        let mut xn_minus_yn: FsG2 = FsG2::default();
+
+        let mut is1: FsG1 = FsG1::default();
+        let mut commit_minus_interp: FsG1 = FsG1::default();
+
+        // Interpolate at a coset.
+
+        //TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
+        // interp.coeffs = fft_fr(ys, true, &kzg_settings.fs).unwrap();
+        interp.coeffs = self.fs.fft_fr(ys, true).unwrap();
+
+        let inv_x = x.eucl_inverse();
+        let mut inv_x_pow = inv_x.clone();
+        for i in 1..n {
+            interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
+            inv_x_pow = inv_x_pow.mul(&inv_x_pow);
+        }
+
+        // [x^n]_2
+        let x_pow = inv_x_pow.eucl_inverse();
+
+        // g2_mul(&xn2, &g2_generator, &x_pow);
+        let scalar = x_pow.to_scalar();
+        unsafe {
+            blst_p2_mult(&mut xn2.0, &G2_GENERATOR.0, scalar.as_ptr(), 8 * std::mem::size_of::<blst_scalar>());
+        }
+
+        // [s^n - x^n]_2
+        let mut b_negative: FsG2 = xn2.clone();
+        unsafe {
+            blst_p2_cneg(&mut b_negative.0, true);
+            blst_p2_add_or_double(
+                &mut xn_minus_yn.0,
+                &self.secret_g2[n].0,
+                &b_negative.0,
+            );
+        }
+
+        // [interpolation_polynomial(s)]_1
+        let ret = self.commit_to_poly(&interp).unwrap();
+
+        // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
+        let mut b_negative: FsG1 = is1;
+        unsafe {
+            blst_p1_cneg(&mut b_negative.0, true);
+            blst_p1_add_or_double(&mut commit_minus_interp.0, &com.0, &b_negative.0);
+        }
+        return Ok(pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn));
+    }
+
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
+        todo!()
+    }
+}
+
+
+pub struct FsFK20SingleSettings {
+    pub kzg_settings: FsKZGSettings,
+    pub x_ext_fft: Vec<FsG1>,
+}
+
+impl Clone for FsFK20SingleSettings {
+    fn clone(&self) -> Self {
+        Self {
+            kzg_settings: self.kzg_settings.clone(),
+            x_ext_fft: self.x_ext_fft.clone(),
+        }
+    }
+}
+
+impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> for FsFK20SingleSettings {
+    fn default() -> Self {
+        todo!()
+    }
+
+    fn new(kzg_settings: &FsKZGSettings, n2: usize) -> Result<Self, String> {
+        let n = n2 / 2;
+
+        if n2 > kzg_settings.fs.max_width {
+            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+        } else if !is_power_of_two(n2) {
+            return Err(String::from("n2 must be a power of two"));
+        } else if n2 < 2 {
+            return Err(String::from("n2 must be greater than or equal to 2"));
+        }
+
+        let mut x = vec![FsG1::default(); n];
+        for i in 0..(n - 1) {
+            x[i] = kzg_settings.secret_g1[n - 2 - 1];
+        }
+        x[n - 1] = FsG1::identity();
+
+        let x_ext_fft = kzg_settings.fs.toeplitz_part_1(&x);
+        let kzg_settings = kzg_settings.clone();
+
+        let ret = Self {
+            kzg_settings,
+            x_ext_fft,
+        };
+
+        Ok(ret)
+    }
+
+    fn data_availability(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+        todo!()
+    }
+
+    fn data_availability_optimized(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+        todo!()
+    }
+}
+
+pub struct FsFK20MultiSettings {
+    pub kzg_settings: FsKZGSettings,
+    pub chunk_len: usize,
+    pub x_ext_fft_files: Vec<FsG1>,
+}
+
+impl Clone for FsFK20MultiSettings {
+    fn clone(&self) -> Self {
+        Self {
+            kzg_settings: self.kzg_settings.clone(),
+            chunk_len: self.chunk_len,
+            x_ext_fft_files: self.x_ext_fft_files.clone(),
+        }
+    }
+}
+
+impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> for FsFK20MultiSettings {
+    fn default() -> Self {
+        todo!()
+    }
+
+    fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
+        todo!()
+    }
+
+    fn data_availability(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+        todo!()
+    }
+
+    fn data_availability_optimized(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+        todo!()
     }
 }

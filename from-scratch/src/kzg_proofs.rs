@@ -1,4 +1,4 @@
-use kzg::{G1, Fr, FFTFr, Poly};
+use kzg::{G1};
 use blst::{blst_p1_add_or_double,
            blst_p1s_to_affine,
            blst_scalar,
@@ -22,32 +22,8 @@ use blst::{blst_p1_add_or_double,
            blst_p2_affine,
            blst_fp,
 };
-use crate::kzg_types::{FsKZGSettings, FsPoly, FsFr, FsG1, FsG2, Scalarized};
-use crate::utils::{is_power_of_two, log_2_byte};
-use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-
-pub fn commit_to_poly(
-    out: &mut FsG1,
-    poly: &FsPoly,
-    kzg_settings: &FsKZGSettings,
-) -> Result<(), String> {
-    if poly.coeffs.len() > kzg_settings.secret_g1.len() {
-        return Err(String::from("Polynomial is longer than secret g1"));
-    }
-
-    g1_linear_combination(
-        out,
-        &kzg_settings.secret_g1,
-        &poly.coeffs,
-        poly.coeffs.len(),
-    );
-
-    return Ok(());
-}
-
-pub fn compute_proof_single(p: &FsPoly, x0: &FsFr, ks: &FsKZGSettings) -> Result<FsG1, String> {
-    compute_proof_multi(p, x0, 1, ks)
-}
+use crate::kzg_types::{FsFr, FsG1, FsG2};
+use crate::utils::{log_2_byte};
 
 pub fn g2_mul(a: &FsG2, b: &FsFr) -> FsG2 {
     let mut scalar = blst_scalar::default();
@@ -81,47 +57,6 @@ pub fn g1_sub(a: &FsG1, b: &FsG1) -> FsG1 {
         blst_p1_add_or_double(&mut out.0, &a.0, &bneg.0);
     }
     out
-}
-
-pub fn check_proof_single(commitment: &FsG1, proof: &FsG1, x: &FsFr, y: &FsFr, ks: &FsKZGSettings) -> bool {
-    let x_g2: FsG2 = g2_mul(&G2_GENERATOR, x);
-    let s_minus_x: FsG2 = g2_sub(&ks.secret_g2[1], &x_g2);
-    let mut y_g1 = G1::default();
-    g1_mul(&mut y_g1, &G1_GENERATOR, y);
-
-    let commitment_minus_y: FsG1 = g1_sub(commitment, &y_g1);
-
-    return pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x);
-}
-
-pub fn compute_proof_multi(p: &FsPoly, x0: &FsFr, n: usize, kzg_settings: &FsKZGSettings) -> Result<FsG1, String> {
-    assert!(is_power_of_two(n));
-
-    // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
-    let mut divisor: FsPoly = FsPoly { coeffs: Vec::default() };
-
-    // -(x0^n)
-    let x_pow_n = x0.pow(n);
-
-    divisor.coeffs[0] = x_pow_n.negate();
-
-    // Zeros
-    for _ in 1..n {
-        divisor.coeffs.push(Fr::zero());
-    }
-
-    // x^n
-    divisor.coeffs.push(Fr::one());
-
-    // Calculate q = p / (x^n - x0^n)
-    let result = p.div(&divisor);
-    assert!(result.is_ok());
-    let q: FsPoly = result.unwrap();
-
-    let mut out = FsG1::default();
-    commit_to_poly(&mut out, &q, &kzg_settings).unwrap();
-
-    return Ok(out);
 }
 
 pub fn g1_mul(out: &mut FsG1, a: &FsG1, b: &FsFr) {
@@ -228,71 +163,6 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, 
             blst_p1s_mult_pippenger(&mut out.0, points_arg.as_ptr(), len, newarg, 256, &mut scratch);
         }
     }
-}
-
-pub fn check_proof_multi(
-    commitment: &FsG1,
-    proof: &FsG1,
-    x: &FsFr,
-    ys: &[FsFr],
-    n: usize,
-    kzg_settings: &FsKZGSettings,
-) -> Result<bool, String> {
-    if !is_power_of_two(n) {
-        return Err(String::from("n is not a power of two"));
-    }
-    let mut interp: FsPoly = Poly::new(n).unwrap(); // { coeffs: Vec::default() };
-
-    let mut xn2: FsG2 = FsG2::default();
-    let mut xn_minus_yn: FsG2 = FsG2::default();
-
-    let mut is1: FsG1 = FsG1::default();
-    let mut commit_minus_interp: FsG1 = FsG1::default();
-
-    // Interpolate at a coset.
-
-    //TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
-    // interp.coeffs = fft_fr(ys, true, &kzg_settings.fs).unwrap();
-    interp.coeffs = kzg_settings.fs.fft_fr(ys, true).unwrap();
-
-    let inv_x = x.eucl_inverse();
-    let mut inv_x_pow = inv_x.clone();
-    for i in 1..n {
-        interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
-        inv_x_pow = inv_x_pow.mul(&inv_x_pow);
-    }
-
-    // [x^n]_2
-    let x_pow = inv_x_pow.eucl_inverse();
-
-    // g2_mul(&xn2, &g2_generator, &x_pow);
-    let scalar = x_pow.get_scalar();
-    unsafe {
-        blst_p2_mult(&mut xn2.0, &G2_GENERATOR.0, scalar.0.b.as_ptr() as *const u8, 8 * std::mem::size_of::<blst_scalar>());
-    }
-
-    // [s^n - x^n]_2
-    let mut b_negative: FsG2 = xn2.clone();
-    unsafe {
-        blst_p2_cneg(&mut b_negative.0, true);
-        blst_p2_add_or_double(
-            &mut xn_minus_yn.0,
-            &kzg_settings.secret_g2[n].0,
-            &b_negative.0,
-        );
-    }
-
-    // [interpolation_polynomial(s)]_1
-    let result = commit_to_poly(&mut is1, &interp, &kzg_settings);
-    assert!(result.is_ok());
-
-    // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
-    let mut b_negative: FsG1 = is1;
-    unsafe {
-        blst_p1_cneg(&mut b_negative.0, true);
-        blst_p1_add_or_double(&mut commit_minus_interp.0, &commitment.0, &b_negative.0);
-    }
-    return Ok(pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn));
 }
 
 pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
