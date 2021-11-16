@@ -55,20 +55,23 @@ jobs:
 
 # 3rd team #########################################################
 
-    - uses: actions-rs/cargo@v1
+    - name: "[blst-from-scratch] Tests"
+      uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --manifest-path from-scratch/Cargo.toml
+        args: --manifest-path blst-from-scratch/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[blst-from-scratch] Benchmark"
+      uses: actions-rs/cargo@v1
       with:
         command: bench
-        args: --manifest-path from-scratch/Cargo.toml
+        args: --manifest-path blst-from-scratch/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[blst-from-scratch] Formatting"
+      uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --manifest-path from-scratch/Cargo.toml
+        args: --manifest-path blst-from-scratch/Cargo.toml
 
 # 4th team #########################################################
 
@@ -108,18 +111,18 @@ jobs:
 #     - name: Run mcl-kzg10-rust tests
 #       if: matrix.os == 'ubuntu-latest'
 #       run: |
-#         cargo test --manifest-path kzg10-rust/kzg-bench/Cargo.toml -- --test-threads 1 
-        
+#         cargo test --manifest-path kzg10-rust/kzg-bench/Cargo.toml -- --test-threads 1
+
 #     - name: Run mcl-kzg10-rust benches
 #       if: matrix.os == 'ubuntu-latest'
 #       run: |
 #         cargo bench --manifest-path kzg10-rust/kzg-bench/Cargo.toml
-        
+
 #     - name: Run mcl-kzg10-rust fmt
 #       if: matrix.os == 'ubuntu-latest'
 #       run: |
 #         cargo fmt --manifest-path kzg10-rust/kzg-bench/Cargo.toml
-        
+
 
 # Common ###########################################################
 

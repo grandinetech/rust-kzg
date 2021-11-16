@@ -11,7 +11,7 @@ pub fn test_reverse_bit_order_fr() {
 
     }
 
-    reverse_bit_order(a);
+    // reverse_bit_order(a);
 }
 
 pub fn test_reverse_bit_order_g1() {
