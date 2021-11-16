@@ -29,16 +29,10 @@ pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
 pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFFTSettings) -> Result<Vec<FsFr>, String> {
     assert!(is_power_of_two(len_samples));
 
-    let mut missing: Vec<usize> = Vec::default();
-    for _ in 0..len_samples {
-        missing.push(0);
-    }
-
-    let mut len_missing: usize = 0;
+    let mut missing: Vec<usize> = Vec::new();
     for i in 0..len_samples {
         if samples[i].is_null() {
-            missing[len_missing] = i;
-            len_missing += 1;
+            missing.push(i);
         }
     }
 
@@ -46,7 +40,7 @@ pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFF
     let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing).unwrap();
 
     for i in 0..len_samples {
-        assert!(samples[i].is_null() == zero_eval[i].is_zero());
+        assert_eq!(samples[i].is_null(), zero_eval[i].is_zero());
     }
 
     let mut poly_evaluations_with_zero = FsPoly::default();
