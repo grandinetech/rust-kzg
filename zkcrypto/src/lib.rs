@@ -14,6 +14,7 @@ pub mod kzg_types;
 pub mod kzg_proofs;
 pub mod das;
 pub mod zero_poly;
+pub mod recover;
 #[macro_use]
 pub mod curve {
 	pub mod scalar;
