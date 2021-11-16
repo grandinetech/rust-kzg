@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use kzg::{Fr, G1, FFTSettings, Poly, KZGSettings};
-    use kzg_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, FsFr, FsG1, FsG2};
-    use kzg_from_scratch::consts::{TRUSTED_SETUP_GENERATOR};
-    use kzg_from_scratch::utils::{generate_trusted_setup};
+    use blst_from_scratch::kzg_types::{FsKZGSettings, FsFFTSettings, FsPoly, FsFr, FsG1, FsG2};
+    use blst_from_scratch::consts::{TRUSTED_SETUP_GENERATOR};
+    use blst_from_scratch::utils::{generate_trusted_setup};
     use blst::{blst_p1_is_equal, blst_fp, blst_p1};
     use kzg_bench::tests::kzg_proofs::{commit_to_nil_poly, commit_to_too_long_poly, proof_multi, proof_single};
 

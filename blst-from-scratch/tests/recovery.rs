@@ -4,8 +4,8 @@ pub mod local_recovery;
 #[cfg(test)]
 pub mod tests {
     use crate::local_recovery::{recover_simple, recover_random};
-    use kzg_from_scratch::recovery::{recover_poly_from_samples};
-    use kzg_from_scratch::kzg_types::{FsFr, FsPoly, FsFFTSettings};
+    use blst_from_scratch::recovery::{recover_poly_from_samples};
+    use blst_from_scratch::kzg_types::{FsFr, FsPoly, FsFFTSettings};
 
     #[test]
     fn recover_simple_() {

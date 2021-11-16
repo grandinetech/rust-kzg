@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fk20_proofs::*;
-    use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFK20MultiSettings, FsFK20SingleSettings, FsFr, FsG1, FsG2, FsKZGSettings, FsPoly};
-    use kzg_from_scratch::utils::generate_trusted_setup;
+    use blst_from_scratch::kzg_types::{FsFFTSettings, FsFK20MultiSettings, FsFK20SingleSettings, FsFr, FsG1, FsG2, FsKZGSettings, FsPoly};
+    use blst_from_scratch::utils::generate_trusted_setup;
 
     #[test]
     fn test_fk_single() {

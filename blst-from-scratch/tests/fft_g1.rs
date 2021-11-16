@@ -2,9 +2,9 @@
 pub mod tests {
     use kzg::G1;
     use kzg_bench::tests::fft_g1::{compare_ft_fft, roundtrip_fft, stride_fft};
-    use kzg_from_scratch::consts::G1_GENERATOR;
-    use kzg_from_scratch::fft_g1::{fft_g1_fast, fft_g1_slow};
-    use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr, FsG1};
+    use blst_from_scratch::consts::G1_GENERATOR;
+    use blst_from_scratch::fft_g1::{fft_g1_fast, fft_g1_slow};
+    use blst_from_scratch::kzg_types::{FsFFTSettings, FsFr, FsG1};
 
     fn make_data(n: usize) -> Vec<FsG1> {
         if n == 0 {

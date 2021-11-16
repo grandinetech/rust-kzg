@@ -7,8 +7,8 @@ pub mod tests {
         expand_roots_is_plausible, new_fft_settings_is_plausible, roots_of_unity_are_plausible,
         roots_of_unity_out_of_bounds_fails, roots_of_unity_is_the_expected_size,
     };
-    use kzg_from_scratch::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
-    use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr};
+    use blst_from_scratch::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
+    use blst_from_scratch::kzg_types::{FsFFTSettings, FsFr};
     use crate::local_consts::roots_of_unity_repeat_at_stride;
 
     #[test]
