@@ -1,7 +1,6 @@
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-use crate::kzg_proofs::{g1_mul, g2_mul};
 use crate::kzg_types::{FsFr, FsG1, FsG2};
-use kzg::{Fr, G1, G1Mul};
+use kzg::{Fr, G1Mul, G2Mul};
 
 pub fn is_power_of_two(x: usize) -> bool {
     (x != 0) && ((x & (x - 1)) == 0)
@@ -66,17 +65,12 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Ve
     let s = FsFr::from_scalar(secret);
     let mut s_pow = Fr::one();
 
-    let mut s1 = vec![FsG1::default(); n];
-    let mut s2 = vec![FsG2::default(); n];
+    let mut s1 = Vec::new();
+    let mut s2 = Vec::new();
 
-    for i in 0..n {
-        let mut tmp_g1 = G1_GENERATOR.mul(&s_pow);
-        s1[i] = tmp_g1;
-
-        let tmp_g2 = g2_mul(&G2_GENERATOR, &s_pow);
-        s2.push(tmp_g2);
-        s2[i] = tmp_g2;
-
+    for _ in 0..n {
+        s1.push(G1_GENERATOR.mul(&s_pow));
+        s2.push(G2_GENERATOR.mul(&s_pow));
         s_pow = s_pow.mul(&s);
     }
 
