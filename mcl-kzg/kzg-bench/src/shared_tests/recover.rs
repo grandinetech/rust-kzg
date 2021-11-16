@@ -1,11 +1,11 @@
 #[cfg(test)]
 pub mod recover_tests {
-    // use kzg_bench::tests::recover::*;
-    // use mcl_rust::data_types::fr::Fr;
-    // use mcl_rust::kzg10::Polynomial;
-    // use mcl_rust::mcl_methods::init;
-    // use mcl_rust::CurveType;
-    // use mcl_rust::fk20_fft::FFTSettings;
+    use kzg_bench::tests::recover::*;
+    use mcl_rust::data_types::fr::Fr;
+    use mcl_rust::kzg10::Polynomial;
+    use mcl_rust::mcl_methods::init;
+    use mcl_rust::CurveType;
+    use mcl_rust::fk20_fft::FFTSettings;
 
     #[test]
     fn recover_simple_() {
@@ -19,4 +19,4 @@ pub mod recover_tests {
 //         assert!(init(CurveType::BLS12_381));
 //         recover_random::<Fr, FFTSettings, Polynomial, Polynomial>();
 //     }
-// }
+}
