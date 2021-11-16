@@ -114,17 +114,17 @@ jobs:
     - name: Run mcl-kzg10-rust tests
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo test --manifest-path kzg10-rust/kzg-bench/Cargo.toml -- --test-threads 1 
+        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1 
         
     - name: Run mcl-kzg10-rust benches
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo bench --manifest-path kzg10-rust/kzg-bench/Cargo.toml
+        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
         
     - name: Run mcl-kzg10-rust fmt
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo fmt --manifest-path kzg10-rust/kzg-bench/Cargo.toml
+        cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
         
 
 # Common ###########################################################

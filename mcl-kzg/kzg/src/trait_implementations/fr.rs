@@ -19,9 +19,7 @@ impl CommonFr for Fr {
     }
 
     fn rand() -> Self {
-        let mut fr = Fr::zero();
-        Fr::set_by_csprng(&mut fr);
-        fr
+        Fr::random()
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
@@ -33,11 +31,13 @@ impl CommonFr for Fr {
     }
 
 	fn to_u64_arr(&self) -> [u64; 4] {
-		todo!()
+        Fr::to_u64_arr(self)
 	}
 	
 	fn div(&self, b: &Self) -> Result<Self, String>{
-		todo!()
+        let mut res = Fr::zero();
+        Fr::div(&mut res, self, b);
+        Ok(res)
 	}
 	
     fn is_one(&self) -> bool {

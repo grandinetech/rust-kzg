@@ -1,11 +1,11 @@
-use crate::data_types::fr::Fr;
 use crate::data_types::fp::Fp;
-use std::ops::{Add, AddAssign};
-use std::ops::{Sub, SubAssign};
-use std::mem::MaybeUninit;
-use std::os::raw::c_int;
+use crate::data_types::fr::Fr;
 use crate::mcl_methods;
 use crate::utilities::arr64_6_to_g1_sum;
+use std::mem::MaybeUninit;
+use std::ops::{Add, AddAssign};
+use std::ops::{Sub, SubAssign};
+use std::os::raw::c_int;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -65,4 +65,16 @@ impl G1 {
         g1.z.set_str(&arr64_6_to_g1_sum(&u[2]).to_string(), 10);
         return g1;
     }
+    
+    pub const G1_IDENTITY: G1 = G1 {
+        x: Fp {
+            d: [0, 0, 0, 0, 0, 0],
+        },
+        y: Fp {
+            d: [0, 0, 0, 0, 0, 0],
+        },
+        z: Fp {
+            d: [0, 0, 0, 0, 0, 0],
+        },
+    };
 }
