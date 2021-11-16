@@ -1,7 +1,7 @@
 use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY, G2_GENERATOR, G2_NEGATIVE_GENERATOR, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use crate::utils::{is_power_of_two, log_2_byte};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double, blst_p2_is_equal, blst_p2_double, blst_p1_is_inf, blst_p1_double};
-use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings};
+use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings, FFTG1};
 use crate::bytes::reverse_bit_order;
 use crate::kzg_proofs::{g1_linear_combination, g1_mul, g1_sub, g2_mul, g2_sub, pairings_verify};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
@@ -364,7 +364,6 @@ impl G2 for FsG2 {
 
 impl G1Mul<FsFr> for FsG1 {
     fn mul(&self, b: &FsFr) -> Self {
-
         let mut scalar: blst_scalar = blst_scalar::default();
         unsafe {
             blst_scalar_from_fr(&mut scalar, &b.0);
