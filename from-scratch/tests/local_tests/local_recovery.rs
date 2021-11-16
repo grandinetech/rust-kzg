@@ -54,7 +54,7 @@ pub fn recover_simple<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
     assert!(data_query.is_ok());
     let data = data_query.unwrap();
 
-    let mut sample = vec![TFr::default(); fs.get_max_width()]; // Vec::default(); //[TFr; fs.get_max_width()];
+    let mut sample = Vec::default();
     sample.push(data[0].clone());
     sample.push(TFr::null());
     sample.push(TFr::null());
@@ -111,7 +111,7 @@ pub fn recover_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
         let known_ratio = 0.5 + (i as f32) * 0.05;
         let known: usize = ((fs.get_max_width() as f32) * known_ratio) as usize;
 
-        for i in 0..4 {
+        for _ in 0..4 {
             random_missing(&mut samples, &data, fs.get_max_width(), known);
 
             let recovered_query = recover_poly_from_samples(&samples, fs.get_max_width(), &fs);
@@ -119,19 +119,19 @@ pub fn recover_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
             let recovered = recovered_query.unwrap();
 
             for j in 0..fs.get_max_width() {
-                assert!(data[i].equals(&recovered[i]));
+                assert!(data[j].equals(&recovered[j]));
             }
 
             let back_query = fs.fft_fr(&recovered, true);
             assert!(back_query.is_ok());
             let back = back_query.unwrap();
 
-            for i in 0..(fs.get_max_width() / 2) {
-                assert!(back[i].equals(&poly.get_coeff_at(i)));
+            for j in 0..(fs.get_max_width() / 2) {
+                assert!(back[j].equals(&poly.get_coeff_at(j)));
             }
 
-            for i in (fs.get_max_width() / 2)..fs.get_max_width() {
-                assert!(back[i].is_zero());
+            for j in (fs.get_max_width() / 2)..fs.get_max_width() {
+                assert!(back[j].is_zero());
             }
         }
     }
