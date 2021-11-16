@@ -1,11 +1,9 @@
-use kzg::{Fr, FFTSettings, FFTSettingsPoly, Poly, ZeroPoly, FFTFr, FFTG1, G1};
-use kzg::DAS as Das;
-use crate::utils::{log_2, next_pow_of_2};
-use crate::consts::{KzgRet, BlstP1};
-use crate::poly::KzgPoly;
+use std::{cmp::min, slice};
+use kzg::{DAS, FFTFr, FFTG1, FFTSettings, FFTSettingsPoly, Fr, G1, Poly, ZeroPoly};
+use crate::consts::{BlstP1, KzgRet};
 use crate::finite::BlstFr;
-use std::{cmp::min};
-use std::slice;
+use crate::poly::KzgPoly;
+use crate::utils::{log_2, next_pow_of_2};
 
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -46,7 +44,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     fn new(scale: usize) -> Result<Self, String> {
         let mut settings = FFTSettings::default();
         unsafe {
-            return match new_fft_settings(&mut settings, scale as u32) {
+            match new_fft_settings(&mut settings, scale as u32) {
                 KzgRet::KzgOk => Ok(settings),
                 e => Err(format!("An error has occurred in FFTSettings::new ==> {:?}", e))
             }
@@ -94,10 +92,10 @@ impl Drop for KzgFFTSettings {
 
 impl FFTFr<BlstFr> for KzgFFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
-        return match _fft_fr(data.as_ptr(), inverse, data.len() as u64, self) {
+        match _fft_fr(data.as_ptr(), inverse, data.len() as u64, self) {
             Ok(fr) => Ok(fr),
             Err(e) => Err(format!("An error has occurred in FFTFr::fft_fr ==> {:?}", e))
-        };
+        }
     }
 }
 
@@ -113,10 +111,10 @@ fn _fft_fr(input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSetting
 
 impl FFTG1<BlstP1> for KzgFFTSettings {
     fn fft_g1(&self, data: &[BlstP1], inverse: bool) -> Result<Vec<BlstP1>, String> {
-        return match _fft_g1(data.as_ptr(), inverse, data.len() as u64, self) {
+        match _fft_g1(data.as_ptr(), inverse, data.len() as u64, self) {
             Ok(g) => Ok(g),
             Err(e) => Err(format!("An error has occurred in FFTG1::fft_g1 ==> {:?}", e))
-        };
+        }
     }
 }
 
@@ -140,7 +138,7 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
         let mut fft = KzgFFTSettings::new(log_2(length)).unwrap();
         let mut poly = KzgPoly::new(len).unwrap();
         unsafe {
-            return match poly_mul_(&mut poly, a, b, &mut fft) {
+            match poly_mul_(&mut poly, a, b, &mut fft) {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in FFTSettingsPoly::poly_mul_fft ==> {:?}", e))
             }
@@ -151,13 +149,12 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
 impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<KzgPoly, String> {
         let mut poly = KzgPoly::new(idxs.len() + 1).unwrap();
-
         unsafe {
-            return match do_zero_poly_mul_partial(&mut poly, idxs.as_ptr() as *const u64,
-                                                  idxs.len() as u64, stride as u64, self)
+            match do_zero_poly_mul_partial(&mut poly, idxs.as_ptr() as *const u64,
+                                           idxs.len() as u64, stride as u64, self)
             {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in FFTSettingsPoly::do_zero_poly_mul_partial ==> {:?}", e))
+                e => Err(format!("An error has occurred in ZeroPoly::do_zero_poly_mul_partial ==> {:?}", e))
             }
         }
     }
@@ -165,43 +162,40 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
     fn reduce_partials(&self, domain_size: usize, partials: &[KzgPoly]) -> Result<KzgPoly, String> {
         let mut poly = KzgPoly::new(domain_size).unwrap();
         let scratch_len = domain_size * 3;
-        let mut scratch = vec![BlstFr::zero(); scratch_len];
-
+        let mut scratch = vec![Fr::default(); scratch_len];
         unsafe {
-            return match reduce_partials(&mut poly, domain_size as u64,
-                                         scratch.as_mut_ptr(), scratch_len as u64,
-                                         partials.as_ptr(), partials.len() as u64, self)
+            match reduce_partials(&mut poly, domain_size as u64,
+                                  scratch.as_mut_ptr(), scratch_len as u64,
+                                  partials.as_ptr(), partials.len() as u64, self)
             {
                 KzgRet::KzgOk => Ok(poly),
-                e => Err(format!("An error has occurred in FFTSettingsPoly:reduce_partials ==> {:?}", e))
+                e => Err(format!("An error has occurred in ZeroPoly:reduce_partials ==> {:?}", e))
             }
         }
     }
 
     fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<BlstFr>, KzgPoly), String> {
         let mut zero_poly = KzgPoly::new(domain_size).unwrap();
-        let mut zero_eval = vec![BlstFr::zero(); domain_size];
-
+        let mut zero_eval = vec![Fr::default(); domain_size];
         unsafe {
-            return match zero_polynomial_via_multiplication(zero_eval.as_mut_ptr(), &mut zero_poly, domain_size as u64,
-                                                            idxs.as_ptr() as *const u64,
-                                                            idxs.len() as u64, self)
+            match zero_polynomial_via_multiplication(zero_eval.as_mut_ptr(), &mut zero_poly, domain_size as u64,
+                                                     idxs.as_ptr() as *const u64,
+                                                     idxs.len() as u64, self)
             {
                 KzgRet::KzgOk => Ok((zero_eval, zero_poly)),
-                e => Err(format!("An error has occurred in FFTSettingsPoly:zero_poly_via_multiplication ==> {:?}", e))
+                e => Err(format!("An error has occurred in ZeroPoly:zero_poly_via_multiplication ==> {:?}", e))
             }
         }
     }
 }
 
-impl Das<BlstFr> for KzgFFTSettings {
+impl DAS<BlstFr> for KzgFFTSettings {
     fn das_fft_extension(&self, evens: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
         let mut values = evens.to_vec();
-
         unsafe {
-            return match das_fft_extension(values.as_mut_ptr(), values.len() as u64, self) {
+            match das_fft_extension(values.as_mut_ptr(), values.len() as u64, self) {
                 KzgRet::KzgOk => Ok(values),
-                e => Err(format!("An error has occurred in FFTSettingsPoly::das_fft_extension ==> {:?}", e))
+                e => Err(format!("An error has occurred in DAS::das_fft_extension ==> {:?}", e))
             }
         }
     }

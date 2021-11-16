@@ -45,7 +45,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     fn new(secret_g1: &Vec<BlstP1>, secret_g2: &Vec<BlstP2>, length: usize, fs: &KzgFFTSettings) -> Result<Self, String> {
         let mut settings = KZGSettings::default();
         unsafe {
-            return match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, fs) {
+            match new_kzg_settings(&mut settings, secret_g1.as_ptr(), secret_g2.as_ptr(), length as u64, fs) {
                 KzgRet::KzgOk => Ok(settings),
                 e => Err(format!("An error has occurred in KZGSettings::new ==> {:?}", e))
             }
@@ -55,7 +55,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     fn commit_to_poly(&self, p: &KzgPoly) -> Result<BlstP1, String> {
         let mut ret = G1::default();
         unsafe {
-            return match commit_to_poly(&mut ret, p, self) {
+            match commit_to_poly(&mut ret, p, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in KZGSettings::commit_to_poly ==> {:?}", e))
             }
@@ -65,7 +65,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     fn compute_proof_single(&self, p: &KzgPoly, x: &BlstFr) -> Result<BlstP1, String> {
         let mut ret = G1::default();
         unsafe {
-            return match compute_proof_single(&mut ret, p, x, self) {
+            match compute_proof_single(&mut ret, p, x, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in KZGSettings::compute_proof_single ==> {:?}", e))
             }
@@ -75,7 +75,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     fn check_proof_single(&self, com: &BlstP1, proof: &BlstP1, x: &BlstFr, value: &BlstFr) -> Result<bool, String> {
         let mut ret = false;
         unsafe {
-            return match check_proof_single(&mut ret, com, proof, x, value, self) {
+            match check_proof_single(&mut ret, com, proof, x, value, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in KZGSettings::check_proof_single ==> {:?}", e))
             }
@@ -85,7 +85,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     fn compute_proof_multi(&self, p: &KzgPoly, x: &BlstFr, n: usize) -> Result<BlstP1, String> {
         let mut ret = G1::default();
         unsafe {
-            return match compute_proof_multi(&mut ret, p, x, n as u64, self) {
+            match compute_proof_multi(&mut ret, p, x, n as u64, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in KZGSettings::compute_proof_multi ==> {:?}", e))
             }
@@ -95,7 +95,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     fn check_proof_multi(&self, com: &BlstP1, proof: &BlstP1, x: &BlstFr, values: &Vec<BlstFr>, n: usize) -> Result<bool, String> {
         let mut ret = false;
         unsafe {
-            return match check_proof_multi(&mut ret, com, proof, x, values.as_ptr(), n as u64, self) {
+            match check_proof_multi(&mut ret, com, proof, x, values.as_ptr(), n as u64, self) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in KZGSettings::check_proof_multi ==> {:?}", e))
             }
