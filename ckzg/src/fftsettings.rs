@@ -1,4 +1,5 @@
 use kzg::{Fr, FFTSettings, FFTSettingsPoly, Poly, ZeroPoly, FFTFr, FFTG1, G1};
+use kzg::DAS as Das;
 use crate::utils::{log_2, next_pow_of_2};
 use crate::consts::{KzgRet, BlstP1};
 use crate::poly::KzgPoly;
@@ -29,6 +30,7 @@ extern "C" {
     //fn pad_p(out: *mut BlstFr, out_len: u64, p: *const KzgPoly) -> KzgRet;
     fn reduce_partials(out: *mut KzgPoly, len_out: u64, scratch: *mut BlstFr, len_scratch: u64, partials: *const KzgPoly, partial_count: u64, fs: *const KzgFFTSettings) -> KzgRet;
     fn zero_polynomial_via_multiplication(zero_eval: *mut BlstFr, zero_poly: *mut KzgPoly, length: u64, missing_indices: *const u64, len_missing: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    fn das_fft_extension(vals: *mut BlstFr, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
 }
 
 impl FFTSettings<BlstFr> for KzgFFTSettings {
@@ -187,6 +189,19 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
             {
                 KzgRet::KzgOk => Ok((zero_eval, zero_poly)),
                 e => Err(format!("An error has occurred in FFTSettingsPoly:zero_poly_via_multiplication ==> {:?}", e))
+            }
+        }
+    }
+}
+
+impl Das<BlstFr> for KzgFFTSettings {
+    fn das_fft_extension(&self, evens: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
+        let mut values = evens.to_vec();
+
+        unsafe {
+            return match das_fft_extension(values.as_mut_ptr(), values.len() as u64, self) {
+                KzgRet::KzgOk => Ok(values),
+                e => Err(format!("An error has occurred in FFTSettingsPoly::das_fft_extension ==> {:?}", e))
             }
         }
     }
