@@ -101,19 +101,19 @@ impl Fr for BlstFr {
 
     fn is_one(&self) -> bool {
         unsafe {
-            return fr_is_one(self);
+            fr_is_one(self)
         }
     }
 
     fn is_zero(&self) -> bool {
         unsafe {
-            return fr_is_zero(self);
+            fr_is_zero(self)
         }
     }
 
     fn is_null(&self) -> bool {
         unsafe {
-            return fr_is_null(self);
+            fr_is_null(self)
         }
     }
 
@@ -179,7 +179,7 @@ impl Fr for BlstFr {
 
     fn equals(&self, b: &Self) -> bool {
         unsafe {
-            return fr_equal(self, b);
+            fr_equal(self, b)
         }
     }
 }
@@ -203,7 +203,7 @@ impl G1 for BlstP1 {
 
     fn generator() -> Self {
         unsafe {
-            return *blst_p1_generator();
+            *blst_p1_generator()
         }
     }
 
@@ -230,7 +230,7 @@ impl G1 for BlstP1 {
 
     fn is_inf(&self) -> bool {
         unsafe {
-            return g1_is_inf(self);
+            g1_is_inf(self)
         }
     }
 
@@ -252,7 +252,7 @@ impl G1 for BlstP1 {
 
     fn equals(&self, b: &Self) -> bool {
         unsafe {
-            return g1_equal(self, b);
+            g1_equal(self, b)
         }
     }
 }
@@ -278,7 +278,7 @@ impl G2 for BlstP2 {
 
     fn generator() -> Self {
         unsafe {
-            return *blst_p2_generator();
+            *blst_p2_generator()
         }
     }
 
@@ -312,7 +312,7 @@ impl G2 for BlstP2 {
 
     fn equals(&self, b: &Self) -> bool {
         unsafe {
-            return g2_equal(self, b);
+            g2_equal(self, b)
         }
     }
 }
@@ -327,7 +327,7 @@ impl G2Mul<BlstFr> for BlstP2 {
     }
 }
 
-pub fn linear_combination_g1(out: &mut BlstP1, p: &Vec<BlstP1>, coeffs: &Vec<BlstFr>, len: usize) {
+pub fn linear_combination_g1(out: &mut BlstP1, p: &[BlstP1], coeffs: &[BlstFr], len: usize) {
     unsafe {
         g1_linear_combination(out, p.as_ptr(), coeffs.as_ptr(), len as u64);
     }
@@ -335,6 +335,6 @@ pub fn linear_combination_g1(out: &mut BlstP1, p: &Vec<BlstP1>, coeffs: &Vec<Bls
 
 pub fn verify_pairings(a1: &BlstP1, a2: &BlstP2, b1: &BlstP1, b2: &BlstP2) -> bool {
     unsafe {
-        return pairings_verify(a1, a2, b1, b2);
+        pairings_verify(a1, a2, b1, b2)
     }
 }

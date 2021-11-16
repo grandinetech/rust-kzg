@@ -148,7 +148,7 @@ pub fn g1_identity_is_identity<TFr: Fr, TG1: G1<TFr>>() {
     assert!(actual.equals(&TG1::generator()));
 }
 
-pub fn g1_make_linear_combination<TFr: Fr, TG1: G1<TFr> + G1Mul<TFr> + Copy>(g1_linear_combination: &dyn Fn (&mut TG1, &Vec<TG1>, &Vec<TFr>, usize)) {
+pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_linear_combination: &dyn Fn (&mut TG1, &[TG1], &[TFr], usize)) {
     let len: usize = 255;
     let mut coeffs = vec![TFr::default(); len];
     let mut p = vec![TG1::default(); len];
@@ -168,7 +168,7 @@ pub fn g1_make_linear_combination<TFr: Fr, TG1: G1<TFr> + G1Mul<TFr> + Copy>(g1_
     assert!(exp.equals(&res));
 }
 
-pub fn g1_random_linear_combination<TFr: Fr, TG1: G1<TFr> + G1Mul<TFr> + Copy>(g1_linear_combination: &dyn Fn (&mut TG1, &Vec<TG1>, &Vec<TFr>, usize)) {
+pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_linear_combination: &dyn Fn (&mut TG1, &[TG1], &[TFr], usize)) {
     let len: usize = 8192;
     let mut coeffs = vec![TFr::default(); len];
     let mut p = vec![TG1::default(); len];

@@ -42,7 +42,7 @@ pub trait Fr: Clone {
     fn equals(&self, b: &Self) -> bool;
 }
 
-pub trait G1<Coeff: Fr>: Clone {
+pub trait G1: Clone {
     fn default() -> Self;
 
     fn identity() -> Self;
@@ -94,7 +94,7 @@ pub trait FFTFr<Coeff: Fr> {
     fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
-pub trait FFTG1<TFr: Fr, Coeff: G1<TFr>> {
+pub trait FFTG1<TFr: Fr, Coeff: G1> {
     fn fft_g1(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
@@ -177,9 +177,13 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn pad(&self, output_len: usize) -> Self;
 }
 
+pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
+    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: FSettings) -> Polynomial;
+}
+
 pub trait KZGSettings<
     Coeff1: Fr,
-    Coeff2: G1<Coeff1>,
+    Coeff2: G1,
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
@@ -211,7 +215,7 @@ pub trait KZGSettings<
 
 pub trait FK20SingleSettings<
     Coeff1: Fr,
-    Coeff2: G1<Coeff1>,
+    Coeff2: G1,
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
@@ -228,7 +232,7 @@ pub trait FK20SingleSettings<
 
 pub trait FK20MultiSettings<
     Coeff1: Fr,
-    Coeff2: G1<Coeff1>,
+    Coeff2: G1,
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,

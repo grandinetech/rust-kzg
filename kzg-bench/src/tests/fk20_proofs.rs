@@ -23,7 +23,7 @@ fn reverse_bits_limited(length: usize, value: usize) -> usize {
     value.reverse_bits() >> unused_bits
 }
 
-fn reverse_bit_order<T>(vals: &mut Vec<T>) where T: Clone {
+fn reverse_bit_order<T>(vals: &mut Vec<T>) where T : Clone {
     let unused_bit_len = vals.len().leading_zeros() + 1;
     for i in 0..vals.len() - 1 {
         let r = i.reverse_bits() >> unused_bit_len;
@@ -37,7 +37,7 @@ fn reverse_bit_order<T>(vals: &mut Vec<T>) where T: Clone {
 
 pub fn fk_single<
     TFr: Fr,
-    TG1: G1<TFr>,
+    TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
@@ -96,7 +96,7 @@ pub fn fk_single<
 
 pub fn fk_single_strided<
     TFr: Fr,
-    TG1: G1<TFr>,
+    TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
@@ -141,7 +141,7 @@ pub fn fk_single_strided<
 
 pub fn fk_multi_settings<
     TFr: Fr,
-    TG1: G1<TFr>,
+    TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
@@ -162,7 +162,7 @@ pub fn fk_multi_settings<
 
 fn fk_multi_case<
     TFr: Fr,
-    TG1: G1<TFr>,
+    TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
@@ -170,7 +170,7 @@ fn fk_multi_case<
     TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
 >(
     chunk_len: usize, n: usize,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>)
 ) {
     let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
@@ -256,7 +256,7 @@ fn fk_multi_case<
 
 pub fn fk_multi_chunk_len_1_512<
     TFr: Fr,
-    TG1: G1<TFr>,
+    TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
@@ -270,7 +270,7 @@ pub fn fk_multi_chunk_len_1_512<
 
 pub fn fk_multi_chunk_len_16_512<
     TFr: Fr,
-    TG1: G1<TFr>,
+    TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
@@ -284,7 +284,7 @@ pub fn fk_multi_chunk_len_16_512<
 
 pub fn fk_multi_chunk_len_16_16<
     TFr: Fr,
-    TG1: G1<TFr>,
+    TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,

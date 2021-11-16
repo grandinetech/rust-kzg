@@ -16,15 +16,15 @@ fn roots_of_unity_are_plausible_() {
     roots_of_unity_are_plausible::<blsScalar>(&SCALE2_ROOT_OF_UNITY);
 }
 
-// #[test]
-// fn expand_roots_is_plausible_() {
-	// expand_roots_is_plausible::<blsScalar>(&SCALE2_ROOT_OF_UNITY,
-	// &expand_root_of_unity);
-// }
+#[test]
+fn expand_roots_is_plausible_() {
+	expand_roots_is_plausible::<blsScalar>(&SCALE2_ROOT_OF_UNITY,
+	&expand_root_of_unity);
+}
 
-// #[test]
-// fn new_fft_settings_is_plausible_() {
-	// new_fft_settings_is_plausible::<blsScalar, ZkFFTSettings>();
-// }
+#[test]
+fn new_fft_settings_is_plausible_() {
+	new_fft_settings_is_plausible::<blsScalar, ZkFFTSettings>();
+}
 
 }
