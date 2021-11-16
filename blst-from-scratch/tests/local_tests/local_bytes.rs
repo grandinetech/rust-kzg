@@ -1,13 +1,13 @@
 use kzg::Fr;
-use kzg_from_scratch::bytes::reverse_bit_order;
-use kzg_from_scratch::kzg_types::FsFr;
+// use blst_from_scratch::bytes::reverse_bit_order;
+use blst_from_scratch::kzg_types::FsFr;
 
 pub fn test_reverse_bit_order_fr() {
     let size = 10;
     let n = 1 << size;
 
     for i in 0..n {
-        let tmp = FsFr::from_u64(i);
+        let _tmp = FsFr::from_u64(i);
 
     }
 

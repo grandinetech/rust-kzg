@@ -3,7 +3,7 @@ use crate::utils::{is_power_of_two, log_2_byte};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double, blst_p2_is_equal, blst_p2_double, blst_p1_is_inf, blst_p1_double};
 use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings, FFTG1};
 use crate::bytes::reverse_bit_order;
-use crate::kzg_proofs::{g1_linear_combination, g1_mul, g1_sub, g2_mul, g2_sub, pairings_verify};
+use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 
 pub struct FsFr(pub blst::blst_fr);
@@ -725,7 +725,7 @@ impl FsPoly {
         }
 
         if temp_len == 0 {
-            ret.coeffs = Vec::default();
+            ret.coeffs = Vec::new();
         } else {
             ret.coeffs = ret.coeffs[0..temp_len].to_vec();
         }
@@ -835,8 +835,8 @@ impl Clone for FsKZGSettings {
 impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     fn default() -> Self {
         let output = Self {
-            secret_g1: Vec::default(),
-            secret_g2: Vec::default(),
+            secret_g1: Vec::new(),
+            secret_g2: Vec::new(),
             fs: FsFFTSettings::default(),
         };
         output
@@ -896,13 +896,11 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn check_proof_single(&self, com: &FsG1, proof: &FsG1, x: &FsFr, y: &FsFr) -> Result<bool, String> {
-        let x_g2: FsG2 = g2_mul(&G2_GENERATOR, x);
-        let s_minus_x: FsG2 = g2_sub(&self.secret_g2[1], &x_g2);
-        let mut y_g1 = FsG1::default();
-        y_g1 = G1_GENERATOR.mul(y);
+        let x_g2: FsG2 = G2_GENERATOR.mul(&x);
+        let s_minus_x: FsG2 = self.secret_g2[1].sub(&x_g2);
+        let y_g1 = G1_GENERATOR.mul(y);
 
-
-        let commitment_minus_y: FsG1 = g1_sub(com, &y_g1);
+        let commitment_minus_y: FsG1 = com.sub(&y_g1);
 
         return Ok(pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x));
     }
@@ -911,7 +909,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         assert!(is_power_of_two(n));
 
         // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
-        let mut divisor: FsPoly = FsPoly { coeffs: Vec::default() };
+        let mut divisor: FsPoly = FsPoly { coeffs: Vec::new() };
 
         // -(x0^n)
         let x_pow_n = x0.pow(n);
@@ -954,8 +952,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         // [x^n]_2
         let x_pow = inv_x_pow.inverse();
 
-        // g2_mul(&xn2, &g2_generator, &x_pow);
-        let xn2 = g2_mul(&G2_GENERATOR, &x_pow);
+        let xn2 = G2_GENERATOR.mul(&x_pow);
 
         // [s^n - x^n]_2
         let xn_minus_yn = self.secret_g2[n].sub(&xn2);
@@ -1112,7 +1109,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
                 x[i] = ks.secret_g1[j as usize];
 
                 i += 1;
-                j -= (chunk_len as i64);
+                j -= chunk_len as i64;
             }
             x[k - 1] = FsG1::identity();
 

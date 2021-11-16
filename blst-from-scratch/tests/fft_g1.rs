@@ -8,7 +8,7 @@ pub mod tests {
 
     fn make_data(n: usize) -> Vec<FsG1> {
         if n == 0 {
-            return Vec::default();
+            return Vec::new();
         }
         let mut result: Vec<FsG1> = vec![FsG1::default(); n];
         result[0] = G1_GENERATOR;

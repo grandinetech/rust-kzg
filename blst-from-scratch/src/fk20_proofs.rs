@@ -10,7 +10,7 @@ impl FsFFTSettings {
             x_ext.push(x[i]);
         }
 
-        for i in n..n2 {
+        for _ in n..n2 {
             x_ext.push(FsG1::identity());
         }
 
