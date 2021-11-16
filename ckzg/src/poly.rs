@@ -40,13 +40,13 @@ impl Poly<BlstFr> for KzgPoly {
 
     fn get_coeff_at(&self, i: usize) -> BlstFr {
         unsafe {
-            return *self.coeffs.offset(i as isize) as BlstFr;
+            *self.coeffs.add(i) as BlstFr
         }
     }
 
     fn set_coeff_at(&mut self, i: usize, x: &BlstFr) {
         unsafe {
-            *self.coeffs.offset(i as isize) = *x;
+            *self.coeffs.add(i) = *x;
         }
     }
 

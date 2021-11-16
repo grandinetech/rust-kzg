@@ -59,25 +59,25 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
         unsafe {
-            return *self.expanded_roots_of_unity.offset(i as isize) as BlstFr;
+            *self.expanded_roots_of_unity.add(i) as BlstFr
         }
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {
         unsafe {
-            return slice::from_raw_parts(self.expanded_roots_of_unity, self.max_width);
+            slice::from_raw_parts(self.expanded_roots_of_unity, self.max_width)
         }
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> BlstFr {
         unsafe {
-            return *self.reverse_roots_of_unity.offset(i as isize) as BlstFr;
+            *self.reverse_roots_of_unity.add(i) as BlstFr
         }
     }
 
     fn get_reversed_roots_of_unity(&self) -> &[BlstFr] {
         unsafe {
-            return slice::from_raw_parts(self.reverse_roots_of_unity, self.max_width);
+            slice::from_raw_parts(self.reverse_roots_of_unity, self.max_width)
         }
     }
 }
@@ -104,7 +104,7 @@ impl FFTFr<BlstFr> for KzgFFTSettings {
 fn _fft_fr(input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> Result<Vec<BlstFr>, KzgRet> {
     let mut output = vec![Fr::default(); n as usize];
     unsafe {
-        return match fft_fr(output.as_mut_ptr(), input, inverse, n, fs) {
+        match fft_fr(output.as_mut_ptr(), input, inverse, n, fs) {
             KzgRet::KzgOk => Ok(output),
             e => Err(e)
         }
@@ -123,7 +123,7 @@ impl FFTG1<BlstP1> for KzgFFTSettings {
 fn _fft_g1(input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> Result<Vec<BlstP1>, KzgRet> {
     let mut output = vec![G1::default(); n as usize];
     unsafe {
-        return match fft_g1(output.as_mut_ptr(), input, inverse, n, fs) {
+        match fft_g1(output.as_mut_ptr(), input, inverse, n, fs) {
             KzgRet::KzgOk => Ok(output),
             e => Err(e)
         }

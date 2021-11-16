@@ -104,7 +104,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
         unsafe {
-            return (*self.fs).get_expanded_roots_of_unity_at(i);
+            (*self.fs).get_expanded_roots_of_unity_at(i)
         }
     }
 }
@@ -121,9 +121,7 @@ impl Drop for KzgKZGSettings {
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>, Vec<BlstP2>) {
     let mut blst_scalar = BlstScalar { b: [0; 32] };
-    for i in 0..secret.len() {
-        blst_scalar.b[i] = secret[i];
-    }
+    blst_scalar.b[..secret.len()].clone_from_slice(&secret[..]);
 
     let mut s_pow: BlstFr = Fr::one();
     let mut s = Fr::default();
