@@ -14,10 +14,11 @@ mkdir -p lib
 print_msg "Cloning blst"
 git clone https://github.com/supranational/blst.git
 cd blst || exit 1
-git -c advice.detachedHead=false checkout d4b40c33ee86c0556eae8d6aa0380f926911e9ba
 
 print_msg "Building blst"
+export CFLAGS="-O3 -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 bash build.sh
+unset CFLAGS
 cd ..
 
 print_msg "Cloning c-kzg"
@@ -43,6 +44,7 @@ case $(uname -s) in
     ;;
 esac
 eval "$("$sed" -i 's/KZG_CFLAGS =/KZG_CFLAGS = -fPIE/' Makefile)"
+eval "$("$sed" -i 's/KZG_CFLAGS += -O/KZG_CFLAGS += -O3/' Makefile)"
 
 print_msg "Building c-kzg"
 make lib
