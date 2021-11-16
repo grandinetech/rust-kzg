@@ -82,3 +82,4 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Ve
 
     (s1, s2)
 }
+

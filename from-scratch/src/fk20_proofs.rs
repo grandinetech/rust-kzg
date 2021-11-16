@@ -19,7 +19,7 @@ impl FsFFTSettings {
         ret
     }
 
-    pub fn toeplitz_part2(&self, poly: &FsPoly, x_ext_fft: &[FsG1]) -> Vec<FsG1> {
+    pub fn toeplitz_part_2(&self, poly: &FsPoly, x_ext_fft: &[FsG1]) -> Vec<FsG1> {
         let coeffs_fft = self.fft_fr(&poly.coeffs, false).unwrap();
         let mut ret = Vec::new();
 
@@ -43,7 +43,7 @@ impl FsFFTSettings {
 
 
 impl FsPoly {
-    fn toeplitz_coeffs_stride(&self, offset: usize, stride: usize) -> FsPoly {
+    pub fn toeplitz_coeffs_stride(&self, offset: usize, stride: usize) -> FsPoly {
         let n = self.coeffs.len();
         let k = n / stride;
         let k2 = k * 2;
@@ -69,7 +69,7 @@ impl FsPoly {
         ret
     }
 
-    fn toeplitz_coeffs_step(&self) -> FsPoly {
+    pub fn toeplitz_coeffs_step(&self) -> FsPoly {
         self.toeplitz_coeffs_stride(0, 1)
     }
 }

@@ -2,6 +2,7 @@ use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G
 use crate::utils::{is_power_of_two, log_2_byte};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double, blst_p2_is_equal, blst_p2_double, blst_p1_is_inf, blst_p1_double};
 use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings};
+use crate::bytes::reverse_bit_order;
 use crate::kzg_proofs::{g1_linear_combination, g1_mul, g1_sub, g2_mul, g2_sub, pairings_verify};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 
@@ -1047,18 +1048,47 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> 
     }
 
     fn data_availability(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
-        todo!()
+        let n = p.len();
+        let n2 = n * 2;
+
+        if n2 > self.kzg_settings.fs.max_width {
+            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+        } else if !is_power_of_two(n2) {
+            return Err(String::from("n2 must be a power of two"));
+        }
+
+        let mut ret = self.data_availability_optimized(p).unwrap();
+        reverse_bit_order(&mut ret);
+
+        Ok(ret)
     }
 
     fn data_availability_optimized(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
-        todo!()
+        let n = p.len();
+        let n2 = n * 2;
+
+        if n2 > self.kzg_settings.fs.max_width {
+            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+        } else if !is_power_of_two(n2) {
+            return Err(String::from("n2 must be a power of two"));
+        }
+
+        let toeplitz_coeffs = FsPoly { coeffs: vec![FsFr::default(); 2 * p.len()] };
+        let toeplitz_coeffs = toeplitz_coeffs.toeplitz_coeffs_step();
+
+        let h_ext_fft = self.kzg_settings.fs.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft);
+        let h = self.kzg_settings.fs.toeplitz_part_3(&h_ext_fft);
+
+        let ret = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
+
+        Ok(ret)
     }
 }
 
 pub struct FsFK20MultiSettings {
     pub kzg_settings: FsKZGSettings,
     pub chunk_len: usize,
-    pub x_ext_fft_files: Vec<FsG1>,
+    pub x_ext_fft_files: Vec<Vec<FsG1>>,
 }
 
 impl Clone for FsFK20MultiSettings {
@@ -1077,14 +1107,100 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
     }
 
     fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
-        todo!()
+        if n2 > ks.fs.max_width {
+            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+        } else if !is_power_of_two(n2) {
+            return Err(String::from("n2 must be a power of two"));
+        } else if n2 < 2 {
+            return Err(String::from("n2 must be greater than or equal to 2"));
+        } else if chunk_len > n2 / 2 {
+            return Err(String::from("chunk_len must be greater or equal to n2 / 2"));
+        } else if !is_power_of_two(chunk_len) {
+            return Err(String::from("chunk_len must be a power of two"));
+        } else if chunk_len <= 0 {
+            return Err(String::from("chunk_len must be greater or equal to 0"));
+        }
+
+        let n = n2 / 2;
+        let k = n / chunk_len;
+
+        let mut ext_fft_files = vec![Vec::new(); chunk_len];
+        let mut x = vec![FsG1::default(); k];
+
+        for offset in 0..chunk_len {
+            let mut i = 0;
+            let mut j = (n - chunk_len) as i64 - 1 - offset as i64;
+
+            while i + 1 < k {
+                x[i] = ks.secret_g1[j as usize];
+
+                i += 1;
+                j -= (chunk_len as i64);
+            }
+            x[k - 1] = FsG1::identity();
+
+            ext_fft_files[offset] = vec![FsG1::default(); 2 * k];
+            ext_fft_files[offset] = ks.fs.toeplitz_part_1(&ext_fft_files[offset]);
+        }
+
+        let ret = Self {
+            kzg_settings: ks.clone(),
+            chunk_len,
+            x_ext_fft_files: ext_fft_files,
+        };
+
+        Ok(ret)
     }
 
     fn data_availability(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
-        todo!()
+        let n = p.len();
+        let n2 = n * 2;
+
+        if n2 > self.kzg_settings.fs.max_width {
+            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+        } else if !is_power_of_two(n2) {
+            return Err(String::from("n2 must be a power of two"));
+        }
+
+        let mut ret = self.data_availability_optimized(p).unwrap();
+        reverse_bit_order(&mut ret);
+
+        Ok(ret)
     }
 
     fn data_availability_optimized(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
-        todo!()
+        let n = p.len();
+        let n2 = n * 2;
+
+        if n2 > self.kzg_settings.fs.max_width {
+            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+        } else if !is_power_of_two(n2) {
+            return Err(String::from("n2 must be a power of two"));
+        }
+
+        let n = n2 / 2;
+        let k = n / self.chunk_len;
+        let k2 = k * 2;
+
+        let mut h_ext_fft = vec![FsG1::identity(); k2];
+
+        for i in 0..self.chunk_len {
+            let toeplitz_coeffs = p.toeplitz_coeffs_stride(i, self.chunk_len);
+            let h_ext_fft_file = self.kzg_settings.fs.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft_files[i]);
+
+            for j in 0..k2 {
+                h_ext_fft[j] = h_ext_fft[j].add_or_dbl(&h_ext_fft_file[j]);
+            }
+        }
+
+        let mut h = self.kzg_settings.fs.toeplitz_part_3(&h_ext_fft);
+
+        for i in k..k2 {
+            h[i] = FsG1::identity();
+        }
+
+        let ret = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
+
+        Ok(ret)
     }
 }
