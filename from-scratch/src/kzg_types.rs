@@ -1,7 +1,7 @@
-use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_IDENTITY, G2_GENERATOR, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
+use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY, G2_GENERATOR, G2_NEGATIVE_GENERATOR, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use crate::utils::{is_power_of_two, log_2_byte};
-use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double};
-use kzg::{FFTSettings, Fr, Poly, G1, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double, blst_p2_is_equal, blst_p2_double, blst_p1_is_inf, blst_p1_double};
+use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings};
 use crate::kzg_proofs::{g1_linear_combination, g1_mul, g1_sub, g2_mul, g2_sub, pairings_verify};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 
@@ -234,19 +234,19 @@ impl G1<FsFr> for FsG1 {
     }
 
     fn identity() -> Self {
-        todo!()
+        G1_IDENTITY
     }
 
     fn generator() -> Self {
-        todo!()
+        G1_GENERATOR
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        G1_NEGATIVE_GENERATOR
     }
 
     fn rand() -> Self {
-        let result = G1_GENERATOR;
+        let result: FsG1 = G1_GENERATOR;
         result.mul(&FsFr::rand())
     }
 
@@ -259,11 +259,17 @@ impl G1<FsFr> for FsG1 {
     }
 
     fn is_inf(&self) -> bool {
-        todo!()
+        unsafe {
+            return blst_p1_is_inf(&self.0);
+        }
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let mut result = blst_p1::default();
+        unsafe {
+            blst_p1_double(&mut result, &self.0);
+        }
+        Self(result)
     }
 
     fn sub(&self, b: &Self) -> Self {
@@ -280,36 +286,6 @@ impl G1<FsFr> for FsG1 {
         unsafe {
             return blst_p1_is_equal(&self.0, &b.0);
         }
-    }
-
-    fn mul(&self, b: &FsFr) -> Self {
-        let mut scalar: blst_scalar = blst_scalar::default();
-        unsafe {
-            blst_scalar_from_fr(&mut scalar, &b.0);
-        }
-
-        // Count the number of bytes to be multiplied.
-        let mut i = scalar.b.len(); // std::mem::size_of::<blst_scalar>();
-        while i != 0 && scalar.b[i - 1] == 0 {
-            i -= 1;
-        }
-        let mut ret = Self::default();
-        return if i == 0 {
-            G1_IDENTITY
-        } else if i == 1 && scalar.b[0] == 1 {
-            *self
-        } else {
-            // Count the number of bits to be multiplied.
-            unsafe {
-                blst_p1_mult(
-                    &mut ret.0,
-                    &self.0,
-                    &(scalar.b[0]),
-                    8 * i - 7 + log_2_byte(scalar.b[i - 1]),
-                );
-            }
-            ret
-        };
     }
 
     fn div(&self, _b: &Self) -> Result<Self, String> {
@@ -329,37 +305,93 @@ pub struct FsG2(pub blst::blst_p2);
 
 impl G2Mul<FsFr> for FsG2 {
     fn mul(&self, b: &FsFr) -> Self {
-        todo!()
+        let mut result = blst_p2::default();
+        let mut scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &b.0);
+            blst_p2_mult(&mut result, &self.0, scalar.b.as_ptr(), 8 * std::mem::size_of::<blst_scalar>());
+        }
+        Self(result)
     }
 }
 
 impl G2 for FsG2 {
     fn default() -> Self {
-        todo!()
+        Self(blst_p2::default())
     }
 
     fn generator() -> Self {
-        todo!()
+        G2_GENERATOR
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        G2_NEGATIVE_GENERATOR
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        todo!()
+        let mut result = blst_p2::default();
+        unsafe {
+            blst_p2_add_or_double(&mut result, &self.0, &b.0);
+        }
+        Self(result)
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        let mut result = blst_p2::default();
+        unsafe {
+            blst_p2_double(&mut result, &self.0);
+        }
+        Self(result)
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        let mut bneg: blst_p2 = b.0;
+        let mut result = blst_p2::default();
+        unsafe {
+            blst_p2_cneg(&mut bneg, true);
+            blst_p2_add_or_double(&mut result, &self.0, &bneg);
+        }
+        Self(result)
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        unsafe {
+            return blst_p2_is_equal(&self.0, &b.0);
+        }
+    }
+}
+
+impl G1Mul<FsFr> for FsG1 {
+    fn mul(&self, b: &FsFr) -> Self {
+
+        let mut scalar: blst_scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &b.0);
+        }
+
+        // Count the number of bytes to be multiplied.
+        let mut i = scalar.b.len();
+        while i != 0 && scalar.b[i - 1] == 0 {
+            i -= 1;
+        }
+
+        let mut result = Self::default();
+        if i == 0 {
+            return G1_IDENTITY;
+        } else if i == 1 && scalar.b[0] == 1 {
+            return *self;
+        } else {
+            // Count the number of bits to be multiplied.
+            unsafe {
+                blst_p1_mult(
+                    &mut result.0,
+                    &self.0,
+                    &(scalar.b[0]),
+                    8 * i - 7 + log_2_byte(scalar.b[i - 1]),
+                );
+            }
+        }
+        result
     }
 }
 
@@ -866,8 +898,9 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     fn check_proof_single(&self, com: &FsG1, proof: &FsG1, x: &FsFr, y: &FsFr) -> Result<bool, String> {
         let x_g2: FsG2 = g2_mul(&G2_GENERATOR, x);
         let s_minus_x: FsG2 = g2_sub(&self.secret_g2[1], &x_g2);
-        let mut y_g1 = G1::default();
-        g1_mul(&mut y_g1, &G1_GENERATOR, y);
+        let mut y_g1 = FsG1::default();
+        y_g1 = G1_GENERATOR.mul(y);
+
 
         let commitment_minus_y: FsG1 = g1_sub(com, &y_g1);
 
