@@ -24,3 +24,14 @@ subtle = "2.2.1"
 [dependencies.ff]
 version = "0.11"
 default-features = false
+
+[dev-dependencies]
+criterion = "0.3.5"
+
+[[bench]]
+name = "poly"
+harness = false
+
+[[bench]]
+name = "das"
+harness = false
