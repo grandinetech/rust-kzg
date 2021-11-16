@@ -1,4 +1,3 @@
-
 pub trait Fr: Clone {
     fn default() -> Self;
 
@@ -14,7 +13,7 @@ pub trait Fr: Clone {
 
     fn from_u64(u: u64) -> Self;
 
-    fn to_u64_arr(&self) -> [u64; 4]; 
+    fn to_u64_arr(&self) -> [u64; 4];
 
     fn is_one(&self) -> bool;
 
@@ -210,4 +209,38 @@ pub trait KZGSettings<
     ) -> Result<bool, String>;
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
+}
+
+pub trait FK20SingleSettings<
+    Coeff1: Fr,
+    Coeff2: G1<Coeff1>,
+    Coeff3: G2,
+    Fs: FFTSettings<Coeff1>,
+    Polynomial: Poly<Coeff1>,
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>
+>: Clone {
+    fn default() -> Self;
+
+    fn new(ks: &Ks, n2: usize) -> Result<Self, String>;
+
+    fn data_availability(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
+
+    fn data_availability_optimized(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
+}
+
+pub trait FK20MultiSettings<
+    Coeff1: Fr,
+    Coeff2: G1<Coeff1>,
+    Coeff3: G2,
+    Fs: FFTSettings<Coeff1>,
+    Polynomial: Poly<Coeff1>,
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>
+>: Clone {
+    fn default() -> Self;
+
+    fn new(ks: &Ks, n2: usize, chunk_len: usize) -> Result<Self, String>;
+
+    fn data_availability(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
+
+    fn data_availability_optimized(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
 }
