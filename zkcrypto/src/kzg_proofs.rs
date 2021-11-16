@@ -314,7 +314,7 @@ pub(crate) fn new_kzg_settings(_secret_g1: Vec<G1>, _secret_g2: Vec<G2>, secrets
 
 pub(crate) fn commit_to_poly(p: &Poly, ks: &KZGSettings) -> Result<G1, String> {
     if p.coeffs.len() > ks.secret_g1.len() {
-        return Err(String::from("Poly is longer than G1"));
+        return Err(String::from("Poly given is too long"));
     } 
 
     else if p.is_zero() {
