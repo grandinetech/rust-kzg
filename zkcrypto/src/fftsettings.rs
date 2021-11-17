@@ -5,9 +5,10 @@ use crate::consts::*;
 use crate::zkfr::blsScalar;
 use crate::fft_fr::*;
 use crate::utils::is_power_of_two;
+use crate::poly::*;
 
 // use blst::blst_fr_from_uint64;
-use kzg::{Fr, FFTFr, FFTSettings};
+use kzg::{Fr, FFTFr, FFTSettings, FFTSettingsPoly};
 
 #[derive(Clone)]
 pub struct ZkFFTSettings {
@@ -15,6 +16,60 @@ pub struct ZkFFTSettings {
     pub root_of_unity: blsScalar,
     pub expanded_roots_of_unity: Vec<blsScalar>,
     pub reverse_roots_of_unity: Vec<blsScalar>,
+}
+
+impl ZkFFTSettings {
+    pub fn das_fft_extension_stride(&self, ab: &mut [blsScalar], stride: usize) {
+        if ab.len() < 2 {
+            return;
+        } else if ab.len() == 2 {
+            let x = ab[0].add(&ab[1]);
+            let y = ab[0].sub(&ab[1]);
+            let tmp = y.mul(&self.expanded_roots_of_unity[stride]);
+
+            ab[0] = x.add(&tmp);
+            ab[1] = x.sub(&tmp);
+
+            return;
+        }else {
+            let half = ab.len();
+            let halfhalf = half / 2;
+
+            for i in 0..halfhalf{
+                let tmp1 = ab[i].add(&ab[halfhalf+i]);
+                let tmp2 = ab[i].sub(&ab[halfhalf+i]);
+                ab[halfhalf+i] = tmp2.mul(&self.reverse_roots_of_unity[i * 2 * stride]);
+                ab[i] = tmp1;
+            }
+
+            self.das_fft_extension_stride(&mut ab[..halfhalf], stride * 2);
+            self.das_fft_extension_stride(&mut ab[halfhalf..], stride * 2);
+
+            for i in 0..halfhalf{
+                let x = ab[i];
+                let y = ab[halfhalf+i];
+                let y_times_root = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
+                ab[i] = x.add(&y_times_root);
+                ab[halfhalf+i] = x.sub(&y_times_root);
+            }
+        }
+    }
+}
+
+
+impl FFTSettingsPoly<blsScalar, ZPoly, ZkFFTSettings> for ZkFFTSettings {
+    fn poly_mul_fft(a: &ZPoly, b: &ZPoly, len: usize, _fs: Option<&ZkFFTSettings>) -> Result<ZPoly, String> {
+			
+		// for i in 0..3 {	
+			// println!("a(fftsettings_mul_fft) = {:?}", a.get_coeff_at(i));
+		// }
+		// for i in 0..3 {	
+			// println!("b(fftsettings_mul_fft) = {:?}", b.get_coeff_at(i));
+		// }
+		
+		poly_mul_fft(len, a, b)
+	}
+	
 }
 
 impl FFTFr<blsScalar> for ZkFFTSettings {
@@ -78,7 +133,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
 	fn default() -> ZkFFTSettings {
         ZkFFTSettings {
             max_width: 0,
-            root_of_unity: blsScalar ( [0, 0, 0, 0] ),
+            root_of_unity: blsScalar::zero(),
             expanded_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
         }
@@ -130,6 +185,6 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
 }
 
 
-pub fn new_fft_settings(max_scale: usize) -> ZkFFTSettings {
+pub fn new_fft_settings(_max_scale: usize) -> ZkFFTSettings {
     ZkFFTSettings::default()
 }

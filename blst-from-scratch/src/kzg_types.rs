@@ -1,10 +1,11 @@
 use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY, G2_GENERATOR, G2_NEGATIVE_GENERATOR, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use crate::utils::{is_power_of_two, log_2_byte};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double, blst_p2_is_equal, blst_p2_double, blst_p1_is_inf, blst_p1_double};
-use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings, FFTG1};
+use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings, FFTG1, PolyRecover, ZeroPoly};
 use crate::bytes::reverse_bit_order;
-use crate::kzg_proofs::{g1_linear_combination, g1_mul, g1_sub, g2_mul, g2_sub, pairings_verify};
+use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
+use crate::recovery::{scale_poly, unscale_poly};
 
 pub struct FsFr(pub blst::blst_fr);
 
@@ -229,7 +230,7 @@ impl FsG1 {
     }
 }
 
-impl G1<FsFr> for FsG1 {
+impl G1 for FsG1 {
     fn default() -> Self {
         Self(blst_p1::default())
     }
@@ -724,7 +725,7 @@ impl FsPoly {
         }
 
         if temp_len == 0 {
-            ret.coeffs = Vec::default();
+            ret.coeffs = Vec::new();
         } else {
             ret.coeffs = ret.coeffs[0..temp_len].to_vec();
         }
@@ -834,8 +835,8 @@ impl Clone for FsKZGSettings {
 impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     fn default() -> Self {
         let output = Self {
-            secret_g1: Vec::default(),
-            secret_g2: Vec::default(),
+            secret_g1: Vec::new(),
+            secret_g2: Vec::new(),
             fs: FsFFTSettings::default(),
         };
         output
@@ -901,7 +902,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         }
 
         // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
-        let mut divisor: FsPoly = FsPoly { coeffs: Vec::default() };
+        let mut divisor: FsPoly = FsPoly { coeffs: Vec::new() };
 
         // -(x0^n)
         let x_pow_n = x0.pow(n);
@@ -942,8 +943,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         // [x^n]_2
         let x_pow = inv_x_pow.inverse();
 
-        // g2_mul(&xn2, &g2_generator, &x_pow);
-        let xn2 = g2_mul(&G2_GENERATOR, &x_pow);
+        let xn2 = G2_GENERATOR.mul(&x_pow);
 
         // [s^n - x^n]_2
         let xn_minus_yn = self.secret_g2[n].sub(&xn2);
@@ -1183,5 +1183,83 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
         let ret = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
 
         Ok(ret)
+    }
+}
+
+impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
+    fn recover_poly_from_samples(samples: &[Option<FsFr>], fs: FsFFTSettings) -> Self {
+
+        let len_samples = samples.len();
+        assert!(is_power_of_two(len_samples));
+
+        let mut missing: Vec<usize> = Vec::new();
+        for i in 0..len_samples {
+            if samples[i].is_none() {
+                missing.push(i);
+            }
+        }
+
+        // Calculate `Z_r,I`
+        let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing).unwrap();
+
+        for i in 0..len_samples {
+            assert_eq!(samples[i].is_none(), zero_eval[i].is_zero());
+        }
+
+        let mut poly_evaluations_with_zero = FsPoly::default();
+
+        // Construct E * Z_r,I: the loop makes the evaluation polynomial
+        for i in 0..len_samples {
+            if samples[i].is_none() {
+                poly_evaluations_with_zero.coeffs.push(FsFr::zero());
+            } else {
+                poly_evaluations_with_zero.coeffs.push(samples[i].unwrap().mul(&zero_eval[i]));
+            }
+        }
+        // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
+        let mut poly_with_zero: FsPoly = FsPoly::default();
+        poly_with_zero.coeffs = fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap();
+
+        // x -> k * x
+        let len_zero_poly = zero_poly.coeffs.len();
+        scale_poly(&mut poly_with_zero.coeffs, len_samples);
+        scale_poly(&mut zero_poly.coeffs, len_zero_poly);
+
+        // Q1 = (D * Z_r,I)(k * x)
+        let scaled_poly_with_zero = poly_with_zero.coeffs;
+
+        // Q2 = Z_r,I(k * x)
+        let scaled_zero_poly = zero_poly.coeffs;
+
+        // Polynomial division by convolution: Q3 = Q1 / Q2
+        let eval_scaled_poly_with_zero: Vec<FsFr> = fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
+        let eval_scaled_zero_poly: Vec<FsFr> = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+
+        let mut eval_scaled_reconstructed_poly = FsPoly::default();
+        eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
+        for i in 0..len_samples {
+            eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i]).unwrap();
+        }
+
+        // The result of the division is D(k * x):
+        let mut scaled_reconstructed_poly: Vec<FsFr> = fs.fft_fr(&eval_scaled_reconstructed_poly.coeffs, true).unwrap();
+
+        // k * x -> x
+        unscale_poly(&mut scaled_reconstructed_poly, len_samples);
+
+        // Finally we have D(x) which evaluates to our original data at the powers of roots of unity
+        let reconstructed_poly = scaled_reconstructed_poly;
+
+        // The evaluation polynomial for D(x) is the reconstructed data:
+        let mut reconstr_poly = FsPoly::default();
+        let reconstructed_data = fs.fft_fr(&reconstructed_poly, false).unwrap();
+
+        // Check all is well
+        for i in 0..len_samples {
+            assert!(samples[i].is_none() || reconstructed_data[i].equals(&samples[i].unwrap()));
+        }
+
+        reconstr_poly.coeffs = reconstructed_data;
+        reconstr_poly
     }
 }

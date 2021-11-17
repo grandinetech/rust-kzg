@@ -2,14 +2,11 @@
 pub mod tests {
 	use kzg_bench::tests::bls12_381::*;
     use zkcrypto::zkfr::blsScalar;
-	use zkcrypto::kzg_types::ZkG1Projective;
-	use zkcrypto::kzg_types::ZkG2Projective;
-
-	use zkcrypto::kzg_types::{G1_IDENTITY, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR, pairings_verify, g1_linear_combination};
-	// use zkcrypto::curve::fp::Fp as ZkFp;
-	// use kzg::Fr;
+	use zkcrypto::kzg_types::{ZkG1Projective, ZkG2Projective, pairings_verify};
+	// use zkcrypto::kzg_types::ZkG2Projective;
+	
+	
 	use zkcrypto::utils::log_2_byte;
-	use zkcrypto::utils::*;
 	
 #[test]	
 pub fn log_2_byte_works_() {
