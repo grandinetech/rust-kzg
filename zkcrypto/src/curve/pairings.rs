@@ -544,7 +544,7 @@ impl Group for Gt {
 
     */
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn random(_rng: impl RngCore) -> Self { // was mut rng: impl rngCore
         loop {
             // let inner = Fp12::random(&mut rng);
             let inner = Fp12::one();

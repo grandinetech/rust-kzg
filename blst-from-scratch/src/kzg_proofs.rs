@@ -20,7 +20,7 @@ use crate::kzg_types::{FsFr, FsG1, FsG2};
 use crate::consts::G1_IDENTITY;
 
 
-pub fn g1_linear_combination(out: &mut FsG1, p: &Vec<FsG1>, coeffs: &Vec<FsFr>, len: usize) {
+pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: usize) {
     if true {
         // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
         // Direct approach

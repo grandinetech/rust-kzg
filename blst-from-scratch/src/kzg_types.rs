@@ -229,7 +229,7 @@ impl FsG1 {
     }
 }
 
-impl G1<FsFr> for FsG1 {
+impl G1 for FsG1 {
     fn default() -> Self {
         Self(blst_p1::default())
     }
