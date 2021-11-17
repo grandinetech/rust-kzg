@@ -1,7 +1,5 @@
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-use crate::kzg_proofs::{g2_mul};
 use crate::kzg_types::{FsFr, FsG1, FsG2};
-use kzg::{Fr, G1, G1Mul, G2Mul};
 use kzg::{Fr, G1Mul, G2Mul};
 
 pub fn is_power_of_two(x: usize) -> bool {

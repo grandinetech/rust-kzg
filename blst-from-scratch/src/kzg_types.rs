@@ -891,7 +891,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         let x_g2: FsG2 = G2_GENERATOR.mul(x);
         let s_minus_x: FsG2 = self.secret_g2[1].sub(&x_g2);
         let y_g1 = G1_GENERATOR.mul(y);
-        let commitment_minus_y: FsG1 = g1_sub(com, &y_g1);
+        let commitment_minus_y: FsG1 = com.sub(&y_g1);
 
         Ok(pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x))
     }
