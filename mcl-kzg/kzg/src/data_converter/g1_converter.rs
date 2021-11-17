@@ -3,17 +3,9 @@ use crate::BlstP1;
 use crate::data_converter::fp_converter::*;
 
 pub fn g1_from_blst(blst_g1: BlstP1) -> G1 {
-    let mut result = G1::default();
-    result.x = fp_from_blst(blst_g1.x);
-    result.y = fp_from_blst(blst_g1.y);
-    result.z = fp_from_blst(blst_g1.z);
-    return result;
+    G1 { x: fp_from_blst(blst_g1.x), y: fp_from_blst(blst_g1.y), z: fp_from_blst(blst_g1.z) }
 }
 
 pub fn g1_to_blst(g1: G1) -> BlstP1 {
-    let mut result = BlstP1::default();
-    result.x = fp_to_blst(g1.x);
-    result.y = fp_to_blst(g1.y);
-    result.z = fp_to_blst(g1.z);
-    return result;
+    blst::blst_p1 { x: fp_to_blst(g1.x), y: fp_to_blst(g1.y), z: fp_to_blst(g1.z) }
 }

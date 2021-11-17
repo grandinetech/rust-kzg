@@ -9,6 +9,9 @@ macro_rules! common_impl {
             pub fn zero() -> $t {
                 Default::default()
             }
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub unsafe fn uninit() -> $t {
                 std::mem::MaybeUninit::uninit().assume_init()
             }
@@ -24,6 +27,9 @@ macro_rules! common_impl {
 macro_rules! is_valid_impl {
     ($t:ty, $is_valid_fn:ident) => {
         impl $t {
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub fn is_valid(&self) -> bool {
                 unsafe { $is_valid_fn(self) == 1 }
             }
@@ -34,9 +40,15 @@ macro_rules! is_valid_impl {
 macro_rules! serialize_impl {
     ($t:ty, $size:expr, $serialize_fn:ident, $deserialize_fn:ident) => {
         impl $t {
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub fn deserialize(&mut self, buf: &[u8]) -> bool {
                 unsafe { $deserialize_fn(self, buf.as_ptr(), buf.len()) > 0 }
             }
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub fn serialize(&self) -> Vec<u8> {
                 let size = unsafe { $size } as usize;
                 let mut buf: Vec<u8> = Vec::with_capacity(size);

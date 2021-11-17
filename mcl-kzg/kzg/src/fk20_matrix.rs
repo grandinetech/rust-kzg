@@ -26,8 +26,8 @@ impl FK20Matrix {
         // TODO: more panic checks
         
         let mut x_ext_fft_files: Vec<Vec<G1>> = vec![vec![]; chunk_len];
-        for i in 0..chunk_len {
-            x_ext_fft_files[i] = FK20Matrix::x_ext_fft_precompute(&fft_settings, &curve, n, k, chunk_len,i);
+        for (i, item) in x_ext_fft_files.iter_mut().enumerate().take(chunk_len) {
+            *item = FK20Matrix::x_ext_fft_precompute(&fft_settings, &curve, n, k, chunk_len, i);
         }
 
         FK20Matrix {
@@ -37,7 +37,8 @@ impl FK20Matrix {
             chunk_len
         }
     }
-    
+
+    #[allow(clippy::many_single_char_names)]
     fn x_ext_fft_precompute(fft_settings: &FFTSettings, curve: &Curve, n: usize, k: usize, chunk_len: usize, offset: usize) -> Vec<G1> {
         let mut x: Vec<G1> = vec![G1::default(); k];
         let start = n - chunk_len - offset - 1;
@@ -56,63 +57,59 @@ impl FK20Matrix {
         
         x[k - 1] = G1::zero();
 
-        return FK20Matrix::toeplitz_part_1(&fft_settings, &x);
+        FK20Matrix::toeplitz_part_1(fft_settings, &x)
     }
 
-    pub fn toeplitz_part_1(fft_settings: &FFTSettings, x: &Vec<G1>) -> Vec<G1> {
+    pub fn toeplitz_part_1(fft_settings: &FFTSettings, x: &[G1]) -> Vec<G1> {
         let n = x.len();
 
         // extend x with zeroes
         let tail= vec![G1::zero(); n];
-        let x_ext: Vec<G1> = x.iter()
-            .map(|g1| g1.clone())
+        let x_ext: Vec<G1> = x.iter().cloned()
             .chain(tail)
             .collect();
 
-        let x_ext_fft = FK20Matrix::fft_g1(&fft_settings, &x_ext);
         
-        return x_ext_fft;
+        
+        FK20Matrix::fft_g1(fft_settings, &x_ext)
     }
 
-    pub fn fft_g1(fft_settings: &FFTSettings, values: &Vec<G1>) -> Vec<G1> {
+    pub fn fft_g1(fft_settings: &FFTSettings, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
-        let vals_copy = values.clone();
+        // let vals_copy = values.clone();
         
         let root_z: Vec<Fr> = fft_settings.exp_roots_of_unity.iter()
-            .take(fft_settings.max_width)
-            .map(|x| x.clone())
+            .take(fft_settings.max_width).copied()
             .collect();
 
         let stride = fft_settings.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FK20Matrix::_fft_g1(&fft_settings, &vals_copy, 0, 1, &root_z, stride, &mut out);
+        FK20Matrix::_fft_g1(fft_settings, values, 0, 1, &root_z, stride, &mut out);
 
-        return out;
+        out
     }
 
     //possible remove self, merge this methods with the ones in fft_settings
-    pub fn fft_g1_inv(&self, values: &Vec<G1>) -> Vec<G1> {
+    pub fn fft_g1_inv(&self, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
-        let vals_copy = values.clone();
+        // let vals_copy = values.clone();
         
         let root_z: Vec<Fr> = self.fft_settings.exp_roots_of_unity_rev.iter()
-            .take(self.fft_settings.max_width)
-            .map(|x| x.clone())
+            .take(self.fft_settings.max_width).copied()
             .collect();
 
         let stride = self.fft_settings.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FK20Matrix::_fft_g1(&self.fft_settings, &vals_copy, 0, 1, &root_z, stride, &mut out);
+        FK20Matrix::_fft_g1(&self.fft_settings, values, 0, 1, &root_z, stride, &mut out);
         
         let inv_len = Fr::from_int(values.len() as i32).get_inv();
-        for i in 0..out.len() {
-            let tmp = &out[i] * &inv_len;
-            out[i] = tmp;
+        for item in out.iter_mut() {
+            *item = &*item * &inv_len;
         }
 
-        return out;
+        out
     }
 
     pub fn dau_using_fk20_multi(&self, polynomial: &Polynomial) -> Vec<G1> {
@@ -121,14 +118,14 @@ impl FK20Matrix {
         let n2 = n << 1;
         let extended_poly = polynomial.get_extended(n2);
 
-        let mut proofs = extended_poly.fk20_multi_dao_optimized(&self);
+        let mut proofs = extended_poly.fk20_multi_dao_optimized(self);
 
         order_by_rev_bit_order(&mut proofs);
 
-        return proofs;
+        proofs
     }
 
-    fn _fft_g1(fft_settings: &FFTSettings, values: &Vec<G1>, value_offset: usize, value_stride: usize, roots_of_unity: &Vec<Fr>, roots_stride: usize, out: &mut [G1]) {
+    fn _fft_g1(fft_settings: &FFTSettings, values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         //TODO: fine tune for opt, maybe resolve number dinamically based on experiments
         if out.len() <= 4 {
             return FK20Matrix::_fft_g1_simple(values, value_offset, value_stride, roots_of_unity, roots_stride, out);
@@ -146,16 +143,16 @@ impl FK20Matrix {
             let y = out[i + half].clone();
             let root = &roots_of_unity[i * roots_stride];
 
-            let y_times_root = &y * &root;
+            let y_times_root = &y * root;
             out[i] = &x + &y_times_root;
             out[i + half] = &x - &y_times_root;
         }
 
-        return;
+        
     }
     
 
-    fn _fft_g1_simple(values: &Vec<G1>, value_offset: usize, value_stride: usize, roots_of_unity: &Vec<Fr>, roots_stride: usize, out: &mut [G1]) {
+    fn _fft_g1_simple(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         let l = out.len();
         for i in 0..l {
             // TODO: check this logic with a working brain, there could be a simpler way to write this;
@@ -170,7 +167,7 @@ impl FK20Matrix {
         }
     }
 
-    fn toeplitz_coeffs_step_strided(&self, poly: &Vec<Fr>, offset: usize) -> Vec<Fr> {
+    fn toeplitz_coeffs_step_strided(&self, poly: &[Fr], offset: usize) -> Vec<Fr> {
         let stride = self.chunk_len;
         let n = poly.len();
         let k = n / stride;
@@ -178,19 +175,19 @@ impl FK20Matrix {
 
         // [last] + [0]*(n+1) + [1 .. n-2]
         let mut toeplitz_coeffs = vec![Fr::zero(); k2];
-        toeplitz_coeffs[0] = poly[n - 1 - offset].clone();
+        toeplitz_coeffs[0] = poly[n - 1 - offset];
         
         let mut j = (stride << 1) - offset - 1;
-        for i in k+2..k2 {
-            toeplitz_coeffs[i] = poly[j].clone();
+        for item in toeplitz_coeffs.iter_mut().take(k2).skip(k+2) {
+            *item = poly[j];
             j += stride;
         }
 
-        return toeplitz_coeffs;
+        toeplitz_coeffs
     }
 
-    pub fn toeplitz_part_2(&self, coeffs: &Vec<Fr>, index: usize) -> Vec<G1> {
-        let toeplitz_coeffs_fft = self.fft_settings.fft(&coeffs, false);
+    pub fn toeplitz_part_2(&self, coeffs: &[Fr], index: usize) -> Vec<G1> {
+        let toeplitz_coeffs_fft = self.fft_settings.fft(coeffs, false);
 
         let x_ext_fft = &self.x_ext_fft_files[index];
 
@@ -199,22 +196,23 @@ impl FK20Matrix {
             .map(|(g1, coeff)| g1 * &coeff)
             .collect();
 
-        return h_ext_fft;
+        h_ext_fft
     }
 
     // TODO: optimization, reuse h_ext_fft
-    pub fn toeplitz_part_3(&self, h_ext_fft: &Vec<G1>) -> Vec<G1> {
-        let out = self.fft_g1_inv(&h_ext_fft);
+    pub fn toeplitz_part_3(&self, h_ext_fft: &[G1]) -> Vec<G1> {
+        let out = self.fft_g1_inv(h_ext_fft);
 
         // return half, can just resize the vector to be half.
-        return out.iter().take(out.len() >> 1).map(|x| x.clone()).collect();
+        return out.iter().take(out.len() >> 1).cloned().collect();
     }
 
-    pub fn check_proof_multi(&self, commitment: &G1, proof: &G1, x: &Fr, ys: &Vec<Fr>) -> bool {
-        let mut interpolation_poly = self.fft_settings.fft(&ys, true);
+    pub fn check_proof_multi(&self, commitment: &G1, proof: &G1, x: &Fr, ys: &[Fr]) -> bool {
+        let mut interpolation_poly = self.fft_settings.fft(ys, true);
         let mut x_pow = Fr::one();
-        for i in 0.. interpolation_poly.len() {
-            interpolation_poly[i] *= &x_pow.get_inv();
+        for item in interpolation_poly.iter_mut() {
+        // for i in 0.. interpolation_poly.len() {
+            *item *= &x_pow.get_inv();
             x_pow *= x;
         }
 
@@ -228,24 +226,24 @@ impl FK20Matrix {
 
         let commit_minus_interp = commitment - &result;
 
-        return Curve::verify_pairing(&commit_minus_interp, &self.curve.g2_gen, &proof, &&xn_minus_yn);
+        Curve::verify_pairing(&commit_minus_interp, &self.curve.g2_gen, proof, &xn_minus_yn)
     }
 }
 
 impl Polynomial {
-    pub fn extend(vec: &Vec<Fr>, size: usize) -> Vec<Fr> {
+    pub fn extend(vec: &[Fr], size: usize) -> Vec<Fr> {
         if size < vec.len() {
             return vec.to_owned();
         }
         let to_pad = size - vec.len();
         let tail = iter::repeat(Fr::zero()).take(to_pad);
-        let result: Vec<Fr> = vec.iter().map(|x| x.clone()).chain(tail).collect();
+        let result: Vec<Fr> = vec.iter().copied().chain(tail).collect();
 
-        return result;
+        result
     }
 
     pub fn get_extended(&self, size: usize) -> Polynomial { 
-        return Polynomial::from_fr(Polynomial::extend(&self.coeffs, size));
+        Polynomial::from_fr(Polynomial::extend(&self.coeffs, size))
     }
 
     pub fn fk20_multi_dao_optimized(&self, matrix: &FK20Matrix) -> Vec<G1> {
@@ -256,7 +254,7 @@ impl Polynomial {
         let mut h_ext_fft = vec![G1::zero(); k2];
         // TODO: this operates on an extended poly, but doesn't use the extended values?
         // literally just using the poly without the zero trailing tail, makes more sense to take it in as a param, or use without the tail;
-        let reduced_poly: Vec<Fr> = self.coeffs.iter().map(|x| x.clone()).take(n).collect();
+        let reduced_poly: Vec<Fr> = self.coeffs.iter().copied().take(n).collect();
 
         for i in 0..matrix.chunk_len {
             let toeplitz_coeffs = matrix.toeplitz_coeffs_step_strided(&reduced_poly, i);
@@ -275,6 +273,6 @@ impl Polynomial {
             .chain(tail)
             .collect();
         
-        return FK20Matrix::fft_g1(&matrix.fft_settings, &h);
+        FK20Matrix::fft_g1(&matrix.fft_settings, &h)
     }
 }

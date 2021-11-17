@@ -14,7 +14,7 @@ pub fn fr_from_blst(fr: BlstFr) -> Fr {
     for i in 0..4 {
         result.d[i] = fr.l[i];
     }
-    return result;
+    result
 }
 
 pub fn fr_to_blst(fr: Fr) -> BlstFr {
@@ -22,5 +22,5 @@ pub fn fr_to_blst(fr: Fr) -> BlstFr {
     for i in 0..4 {
         result.l[i] = fr.d[i];
     }
-    return result;
+    result
 }

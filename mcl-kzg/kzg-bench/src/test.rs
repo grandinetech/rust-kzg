@@ -8,6 +8,7 @@ use mcl_rust::fk20_fft::*;
 use mcl_rust::fk20_matrix::*;
 
 #[test]
+#[allow(clippy::many_single_char_names)]
 fn mcl_test() {
     assert_eq!(mem::size_of::<Fr>(), 32);
     assert_eq!(mem::size_of::<Fp>(), 48);
@@ -220,7 +221,7 @@ fn fk20matrix_new_builds_valid_settings() {
     let kzg_curve = Curve::new(&secret, n * 2);
     
     // Act
-    let matrix = FK20Matrix::new(kzg_curve, n * 2, chunk_len, 10);
+    let _matrix = FK20Matrix::new(kzg_curve, n * 2, chunk_len, 10);
 
     // Assert
     // Correctness can be implied from first few values (16 in this case), they should already fail if the math is wrong
@@ -252,10 +253,10 @@ fn fk20matrix_new_builds_valid_settings() {
         ]
     ];
 
-    for i in 0.. 4 {
-        for j in 0..4 {
-            let str = matrix.x_ext_fft_files[i][j].get_str(10);
-            assert_eq!(expected[i][j], str);
+    for (_i, item) in expected.iter().enumerate().take(4) {
+        for (j, item2) in item.iter().enumerate().take(4) {
+            let str = *item2;
+            assert_eq!(item[j], str);
         }
     }
 }
@@ -279,7 +280,7 @@ fn get_next_power_of_two_returns_correct_values() {
     ];
     
     // Act
-    let x_next_pows: Vec<usize> = xs.iter().map(|x| next_pow_of_2(x.clone())).collect();
+    let x_next_pows: Vec<usize> = xs.iter().map(|x| next_pow_of_2(*x)).collect();
     
     // Assert
     let expected = [
@@ -291,7 +292,7 @@ fn get_next_power_of_two_returns_correct_values() {
     }
 
     expected.iter().zip(x_next_pows)
-        .for_each(|(a, b)| assert_eq_ints(a.clone(), b as i32));
+        .for_each(|(a, b)| assert_eq_ints(*a, b as i32));
 
 }
 
@@ -425,12 +426,11 @@ fn fk20_multi_proof_full_circle_fixed_value() {
     
     // Act
     let domain_stride = matrix.fft_settings.max_width / n2;
-    for pos in 0..(chunk_count * 2) {
+    for (pos, item) in proofs.iter().enumerate().take(chunk_count * 2) {
         let domain_pos = reverse_bits_limited(chunk_count, pos);
         let x = &matrix.fft_settings.exp_roots_of_unity[domain_pos * domain_stride];
 
-        let mut ys: Vec<Fr> = extended_data.iter()
-            .map(|x| x.clone())
+        let mut ys: Vec<Fr> = extended_data.iter().copied()
             .skip(chunk_len * pos).take(chunk_len)
             .collect();
         order_by_rev_bit_order(&mut ys);
@@ -446,8 +446,8 @@ fn fk20_multi_proof_full_circle_fixed_value() {
         for (a, b) in ys.iter().zip(ys2) {
             assert_eq!(a.get_str(10), b.get_str(10));
         }
-        let proof = &proofs[pos];
-        let valid = matrix.check_proof_multi(&commitment, proof, &x, &ys);
+        let proof = item;
+        let valid = matrix.check_proof_multi(&commitment, proof, x, &ys);
         assert!(valid);
     }
 }
@@ -473,12 +473,11 @@ fn fk20_multi_proof_full_circle_random_secret() {
     
     // Act
     let domain_stride = matrix.fft_settings.max_width / n2;
-    for pos in 0..(chunk_count * 2) {
+    for (pos, item) in proofs.iter().enumerate().take(chunk_count * 2) {
         let domain_pos = reverse_bits_limited(chunk_count, pos);
         let x = &matrix.fft_settings.exp_roots_of_unity[domain_pos * domain_stride];
 
-        let mut ys: Vec<Fr> = extended_data.iter()
-            .map(|x| x.clone())
+        let mut ys: Vec<Fr> = extended_data.iter().copied()
             .skip(chunk_len * pos).take(chunk_len)
             .collect();
         order_by_rev_bit_order(&mut ys);
@@ -494,8 +493,8 @@ fn fk20_multi_proof_full_circle_random_secret() {
         for (a, b) in ys.iter().zip(ys2) {
             assert_eq!(a.get_str(10), b.get_str(10));
         }
-        let proof = &proofs[pos];
-        let valid = matrix.check_proof_multi(&commitment, proof, &x, &ys);
+        let proof = item;
+        let valid = matrix.check_proof_multi(&commitment, proof, x, &ys);
         assert!(valid);
     }
 }
@@ -530,193 +529,6 @@ fn das_ftt_extension_should_extend_with_exact_values_given_known_inputs() {
     assert!(all_values_equal);
 }
 
-// Zero Poly
-#[test]
-fn fft_settings_make_zero_poly_mul_leaf_should_return_exact_result_given_known_input() {
-    // Arrange
-    assert!(init(CurveType::BLS12_381));
-    let settings = FFTSettings::new(4);
-    let mut from_direct = vec![Fr::default(); 9];
-    let indices = vec![1, 3, 7, 8, 9, 10, 12, 13];
-
-    //Act
-    settings.make_zero_poly_mul_leaf(&mut from_direct, &indices, 1);
-    
-    // Assert
-    let expected = vec![
-        "38476778329304481878022718993882556548812578500290864179952442003245540347252",
-        "50186564627255281608660935680706646713107687550024192139838955039448154181749",
-        "39243132587368996089464151276551835679802393705778511611365663565350753197990",
-        "8886525670832950037403820227457774501115357138963728191033023737126263554734",
-        "39423785451480055448398145195082124374056011700214448253256356858091859173057",
-        "33404207154315723314001517707036921761049961639017818728334249043678763064723",
-        "1030314501662711068645766330849776133761481944176186168487690159932860759232",
-        "25696713417412289524464508181164949761159459522454271153855924766367832676326",
-        "1"
-        ];
-        
-    assert_eq!(expected.len(), from_direct.len());
-    for i in 0..from_direct.len() {
-        assert_eq!(expected[i], from_direct[i].get_str(10));
-    }
-}
-
-#[test]
-fn fft_settings_reduce_leaves_should_return_exact_result_given_known_input() {
-    // Arrange
-    assert!(init(CurveType::BLS12_381));
-    let settings = FFTSettings::new(4);
-    let mut leaves = vec![vec![Fr::default(); 3]; 4];
-    let leaf_indices = vec![vec![1, 3], vec![7, 8], vec![9, 10], vec![12, 13]];
-    for i in 0..4 {
-        settings.make_zero_poly_mul_leaf(&mut leaves[i], &leaf_indices[i],1);
-    }
-    let mut scratch = vec![Fr::default(); 16 * 3];
-    // Act
-    let result = settings.reduce_leaves(&mut scratch, &leaves, 16);
-    let from_tree_reduction = &result[..9];
-    // Assert
-    
-    let expected = vec![
-        "38476778329304481878022718993882556548812578500290864179952442003245540347252",
-        "50186564627255281608660935680706646713107687550024192139838955039448154181749",
-        "39243132587368996089464151276551835679802393705778511611365663565350753197990",
-        "8886525670832950037403820227457774501115357138963728191033023737126263554734",
-        "39423785451480055448398145195082124374056011700214448253256356858091859173057",
-        "33404207154315723314001517707036921761049961639017818728334249043678763064723",
-        "1030314501662711068645766330849776133761481944176186168487690159932860759232",
-        "25696713417412289524464508181164949761159459522454271153855924766367832676326",
-        "1"
-        ];
-        
-    assert_eq!(expected.len(), from_tree_reduction.len());
-    for i in 0..from_tree_reduction.len() {
-        assert_eq!(expected[i], from_tree_reduction[i].get_str(10));
-    }
-}
-
-#[test]
-fn fft_settings_zero_poly_scaled_test() {
-    let scale = 8;
-
-    // Arrange
-    let fs = FFTSettings::new(scale);
-    let exists: Vec<bool> = (0..fs.max_width)
-        .map(|_| rand::random())
-        .collect();
-
-    let indices: Vec<usize> = exists.iter()
-        .enumerate()
-        .filter(|(_, ex)| !(*ex))
-        .map(|(ix, _)| ix)
-        .collect();
-    
-    // Act
-    let (_, zero_poly_coeff) = fs.zero_poly_via_multiplication(&indices, exists.len());
-    let zero_poly = Polynomial::from_fr(zero_poly_coeff);
-
-    // Assert
-    for (i, v) in exists.iter().enumerate() {
-        if !v {
-            let out = zero_poly.eval_at(&fs.exp_roots_of_unity[i]);
-            assert_eq!("0", out.get_str(10));
-        }
-    }
-}
-
-#[test]
-fn fft_settings_zero_poly_via_multi_should_return_exact_values_for_eval_given_known_inputs() {
-    // Arrange
-    assert!(init(CurveType::BLS12_381));
-    let settings = FFTSettings::new(4);
-    let exists = vec![
-        true, false, false, true,
-        false, true, true, false,
-        false, false, true, true,
-        false, true, false, true
-    ];
-    let indices: Vec<usize> = exists.iter()
-        .enumerate()
-        .filter(|(_, ex)| !(*ex))
-        .map(|(ix, _)| ix)
-        .collect();
-    
-    // Act
-    let (zero_eval, _) = settings.zero_poly_via_multiplication(&indices, exists.len());
-    
-    // Assert
-    let expected_eval = vec![
-        "14588039771402811141309184187446855981335438080893546259057924963590957391610",
-		"0",
-		"0",
-		"25282314916481609559521954076339682473205592322878335865825728051159013479404",
-		"0",
-		"9734294374130760583715448090686447252507379360428151468094660312309164340954",
-		"46174059940592560972885266237294437331033682990367334129313899533918398326759",
-		"0",
-		"0",
-		"0",
-		"19800438175532257114364592658377771559959372488282871075375645402573059163542",
-		"51600792158839053735333095261675086809225297622863271039022341472045686698468",
-		"0",
-		"30826826002656394595578928901119179510733149506206612508564887111870905005459",
-		"0",
-		"15554185610546001233857357261484634664347627247695018404843511652636226542123",
-    ];
-
-    assert_eq!(expected_eval.len(), zero_eval.len());
-    for i in 0..expected_eval.len() {
-        assert_eq!(expected_eval[i], zero_eval[i].get_str(10));
-    }
-}
-
-
-#[test]
-fn fft_settings_zero_poly_via_multi_should_return_exact_values_for_poly_given_known_inputs() {
-    // Arrange
-    assert!(init(CurveType::BLS12_381));
-    let settings = FFTSettings::new(4);
-    let exists = vec![
-        true, false, false, true,
-        false, true, true, false,
-        false, false, true, true,
-        false, true, false, true
-    ];
-    let indices: Vec<usize> = exists.iter()
-        .enumerate()
-        .filter(|(_, ex)| !(*ex))
-        .map(|(ix, _)| ix)
-        .collect();
-    
-    // Act
-    let (_, zero_poly) = settings.zero_poly_via_multiplication(&indices, exists.len());
-    
-    // Assert
-    let expected_poly = vec![
-		"16624801632831727463500847948913128838752380757508923660793891075002624508302",
-		"657600938076390596890050185197950209451778703253960215879283709261059409858",
-		"3323305725086409462431021445881322078102454991213853012292210556336005043908",
-		"28834633028751086963335689622252225417970192887686504864119125368464893106943",
-		"13240145897582070561550318352041568075426755012978281815272419515864405431856",
-		"29207346592337407428161116115756746704727357067233245260187026881605970530301",
-		"26541641805327388562620144855073374836076680779273352463774100034531024896251",
-		"1030314501662711061715476678702471496208942882800700611947185222402136833216",
-		"1",
-		"0",
-		"0",
-		"0",
-		"0",
-		"0",
-		"0",
-		"0"
-    ];
-
-    assert_eq!(expected_poly.len(), zero_poly.len());
-    for i in 0..zero_poly.len() {
-        assert_eq!(expected_poly[i], zero_poly[i].get_str(10));
-    }
-}
-
 #[test]
 fn polynomial_recover_from_samples_should_recover_all_values_given_less_than_half_of_data_is_missing() {
     // Arrange
@@ -737,37 +549,18 @@ fn polynomial_recover_from_samples_should_recover_all_values_given_less_than_hal
             if ix % 4 == 0 {
                 return None::<Fr>;
             }
-            return Some(entry.clone());
+            Some(*entry)
         }).collect();
 
     // Act
-    let recovered = Polynomial::recover_from_samples(settings, &data_with_missing);
+    let recovered = Polynomial::recover_from_samples(&settings, &data_with_missing);
 
     // Assert
     assert_eq!(data.len(), recovered.order());
-    for i in 0..data.len() {
-        assert_eq!(data[i].get_str(10), recovered.coeffs[i].get_str(10));
+    for (i, item) in data.iter().enumerate() {
+        assert_eq!(item.get_str(10), recovered.coeffs[i].get_str(10));
     }
 }
-
-
-//Starting code of test that can not be implemented in current situation;
-// #[test]
-// fn zero_poly_252() {
-    // assert!(init(CurveType::BLS12_381));
-//     let fs = FFTSettings::new(8);
-//     let mut missing = [0, fs.max_width];
-
-//     const len_missing: usize = 252;
-
-//     for i in 1..(len_missing + 1) {
-//         missing[i] = i;
-//     }
-
-//     let zero_poly = vec![Fr::default(); fs.max_width];
-    
-//     let zero_eval = fs.zero_poly_via_multiplication(&missing, fs.max_width);
-// }
 
 // Helpers
 // Based on poly seen in TestKZGSettings_DAUsingFK20Multi
@@ -781,11 +574,11 @@ fn build_protolambda_poly(chunk_count: usize, chunk_len: usize, n: usize) -> Pol
         for j in 0..base.len() {
             poly_vals[i * chunk_len + j] = Fr::from_int(base[j]);
         }
-        poly_vals[i * chunk_len + 12] = &Fr::zero() - &Fr::one();
-        poly_vals[i * chunk_len + 14] = &Fr::zero() - &v134;
+        poly_vals[i * chunk_len + 12] = Fr::zero() - Fr::one();
+        poly_vals[i * chunk_len + 14] = Fr::zero() - v134;
     }
 
-    let poly = Polynomial::from_fr(poly_vals);
+    
 
-    return poly;
+    Polynomial::from_fr(poly_vals)
 }

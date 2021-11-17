@@ -15,9 +15,9 @@ fn bench_fft_fr(c: &mut Criterion) {
 
 fn _fft_fr(scale: u8, c: &mut Criterion) {
     let settings = FFTSettings::new(scale);
-    let mut data: Vec<Fr> = (0..(settings.max_width >> 1)).map(|_| Fr::random()).collect();
+    let data: Vec<Fr> = (0..(settings.max_width >> 1)).map(|_| Fr::random()).collect();
     let id = format!("bench_fft_fr scale: '{}'", scale);
-    c.bench_function(&id, |b| b.iter(|| settings.fft(&mut data, false)));
+    c.bench_function(&id, |b| b.iter(|| settings.fft(&data, false)));
 }
 
 fn bench_fft_g1(c: &mut Criterion) {

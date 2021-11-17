@@ -33,14 +33,15 @@ fn polynomial_eval_at_should_specific_value_given_exact_inputs() {
 fn extend_poly_appends_fr_zero() {
     // Arrange
     assert!(init(CurveType::BLS12_381));
-    let poly = Polynomial::from_i32(&vec![1, 2, 3, 4]);
+    let poly = Polynomial::from_i32(&[1, 2, 3, 4]);
     // Act
     let extended = poly.get_extended(8);
 
     // Assert
     let expected = vec!["1", "2", "3", "4", "0", "0", "0", "0"];
-    for i in 0..8 {
-        assert_eq!(expected[i], extended.coeffs[i].get_str(10));
+    for (i, item) in expected.iter().enumerate().take(8) {
+    // for i in 0..8 {
+        assert_eq!(*item, extended.coeffs[i].get_str(10));
     }
 }
 
@@ -92,7 +93,7 @@ fn get_test_vec(first: usize, second: usize) -> Vec<Fr> {
         [vec_2_0, vec_2_1, vec_2_2],
     ];
 
-    return data[first][second].clone();
+    data[first][second].clone()
 }
 
 #[test]
