@@ -47,18 +47,18 @@ pub fn log2_u64(n: usize) -> usize {
     let mut n2 = n;
     let mut r: usize = 0;
     while (n2 >> 1) != 0 {
-        n2 = n2 >> 1;
+        n2 >>= 1;
         r += 1;
     }
     r
 }
 
 pub fn min_u64(a: usize, b: usize) -> usize {
-    return if a < b { a } else { b };
+    if a < b { a } else { b }
 }
 
 pub fn max_u64(a: usize, b: usize) -> usize {
-    return if a < b { b } else { a };
+    if a < b { b } else { a }
 }
 
 pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Vec<FsG2>) {
@@ -71,6 +71,7 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Ve
     for _ in 0..n {
         s1.push(G1_GENERATOR.mul(&s_pow));
         s2.push(G2_GENERATOR.mul(&s_pow));
+
         s_pow = s_pow.mul(&s);
     }
 
