@@ -6,6 +6,7 @@ use blst::{
 };
 use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
 use std::mem::size_of;
+// use kzg::G1Mul;
 
 //Needed for g1_mul with Ark
 //use crate::utils::{blst_p1_into_pc_g1projective, pc_g1projective_into_blst_p1, blst_fr_into_pc_fr};
@@ -69,21 +70,19 @@ pub(crate) const G1_IDENTITY: ArkG1 = ArkG1(blst_p1{
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
     let mut vec = Vec::new();
-    if data == 0 {
-        vec
-    } else {
+    if data != 0 {
         vec.push(ArkG1(G1_GENERATOR));
         for i in 1..data as u64 {
             let mut temp = vec[(i - 1) as usize].clone();
             vec.push(temp.add_or_dbl(&ArkG1(G1_GENERATOR)));
         }
-        vec
     }
+    vec
 }
 
 impl FFTG1<ArkG1> for FFTSettings {
     fn fft_g1(&self, data: &[ArkG1], inverse: bool) -> Result<Vec<ArkG1>, String> {
-        let n = self.max_width as usize;
+        let n = data.len();
 
         let stride: usize = self.max_width / data.len();
         let mut out = vec![ArkG1::default(); data.len()];
@@ -100,10 +99,10 @@ impl FFTG1<ArkG1> for FFTSettings {
                 stride,
                 1
             );
-            for i in 0..n {
-                out[i] = g1_mul(&out[i], &inv_len);
+            for i in out.iter_mut().take(n) {
+                *i = g1_mul(i, &inv_len);
+                // out[i] = out[i].mul(&inv_len);
             }
-            Ok(out)
         } else {
             fft_g1_fast(
                 &mut out,
@@ -113,8 +112,8 @@ impl FFTG1<ArkG1> for FFTSettings {
                 stride,
                 1
             );
-            Ok(out)
         }
+        Ok(out)
     }
 }
 
@@ -209,7 +208,7 @@ pub fn g1_mul(a: &ArkG1, b: &BlstFr) -> ArkG1 {
     let mut i = size_of::<blst_scalar>();
 
     while (i != 0) && (s.b[i - 1] == 0) {
-        i = i - 1;
+        i -= 1;
     }
     if i == 0 {
         G1_IDENTITY
