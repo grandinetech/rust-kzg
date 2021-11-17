@@ -13,10 +13,9 @@ pub mod recover_tests {
         recover_simple::<Fr, FFTSettings, Polynomial, Polynomial>();
     }
 
-    //Could be not working because of zero poly.
-//     #[test]
-//     fn recover_random_() {
-//         assert!(init(CurveType::BLS12_381));
-//         recover_random::<Fr, FFTSettings, Polynomial, Polynomial>();
-//     }
+    #[test]
+    fn recover_random_() {
+        assert!(init(CurveType::BLS12_381));
+        recover_random::<Fr, FFTSettings, Polynomial, Polynomial>();
+    }
 }

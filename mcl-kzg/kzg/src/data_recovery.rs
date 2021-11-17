@@ -6,11 +6,11 @@ use crate::data_types::fr::Fr;
 
 impl Polynomial {
     pub fn shift_in_place(&mut self) {
-        self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT));
+        self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT).get_inv());
     }
 
     pub fn unshift_in_place(&mut self) {
-        self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT).get_inv());
+        self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT));
     }
 
     //TODO, use precalculated tables for factors?
@@ -22,7 +22,7 @@ impl Polynomial {
         }
     }
 
-    pub fn recover_from_samples(fft_settings: FFTSettings, samples: &[Option<Fr>]) -> Polynomial {
+    pub fn recover_from_samples(fft_settings: &FFTSettings, samples: &[Option<Fr>]) -> Polynomial {
         let missing_data_indices: Vec<usize> = samples.iter()
             .enumerate()
             .filter(|(_, ex)| ex.is_none())
@@ -30,6 +30,10 @@ impl Polynomial {
             .collect();
 
         let (zero_eval, zero_poly_coeffs) = fft_settings.zero_poly_via_multiplication(&missing_data_indices, samples.len());
+
+        for i in 0..samples.len() {
+            assert_eq!(samples[i].is_none(), zero_eval[i].is_zero());
+        }
 
         // TODO: possible optimization, remove clone()
         let poly_evals_with_zero: Vec<Fr> = samples.iter()

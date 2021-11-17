@@ -27,6 +27,10 @@ criterion = "0.3"
 name = "shared_das"
 harness = false
 
+[[bench]]
+name = "shared_recover"
+harness = false
+
 #[[bench]]
 #name = "bench_fft"
 #harness = false
