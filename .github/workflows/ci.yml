@@ -67,11 +67,12 @@ jobs:
         command: bench
         args: --manifest-path blst-from-scratch/Cargo.toml
 
-    - name: "[blst-from-scratch] Formatting"
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path blst-from-scratch/Cargo.toml
+# Incompatible with Windows CI
+#    - name: "[blst-from-scratch] Formatting"
+#      uses: actions-rs/cargo@v1
+#      with:
+#        command: fmt
+#        args: --manifest-path blst-from-scratch/Cargo.toml
 
 # # 4th team #########################################################
 
