@@ -410,12 +410,11 @@ impl Polynomial {
         Polynomial::mul_(self, b, None, len)
     }
 
-    // @param[in]  n_in  The number of elements of @p in to take
-    // @param[in]  n_out The length of @p out
-    fn pad_coeffs(coeffs: &[Fr], n_in: usize, n_out: usize) -> Vec<Fr> {
+    /// @param[in]  n_in  The number of elements of @p in to take
+    /// @param[in]  n_out The length of @p out
+    pub fn pad_coeffs(coeffs: &[Fr], n_in: usize, n_out: usize) -> Vec<Fr> {
         let num = min(n_in, n_out);
         let mut ret_coeffs: Vec<Fr> = vec![];
-        // for i in 0..num {
         for item in coeffs.iter().take(num) {
             ret_coeffs.push(*item);
         }
@@ -423,6 +422,14 @@ impl Polynomial {
             ret_coeffs.push(Fr::zero());
         }
         ret_coeffs
+    }
+
+    pub fn pad_coeffs_mut(&mut self, n_in: usize, n_out: usize) {
+        let num = min(n_in, n_out);      
+        self.coeffs = self.coeffs[..num].to_vec();
+        for _ in num..n_out {
+            self.coeffs.push(Fr::zero());
+        }
     }
 
     fn pad(&self, n_in: usize, n_out: usize) -> Polynomial { 

@@ -1,7 +1,6 @@
 use crate::kzg10::*;
 use crate::fk20_fft::*;
 use crate::data_types::fr::Fr;
-
 // Data recovery
 
 impl Polynomial {
@@ -29,7 +28,7 @@ impl Polynomial {
             .map(|(ix, _)| ix)
             .collect();
 
-        let (zero_eval, zero_poly_coeffs) = fft_settings.zero_poly_via_multiplication(&missing_data_indices, samples.len());
+        let (zero_eval, zero_poly_coeffs) = fft_settings.zero_poly_via_multiplication(samples.len(), &missing_data_indices).unwrap();
 
         // TODO: possible optimization, remove clone()
         let poly_evals_with_zero: Vec<Fr> = samples.iter()
@@ -45,7 +44,7 @@ impl Polynomial {
         let mut poly_with_zero = Polynomial::from_fr(poly_with_zero_coeffs);
         poly_with_zero.shift_in_place();
 
-        let mut zero_poly = Polynomial::from_fr(zero_poly_coeffs);
+        let mut zero_poly = Polynomial::from_fr(zero_poly_coeffs.coeffs);
         zero_poly.shift_in_place();
 
         let eval_shifted_poly_with_zero = fft_settings.fft(&poly_with_zero.coeffs, false);
