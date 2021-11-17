@@ -19,39 +19,39 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-# # 1st team #########################################################
+# 1st team #########################################################
 
-#     - uses: actions-rs/cargo@v1
-#       with:
-#         command: test
-#         args: --manifest-path Arkworks/Cargo.toml
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path Arkworks/Cargo.toml
 
-#     - uses: actions-rs/cargo@v1
-#       with:
-#         command: bench
-#         args: --manifest-path Arkworks/Cargo.toml
+    - uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path Arkworks/Cargo.toml
 
-#     - uses: actions-rs/cargo@v1
-#       with:
-#         command: fmt
-#         args: --manifest-path Arkworks/Cargo.toml
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path Arkworks/Cargo.toml
 
-# # 2nd team #########################################################
+# 2nd team #########################################################
 
-#     - uses: actions-rs/cargo@v1
-#       with:
-#         command: test
-#         args: --manifest-path zkcrypto/Cargo.toml
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path zkcrypto/Cargo.toml
 
-#     - uses: actions-rs/cargo@v1
-#       with:
-#         command: bench
-#         args: --manifest-path zkcrypto/Cargo.toml
+    - uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path zkcrypto/Cargo.toml
 
-#     - uses: actions-rs/cargo@v1
-#       with:
-#         command: fmt
-#         args: --manifest-path zkcrypto/Cargo.toml
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path zkcrypto/Cargo.toml
 
 # 3rd team #########################################################
 
@@ -74,61 +74,61 @@ jobs:
 #        command: fmt
 #        args: --manifest-path blst-from-scratch/Cargo.toml
 
-# # 4th team #########################################################
+# 4th team #########################################################
 
-#     - name: "[ckzg] Build native libs for Linux"
-#       if: matrix.os == 'ubuntu-latest'
-#       run: |
-#         cd ckzg && bash build.sh
+    - name: "[ckzg] Build native libs for Linux"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd ckzg && bash build.sh
 
-#     - name: "[ckzg] Build native libs for MacOS"
-#       if: matrix.os == 'macos-11'
-#       run: |
-#         brew install gnu-sed
-#         cd ckzg && bash build.sh
+    - name: "[ckzg] Build native libs for MacOS"
+      if: matrix.os == 'macos-11'
+      run: |
+        brew install gnu-sed
+        cd ckzg && bash build.sh
 
-#     - name: "[ckzg] Test"
-#       uses: actions-rs/cargo@v1
-#       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-#       with:
-#         command: test
-#         args: --manifest-path ckzg/Cargo.toml
+    - name: "[ckzg] Test"
+      uses: actions-rs/cargo@v1
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      with:
+        command: test
+        args: --manifest-path ckzg/Cargo.toml
 
-#     - name: "[ckzg] Bench"
-#       uses: actions-rs/cargo@v1
-#       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-#       with:
-#         command: bench
-#         args: --manifest-path ckzg/Cargo.toml
+    - name: "[ckzg] Bench"
+      uses: actions-rs/cargo@v1
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      with:
+        command: bench
+        args: --manifest-path ckzg/Cargo.toml
 
-#     - name: "[ckzg] Clippy"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: clippy
-#         args: --manifest-path ckzg/Cargo.toml --all-targets --all-features -- -D warnings
+    - name: "[ckzg] Clippy"
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --manifest-path ckzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-#     - name: "[ckzg] Fmt"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: fmt
-#         args: --manifest-path ckzg/Cargo.toml
+    - name: "[ckzg] Fmt"
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path ckzg/Cargo.toml
 
-# # 5th team ###########################################################
+# 5th team ###########################################################
 
-#     - name: Run mcl-kzg10-rust tests
-#       if: matrix.os == 'ubuntu-latest'
-#       run: |
-#         cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
+    - name: Run mcl-kzg10-rust tests
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
 
-#     - name: Run mcl-kzg10-rust benches
-#       if: matrix.os == 'ubuntu-latest'
-#       run: |
-#         cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+    - name: Run mcl-kzg10-rust benches
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
 
-#     - name: Run mcl-kzg10-rust fmt
-#       if: matrix.os == 'ubuntu-latest'
-#       run: |
-#         cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+    - name: Run mcl-kzg10-rust fmt
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
 
 
 # Common ###########################################################
