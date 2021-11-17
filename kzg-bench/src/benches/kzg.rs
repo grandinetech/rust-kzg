@@ -15,13 +15,13 @@ pub fn kzg_proof<
 >(
         generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
         c: &mut Criterion
-) {     
+) {
         for scale in 1..15 {
-        let mut fs = TFFTSettings::new(scale as usize).unwrap();
-        
+        let fs = TFFTSettings::new(scale as usize).unwrap();
+
         let fssize = fs.get_max_width();
         let (s1, s2) = generate_trusted_setup(fssize, SECRET);
-        let mut ks = TKZGSettings::new(&s1, &s2, fssize, fs).unwrap();
+        let ks = TKZGSettings::new(&s1, &s2, fssize, &fs).unwrap();
 
 
         let mut poly = TPoly::new(fssize).unwrap();
@@ -30,8 +30,5 @@ pub fn kzg_proof<
         }
         let id = format!("bench_kzg_proof scale: '{}'", scale);
         c.bench_function(&id, |b| b.iter(|| ks.commit_to_poly(&poly).unwrap()));
-
-        ks.destroy();
-        poly.destroy();
     }
 }
