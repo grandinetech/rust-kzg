@@ -31,10 +31,6 @@ impl Polynomial {
 
         let (zero_eval, zero_poly_coeffs) = fft_settings.zero_poly_via_multiplication(&missing_data_indices, samples.len());
 
-        for i in 0..samples.len() {
-            assert_eq!(samples[i].is_none(), zero_eval[i].is_zero());
-        }
-
         // TODO: possible optimization, remove clone()
         let poly_evals_with_zero: Vec<Fr> = samples.iter()
             .zip(zero_eval)
