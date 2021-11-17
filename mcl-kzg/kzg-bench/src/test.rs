@@ -740,7 +740,7 @@ fn polynomial_recover_from_samples_should_recover_all_values_given_less_than_hal
         }).collect();
 
     // Act
-    let recovered = Polynomial::recover_from_samples(settings, &data_with_missing);
+    let recovered = Polynomial::recover_from_samples(&settings, &data_with_missing);
 
     // Assert
     assert_eq!(data.len(), recovered.order());
