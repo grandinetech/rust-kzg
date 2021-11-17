@@ -681,7 +681,6 @@ impl Poly<FsFr> for FsPoly {
         let mut ab_fft = vec![FsFr::default(); length];
         for i in 0..length {
             ab_fft[i] = a_fft[i].mul(&b_fft[i]);
-            assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
         }
 
         // Convert value range multiplication to a resulting polynomial
@@ -824,11 +823,11 @@ pub struct FsKZGSettings {
 
 impl Clone for FsKZGSettings {
     fn clone(&self) -> Self {
-        return Self {
+        Self {
             fs: self.fs.clone(),
             secret_g1: self.secret_g1.clone(),
             secret_g2: self.secret_g2.clone(),
-        };
+        }
     }
 }
 
@@ -850,25 +849,17 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     ) -> Result<Self, String> {
         let mut kzg_settings = Self::default();
 
-        // CHECK(length >= fs->max_width);
-        // assert_eq!(secret_g1.len(), secret_g2.len());
-        assert!(secret_g1.len() >= fft_settings.max_width);
-        assert!(secret_g2.len() >= fft_settings.max_width);
-        assert!(length >= fft_settings.max_width);
+        if secret_g1.len() < fft_settings.max_width {
+            return Err(String::from("secret_g1 must have a length equal to or greater than fft_settings roots"));
+        } else if secret_g2.len() < fft_settings.max_width {
+            return Err(String::from("secret_g2 must have a length equal to or greater than fft_settings roots"));
+        } else if length < fft_settings.max_width {
+            return Err(String::from("length must be equal to or greater than number of fft_settings roots"));
+        }
 
-        // ks->length = length;
-
-        // Allocate space for the secrets
-        // TRY(new_g1_array(&ks->secret_g1, ks->length));
-        // TRY(new_g2_array(&ks->secret_g2, ks->length));
-
-        // Populate the secrets
         for i in 0..length {
             kzg_settings.secret_g1.push(secret_g1[i]);
             kzg_settings.secret_g2.push(secret_g2[i]);
-
-            // kzg_settings.secret_g1[i] = secret_g1[i];
-            // kzg_settings.secret_g2[i] = secret_g2[i];
         }
         kzg_settings.fs = fft_settings.clone();
 
@@ -888,7 +879,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
             poly.coeffs.len(),
         );
 
-        return Ok(out);
+        Ok(out)
     }
 
     fn compute_proof_single(&self, p: &FsPoly, x: &FsFr) -> Result<FsG1, String> {
@@ -896,19 +887,18 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn check_proof_single(&self, com: &FsG1, proof: &FsG1, x: &FsFr, y: &FsFr) -> Result<bool, String> {
-        let x_g2: FsG2 = g2_mul(&G2_GENERATOR, x);
-        let s_minus_x: FsG2 = g2_sub(&self.secret_g2[1], &x_g2);
-        let mut y_g1 = FsG1::default();
-        y_g1 = G1_GENERATOR.mul(y);
-
-
+        let x_g2: FsG2 = G2_GENERATOR.mul(x);
+        let s_minus_x: FsG2 = self.secret_g2[1].sub(&x_g2);
+        let y_g1 = G1_GENERATOR.mul(y);
         let commitment_minus_y: FsG1 = g1_sub(com, &y_g1);
 
-        return Ok(pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x));
+        Ok(pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x))
     }
 
     fn compute_proof_multi(&self, p: &FsPoly, x0: &FsFr, n: usize) -> Result<FsG1, String> {
-        assert!(is_power_of_two(n));
+        if !is_power_of_two(n) {
+            return Err(String::from("n must be a power of two"));
+        }
 
         // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
         let mut divisor: FsPoly = FsPoly { coeffs: Vec::default() };
@@ -927,13 +917,11 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         divisor.coeffs.push(Fr::one());
 
         // Calculate q = p / (x^n - x0^n)
-        let result = p.div(&divisor);
-        assert!(result.is_ok());
-        let q: FsPoly = result.unwrap();
+        let q = p.div(&divisor).unwrap();
 
         let ret = self.commit_to_poly(&q).unwrap();
 
-        return Ok(ret);
+        Ok(ret)
     }
 
     fn check_proof_multi(&self, com: &FsG1, proof: &FsG1, x: &FsFr, ys: &Vec<FsFr>, n: usize) -> Result<bool, String> {
@@ -968,7 +956,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
 
         let ret = pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn);
 
-        return Ok(ret);
+        Ok(ret)
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
@@ -993,7 +981,10 @@ impl Clone for FsFK20SingleSettings {
 
 impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> for FsFK20SingleSettings {
     fn default() -> Self {
-        todo!()
+        Self {
+            kzg_settings: FsKZGSettings::default(),
+            x_ext_fft: vec![],
+        }
     }
 
     fn new(kzg_settings: &FsKZGSettings, n2: usize) -> Result<Self, String> {
@@ -1007,11 +998,11 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> 
             return Err(String::from("n2 must be greater than or equal to 2"));
         }
 
-        let mut x = vec![FsG1::default(); n];
-        for i in 0..(n - 1) {
-            x[i] = kzg_settings.secret_g1[n - 2 - 1];
+        let mut x = Vec::new();
+        for i in 0..n - 1 {
+            x.push(kzg_settings.secret_g1[n - 2 - i]);
         }
-        x[n - 1] = FsG1::identity();
+        x.push(FsG1::identity());
 
         let x_ext_fft = kzg_settings.fs.toeplitz_part_1(&x);
         let kzg_settings = kzg_settings.clone();
@@ -1050,10 +1041,10 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> 
             return Err(String::from("n2 must be a power of two"));
         }
 
-        let toeplitz_coeffs = FsPoly { coeffs: vec![FsFr::default(); 2 * p.len()] };
-        let toeplitz_coeffs = toeplitz_coeffs.toeplitz_coeffs_step();
+        let toeplitz_coeffs = p.toeplitz_coeffs_step();
 
         let h_ext_fft = self.kzg_settings.fs.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft);
+
         let h = self.kzg_settings.fs.toeplitz_part_3(&h_ext_fft);
 
         let ret = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
@@ -1080,7 +1071,11 @@ impl Clone for FsFK20MultiSettings {
 
 impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> for FsFK20MultiSettings {
     fn default() -> Self {
-        todo!()
+        Self {
+            kzg_settings: FsKZGSettings::default(),
+            chunk_len: 1,
+            x_ext_fft_files: vec![],
+        }
     }
 
     fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
@@ -1094,31 +1089,39 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
             return Err(String::from("chunk_len must be greater or equal to n2 / 2"));
         } else if !is_power_of_two(chunk_len) {
             return Err(String::from("chunk_len must be a power of two"));
-        } else if chunk_len <= 0 {
-            return Err(String::from("chunk_len must be greater or equal to 0"));
         }
 
         let n = n2 / 2;
         let k = n / chunk_len;
 
-        let mut ext_fft_files = vec![Vec::new(); chunk_len];
-        let mut x = vec![FsG1::default(); k];
+        let mut ext_fft_files = Vec::new();
 
         for offset in 0..chunk_len {
+            let mut x = Vec::new();
+
+            let mut start = 0;
+            if n >= chunk_len + 1 + offset {
+                start = n - chunk_len - 1 - offset;
+            }
+
             let mut i = 0;
-            let mut j = (n - chunk_len) as i64 - 1 - offset as i64;
+            let mut j = start;
 
             while i + 1 < k {
-                x[i] = ks.secret_g1[j as usize];
+                x.push(ks.secret_g1[j as usize]);
 
                 i += 1;
-                j -= (chunk_len as i64);
-            }
-            x[k - 1] = FsG1::identity();
 
-            ext_fft_files[offset] = vec![FsG1::default(); k];
-            ext_fft_files[offset] = ks.fs.toeplitz_part_1(&ext_fft_files[offset]);
-            ext_fft_files[offset].append(&mut vec![FsG1::default(); k]);
+                if j >= chunk_len {
+                    j -= chunk_len;
+                } else {
+                    j = 0;
+                }
+            }
+            x.push(FsG1::identity());
+
+            let ext_fft_file = ks.fs.toeplitz_part_1(&x);
+            ext_fft_files.push(ext_fft_file);
         }
 
         let ret = Self {

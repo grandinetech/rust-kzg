@@ -1,4 +1,3 @@
-
 use kzg::{Fr, FFTFr, Poly, ZeroPoly};
 use crate::kzg_types::{FsFFTSettings, FsPoly, FsFr};
 use crate::utils::{is_power_of_two};
@@ -27,7 +26,9 @@ pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
 }
 
 pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFFTSettings) -> Result<Vec<FsFr>, String> {
-    assert!(is_power_of_two(len_samples));
+    if !is_power_of_two(len_samples) {
+        return Err(String::from("len_samples must be a power of two"));
+    }
 
     let mut missing: Vec<usize> = Vec::new();
     for i in 0..len_samples {
@@ -40,7 +41,9 @@ pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFF
     let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing).unwrap();
 
     for i in 0..len_samples {
-        assert_eq!(samples[i].is_null(), zero_eval[i].is_zero());
+        if !(samples[i].is_null() == zero_eval[i].is_zero()) {
+            return Err(String::from("recovery error: samples should be null when and only when zero_eval is zero"));
+        }
     }
 
     let mut poly_evaluations_with_zero = FsPoly::default();
@@ -92,7 +95,9 @@ pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFF
 
     // Check all is well
     for i in 0..len_samples {
-        assert!(samples[i].is_null() || reconstructed_data[i].equals(&samples[i]));
+        if !(samples[i].is_null() || reconstructed_data[i].equals(&samples[i])) {
+            return Err(String::from("recovery error: samples should be null or equal reconstructed data"));
+        }
     }
 
     Ok(reconstructed_data)
