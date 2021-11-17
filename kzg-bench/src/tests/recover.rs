@@ -78,13 +78,7 @@ pub fn recover_random<
         let known: u64 = (max_width as f64 * known_ratio) as u64;
         for _ in 0..4 {
             let samples = random_missing(data.clone(), max_width, known);
-
-
             let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs);
-            //Assert
-            for i in 0..max_width {
-                assert!(data[i].equals(&recovered.get_coeff_at(i)));
-            }
         
             let mut recovered_vec: Vec<TFr> = vec![];
             for i in 0..max_width {
@@ -124,6 +118,5 @@ fn random_missing<TFr: Fr>(data: Vec<TFr>, len_data: usize, known: u64) -> Vec<O
     for i in 0..(len_data - (known as usize)) {
         with_missing[missin_idx[i]] = None;
     }
-    println!("random_missing {} - {}", len_data, known);
     with_missing
 }
