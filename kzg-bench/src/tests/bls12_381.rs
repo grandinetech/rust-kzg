@@ -106,14 +106,14 @@ pub fn fr_uint64s_roundtrip<TFr: Fr>() {
     assert_eq!(expected[3], actual[3]);
 }
 
-pub fn p1_mul_works<TFr: Fr, TG1: G1<TFr> + G1Mul<TFr>>() {
+pub fn p1_mul_works<TFr: Fr, TG1: G1 + G1Mul<TFr>>() {
     let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
     let minus1 = TFr::from_u64_arr(&m1);
     let res = TG1::generator().mul(&minus1);
     assert!(res.equals(&TG1::negative_generator()));
 }
 
-pub fn p1_sub_works<TFr: Fr, TG1: G1<TFr>>() {
+pub fn p1_sub_works<TFr: Fr, TG1: G1>() {
     let tmp = TG1::generator().dbl();
     let res = TG1::generator().sub(&TG1::negative_generator());
     assert!(tmp.equals(&res));
@@ -139,11 +139,11 @@ pub fn p2_sub_works<TG2: G2>() {
     assert!(tmp.equals(&res));
 }
 
-pub fn g1_identity_is_infinity<TFr: Fr, TG1: G1<TFr>>() {
+pub fn g1_identity_is_infinity<TFr: Fr, TG1: G1>() {
     assert!(TG1::is_inf(&TG1::identity()));
 }
 
-pub fn g1_identity_is_identity<TFr: Fr, TG1: G1<TFr>>() {
+pub fn g1_identity_is_identity<TFr: Fr, TG1: G1>() {
     let actual = TG1::generator().add_or_dbl(&TG1::identity());
     assert!(actual.equals(&TG1::generator()));
 }
@@ -192,7 +192,7 @@ pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_lin
     assert!(exp.equals(&res));
 }
 
-pub fn pairings_work<TFr: Fr, TG1: G1<TFr> + G1Mul<TFr>, TG2: G2 + G2Mul<TFr>>(pairings_verify: &dyn Fn(&TG1, &TG2, &TG1, &TG2) -> bool) {
+pub fn pairings_work<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2 + G2Mul<TFr>>(pairings_verify: &dyn Fn(&TG1, &TG2, &TG1, &TG2) -> bool) {
     // // Verify that e([3]g1, [5]g2) = e([5]g1, [3]g2)
 
     let three = TFr::from_u64(3);
