@@ -22,7 +22,7 @@ unset CFLAGS
 cd ..
 
 print_msg "Cloning c-kzg"
-git clone https://github.com/tesa4436/c-kzg
+git clone --single-branch --branch openmp https://github.com/tesa4436/c-kzg
 
 print_msg "Copying files from blst to c-kzg"
 cp -r blst/* c-kzg/lib/
@@ -48,7 +48,7 @@ case $(uname -s) in
     exit 1
     ;;
 esac
-eval "$("$sed" -i 's/KZG_CFLAGS =/KZG_CFLAGS = -fPIE/' Makefile)"
+eval "$("$sed" -i 's/KZG_CFLAGS =/KZG_CFLAGS = -fPIE -fopenmp/' Makefile)"
 eval "$("$sed" -i 's/KZG_CFLAGS += -O/KZG_CFLAGS += -Ofast/' Makefile)"
 
 print_msg "Building c-kzg"
