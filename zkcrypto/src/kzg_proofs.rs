@@ -17,6 +17,10 @@ use rand_core::{CryptoRng, RngCore, OsRng};
 use rand::Rng;
 use ff::Field;
 
+use kzg::{Poly as OtherPoly, Fr, FFTFr};
+use std::ops::MulAssign;
+use crate::kzg_types::pairings_verify;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 /// Holds a commitment to a polynomial in a form of a [`G1Affine`]-bls12_381
 /// point.
@@ -273,6 +277,16 @@ impl Default for KZGSettings {
     }
 }
 
+pub fn default_kzg() -> KZGSettings {
+    KZGSettings {
+            fs: ZkFFTSettings::default(),
+            secret_g1: Vec::new(),
+            secret_g2: Vec::new(),
+            length: 0,
+            public_params: PublicParameters::setup(1, &mut OsRng).unwrap(),
+        }
+}
+
 // This code was taken from 'https://github.com/adria0/a0kzg/blob/main/src/kzg.rs' and adapted
 pub fn generate_trusted_setup(n: usize, _secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
     let mut rng = rand::thread_rng();
@@ -365,4 +379,48 @@ pub(crate) fn check_proof_single(com: &G1, proof: &G1, x: &Scalar, value: &Scala
         commitment_to_polynomial: Commitment::from(*com)};
 
     check(&op_key, *x, proof2)
+}
+
+pub(crate) fn compute_proof_multi(p: &Poly, x: &Scalar, n: usize, ks: &KZGSettings) -> G1 {
+    let mut divisor = Poly::new(n+1).unwrap();
+    let x_pow_n = <Scalar as Fr>::pow(&x, n);
+
+    divisor.set_coeff_at(0, &x_pow_n.negate());
+
+    for i in 1..n {
+        divisor.set_coeff_at(i, &Scalar::zero());
+    }
+    divisor.set_coeff_at(n, &Scalar::one());
+
+    let mut p = p.clone();
+
+    let q = p.div(&divisor).unwrap();
+
+    commit_to_poly(&q, &ks).unwrap()
+}
+
+pub(crate) fn check_proof_multi(com: &G1, proof: &G1, x: &Scalar, ys: &Vec<Scalar>, n: usize, ks: &KZGSettings) -> bool {
+    let mut interp = Poly::new(n).unwrap();
+
+    interp.coeffs = ks.fs.fft_fr(ys, true).unwrap();
+
+    let inv_x = x.inverse();
+    let mut inv_x_pow = inv_x.clone();
+    for i in 1..n {
+        interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
+        inv_x_pow = inv_x_pow.mul(&inv_x);
+    }
+
+    let x_pow = inv_x_pow.inverse();
+    let mut xn2 = G2::from(ks.public_params.opening_key.h);
+
+    xn2.mul_assign(&x_pow);
+
+    let xn_minus_yn = &ks.secret_g2[n] - xn2;
+
+    let is1 = &commit_to_poly(&interp, ks).unwrap();
+
+    let commit_minus_interp = com - is1;
+
+    pairings_verify(&commit_minus_interp, &G2::from(ks.public_params.opening_key.h), &proof, &xn_minus_yn)
 }
