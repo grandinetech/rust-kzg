@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-11]
+        os: [ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v2
@@ -19,62 +19,13 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-# 1st team #########################################################
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path Arkworks/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path Arkworks/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path Arkworks/Cargo.toml
-
-# 2nd team #########################################################
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path zkcrypto/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path zkcrypto/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path zkcrypto/Cargo.toml
-
-# 3rd team #########################################################
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path from-scratch/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path from-scratch/Cargo.toml
-
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path from-scratch/Cargo.toml
-
 # 4th team #########################################################
 
     - name: "[ckzg] Build native libs for Linux"
       if: matrix.os == 'ubuntu-latest'
       run: |
+        apt update
+        apt install libomp-dev
         cd ckzg && bash build.sh
 
     - name: "[ckzg] Build native libs for MacOS"
@@ -108,35 +59,6 @@ jobs:
       with:
         command: fmt
         args: --manifest-path ckzg/Cargo.toml
-
-# 5th team ###########################################################
-
-    - name: "Run mcl-kzg10-rust Clippy"
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --manifest-path mcl-kzg/kzg/Cargo.toml --all-targets --all-features -- -D warnings
-        
-    - name: "Run mcl-kzg10-rust bench Clippy"
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --manifest-path mcl-kzg/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
-
-    - name: Run mcl-kzg10-rust tests
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1 
-        
-    - name: Run mcl-kzg10-rust benches
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
-        
-    - name: Run mcl-kzg10-rust fmt
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
         
 # Common ###########################################################
 
