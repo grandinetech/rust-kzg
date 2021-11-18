@@ -35,6 +35,7 @@ use crate::zkfr::blsScalar;
 
 use crate::poly::ZPoly;
 use crate::fftsettings::{ZkFFTSettings};
+use kzg::FFTSettings;
 
 use crate::kzg_proofs::{
 	check_proof_single as check_single,
@@ -42,7 +43,10 @@ use crate::kzg_proofs::{
 	compute_proof_single as open_single,
 	eval_poly,
 	new_kzg_settings,
-	KZGSettings as LKZGSettings
+	KZGSettings as LKZGSettings,
+	default_kzg,
+	compute_proof_multi as open_multi,
+	check_proof_multi as check_multi
 };
 
  pub const G1_GENERATOR: ZkG1Projective = ZkG1Projective {
@@ -305,7 +309,7 @@ pub fn pairings_verify(a1: &ZkG1Projective, a2: &ZkG2Projective, b1: &ZkG1Projec
 
 impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly> for LKZGSettings {
 	fn default() -> Self {
-    	todo!()
+    	default_kzg()
     }
 
 	fn new(secret_g1: &Vec<ZkG1Projective>, secret_g2: &Vec<ZkG2Projective>, length: usize, fs: &ZkFFTSettings) -> Result<LKZGSettings, String> {
@@ -324,16 +328,16 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
     	Ok(check_single(com, proof, x, value, self))
     }
 
-    fn compute_proof_multi(&self, _p: &ZPoly, _x: &blsScalar, _n: usize) -> Result<ZkG1Projective, String> {
-    	todo!()
+    fn compute_proof_multi(&self, p: &ZPoly, x: &blsScalar, n: usize) -> Result<ZkG1Projective, String> {
+    	Ok(open_multi(p, x, n, self))
     }
 
-    fn check_proof_multi(&self, _com: &ZkG1Projective, _proof: &ZkG1Projective, _x: &blsScalar, _values: &Vec<blsScalar>, _n: usize) -> Result<bool, String> {
-    	todo!()
+    fn check_proof_multi(&self, com: &ZkG1Projective, proof: &ZkG1Projective, x: &blsScalar, values: &Vec<blsScalar>, n: usize) -> Result<bool, String> {
+    	Ok(check_multi(com, proof, x, values, n, self))
     }
 
-    fn get_expanded_roots_of_unity_at(&self, _i: usize) -> blsScalar {
-    	todo!()
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> blsScalar {
+    	self.fs.get_expanded_roots_of_unity_at(i)
     }
 }
 
