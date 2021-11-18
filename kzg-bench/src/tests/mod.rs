@@ -7,4 +7,5 @@ pub mod poly;
 pub mod zero_poly;
 pub mod kzg_proofs;
 pub mod bls12_381;
+pub mod recover;
 pub mod fk20_proofs;

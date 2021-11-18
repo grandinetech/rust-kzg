@@ -1,0 +1,53 @@
+[package]
+name = "mcl_kzg_bench"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mcl_rust = { path = '../kzg' }
+blst = {'git' = 'https://github.com/supranational/blst.git'}
+kzg = { path = "../../kzg" }
+kzg-bench = { path = "../../kzg-bench" }
+
+[dev-dependencies]
+rand = "0.5"
+criterion = "0.3"
+
+[[bench]]
+name = "shared_fft"
+harness = false
+
+[[bench]]
+name = "shared_poly"
+harness = false
+
+[[bench]]
+name = "shared_das"
+harness = false
+
+[[bench]]
+name = "shared_recover"
+harness = false
+
+#[[bench]]
+#name = "bench_fft"
+#harness = false
+
+#[[bench]]
+#name = "bench_proof_check"
+#harness = false
+
+#[[bench]]
+#name = "bench_das"
+#harness = false
+
+#[[bench]]
+#name = "bench_proof_gen"
+#harness = false
+
+#[[bench]]
+#name = "bench_commits"
+#harness = false
+
