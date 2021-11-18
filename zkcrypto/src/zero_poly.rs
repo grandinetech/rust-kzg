@@ -20,7 +20,6 @@ pub(crate) fn pad_poly(poly: &ZPoly, new_length: usize) -> Result<Vec<blsScalar>
     Ok(out)
 }
 
-
 impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
     fn do_zero_poly_mul_partial(&self, indices: &[usize], stride: usize) 
 	-> Result<ZPoly, String> {
@@ -83,7 +82,6 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
         return Ok(out);
     }
 
-    //Partially taken from team 'From-scratch'
     fn zero_poly_via_multiplication(&self, length: usize, missing_indices: &[usize]) 
 	-> Result<(Vec<blsScalar>, ZPoly), String> {
         let zero_eval: Vec<blsScalar>;
