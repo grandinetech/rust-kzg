@@ -67,7 +67,7 @@ pub mod tests {
 
     #[test]
     fn p1_sub_works_() {
-        p1_sub_works::<FsFr, FsG1>()
+        p1_sub_works::<FsG1>()
     }
 
     #[test]
@@ -87,12 +87,12 @@ pub mod tests {
 
     #[test]
     fn g1_identity_is_infinity_() {
-        g1_identity_is_infinity::<FsFr, FsG1>()
+        g1_identity_is_infinity::<FsG1>()
     }
 
     #[test]
     fn g1_identity_is_identity_() {
-        g1_identity_is_identity::<FsFr, FsG1>()
+        g1_identity_is_identity::<FsG1>()
     }
 
     #[test]

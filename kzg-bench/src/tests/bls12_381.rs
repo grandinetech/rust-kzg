@@ -113,7 +113,7 @@ pub fn p1_mul_works<TFr: Fr, TG1: G1 + G1Mul<TFr>>() {
     assert!(res.equals(&TG1::negative_generator()));
 }
 
-pub fn p1_sub_works<TFr: Fr, TG1: G1>() {
+pub fn p1_sub_works<TG1: G1>() {
     let tmp = TG1::generator().dbl();
     let res = TG1::generator().sub(&TG1::negative_generator());
     assert!(tmp.equals(&res));
@@ -139,11 +139,11 @@ pub fn p2_sub_works<TG2: G2>() {
     assert!(tmp.equals(&res));
 }
 
-pub fn g1_identity_is_infinity<TFr: Fr, TG1: G1>() {
+pub fn g1_identity_is_infinity<TG1: G1>() {
     assert!(TG1::is_inf(&TG1::identity()));
 }
 
-pub fn g1_identity_is_identity<TFr: Fr, TG1: G1>() {
+pub fn g1_identity_is_identity<TG1: G1>() {
     let actual = TG1::generator().add_or_dbl(&TG1::identity());
     assert!(actual.equals(&TG1::generator()));
 }
