@@ -113,17 +113,17 @@ fn fk_multi_da<
     optimized: bool
 ) {
     let start = if chunk_len == 512 {9} else {4};
-    for i in start..16 {
-        let scale = 1 << i;
+    for i in start..10 {
+        let n = 1 << i;
         let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
-        assert!(is_power_of_two(scale));
+        assert!(is_power_of_two(n));
         assert!(is_power_of_two(chunk_len));
-        assert_eq!(scale % 16, 0);
-        assert!(scale >= chunk_len);
+        assert_eq!(n % 16, 0);
+        assert!(n >= chunk_len);
 
-        let chunk_count: usize = scale / chunk_len;
-        let secrets_len: usize = 2 * scale;
+        let chunk_count: usize = n / chunk_len;
+        let secrets_len: usize = 2 * n;
         let width: usize = log2_pow2(secrets_len as u32);
 
         // Initialise the secrets and data structures
@@ -133,7 +133,7 @@ fn fk_multi_da<
         let fk = TFK20MultiSettings::new(&ks, secrets_len, chunk_len).unwrap();
 
         // Create a test polynomial of size n that's independent of chunk_len
-        let mut p = TPoly::new(scale).unwrap();
+        let mut p = TPoly::new(n).unwrap();
         for i in 0..chunk_count {
             for j in 0..chunk_len {
                 let p_index = i * chunk_len + j;
@@ -152,7 +152,7 @@ fn fk_multi_da<
         ks.commit_to_poly(&p).unwrap();
 
         // Compute the multi proofs, assuming that the polynomial will be extended with zeros
-        let id = format!("{} scale: '{}'", test_name, scale);
+        let id = format!("{} scale: '{}'", test_name, width);
 
         if optimized == true {
             c.bench_function(&id, |b| b.iter(|| fk.data_availability_optimized(&p).unwrap()));
