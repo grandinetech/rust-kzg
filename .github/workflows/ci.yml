@@ -33,8 +33,12 @@ jobs:
 
     - name: "[ckzg] Setup Env"
       run: |
-        libomp_path=$(locate libiomp5.so | head -n 1)
-        echo "RUSTFLAGS=\""-C link-arg=$libomp_path""\" >> $GITHUB_ENV
+        libomp_path=$(find /usr/lib/llvm* -name libiomp5.so | head -n 1)
+        if [[ -z "$libomp_path" ]]; then
+          echo "FAIL: libiomp5.so was not found"
+          exit 1
+        fi
+        echo "RUSTFLAGS=-C link-arg="$libomp_path"" >> $GITHUB_ENV
 
     - name: "[ckzg] Test"
       uses: actions-rs/cargo@v1
@@ -61,7 +65,10 @@ jobs:
       with:
         command: fmt
         args: --manifest-path ckzg/Cargo.toml
-        
+
+    - name: "[ckzg] Unset Env"
+      run: echo "RUSTFLAGS=" >> $GITHUB_ENV
+
 # Common ###########################################################
 
     - uses: actions-rs/cargo@v1
