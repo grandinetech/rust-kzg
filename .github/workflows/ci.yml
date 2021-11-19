@@ -32,6 +32,9 @@ jobs:
         brew install gnu-sed
         cd ckzg && bash build.sh
 
+    - name: "[ckzg] Setup Env"
+      run: echo 'export RUSTFLAGS="echo $(locate libiomp5.so | head -n 1)"' >> $BASH_ENV
+
     - name: "[ckzg] Test"
       uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
