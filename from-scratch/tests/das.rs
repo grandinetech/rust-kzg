@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod tests {
     use kzg_bench::tests::das::{das_extension_test_known, das_extension_test_random};
-    use blst_from_scratch::kzg_types::{FsFFTSettings, FsFr};
+    use kzg_from_scratch::kzg_types::{FsFFTSettings, FsFr};
 
     #[test]
     fn das_extension_test_known_() {

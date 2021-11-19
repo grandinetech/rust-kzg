@@ -223,7 +223,7 @@ fn fk_multi_case<
     reverse_bit_order(&mut extended_coeffs_fft);
 
     // Verify the proofs
-    let mut ys = vec![Fr::default(); chunk_len];
+    let mut ys  = vec![Fr::default(); chunk_len];
     let mut ys2 = vec![Fr::default(); chunk_len];
     let domain_stride = fs.get_max_width() / (2 * n);
     for pos in 0..(2 * chunk_count) {
