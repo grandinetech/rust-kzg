@@ -26,3 +26,7 @@ harness = false
 [[bench]]
 name = "kzg"
 harness = false
+
+[[bench]]
+name = "fk_20"
+harness = false
