@@ -94,7 +94,7 @@ pub trait FFTFr<Coeff: Fr> {
     fn fft_fr(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
-pub trait FFTG1<TFr: Fr, Coeff: G1> {
+pub trait FFTG1<Coeff: G1> {
     fn fft_g1(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 

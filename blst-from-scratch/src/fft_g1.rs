@@ -50,7 +50,7 @@ pub fn fft_g1_slow(
     }
 }
 
-impl FFTG1<FsFr, FsG1> for FsFFTSettings {
+impl FFTG1<FsG1> for FsFFTSettings {
     fn fft_g1(&self, data: &[FsG1], inverse: bool) -> Result<Vec<FsG1>, String> {
         if data.len() > self.max_width {
             return Err(String::from(
