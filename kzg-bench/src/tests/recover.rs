@@ -26,7 +26,7 @@ pub fn recover_simple<
     // for i in (max_width / 2)..max_width {
     //     poly[i] = TFr::zero();
     // }
-    
+
     let data = fs.fft_fr(&poly, false).unwrap();
     let samples: [Option<TFr>; 4] = [Some(data[0].clone()), None, None, Some(data[3].clone())];
 
@@ -84,18 +84,18 @@ pub fn recover_random<
             for i in 0..max_width {
                 assert!(data[i].equals(&recovered.get_coeff_at(i)));
             }
-        
+
             let mut recovered_vec: Vec<TFr> = vec![];
             for i in 0..max_width {
                 recovered_vec.push(recovered.get_coeff_at(i));
             }
-        
+
             //Also check against original coefficients
             let back = fs.fft_fr(&recovered_vec, true).unwrap();
             for i in 0..(max_width / 2) {
                 assert!(poly[i].equals(&back[i]));
             }
-        
+
             for i in (max_width / 2)..max_width {
                 assert!(poly[i].is_zero());
             }
