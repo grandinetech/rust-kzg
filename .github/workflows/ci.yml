@@ -23,8 +23,7 @@ jobs:
 
     - name: "[ckzg] Build native libs for Linux"
       if: matrix.os == 'ubuntu-latest'
-      run: |
-        cd ckzg && bash build.sh
+      run: cd ckzg && bash build.sh
 
     - name: "[ckzg] Build native libs for MacOS"
       if: matrix.os == 'macos-11'
@@ -33,7 +32,9 @@ jobs:
         cd ckzg && bash build.sh
 
     - name: "[ckzg] Setup Env"
-      run: echo "RUSTFLAGS="echo $(locate libiomp5.so | head -n 1)"" >> $GITHUB_ENV
+      run: |
+        libomp_path=$(locate libiomp5.so | head -n 1)
+        echo "RUSTFLAGS=\""-C link-arg=$libomp_path""\" >> $GITHUB_ENV
 
     - name: "[ckzg] Test"
       uses: actions-rs/cargo@v1
