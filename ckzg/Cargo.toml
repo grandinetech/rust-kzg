@@ -18,3 +18,11 @@ harness = false
 [[bench]]
 name = "poly"
 harness = false
+
+[[bench]]
+name = "kzg"
+harness = false
+
+[[bench]]
+name = "das"
+harness = false

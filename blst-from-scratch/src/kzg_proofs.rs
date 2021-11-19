@@ -67,12 +67,12 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
         let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), &blst_p1_affine::default()];
 
         let mut scratch;
-        let newarg = scalars_arg.as_ptr() as *const *const u8;
+        let new_arg = scalars_arg.as_ptr() as *const *const u8;
         unsafe {
             scratch = blst_p1s_mult_pippenger_scratch_sizeof(len) as u64;
         }
         unsafe {
-            blst_p1s_mult_pippenger(&mut out.0, points_arg.as_ptr(), len, newarg, 256, &mut scratch);
+            blst_p1s_mult_pippenger(&mut out.0, points_arg.as_ptr(), len, new_arg, 256, &mut scratch);
         }
     }
 }

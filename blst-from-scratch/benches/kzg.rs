@@ -4,7 +4,7 @@ use blst_from_scratch::kzg_types::{FsFFTSettings, FsKZGSettings, FsFr, FsG1, FsG
 use blst_from_scratch::utils::generate_trusted_setup;
 
 fn kzg_proof_(c: &mut Criterion) {
-    kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(&generate_trusted_setup, c)
+    kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(c, &generate_trusted_setup)
 }
 
 criterion_group!(benches, kzg_proof_);

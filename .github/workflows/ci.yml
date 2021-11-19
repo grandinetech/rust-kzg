@@ -19,7 +19,7 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-# # 1st team #########################################################
+# 1st team #########################################################
 
 #     - uses: actions-rs/cargo@v1
 #       with:
@@ -67,6 +67,12 @@ jobs:
         command: bench
         args: --manifest-path blst-from-scratch/Cargo.toml
 
+#  - name: "[blst-from-scratch] Clippy"
+#     uses: actions-rs/cargo@v1
+#     with:
+#     command: clippy
+#     args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
+
 # Incompatible with Windows CI
 #    - name: "[blst-from-scratch] Formatting"
 #      uses: actions-rs/cargo@v1
@@ -74,7 +80,7 @@ jobs:
 #        command: fmt
 #        args: --manifest-path blst-from-scratch/Cargo.toml
 
-# # 4th team #########################################################
+# 4th team #########################################################
 
 #     - name: "[ckzg] Build native libs for Linux"
 #       if: matrix.os == 'ubuntu-latest'

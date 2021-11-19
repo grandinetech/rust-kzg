@@ -1078,6 +1078,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
         }
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         if n2 > ks.fs.max_width {
             return Err(String::from("n2 must be less than or equal to kzg settings max width"));
