@@ -31,7 +31,7 @@ pub fn fk_single_da<
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
-    for scale in 5..16 {
+    for scale in 5..12 {
         let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
         let poly_len: usize = coeffs.len();
         let n_len: usize = 1 << scale;
@@ -70,7 +70,7 @@ pub fn fk_single_da_optimized<
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
-    for scale in 5..16 {
+    for scale in 5..12 {
         let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
         let poly_len: usize = coeffs.len();
         let n_len: usize = 1 << scale;
@@ -112,8 +112,7 @@ fn fk_multi_da<
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
     optimized: bool
 ) {
-    let start = if chunk_len == 512 {9} else {4};
-    for i in start..10 {
+    for i in 5..8 {
         let n = 1 << i;
         let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
@@ -162,7 +161,7 @@ fn fk_multi_da<
     }
 }
 
-pub fn fk_multi_da_chunk_1<
+pub fn fk_multi_da_chunk_32<
     TFr: Fr,
     TG1: G1,
     TG2: G2,
@@ -174,10 +173,10 @@ pub fn fk_multi_da_chunk_1<
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>)
 ) {
-    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(1, "bench_fk_multi_commit_da_chunk_1".to_string(), c, generate_trusted_setup, false);
+    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(32, "bench_fk_multi_commit_da _chunk_512".to_string(), c, generate_trusted_setup, false);
 }
 
-pub fn fk_multi_da_chunk_512<
+pub fn fk_multi_da_chunk_32_optimized<
     TFr: Fr,
     TG1: G1,
     TG2: G2,
@@ -189,35 +188,5 @@ pub fn fk_multi_da_chunk_512<
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>)
 ) {
-    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(512, "bench_fk_multi_commit_da _chunk_512".to_string(), c, generate_trusted_setup, false);
-}
-
-pub fn fk_multi_da_chunk_1_optimized<
-    TFr: Fr,
-    TG1: G1,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
->(
-    c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>)
-) {
-    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(1, "bench_fk_multi_commit_da_chunk_1_optimized".to_string(), c, generate_trusted_setup, false);
-}
-
-pub fn fk_multi_da_chunk_512_optimized<
-    TFr: Fr,
-    TG1: G1,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>
->(
-    c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>)
-) {
-    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(512, "bench_fk_multi_commit_da_chunk_512_optimized".to_string(), c, generate_trusted_setup, false);
+    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(32, "bench_fk_multi_commit_da_chunk_512_optimized".to_string(), c, generate_trusted_setup, false);
 }
