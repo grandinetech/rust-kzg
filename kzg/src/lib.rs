@@ -178,10 +178,6 @@ pub trait Poly<Coeff: Fr>: Clone {
 }
 
 pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
-    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: FSettings) -> Polynomial;
-}
-
-pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
     fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: &FSettings) -> Polynomial;
 }
 
