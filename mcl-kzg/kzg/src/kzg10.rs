@@ -32,7 +32,7 @@ impl G1 {
 
     pub fn random() -> G1 {
         let fr = Fr::random();
-
+        
         &G1_GENERATOR * &fr
     }
 }
@@ -79,7 +79,7 @@ impl ops::Sub<G1> for G1 {
 }
 
 impl GT {
-    pub fn get_final_exp(&self) -> GT {
+    pub fn get_final_exp(&self) -> GT { 
         let mut gt = GT::default();
         final_exp(&mut gt, self);
 
@@ -107,7 +107,7 @@ impl ops::Mul<GT> for GT {
 impl G2 {
     pub fn gen() -> G2 {
         let mut g2 = G2::default();
-
+        
         g2.x.d[0].set_str(G2_GEN_X_D0, 10);
         g2.x.d[1].set_str(G2_GEN_X_D1, 10);
         g2.y.d[0].set_str(G2_GEN_Y_D0, 10);
@@ -239,7 +239,7 @@ impl Polynomial {
             coeffs: data
         }
     }
-
+    
     pub fn from_i32(data: &[i32]) -> Self {
         Self {
             coeffs: data.iter().map(|x| Fr::from_int(*x)).collect(),
@@ -257,7 +257,7 @@ impl Polynomial {
 
     pub fn eval_at(&self, point: &Fr) -> Fr {
         let mut result = Fr::default();
-        unsafe {
+        unsafe { 
             mclBn_FrEvaluatePolynomial(&mut result, self.coeffs.as_ptr(), self.order(), point)
         };
         result
@@ -310,7 +310,7 @@ impl Polynomial {
             diff -= 1;
         }
         out_coeffs[0] = a[a_pos] / divisor[b_pos];
-        Ok(Polynomial::from_fr(out_coeffs))
+        Ok(Polynomial::from_fr(out_coeffs)) 
     }
 
     pub fn fast_div(&self, divisor: &[Fr]) -> Result<Polynomial, String> {
@@ -332,7 +332,7 @@ impl Polynomial {
             for i in 0..out_length {
                 out_coeffs.push(self.coeffs[i] / divisor[0]);
             }
-            return Ok(Polynomial::from_fr(out_coeffs));
+            return Ok(Polynomial::from_fr(out_coeffs));  
         }
 
         let a_flip = Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs));
@@ -363,7 +363,7 @@ impl Polynomial {
         result
     }
 
-    fn flip(&self) -> Polynomial {
+    fn flip(&self) -> Polynomial { 
         Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs))
     }
 
@@ -404,7 +404,7 @@ impl Polynomial {
             Polynomial::mul_fft(self, b, ft, len)
         }
     }
-
+    
 
     pub fn mul(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
         Polynomial::mul_(self, b, None, len)
@@ -425,14 +425,14 @@ impl Polynomial {
     }
 
     pub fn pad_coeffs_mut(&mut self, n_in: usize, n_out: usize) {
-        let num = min(n_in, n_out);
+        let num = min(n_in, n_out);      
         self.coeffs = self.coeffs[..num].to_vec();
         for _ in num..n_out {
             self.coeffs.push(Fr::zero());
         }
     }
 
-    fn pad(&self, n_in: usize, n_out: usize) -> Polynomial {
+    fn pad(&self, n_in: usize, n_out: usize) -> Polynomial { 
         Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
     }
 
@@ -496,7 +496,7 @@ impl Polynomial {
         Ok(Polynomial::from_fr(coeffs))
     }
 
-    pub fn inverse(&self, new_length: usize) -> Result<Polynomial, String> {
+    pub fn inverse(&self, new_length: usize) -> Result<Polynomial, String> { 
         let self_length = self.order();
         if self_length == 0 || new_length == 0 {
             return Ok(Polynomial::default());
@@ -520,7 +520,7 @@ impl Polynomial {
         // Max space for multiplications is (2 * length - 1)
         //use a more efficent log_2?
         let scale = log_2(next_pow_of_2(2 * new_length - 1));
-
+        
         //check if scale actually always fits in u8
         //fftsettings to be used, if multiplacation is done with fft
         let fs = FFTSettings::new(scale as u8);
@@ -529,7 +529,7 @@ impl Polynomial {
 
         //if new length is 1, max d is 0
         let mut mask = 1 << log_2(maxd);
-
+        
         while mask != 0 {
             let mut poly_temp_0: Polynomial;
             let poly_temp_1: Polynomial;
@@ -566,7 +566,7 @@ impl Polynomial {
 impl Curve {
     pub fn new(secret: &Fr, order: usize) -> Self {
         let g1_gen = G1::gen();
-        let g2_gen = G2::gen();
+        let g2_gen = G2::gen(); 
 
         let mut g1_points = vec!(G1::default(); order);
         let mut g2_points = vec!(G2::default(); order);

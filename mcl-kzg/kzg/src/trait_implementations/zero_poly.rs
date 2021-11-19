@@ -11,8 +11,9 @@ impl ZeroPoly<Fr, Polynomial> for FFTSettings {
     fn reduce_partials(&self, domain_size: usize, partials: &[Polynomial]) -> Result<Polynomial, String> {
        self.reduce_partials(domain_size, partials)
     }
-
+    
     fn zero_poly_via_multiplication(&self, domain_size: usize, missing_idxs: &[usize]) -> Result<(Vec<Fr>, Polynomial), String> {
         self.zero_poly_via_multiplication(domain_size, missing_idxs)
     }
 }
+

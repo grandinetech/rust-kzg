@@ -231,7 +231,7 @@ impl FFTSettings {
     }
 
     pub fn inplace_fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
-
+        
         if inv {
             let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter().copied().take(self.max_width).collect();
             let stride = self.max_width / values.len();
@@ -257,7 +257,7 @@ impl FFTSettings {
 
     pub fn fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
         let n = next_pow_of_2(values.len());
-
+        
         let diff = n - values.len();
         let tail= iter::repeat(Fr::zero()).take(diff);
         let values_copy: Vec<Fr> = values.iter().copied()
@@ -269,7 +269,7 @@ impl FFTSettings {
 
     pub fn fft_from_slice(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
         let n = next_pow_of_2(values.len());
-
+        
         let diff = n - values.len();
         let tail= iter::repeat(Fr::zero()).take(diff);
         let values_copy: Vec<Fr> = values.iter().copied()
@@ -282,7 +282,7 @@ impl FFTSettings {
     pub fn fft_g1(&self, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
-
+        
         let root_z: Vec<Fr> = self.exp_roots_of_unity.iter()
             .take(self.max_width).copied()
             .collect();
@@ -299,7 +299,7 @@ impl FFTSettings {
     pub fn fft_g1_inv(&self, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
-
+        
         let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter()
             .take(self.max_width).copied()
             .collect();
@@ -308,7 +308,7 @@ impl FFTSettings {
         let mut out = vec![G1::zero(); values.len()];
 
         FFTSettings::_fft_g1(self, values, 0, 1, &root_z, stride, &mut out);
-
+        
         let inv_len = Fr::from_int(values.len() as i32).get_inv();
         for item in out.iter_mut() {
         // for i in 0..out.len() {
@@ -341,9 +341,9 @@ impl FFTSettings {
             out[i + half] = &x - &y_times_root;
         }
 
-
+        
     }
-
+    
 
     fn _fft_g1_simple(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         let l = out.len();

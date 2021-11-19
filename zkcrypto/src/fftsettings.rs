@@ -20,7 +20,7 @@ pub struct ZkFFTSettings {
 
 impl ZkFFTSettings {
     pub fn das_fft_extension_stride(&self, vals: &mut [blsScalar], stride: usize) {
-
+        
 		if vals.len() < 2 {
             return;
         }
@@ -45,7 +45,7 @@ impl ZkFFTSettings {
             }
 
             self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
-
+			
             self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
 
             for i in 0..half_halved{
@@ -61,21 +61,21 @@ impl ZkFFTSettings {
 
 impl FFTSettingsPoly<blsScalar, ZPoly, ZkFFTSettings> for ZkFFTSettings {
     fn poly_mul_fft(a: &ZPoly, b: &ZPoly, len: usize, _fs: Option<&ZkFFTSettings>) -> Result<ZPoly, String> {
-
-		// for i in 0..3 {
+			
+		// for i in 0..3 {	
 			// println!("a(fftsettings_mul_fft) = {:?}", a.get_coeff_at(i));
 		// }
-		// for i in 0..3 {
+		// for i in 0..3 {	
 			// println!("b(fftsettings_mul_fft) = {:?}", b.get_coeff_at(i));
 		// }
-
+		
 		poly_mul_fft(len, &a, &b)
 	}
-
+	
 }
 
 impl FFTFr<blsScalar> for ZkFFTSettings {
-
+	
 	fn fft_fr(&self, data: &[blsScalar], inverse: bool) -> Result<Vec<blsScalar>, String> {
 		if data.len() > self.max_width {
 			return Err(String::from( "The supplied list is longer than the available max width",
@@ -84,7 +84,7 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
 		else if !is_power_of_two(data.len()) {
 			return Err(String::from("A list with power-of-two length is expected"));
 		}
-
+	
 	// In case more roots are provided with fft_settings, use a larger stride
         let stride = self.max_width / data.len();
         let mut ret = vec![<blsScalar as Fr>::default(); data.len()];
@@ -107,11 +107,11 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
         }
 
         return Ok(ret);
-
-
+	
+	
 	}
-
-
+	
+	
 }
 
 impl ZkFFTSettings {
@@ -140,7 +140,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
             reverse_roots_of_unity: Vec::new(),
         }
     }
-
+	
 	fn new(scale: usize) -> Result<ZkFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from("Scale is expected to be within root of unity matrix row size"));
@@ -164,7 +164,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
             reverse_roots_of_unity,
         })
     }
-
+	
 	fn get_max_width(&self) -> usize {
         self.max_width
     }

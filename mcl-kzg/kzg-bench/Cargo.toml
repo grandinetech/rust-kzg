@@ -15,16 +15,12 @@ kzg-bench = { path = "../../kzg-bench" }
 rand = "0.5"
 criterion = "0.3"
 
-#[[bench]]
-#name = "shared_fft"
-#harness = false
-
-#[[bench]]
-#name = "shared_poly"
-#harness = false
+[[bench]]
+name = "shared_fft"
+harness = false
 
 [[bench]]
-name = "shared_das"
+name = "shared_poly"
 harness = false
 
 [[bench]]

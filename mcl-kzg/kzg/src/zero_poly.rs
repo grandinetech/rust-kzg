@@ -131,7 +131,7 @@ impl FFTSettings {
         } else {
             // Work space for building and reducing the partials
             let mut work = vec![Fr::zero(); next_pow_of_2(partial_count * degree_of_partial)];
-
+            
             // Build the partials from the missing indices
             // Just allocate pointers here since we're re-using `work` for the partial processing
             // Combining partials can be done mostly in-place, using a scratchpad.

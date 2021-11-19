@@ -47,7 +47,7 @@ impl Poly<Fr> for Polynomial {
         Polynomial::inverse(self, new_len)
     }
 
-    fn div(&mut self, x: &Self) -> Result<Self, String> {
+    fn div(&mut self, x: &Self) -> Result<Self, String> { 
         Polynomial::div(self, &x.coeffs)
     }
 

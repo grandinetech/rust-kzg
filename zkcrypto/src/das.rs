@@ -3,9 +3,9 @@ use crate::zkfr::blsScalar;
 use kzg::{Fr, DAS};
 
 impl DAS<blsScalar> for ZkFFTSettings {
-    fn das_fft_extension(&self, val: &[blsScalar])
+    fn das_fft_extension(&self, val: &[blsScalar]) 
 	-> Result<Vec<blsScalar>, String> {
-
+		
 		if !(val.len() > 0) {
 			return Err(String::from("Cant divide by zero"));
 		}
@@ -15,7 +15,7 @@ impl DAS<blsScalar> for ZkFFTSettings {
 		if !(val.len() * 2 <= self.max_width) {
 			return Err(String::from("Cant divide by zero"));
 		}
-
+		
 	    // assert!(val.len() > 0);
         // assert!(val.len().is_power_of_two());
         // assert!(val.len() * 2 <= self.max_width);

@@ -15,7 +15,7 @@ pub struct FK20Matrix {
 }
 
 impl FK20Matrix {
-
+    
     pub fn new(curve: Curve, n2: usize, chunk_len: usize, fft_max_scale: u8) -> FK20Matrix {
         let n = n2 >> 1; // div by 2
         let k = n / chunk_len;
@@ -24,7 +24,7 @@ impl FK20Matrix {
             panic!("extended size is larger than fft settings supoort");
         }
         // TODO: more panic checks
-
+        
         let mut x_ext_fft_files: Vec<Vec<G1>> = vec![vec![]; chunk_len];
         for (i, item) in x_ext_fft_files.iter_mut().enumerate().take(chunk_len) {
             *item = FK20Matrix::x_ext_fft_precompute(&fft_settings, &curve, n, k, chunk_len, i);
@@ -47,14 +47,14 @@ impl FK20Matrix {
         let mut j = start + chunk_len;
 
         while i + 1 < k {
-            // hack to remove overflow checking,
+            // hack to remove overflow checking, 
             // could just move this to the bottom and define j as start, but then need to check for overflows
             // basically last j -= chunk_len overflows, but it's not used to access the array, as the i + 1 < k is false
             j -= chunk_len;
             x[i] = curve.g1_points[j].clone();
             i += 1;
         }
-
+        
         x[k - 1] = G1::zero();
 
         FK20Matrix::toeplitz_part_1(fft_settings, &x)
@@ -69,15 +69,15 @@ impl FK20Matrix {
             .chain(tail)
             .collect();
 
-
-
+        
+        
         FK20Matrix::fft_g1(fft_settings, &x_ext)
     }
 
     pub fn fft_g1(fft_settings: &FFTSettings, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
-
+        
         let root_z: Vec<Fr> = fft_settings.exp_roots_of_unity.iter()
             .take(fft_settings.max_width).copied()
             .collect();
@@ -94,7 +94,7 @@ impl FK20Matrix {
     pub fn fft_g1_inv(&self, values: &[G1]) -> Vec<G1> {
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
-
+        
         let root_z: Vec<Fr> = self.fft_settings.exp_roots_of_unity_rev.iter()
             .take(self.fft_settings.max_width).copied()
             .collect();
@@ -103,7 +103,7 @@ impl FK20Matrix {
         let mut out = vec![G1::zero(); values.len()];
 
         FK20Matrix::_fft_g1(&self.fft_settings, values, 0, 1, &root_z, stride, &mut out);
-
+        
         let inv_len = Fr::from_int(values.len() as i32).get_inv();
         for item in out.iter_mut() {
             *item = &*item * &inv_len;
@@ -148,9 +148,9 @@ impl FK20Matrix {
             out[i + half] = &x - &y_times_root;
         }
 
-
+        
     }
-
+    
 
     fn _fft_g1_simple(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         let l = out.len();
@@ -176,7 +176,7 @@ impl FK20Matrix {
         // [last] + [0]*(n+1) + [1 .. n-2]
         let mut toeplitz_coeffs = vec![Fr::zero(); k2];
         toeplitz_coeffs[0] = poly[n - 1 - offset];
-
+        
         let mut j = (stride << 1) - offset - 1;
         for item in toeplitz_coeffs.iter_mut().take(k2).skip(k+2) {
             *item = poly[j];
@@ -242,7 +242,7 @@ impl Polynomial {
         result
     }
 
-    pub fn get_extended(&self, size: usize) -> Polynomial {
+    pub fn get_extended(&self, size: usize) -> Polynomial { 
         Polynomial::from_fr(Polynomial::extend(&self.coeffs, size))
     }
 
@@ -250,7 +250,7 @@ impl Polynomial {
         let n = self.order() >> 1;
         let k = n / matrix.chunk_len;
         let k2 = k << 1;
-
+        
         let mut h_ext_fft = vec![G1::zero(); k2];
         // TODO: this operates on an extended poly, but doesn't use the extended values?
         // literally just using the poly without the zero trailing tail, makes more sense to take it in as a param, or use without the tail;
@@ -265,14 +265,14 @@ impl Polynomial {
                 h_ext_fft[j] = tmp;
             }
         }
-
+        
         let tail = iter::repeat(G1::zero()).take(k);
         let h: Vec<G1> = matrix.toeplitz_part_3(&h_ext_fft)
             .into_iter()
             .take(k)
             .chain(tail)
             .collect();
-
+        
         FK20Matrix::fft_g1(&matrix.fft_settings, &h)
     }
 }
