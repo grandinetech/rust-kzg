@@ -142,7 +142,7 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let dividend: TPoly = new_test_poly(&divided_data);
+        let mut dividend: TPoly = new_test_poly(&divided_data);
         let divisor: TPoly = new_test_poly(&divisor_data);
         let expected: TPoly = new_test_poly(&expected_data);
 
@@ -161,7 +161,7 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
 pub fn poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
     //Arrange
     let coeffs: Vec<i32> = vec![1,1];
-    let dividend: TPoly = new_test_poly(&coeffs);
+    let mut dividend: TPoly = new_test_poly(&coeffs);
     let divisor = TPoly::new(0).unwrap();
 
     //Act
@@ -173,10 +173,10 @@ pub fn poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
 
 pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     let coeffs0: Vec<i32> = vec![3, 4];
-    let multiplicand: TPoly = new_test_poly(&coeffs0);
+    let mut multiplicand: TPoly = new_test_poly(&coeffs0);
 
     let coeffs1: Vec<i32> = vec![6, -5, 3];
-    let multiplier: TPoly = new_test_poly(&coeffs1);
+    let mut multiplier: TPoly = new_test_poly(&coeffs1);
 
     let coeffs2: Vec<i32> = vec![18, 9, -11, 12];
     let expected: TPoly = new_test_poly(&coeffs2);
@@ -312,9 +312,9 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
             divisor.set_coeff_at(divisor.len() - 1, &fr_one);
         }
 
-        let result0 = dividend.div_long(&divisor);
+        let result0 = dividend.long_div(&divisor);
         assert!(result0.is_ok());
-        let result1 = dividend.div_fast(&divisor);
+        let result1 = dividend.fast_div(&divisor);
         assert!(result1.is_ok());
 
         let actual0 = result0.unwrap();
@@ -338,11 +338,11 @@ pub fn poly_div_long_test<TFr: Fr, TPoly: Poly<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let dividend: TPoly = new_test_poly(&divided_data);
+        let mut dividend: TPoly = new_test_poly(&divided_data);
         let divisor: TPoly = new_test_poly(&divisor_data);
         let expected: TPoly = new_test_poly(&expected_data);
 
-        let actual = dividend.div_long(&divisor).unwrap();
+        let actual = dividend.long_div(&divisor).unwrap();
 
         assert_eq!(expected.len(), actual.len());
         for i in 0..actual.len() {
@@ -361,11 +361,11 @@ pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let dividend: TPoly = new_test_poly(&divided_data);
+        let mut dividend: TPoly = new_test_poly(&divided_data);
         let divisor: TPoly = new_test_poly(&divisor_data);
         let expected: TPoly = new_test_poly(&expected_data);
 
-        let actual = dividend.div_fast(&divisor).unwrap();
+        let actual = dividend.fast_div(&divisor).unwrap();
 
         assert_eq!(expected.len(), actual.len());
         for i in 0..actual.len() {

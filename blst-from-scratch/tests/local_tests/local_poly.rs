@@ -1,13 +1,14 @@
-use kzg::{Fr, Poly};
+use kzg::{Fr};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
+use blst_from_scratch::kzg_types::{PolyStupidInterface};
 
-pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn create_poly_of_length_ten<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let poly = TPoly::new(10).unwrap();
     assert_eq!(poly.len(), 10);
 }
 
-pub fn poly_pad_works_rand<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_pad_works_rand<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let mut rng = StdRng::seed_from_u64(0);
 
     for _k in 0..256 {
@@ -27,7 +28,7 @@ pub fn poly_pad_works_rand<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
-pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_eval_check<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let n: usize = 10;
     let mut poly = TPoly::new(n).unwrap();
     for i in 0..n {
@@ -39,7 +40,7 @@ pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
     assert!(expected.equals(&actual));
 }
 
-pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_eval_0_check<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let n: usize = 7;
     let a: usize = 597;
     let mut poly = TPoly::new(n).unwrap();
@@ -52,14 +53,14 @@ pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
     assert!(expected.equals(&actual));
 }
 
-pub fn poly_eval_nil_check<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_eval_nil_check<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let n: usize = 0;
     let poly = TPoly::new(n).unwrap();
     let actual = poly.eval(&TFr::one());
     assert!(actual.equals(&TFr::zero()));
 }
 
-pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_inverse_simple_0<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     // 1 / (1 - x) = 1 + x + x^2 + ...
     let d: usize = 16;
     let mut p = TPoly::new(2).unwrap();
@@ -74,7 +75,7 @@ pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
-pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_inverse_simple_1<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     // 1 / (1 + x) = 1 - x + x^2 - ...
     let d: usize = 16;
     let mut p = TPoly::new(2).unwrap();
@@ -163,7 +164,7 @@ fn test_data(a: usize, b: usize) -> Vec<i64> {
 }
 
 
-fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i64>, len: usize) -> TPoly {
+fn new_test_poly<TFr: Fr, TPoly: PolyStupidInterface<TFr>>(coeffs: &Vec<i64>, len: usize) -> TPoly {
     let mut p = TPoly::new(len).unwrap();
 
     for i in 0..len {
@@ -181,7 +182,7 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i64>, len: usize) -> TP
     p
 }
 
-pub fn poly_div_long_test<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_div_long_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     for i in 0..9 {
         // Tests are designed to throw an exception when last member is 0
         if i == 6 {
@@ -191,11 +192,11 @@ pub fn poly_div_long_test<TFr: Fr, TPoly: Poly<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
+        let mut dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
         let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
-        let actual = dividend.div_long(&divisor).unwrap();
+        let actual = dividend.long_div(&divisor).unwrap();
 
         assert_eq!(expected.len(), actual.len());
         for i in 0..actual.len() {
@@ -204,7 +205,7 @@ pub fn poly_div_long_test<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
-pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_div_fast_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     for i in 0..9 {
         // Tests are designed to throw an exception when last member is 0
         if i == 6 {
@@ -214,11 +215,11 @@ pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
+        let mut dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
         let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
         let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
 
-        let actual = dividend.div_fast(&divisor).unwrap();
+        let actual = dividend.fast_div(&divisor).unwrap();
 
         assert_eq!(expected.len(), actual.len());
         for i in 0..actual.len() {
@@ -227,7 +228,7 @@ pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
-pub fn test_poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn test_poly_div_by_zero<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let mut dividend = TPoly::new(2).unwrap();
 
     dividend.set_coeff_at(0, &TFr::from_u64(1));
@@ -239,14 +240,14 @@ pub fn test_poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
     assert!(dummy.is_err());
 }
 
-pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_mul_direct_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     for i in 0..9 {
         let coeffs1 = test_data(i, 2);
         let coeffs2 = test_data(i, 1);
         let coeffs3 = test_data(i, 0);
 
-        let multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
-        let multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
+        let mut multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
+        let mut multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
         let expected: TPoly = new_test_poly(&coeffs3, coeffs3.len());
 
         let result0 = multiplicand.mul_direct(&multiplier, coeffs3.len()).unwrap();
@@ -262,7 +263,7 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
-pub fn poly_mul_fft_test<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_mul_fft_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     for i in 0..9 {
         // Ignore 0 multiplication case because its incorrect when multiplied backwards
         if i == 2 {
@@ -290,7 +291,7 @@ pub fn poly_mul_fft_test<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
-pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_mul_random<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let mut rng = StdRng::seed_from_u64(0);
 
     for _k in 0..256 {
@@ -325,7 +326,7 @@ pub fn poly_mul_random<TFr: Fr, TPoly: Poly<TFr>>() {
     }
 }
 
-pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
+pub fn poly_div_random<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let mut rng = StdRng::seed_from_u64(0);
     for _k in 0..256 {
         let dividend_length: usize = (2 + (rng.next_u64() % 1000)) as usize;
@@ -351,8 +352,8 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
             divisor.set_coeff_at(divisor.len() - 1, &Fr::one());
         }
 
-        let result0 = dividend.div_long(&divisor).unwrap();
-        let result1 = dividend.div_fast(&divisor).unwrap();
+        let result0 = dividend.long_div(&divisor).unwrap();
+        let result1 = dividend.fast_div(&divisor).unwrap();
 
         assert_eq!(result0.len(), result1.len());
         for i in 0..result0.len() {
