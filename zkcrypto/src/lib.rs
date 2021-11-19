@@ -13,6 +13,8 @@ pub mod fft_fr;
 pub mod kzg_types;
 pub mod kzg_proofs;
 pub mod das;
+pub mod zero_poly;
+pub mod recover;
 #[macro_use]
 pub mod curve {
 	pub mod scalar;
@@ -24,10 +26,10 @@ pub mod curve {
     pub mod fp12;
 	pub mod pairings;
 	pub mod multiscalar_mul;
-	
+
 	#[cfg(feature = "pairings")]
 	pub use pairings::{pairing, Bls12, Gt, MillerLoopResult};
-	
+
 	// #[cfg(all(feature = "pairings", feature = "alloc"))]
 	pub use pairings::{ G2Prepared};
 }

@@ -7,17 +7,17 @@ pub mod zero_poly_tests {
     use mcl_rust::mcl_methods::init;
     use mcl_rust::CurveType;
 
-    // #[test]
-    // fn test_reduce_partials_() {
-    //     assert!(init(CurveType::BLS12_381));
-    //     test_reduce_partials::<Fr, FFTSettings, Polynomial>();
-    // }
+    #[test]
+    fn test_reduce_partials_() {
+        assert!(init(CurveType::BLS12_381));
+        test_reduce_partials::<Fr, FFTSettings, Polynomial>();
+    }
 
-    // #[test]
-    // fn reduce_partials_random_() {
-    //     assert!(init(CurveType::BLS12_381));
-    //     reduce_partials_random::<Fr, FFTSettings, Polynomial>();
-    // }
+    #[test]
+    fn reduce_partials_random_() {
+        assert!(init(CurveType::BLS12_381));
+        reduce_partials_random::<Fr, FFTSettings, Polynomial>();
+    }
 
     #[test]
     fn check_test_data_() {
@@ -31,19 +31,17 @@ pub mod zero_poly_tests {
         zero_poly_known::<Fr, FFTSettings, Polynomial>();
     }
 
-    //fails for some reason, leaving for part 2
-    // #[test]
-    // fn zero_poly_random_() {
-    //     assert!(init(CurveType::BLS12_381));
-    //     zero_poly_random::<Fr, FFTSettings, Polynomial>();
-    // }
+    #[test]
+    fn zero_poly_random_() {
+        assert!(init(CurveType::BLS12_381));
+        zero_poly_random::<Fr, FFTSettings, Polynomial>();
+    }
 
-    //fails for some reason, leaving for part 2
-    // #[test]
-    // fn zero_poly_all_but_one_() {
-    //     assert!(init(CurveType::BLS12_381));
-    //     zero_poly_all_but_one::<Fr, FFTSettings, Polynomial>();
-    // }
+    #[test]
+    fn zero_poly_all_but_one_() {
+        assert!(init(CurveType::BLS12_381));
+        zero_poly_all_but_one::<Fr, FFTSettings, Polynomial>();
+    }
 
     #[test]
     fn zero_poly_252_() {

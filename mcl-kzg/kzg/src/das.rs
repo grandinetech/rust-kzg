@@ -13,8 +13,8 @@ impl FFTSettings {
         // just dividing every value by 1/(2**depth) aka length
         // TODO: what's faster, maybe vec[x] * vec[x], ask herumi to implement?
         let inv_length = Fr::from_int(values.len() as i32).get_inv();
-        for i in 0..values.len() {
-            values[i] *= &inv_length;
+        for item in values.iter_mut() {
+            *item *= &inv_length;
         }
     }
 
@@ -25,9 +25,9 @@ impl FFTSettings {
         if values.len() == 2 {
             let (x, y) = FFTSettings::_calc_add_and_sub(&values[0], &values[1]);
 
-            let temp = &y * &self.exp_roots_of_unity[stride];
-            values[0] = &x + &temp;
-            values[1] = &x - &temp;
+            let temp = y * self.exp_roots_of_unity[stride];
+            values[0] = x + temp;
+            values[1] = x - temp;
             return;
         }
 
@@ -38,7 +38,7 @@ impl FFTSettings {
         // let ab_half_1s = ab[quarter..];
         for i in 0..half {
             let (add, sub) = FFTSettings::_calc_add_and_sub(&values[i], &values[half + i]);
-            values[half + i] = &sub * &self.exp_roots_of_unity_rev[(i << 1) * stride];
+            values[half + i] = sub * self.exp_roots_of_unity_rev[(i << 1) * stride];
             values[i] = add;
         }
 
@@ -58,6 +58,6 @@ impl FFTSettings {
     }
 
     fn _calc_add_and_sub(a: &Fr, b: &Fr) -> (Fr, Fr) {
-        return (a + b, a - b);
+        (a + b, a - b)
     }
 }

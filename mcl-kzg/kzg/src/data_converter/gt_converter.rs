@@ -13,7 +13,7 @@ pub fn gt_from_blst(fp12: BlstFp12) -> GT {
         }
     }
     
-    return result;
+    result
 }
 
 pub fn gt_to_blst(fp12: GT) -> BlstFp12 {
@@ -27,5 +27,5 @@ pub fn gt_to_blst(fp12: GT) -> BlstFp12 {
         }
     }
     
-    return result;
+    result
 }

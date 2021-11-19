@@ -9,7 +9,7 @@ pub fn fp2_from_blst(fp2: BlstFp2) -> Fp2 {
         result.d[i] = fp_from_blst(fp2.fp[i]);
     }
     
-    return result;
+    result
 }
 
 pub fn fp2_to_blst(fp2: Fp2) -> BlstFp2 {
@@ -19,5 +19,5 @@ pub fn fp2_to_blst(fp2: Fp2) -> BlstFp2 {
         result.fp[i] = fp_to_blst(fp2.d[i].clone()); //probably should implement clone
     }
     
-    return result;
+    result
 }
