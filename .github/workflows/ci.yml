@@ -24,8 +24,6 @@ jobs:
     - name: "[ckzg] Build native libs for Linux"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        sudo apt update
-        sudo apt install -y libomp-dev
         cd ckzg && bash build.sh
 
     - name: "[ckzg] Build native libs for MacOS"
