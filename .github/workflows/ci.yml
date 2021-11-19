@@ -33,7 +33,7 @@ jobs:
         cd ckzg && bash build.sh
 
     - name: "[ckzg] Setup Env"
-      run: echo 'export RUSTFLAGS="echo $(locate libiomp5.so | head -n 1)"' >> $BASH_ENV
+      run: echo "RUSTFLAGS="echo $(locate libiomp5.so | head -n 1)"" >> $GITHUB_ENV
 
     - name: "[ckzg] Test"
       uses: actions-rs/cargo@v1
