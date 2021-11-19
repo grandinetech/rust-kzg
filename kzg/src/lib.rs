@@ -13,7 +13,7 @@ pub trait Fr: Clone {
 
     fn from_u64(u: u64) -> Self;
 
-    fn to_u64_arr(&self) -> [u64; 4];
+    fn to_u64_arr(&self) -> [u64; 4]; 
 
     fn is_one(&self) -> bool;
 

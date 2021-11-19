@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use kzg::{FFTFr, FFTSettings, Fr, G1, FFTG1};
+use kzg::{FFTFr, FFTG1, FFTSettings, Fr, G1};
 
 pub fn bench_fft_fr<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(c: &mut Criterion) {
     for scale in 4..16 {

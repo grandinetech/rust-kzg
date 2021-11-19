@@ -1,9 +1,5 @@
 use kzg::{FFTSettings, Fr};
 
-pub fn roots_of_unity_is_the_expected_size(roots: &[[u64; 4]; 32]) {
-    assert_eq!(roots.len(), 32);
-}
-
 pub fn roots_of_unity_out_of_bounds_fails<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() {
     let fft_settings = TFFTSettings::new(32);
     assert!(fft_settings.is_err());
