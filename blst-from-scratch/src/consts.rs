@@ -50,14 +50,14 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
 
 /// Multiply a given root of unity by itself until it results in a 1 and result all multiplication values in a vector
 pub fn expand_root_of_unity(root: &FsFr, width: usize) -> Result<Vec<FsFr>, String> {
-    let mut generated_powers = vec![FsFr::one(), root.clone()];
+    let mut generated_powers = vec![FsFr::one(), *root];
 
     while !(generated_powers.last().unwrap().is_one()) {
         if generated_powers.len() > width {
             return Err(String::from("Root of unity multiplied for too long"));
         }
 
-        generated_powers.push(generated_powers.last().unwrap().mul(&root));
+        generated_powers.push(generated_powers.last().unwrap().mul(root));
     }
 
     Ok(generated_powers)

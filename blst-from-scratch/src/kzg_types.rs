@@ -1,11 +1,12 @@
-use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY, G2_GENERATOR, G2_NEGATIVE_GENERATOR, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
-use crate::utils::{is_power_of_two, log_2_byte};
-use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p2, blst_uint64_from_fr, blst_fr_from_scalar, blst_scalar_from_fr, blst_p1_add_or_double, blst_p1_cneg, blst_p1_mult, blst_p1_is_equal, blst_scalar, blst_p2_mult, blst_p2_cneg, blst_p2_add_or_double, blst_p2_is_equal, blst_p2_double, blst_p1_is_inf, blst_p1_double};
-use kzg::{FFTSettings, Fr, Poly, G1, G1Mul, FFTFr, G2, G2Mul, FK20SingleSettings, FK20MultiSettings, KZGSettings, FFTG1, PolyRecover, ZeroPoly};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p1_add_or_double, blst_p1_cneg, blst_p1_double, blst_p1_is_equal, blst_p1_is_inf, blst_p1_mult, blst_p2, blst_p2_add_or_double, blst_p2_cneg, blst_p2_double, blst_p2_is_equal, blst_p2_mult, blst_scalar, blst_scalar_from_fr, blst_uint64_from_fr};
+use kzg::{FFTFr, FFTG1, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, G1, G1Mul, G2, G2Mul, KZGSettings, Poly, PolyRecover, ZeroPoly};
+
 use crate::bytes::reverse_bit_order;
+use crate::consts::{expand_root_of_unity, G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR, SCALE2_ROOT_OF_UNITY, SCALE_FACTOR};
 use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
-use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 use crate::recovery::{scale_poly, unscale_poly};
+use crate::utils::{is_power_of_two, log_2_byte};
+use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 
 pub struct FsFr(pub blst::blst_fr);
 
@@ -69,7 +70,8 @@ impl Fr for FsFr {
         unsafe {
             blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
         }
-        return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
+
+        val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0
     }
 
     fn is_zero(&self) -> bool {
@@ -77,12 +79,12 @@ impl Fr for FsFr {
         unsafe {
             blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
         }
-        return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
+
+        val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0
     }
 
     fn is_null(&self) -> bool {
-        let null = Self::null();
-        return null.equals(self);
+        self.equals(&Self::null())
     }
 
     fn sqr(&self) -> Self {
@@ -101,13 +103,6 @@ impl Fr for FsFr {
         }
 
         ret
-    }
-
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let tmp = b.eucl_inverse();
-        let out = self.mul(&tmp);
-
-        Ok(out)
     }
 
     fn add(&self, b: &Self) -> Self {
@@ -134,7 +129,7 @@ impl Fr for FsFr {
             blst_fr_eucl_inverse(&mut ret.0, &self.0);
         }
 
-        return ret;
+        ret
     }
 
     fn negate(&self) -> Self {
@@ -158,13 +153,13 @@ impl Fr for FsFr {
     fn pow(&self, n: usize) -> Self {
         let mut out = Self::one();
 
-        let mut temp = self.clone();
+        let mut temp = *self;
         let mut n = n;
         loop {
             if (n & 1) == 1 {
                 out = out.mul(&temp);
             }
-            n = n >> 1;
+            n >>= 1;
             if n == 0 {
                 break;
             }
@@ -173,6 +168,13 @@ impl Fr for FsFr {
         }
 
         out
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let tmp = b.eucl_inverse();
+        let out = self.mul(&tmp);
+
+        Ok(out)
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -184,10 +186,10 @@ impl Fr for FsFr {
             blst_uint64_from_fr(val_b.as_mut_ptr(), &b.0);
         }
 
-        return val_a[0] == val_b[0]
+        val_a[0] == val_b[0]
             && val_a[1] == val_b[1]
             && val_a[2] == val_b[2]
-            && val_a[3] == val_b[3];
+            && val_a[3] == val_b[3]
     }
 }
 
@@ -202,8 +204,7 @@ impl FsFr {
     }
 
     pub fn from_scalar(scalar: [u8; 32usize]) -> Self {
-        let mut bls_scalar = blst_scalar::default();
-        bls_scalar.b = scalar;
+        let bls_scalar = blst_scalar { b: scalar };
         let mut fr = blst_fr::default();
         unsafe {
             blst_fr_from_scalar(&mut fr, &bls_scalar);
@@ -216,7 +217,7 @@ impl FsFr {
 
 impl Clone for FsFr {
     fn clone(&self) -> Self {
-        FsFr(self.0.clone())
+        FsFr(self.0)
     }
 }
 
@@ -262,7 +263,7 @@ impl G1 for FsG1 {
 
     fn is_inf(&self) -> bool {
         unsafe {
-            return blst_p1_is_inf(&self.0);
+            blst_p1_is_inf(&self.0)
         }
     }
 
@@ -286,14 +287,14 @@ impl G1 for FsG1 {
 
     fn equals(&self, b: &Self) -> bool {
         unsafe {
-            return blst_p1_is_equal(&self.0, &b.0);
+            blst_p1_is_equal(&self.0, &b.0)
         }
     }
 }
 
 impl Clone for FsG1 {
     fn clone(&self) -> Self {
-        FsG1(self.0.clone())
+        FsG1(self.0)
     }
 }
 
@@ -354,7 +355,7 @@ impl G2 for FsG2 {
 
     fn equals(&self, b: &Self) -> bool {
         unsafe {
-            return blst_p2_is_equal(&self.0, &b.0);
+            blst_p2_is_equal(&self.0, &b.0)
         }
     }
 }
@@ -404,7 +405,7 @@ impl FsG2 {
 
 impl Clone for FsG2 {
     fn clone(&self) -> Self {
-        FsG2(self.0.clone())
+        FsG2(self.0)
     }
 }
 
@@ -443,13 +444,13 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn eval(&self, x: &FsFr) -> FsFr {
-        if self.coeffs.len() == 0 {
+        if self.coeffs.is_empty() {
             return FsFr::zero();
         } else if x.is_zero() {
-            return self.coeffs[0].clone();
+            return self.coeffs[0];
         }
 
-        let mut ret = self.coeffs[self.coeffs.len() - 1].clone();
+        let mut ret = self.coeffs[self.coeffs.len() - 1];
         let mut i = self.coeffs.len() - 2;
         loop {
             let temp = ret.mul(&x);
@@ -461,7 +462,7 @@ impl Poly<FsFr> for FsPoly {
             i -= 1;
         }
 
-        return ret;
+        ret
     }
 
     fn scale(&mut self) {
@@ -674,7 +675,11 @@ impl FsPoly {
     }
 
     pub fn poly_quotient_length(&self, divisor: &Self) -> usize {
-        return if self.len() >= divisor.len() { self.len() - divisor.len() + 1 } else { 0 };
+        if self.len() >= divisor.len() {
+            self.len() - divisor.len() + 1
+        } else {
+            0
+        }
     }
 
     pub fn pad(&self, out_length: usize) -> Self {
@@ -718,19 +723,19 @@ impl FsPoly {
         let ab = fft_settings.fft_fr(&ab_fft, true).unwrap();
 
         let mut ret = FsPoly { coeffs: vec![FsFr::zero(); output_len] };
-        for i in 0..min_u64(output_len, length) {
-            ret.coeffs[i] = ab[i];
-        }
+
+        let range = ..min_u64(output_len, length);
+        ret.coeffs[range].clone_from_slice(&ab[range]);
 
         Ok(ret)
     }
 
     pub fn mul(&mut self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
-        return if self.len() < 64 || multiplier.len() < 64 || output_len < 128 { // Tunable parameter
+        if self.len() < 64 || multiplier.len() < 64 || output_len < 128 { // Tunable parameter
             self.mul_direct(multiplier, output_len)
         } else {
             self.mul_fft(multiplier, output_len)
-        };
+        }
     }
 }
 
@@ -804,7 +809,7 @@ impl Clone for FsFFTSettings {
     fn clone(&self) -> Self {
         let mut output = FsFFTSettings::new(0).unwrap();
         output.max_width = self.max_width;
-        output.root_of_unity = self.root_of_unity.clone();
+        output.root_of_unity = self.root_of_unity;
         output.expanded_roots_of_unity = self.expanded_roots_of_unity.clone();
         output.reverse_roots_of_unity = self.reverse_roots_of_unity.clone();
         output
@@ -830,12 +835,11 @@ impl Clone for FsKZGSettings {
 
 impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     fn default() -> Self {
-        let output = Self {
+        Self {
             secret_g1: Vec::new(),
             secret_g2: Vec::new(),
             fs: FsFFTSettings::default(),
-        };
-        output
+        }
     }
 
     fn new(
@@ -933,7 +937,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         let mut interp = FsPoly { coeffs: self.fs.fft_fr(ys, true)? };
 
         let inv_x = x.inverse(); // Not euclidean?
-        let mut inv_x_pow = inv_x.clone();
+        let mut inv_x_pow = inv_x;
         for i in 1..n {
             interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
             inv_x_pow = inv_x_pow.mul(&inv_x);
@@ -1188,11 +1192,11 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
 
 impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
     fn recover_poly_from_samples(samples: &[Option<FsFr>], fs: &FsFFTSettings) -> Self {
-
         let len_samples = samples.len();
         assert!(is_power_of_two(len_samples));
 
         let mut missing: Vec<usize> = Vec::new();
+
         for i in 0..len_samples {
             if samples[i].is_none() {
                 missing.push(i);
@@ -1264,7 +1268,7 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
     }
 }
 
-pub trait PolyStupidInterface<Coeff: Fr> : Clone {
+pub trait PolyStupidInterface<Coeff: Fr>: Clone {
     fn default() -> Self;
 
     fn new(size: usize) -> Result<Self, String>;
@@ -1310,7 +1314,6 @@ pub struct StupidPoly {
     pub coeffs: Vec<FsFr>,
 }
 
-
 impl Clone for StupidPoly {
     fn clone(&self) -> Self {
         StupidPoly {
@@ -1320,83 +1323,9 @@ impl Clone for StupidPoly {
 }
 
 impl PolyStupidInterface<FsFr> for StupidPoly {
-    fn _poly_norm(&self) -> Self {
-        let mut ret = self.clone();
-
-        let mut temp_len: usize = ret.coeffs.len();
-        while temp_len > 0 && ret.coeffs[temp_len - 1].is_zero() {
-            temp_len -= 1;
-        }
-
-        if temp_len == 0 {
-            ret.coeffs = Vec::new();
-        } else {
-            ret.coeffs = ret.coeffs[0..temp_len].to_vec();
-        }
-
-        ret
+    fn default() -> Self {
+        Self::new(0).unwrap()
     }
-
-    fn poly_quotient_length(&self, divisor: &Self) -> usize {
-        return if self.len() >= divisor.len() { self.len() - divisor.len() + 1 } else { 0 };
-    }
-
-    fn pad(&self, out_length: usize) -> Self {
-        let mut ret = Self { coeffs: vec![FsFr::zero(); out_length] };
-
-        for i in 0..min_u64(self.len(), out_length) {
-            ret.coeffs[i] = self.coeffs[i];
-        }
-
-        ret
-    }
-
-    fn flip(&self) -> Result<Self, String> {
-        let mut ret = Self { coeffs: vec![FsFr::default(); self.len()] };
-        for i in 0..self.len() {
-            ret.coeffs[i] = self.coeffs[self.coeffs.len() - i - 1]
-        }
-
-        Ok(ret)
-    }
-
-    fn mul_fft(&self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
-        let length = next_power_of_two(self.len() + multiplier.len() - 1);
-
-        let scale = log2_pow2(length);
-        let fft_settings = FsFFTSettings::new(scale).unwrap();
-
-        let a_pad = self.pad(length);
-        let b_pad = multiplier.pad(length);
-        // Convert Poly to values
-        let a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
-        let b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
-
-        // Multiply two value ranges
-        let mut ab_fft = vec![FsFr::default(); length];
-        for i in 0..length {
-            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
-        }
-
-        // Convert value range multiplication to a resulting polynomial
-        let ab = fft_settings.fft_fr(&ab_fft, true).unwrap();
-
-        let mut ret = Self { coeffs: vec![FsFr::zero(); output_len] };
-        for i in 0..min_u64(output_len, length) {
-            ret.coeffs[i] = ab[i];
-        }
-
-        Ok(ret)
-    }
-
-    fn mul(&mut self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
-        return if self.len() < 64 || multiplier.len() < 64 || output_len < 128 { // Tunable parameter
-            self.mul_direct(multiplier, output_len)
-        } else {
-            self.mul_fft(multiplier, output_len)
-        };
-    }
-
 
     fn new(size: usize) -> Result<Self, String> {
         Ok(Self {
@@ -1404,17 +1333,12 @@ impl PolyStupidInterface<FsFr> for StupidPoly {
         })
     }
 
-    fn default() -> Self {
-        // Not perfect, but shouldn't fail
-        Self::new(0).unwrap()
-    }
-
     fn get_coeff_at(&self, i: usize) -> FsFr {
         self.coeffs[i]
     }
 
     fn set_coeff_at(&mut self, i: usize, x: &FsFr) {
-        self.coeffs[i] = x.clone()
+        self.coeffs[i] = *x
     }
 
     fn get_coeffs(&self) -> &[FsFr] {
@@ -1425,17 +1349,18 @@ impl PolyStupidInterface<FsFr> for StupidPoly {
         self.coeffs.len()
     }
 
+
     fn eval(&self, x: &FsFr) -> FsFr {
-        if self.coeffs.len() == 0 {
+        if self.coeffs.is_empty() {
             return FsFr::zero();
         } else if x.is_zero() {
-            return self.coeffs[0].clone();
+            return self.coeffs[0];
         }
 
-        let mut ret = self.coeffs[self.coeffs.len() - 1].clone();
+        let mut ret = self.coeffs[self.coeffs.len() - 1];
         let mut i = self.coeffs.len() - 2;
         loop {
-            let temp = ret.mul(&x);
+            let temp = ret.mul(x);
             ret = temp.add(&self.coeffs[i]);
 
             if i == 0 {
@@ -1635,5 +1560,82 @@ impl PolyStupidInterface<FsFr> for StupidPoly {
         }
 
         Ok(ret)
+    }
+
+    fn _poly_norm(&self) -> Self {
+        let mut ret = self.clone();
+
+        let mut temp_len: usize = ret.coeffs.len();
+        while temp_len > 0 && ret.coeffs[temp_len - 1].is_zero() {
+            temp_len -= 1;
+        }
+
+        if temp_len == 0 {
+            ret.coeffs = Vec::new();
+        } else {
+            ret.coeffs = ret.coeffs[0..temp_len].to_vec();
+        }
+
+        ret
+    }
+
+    fn poly_quotient_length(&self, divisor: &Self) -> usize {
+        return if self.len() >= divisor.len() { self.len() - divisor.len() + 1 } else { 0 };
+    }
+
+    fn pad(&self, out_length: usize) -> Self {
+        let mut ret = Self { coeffs: vec![FsFr::zero(); out_length] };
+
+        for i in 0..min_u64(self.len(), out_length) {
+            ret.coeffs[i] = self.coeffs[i];
+        }
+
+        ret
+    }
+
+    fn flip(&self) -> Result<Self, String> {
+        let mut ret = Self { coeffs: vec![FsFr::default(); self.len()] };
+        for i in 0..self.len() {
+            ret.coeffs[i] = self.coeffs[self.coeffs.len() - i - 1]
+        }
+
+        Ok(ret)
+    }
+
+    fn mul_fft(&self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
+        let length = next_power_of_two(self.len() + multiplier.len() - 1);
+
+        let scale = log2_pow2(length);
+        let fft_settings = FsFFTSettings::new(scale).unwrap();
+
+        let a_pad = self.pad(length);
+        let b_pad = multiplier.pad(length);
+        // Convert Poly to values
+        let a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
+        let b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
+
+        // Multiply two value ranges
+        let mut ab_fft = vec![FsFr::default(); length];
+        for i in 0..length {
+            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+        }
+
+        // Convert value range multiplication to a resulting polynomial
+        let ab = fft_settings.fft_fr(&ab_fft, true).unwrap();
+
+        let mut ret = Self { coeffs: vec![FsFr::zero(); output_len] };
+        for i in 0..min_u64(output_len, length) {
+            ret.coeffs[i] = ab[i];
+        }
+
+        Ok(ret)
+    }
+
+    fn mul(&mut self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
+        return if self.len() < 64 || multiplier.len() < 64 || output_len < 128 { // Tunable parameter
+            self.mul_direct(multiplier, output_len)
+        } else {
+            self.mul_fft(multiplier, output_len)
+        };
     }
 }

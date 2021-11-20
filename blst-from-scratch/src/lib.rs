@@ -1,5 +1,5 @@
 pub mod consts;
-pub mod das;
+pub mod data_availability_sampling;
 pub mod fft_fr;
 pub mod fft_g1;
 pub mod fk20_proofs;

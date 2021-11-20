@@ -14,9 +14,7 @@ impl FsFFTSettings {
             x_ext.push(FsG1::identity());
         }
 
-        let ret = self.fft_g1(&x_ext, false).unwrap();
-
-        ret
+        self.fft_g1(&x_ext, false).unwrap()
     }
 
     /// poly and x_ext_fft should be of same length

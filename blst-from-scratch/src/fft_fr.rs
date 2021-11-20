@@ -31,7 +31,7 @@ pub fn fft_fr_fast(
         }
     } else {
         // When len = 1, return the permuted element
-        ret[0] = data[0].clone();
+        ret[0] = data[0];
     }
 }
 
@@ -57,6 +57,7 @@ impl FFTFr<FsFr> for FsFFTSettings {
         } else {
             &self.expanded_roots_of_unity
         };
+
         fft_fr_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
@@ -67,7 +68,7 @@ impl FFTFr<FsFr> for FsFFTSettings {
             }
         }
 
-        return Ok(ret);
+        Ok(ret)
     }
 }
 

@@ -1,24 +1,24 @@
-use kzg::{G1Mul};
-use blst::{blst_p1_add_or_double,
-           blst_p1s_to_affine,
-           blst_scalar,
+use blst::{blst_final_exp,
+           blst_fp12,
+           blst_fp12_is_one,
+           blst_fp12_mul,
+           blst_miller_loop,
+           blst_p1,
+           blst_p1_add_or_double,
+           blst_p1_affine,
+           blst_p1_cneg,
+           blst_p1_to_affine,
            blst_p1s_mult_pippenger,
            blst_p1s_mult_pippenger_scratch_sizeof,
-           blst_p1_cneg,
-           blst_fp12,
-           blst_p1_to_affine,
-           blst_p2_to_affine,
-           blst_miller_loop,
-           blst_fp12_mul,
-           blst_final_exp,
-           blst_fp12_is_one,
-           blst_p1,
-           blst_p1_affine,
+           blst_p1s_to_affine,
            blst_p2_affine,
+           blst_p2_to_affine,
+           blst_scalar,
 };
-use crate::kzg_types::{FsFr, FsG1, FsG2};
-use crate::consts::G1_IDENTITY;
+use kzg::G1Mul;
 
+use crate::consts::G1_IDENTITY;
+use crate::kzg_types::{FsFr, FsG1, FsG2};
 
 pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: usize) {
     if true {
@@ -105,6 +105,6 @@ pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
         blst_fp12_mul(&mut gt_point, &loop0, &loop1);
         blst_final_exp(&mut gt_point, &gt_point);
 
-        return blst_fp12_is_one(&gt_point);
+        blst_fp12_is_one(&gt_point)
     }
 }
