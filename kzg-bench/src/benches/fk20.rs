@@ -190,7 +190,7 @@ pub fn fk_multi_da_chunk_32<
 ) {
     fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(
         32,
-        "bench_fk_multi_commit_da _chunk_512".to_string(),
+        "bench_fk_multi_commit_da_chunk_32".to_string(),
         c,
         generate_trusted_setup,
         false,
@@ -211,7 +211,7 @@ pub fn fk_multi_da_chunk_32_optimized<
 ) {
     fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(
         32,
-        "bench_fk_multi_commit_da_chunk_512_optimized".to_string(),
+        "bench_fk_multi_commit_da_chunk_32_optimized".to_string(),
         c,
         generate_trusted_setup,
         false,
