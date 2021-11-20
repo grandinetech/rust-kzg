@@ -1,7 +1,5 @@
 use blst::{blst_fp, blst_fp2, blst_p1, blst_p2};
-use kzg::Fr;
 
-use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 
