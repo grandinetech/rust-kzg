@@ -1,5 +1,3 @@
-use std::iter::Map;
-
 use kzg::{FFTFr, Fr};
 
 use crate::types::fft_settings::FsFFTSettings;
