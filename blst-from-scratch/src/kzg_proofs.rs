@@ -1,24 +1,15 @@
-use kzg::{G1Mul};
-use blst::{blst_p1_add_or_double,
-           blst_p1s_to_affine,
-           blst_scalar,
-           blst_p1s_mult_pippenger,
-           blst_p1s_mult_pippenger_scratch_sizeof,
-           blst_p1_cneg,
-           blst_fp12,
-           blst_p1_to_affine,
-           blst_p2_to_affine,
-           blst_miller_loop,
-           blst_fp12_mul,
-           blst_final_exp,
-           blst_fp12_is_one,
-           blst_p1,
-           blst_p1_affine,
-           blst_p2_affine,
+use blst::{
+    blst_final_exp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1,
+    blst_p1_add_or_double, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine,
+    blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine,
+    blst_p2_affine, blst_p2_to_affine, blst_scalar,
 };
-use crate::kzg_types::{FsFr, FsG1, FsG2};
-use crate::consts::G1_IDENTITY;
+use kzg::G1Mul;
 
+use crate::consts::G1_IDENTITY;
+use crate::types::fr::FsFr;
+use crate::types::g1::FsG1;
+use crate::types::g2::FsG2;
 
 pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: usize) {
     if true {
@@ -56,7 +47,9 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
         let mut scalars = Vec::new();
         // Transform the field elements to 256-bit scalars
         for i in 0..len {
-            scalars.push(blst_scalar { b: coeffs[i].to_scalar() });
+            scalars.push(blst_scalar {
+                b: coeffs[i].to_scalar(),
+            });
         }
 
         // Call the Pippenger g1_mul implementation
@@ -64,7 +57,8 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
         let scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), &blst_scalar::default()];
 
         //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-        let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), &blst_p1_affine::default()];
+        let points_arg: [*const blst_p1_affine; 2] =
+            [p_affine.as_ptr(), &blst_p1_affine::default()];
 
         let mut scratch;
         let new_arg = scalars_arg.as_ptr() as *const *const u8;
@@ -72,7 +66,14 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
             scratch = blst_p1s_mult_pippenger_scratch_sizeof(len) as u64;
         }
         unsafe {
-            blst_p1s_mult_pippenger(&mut out.0, points_arg.as_ptr(), len, new_arg, 256, &mut scratch);
+            blst_p1s_mult_pippenger(
+                &mut out.0,
+                points_arg.as_ptr(),
+                len,
+                new_arg,
+                256,
+                &mut scratch,
+            );
         }
     }
 }
@@ -105,6 +106,6 @@ pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
         blst_fp12_mul(&mut gt_point, &loop0, &loop1);
         blst_final_exp(&mut gt_point, &gt_point);
 
-        return blst_fp12_is_one(&gt_point);
+        blst_fp12_is_one(&gt_point)
     }
 }

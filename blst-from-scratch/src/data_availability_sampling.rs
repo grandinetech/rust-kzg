@@ -1,7 +1,8 @@
-use crate::kzg_types::FsFFTSettings;
-use crate::kzg_types::FsFr;
-use crate::utils::is_power_of_two;
 use kzg::{Fr, DAS};
+
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::utils::is_power_of_two;
 
 // TODO: explain algo
 impl FsFFTSettings {
@@ -33,8 +34,8 @@ impl FsFFTSettings {
         self.das_fft_extension_stride(&mut evens[half..], stride * 2);
 
         for i in 0..half {
-            let x = evens[i].clone();
-            let y = evens[half + i].clone();
+            let x = evens[i];
+            let y = evens[half + i];
             let y_times_root: FsFr = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
 
             evens[i] = x.add(&y_times_root);
@@ -48,7 +49,7 @@ impl DAS<FsFr> for FsFFTSettings {
     /// FFTSettings must hold at least 2 times the roots of provided evens.
     /// The resulting odd indices make the right half of the coefficients of the inverse FFT of the combined indices zero.
     fn das_fft_extension(&self, evens: &[FsFr]) -> Result<Vec<FsFr>, String> {
-        if evens.len() == 0 {
+        if evens.is_empty() {
             return Err(String::from("A non-zero list ab expected"));
         } else if !is_power_of_two(evens.len()) {
             return Err(String::from("A list with power-of-two length expected"));

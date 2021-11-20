@@ -1,4 +1,4 @@
-use kzg::{Fr, Poly, FFTSettings, FFTFr};
+use kzg::{FFTFr, FFTSettings, Fr, Poly};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 use std::convert::TryInto;
@@ -32,7 +32,7 @@ fn random_missing<TFr: Fr>(with_missing: &mut [TFr], data: &[TFr], len_data: usi
 }
 
 pub fn recover_simple<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPoly: Poly<TFr>>(
-    recover_poly_from_samples: &dyn Fn(&[TFr], usize, &TFFTSettings) -> Result<Vec<TFr>, String>
+    recover_poly_from_samples: &dyn Fn(&[TFr], usize, &TFFTSettings) -> Result<Vec<TFr>, String>,
 ) {
     let fs_query = TFFTSettings::new(2);
     assert!(fs_query.is_ok());
@@ -82,7 +82,7 @@ pub fn recover_simple<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
 }
 
 pub fn recover_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPoly: Poly<TFr>>(
-    recover_poly_from_samples: &dyn Fn(&[TFr], usize, &TFFTSettings) -> Result<Vec<TFr>, String>
+    recover_poly_from_samples: &dyn Fn(&[TFr], usize, &TFFTSettings) -> Result<Vec<TFr>, String>,
 ) {
     let fs_query = TFFTSettings::new(12);
     assert!(fs_query.is_ok());
