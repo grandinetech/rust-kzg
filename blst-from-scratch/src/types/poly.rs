@@ -1,4 +1,4 @@
-use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, FK20MultiSettings, FK20SingleSettings, Fr, G1, G1Mul, G2, G2Mul, KZGSettings, Poly, PolyRecover, ZeroPoly};
+use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr, Poly, PolyRecover, ZeroPoly};
 
 use crate::consts::SCALE_FACTOR;
 use crate::recovery::{scale_poly, unscale_poly};
@@ -263,7 +263,7 @@ impl Poly<FsFr> for FsPoly {
 }
 
 impl FFTSettingsPoly<FsFr, FsPoly, FsFFTSettings> for FsFFTSettings {
-    fn poly_mul_fft(a: &FsPoly, b: &FsPoly, len: usize, fs: Option<&FsFFTSettings>) -> Result<FsPoly, String> {
+    fn poly_mul_fft(a: &FsPoly, b: &FsPoly, len: usize, _fs: Option<&FsFFTSettings>) -> Result<FsPoly, String> {
         b.mul_fft(a, len)
     }
 }
