@@ -1,5 +1,5 @@
-#[path = "./local_tests/local_consts.rs"]
-pub mod local_consts;
+// #[path = "./local_tests/local_consts.rs"]
+// pub mod local_consts;
 
 #[cfg(test)]
 pub mod tests {
@@ -10,8 +10,8 @@ pub mod tests {
     use blst_from_scratch::consts::{SCALE2_ROOT_OF_UNITY};
     use blst_from_scratch::types::fft_settings::{expand_root_of_unity, FsFFTSettings};
     use blst_from_scratch::types::fr::FsFr;
-    use crate::local_consts::roots_of_unity_repeat_at_stride;
 
+    // Shared tests
     #[test]
     fn roots_of_unity_is_the_expected_size_() {
         roots_of_unity_is_the_expected_size(&SCALE2_ROOT_OF_UNITY);
@@ -37,8 +37,9 @@ pub mod tests {
         new_fft_settings_is_plausible::<FsFr, FsFFTSettings>();
     }
 
-    #[test]
-    fn roots_of_unity_repeat_at_stride_() {
-        roots_of_unity_repeat_at_stride::<FsFr, FsFFTSettings>();
-    }
+    // Local tests
+    // #[test]
+    // fn roots_of_unity_repeat_at_stride_() {
+    //     roots_of_unity_repeat_at_stride::<FsFr, FsFFTSettings>();
+    // }
 }
