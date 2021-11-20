@@ -5,15 +5,15 @@ pub mod tests {
 	use zkcrypto::zkfr::blsScalar;
     use zkcrypto::fftsettings::ZkFFTSettings;
 
-    // #[test]
-    // fn compare_sft_fft_() {
-        // compare_sft_fft::<blsScalar, ZkFFTSettings>(&fft_fr_slow, &fft_fr_fast);
-    // }
+     #[test]
+     fn compare_sft_fft_() {
+         compare_sft_fft::<blsScalar, ZkFFTSettings>(&fft_fr_slow, &fft_fr_fast);
+     }
 
-    // #[test]
-    // fn roundtrip_fft_() {
-        // roundtrip_fft::<blsScalar, ZkFFTSettings>();
-    // }
+     #[test]
+     fn roundtrip_fft_() {
+         roundtrip_fft::<blsScalar, ZkFFTSettings>();
+     }
 
 //&fft_fr
     #[test]
