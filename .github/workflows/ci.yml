@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-11]
 
     steps:
     - uses: actions/checkout@v2
@@ -30,13 +30,15 @@ jobs:
     - name: "[ckzg] Build native libs for MacOS"
       if: matrix.os == 'macos-11'
       run: |
-        brew install gnu-sed
+        brew install libomp gnu-sed
+        echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
         cd ckzg && bash build.sh
 
     - name: "[ckzg] Setup Env"
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         if [[ -z "$LIBOMP_PATH" ]]; then
-          echo "FAIL: libiomp5.so was not found"
+          echo "FAIL: LLVM OpenMP runtime was not found"
           exit 1
         fi
         echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
