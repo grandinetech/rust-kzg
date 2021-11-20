@@ -13,7 +13,7 @@ pub trait Fr: Clone {
 
     fn from_u64(u: u64) -> Self;
 
-    fn to_u64_arr(&self) -> [u64; 4]; 
+    fn to_u64_arr(&self) -> [u64; 4];
 
     fn is_one(&self) -> bool;
 
@@ -168,7 +168,7 @@ pub trait Poly<Coeff: Fr>: Clone {
 }
 
 pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
-    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: FSettings) -> Polynomial;
+    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: &FSettings) -> Polynomial;
 }
 
 pub trait KZGSettings<

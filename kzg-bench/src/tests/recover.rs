@@ -26,11 +26,11 @@ pub fn recover_simple<
     // for i in (max_width / 2)..max_width {
     //     poly[i] = TFr::zero();
     // }
-    
-    let data = fs.fft_fr(&poly, false).unwrap();
-    let sample: [Option<TFr>; 4] = [Some(data[0].clone()), None, None, Some(data[3].clone())];
 
-    let recovered = TPolyRecover::recover_poly_from_samples(&sample, fs.clone());
+    let data = fs.fft_fr(&poly, false).unwrap();
+    let samples: [Option<TFr>; 4] = [Some(data[0].clone()), None, None, Some(data[3].clone())];
+
+    let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs);
 
     //Check recovered data
     for i in 0..max_width {
@@ -73,30 +73,29 @@ pub fn recover_random<
     let data = fs.fft_fr(&poly, false).unwrap();
 
     //Having half of the data is the minimum
-    let mut known_ratio: f64 = 0.7;
+    let mut known_ratio: f64 = 0.5;
     while known_ratio < 1.0 {
         let known: u64 = (max_width as f64 * known_ratio) as u64;
         for _ in 0..4 {
-            let sample = random_missing(data.clone(), max_width, known);
+            let samples = random_missing(data.clone(), max_width, known);
 
-
-            let recovered = TPolyRecover::recover_poly_from_samples(&sample, fs.clone());
+            let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs);
             //Assert
             for i in 0..max_width {
                 assert!(data[i].equals(&recovered.get_coeff_at(i)));
             }
-        
+
             let mut recovered_vec: Vec<TFr> = vec![];
             for i in 0..max_width {
                 recovered_vec.push(recovered.get_coeff_at(i));
             }
-        
+
             //Also check against original coefficients
             let back = fs.fft_fr(&recovered_vec, true).unwrap();
             for i in 0..(max_width / 2) {
                 assert!(poly[i].equals(&back[i]));
             }
-        
+
             for i in (max_width / 2)..max_width {
                 assert!(poly[i].is_zero());
             }
@@ -124,6 +123,5 @@ fn random_missing<TFr: Fr>(data: Vec<TFr>, len_data: usize, known: u64) -> Vec<O
     for i in 0..(len_data - (known as usize)) {
         with_missing[missin_idx[i]] = None;
     }
-    println!("random_missing {} - {}", len_data, known);
     with_missing
 }
