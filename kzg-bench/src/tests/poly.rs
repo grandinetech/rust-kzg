@@ -138,7 +138,7 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>) -> TPoly {
 }
 
 pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
-    for i in 0..7 {
+    for i in 0..6 {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
