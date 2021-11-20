@@ -211,8 +211,8 @@ pub fn toeplitz_coeffs_step(p: &PolyData, outlen: usize) -> Result<PolyData, Str
     toeplitz_coeffs_stride(p, 0, 1, outlen)
 }
 
-pub fn toeplitz_coeffs_stride(p: &PolyData, offset: usize, stride: usize, outlen: usize) -> Result<PolyData, String>{
-    let n = p.len();
+pub fn toeplitz_coeffs_stride(poly: &PolyData, offset: usize, stride: usize, outlen: usize) -> Result<PolyData, String>{
+    let n = poly.len();
 
     assert!(stride > 0);
 
@@ -221,7 +221,7 @@ pub fn toeplitz_coeffs_stride(p: &PolyData, offset: usize, stride: usize, outlen
 
     assert!(outlen >= k2);
     let mut out = PolyData::new(outlen).unwrap();
-    out.set_coeff_at(0, &p.coeffs[n - 1 - offset]);
+    out.set_coeff_at(0, &poly.coeffs[n - 1 - offset]);
     let mut i = 1;
     while i <= (k+1) && i < k2{
         out.set_coeff_at(i, &BlstFr::zero());
@@ -229,7 +229,7 @@ pub fn toeplitz_coeffs_stride(p: &PolyData, offset: usize, stride: usize, outlen
     }
     let mut j = 2 * stride - offset - 1;
     for i in (k+2)..k2{
-        out.set_coeff_at(i, &p.coeffs[j]);
+        out.set_coeff_at(i, &poly.coeffs[j]);
         j+= stride;
     }
     Ok(out)

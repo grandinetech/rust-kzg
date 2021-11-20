@@ -42,14 +42,13 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         for (i, indice) in indices.iter().enumerate().skip(1) {
             let neg_di =
                 blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indice * stride]).neg();
-            poly.coeffs[i] = neg_di;
 
-            poly.coeffs[i] = poly.coeffs[i] + poly.coeffs[i - 1];
+            poly.coeffs[i] = neg_di + poly.coeffs[i - 1];
 
             let mut j = i - 1;
             while j > 0 {
-                poly.coeffs[j] *= neg_di;
-                poly.coeffs[j] = poly.coeffs[j] + poly.coeffs[j - 1];
+                let temp = poly.coeffs[j] * neg_di;
+                poly.coeffs[j] = temp + poly.coeffs[j - 1];
                 j -= 1;
             }
 

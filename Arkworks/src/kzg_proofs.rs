@@ -67,6 +67,12 @@ pub struct KZG<E: PairingEngine, P: UVPolynomial<E::Fr>> {
     _poly: PhantomData<P>,
 }
 
+pub struct setup_type{
+    params: UniversalParams<Bls12_381>, 
+    g1_secret: Vec<GroupProjective<g1::Parameters>>, 
+    g2_secret: Vec<GroupProjective<g2::Parameters>>
+}
+
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
 Due to being private and, therefore, unreachable and/or in need of modification*/
 impl<E, P> KZG<E, P>
@@ -82,7 +88,7 @@ where
         max_degree: usize,
         produce_g2_powers: bool,
         rng: &mut R,
-    ) -> Result<(UniversalParams<Bls12_381>,Vec<GroupProjective<g1::Parameters>>, Vec<GroupProjective<g2::Parameters>>), Error> {
+    ) -> Result<setup_type, Error> {
         if max_degree < 1 {
             return Err(Error::DegreeIsZero);
         }
@@ -186,7 +192,8 @@ where
             prepared_h,
             prepared_beta_h,
         };
-        Ok((pp, s1, s2))
+        let res = setup_type{params: pp, g1_secret: s1, g2_secret: s2};
+        Ok(res)
     }
 
     pub fn open(
@@ -400,29 +407,30 @@ pub(crate) fn new_kzg_settings(
     ffs: &FFTSettings,
 ) -> KZGSettings {
     let length = length + 1;
-    let (mut params, test, test2) = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, true, &mut test_rng()).unwrap();
+    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, true, &mut test_rng()).unwrap();
+
     let mut temp = Vec::new();
     for i in 0..length{
-        temp.push(pc_g1projective_into_blst_p1(test[i as usize]).unwrap());
+        temp.push(pc_g1projective_into_blst_p1(setup.g1_secret[i as usize]).unwrap());
     }
 
     let mut temp2 = Vec::new();
     for i in 0..length{
-        temp2.push(pc_g2projective_into_blst_p2(test2[i as usize]).unwrap());
+        temp2.push(pc_g2projective_into_blst_p2(setup.g2_secret[i as usize]).unwrap());
     }
 
     let mut temp3 = Vec::new();
     for i in 0..length{
-        temp3.push(test[i as usize].into_affine());
+        temp3.push(setup.g1_secret[i as usize].into_affine());
     }
 
-    params.powers_of_g = temp3;
+    setup.params.powers_of_g = temp3;
 
     KZGSettings {
         secret_g1: temp,
         secret_g2: temp2,
         length,
-        params,
+        params: setup.params,
         fs: ffs.borrow().clone(),
         ..KZGSettings::default()
     }
