@@ -51,10 +51,26 @@ parallel = [ "std", "ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel", "
 name = "fft"
 harness = false
 
-#[[bench]]
-#name = "poly"
+[[bench]]
+name = "kzg"
+harness = false
+
+[[bench]]
+name = "poly"
 #harness = false
 
 [[bench]]
 name = "das"
+harness = false
+
+[[bench]]
+name = "fk_20"
+harness = false
+
+[[bench]]
+name = "recover"
+harness = false
+
+[[bench]]
+name = "zero_poly"
 harness = false
