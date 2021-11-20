@@ -13,10 +13,10 @@ mod tests {
         fk_single::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20SingleSettings>(&generate_trusted_setup);
     }
 
-    // #[test]
-    // fn test_fk_single_strided() {
-    //     fk_single_strided::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20SingleSettings>(&generate_trusted_setup);
-    // }
+    #[test]
+    fn test_fk_single_strided() {
+        fk_single_strided::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20SingleSettings>(&generate_trusted_setup);
+    }
 
     #[test]
     fn test_fk_multi_settings() {
@@ -28,10 +28,10 @@ mod tests {
         fk_multi_chunk_len_1_512::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20MultiSettings>(&generate_trusted_setup);
     }
 
-    // #[test]
-    // fn test_fk_multi_chunk_len_16_512() {
-    //     fk_multi_chunk_len_16_512::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20MultiSettings>(&generate_trusted_setup);
-    // }
+    #[test]
+    fn test_fk_multi_chunk_len_16_512() {
+        fk_multi_chunk_len_16_512::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20MultiSettings>(&generate_trusted_setup);
+    }
 
     #[test]
     fn test_fk_multi_chunk_len_16_16() {
