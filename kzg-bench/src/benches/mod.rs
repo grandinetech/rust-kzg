@@ -4,3 +4,4 @@ pub mod das;
 pub mod zero_poly;
 pub mod kzg;
 pub mod recover;
+pub mod fk20;

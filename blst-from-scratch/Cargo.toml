@@ -1,5 +1,5 @@
 [package]
-name = "kzg_from_scratch"
+name = "blst_from_scratch"
 version = "0.1.0"
 edition = "2018"
 
@@ -17,4 +17,16 @@ criterion = "0.3.5"
 
 [[bench]]
 name = "fft"
+harness = false
+
+[[bench]]
+name = "poly"
+harness = false
+
+[[bench]]
+name = "kzg"
+harness = false
+
+[[bench]]
+name = "fk_20"
 harness = false
