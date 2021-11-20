@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use kzg::{Fr, DAS};
 
 use crate::types::fft_settings::FsFFTSettings;
@@ -7,17 +8,21 @@ use crate::utils::is_power_of_two;
 // TODO: explain algo
 impl FsFFTSettings {
     pub fn das_fft_extension_stride(&self, evens: &mut [FsFr], stride: usize) {
-        if evens.len() < 2 {
-            return;
-        } else if evens.len() == 2 {
-            let x = evens[0].add(&evens[1]);
-            let y = evens[0].sub(&evens[1]);
-            let y_times_root = y.mul(&self.expanded_roots_of_unity[stride]);
+        match evens.len().cmp(&2) {
+            Ordering::Less => {
+                return;
+            }
+            Ordering::Equal => {
+                let x = evens[0].add(&evens[1]);
+                let y = evens[0].sub(&evens[1]);
+                let y_times_root = y.mul(&self.expanded_roots_of_unity[stride]);
 
-            evens[0] = x.add(&y_times_root);
-            evens[1] = x.sub(&y_times_root);
+                evens[0] = x.add(&y_times_root);
+                evens[1] = x.sub(&y_times_root);
 
-            return;
+                return;
+            },
+            Ordering::Greater => {}
         }
 
         let half: usize = evens.len() / 2;
@@ -67,9 +72,7 @@ impl DAS<FsFr> for FsFFTSettings {
         // TODO: explain why each odd member is multiplied by euclidean inverse of length
         let mut inv_len = FsFr::from_u64(odds.len() as u64);
         inv_len = inv_len.eucl_inverse();
-        for i in 0..odds.len() {
-            odds[i] = odds[i].mul(&inv_len);
-        }
+        let odds = odds.iter().map(|f| f.mul(&inv_len)).collect();
 
         Ok(odds)
     }

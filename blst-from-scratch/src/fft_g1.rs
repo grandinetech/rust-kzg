@@ -54,11 +54,8 @@ impl FFTG1<FsG1> for FsFFTSettings {
         fft_g1_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
-            let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
-            inv_len = inv_len.inverse();
-            for i in 0..data.len() {
-                ret[i] = ret[i].mul(&inv_len);
-            }
+            let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
+            ret[..data.len()].iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
         }
 
         Ok(ret)

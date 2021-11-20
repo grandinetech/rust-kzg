@@ -1,6 +1,8 @@
-use crate::types::fft_settings::FsFFTSettings;
+use std::iter::Map;
+
 use kzg::{FFTFr, Fr};
 
+use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::utils::is_power_of_two;
 
@@ -62,11 +64,8 @@ impl FFTFr<FsFr> for FsFFTSettings {
         fft_fr_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
-            let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
-            inv_len = inv_len.inverse();
-            for i in 0..data.len() {
-                ret[i] = ret[i].mul(&inv_len);
-            }
+            let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
+            ret[..data.len()].iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
         }
 
         Ok(ret)
