@@ -1,6 +1,9 @@
-use crate::kzg_types::{FsFr, FsG1, FsG2};
 use blst::{blst_fp, blst_fp2, blst_p1, blst_p2};
-use kzg::{Fr};
+use kzg::Fr;
+
+use crate::types::fr::FsFr;
+use crate::types::g1::FsG1;
+use crate::types::g2::FsG2;
 
 pub const G1_IDENTITY: FsG1 = FsG1::from_xyz(
     blst_fp { l: [0; 6] },
@@ -47,21 +50,6 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x694341f608c9dd56, 0xed3a181fabb30adc, 0x1339a815da8b398f, 0x2c6d4e4511657e1e],
     [0x63e7cb4906ffc93f, 0xf070bb00e28a193d, 0xad1715b02e5713b5, 0x4b5371495990693f]
 ];
-
-/// Multiply a given root of unity by itself until it results in a 1 and result all multiplication values in a vector
-pub fn expand_root_of_unity(root: &FsFr, width: usize) -> Result<Vec<FsFr>, String> {
-    let mut generated_powers = vec![FsFr::one(), *root];
-
-    while !(generated_powers.last().unwrap().is_one()) {
-        if generated_powers.len() > width {
-            return Err(String::from("Root of unity multiplied for too long"));
-        }
-
-        generated_powers.push(generated_powers.last().unwrap().mul(root));
-    }
-
-    Ok(generated_powers)
-}
 
 pub const G1_GENERATOR: FsG1 = FsG1 {
     0: blst_p1 {
@@ -288,7 +276,6 @@ pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2 {
 };
 
 pub const TRUSTED_SETUP_GENERATOR: [u8; 32usize] = [
-    0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00,
+    0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];

@@ -1,7 +1,8 @@
-use crate::kzg_types::FsFFTSettings;
-use crate::kzg_types::FsFr;
-use crate::utils::is_power_of_two;
 use kzg::{Fr, DAS};
+
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::utils::is_power_of_two;
 
 // TODO: explain algo
 impl FsFFTSettings {

@@ -1,6 +1,8 @@
-use kzg::{FFTG1, Fr, G1, G1Mul};
+use kzg::{Fr, G1Mul, FFTG1, G1};
 
-use crate::kzg_types::{FsFFTSettings, FsFr, FsG1};
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::types::g1::FsG1;
 use crate::utils::is_power_of_two;
 
 pub fn fft_g1_fast(

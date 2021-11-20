@@ -1,5 +1,9 @@
-use kzg::{FFTFr, FFTG1, Fr, G1, G1Mul, Poly};
-use crate::kzg_types::{FsFFTSettings, FsFr, FsG1, FsPoly};
+use kzg::{FFTFr, Fr, G1Mul, Poly, FFTG1, G1};
+
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::types::g1::FsG1;
+use crate::types::poly::FsPoly;
 
 impl FsFFTSettings {
     pub fn toeplitz_part_1(&self, x: &[FsG1]) -> Vec<FsG1> {
@@ -42,7 +46,6 @@ impl FsFFTSettings {
         ret
     }
 }
-
 
 impl FsPoly {
     pub fn toeplitz_coeffs_stride(&self, offset: usize, stride: usize) -> FsPoly {

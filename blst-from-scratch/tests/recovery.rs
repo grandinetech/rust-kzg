@@ -6,8 +6,11 @@ pub mod tests {
     // use crate::local_recovery::{recover_simple, recover_random};
     // use blst_from_scratch::recovery::{recover_poly_from_samples};
 
-    use blst_from_scratch::kzg_types::{FsFr, FsPoly, FsFFTSettings};
-    use kzg_bench::tests::recover::{recover_simple, recover_random};
+    use kzg_bench::tests::recover::{recover_random, recover_simple};
+
+    use blst_from_scratch::types::fft_settings::FsFFTSettings;
+    use blst_from_scratch::types::fr::FsFr;
+    use blst_from_scratch::types::poly::FsPoly;
 
     #[test]
     fn recover_simple_() {

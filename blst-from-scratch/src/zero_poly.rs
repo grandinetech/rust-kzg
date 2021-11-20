@@ -1,8 +1,11 @@
-use crate::kzg_types::FsFr;
-use crate::kzg_types::{FsFFTSettings, FsPoly};
-use crate::utils::{is_power_of_two, next_power_of_two};
-use kzg::{FFTFr, Fr, ZeroPoly};
 use std::cmp::min;
+
+use kzg::{FFTFr, Fr, ZeroPoly};
+
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::types::poly::FsPoly;
+use crate::utils::{is_power_of_two, next_power_of_two};
 
 /// Create a copy of the given poly and pad it with zeros
 pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {

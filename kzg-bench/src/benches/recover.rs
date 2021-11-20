@@ -1,14 +1,16 @@
 use criterion::Criterion;
+use kzg::{FFTFr, FFTSettings, Fr, Poly, PolyRecover};
 use rand::Rng;
-use kzg::{Fr, FFTSettings, FFTFr, Poly, PolyRecover};
 use std::convert::TryInto;
 
 pub fn bench_recover<
     TFr: Fr,
     TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>,
     TPoly: Poly<TFr>,
-    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>
->(c: &mut Criterion) {
+    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>,
+>(
+    c: &mut Criterion,
+) {
     let mut rng = rand::thread_rng();
     for scale in 5..16 {
         let fs = TFTTSettings::new(scale).unwrap();
@@ -36,8 +38,10 @@ pub fn bench_recover<
         }
 
         let id = format!("bench_recover scale: '{}'", scale);
-        c.bench_function(&id, |b| b.iter(|| {
-            TPolyRecover::recover_poly_from_samples(&samples, &fs);
-        }));
+        c.bench_function(&id, |b| {
+            b.iter(|| {
+                TPolyRecover::recover_poly_from_samples(&samples, &fs);
+            })
+        });
     }
 }

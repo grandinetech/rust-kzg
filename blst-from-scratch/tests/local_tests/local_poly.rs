@@ -1,7 +1,7 @@
-use kzg::{Fr};
+use blst_from_scratch::types::poly::PolyStupidInterface;
+use kzg::Fr;
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
-use blst_from_scratch::kzg_types::{PolyStupidInterface};
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     let poly = TPoly::new(10).unwrap();
@@ -137,7 +137,16 @@ fn test_data(a: usize, b: usize) -> Vec<i64> {
     let test_7_2 = vec![0, 0, 1];
 
     //
-    let test_8_0 = vec![236, 945, -297698, 2489425, -18556462, -301325440, 2473062655, -20699887353];
+    let test_8_0 = vec![
+        236,
+        945,
+        -297698,
+        2489425,
+        -18556462,
+        -301325440,
+        2473062655,
+        -20699887353,
+    ];
     let test_8_1 = vec![4, 11, -5000, 45541, -454533];
     let test_8_2 = vec![59, 74, -878, 45541];
 
@@ -146,23 +155,21 @@ fn test_data(a: usize, b: usize) -> Vec<i64> {
     let test_9_1 = vec![-1, -1, -1];
     let test_9_2 = vec![-1, -1, -1];
 
-    let test_data =
-        [
-            [test_0_0, test_0_1, test_0_2],
-            [test_1_0, test_1_1, test_1_2],
-            [test_2_0, test_2_1, test_2_2],
-            [test_3_0, test_3_1, test_3_2],
-            [test_4_0, test_4_1, test_4_2],
-            [test_5_0, test_5_1, test_5_2],
-            [test_6_0, test_6_1, test_6_2],
-            [test_7_0, test_7_1, test_7_2],
-            [test_8_0, test_8_1, test_8_2],
-            [test_9_0, test_9_1, test_9_2],
-        ];
+    let test_data = [
+        [test_0_0, test_0_1, test_0_2],
+        [test_1_0, test_1_1, test_1_2],
+        [test_2_0, test_2_1, test_2_2],
+        [test_3_0, test_3_1, test_3_2],
+        [test_4_0, test_4_1, test_4_2],
+        [test_5_0, test_5_1, test_5_2],
+        [test_6_0, test_6_1, test_6_2],
+        [test_7_0, test_7_1, test_7_2],
+        [test_8_0, test_8_1, test_8_2],
+        [test_9_0, test_9_1, test_9_2],
+    ];
 
     test_data[a][b].clone()
 }
-
 
 fn new_test_poly<TFr: Fr, TPoly: PolyStupidInterface<TFr>>(coeffs: &Vec<i64>, len: usize) -> TPoly {
     let mut p = TPoly::new(len).unwrap();

@@ -4,7 +4,8 @@ pub mod local_poly;
 #[cfg(test)]
 pub mod tests {
     use crate::local_poly::{poly_pad_works_rand, create_poly_of_length_ten, poly_div_fast_test, poly_div_long_test, poly_div_random, poly_eval_0_check, poly_eval_check, poly_eval_nil_check, poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test, poly_mul_random, test_poly_div_by_zero};
-    use blst_from_scratch::kzg_types::{FsFr, StupidPoly};
+    use blst_from_scratch::types::fr::FsFr;
+    use blst_from_scratch::types::poly::StupidPoly;
 
     #[test]
     fn create_poly_of_length_ten_() {
