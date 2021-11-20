@@ -49,7 +49,7 @@ impl Poly<FsFr> for FsPoly {
         let mut ret = self.coeffs[self.coeffs.len() - 1];
         let mut i = self.coeffs.len() - 2;
         loop {
-            let temp = ret.mul(&x);
+            let temp = ret.mul(x);
             ret = temp.add(&self.coeffs[i]);
 
             if i == 0 {
@@ -86,7 +86,7 @@ impl Poly<FsFr> for FsPoly {
     fn inverse(&mut self, output_len: usize) -> Result<Self, String> {
         if output_len == 0 {
             return Err(String::from("Can't produce a zero-length result"));
-        } else if self.coeffs.len() == 0 {
+        } else if self.coeffs.is_empty() {
             return Err(String::from("Can't inverse a zero-length poly"));
         } else if self.coeffs[0].is_zero() {
             return Err(String::from(
@@ -150,9 +150,9 @@ impl Poly<FsFr> for FsPoly {
 
     fn div(&mut self, divisor: &Self) -> Result<Self, String> {
         if divisor.len() >= self.len() || divisor.len() < 128 { // Tunable parameter
-            self.long_div(&divisor)
+            self.long_div(divisor)
         } else {
-            self.fast_div(&divisor)
+            self.fast_div(divisor)
         }
     }
 
@@ -175,10 +175,7 @@ impl Poly<FsFr> for FsPoly {
         let b_pos = divisor.len() - 1;
         let mut diff = a_pos - b_pos;
 
-        let mut a = vec![FsFr::default(); self.len()];
-        for i in 0..a.len() {
-            a[i] = self.coeffs[i];
-        }
+        let mut a = self.coeffs.clone();
 
         while diff > 0 {
             out.coeffs[diff] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
@@ -373,8 +370,8 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
 
         let mut missing: Vec<usize> = Vec::new();
 
-        for i in 0..len_samples {
-            if samples[i].is_none() {
+        for (i, sample) in samples.iter().enumerate() {
+            if sample.is_none() {
                 missing.push(i);
             }
         }

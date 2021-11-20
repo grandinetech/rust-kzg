@@ -173,18 +173,17 @@ fn test_data(a: usize, b: usize) -> Vec<i64> {
     test_data[a][b].clone()
 }
 
-fn new_test_poly(coeffs: &[i64], len: usize) -> FsPoly {
-    let mut p = FsPoly::new(len).unwrap();
+fn new_test_poly(coeffs: &[i64]) -> FsPoly {
+    let mut p = FsPoly::new(0).unwrap();
 
-    for i in 0..len {
-        let coeff = coeffs[i];
+    for &coeff in coeffs.iter() {
         if coeff >= 0 {
             let c = FsFr::from_u64(coeff as u64);
-            p.set_coeff_at(i, &c);
+            p.coeffs.push(c);
         } else {
             let c = FsFr::from_u64((-coeff) as u64);
             let negc = c.negate();
-            p.set_coeff_at(i, &negc);
+            p.coeffs.push(negc);
         }
     }
 
@@ -201,9 +200,9 @@ pub fn poly_div_long_test() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let mut dividend: FsPoly = new_test_poly(&divided_data, divided_data.len());
-        let divisor: FsPoly = new_test_poly(&divisor_data, divisor_data.len());
-        let expected: FsPoly = new_test_poly(&expected_data, expected_data.len());
+        let mut dividend: FsPoly = new_test_poly(&divided_data);
+        let divisor: FsPoly = new_test_poly(&divisor_data);
+        let expected: FsPoly = new_test_poly(&expected_data);
 
         let actual = dividend.long_div(&divisor).unwrap();
 
@@ -224,9 +223,9 @@ pub fn poly_div_fast_test() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let mut dividend: FsPoly = new_test_poly(&divided_data, divided_data.len());
-        let divisor: FsPoly = new_test_poly(&divisor_data, divisor_data.len());
-        let expected: FsPoly = new_test_poly(&expected_data, expected_data.len());
+        let mut dividend: FsPoly = new_test_poly(&divided_data);
+        let divisor: FsPoly = new_test_poly(&divisor_data);
+        let expected: FsPoly = new_test_poly(&expected_data);
 
         let actual = dividend.fast_div(&divisor).unwrap();
 
@@ -255,9 +254,9 @@ pub fn poly_mul_direct_test() {
         let coeffs2 = test_data(i, 1);
         let coeffs3 = test_data(i, 0);
 
-        let mut multiplicand: FsPoly = new_test_poly(&coeffs1, coeffs1.len());
-        let mut multiplier: FsPoly = new_test_poly(&coeffs2, coeffs2.len());
-        let expected: FsPoly = new_test_poly(&coeffs3, coeffs3.len());
+        let mut multiplicand: FsPoly = new_test_poly(&coeffs1);
+        let mut multiplier: FsPoly = new_test_poly(&coeffs2);
+        let expected: FsPoly = new_test_poly(&coeffs3);
 
         let result0 = multiplicand.mul_direct(&multiplier, coeffs3.len()).unwrap();
         for j in 0..result0.len() {
@@ -283,9 +282,9 @@ pub fn poly_mul_fft_test() {
         let coeffs2 = test_data(i, 1);
         let coeffs3 = test_data(i, 0);
 
-        let multiplicand: FsPoly = new_test_poly(&coeffs1, coeffs1.len());
-        let multiplier: FsPoly = new_test_poly(&coeffs2, coeffs2.len());
-        let expected: FsPoly = new_test_poly(&coeffs3, coeffs3.len());
+        let multiplicand: FsPoly = new_test_poly(&coeffs1);
+        let multiplier: FsPoly = new_test_poly(&coeffs2);
+        let expected: FsPoly = new_test_poly(&coeffs3);
 
         let result0 = multiplicand.mul_fft(&multiplier, coeffs3.len()).unwrap();
         for j in 0..result0.len() {

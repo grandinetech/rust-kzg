@@ -1,12 +1,13 @@
-use crate::types::fft_settings::FsFFTSettings;
 use kzg::{FFTFr, Fr, Poly, ZeroPoly};
 
+use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::poly::FsPoly;
 use crate::utils::is_power_of_two;
 
 const SCALE_FACTOR: u64 = 5;
 
+#[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
     let inv_factor = FsFr::inverse(&scale_factor);
@@ -18,6 +19,7 @@ pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
     let mut factor_power = FsFr::one();
@@ -38,8 +40,8 @@ pub fn recover_poly_from_samples(
     }
 
     let mut missing: Vec<usize> = Vec::new();
-    for i in 0..len_samples {
-        if samples[i].is_null() {
+    for (i, sample) in samples.iter().enumerate() {
+        if sample.is_null() {
             missing.push(i);
         }
     }
@@ -50,7 +52,7 @@ pub fn recover_poly_from_samples(
         .unwrap();
 
     for i in 0..len_samples {
-        if !(samples[i].is_null() == zero_eval[i].is_zero()) {
+        if samples[i].is_null() != zero_eval[i].is_zero() {
             return Err(String::from(
                 "recovery error: samples should be null when and only when zero_eval is zero",
             ));

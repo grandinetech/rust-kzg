@@ -50,15 +50,11 @@ pub fn recover_simple<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
         poly.set_coeff_at(i, &TFr::zero());
     }
 
-    let data_query = fs.fft_fr(&poly.get_coeffs(), false);
+    let data_query = fs.fft_fr(poly.get_coeffs(), false);
     assert!(data_query.is_ok());
     let data = data_query.unwrap();
 
-    let mut sample = Vec::new();
-    sample.push(data[0].clone());
-    sample.push(TFr::null());
-    sample.push(TFr::null());
-    sample.push(data[3].clone());
+    let sample = vec![data[0].clone(), TFr::null(), TFr::null(), data[3].clone()];
 
     let recovered_query = recover_poly_from_samples(&sample, fs.get_max_width(), &fs);
     assert!(recovered_query.is_ok());
@@ -72,12 +68,12 @@ pub fn recover_simple<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
     assert!(back_query.is_ok());
     let back = back_query.unwrap();
 
-    for i in 0..(fs.get_max_width() / 2) {
-        assert!(back[i].equals(&poly.get_coeff_at(i)));
+    for (i, back_x) in back[..(fs.get_max_width() / 2)].iter().enumerate() {
+        assert!(back_x.equals(&poly.get_coeff_at(i)));
     }
 
-    for i in (fs.get_max_width() / 2)..fs.get_max_width() {
-        assert!(back[i].is_zero());
+    for back_x in back[(fs.get_max_width() / 2)..fs.get_max_width()].iter() {
+        assert!(back_x.is_zero());
     }
 }
 
@@ -101,7 +97,7 @@ pub fn recover_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
         poly.set_coeff_at(i, &TFr::zero());
     }
 
-    let data_query = fs.fft_fr(&poly.get_coeffs(), false);
+    let data_query = fs.fft_fr(poly.get_coeffs(), false);
     assert!(data_query.is_ok());
     let data = data_query.unwrap();
 
@@ -126,12 +122,12 @@ pub fn recover_random<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPol
             assert!(back_query.is_ok());
             let back = back_query.unwrap();
 
-            for j in 0..(fs.get_max_width() / 2) {
-                assert!(back[j].equals(&poly.get_coeff_at(j)));
+            for (i, back_x) in back[..(fs.get_max_width() / 2)].iter().enumerate() {
+                assert!(back_x.equals(&poly.get_coeff_at(i)));
             }
 
-            for j in (fs.get_max_width() / 2)..fs.get_max_width() {
-                assert!(back[j].is_zero());
+            for back_x in back[(fs.get_max_width() / 2)..fs.get_max_width()].iter() {
+                assert!(back_x.is_zero());
             }
         }
     }

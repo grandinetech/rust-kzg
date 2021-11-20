@@ -25,7 +25,7 @@ impl Clone for FsFK20MultiSettings {
 }
 
 impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
-    for FsFK20MultiSettings
+for FsFK20MultiSettings
 {
     fn default() -> Self {
         Self {
@@ -101,7 +101,9 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        }
+
+        if !is_power_of_two(n2) {
             return Err(String::from("n2 must be a power of two"));
         }
 
@@ -143,9 +145,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
 
         let mut h = self.kzg_settings.fs.toeplitz_part_3(&h_ext_fft);
 
-        for i in k..k2 {
-            h[i] = FsG1::identity();
-        }
+        h[k..k2].copy_from_slice(&vec![FsG1::identity(); k2 - k]);
 
         let ret = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
 

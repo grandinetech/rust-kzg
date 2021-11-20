@@ -10,8 +10,9 @@ impl FsFFTSettings {
         let n = x.len();
         let n2 = n * 2;
         let mut x_ext = Vec::new();
-        for i in 0..n {
-            x_ext.push(x[i]);
+
+        for &x_n in x[..n].iter() {
+            x_ext.push(x_n);
         }
 
         for _ in n..n2 {
@@ -38,10 +39,7 @@ impl FsFFTSettings {
         let n = n2 / 2;
 
         let mut ret = self.fft_g1(h_ext_fft, true).unwrap();
-
-        for i in n..n2 {
-            ret[i] = FsG1::identity();
-        }
+        ret[n..n2].copy_from_slice(&vec![FsG1::identity(); n2 - n]);
 
         ret
     }

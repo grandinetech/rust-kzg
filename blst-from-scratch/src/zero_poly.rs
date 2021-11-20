@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 
 use kzg::{FFTFr, Fr, ZeroPoly};
 
@@ -24,6 +24,7 @@ pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
     Ok(ret)
 }
 
+#[allow(clippy::needless_range_loop)]
 impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
     /// Calculates a polynomial that evaluates to zero for roots of unity at given indices.
     /// The returned polynomial has a length of idxs.len() + 1.
@@ -222,11 +223,15 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             zero_poly = FsPoly { coeffs: work };
         }
 
-        // Pad resulting poly to expected length
-        if zero_poly.coeffs.len() < domain_size {
-            zero_poly.coeffs = pad_poly(&zero_poly, domain_size)?;
-        } else if zero_poly.coeffs.len() > domain_size {
-            zero_poly.coeffs = zero_poly.coeffs[..domain_size].to_vec();
+        // Pad resulting poly to expected
+        match zero_poly.coeffs.len().cmp(&domain_size) {
+            Ordering::Less => {
+                zero_poly.coeffs = pad_poly(&zero_poly, domain_size)?;
+            }
+            Ordering::Equal => {}
+            Ordering::Greater => {
+                zero_poly.coeffs = zero_poly.coeffs[..domain_size].to_vec();
+            }
         }
 
         // Evaluate calculated poly

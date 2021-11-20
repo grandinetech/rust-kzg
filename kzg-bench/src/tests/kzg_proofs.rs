@@ -100,6 +100,30 @@ pub fn commit_to_too_long_poly<
     }
 }
 
+// Instead of panicking, commit should return an err
+pub fn commit_to_too_long_poly_returns_err<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+) {
+    let secrets_len = 16;
+    let poly_len = 32; // poly is longer than secrets!
+
+    // Initialise the (arbitrary) secrets and data structures
+    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let fs = TFFTSettings::new(4).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+
+    let a = TPoly::new(poly_len).unwrap();
+    let _result = ks.commit_to_poly(&a);
+    assert!(_result.is_err());
+}
+
 //It was not verified that this test works, use with caution
 pub fn proof_multi<
     TFr: Fr,
