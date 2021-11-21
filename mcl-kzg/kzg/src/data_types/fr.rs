@@ -64,6 +64,15 @@ impl Fr {
         let res = U256([u[0], u[1], u[2], u[3]]);
         Fr::from_str(&res.to_string(), 10).unwrap()
     }
+
+    pub fn from_scalar(secret: &[u8; 32]) -> Self {
+        let value0 = u64::from_be_bytes([secret[0], secret[1], secret[2], secret[3], secret[4], secret[5], secret[6], secret[7]]);
+        let value1 = u64::from_be_bytes([secret[8], secret[9], secret[10], secret[11], secret[12], secret[13], secret[14], secret[15]]);
+        let value2 = u64::from_be_bytes([secret[16], secret[17], secret[18], secret[19], secret[20], secret[21], secret[22], secret[23]]);
+        let value3 = u64::from_be_bytes([secret[24], secret[25], secret[26], secret[27], secret[28], secret[29], secret[30], secret[31]]);
+
+        Fr::from_u64_arr(&[value0, value1, value2, value3])
+    }
     
     pub fn to_u64_arr(&self) -> [u64; 4] {
         let string = self.get_str(10);
