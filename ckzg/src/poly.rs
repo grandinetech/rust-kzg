@@ -1,7 +1,8 @@
 use std::slice;
-use kzg::{Fr, Poly};
+use kzg::{Fr, Poly, PolyRecover};
 use crate::finite::BlstFr;
 use crate::consts::KzgRet;
+use crate::fftsettings::KzgFFTSettings;
 
 extern "C" {
     fn new_poly(out: *mut KzgPoly, length: u64) -> KzgRet;
@@ -12,6 +13,7 @@ extern "C" {
     fn poly_mul(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly) -> KzgRet;
     fn poly_long_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
     fn poly_fast_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
+    fn recover_poly_from_samples(reconstructed_data: *mut BlstFr, samples: *mut BlstFr, len_samples: u64, fs: *const KzgFFTSettings) -> KzgRet;
 }
 
 #[repr(C)]
@@ -133,5 +135,27 @@ impl Drop for KzgPoly {
         unsafe {
             free_poly(self);
         }
+    }
+}
+
+impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
+    fn recover_poly_from_samples(samples: &[Option<BlstFr>], fs: &KzgFFTSettings) -> KzgPoly {
+        let mut reconstructed_data = vec![Fr::default(); samples.len()];
+        let mut optionless_samples = Vec::new();
+        for i in 0..samples.len() {
+            if samples[i].is_some() {
+                optionless_samples.push(samples[i].unwrap());
+                continue
+            }
+            optionless_samples.push(Fr::null());
+        }
+        unsafe {
+            recover_poly_from_samples(reconstructed_data.as_mut_ptr(), optionless_samples.as_mut_ptr(), samples.len() as u64, fs);
+        }
+        let mut out = KzgPoly::new(reconstructed_data.len()).unwrap();
+        for i in 0..reconstructed_data.len() {
+            out.set_coeff_at(i, &reconstructed_data[i])
+        }
+        out
     }
 }
