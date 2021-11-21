@@ -16,7 +16,7 @@ use std::ops::Neg;
 use std::ops::MulAssign;
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ec::ProjectiveCurve;
-use ark_std::{UniformRand, One, Zero, test_rng};
+use ark_std::{UniformRand, One, Zero};
 use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, blst_p1_into_pc_g1projective,
 blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2};
 use blst::{
@@ -29,7 +29,7 @@ pub struct ArkG1(pub blst::blst_p1);
 
 impl Clone for ArkG1 {
     fn clone(&self) -> Self {
-        ArkG1(self.0.clone())
+        ArkG1(self.0)
     }
 }
 
@@ -96,7 +96,7 @@ pub struct ArkG2(pub blst::blst_p2);
 
 impl Clone for ArkG2 {
     fn clone(&self) -> Self {
-        ArkG2(self.0.clone())
+        ArkG2(self.0)
     }
 }
 
@@ -156,7 +156,7 @@ impl Fr for FsFr {
     }
 
     fn null() -> Self {
-        Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+        FsFr(blst_fr{l: [14526898868952669296, 2784871451429007392, 11493358522590675359, 7138715389977065193]})
     }
 
     fn one() -> Self {
@@ -164,13 +164,16 @@ impl Fr for FsFr {
     }
 
     fn rand() -> Self {
-        let mut rng = test_rng();
+        let mut rng = rand::thread_rng();
         pc_fr_into_blst_fr(ArkFr::rand(&mut rng))
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let b = ArkFr::from_repr(BigInteger256::new(u.clone())).unwrap();
-        pc_fr_into_blst_fr(b)
+        let b = ArkFr::from_repr(BigInteger256::new(*u));
+        match b{
+            None => {FsFr(blst_fr { l: [0, 0, 0, 0] })},
+            Some(x) => {pc_fr_into_blst_fr(x)}
+        }
     }
 
     fn from_u64(val: u64) -> Self {
@@ -199,8 +202,7 @@ impl Fr for FsFr {
     }
 
     fn is_null(&self) -> bool {
-        let val = self.to_u64_arr();
-        return val[0] == u64::MAX && val[1] == u64::MAX && val[2] == u64::MAX && val[3] == u64::MAX;
+        self.equals(&FsFr(blst_fr{l: [14526898868952669296, 2784871451429007392, 11493358522590675359, 7138715389977065193]}))
     }
 
     fn is_zero(&self) -> bool {
@@ -253,7 +255,7 @@ impl Fr for FsFr {
 
 impl Clone for FsFr {
     fn clone(&self) -> Self {
-        FsFr(self.0.clone())
+        FsFr(self.0)
     }
 }
 
@@ -278,7 +280,7 @@ impl Poly<FsFr> for LPoly {
     }
 
     fn set_coeff_at(&mut self, i: usize, x: &FsFr) {
-        self.coeffs[i] = x.clone()
+        self.coeffs[i] = *x
     }
 
     fn get_coeffs(&self) -> &[FsFr] {
@@ -306,14 +308,15 @@ impl Poly<FsFr> for LPoly {
     }
 
     fn div(&mut self, x: &Self) -> Result<Self, String> {
-        // pc_poly_into_blst_poly(
-        //     &blst_poly_into_pc_poly(self).unwrap() / &blst_poly_into_pc_poly(x).unwrap(),
-        // )
-        Ok(poly_fast_div(self, x).unwrap())
+        if x.len() >= self.len() || x.len() < 128 {
+            poly_long_div(self, x)
+        } else {
+            poly_fast_div(self, x)
+        }
     }
 
     fn long_div(&mut self, x: &Self) -> Result<Self, String> {
-        Ok(poly_long_div(self, x))
+        poly_long_div(self, x)
     }
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
@@ -321,7 +324,7 @@ impl Poly<FsFr> for LPoly {
     }
 
     fn fast_div(&mut self, x: &Self) -> Result<Self, String>  {
-        Ok(poly_fast_div(self, x).unwrap())
+        poly_fast_div(self, x)
     }
 }
 
@@ -357,11 +360,11 @@ impl FFTSettings<FsFr> for LFFTSettings {
         reverse.reverse();
 
         Ok(LFFTSettings {
-            max_width: max_width,
+            max_width,
             root_of_unity: pc_fr_into_blst_fr(domain.group_gen),
             expanded_roots_of_unity: roots,
             reverse_roots_of_unity: reverse,
-            domain: domain
+            domain
         })
     }
 
@@ -374,7 +377,7 @@ impl FFTSettings<FsFr> for LFFTSettings {
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[FsFr] {
-        &self.expanded_roots_of_unity.as_slice()
+        self.expanded_roots_of_unity.as_slice()
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr {
@@ -382,7 +385,7 @@ impl FFTSettings<FsFr> for LFFTSettings {
     }
 
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
-        &self.reverse_roots_of_unity.as_slice()
+        self.reverse_roots_of_unity.as_slice()
     }
     fn default() -> Self {
         LFFTSettings {
@@ -390,7 +393,7 @@ impl FFTSettings<FsFr> for LFFTSettings {
             root_of_unity: FsFr::zero(),
             expanded_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
-            domain: Radix2EvaluationDomain::<ArkFr>::new(0 as usize).unwrap(),
+            domain: Radix2EvaluationDomain::<ArkFr>::new(0_usize).unwrap(),
         }
     }
 }
@@ -399,7 +402,7 @@ impl Clone for LFFTSettings {
     fn clone(&self) -> Self {
         let mut output = LFFTSettings::new(0).unwrap();
         output.max_width = self.max_width;
-        output.root_of_unity = self.root_of_unity.clone();
+        output.root_of_unity = self.root_of_unity;
         output.expanded_roots_of_unity = self.expanded_roots_of_unity.clone();
         output.reverse_roots_of_unity = self.reverse_roots_of_unity.clone();
         output

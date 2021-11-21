@@ -5,12 +5,12 @@ use super::utils::{
 };
 use crate::kzg_types::FsFr as BlstFr;
 use kzg::{FFTFr, Fr as FrTrait, ZeroPoly};
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 use std::ops::Neg;
 
 pub(crate) fn pad_poly(poly: &PolyData, new_length: usize) -> Result<Vec<BlstFr>, String> {
-    if new_length < poly.coeffs.len() {
-        return Err(String::from("Wanted length less than current"));
+    if new_length <= poly.coeffs.len() {
+        return Ok(poly.coeffs.clone());
     }
 
     let mut out = poly.coeffs.to_vec();
@@ -29,7 +29,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         indices: &[usize],
         stride: usize,
     ) -> Result<PolyData, String> {
-        if indices.len() == 0 {
+        if indices.is_empty(){
             return Err(String::from("idx array must be non-zero"));
         }
         let blstpoly = PolyData {
@@ -39,21 +39,20 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         poly.coeffs[0] =
             blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indices[0] * stride]).neg();
 
-        for i in 1..indices.len() {
+        for (i, indice) in indices.iter().enumerate().skip(1) {
             let neg_di =
-                blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indices[i] * stride]).neg();
-            poly.coeffs[i] = neg_di.clone();
+                blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indice * stride]).neg();
 
-            poly.coeffs[i] = poly.coeffs[i] + poly.coeffs[i - 1];
+            poly.coeffs[i] = neg_di + poly.coeffs[i - 1];
 
             let mut j = i - 1;
             while j > 0 {
-                poly.coeffs[j] = poly.coeffs[j] * neg_di;
-                poly.coeffs[j] = poly.coeffs[j] + poly.coeffs[j - 1];
+                let temp = poly.coeffs[j] * neg_di;
+                poly.coeffs[j] = temp + poly.coeffs[j - 1];
                 j -= 1;
             }
 
-            poly.coeffs[0] = poly.coeffs[0] * &neg_di;
+            poly.coeffs[0] *= neg_di;
         }
 
         Ok(pc_poly_into_blst_poly(poly).unwrap())
@@ -61,8 +60,8 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
     fn reduce_partials(&self, len_out: usize, partials: &[PolyData]) -> Result<PolyData, String> {
         let mut out_degree: usize = 0;
-        for i in 0..partials.len() {
-            out_degree += partials[i].coeffs.len() - 1;
+        for partial in partials  {
+            out_degree += partial.coeffs.len() - 1;
         }
 
         if out_degree + 1 > len_out {
@@ -72,8 +71,8 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         let mut p_partial = pad_poly(&partials[0], len_out).unwrap();
         let mut mul_eval_ps = self.fft_fr(&p_partial, false).unwrap();
 
-        for i in 1..(partials.len()) {
-            p_partial = pad_poly(&partials[i], len_out)?;
+        for partial in partials.iter().skip(1) {
+            p_partial = pad_poly(partial, len_out)?;
 
             let p_eval = self.fft_fr(&p_partial, false).unwrap();
             for j in 0..len_out {
@@ -92,7 +91,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         Ok(out)
     }
 
-    //Partially taken from team 'From-scratch'
+    // Partially modified from team 'From-scratch'
     fn zero_poly_via_multiplication(
         &self,
         length: usize,
@@ -101,7 +100,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         let zero_eval: Vec<BlstFr>;
         let mut zero_poly: PolyData;
 
-        if missing_indices.len() == 0 {
+        if missing_indices.is_empty() {
             zero_eval = Vec::new();
             zero_poly = PolyData { coeffs: Vec::new() };
             return Ok((zero_eval, zero_poly));
@@ -128,13 +127,12 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         );
 
         if missing_indices.len() <= missing_per_partial {
-            zero_poly = self.do_zero_poly_mul_partial(&missing_indices, domain_stride)?;
+            zero_poly = self.do_zero_poly_mul_partial(missing_indices, domain_stride)?;
         } else {
             let mut work =
                 vec![BlstFr::zero(); (partial_count * degree_of_partial).next_power_of_two()];
 
             let mut partial_lens = Vec::new();
-            let mut partial_offsets = Vec::new();
 
             let mut offset = 0;
             let mut out_offset = 0;
@@ -151,7 +149,6 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
                     partial.coeffs.to_vec(),
                 );
                 partial_lens.push(degree_of_partial);
-                partial_offsets.push(out_offset);
 
                 offset += missing_per_partial;
                 out_offset += degree_of_partial;
@@ -172,14 +169,10 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
                     let partials_num = min(reduction_factor, partial_count - start);
 
                     let mut partial_vec = Vec::new();
-                    partial_offsets[i] = start * partial_size;
-                    for j in 0..(partials_num) {
-                        partial_offsets[i + j] = (start + j) * partial_size;
+                    for j in 0..partials_num {
+                        let k = (start + j) * partial_size;
                         partial_vec.push(PolyData {
-                            coeffs: work[partial_offsets[i + j]
-                                ..(partial_offsets[i + j] + partial_lens[i + j])]
-                                .to_vec(),
-                        });
+                            coeffs: work[k..(k + partial_lens[i + j])].to_vec()});
                     }
 
                     if partials_num > 1 {
@@ -187,7 +180,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
                         partial_lens[i] = reduced_poly.coeffs.len();
                         reduced_poly.coeffs = pad_poly(&reduced_poly, partial_size * partials_num)?;
                         work.splice(
-                            (partial_offsets[i])..(partial_offsets[i] + reduced_poly.coeffs.len()),
+                            (start * partial_size)..(start * partial_size + reduced_poly.coeffs.len()),
                             reduced_poly.coeffs,
                         );
                     } else {
@@ -201,11 +194,17 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             zero_poly = PolyData { coeffs: work };
         }
 
-        if zero_poly.coeffs.len() < length {
-            zero_poly.coeffs = pad_poly(&zero_poly, length)?;
-        } else if zero_poly.coeffs.len() > length {
-            zero_poly.coeffs = zero_poly.coeffs[..length].to_vec();
+        match zero_poly.coeffs.len().cmp(&length){
+            Ordering::Less => zero_poly.coeffs = pad_poly(&zero_poly, length)?,
+            Ordering::Greater => zero_poly.coeffs = zero_poly.coeffs[..length].to_vec(),
+            Ordering::Equal => {}
         }
+
+        // if zero_poly.coeffs.len() < length {
+        //     zero_poly.coeffs = pad_poly(&zero_poly, length)?;
+        // } else if zero_poly.coeffs.len() > length {
+        //     zero_poly.coeffs = zero_poly.coeffs[..length].to_vec();
+        // }
 
         zero_eval = self.fft_fr(&zero_poly.coeffs, false)?;
 

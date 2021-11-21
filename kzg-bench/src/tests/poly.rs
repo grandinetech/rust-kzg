@@ -327,3 +327,49 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
         }
     }
 }
+
+pub fn poly_div_long_test<TFr: Fr, TPoly: Poly<TFr>>() {
+    for i in 0..7 {
+        // Tests are designed to throw an exception when last member is 0
+        if i == 6 {
+            continue;
+        }
+
+        let divided_data = test_data(i, 0);
+        let divisor_data = test_data(i, 1);
+        let expected_data = test_data(i, 2);
+        let mut dividend: TPoly = new_test_poly(&divided_data);
+        let divisor: TPoly = new_test_poly(&divisor_data);
+        let expected: TPoly = new_test_poly(&expected_data);
+
+        let actual = dividend.long_div(&divisor).unwrap();
+
+        assert_eq!(expected.len(), actual.len());
+        for i in 0..actual.len() {
+            assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+        }
+    }
+}
+
+pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
+    for i in 0..7 {
+        // Tests are designed to throw an exception when last member is 0
+        if i == 6 {
+            continue;
+        }
+
+        let divided_data = test_data(i, 0);
+        let divisor_data = test_data(i, 1);
+        let expected_data = test_data(i, 2);
+        let mut dividend: TPoly = new_test_poly(&divided_data);
+        let divisor: TPoly = new_test_poly(&divisor_data);
+        let expected: TPoly = new_test_poly(&expected_data);
+
+        let actual = dividend.fast_div(&divisor).unwrap();
+
+        assert_eq!(expected.len(), actual.len());
+        for i in 0..actual.len() {
+            assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
+        }
+    }
+}

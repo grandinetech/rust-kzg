@@ -1,5 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, Error};
+use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr};
 use crate::kzg_types::FsFr as BlstFr;
 use ark_bls12_381::Fr;
 use ark_poly::univariate::DensePolynomial as DensePoly;
@@ -204,10 +204,6 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     ],
 ];
 
-// pub fn blst_fr_from_uint64(Blst:&mut BlstFr, ptr: u64) {
-//     *Blst=fr_from_uint64(ptr);
-
-// }
 impl FFTFr<BlstFr> for FFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
         let width;
@@ -221,7 +217,7 @@ impl FFTFr<BlstFr> for FFTSettings {
         let mut datafr = Vec::new();
         let mut dataeval = Vec::new();
         for x in data {
-            datafr.push(blst_fr_into_pc_fr(&x));
+            datafr.push(blst_fr_into_pc_fr(x));
         }
 
         let mut poly = DensePoly::from_coefficients_slice(&datafr);
@@ -237,57 +233,16 @@ impl FFTFr<BlstFr> for FFTSettings {
             for x in eval {
                 dataeval.push(pc_fr_into_blst_fr(x));
             }
-
-            Ok(dataeval)
         } else {
             let eval = domain.fft(&poly.coeffs);
-            if data.len() == 16 {}
             for x in eval {
                 dataeval.push(pc_fr_into_blst_fr(x));
             }
-
-            Ok(dataeval)
         }
-    }
-}
-pub fn fft_fr(data: &Vec<BlstFr>, inverse: bool, ffts: &FFTSettings) -> Result<Vec<BlstFr>, Error> {
-    let width;
-
-    if ffts.max_width > data.len() {
-        width = data.len()
-    } else {
-        width = ffts.max_width as usize
-    }
-
-    let mut datafr = Vec::new();
-    let mut dataeval = Vec::new();
-    for x in data {
-        datafr.push(blst_fr_into_pc_fr(&x));
-    }
-
-    let mut poly = DensePoly::from_coefficients_slice(&datafr);
-    let domain = Radix2EvaluationDomain::<Fr>::new(width as usize).unwrap();
-
-    if inverse {
-        let len = poly.coeffs.len();
-        for _x in 0..(data.len() - len) as u64 {
-            poly.coeffs.push(Fr::from(0));
-        }
-        let eval = domain.ifft(&poly.coeffs);
-        for x in eval {
-            dataeval.push(pc_fr_into_blst_fr(x));
-        }
-
-        Ok(dataeval)
-    } else {
-        let eval = domain.fft(&poly.coeffs);
-        for x in eval {
-            dataeval.push(pc_fr_into_blst_fr(x));
-        }
-
         Ok(dataeval)
     }
 }
+
 
 pub fn fft_fr_fast(
     ret: &mut [BlstFr],
@@ -297,10 +252,8 @@ pub fn fft_fr_fast(
     _roots_stride: usize,
 ) {
     let fft_settings = FFTSettings::from_scale(log2(data.len()) as usize).unwrap();
-    let temp = fft_fr(&data.to_vec(), false, &fft_settings).unwrap();
-    for i in 0..ret.len() {
-        ret[i] = temp[i];
-    }
+    let temp = fft_settings.fft_fr(&data.to_vec(), false).unwrap();
+    ret.clone_from_slice(&temp[..ret.len()]);
 }
 
 pub fn fft_fr_slow( ret: &mut [BlstFr], data: &[BlstFr], stride: usize, roots: &[BlstFr], roots_stride: usize,) {
@@ -311,7 +264,7 @@ pub fn fft_fr_slow( ret: &mut [BlstFr], data: &[BlstFr], stride: usize, roots: &
     for i in 0..data.len() {
         ret[i] = data[0].mul(&roots[0]);
         for j in 1..data.len() {
-            jv = data[j * stride].clone();
+            jv = data[j * stride];
             r = roots[((i * j) % data.len()) * roots_stride];
             v = jv.mul(&r);
             ret[i] = ret[i].add(&v);
