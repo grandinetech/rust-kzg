@@ -20,6 +20,10 @@ name = "poly"
 harness = false
 
 [[bench]]
+name = "zero_poly"
+harness = false
+
+[[bench]]
 name = "kzg"
 harness = false
 
