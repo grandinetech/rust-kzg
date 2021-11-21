@@ -26,7 +26,7 @@ pub fn unscale_poly(p: &mut PolyData) {
     }
 }
 impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData{
-    fn recover_poly_from_samples(samples: &[Option<BlstFr>], fs: &FFTSettings) -> Self {
+    fn recover_poly_from_samples(samples: &[Option<BlstFr>], fs: &FFTSettings) -> Result<Self, String> {
 
         assert!(samples.len().is_power_of_two());
 
@@ -103,6 +103,6 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData{
         for (i, sample) in samples.iter().enumerate() {
             assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
         }
-        out
+        Ok(out)
     }
 }
