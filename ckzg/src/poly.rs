@@ -157,7 +157,7 @@ impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
         }
         let mut out = KzgPoly::new(reconstructed_data.len()).unwrap();
         for (i, data) in reconstructed_data.iter().enumerate() {
-            out.set_coeff_at(i, &data)
+            out.set_coeff_at(i, data)
         }
         Ok(out)
     }
