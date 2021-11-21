@@ -139,7 +139,7 @@ impl Drop for KzgPoly {
 }
 
 impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
-    fn recover_poly_from_samples(samples: &[Option<BlstFr>], fs: &KzgFFTSettings) -> KzgPoly {
+    fn recover_poly_from_samples(samples: &[Option<BlstFr>], fs: &KzgFFTSettings) -> Result<KzgPoly, String> {
         let mut reconstructed_data = vec![Fr::default(); samples.len()];
         let mut optionless_samples = Vec::new();
         for i in 0..samples.len() {
@@ -150,12 +150,15 @@ impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
             optionless_samples.push(Fr::null());
         }
         unsafe {
-            recover_poly_from_samples(reconstructed_data.as_mut_ptr(), optionless_samples.as_mut_ptr(), samples.len() as u64, fs);
+            match recover_poly_from_samples(reconstructed_data.as_mut_ptr(), optionless_samples.as_mut_ptr(), samples.len() as u64, fs) {
+                KzgRet::KzgOk => (),
+                e => return Err(format!("An error has occurred in PolyRecover::recover_poly_from_samples ==> {:?}", e))
+            }
         }
         let mut out = KzgPoly::new(reconstructed_data.len()).unwrap();
         for i in 0..reconstructed_data.len() {
             out.set_coeff_at(i, &reconstructed_data[i])
         }
-        out
+        Ok(out)
     }
 }
