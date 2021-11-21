@@ -34,3 +34,7 @@ harness = false
 [[bench]]
 name = "fk20"
 harness = false
+
+[[bench]]
+name = "recover"
+harness = false
