@@ -142,9 +142,9 @@ impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
     fn recover_poly_from_samples(samples: &[Option<BlstFr>], fs: &KzgFFTSettings) -> Result<KzgPoly, String> {
         let mut reconstructed_data = vec![Fr::default(); samples.len()];
         let mut optionless_samples = Vec::new();
-        for i in 0..samples.len() {
-            if samples[i].is_some() {
-                optionless_samples.push(samples[i].unwrap());
+        for s in samples {
+            if s.is_some() {
+                optionless_samples.push(s.unwrap());
                 continue
             }
             optionless_samples.push(Fr::null());
@@ -156,8 +156,8 @@ impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
             }
         }
         let mut out = KzgPoly::new(reconstructed_data.len()).unwrap();
-        for i in 0..reconstructed_data.len() {
-            out.set_coeff_at(i, &reconstructed_data[i])
+        for (i, data) in reconstructed_data.iter().enumerate() {
+            out.set_coeff_at(i, &data)
         }
         Ok(out)
     }
