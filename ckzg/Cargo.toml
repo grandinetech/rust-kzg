@@ -30,3 +30,7 @@ harness = false
 [[bench]]
 name = "das"
 harness = false
+
+[[bench]]
+name = "fk20"
+harness = false
