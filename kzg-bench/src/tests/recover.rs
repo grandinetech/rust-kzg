@@ -30,7 +30,7 @@ pub fn recover_simple<
     let data = fs.fft_fr(&poly, false).unwrap();
     let samples: [Option<TFr>; 4] = [Some(data[0].clone()), None, None, Some(data[3].clone())];
 
-    let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs);
+    let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
 
     //Check recovered data
     for i in 0..max_width {
@@ -79,7 +79,7 @@ pub fn recover_random<
         for _ in 0..4 {
             let samples = random_missing(data.clone(), max_width, known);
 
-            let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs);
+            let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
             //Assert
             for i in 0..max_width {
                 assert!(data[i].equals(&recovered.get_coeff_at(i)));
