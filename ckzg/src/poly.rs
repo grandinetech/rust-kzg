@@ -1,3 +1,4 @@
+use std::slice;
 use kzg::{Fr, Poly};
 use crate::finite::BlstFr;
 use crate::consts::KzgRet;
@@ -51,7 +52,9 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn get_coeffs(&self) -> &[BlstFr] {
-        todo!()
+        unsafe {
+            slice::from_raw_parts(self.coeffs, self.length as usize)
+        }
     }
 
     fn len(&self) -> usize {
