@@ -1187,7 +1187,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings> f
 }
 
 impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
-    fn recover_poly_from_samples(samples: &[Option<FsFr>], fs: &FsFFTSettings) -> Self {
+    fn recover_poly_from_samples(samples: &[Option<FsFr>], fs: &FsFFTSettings) -> Result<Self, String> {
 
         let len_samples = samples.len();
         assert!(is_power_of_two(len_samples));
@@ -1260,7 +1260,7 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         }
 
         reconstr_poly.coeffs = reconstructed_data;
-        reconstr_poly
+        Ok(reconstr_poly)
     }
 }
 
