@@ -34,8 +34,8 @@ jobs:
         args: --manifest-path Arkworks/Cargo.toml
 
     - name: "[arkworks] Clippy"
-        uses: actions-rs/cargo@v1
-        with:
+      uses: actions-rs/cargo@v1
+      with:
         command: clippy
         args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
 
