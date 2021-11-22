@@ -25,6 +25,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         echo "LIBOMP_PATH=$(find /usr/lib/llvm* -name libiomp5.so | head -n 1)" >> $GITHUB_ENV
+        echo "OMP_NUM_THREADS=$(nproc)" >> $GITHUB_ENV
         cd ckzg && bash build.sh
 
     - name: "[ckzg] Build native libs for MacOS"
@@ -32,6 +33,7 @@ jobs:
       run: |
         brew install libomp gnu-sed
         echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
+        echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
         cd ckzg && bash build.sh
 
     - name: "[ckzg] Setup Env"
