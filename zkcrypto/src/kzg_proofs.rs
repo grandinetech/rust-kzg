@@ -412,7 +412,7 @@ pub(crate) fn check_proof_multi(com: &G1, proof: &G1, x: &Scalar, ys: &Vec<Scala
     }
 
     let x_pow = inv_x_pow.inverse();
-    let mut xn2 = G2::from(ks.public_params.opening_key.h);
+    let mut xn2 = G2::from(ks.public_params.opening_key.h); // is this good?
 
     xn2.mul_assign(&x_pow);
 

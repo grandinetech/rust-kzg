@@ -1,8 +1,7 @@
 use zkcrypto::poly::*;
 use zkcrypto::fftsettings::*;
-use zkcrypto::fftsettings::ZkFFTSettings;
 use kzg::{FFTSettingsPoly, Poly};
-use zkcrypto::zkfr::{blsScalar, fr_div}; 
+use zkcrypto::zkfr::{blsScalar}; 
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 

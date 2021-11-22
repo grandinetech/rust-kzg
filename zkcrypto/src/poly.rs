@@ -16,9 +16,9 @@ pub struct KzgPoly {
 }
 
 impl ZPoly {
-	fn new_poly (size: usize) -> Self {
-		Self {coeffs: vec![<blsScalar as Fr>::default(); size]}
-	}
+	// fn new_poly (size: usize) -> Self {
+		// Self {coeffs: vec![<blsScalar as Fr>::default(); size]}
+	// }
 
 	/// Checks if the given polynomial is zero.
     	pub(crate) fn is_zero(&self) -> bool {
