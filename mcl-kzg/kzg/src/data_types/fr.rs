@@ -54,6 +54,15 @@ impl Fr {
         mcl_methods::get_curve_order()
     }
 
+    pub fn pow(&self, n: usize) -> Self {
+        //No idea if this works
+        let mut res = *self;
+        for _ in 1 .. n {
+            res = res * *self;
+        }
+        res
+    }
+
     pub fn inverse(&self) -> Self {
         let mut res = Fr::zero();
         Fr::inv(&mut res, self);

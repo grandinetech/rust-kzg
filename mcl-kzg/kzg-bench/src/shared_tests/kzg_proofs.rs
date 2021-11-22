@@ -21,4 +21,16 @@ pub mod kzg_proofs_tests {
         commit_to_nil_poly::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(&KZGSettings::generate_trusted_setup);
     }
 
+    #[test]
+    fn commit_to_too_long_poly_() {
+        assert!(init(CurveType::BLS12_381));
+        commit_to_too_long_poly::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(&KZGSettings::generate_trusted_setup);
+    }
+
+    #[test]
+    fn proof_multi_() {
+        assert!(init(CurveType::BLS12_381));
+        proof_multi::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(&KZGSettings::generate_trusted_setup);
+    }
+
 }
