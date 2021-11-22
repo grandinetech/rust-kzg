@@ -21,17 +21,26 @@ jobs:
 
 # 1st team #########################################################
 
-    - uses: actions-rs/cargo@v1
+    - name: "[arkworks] Tests"
+      uses: actions-rs/cargo@v1
       with:
         command: test
         args: --manifest-path Arkworks/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[arkworks] Benchmark"
+      uses: actions-rs/cargo@v1
       with:
         command: bench
         args: --manifest-path Arkworks/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[arkworks] Clippy"
+        uses: actions-rs/cargo@v1
+        with:
+        command: clippy
+        args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
+
+    - name: "[arkworks] Formatting"
+      uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --manifest-path Arkworks/Cargo.toml
