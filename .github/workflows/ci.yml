@@ -76,18 +76,17 @@ jobs:
         command: bench
         args: --manifest-path blst-from-scratch/Cargo.toml
 
-#  - name: "[blst-from-scratch] Clippy"
-#     uses: actions-rs/cargo@v1
-#     with:
-#     command: clippy
-#     args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
+    - name: "[blst-from-scratch] Clippy"
+      uses: actions-rs/cargo@v1
+      with:
+       command: clippy
+       args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features --
 
-# Incompatible with Windows CI
-#    - name: "[blst-from-scratch] Formatting"
-#      uses: actions-rs/cargo@v1
-#      with:
-#        command: fmt
-#        args: --manifest-path blst-from-scratch/Cargo.toml
+    - name: "[blst-from-scratch] Formatting"
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path blst-from-scratch/Cargo.toml
 
 # 4th team #########################################################
 

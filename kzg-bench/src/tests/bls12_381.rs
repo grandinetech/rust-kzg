@@ -1,7 +1,7 @@
-use kzg::{Fr, G1, G1Mul, G2, G2Mul};
+use kzg::{Fr, G1Mul, G2Mul, G1, G2};
 use std::convert::TryInto;
 
-pub fn log_2_byte_works (log_2_byte: &dyn Fn(u8) -> usize) {
+pub fn log_2_byte_works(log_2_byte: &dyn Fn(u8) -> usize) {
     assert_eq!(0, log_2_byte(0x01));
     assert_eq!(7, log_2_byte(0x80));
     assert_eq!(7, log_2_byte(0xff));
@@ -38,14 +38,14 @@ pub fn fr_equal_works<TFr: Fr>() {
         0x0001000000000000,
         0xec03000276030000,
         0x8d51ccce760304d0,
-        0x0000000000000000
+        0x0000000000000000,
     ];
 
     let bb: [u64; 4] = [
         0x8dd702cb688bc087,
         0xa032824078eaa4fe,
         0xa733b23a98ca5b22,
-        0x3f96405d25a31660
+        0x3f96405d25a31660,
     ];
 
     let a: TFr = TFr::from_u64_arr(&aa);
@@ -56,7 +56,12 @@ pub fn fr_equal_works<TFr: Fr>() {
 }
 
 pub fn fr_negate_works<TFr: Fr>() {
-    let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
+    let m1: [u64; 4] = [
+        0xffffffff00000000,
+        0x53bda402fffe5bfe,
+        0x3339d80809a1d805,
+        0x73eda753299d7d48,
+    ];
     let minus1 = TFr::from_u64_arr(&m1);
     let res = minus1.negate();
     assert!(res.is_one());
@@ -107,7 +112,12 @@ pub fn fr_uint64s_roundtrip<TFr: Fr>() {
 }
 
 pub fn p1_mul_works<TFr: Fr, TG1: G1 + G1Mul<TFr>>() {
-    let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
+    let m1: [u64; 4] = [
+        0xffffffff00000000,
+        0x53bda402fffe5bfe,
+        0x3339d80809a1d805,
+        0x73eda753299d7d48,
+    ];
     let minus1 = TFr::from_u64_arr(&m1);
     let res = TG1::generator().mul(&minus1);
     assert!(res.equals(&TG1::negative_generator()));
@@ -126,7 +136,12 @@ pub fn p2_add_or_dbl_works<TG2: G2>() {
 }
 
 pub fn p2_mul_works<TFr: Fr, TG2: G2 + G2Mul<TFr>>() {
-    let m1: [u64; 4] = [0xffffffff00000000, 0x53bda402fffe5bfe, 0x3339d80809a1d805, 0x73eda753299d7d48];
+    let m1: [u64; 4] = [
+        0xffffffff00000000,
+        0x53bda402fffe5bfe,
+        0x3339d80809a1d805,
+        0x73eda753299d7d48,
+    ];
 
     let minus1 = TFr::from_u64_arr(&m1);
     let res = TG2::generator().mul(&minus1);
@@ -148,13 +163,15 @@ pub fn g1_identity_is_identity<TG1: G1>() {
     assert!(actual.equals(&TG1::generator()));
 }
 
-pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_linear_combination: &dyn Fn (&mut TG1, &[TG1], &[TFr], usize)) {
+pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
+    g1_linear_combination: &dyn Fn(&mut TG1, &[TG1], &[TFr], usize),
+) {
     let len: usize = 255;
     let mut coeffs = vec![TFr::default(); len];
     let mut p = vec![TG1::default(); len];
 
     for i in 0..len {
-        coeffs[i] = TFr::from_u64((i+1).try_into().unwrap());
+        coeffs[i] = TFr::from_u64((i + 1).try_into().unwrap());
         p[i] = TG1::generator();
     }
 
@@ -168,7 +185,9 @@ pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_linea
     assert!(exp.equals(&res));
 }
 
-pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_linear_combination: &dyn Fn (&mut TG1, &[TG1], &[TFr], usize)) {
+pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
+    g1_linear_combination: &dyn Fn(&mut TG1, &[TG1], &[TFr], usize),
+) {
     let len: usize = 8192;
     let mut coeffs = vec![TFr::default(); len];
     let mut p = vec![TG1::default(); len];
@@ -192,7 +211,9 @@ pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(g1_lin
     assert!(exp.equals(&res));
 }
 
-pub fn pairings_work<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2 + G2Mul<TFr>>(pairings_verify: &dyn Fn(&TG1, &TG2, &TG1, &TG2) -> bool) {
+pub fn pairings_work<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2 + G2Mul<TFr>>(
+    pairings_verify: &dyn Fn(&TG1, &TG2, &TG1, &TG2) -> bool,
+) {
     // // Verify that e([3]g1, [5]g2) = e([5]g1, [3]g2)
 
     let three = TFr::from_u64(3);

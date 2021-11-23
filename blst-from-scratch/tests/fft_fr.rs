@@ -1,8 +1,9 @@
 #[cfg(test)]
 pub mod tests {
-    use kzg_bench::tests::fft_fr::{compare_sft_fft, inverse_fft, roundtrip_fft, stride_fft};
     use blst_from_scratch::fft_fr::{fft_fr_fast, fft_fr_slow};
-    use blst_from_scratch::kzg_types::{FsFFTSettings, FsFr};
+    use blst_from_scratch::types::fft_settings::FsFFTSettings;
+    use blst_from_scratch::types::fr::FsFr;
+    use kzg_bench::tests::fft_fr::{compare_sft_fft, inverse_fft, roundtrip_fft, stride_fft};
 
     #[test]
     fn compare_sft_fft_() {

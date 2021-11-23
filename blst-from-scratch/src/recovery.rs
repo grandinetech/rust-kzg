@@ -1,9 +1,13 @@
-use kzg::{Fr, FFTFr, Poly, ZeroPoly};
-use crate::kzg_types::{FsFFTSettings, FsPoly, FsFr};
-use crate::utils::{is_power_of_two};
+use kzg::{FFTFr, Fr, Poly, ZeroPoly};
+
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::types::poly::FsPoly;
+use crate::utils::is_power_of_two;
 
 const SCALE_FACTOR: u64 = 5;
 
+#[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
     let inv_factor = FsFr::inverse(&scale_factor);
@@ -15,6 +19,7 @@ pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
     let mut factor_power = FsFr::one();
@@ -25,24 +30,32 @@ pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     }
 }
 
-pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFFTSettings) -> Result<Vec<FsFr>, String> {
+pub fn recover_poly_from_samples(
+    samples: &[FsFr],
+    len_samples: usize,
+    fs: &FsFFTSettings,
+) -> Result<Vec<FsFr>, String> {
     if !is_power_of_two(len_samples) {
         return Err(String::from("len_samples must be a power of two"));
     }
 
     let mut missing: Vec<usize> = Vec::new();
-    for i in 0..len_samples {
-        if samples[i].is_null() {
+    for (i, sample) in samples.iter().enumerate() {
+        if sample.is_null() {
             missing.push(i);
         }
     }
 
     // Calculate `Z_r,I`
-    let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing).unwrap();
+    let (zero_eval, mut zero_poly) = fs
+        .zero_poly_via_multiplication(len_samples, &missing)
+        .unwrap();
 
     for i in 0..len_samples {
-        if !(samples[i].is_null() == zero_eval[i].is_zero()) {
-            return Err(String::from("recovery error: samples should be null when and only when zero_eval is zero"));
+        if samples[i].is_null() != zero_eval[i].is_zero() {
+            return Err(String::from(
+                "recovery error: samples should be null when and only when zero_eval is zero",
+            ));
         }
     }
 
@@ -53,7 +66,9 @@ pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFF
         if samples[i].is_null() {
             poly_evaluations_with_zero.coeffs.push(FsFr::zero());
         } else {
-            poly_evaluations_with_zero.coeffs.push(samples[i].mul(&zero_eval[i]));
+            poly_evaluations_with_zero
+                .coeffs
+                .push(samples[i].mul(&zero_eval[i]));
         }
     }
     // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
@@ -78,11 +93,15 @@ pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFF
     let mut eval_scaled_reconstructed_poly = FsPoly::default();
     eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
     for i in 0..len_samples {
-        eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i]).unwrap();
+        eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i]
+            .div(&eval_scaled_zero_poly[i])
+            .unwrap();
     }
 
     // The result of the division is D(k * x):
-    let mut scaled_reconstructed_poly: Vec<FsFr> = fs.fft_fr(&eval_scaled_reconstructed_poly.coeffs, true).unwrap();
+    let mut scaled_reconstructed_poly: Vec<FsFr> = fs
+        .fft_fr(&eval_scaled_reconstructed_poly.coeffs, true)
+        .unwrap();
 
     // k * x -> x
     unscale_poly(&mut scaled_reconstructed_poly, len_samples);
@@ -96,7 +115,9 @@ pub fn recover_poly_from_samples(samples: &[FsFr], len_samples: usize, fs: &FsFF
     // Check all is well
     for i in 0..len_samples {
         if !(samples[i].is_null() || reconstructed_data[i].equals(&samples[i])) {
-            return Err(String::from("recovery error: samples should be null or equal reconstructed data"));
+            return Err(String::from(
+                "recovery error: samples should be null or equal reconstructed data",
+            ));
         }
     }
 
