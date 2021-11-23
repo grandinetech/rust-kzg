@@ -373,15 +373,3 @@ pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
         }
     }
 }
-
-pub fn test_poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
-    let mut dividend = TPoly::new(2).unwrap();
-
-    dividend.set_coeff_at(0, &TFr::from_u64(1));
-    dividend.set_coeff_at(1, &TFr::from_u64(1));
-
-    let divisor = TPoly::new(0).unwrap();
-
-    let dummy = dividend.div(&divisor);
-    assert!(dummy.is_err());
-}
