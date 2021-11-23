@@ -47,8 +47,10 @@ impl KZGSettings {
 
         divisor.coeffs.push(Fr::one());
         let temp_poly = p.clone();
-        q = temp_poly.div(&divisor.coeffs).unwrap();
-        q.commit(&self.secret1);
+        let q = temp_poly.div(&divisor.coeffs).unwrap();
+        let ret = q.commit(&self.secret1);
+
+        ret
     }
 
     pub fn check_proof_multi(&self, commitment: &G1, proof: &G1, x: &Fr, ys: &Vec<Fr>, n: usize) -> bool {
@@ -56,7 +58,7 @@ impl KZGSettings {
         interp.coeffs = self.fs.fft_from_slice(ys, true);
 
         let inv_x = x.inverse();
-        let mut inv_x_pow = inv_x;
+        let mut inv_x_pow = inv_x.clone();
         for i in 1..n {
             let mut temp_fr = Fr::zero();
             Fr::mul(&mut temp_fr, &interp.coeffs[i], &inv_x_pow);
@@ -82,6 +84,7 @@ impl KZGSettings {
         G1::sub(&mut commit_minus_interp, commitment, &is1);
 
         Curve::verify_pairing(&commit_minus_interp, &G2::gen(), proof, &xn_minus_yn)
+
     }
 
     pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
