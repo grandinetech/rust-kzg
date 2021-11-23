@@ -67,7 +67,6 @@ impl ops::Mul<&Fr> for &mut G1 {
     }
 }
 
-
 impl ops::Sub<G1> for G1 {
     type Output = G1;
     fn sub(self, rhs: G1) -> Self::Output {
