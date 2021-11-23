@@ -1,7 +1,8 @@
-use crate::kzg_types::FsFFTSettings;
-use crate::kzg_types::FsFr;
-use crate::utils::is_power_of_two;
 use kzg::{FFTFr, Fr};
+
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::utils::is_power_of_two;
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(
@@ -31,7 +32,7 @@ pub fn fft_fr_fast(
         }
     } else {
         // When len = 1, return the permuted element
-        ret[0] = data[0].clone();
+        ret[0] = data[0];
     }
 }
 
@@ -57,17 +58,15 @@ impl FFTFr<FsFr> for FsFFTSettings {
         } else {
             &self.expanded_roots_of_unity
         };
+
         fft_fr_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
-            let mut inv_len: FsFr = FsFr::from_u64(data.len() as u64);
-            inv_len = inv_len.inverse();
-            for i in 0..data.len() {
-                ret[i] = ret[i].mul(&inv_len);
-            }
+            let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
+            ret[..data.len()].iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
         }
 
-        return Ok(ret);
+        Ok(ret)
     }
 }
 

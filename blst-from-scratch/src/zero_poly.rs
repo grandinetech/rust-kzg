@@ -1,8 +1,11 @@
-use crate::kzg_types::FsFr;
-use crate::kzg_types::{FsFFTSettings, FsPoly};
-use crate::utils::{is_power_of_two, next_power_of_two};
+use std::cmp::{min, Ordering};
+
 use kzg::{FFTFr, Fr, ZeroPoly};
-use std::cmp::min;
+
+use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fr::FsFr;
+use crate::types::poly::FsPoly;
+use crate::utils::{is_power_of_two, next_power_of_two};
 
 /// Create a copy of the given poly and pad it with zeros
 pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
@@ -21,11 +24,12 @@ pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
     Ok(ret)
 }
 
+#[allow(clippy::needless_range_loop)]
 impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
     /// Calculates a polynomial that evaluates to zero for roots of unity at given indices.
     /// The returned polynomial has a length of idxs.len() + 1.
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
-        if idxs.len() == 0 {
+        if idxs.is_empty() {
             return Err(String::from("idx array must be non-zero"));
         }
 
@@ -40,7 +44,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         for i in 1..idxs.len() {
             // For member (x - w_i) take coefficient as -(w_i + w_{i-1} + ...)
             poly.coeffs[i] = self.expanded_roots_of_unity[idxs[i] * stride].negate();
-            let neg_di = poly.coeffs[i].clone();
+            let neg_di = poly.coeffs[i];
             poly.coeffs[i] = poly.coeffs[i].add(&poly.coeffs[i - 1]);
 
             // Multiply all previous members by (x - w_i)
@@ -108,7 +112,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         let zero_eval: Vec<FsFr>;
         let mut zero_poly: FsPoly;
 
-        if missing_idxs.len() == 0 {
+        if missing_idxs.is_empty() {
             zero_eval = Vec::new();
             zero_poly = FsPoly { coeffs: Vec::new() };
             return Ok((zero_eval, zero_poly));
@@ -136,7 +140,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
             // When all idxs fit into a single multiplication
-            zero_poly = self.do_zero_poly_mul_partial(&missing_idxs, domain_stride)?;
+            zero_poly = self.do_zero_poly_mul_partial(missing_idxs, domain_stride)?;
         } else {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
@@ -219,11 +223,15 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             zero_poly = FsPoly { coeffs: work };
         }
 
-        // Pad resulting poly to expected length
-        if zero_poly.coeffs.len() < domain_size {
-            zero_poly.coeffs = pad_poly(&zero_poly, domain_size)?;
-        } else if zero_poly.coeffs.len() > domain_size {
-            zero_poly.coeffs = zero_poly.coeffs[..domain_size].to_vec();
+        // Pad resulting poly to expected
+        match zero_poly.coeffs.len().cmp(&domain_size) {
+            Ordering::Less => {
+                zero_poly.coeffs = pad_poly(&zero_poly, domain_size)?;
+            }
+            Ordering::Equal => {}
+            Ordering::Greater => {
+                zero_poly.coeffs = zero_poly.coeffs[..domain_size].to_vec();
+            }
         }
 
         // Evaluate calculated poly

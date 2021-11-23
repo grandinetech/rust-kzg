@@ -1,8 +1,9 @@
-use kzg::{FFTSettings, Fr, G1, G2, KZGSettings, Poly};
+use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 
-pub const SECRET: [u8; 32usize] = [0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
-    0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+pub const SECRET: [u8; 32usize] = [
+    0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+];
 
 /// Check that both FFT implementations produce the same results
 pub fn proof_single<
@@ -38,11 +39,15 @@ pub fn proof_single<
     let mut value = p.eval(&x);
 
     // Verify the proof that the (unknown) polynomial has y = value at x = 25
-    assert!(ks.check_proof_single(&commitment, &proof, &x, &value).unwrap());
+    assert!(ks
+        .check_proof_single(&commitment, &proof, &x, &value)
+        .unwrap());
 
     // Change the value and check that the proof fails
     value = value.add(&TFr::one());
-    assert!(!ks.check_proof_single(&commitment, &proof, &x, &value).unwrap());
+    assert!(!ks
+        .check_proof_single(&commitment, &proof, &x, &value)
+        .unwrap());
 }
 
 pub fn commit_to_nil_poly<
@@ -93,6 +98,30 @@ pub fn commit_to_too_long_poly<
         let a = TPoly::new(poly_len).unwrap();
         let _result = ks.commit_to_poly(&a);
     }
+}
+
+// Instead of panicking, commit should return an err
+pub fn commit_to_too_long_poly_returns_err<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+) {
+    let secrets_len = 16;
+    let poly_len = 32; // poly is longer than secrets!
+
+    // Initialise the (arbitrary) secrets and data structures
+    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let fs = TFFTSettings::new(4).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+
+    let a = TPoly::new(poly_len).unwrap();
+    let _result = ks.commit_to_poly(&a);
+    assert!(_result.is_err());
 }
 
 //It was not verified that this test works, use with caution
@@ -151,12 +180,16 @@ pub fn proof_multi<
     }
 
     // Verify the proof that the (unknown) polynomial has value y_i at x_i
-    let result = ks2.check_proof_multi(&commitment, &proof, &x, &y, coset_len).unwrap();
+    let result = ks2
+        .check_proof_multi(&commitment, &proof, &x, &y, coset_len)
+        .unwrap();
     assert_eq!(result, true);
 
     // Change a value and check that the proof fails
     let temp = TFr::add(&y[4], &TFr::one());
     let _temp = std::mem::replace(&mut y[4], temp);
-    let result = ks2.check_proof_multi(&commitment, &proof, &x, &y, coset_len).unwrap();
+    let result = ks2
+        .check_proof_multi(&commitment, &proof, &x, &y, coset_len)
+        .unwrap();
     assert_eq!(result, false);
 }

@@ -1,17 +1,17 @@
+use kzg::FFTFr;
 use kzg::FFTSettings;
 use kzg::Fr;
 use kzg::Poly;
 use kzg::PolyRecover;
-use kzg::FFTFr;
-use std::convert::TryInto;
-use rand::thread_rng;
 use rand::seq::SliceRandom;
+use rand::thread_rng;
+use std::convert::TryInto;
 
 pub fn recover_simple<
     TFr: Fr,
     TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>,
     TPoly: Poly<TFr>,
-    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>
+    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>,
 >() {
     let fs = TFTTSettings::new(2).unwrap();
     let max_width: usize = fs.get_max_width();
@@ -58,9 +58,8 @@ pub fn recover_random<
     TFr: Fr,
     TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>,
     TPoly: Poly<TFr>,
-    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>
+    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>,
 >() {
-
     let fs = TFTTSettings::new(12).unwrap();
     let max_width: usize = fs.get_max_width();
 
