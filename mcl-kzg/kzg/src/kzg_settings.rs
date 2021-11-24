@@ -3,36 +3,43 @@ use crate::fk20_fft::FFTSettings;
 use crate::kzg10::Curve;
 use crate::kzg10::Polynomial;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct KZGSettings {
-    pub fs: FFTSettings,
-    pub secret1: Vec<G1>,
-    pub secret2: Vec<G2>
+    pub fft_settings: FFTSettings,
+    pub curve: Curve,
 }
 
 impl KZGSettings {
-    pub fn new(secret_g1: &[G1], secret_g2: &[G2], length: usize, fs: &FFTSettings) -> Self {
-        let mut sec1: Vec<G1> = vec![];
-        let mut sec2: Vec<G2> = vec![];
-        for i in 0..length {
-            sec1.push(secret_g1[i].clone());
-            sec2.push(secret_g2[i].clone());
+    pub fn default() -> Self {
+        Self {
+           fft_settings: FFTSettings::default(),
+            curve: Curve::default()
         }
-        
-        KZGSettings{
-            fs: fs.clone(),
-            secret1: sec1,
-            secret2: sec2
+    }
+
+    pub fn new_from_curve(curve: &Curve, fs: &FFTSettings) -> Self {
+        KZGSettings {
+            fft_settings: fs.clone(),
+            curve: curve.clone(),
+        }
+    }
+
+    pub fn new(secret_g1: &[G1], secret_g2: &[G2], length: usize, fs: &FFTSettings) -> Self {
+        let mut secret1: Vec<G1> = vec![];
+        let mut secret2: Vec<G2> = vec![];
+        for i in 0..length {
+            secret1.push(secret_g1[i].clone());
+            secret2.push(secret_g2[i].clone());
+        }
+        let curve = Curve::new2(&secret1, &secret2, length);
+        KZGSettings {
+            fft_settings: fs.clone(),
+            curve,
         }
     }
 
     pub fn check_proof_single(&self, commitment: &G1, proof: &G1, x: &Fr, y: &Fr) -> bool {
-        let g1_gen = G1::gen();
-        let g2_gen = G2::gen();
-        let secret_minus_x = &self.secret2[1] - &(&g2_gen * x); // g2 * x to get x on g2
-        let commitment_minus_y = commitment - &(&g1_gen * y);
-
-        Curve::verify_pairing(&commitment_minus_y, &g2_gen, proof, &secret_minus_x)
+        self.curve.is_proof_valid(commitment, proof, x, y)
     }
 
     pub fn compute_proof_multi(&self, p: &Polynomial, x0: &Fr, n: usize) -> G1 {
@@ -47,36 +54,34 @@ impl KZGSettings {
         divisor.coeffs.push(Fr::one());
         let temp_poly = p.clone();
         let q = temp_poly.div(&divisor.coeffs).unwrap();
-        q.commit(&self.secret1)
+        q.commit(&self.curve.g1_points)
     }
 
-    pub fn check_proof_multi(&self, commitment: &G1, proof: &G1, x: &Fr, ys: &[Fr], n: usize) -> bool {
-        let mut interp = Polynomial::new(n);
-        interp.coeffs = self.fs.fft_from_slice(ys, true);
+    pub fn check_proof_multi(&self, commitment: &G1,proof: &G1, x: &Fr, ys: &[Fr], n: usize) -> bool {
+        let mut interpolation_poly = Polynomial::new(n);
+        interpolation_poly.coeffs = self.fft_settings.fft_from_slice(ys, true);
 
         let inv_x = x.inverse();
         let mut inv_x_pow = inv_x;
         for i in 1..n {
-            interp.coeffs[i] = interp.coeffs[i] * inv_x_pow;
+            interpolation_poly.coeffs[i] = interpolation_poly.coeffs[i] * inv_x_pow;
             inv_x_pow = inv_x_pow * inv_x;
         }
 
         let x_pow = inv_x_pow.inverse();
-        let g2_gen = G2::gen(); 
-
-        let xn2 = &g2_gen * &x_pow;
-        let xn_minus_yn = &self.secret2[n] - &xn2;
-        let is1 = interp.commit(&self.secret1);
+        let xn2 = &self.curve.g2_gen * &x_pow;
+        let xn_minus_yn = &self.curve.g2_points[n] - &xn2;
+        let is1 = interpolation_poly.commit(&self.curve.g1_points);
         let commit_minus_interp = commitment - &is1;
-        Curve::verify_pairing(&commit_minus_interp, &G2::gen(), proof, &xn_minus_yn)
+        Curve::verify_pairing(&commit_minus_interp, &self.curve.g2_gen, proof, &xn_minus_yn)
     }
 
     pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
         let g1_gen = G1::gen();
-        let g2_gen = G2::gen(); 
+        let g2_gen = G2::gen();
 
-        let mut g1_points = vec!(G1::default(); n);
-        let mut g2_points = vec!(G2::default(); n);
+        let mut g1_points = vec![G1::default(); n];
+        let mut g2_points = vec![G2::default(); n];
         let secretfr = Fr::from_scalar(&secret);
         let mut secret_to_power = Fr::one();
         for i in 0..n {

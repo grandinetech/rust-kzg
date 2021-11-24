@@ -1,10 +1,10 @@
-use std::{cmp::min,  ops, iter};
-use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
-use crate::{BlstFr};
 use crate::data_converter::fr_converter::*;
-use crate::mcl_methods::{pairing, final_exp, mclBn_FrEvaluatePolynomial};
-use crate::utilities::{next_pow_of_2, log_2};
+use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::fk20_fft::{FFTSettings, G1_GENERATOR};
+use crate::mcl_methods::{final_exp, mclBn_FrEvaluatePolynomial, pairing};
+use crate::utilities::{log_2, next_pow_of_2};
+use crate::BlstFr;
+use std::{cmp::min, iter, ops};
 
 const G1_GEN_X: &str = "3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507";
 const G1_GEN_Y: &str = "1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569";
@@ -32,7 +32,6 @@ impl G1 {
 
     pub fn random() -> G1 {
         let fr = Fr::random();
-        
         &G1_GENERATOR * &fr
     }
 }
@@ -78,7 +77,7 @@ impl ops::Sub<G1> for G1 {
 }
 
 impl GT {
-    pub fn get_final_exp(&self) -> GT { 
+    pub fn get_final_exp(&self) -> GT {
         let mut gt = GT::default();
         final_exp(&mut gt, self);
 
@@ -106,7 +105,6 @@ impl ops::Mul<GT> for GT {
 impl G2 {
     pub fn gen() -> G2 {
         let mut g2 = G2::default();
-        
         g2.x.d[0].set_str(G2_GEN_X_D0, 10);
         g2.x.d[1].set_str(G2_GEN_X_D1, 10);
         g2.y.d[0].set_str(G2_GEN_Y_D0, 10);
@@ -209,23 +207,11 @@ impl ops::Add<Fr> for Fr {
 
 #[derive(Debug, Clone)]
 pub struct Polynomial {
-    pub coeffs: Vec<Fr>
+    pub coeffs: Vec<Fr>,
 }
-
-#[derive(Debug, Clone)]
-pub struct Curve {
-    pub g1_gen: G1,
-    pub g2_gen: G2,
-    pub g1_points: Vec<G1>,
-    pub g2_points: Vec<G2>,
-    pub order: usize
-}
-
 impl Polynomial {
     pub fn default() -> Self {
-        Self {
-            coeffs: vec![]
-        }
+        Self { coeffs: vec![] }
     }
     pub fn new(size: usize) -> Self {
         Polynomial {
@@ -234,11 +220,8 @@ impl Polynomial {
     }
 
     pub fn from_fr(data: Vec<Fr>) -> Self {
-        Self {
-            coeffs: data
-        }
+        Self { coeffs: data }
     }
-    
     pub fn from_i32(data: &[i32]) -> Self {
         Self {
             coeffs: data.iter().map(|x| Fr::from_int(*x)).collect(),
@@ -256,7 +239,7 @@ impl Polynomial {
 
     pub fn eval_at(&self, point: &Fr) -> Fr {
         let mut result = Fr::default();
-        unsafe { 
+        unsafe {
             mclBn_FrEvaluatePolynomial(&mut result, self.coeffs.as_ptr(), self.order(), point)
         };
         result
@@ -268,13 +251,22 @@ impl Polynomial {
 
         let mut result = G1::default();
         unsafe {
-            mclBnG1_mulVec(&mut result, g1_points.as_ptr(), quotient_poly.coeffs.as_ptr(), min(g1_points.len(), quotient_poly.order()))
+            mclBnG1_mulVec(
+                &mut result,
+                g1_points.as_ptr(),
+                quotient_poly.coeffs.as_ptr(),
+                min(g1_points.len(), quotient_poly.order()),
+            )
         };
         result
     }
 
     pub fn poly_quotient_length(dividend: &[Fr], divisor: &[Fr]) -> usize {
-        if dividend.len() >= divisor.len() { dividend.len() - divisor.len() + 1} else { 0 }
+        if dividend.len() >= divisor.len() {
+            dividend.len() - divisor.len() + 1
+        } else {
+            0
+        }
     }
 
     pub fn long_division(&self, divisor: &[Fr]) -> Result<Polynomial, String> {
@@ -282,7 +274,9 @@ impl Polynomial {
             return Err(String::from("Dividing by zero is undefined"));
         }
         if divisor.last().unwrap().is_zero() {
-            return Err(String::from("The divisor's highest coefficient must be non-zero"));
+            return Err(String::from(
+                "The divisor's highest coefficient must be non-zero",
+            ));
         }
         let out_length = Polynomial::poly_quotient_length(&self.coeffs, divisor);
         if out_length == 0 {
@@ -309,7 +303,7 @@ impl Polynomial {
             diff -= 1;
         }
         out_coeffs[0] = a[a_pos] / divisor[b_pos];
-        Ok(Polynomial::from_fr(out_coeffs)) 
+        Ok(Polynomial::from_fr(out_coeffs))
     }
 
     pub fn fast_div(&self, divisor: &[Fr]) -> Result<Polynomial, String> {
@@ -317,7 +311,9 @@ impl Polynomial {
             return Err(String::from("Dividing by zero is undefined"));
         }
         if divisor.last().unwrap().is_zero() {
-            return Err(String::from("The divisor's highest coefficient must be non-zero"));
+            return Err(String::from(
+                "The divisor's highest coefficient must be non-zero",
+            ));
         }
         let mut out_length = Polynomial::poly_quotient_length(&self.coeffs, divisor);
         if out_length == 0 {
@@ -331,7 +327,7 @@ impl Polynomial {
             for i in 0..out_length {
                 out_coeffs.push(self.coeffs[i] / divisor[0]);
             }
-            return Ok(Polynomial::from_fr(out_coeffs));  
+            return Ok(Polynomial::from_fr(out_coeffs));
         }
 
         let a_flip = Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs));
@@ -362,7 +358,7 @@ impl Polynomial {
         result
     }
 
-    fn flip(&self) -> Polynomial { 
+    fn flip(&self) -> Polynomial {
         Polynomial::from_fr(Polynomial::flip_coeffs(&self.coeffs))
     }
 
@@ -370,7 +366,8 @@ impl Polynomial {
         let dividend = self.normalise();
         let divisor = Polynomial::normalise_coeffs(_divisor);
 
-        if divisor.len() >= dividend.order() || divisor.len() < 128 { // Tunable paramter
+        if divisor.len() >= dividend.order() || divisor.len() < 128 {
+            // Tunable paramter
             self.long_division(&divisor)
         } else {
             self.fast_div(&divisor)
@@ -380,30 +377,35 @@ impl Polynomial {
     pub fn commit(&self, g1_points: &[G1]) -> G1 {
         let mut result = G1::default();
         unsafe {
-            mclBnG1_mulVec(&mut result, g1_points.as_ptr(), self.coeffs.as_ptr(), min(g1_points.len(), self.order()))
+            mclBnG1_mulVec(
+                &mut result,
+                g1_points.as_ptr(),
+                self.coeffs.as_ptr(),
+                min(g1_points.len(), self.order()),
+            )
         };
         result
     }
 
     pub fn random(order: usize) -> Polynomial {
-        let coeffs = iter::repeat(0)
-            .take(order)
-            .map(|_| Fr::random())
-            .collect();
+        let coeffs = iter::repeat(0).take(order).map(|_| Fr::random()).collect();
 
-        Polynomial {
-            coeffs
-        }
+        Polynomial { coeffs }
     }
 
-    pub fn mul_(&self, b: &Self, ft: Option<&FFTSettings>, len: usize) -> Result<Polynomial, String> {
-        if self.order() < 64 || b.order() < 64 || len < 128 { // Tunable parameter
+    pub fn mul_(
+        &self,
+        b: &Self,
+        ft: Option<&FFTSettings>,
+        len: usize,
+    ) -> Result<Polynomial, String> {
+        if self.order() < 64 || b.order() < 64 || len < 128 {
+            // Tunable parameter
             Polynomial::mul_direct(self, b, len)
         } else {
             Polynomial::mul_fft(self, b, ft, len)
         }
     }
-    
 
     pub fn mul(&self, b: &Self, len: usize) -> Result<Polynomial, String> {
         Polynomial::mul_(self, b, None, len)
@@ -424,18 +426,23 @@ impl Polynomial {
     }
 
     pub fn pad_coeffs_mut(&mut self, n_in: usize, n_out: usize) {
-        let num = min(n_in, n_out);      
+        let num = min(n_in, n_out);
         self.coeffs = self.coeffs[..num].to_vec();
         for _ in num..n_out {
             self.coeffs.push(Fr::zero());
         }
     }
 
-    fn pad(&self, n_in: usize, n_out: usize) -> Polynomial { 
+    fn pad(&self, n_in: usize, n_out: usize) -> Polynomial {
         Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
     }
 
-    pub fn mul_fft(&self, b: &Self, ft: Option<&FFTSettings>, len: usize) -> Result<Polynomial, String> {
+    pub fn mul_fft(
+        &self,
+        b: &Self,
+        ft: Option<&FFTSettings>,
+        len: usize,
+    ) -> Result<Polynomial, String> {
         // Truncate a and b so as not to do excess work for the number of coefficients required.
         let a_len = min(self.order(), len);
         let b_len = min(b.order(), len);
@@ -446,7 +453,7 @@ impl Polynomial {
         let temp_fft = FFTSettings::new(log_2(length) as u8);
         match ft {
             Some(x) => fft_settings = x,
-            None    => fft_settings = &temp_fft,
+            None => fft_settings = &temp_fft,
         }
         let ft = fft_settings;
         if length > ft.max_width {
@@ -495,7 +502,7 @@ impl Polynomial {
         Ok(Polynomial::from_fr(coeffs))
     }
 
-    pub fn inverse(&self, new_length: usize) -> Result<Polynomial, String> { 
+    pub fn inverse(&self, new_length: usize) -> Result<Polynomial, String> {
         let self_length = self.order();
         if self_length == 0 || new_length == 0 {
             return Ok(Polynomial::default());
@@ -519,7 +526,6 @@ impl Polynomial {
         // Max space for multiplications is (2 * length - 1)
         //use a more efficent log_2?
         let scale = log_2(next_pow_of_2(2 * new_length - 1));
-        
         //check if scale actually always fits in u8
         //fftsettings to be used, if multiplacation is done with fft
         let fs = FFTSettings::new(scale as u8);
@@ -528,7 +534,6 @@ impl Polynomial {
 
         //if new length is 1, max d is 0
         let mut mask = 1 << log_2(maxd);
-        
         while mask != 0 {
             let mut poly_temp_0: Polynomial;
             let poly_temp_1: Polynomial;
@@ -539,7 +544,7 @@ impl Polynomial {
             let temp_0_len = min(d + 1, self.order() + out.order() - 1);
             poly_temp_0 = self.mul_(&out, Some(&fs), temp_0_len).unwrap();
 
-             // 2 - b.c -> tmp0
+            // 2 - b.c -> tmp0
             for i in 0..temp_0_len {
                 poly_temp_0.coeffs[i] = poly_temp_0.coeffs[i].get_neg();
             }
@@ -562,13 +567,38 @@ impl Polynomial {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Curve {
+    pub g1_gen: G1,
+    pub g2_gen: G2,
+    pub g1_points: Vec<G1>,
+    pub g2_points: Vec<G2>,
+    pub order: usize,
+}
+
 impl Curve {
+    pub fn default() -> Self {
+        let g1_gen = G1::gen();
+        let g2_gen = G2::gen();
+        let g1_points: Vec<G1> = vec![];
+        let g2_points: Vec<G2> = vec![];
+        let order = 0;
+
+        Self {
+            g1_gen,
+            g2_gen,
+            g1_points,
+            g2_points,
+            order
+        }
+    }
+
     pub fn new(secret: &Fr, order: usize) -> Self {
         let g1_gen = G1::gen();
-        let g2_gen = G2::gen(); 
+        let g2_gen = G2::gen();
 
-        let mut g1_points = vec!(G1::default(); order);
-        let mut g2_points = vec!(G2::default(); order);
+        let mut g1_points = vec![G1::default(); order];
+        let mut g2_points = vec![G2::default(); order];
 
         let mut secret_to_power = Fr::one();
         for i in 0..order {
@@ -584,6 +614,26 @@ impl Curve {
             g1_points,
             g2_points,
             order
+        }
+    }
+
+    pub fn new2(secret_g1: &[G1], secret_g2: &[G2], order: usize) -> Self {
+        let g1_gen = G1::gen();
+        let g2_gen = G2::gen();
+
+        let mut g1_points: Vec<G1> = vec![];
+        let mut g2_points: Vec<G2> = vec![];
+        for i in 0..order {
+            g1_points.push(secret_g1[i].clone());
+            g2_points.push(secret_g2[i].clone());
+        }
+
+        Self {
+            g1_gen,
+            g2_gen,
+            g1_points,
+            g2_points,
+            order,
         }
     }
 

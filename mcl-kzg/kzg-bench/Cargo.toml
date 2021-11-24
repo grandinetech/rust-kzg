@@ -16,6 +16,14 @@ rand = "0.5"
 criterion = "0.3"
 
 [[bench]]
+name = "shared_fk20"
+harness = false
+
+[[bench]]
+name = "shared_zero_poly"
+harness = false
+
+[[bench]]
 name = "shared_fft"
 harness = false
 

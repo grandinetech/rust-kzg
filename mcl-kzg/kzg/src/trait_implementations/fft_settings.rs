@@ -4,7 +4,7 @@ use kzg::FFTSettings as CommonFFTSettings;
 
 impl CommonFFTSettings<Fr> for FFTSettings {
     fn default() -> Self {
-        todo!()
+        FFTSettings::default()
     }
 
     fn new(scale: usize) -> Result<FFTSettings, String> {
@@ -14,7 +14,10 @@ impl CommonFFTSettings<Fr> for FFTSettings {
                 "Scale is expected to be within root of unity matrix row size",
             ));
         }
-        Ok(FFTSettings::new_custom_primitive_roots(scale as u8, SCALE_2_ROOT_OF_UNITY_PR7_STRINGS))
+        Ok(FFTSettings::new_custom_primitive_roots(
+            scale as u8,
+            SCALE_2_ROOT_OF_UNITY_PR7_STRINGS,
+        ))
     }
 
     fn get_max_width(&self) -> usize {

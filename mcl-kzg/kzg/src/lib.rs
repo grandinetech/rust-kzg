@@ -56,6 +56,7 @@ pub mod trait_implementations {
     pub mod g1;
     pub mod g2;
     pub mod kzg_settings;
+    pub mod fk20;
 }
 pub mod das;
 pub mod data_recovery;
