@@ -55,6 +55,8 @@ pub mod trait_implementations {
     pub mod zero_poly;
     pub mod g1;
     pub mod g2;
+    pub mod kzg_settings;
+    pub mod fk20;
 }
 pub mod das;
 pub mod data_recovery;
@@ -62,3 +64,4 @@ pub mod fk20_fft;
 pub mod fk20_matrix;
 pub mod kzg10;
 pub mod zero_poly;
+pub mod kzg_settings;
