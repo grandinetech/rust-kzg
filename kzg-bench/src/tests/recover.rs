@@ -1,17 +1,17 @@
+use kzg::FFTFr;
 use kzg::FFTSettings;
 use kzg::Fr;
 use kzg::Poly;
 use kzg::PolyRecover;
-use kzg::FFTFr;
-use std::convert::TryInto;
-use rand::thread_rng;
 use rand::seq::SliceRandom;
+use rand::thread_rng;
+use std::convert::TryInto;
 
 pub fn recover_simple<
     TFr: Fr,
     TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>,
     TPoly: Poly<TFr>,
-    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>
+    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>,
 >() {
     let fs = TFTTSettings::new(2).unwrap();
     let max_width: usize = fs.get_max_width();
@@ -30,7 +30,7 @@ pub fn recover_simple<
     let data = fs.fft_fr(&poly, false).unwrap();
     let samples: [Option<TFr>; 4] = [Some(data[0].clone()), None, None, Some(data[3].clone())];
 
-    let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs);
+    let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
 
     //Check recovered data
     for i in 0..max_width {
@@ -58,9 +58,8 @@ pub fn recover_random<
     TFr: Fr,
     TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>,
     TPoly: Poly<TFr>,
-    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>
+    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>,
 >() {
-
     let fs = TFTTSettings::new(12).unwrap();
     let max_width: usize = fs.get_max_width();
 
@@ -79,7 +78,7 @@ pub fn recover_random<
         for _ in 0..4 {
             let samples = random_missing(data.clone(), max_width, known);
 
-            let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs);
+            let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
             //Assert
             for i in 0..max_width {
                 assert!(data[i].equals(&recovered.get_coeff_at(i)));

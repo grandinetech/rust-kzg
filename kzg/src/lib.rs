@@ -134,7 +134,12 @@ pub trait FFTSettings<Coeff: Fr>: Clone {
 }
 
 pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
-    fn poly_mul_fft(a: &Polynomial, b: &Polynomial, len: usize, fs: Option<&FSettings>) -> Result<Polynomial, String>;
+    fn poly_mul_fft(
+        a: &Polynomial,
+        b: &Polynomial,
+        len: usize,
+        fs: Option<&FSettings>,
+    ) -> Result<Polynomial, String>;
 }
 
 pub trait Poly<Coeff: Fr>: Clone {
@@ -168,7 +173,7 @@ pub trait Poly<Coeff: Fr>: Clone {
 }
 
 pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
-    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: &FSettings) -> Polynomial;
+    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: &FSettings) -> Result<Polynomial, String>;
 }
 
 pub trait KZGSettings<
@@ -181,13 +186,24 @@ pub trait KZGSettings<
 {
     fn default() -> Self;
 
-    fn new(secret_g1: &Vec<Coeff2>, secret_g2: &Vec<Coeff3>, length: usize, fs: &Fs) -> Result<Self, String>;
+    fn new(
+        secret_g1: &Vec<Coeff2>,
+        secret_g2: &Vec<Coeff3>,
+        length: usize,
+        fs: &Fs,
+    ) -> Result<Self, String>;
 
     fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
 
     fn compute_proof_single(&self, p: &Polynomial, x: &Coeff1) -> Result<Coeff2, String>;
 
-    fn check_proof_single(&self, com: &Coeff2, proof: &Coeff2, x: &Coeff1, value: &Coeff1) -> Result<bool, String>;
+    fn check_proof_single(
+        &self,
+        com: &Coeff2,
+        proof: &Coeff2,
+        x: &Coeff1,
+        value: &Coeff1,
+    ) -> Result<bool, String>;
 
     fn compute_proof_multi(&self, p: &Polynomial, x: &Coeff1, n: usize) -> Result<Coeff2, String>;
 
@@ -209,8 +225,9 @@ pub trait FK20SingleSettings<
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
-    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>
->: Clone {
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>,
+>: Clone
+{
     fn default() -> Self;
 
     fn new(ks: &Ks, n2: usize) -> Result<Self, String>;
@@ -226,8 +243,9 @@ pub trait FK20MultiSettings<
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
-    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>
->: Clone {
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>,
+>: Clone
+{
     fn default() -> Self;
 
     fn new(ks: &Ks, n2: usize, chunk_len: usize) -> Result<Self, String>;

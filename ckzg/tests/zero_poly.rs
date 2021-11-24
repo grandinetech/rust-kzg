@@ -16,6 +16,11 @@ mod tests {
     }
 
     #[test]
+    fn test_check_test_data() {
+        check_test_data::<BlstFr, KzgFFTSettings, KzgPoly>();
+    }
+
+    #[test]
     fn test_zero_poly_random() {
         zero_poly_random::<BlstFr, KzgFFTSettings, KzgPoly>();
     }

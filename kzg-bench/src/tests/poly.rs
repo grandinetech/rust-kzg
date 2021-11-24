@@ -1,4 +1,4 @@
-use kzg::{Fr, Poly, FFTSettings, FFTSettingsPoly};
+use kzg::{FFTSettings, FFTSettingsPoly, Fr, Poly};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 
@@ -138,7 +138,7 @@ fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>) -> TPoly {
 }
 
 pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
-    for i in 0..7 {
+    for i in 0..6 {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
@@ -160,7 +160,7 @@ pub fn poly_test_div<TFr: Fr, TPoly: Poly<TFr>>() {
 
 pub fn poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
     //Arrange
-    let coeffs: Vec<i32> = vec![1,1];
+    let coeffs: Vec<i32> = vec![1, 1];
     let mut dividend: TPoly = new_test_poly(&coeffs);
     let divisor = TPoly::new(0).unwrap();
 
@@ -202,7 +202,7 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: Poly<TFr>>() {
 pub fn poly_mul_fft_test<
     TFr: Fr,
     TPoly: Poly<TFr>,
-    TFTTSettings: FFTSettings<TFr> + FFTSettingsPoly<TFr, TPoly, TFTTSettings>
+    TFTTSettings: FFTSettings<TFr> + FFTSettingsPoly<TFr, TPoly, TFTTSettings>,
 >() {
     let coeffs: Vec<i32> = vec![3, 4];
     let multiplicand: TPoly = new_test_poly(&coeffs);
@@ -234,7 +234,7 @@ pub fn poly_mul_fft_test<
 pub fn poly_mul_random<
     TFr: Fr,
     TPoly: Poly<TFr>,
-    TFTTSettings: FFTSettings<TFr> + FFTSettingsPoly<TFr, TPoly, TFTTSettings>
+    TFTTSettings: FFTSettings<TFr> + FFTSettingsPoly<TFr, TPoly, TFTTSettings>,
 >() {
     let mut rng = StdRng::seed_from_u64(0);
     for _k in 0..256 {
@@ -372,16 +372,4 @@ pub fn poly_div_fast_test<TFr: Fr, TPoly: Poly<TFr>>() {
             assert!(expected.get_coeff_at(i).equals(&actual.get_coeff_at(i)))
         }
     }
-}
-
-pub fn test_poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
-    let mut dividend = TPoly::new(2).unwrap();
-
-    dividend.set_coeff_at(0, &TFr::from_u64(1));
-    dividend.set_coeff_at(1, &TFr::from_u64(1));
-
-    let divisor = TPoly::new(0).unwrap();
-
-    let dummy = dividend.div(&divisor);
-    assert!(dummy.is_err());
 }

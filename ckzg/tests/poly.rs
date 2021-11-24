@@ -64,4 +64,14 @@ mod tests {
     fn test_poly_div_random() {
         poly_div_random::<BlstFr, KzgPoly>();
     }
+
+    #[test]
+    fn test_poly_div_long_test() {
+        poly_div_long_test::<BlstFr, KzgPoly>();
+    }
+
+    #[test]
+    fn test_poly_div_fast_test() {
+        poly_div_fast_test::<BlstFr, KzgPoly>();
+    }
 }
