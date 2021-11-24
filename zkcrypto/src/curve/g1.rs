@@ -1,5 +1,5 @@
 //! This module provides an implementation of the $\mathbb{G}_1$ group of BLS12-381.
-
+use crate::zkfr::blsScalar;
 // ================ util.rs ========================
 
 // #[cfg(feature = "groups")]
@@ -613,6 +613,12 @@ pub struct G1Projective {
 impl Default for G1Projective {
     fn default() -> G1Projective {
         G1Projective::identity()
+    }
+}
+
+impl G1Projective {
+    pub fn mul(&self, b: &blsScalar) -> Self {
+        self * b
     }
 }
 

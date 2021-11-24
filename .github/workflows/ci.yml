@@ -47,17 +47,20 @@ jobs:
 
 # 2nd team #########################################################
 
-    - uses: actions-rs/cargo@v1
+    - name: "[zkcrypto] Tests"
+      uses: actions-rs/cargo@v1
       with:
         command: test
         args: --manifest-path zkcrypto/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[zkcrypto] Benches"
+      uses: actions-rs/cargo@v1
       with:
         command: bench
         args: --manifest-path zkcrypto/Cargo.toml
 
-    - uses: actions-rs/cargo@v1
+    - name: "[zkcrypto] Formatting"
+      uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --manifest-path zkcrypto/Cargo.toml

@@ -141,7 +141,7 @@ pub fn expand_root_of_unity(root: &Fr) -> Vec<Fr> {
     root_z
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct FFTSettings {
     pub max_width: usize,
     pub root_of_unity: Fr,
@@ -150,6 +150,9 @@ pub struct FFTSettings {
 }
 
 impl FFTSettings {
+    pub fn default() -> Self {
+        Self::new(0)
+    }
     //fix this mess
     /// # Safety
     ///

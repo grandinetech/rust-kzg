@@ -19,7 +19,7 @@ pub fn fft_fr(data: &[blsScalar], inverse: bool, fft_settings: &ZkFFTSettings) -
     if data.len() > fft_settings.max_width {
         return Err(String::from("Given data is longer than allowed max width"));
     } else if !is_power_of_two(data.len()) {
-        return Err(String::from("Given data is not power-of-two"));
+        return Err(String::from("Given data is not power-of-two length"));
     }
 
     let stride = fft_settings.max_width / data.len();
