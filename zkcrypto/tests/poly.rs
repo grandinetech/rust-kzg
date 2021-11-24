@@ -65,4 +65,14 @@ pub mod tests {
 		poly_div_random::<blsScalar, ZPoly>();
 	}
 	
+	#[test]
+    fn poly_div_long_test_() { 
+		poly_div_long_test::<blsScalar, ZPoly>() 
+	}
+
+    #[test]
+    fn poly_div_fast_test_() { 
+		poly_div_fast_test::<blsScalar, ZPoly>() 
+	}
+	
 }

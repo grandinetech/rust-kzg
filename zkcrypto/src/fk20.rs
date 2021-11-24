@@ -66,7 +66,8 @@ impl FK20SingleSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings
 
         if n2 > self.kzg_settings.fs.max_width {
             return Err(String::from("n2 must be less than or equal to kzg settings max width"));
-        } else if !is_power_of_two(n2) {
+        } 
+		else if !is_power_of_two(n2) {
             return Err(String::from("n2 must be a power of two"));
         }
 
@@ -236,9 +237,11 @@ pub fn toeplitz_part_1 (x: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<Zk
 	
 	let n2 = x.len() * 2;
 	let mut x_ext = Vec::new();
+	
 	for i in 0..x.len() {
 		x_ext.push(x[i]);
 	}
+	
 	for _i in x.len()..n2 {
 		x_ext.push(ZkG1Projective::identity());
 	}
@@ -259,8 +262,8 @@ pub fn toeplitz_part_2 (toeplitz: &ZPoly, x_ext_fft: &[ZkG1Projective], fft_set:
 	return out;
 }
 pub fn toeplitz_part_3 (h_ext_fft: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
-	
-	let n = (h_ext_fft.len() / 2); // is this good?
+	// let n2 = h_ext_fft.len();
+	let n = h_ext_fft.len() / 2;
 	let mut out = fft_set.fft_g1(h_ext_fft, true).unwrap();
 	
 	for i in n..h_ext_fft.len() {

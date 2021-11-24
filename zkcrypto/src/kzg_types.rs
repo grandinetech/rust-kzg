@@ -1,6 +1,6 @@
 
 // pub use super::{ZPoly, BlsScalar};
-use kzg::{G1, G2, G1Mul, G2Mul, KZGSettings};
+use kzg::{G1, Fr, G2, G1Mul, G2Mul, KZGSettings};
 // use ff::{Field, PrimeField};
 
 // use std::ptr;
@@ -124,7 +124,8 @@ impl G1 for ZkG1Projective {
 	}
 
 	fn rand() -> Self {
-		todo!()
+		let result: ZkG1Projective = G1_GENERATOR;
+        result.mul(&blsScalar::rand())
 	}
 
 	fn add_or_dbl(&mut self, b: &Self) -> Self {
