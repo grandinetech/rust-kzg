@@ -21,4 +21,5 @@ mod shared_tests {
     mod kzg_proofs;
     mod fk20_proofs;
     mod recover;
+    mod finite;
 }
