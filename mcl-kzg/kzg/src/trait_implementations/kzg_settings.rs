@@ -21,7 +21,7 @@ impl CommonKZGSettings<Fr, G1, G2, FFTSettings, Polynomial> for KZGSettings {
 
     fn commit_to_poly(&self, p: &Polynomial) -> Result<G1, String> {
         if p.coeffs.len() > self.curve.g1_points.len() {
-            return Err(String::from("Provided polynomial is longer than G1!"));
+            Err(String::from("Provided polynomial is longer than G1!"))
         }
         else {
             Ok(p.commit(&self.curve.g1_points))
