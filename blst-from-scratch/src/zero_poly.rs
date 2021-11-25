@@ -28,7 +28,7 @@ pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
 impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
     /// Calculates a polynomial that evaluates to zero for roots of unity at given indices.
     /// The returned polynomial has a length of idxs.len() + 1.
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], len_idxs: usize, stride: usize) -> Result<FsPoly, String> {
         if idxs.is_empty() {
             return Err(String::from("idx array must be non-zero"));
         }
@@ -41,7 +41,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         // For the first member, store -w_0 as constant term
         poly.coeffs[0] = self.expanded_roots_of_unity[idxs[0] * stride].negate();
 
-        for i in 1..idxs.len() {
+        for i in 1..len_idxs {
             // For member (x - w_i) take coefficient as -(w_i + w_{i-1} + ...)
             poly.coeffs[i] = self.expanded_roots_of_unity[idxs[i] * stride].negate();
             let neg_di = poly.coeffs[i];
@@ -58,6 +58,11 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
             // Multiply x^0 member by - w_i
             poly.coeffs[0] = poly.coeffs[0].mul(&neg_di);
+        }
+
+        poly.coeffs[len_idxs] = Fr::one();
+        for i in (len_idxs + 1)..poly.coeffs.len() {
+            poly.coeffs[i] = Fr::zero();
         }
 
         Ok(poly)
@@ -108,17 +113,18 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         &self,
         domain_size: usize,
         missing_idxs: &[usize],
+        len_idxs: usize
     ) -> Result<(Vec<FsFr>, FsPoly), String> {
         let zero_eval: Vec<FsFr>;
         let mut zero_poly: FsPoly;
 
-        if missing_idxs.is_empty() {
+        if len_idxs == 0 {
             zero_eval = Vec::new();
             zero_poly = FsPoly { coeffs: Vec::new() };
             return Ok((zero_eval, zero_poly));
         }
 
-        if missing_idxs.len() >= domain_size {
+        if len_idxs >= domain_size {
             return Err(String::from("Missing idxs greater than domain size"));
         } else if domain_size > self.max_width {
             return Err(String::from(
@@ -131,16 +137,16 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         let degree_of_partial = 64; // Can be tuned & optimized (must be a power of 2)
         let missing_per_partial = degree_of_partial - 1; // Number of missing idxs needed per partial
         let domain_stride = self.max_width / domain_size;
-        let mut partial_count = 1 + (missing_idxs.len() - 1) / missing_per_partial; // TODO: explain why -1 is used here
+        let mut partial_count = (len_idxs + missing_per_partial - 1) / missing_per_partial; // TODO: explain why -1 is used here
         let domain_ceiling = min(
             next_power_of_two(partial_count * degree_of_partial),
             domain_size,
         );
 
         // Calculate zero poly
-        if missing_idxs.len() <= missing_per_partial {
+        if len_idxs <= missing_per_partial {
             // When all idxs fit into a single multiplication
-            zero_poly = self.do_zero_poly_mul_partial(missing_idxs, domain_stride)?;
+            zero_poly = self.do_zero_poly_mul_partial(missing_idxs, len_idxs, domain_stride)?;
         } else {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
@@ -151,14 +157,14 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
             let mut missing_offset = 0;
             let mut work_offset = 0;
-            let max = missing_idxs.len();
+            let max = len_idxs;
 
             // Insert all generated partial polynomials at degree_of_partial intervals in work vector
             for _i in 0..partial_count {
                 let end = min(missing_offset + missing_per_partial, max);
 
                 let mut partial = self
-                    .do_zero_poly_mul_partial(&missing_idxs[missing_offset..end], domain_stride)?;
+                    .do_zero_poly_mul_partial(&missing_idxs[missing_offset..end], end - missing_offset, domain_stride)?;
                 partial.coeffs = pad_poly(&partial, degree_of_partial)?;
                 work.splice(
                     work_offset..(work_offset + degree_of_partial),
@@ -173,7 +179,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
             // Adjust last length to match its actual length
             partial_lens[partial_count - 1] =
-                1 + missing_idxs.len() - (partial_count - 1) * missing_per_partial;
+                1 + len_idxs - (partial_count - 1) * missing_per_partial;
 
             // Reduce all vectors into one by reducing them w/ varying size multiplications
             let reduction_factor = 4; // Can be tuned & optimized (but must be a power of 2)
