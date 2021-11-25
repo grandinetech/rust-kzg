@@ -165,7 +165,7 @@ fn fk_multi_da<
         ks.commit_to_poly(&p).unwrap();
 
         // Compute the multi proofs, assuming that the polynomial will be extended with zeros
-        let id = format!("{} scale: '{}'", test_name, width);
+        let id = format!("{} scale: '{}'", test_name, i);
 
         if optimized == true {
             c.bench_function(&id, |b| {
