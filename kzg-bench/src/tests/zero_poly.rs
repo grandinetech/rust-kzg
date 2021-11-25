@@ -64,7 +64,7 @@ pub fn test_reduce_partials<
 
     for i in 0..4 {
         let temp = fft_settings
-            .do_zero_poly_mul_partial(&partial_idxs[i], 1)
+            .do_zero_poly_mul_partial(&partial_idxs[i], 2, 1)
             .unwrap();
         poly_partials.push(temp);
     }
@@ -72,7 +72,7 @@ pub fn test_reduce_partials<
     let from_tree_reduction = fft_settings.reduce_partials(16, &poly_partials).unwrap();
 
     let idxs = [1, 3, 7, 8, 9, 10, 12, 13];
-    let from_direct = fft_settings.do_zero_poly_mul_partial(&idxs, 1).unwrap();
+    let from_direct = fft_settings.do_zero_poly_mul_partial(&idxs, 8, 1).unwrap();
 
     for i in 0..9 {
         from_tree_reduction
@@ -123,7 +123,7 @@ pub fn reduce_partials_random<
                 }
 
                 let partial = fft_settings
-                    .do_zero_poly_mul_partial(&idxs[..partial_size], 1)
+                    .do_zero_poly_mul_partial(&idxs[..partial_size], partial_size, 1)
                     .unwrap();
                 partials.push(partial);
             }
@@ -134,6 +134,7 @@ pub fn reduce_partials_random<
             let from_direct = fft_settings
                 .do_zero_poly_mul_partial(
                     &missing[..missing_count],
+                    missing_count,
                     fft_settings.get_max_width() / point_count,
                 )
                 .unwrap();
@@ -202,7 +203,7 @@ pub fn zero_poly_known<
     }
 
     let (zero_eval, zero_poly) = fft_settings
-        .zero_poly_via_multiplication(16, &missing_idxs)
+        .zero_poly_via_multiplication(16, &missing_idxs, missing_idxs.len())
         .unwrap();
 
     for i in 0..expected_eval.len() {
@@ -236,7 +237,7 @@ pub fn zero_poly_random<
             }
 
             let (zero_eval, zero_poly) = fft_settings
-                .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs)
+                .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs, missing_idxs.len())
                 .unwrap();
 
             for i in 0..missing_idxs.len() {
@@ -273,7 +274,7 @@ pub fn zero_poly_all_but_one<
     }
 
     let (zero_eval, zero_poly) = fft_settings
-        .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs)
+        .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs, fft_settings.get_max_width() - 1)
         .unwrap();
 
     for i in 0..missing_idxs.len() {
@@ -309,6 +310,7 @@ pub fn zero_poly_252<
         .zero_poly_via_multiplication(
             fft_settings.get_max_width(),
             &missing_idxs[..missing_idxs.len()],
+            252
         )
         .unwrap();
 
