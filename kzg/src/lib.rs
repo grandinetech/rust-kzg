@@ -101,7 +101,7 @@ pub trait DAS<Coeff: Fr> {
 }
 
 pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], len_idxs: usize, stride: usize)
         -> Result<Polynomial, String>;
 
     fn reduce_partials(
@@ -114,6 +114,7 @@ pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
         &self,
         domain_size: usize,
         idxs: &[usize],
+        len_idxs: usize,
     ) -> Result<(Vec<Coeff>, Polynomial), String>;
 }
 
