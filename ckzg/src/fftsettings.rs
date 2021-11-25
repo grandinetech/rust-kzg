@@ -147,11 +147,11 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
 }
 
 impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<KzgPoly, String> {
-        let mut poly = KzgPoly::new(idxs.len() + 1).unwrap();
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], len_idxs: usize, stride: usize) -> Result<KzgPoly, String> {
+        let mut poly = KzgPoly::new(len_idxs + 1).unwrap();
         unsafe {
             match do_zero_poly_mul_partial(&mut poly, idxs.as_ptr() as *const u64,
-                                           idxs.len() as u64, stride as u64, self)
+                                           len_idxs as u64, stride as u64, self)
             {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in ZeroPoly::do_zero_poly_mul_partial ==> {:?}", e))
@@ -174,13 +174,13 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
         }
     }
 
-    fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize]) -> Result<(Vec<BlstFr>, KzgPoly), String> {
+    fn zero_poly_via_multiplication(&self, domain_size: usize, idxs: &[usize], len_idxs: usize) -> Result<(Vec<BlstFr>, KzgPoly), String> {
         let mut zero_poly = KzgPoly::new(domain_size).unwrap();
         let mut zero_eval = vec![Fr::default(); domain_size];
         unsafe {
             match zero_polynomial_via_multiplication(zero_eval.as_mut_ptr(), &mut zero_poly, domain_size as u64,
                                                      idxs.as_ptr() as *const u64,
-                                                     idxs.len() as u64, self)
+                                                     len_idxs as u64, self)
             {
                 KzgRet::KzgOk => Ok((zero_eval, zero_poly)),
                 e => Err(format!("An error has occurred in ZeroPoly:zero_poly_via_multiplication ==> {:?}", e))
