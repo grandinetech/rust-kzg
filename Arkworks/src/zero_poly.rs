@@ -22,11 +22,11 @@ pub(crate) fn pad_poly(poly: &PolyData, new_length: usize) -> Result<Vec<BlstFr>
     Ok(out)
 }
 
-
 impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
     fn do_zero_poly_mul_partial(
         &self,
         indices: &[usize],
+        len_indices: usize,
         stride: usize,
     ) -> Result<PolyData, String> {
         if indices.is_empty(){
@@ -39,7 +39,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         poly.coeffs[0] =
             blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indices[0] * stride]).neg();
 
-        for (i, indice) in indices.iter().enumerate().skip(1) {
+        for (i, indice) in indices.iter().enumerate().take(len_indices).skip(1) {
             let neg_di =
                 blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indice * stride]).neg();
 
@@ -96,17 +96,18 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         &self,
         length: usize,
         missing_indices: &[usize],
+        len_indices: usize
     ) -> Result<(Vec<BlstFr>, PolyData), String> {
         let zero_eval: Vec<BlstFr>;
         let mut zero_poly: PolyData;
 
-        if missing_indices.is_empty() {
+        if len_indices == 0 {
             zero_eval = Vec::new();
             zero_poly = PolyData { coeffs: Vec::new() };
             return Ok((zero_eval, zero_poly));
         }
 
-        if missing_indices.len() >= length {
+        if len_indices >= length {
             return Err(String::from("Missing idxs greater than domain size"));
         } else if length > self.max_width as usize {
             return Err(String::from(
@@ -120,14 +121,14 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         let missing_per_partial = degree_of_partial - 1;
         let domain_stride = self.max_width as usize / length;
         let mut partial_count =
-            (missing_per_partial + missing_indices.len() - 1) / missing_per_partial;
+            (missing_per_partial + len_indices - 1) / missing_per_partial;
         let domain_ceiling = min(
             (partial_count * degree_of_partial).next_power_of_two(),
             length,
         );
 
-        if missing_indices.len() <= missing_per_partial {
-            zero_poly = self.do_zero_poly_mul_partial(missing_indices, domain_stride)?;
+        if len_indices <= missing_per_partial {
+            zero_poly = self.do_zero_poly_mul_partial(missing_indices, len_indices, domain_stride)?;
         } else {
             let mut work =
                 vec![BlstFr::zero(); (partial_count * degree_of_partial).next_power_of_two()];
@@ -136,13 +137,13 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
             let mut offset = 0;
             let mut out_offset = 0;
-            let max = missing_indices.len();
+            let max = len_indices;
 
             for _i in 0..partial_count {
                 let end = min(offset + missing_per_partial, max);
 
                 let mut partial =
-                    self.do_zero_poly_mul_partial(&missing_indices[offset..end], domain_stride)?;
+                    self.do_zero_poly_mul_partial(&missing_indices[offset..end], end - offset, domain_stride)?;
                 partial.coeffs = pad_poly(&partial, degree_of_partial)?;
                 work.splice(
                     out_offset..(out_offset + degree_of_partial),
@@ -155,7 +156,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             }
 
             partial_lens[partial_count - 1] =
-                1 + missing_indices.len() - (partial_count - 1) * missing_per_partial;
+                1 + len_indices - (partial_count - 1) * missing_per_partial;
 
             let reduction_factor = 4;
             while partial_count > 1 {
@@ -199,12 +200,6 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             Ordering::Greater => zero_poly.coeffs = zero_poly.coeffs[..length].to_vec(),
             Ordering::Equal => {}
         }
-
-        // if zero_poly.coeffs.len() < length {
-        //     zero_poly.coeffs = pad_poly(&zero_poly, length)?;
-        // } else if zero_poly.coeffs.len() > length {
-        //     zero_poly.coeffs = zero_poly.coeffs[..length].to_vec();
-        // }
 
         zero_eval = self.fft_fr(&zero_poly.coeffs, false)?;
 
