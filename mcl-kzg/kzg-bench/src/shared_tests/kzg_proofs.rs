@@ -22,9 +22,9 @@ pub mod kzg_proofs_tests {
     }
 
     #[test]
-    fn commit_to_too_long_poly_() {
+    fn commit_to_too_long_poly_returns_err_() {
         assert!(init(CurveType::BLS12_381));
-        commit_to_too_long_poly::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(&KZGSettings::generate_trusted_setup);
+        commit_to_too_long_poly_returns_err::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(&KZGSettings::generate_trusted_setup);
     }
 
     #[test]

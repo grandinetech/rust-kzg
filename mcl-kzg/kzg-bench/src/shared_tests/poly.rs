@@ -78,4 +78,16 @@ pub mod poly_tests {
         assert!(init(CurveType::BLS12_381));
         poly_div_random::<Fr, Polynomial>();
     }
+
+    #[test]
+    fn poly_div_long_test_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_div_long_test::<Fr, Polynomial>();
+    }
+
+    #[test]
+    fn poly_div_fast_test_() {
+        assert!(init(CurveType::BLS12_381));
+        poly_div_fast_test::<Fr, Polynomial>();
+    }
 }
