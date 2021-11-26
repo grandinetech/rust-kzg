@@ -66,13 +66,12 @@ impl Poly<Fr> for Polynomial {
 
 impl FFTSettingsPoly<Fr, Polynomial, FFTSettings> for FFTSettings {
     fn poly_mul_fft(a: &Polynomial, x: &Polynomial, len: usize, fs: Option<&FFTSettings>) -> Result<Polynomial, String> {
-        // Polynomial::mul(a, x, _fs, len)
         Polynomial::mul_fft(a, x, fs, len)
     }
 }
 
 impl PolyRecover<Fr, Polynomial, FFTSettings> for Polynomial {
     fn recover_poly_from_samples(samples: &[Option<Fr>], fs: &FFTSettings) -> Result<Self, String> {
-        Ok(Polynomial::recover_from_samples(fs, samples))
+        Polynomial::recover_from_samples(fs, samples)
     }
 }

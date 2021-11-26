@@ -7,7 +7,7 @@ use crate::fk20_fft::*;
 use crate::kzg_settings::KZGSettings;
 
 impl FFTSettings {
-    pub fn toeplitz_part_1(&self, x: &[G1]) -> Vec<G1> {
+    pub fn toeplitz_part_1(&self, x: &[G1]) -> Result<Vec<G1>, String> {
         let n = x.len();
 
         // extend x with zeroes
@@ -19,28 +19,28 @@ impl FFTSettings {
         self.fft_g1(&x_ext)
     }
     
-    pub fn toeplitz_part_2(&self, coeffs: &[Fr], x_ext_fft: &[G1]) -> Vec<G1> {
-        let toeplitz_coeffs_fft = self.fft(coeffs, false);
+    pub fn toeplitz_part_2(&self, coeffs: &[Fr], x_ext_fft: &[G1]) -> Result<Vec<G1>, String> {
+        let toeplitz_coeffs_fft = self.fft(coeffs, false).unwrap();
 
         let h_ext_fft: Vec<G1> = x_ext_fft.iter()
             .zip(toeplitz_coeffs_fft)
             .map(|(g1, coeff)| g1 * &coeff)
             .collect();
 
-        h_ext_fft
+        Ok(h_ext_fft)
     }
     
-    pub fn toeplitz_part_3(&self, h_ext_fft: &[G1]) -> Vec<G1> {
+    pub fn toeplitz_part_3(&self, h_ext_fft: &[G1]) -> Result<Vec<G1>, String> {
         let n2 = h_ext_fft.len();
         let n = n2 / 2;
 
-        let mut ret = self.fft_g1_inv(h_ext_fft);
+        let mut ret = self.fft_g1_inv(h_ext_fft).unwrap();
 
         for item in ret.iter_mut().take(n2).skip(n) {
             *item = G1::G1_IDENTITY;
         }
 
-        ret
+        Ok(ret)
     }
 }
 
@@ -70,12 +70,12 @@ impl FK20SingleMatrix {
         }
         x.push(G1::G1_IDENTITY);
 
-        let x_ext_fft = kzg_settings.fft_settings.toeplitz_part_1(&x);
+        let x_ext_fft = kzg_settings.fft_settings.toeplitz_part_1(&x).unwrap();
         let kzg_settings = kzg_settings.clone();
 
         Ok(Self {
             kzg_settings,
-            x_ext_fft,
+            x_ext_fft
         })
     }
 
@@ -115,10 +115,10 @@ impl FK20SingleMatrix {
         } 
 
         let toeplitz_coeffs = polynomial.toeplitz_coeffs_step_strided(0, 1);
-        let h_ext_fft = self.kzg_settings.fft_settings.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft);
-        let h = self.kzg_settings.fft_settings.toeplitz_part_3(&h_ext_fft);
+        let h_ext_fft = self.kzg_settings.fft_settings.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft).unwrap();
+        let h = self.kzg_settings.fft_settings.toeplitz_part_3(&h_ext_fft).unwrap();
 
-        Ok(self.kzg_settings.fft_settings.fft_g1(&h))
+        self.kzg_settings.fft_settings.fft_g1(&h)
     }
 }
 
@@ -163,7 +163,7 @@ impl FK20Matrix {
 
         let mut x_ext_fft_files: Vec<Vec<G1>> = vec![vec![]; chunk_len];
         for (i, item) in x_ext_fft_files.iter_mut().enumerate().take(chunk_len) {
-            *item = FK20Matrix::x_ext_fft_precompute(&kzg_settings.fft_settings, &kzg_settings.curve, n, k,chunk_len, i);
+            *item = FK20Matrix::x_ext_fft_precompute(&kzg_settings.fft_settings, &kzg_settings.curve, n, k,chunk_len, i).unwrap();
         }
 
         Ok(FK20Matrix {
@@ -174,7 +174,7 @@ impl FK20Matrix {
     }
 
     #[allow(clippy::many_single_char_names)]
-    fn x_ext_fft_precompute(fft_settings: &FFTSettings, curve: &Curve, n: usize, k: usize, chunk_len: usize, offset: usize) -> Vec<G1> {
+    fn x_ext_fft_precompute(fft_settings: &FFTSettings, curve: &Curve, n: usize, k: usize, chunk_len: usize, offset: usize) -> Result<Vec<G1>, String> {
         let mut x: Vec<G1> = vec![G1::default(); k];
         
         let mut start = 0;
@@ -238,7 +238,7 @@ impl FK20Matrix {
 
         for i in 0..self.chunk_len {
             let toeplitz_coeffs = reduced_poly.toeplitz_coeffs_step_strided(i, self.chunk_len);
-            let h_ext_fft_file = self.kzg_settings.fft_settings.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft_files[i]);
+            let h_ext_fft_file = self.kzg_settings.fft_settings.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft_files[i]).unwrap();
 
             for j in 0..k2 {
                 let tmp = &h_ext_fft[j] + &h_ext_fft_file[j];
@@ -248,12 +248,13 @@ impl FK20Matrix {
         
         let tail = iter::repeat(G1::zero()).take(k);
         let h: Vec<G1> = self.kzg_settings.fft_settings.toeplitz_part_3(&h_ext_fft)
+            .unwrap()
             .into_iter()
             .take(k)
             .chain(tail)
             .collect();
         
-        Ok(self.kzg_settings.fft_settings.fft_g1(&h))
+        self.kzg_settings.fft_settings.fft_g1(&h)
     }
 }
 

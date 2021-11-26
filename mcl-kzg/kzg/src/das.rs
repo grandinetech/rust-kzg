@@ -1,11 +1,19 @@
 use crate::data_types::fr::Fr;
 use crate::fk20_fft::*;
+use crate::utilities::is_power_of_2;
 
 impl FFTSettings {
-    pub fn das_fft_extension(&self, values: &mut Vec<Fr>) {
-        if (values.len() << 1) > self.max_width {
-            panic!("ftt_settings max width too small!");
+    pub fn das_fft_extension(&self, values: &mut Vec<Fr>) -> Result<(), String> {
+        if values.is_empty() {
+            return Err(String::from("Values cannot be empty"));
+        } 
+        if !is_power_of_2(values.len()) {
+            return Err(String::from("Value count must be a number of two"));
         }
+         if values.len() << 1 > self.max_width {
+            return Err(String::from("ftt settings max width too small!"));
+        }
+
         //larger stride if more roots fttsettings
         let stride = self.max_width / (values.len() * 2);
         self._das_fft_extension(values, stride);
@@ -16,6 +24,7 @@ impl FFTSettings {
         for item in values.iter_mut() {
             *item *= &inv_length;
         }
+        Ok(())
     }
 
     fn _das_fft_extension(&self, values: &mut [Fr], stride: usize) {

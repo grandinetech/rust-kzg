@@ -209,10 +209,12 @@ impl ops::Add<Fr> for Fr {
 pub struct Polynomial {
     pub coeffs: Vec<Fr>,
 }
+
 impl Polynomial {
     pub fn default() -> Self {
         Self { coeffs: vec![] }
     }
+
     pub fn new(size: usize) -> Self {
         Polynomial {
             coeffs: vec![Fr::default(); size],
@@ -222,6 +224,7 @@ impl Polynomial {
     pub fn from_fr(data: Vec<Fr>) -> Self {
         Self { coeffs: data }
     }
+
     pub fn from_i32(data: &[i32]) -> Self {
         Self {
             coeffs: data.iter().map(|x| Fr::from_int(*x)).collect(),
@@ -245,7 +248,7 @@ impl Polynomial {
         result
     }
 
-    pub fn gen_proof_at(&self, g1_points: &[G1], point: &Fr) -> G1 {
+    pub fn gen_proof_at(&self, g1_points: &[G1], point: &Fr) -> Result<G1, String> {
         let divisor = vec![point.get_neg(), Fr::one()];
         let quotient_poly = self.long_division(&divisor).unwrap();
 
@@ -258,7 +261,7 @@ impl Polynomial {
                 min(g1_points.len(), quotient_poly.order()),
             )
         };
-        result
+        Ok(result)
     }
 
     pub fn poly_quotient_length(dividend: &[Fr], divisor: &[Fr]) -> usize {
@@ -374,7 +377,11 @@ impl Polynomial {
         }
     }
 
-    pub fn commit(&self, g1_points: &[G1]) -> G1 {
+    pub fn commit(&self, g1_points: &[G1]) -> Result<G1, String> {
+        if self.order() > g1_points.len() {
+            return Err(String::from("Provided polynomial is longer than G1!"));
+        }
+
         let mut result = G1::default();
         unsafe {
             mclBnG1_mulVec(
@@ -384,7 +391,7 @@ impl Polynomial {
                 min(g1_points.len(), self.order()),
             )
         };
-        result
+        Ok(result)
     }
 
     pub fn random(order: usize) -> Polynomial {
@@ -462,13 +469,13 @@ impl Polynomial {
 
         let a_pad = self.pad(a_len, length);
         let b_pad = b.pad(b_len, length);
-        let a_fft = ft.fft(&a_pad.coeffs, false);
-        let b_fft = ft.fft(&b_pad.coeffs, false);
+        let a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
+        let b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
         let mut ab_fft = a_fft;
         for i in 0..length {
             ab_fft[i] = ab_fft[i] * b_fft[i];
         }
-        let ab = ft.fft(&ab_fft, true);
+        let ab = ft.fft(&ab_fft, true).unwrap();
 
         let mut ret_coeffs: Vec<Fr> = ab;
 

@@ -1,6 +1,6 @@
 use std::iter;
 use crate::data_types::{fr::*, g1::*, fp::*};
-use crate::utilities::next_pow_of_2;
+use crate::utilities::{is_power_of_2, next_pow_of_2};
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
 // PRIMITIVE_ROOT = 5
@@ -178,22 +178,26 @@ impl FFTSettings {
     /// # Safety
     ///
     /// use of mutable static is unsafe and requires unsafe function or block
-    pub fn new_custom_primitive_roots(max_scale: u8, root_strings: [&str; 32]) -> FFTSettings {
+    pub fn new_custom_primitive_roots(max_scale: u8, root_strings: [&str; 32]) -> Result<FFTSettings, String> {
         let root: Fr;
         unsafe {
             init_globals_custom(root_strings);
+            if max_scale as usize >= SCALE_2_ROOT_OF_UNITY.len() {
+                return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+            }
             root = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
         }
+        
         let root_z = expand_root_of_unity(&root);
         let mut root_z_rev = root_z.clone();
         root_z_rev.reverse();
 
-        FFTSettings {
+        Ok(FFTSettings {
             max_width: 1 << max_scale,
             root_of_unity: root,
             exp_roots_of_unity: root_z,
             exp_roots_of_unity_rev: root_z_rev
-        }
+        })
     }
 
     fn _fft(&self, values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
@@ -234,7 +238,6 @@ impl FFTSettings {
     }
 
     pub fn inplace_fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
-        
         if inv {
             let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter().copied().take(self.max_width).collect();
             let stride = self.max_width / values.len();
@@ -258,7 +261,10 @@ impl FFTSettings {
         }
     }
 
-    pub fn fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
+    pub fn fft(&self, values: &[Fr], inv: bool) -> Result<Vec<Fr>, String> {
+        if values.len() > self.max_width {
+            return Err(String::from("Supplied values is longer than the available max width"));
+        }
         let n = next_pow_of_2(values.len());
         
         let diff = n - values.len();
@@ -267,22 +273,16 @@ impl FFTSettings {
             .chain(tail)
             .collect();
 
-        self.inplace_fft(&values_copy, inv)
+        Ok(self.inplace_fft(&values_copy, inv))
     }
 
-    pub fn fft_from_slice(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
-        let n = next_pow_of_2(values.len());
-        
-        let diff = n - values.len();
-        let tail= iter::repeat(Fr::zero()).take(diff);
-        let values_copy: Vec<Fr> = values.iter().copied()
-            .chain(tail)
-            .collect();
-
-        self.inplace_fft(&values_copy, inv)
-    }
-
-    pub fn fft_g1(&self, values: &[G1]) -> Vec<G1> {
+    pub fn fft_g1(&self, values: &[G1]) -> Result<Vec<G1>, String> {
+        if values.len() > self.max_width {
+            return Err(String::from("length of values is longer than the available max width"));
+        } 
+        if !is_power_of_2(values.len()) {
+            return Err(String::from("length of values must be a power of two"));
+        }
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
         
@@ -295,11 +295,17 @@ impl FFTSettings {
 
         FFTSettings::_fft_g1(self, values, 0, 1, &root_z, stride, &mut out);
 
-        out
+        Ok(out)
     }
 
     //just copied of for fk20_matrix
-    pub fn fft_g1_inv(&self, values: &[G1]) -> Vec<G1> {
+    pub fn fft_g1_inv(&self, values: &[G1]) -> Result<Vec<G1>, String> {
+        if values.len() > self.max_width {
+            return Err(String::from("length of values is longer than the available max width"));
+        } 
+        if !is_power_of_2(values.len()) {
+            return Err(String::from("length of values must be a power of two"));
+        }
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
         
@@ -318,7 +324,7 @@ impl FFTSettings {
             *item = &*item * &inv_len;
         }
 
-        out
+        Ok(out)
     }
 
     fn _fft_g1(fft_settings: &FFTSettings, values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
