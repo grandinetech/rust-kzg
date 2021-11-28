@@ -18,4 +18,10 @@ pub mod fft_g1_tests {
         assert!(init(CurveType::BLS12_381));
         stride_fft::<Fr, G1, FFTSettings>(&make_data);
     }
+
+    #[test]
+    fn compare_sft_fft_() {
+        assert!(init(CurveType::BLS12_381));
+        compare_sft_fft::<Fr, G1, FFTSettings>(&FFTSettings::fft_g1_slow, &FFTSettings::fft_g1_fast, &make_data);
+    }
 }
