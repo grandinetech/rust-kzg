@@ -39,7 +39,7 @@ impl KZGSettings {
         let mut secret1: Vec<G1> = vec![];
         let mut secret2: Vec<G2> = vec![];
         for i in 0..length {
-            secret1.push(secret_g1[i].clone());
+            secret1.push(secret_g1[i]);
             secret2.push(secret_g2[i].clone());
         }
         let curve = Curve::new2(&secret1, &secret2, length);

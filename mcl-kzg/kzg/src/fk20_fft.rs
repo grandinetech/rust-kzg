@@ -95,7 +95,7 @@ pub fn make_data(n: usize) -> Vec<G1> {
     if n == 0 {
         return vec![];
     }
-    let mut data: Vec<G1> = vec![G1_GENERATOR.clone()];
+    let mut data: Vec<G1> = vec![G1_GENERATOR];
     for _ in 1..n {
         let g1 = data.last().unwrap() + &G1_GENERATOR.clone();
         data.push(g1);
@@ -349,13 +349,13 @@ impl FFTSettings {
         FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]);
 
         for i in 0..half {
-            let x = out[i].clone();
-            let y = out[i + half].clone();
+            let x = out[i];
+            let y = out[i + half];
             let root = &roots_of_unity[i * roots_stride];
 
-            let y_times_root = &y * root;
-            out[i] = &x + &y_times_root;
-            out[i + half] = &x - &y_times_root;
+            let y_times_root = y * root;
+            G1::add(&mut out[i], &x, &y_times_root);
+            out[i + half] = x - y_times_root;
         }
 
         
@@ -367,10 +367,10 @@ impl FFTSettings {
         for i in 0..l {
             // TODO: check this logic with a working brain, there could be a simpler way to write this;
             let mut v = &values[value_offset] * &roots_of_unity[0];
-            let mut last = v.clone();
+            let mut last = v;
             for j in 1..l {
                 v = &values[value_offset + j * value_stride] * &roots_of_unity[((i * j) % l) * roots_stride];
-                let temp = last.clone();
+                let temp = last;
                 last = &temp + &v;
             }
             out[i] = last;

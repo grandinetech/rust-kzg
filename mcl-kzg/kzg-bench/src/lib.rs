@@ -2,8 +2,6 @@
 #[cfg(test)]
 mod test_macro;
 #[cfg(test)]
-mod converter_tests;
-#[cfg(test)]
 mod fft_common;
 #[cfg(test)]
 mod poly;
