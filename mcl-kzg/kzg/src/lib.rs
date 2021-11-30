@@ -37,14 +37,6 @@ pub mod data_types {
     pub mod g2;
     pub mod gt;
 }
-pub mod data_converter {
-    pub mod fp2_converter;
-    pub mod fp_converter;
-    pub mod fr_converter;
-    pub mod g1_converter;
-    pub mod g2_converter;
-    pub mod gt_converter;
-}
 pub mod trait_implementations {
     pub mod das;
     pub mod fft_fr;
