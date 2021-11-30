@@ -26,8 +26,10 @@ pub fn bench_new_poly_div<TFr: Fr, TPoly: Poly<TFr>>(c: &mut Criterion) {
         }
 
         let id = format!("bench_new_poly_div scale: '{}'", scale);
-        c.bench_function(&id, |b| b.iter(|| {
-            dividend.div(&mut divisor).unwrap();
-        }));
+        c.bench_function(&id, |b| {
+            b.iter(|| {
+                dividend.div(&mut divisor).unwrap();
+            })
+        });
     }
 }

@@ -4,17 +4,12 @@ use kzg::FFTSettings as CommonFFTSettings;
 
 impl CommonFFTSettings<Fr> for FFTSettings {
     fn default() -> Self {
-        todo!()
+        FFTSettings::default()
     }
 
     fn new(scale: usize) -> Result<FFTSettings, String> {
         //currently alawys use PR 7 for shared tests
-        if scale >= SCALE_2_ROOT_OF_UNITY_PR7_STRINGS.len() {
-            return Err(String::from(
-                "Scale is expected to be within root of unity matrix row size",
-            ));
-        }
-        Ok(FFTSettings::new_custom_primitive_roots(scale as u8, SCALE_2_ROOT_OF_UNITY_PR7_STRINGS))
+        FFTSettings::new_custom_primitive_roots(scale as u8, SCALE_2_ROOT_OF_UNITY_PR7_STRINGS)
     }
 
     fn get_max_width(&self) -> usize {

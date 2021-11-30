@@ -61,14 +61,6 @@ impl ZkFFTSettings {
 
 impl FFTSettingsPoly<blsScalar, ZPoly, ZkFFTSettings> for ZkFFTSettings {
     fn poly_mul_fft(a: &ZPoly, b: &ZPoly, len: usize, _fs: Option<&ZkFFTSettings>) -> Result<ZPoly, String> {
-			
-		// for i in 0..3 {	
-			// println!("a(fftsettings_mul_fft) = {:?}", a.get_coeff_at(i));
-		// }
-		// for i in 0..3 {	
-			// println!("b(fftsettings_mul_fft) = {:?}", b.get_coeff_at(i));
-		// }
-		
 		poly_mul_fft(len, &a, &b)
 	}
 	
@@ -108,9 +100,7 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
 
         return Ok(ret);
 	
-	
 	}
-	
 	
 }
 

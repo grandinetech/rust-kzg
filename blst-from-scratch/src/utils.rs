@@ -1,6 +1,9 @@
-use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-use crate::kzg_types::{FsFr, FsG1, FsG2};
 use kzg::{Fr, G1Mul, G2Mul};
+
+use crate::consts::{G1_GENERATOR, G2_GENERATOR};
+use crate::types::fr::FsFr;
+use crate::types::g1::FsG1;
+use crate::types::g2::FsG2;
 
 pub fn is_power_of_two(x: usize) -> bool {
     (x != 0) && ((x & (x - 1)) == 0)
@@ -54,11 +57,19 @@ pub fn log2_u64(n: usize) -> usize {
 }
 
 pub fn min_u64(a: usize, b: usize) -> usize {
-    if a < b { a } else { b }
+    if a < b {
+        a
+    } else {
+        b
+    }
 }
 
 pub fn max_u64(a: usize, b: usize) -> usize {
-    if a < b { b } else { a }
+    if a < b {
+        b
+    } else {
+        a
+    }
 }
 
 pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Vec<FsG2>) {
@@ -78,3 +89,17 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Ve
     (s1, s2)
 }
 
+pub fn reverse_bit_order<T>(values: &mut Vec<T>)
+where
+    T: Clone,
+{
+    let unused_bit_len = values.len().leading_zeros() + 1;
+    for i in 0..values.len() - 1 {
+        let r = i.reverse_bits() >> unused_bit_len;
+        if r > i {
+            let tmp = values[r].clone();
+            values[r] = values[i].clone();
+            values[i] = tmp;
+        }
+    }
+}

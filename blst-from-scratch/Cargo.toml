@@ -15,6 +15,11 @@ kzg-bench = { path = "../kzg-bench" }
 [dev-dependencies]
 criterion = "0.3.5"
 
+
+[[bench]]
+name = "das"
+harness = false
+
 [[bench]]
 name = "fft"
 harness = false
@@ -29,4 +34,12 @@ harness = false
 
 [[bench]]
 name = "fk_20"
+harness = false
+
+[[bench]]
+name = "recover"
+harness = false
+
+[[bench]]
+name = "zero_poly"
 harness = false

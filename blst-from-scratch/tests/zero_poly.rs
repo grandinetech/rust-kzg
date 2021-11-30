@@ -1,10 +1,12 @@
 #[cfg(test)]
 pub mod tests {
+    use blst_from_scratch::types::fft_settings::FsFFTSettings;
+    use blst_from_scratch::types::fr::FsFr;
+    use blst_from_scratch::types::poly::FsPoly;
     use kzg_bench::tests::zero_poly::{
         check_test_data, reduce_partials_random, test_reduce_partials, zero_poly_252,
         zero_poly_all_but_one, zero_poly_known, zero_poly_random,
     };
-    use blst_from_scratch::kzg_types::{FsFFTSettings, FsFr, FsPoly};
 
     #[test]
     fn test_reduce_partials_() {

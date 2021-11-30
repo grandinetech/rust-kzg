@@ -1,21 +1,23 @@
-use kzg::{Fr};
-use rand::rngs::StdRng;
+use kzg::{Fr, Poly};
 use rand::{RngCore, SeedableRng};
-use blst_from_scratch::kzg_types::{PolyStupidInterface};
+use rand::rngs::StdRng;
 
-pub fn create_poly_of_length_ten<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
-    let poly = TPoly::new(10).unwrap();
+use blst_from_scratch::types::fr::FsFr;
+use blst_from_scratch::types::poly::FsPoly;
+
+pub fn create_poly_of_length_ten() {
+    let poly = FsPoly::new(10).unwrap();
     assert_eq!(poly.len(), 10);
 }
 
-pub fn poly_pad_works_rand<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_pad_works_rand() {
     let mut rng = StdRng::seed_from_u64(0);
 
     for _k in 0..256 {
         let poly_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
-        let mut poly = TPoly::new(poly_length).unwrap();
+        let mut poly = FsPoly::new(poly_length).unwrap();
         for i in 0..poly.len() {
-            poly.set_coeff_at(i, &TFr::rand());
+            poly.set_coeff_at(i, &FsFr::rand());
         }
 
         let padded_poly = poly.pad(1000);
@@ -28,45 +30,45 @@ pub fn poly_pad_works_rand<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     }
 }
 
-pub fn poly_eval_check<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_eval_check() {
     let n: usize = 10;
-    let mut poly = TPoly::new(n).unwrap();
+    let mut poly = FsPoly::new(n).unwrap();
     for i in 0..n {
-        let fr = TFr::from_u64((i + 1) as u64);
+        let fr = FsFr::from_u64((i + 1) as u64);
         poly.set_coeff_at(i, &fr);
     }
-    let expected = TFr::from_u64((n * (n + 1) / 2) as u64);
-    let actual = poly.eval(&TFr::one());
+    let expected = FsFr::from_u64((n * (n + 1) / 2) as u64);
+    let actual = poly.eval(&FsFr::one());
     assert!(expected.equals(&actual));
 }
 
-pub fn poly_eval_0_check<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_eval_0_check() {
     let n: usize = 7;
     let a: usize = 597;
-    let mut poly = TPoly::new(n).unwrap();
+    let mut poly = FsPoly::new(n).unwrap();
     for i in 0..n {
-        let fr = TFr::from_u64((i + a) as u64);
+        let fr = FsFr::from_u64((i + a) as u64);
         poly.set_coeff_at(i, &fr);
     }
-    let expected = TFr::from_u64(a as u64);
-    let actual = poly.eval(&TFr::zero());
+    let expected = FsFr::from_u64(a as u64);
+    let actual = poly.eval(&FsFr::zero());
     assert!(expected.equals(&actual));
 }
 
-pub fn poly_eval_nil_check<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_eval_nil_check() {
     let n: usize = 0;
-    let poly = TPoly::new(n).unwrap();
-    let actual = poly.eval(&TFr::one());
-    assert!(actual.equals(&TFr::zero()));
+    let poly = FsPoly::new(n).unwrap();
+    let actual = poly.eval(&FsFr::one());
+    assert!(actual.equals(&FsFr::zero()));
 }
 
-pub fn poly_inverse_simple_0<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_inverse_simple_0() {
     // 1 / (1 - x) = 1 + x + x^2 + ...
     let d: usize = 16;
-    let mut p = TPoly::new(2).unwrap();
-    p.set_coeff_at(0, &TFr::one());
-    p.set_coeff_at(1, &TFr::one());
-    p.set_coeff_at(1, &TFr::negate(&p.get_coeff_at(1)));
+    let mut p = FsPoly::new(2).unwrap();
+    p.set_coeff_at(0, &FsFr::one());
+    p.set_coeff_at(1, &FsFr::one());
+    p.set_coeff_at(1, &FsFr::negate(&p.get_coeff_at(1)));
     let result = p.inverse(d);
     assert!(result.is_ok());
     let q = result.unwrap();
@@ -75,19 +77,19 @@ pub fn poly_inverse_simple_0<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     }
 }
 
-pub fn poly_inverse_simple_1<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_inverse_simple_1() {
     // 1 / (1 + x) = 1 - x + x^2 - ...
     let d: usize = 16;
-    let mut p = TPoly::new(2).unwrap();
-    p.set_coeff_at(0, &TFr::one());
-    p.set_coeff_at(1, &TFr::one());
+    let mut p = FsPoly::new(2).unwrap();
+    p.set_coeff_at(0, &FsFr::one());
+    p.set_coeff_at(1, &FsFr::one());
     let result = p.inverse(d);
     assert!(result.is_ok());
     let q = result.unwrap();
     for i in 0..d {
         let mut tmp = q.get_coeff_at(i);
         if i & 1 != 0 {
-            tmp = TFr::negate(&mut tmp);
+            tmp = FsFr::negate(&tmp);
         }
         assert!(tmp.is_one());
     }
@@ -137,7 +139,16 @@ fn test_data(a: usize, b: usize) -> Vec<i64> {
     let test_7_2 = vec![0, 0, 1];
 
     //
-    let test_8_0 = vec![236, 945, -297698, 2489425, -18556462, -301325440, 2473062655, -20699887353];
+    let test_8_0 = vec![
+        236,
+        945,
+        -297698,
+        2489425,
+        -18556462,
+        -301325440,
+        2473062655,
+        -20699887353,
+    ];
     let test_8_1 = vec![4, 11, -5000, 45541, -454533];
     let test_8_2 = vec![59, 74, -878, 45541];
 
@@ -146,43 +157,40 @@ fn test_data(a: usize, b: usize) -> Vec<i64> {
     let test_9_1 = vec![-1, -1, -1];
     let test_9_2 = vec![-1, -1, -1];
 
-    let test_data =
-        [
-            [test_0_0, test_0_1, test_0_2],
-            [test_1_0, test_1_1, test_1_2],
-            [test_2_0, test_2_1, test_2_2],
-            [test_3_0, test_3_1, test_3_2],
-            [test_4_0, test_4_1, test_4_2],
-            [test_5_0, test_5_1, test_5_2],
-            [test_6_0, test_6_1, test_6_2],
-            [test_7_0, test_7_1, test_7_2],
-            [test_8_0, test_8_1, test_8_2],
-            [test_9_0, test_9_1, test_9_2],
-        ];
+    let test_data = [
+        [test_0_0, test_0_1, test_0_2],
+        [test_1_0, test_1_1, test_1_2],
+        [test_2_0, test_2_1, test_2_2],
+        [test_3_0, test_3_1, test_3_2],
+        [test_4_0, test_4_1, test_4_2],
+        [test_5_0, test_5_1, test_5_2],
+        [test_6_0, test_6_1, test_6_2],
+        [test_7_0, test_7_1, test_7_2],
+        [test_8_0, test_8_1, test_8_2],
+        [test_9_0, test_9_1, test_9_2],
+    ];
 
     test_data[a][b].clone()
 }
 
+fn new_test_poly(coeffs: &[i64]) -> FsPoly {
+    let mut p = FsPoly::new(0).unwrap();
 
-fn new_test_poly<TFr: Fr, TPoly: PolyStupidInterface<TFr>>(coeffs: &Vec<i64>, len: usize) -> TPoly {
-    let mut p = TPoly::new(len).unwrap();
-
-    for i in 0..len {
-        let coeff = coeffs[i];
+    for &coeff in coeffs.iter() {
         if coeff >= 0 {
-            let c = TFr::from_u64(coeff as u64);
-            p.set_coeff_at(i, &c);
+            let c = FsFr::from_u64(coeff as u64);
+            p.coeffs.push(c);
         } else {
-            let c = TFr::from_u64((-coeff) as u64);
+            let c = FsFr::from_u64((-coeff) as u64);
             let negc = c.negate();
-            p.set_coeff_at(i, &negc);
+            p.coeffs.push(negc);
         }
     }
 
     p
 }
 
-pub fn poly_div_long_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_div_long_test() {
     for i in 0..9 {
         // Tests are designed to throw an exception when last member is 0
         if i == 6 {
@@ -192,9 +200,9 @@ pub fn poly_div_long_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let mut dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
-        let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
-        let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
+        let mut dividend: FsPoly = new_test_poly(&divided_data);
+        let divisor: FsPoly = new_test_poly(&divisor_data);
+        let expected: FsPoly = new_test_poly(&expected_data);
 
         let actual = dividend.long_div(&divisor).unwrap();
 
@@ -205,7 +213,7 @@ pub fn poly_div_long_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     }
 }
 
-pub fn poly_div_fast_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_div_fast_test() {
     for i in 0..9 {
         // Tests are designed to throw an exception when last member is 0
         if i == 6 {
@@ -215,9 +223,9 @@ pub fn poly_div_fast_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
         let divided_data = test_data(i, 0);
         let divisor_data = test_data(i, 1);
         let expected_data = test_data(i, 2);
-        let mut dividend: TPoly = new_test_poly(&divided_data, divided_data.len());
-        let divisor: TPoly = new_test_poly(&divisor_data, divisor_data.len());
-        let expected: TPoly = new_test_poly(&expected_data, expected_data.len());
+        let mut dividend: FsPoly = new_test_poly(&divided_data);
+        let divisor: FsPoly = new_test_poly(&divisor_data);
+        let expected: FsPoly = new_test_poly(&expected_data);
 
         let actual = dividend.fast_div(&divisor).unwrap();
 
@@ -228,27 +236,27 @@ pub fn poly_div_fast_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     }
 }
 
-pub fn test_poly_div_by_zero<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
-    let mut dividend = TPoly::new(2).unwrap();
+pub fn test_poly_div_by_zero() {
+    let mut dividend = FsPoly::new(2).unwrap();
 
-    dividend.set_coeff_at(0, &TFr::from_u64(1));
-    dividend.set_coeff_at(1, &TFr::from_u64(1));
+    dividend.set_coeff_at(0, &FsFr::from_u64(1));
+    dividend.set_coeff_at(1, &FsFr::from_u64(1));
 
-    let divisor = TPoly::new(0).unwrap();
+    let divisor = FsPoly::new(0).unwrap();
 
     let dummy = dividend.div(&divisor);
     assert!(dummy.is_err());
 }
 
-pub fn poly_mul_direct_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_mul_direct_test() {
     for i in 0..9 {
         let coeffs1 = test_data(i, 2);
         let coeffs2 = test_data(i, 1);
         let coeffs3 = test_data(i, 0);
 
-        let mut multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
-        let mut multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
-        let expected: TPoly = new_test_poly(&coeffs3, coeffs3.len());
+        let mut multiplicand: FsPoly = new_test_poly(&coeffs1);
+        let mut multiplier: FsPoly = new_test_poly(&coeffs2);
+        let expected: FsPoly = new_test_poly(&coeffs3);
 
         let result0 = multiplicand.mul_direct(&multiplier, coeffs3.len()).unwrap();
         for j in 0..result0.len() {
@@ -263,7 +271,7 @@ pub fn poly_mul_direct_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     }
 }
 
-pub fn poly_mul_fft_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_mul_fft_test() {
     for i in 0..9 {
         // Ignore 0 multiplication case because its incorrect when multiplied backwards
         if i == 2 {
@@ -274,9 +282,9 @@ pub fn poly_mul_fft_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
         let coeffs2 = test_data(i, 1);
         let coeffs3 = test_data(i, 0);
 
-        let multiplicand: TPoly = new_test_poly(&coeffs1, coeffs1.len());
-        let multiplier: TPoly = new_test_poly(&coeffs2, coeffs2.len());
-        let expected: TPoly = new_test_poly(&coeffs3, coeffs3.len());
+        let multiplicand: FsPoly = new_test_poly(&coeffs1);
+        let multiplier: FsPoly = new_test_poly(&coeffs2);
+        let expected: FsPoly = new_test_poly(&coeffs3);
 
         let result0 = multiplicand.mul_fft(&multiplier, coeffs3.len()).unwrap();
         for j in 0..result0.len() {
@@ -291,20 +299,20 @@ pub fn poly_mul_fft_test<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     }
 }
 
-pub fn poly_mul_random<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_mul_random() {
     let mut rng = StdRng::seed_from_u64(0);
 
     for _k in 0..256 {
         let multiplicand_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
-        let mut multiplicand = TPoly::new(multiplicand_length).unwrap();
+        let mut multiplicand = FsPoly::new(multiplicand_length).unwrap();
         for i in 0..multiplicand.len() {
-            multiplicand.set_coeff_at(i, &TFr::rand());
+            multiplicand.set_coeff_at(i, &FsFr::rand());
         }
 
         let multiplier_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
-        let mut multiplier = TPoly::new(multiplier_length).unwrap();
+        let mut multiplier = FsPoly::new(multiplier_length).unwrap();
         for i in 0..multiplier.len() {
-            multiplier.set_coeff_at(i, &TFr::rand());
+            multiplier.set_coeff_at(i, &FsFr::rand());
         }
 
         if multiplicand.get_coeff_at(multiplicand.len() - 1).is_zero() {
@@ -326,21 +334,21 @@ pub fn poly_mul_random<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
     }
 }
 
-pub fn poly_div_random<TFr: Fr, TPoly: PolyStupidInterface<TFr>>() {
+pub fn poly_div_random() {
     let mut rng = StdRng::seed_from_u64(0);
     for _k in 0..256 {
         let dividend_length: usize = (2 + (rng.next_u64() % 1000)) as usize;
         let divisor_length: usize = 1 + ((rng.next_u64() as usize) % dividend_length);
 
-        let mut dividend = TPoly::new(dividend_length).unwrap();
-        let mut divisor = TPoly::new(divisor_length).unwrap();
+        let mut dividend = FsPoly::new(dividend_length).unwrap();
+        let mut divisor = FsPoly::new(divisor_length).unwrap();
 
         for i in 0..dividend_length {
-            dividend.set_coeff_at(i, &TFr::rand());
+            dividend.set_coeff_at(i, &FsFr::rand());
         }
 
         for i in 0..divisor_length {
-            divisor.set_coeff_at(i, &TFr::rand());
+            divisor.set_coeff_at(i, &FsFr::rand());
         }
 
         //Ensure that the polynomials' orders corresponds to their lengths
