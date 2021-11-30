@@ -41,7 +41,6 @@ use crate::kzg_proofs::{
 	check_proof_single as check_single,
 	commit_to_poly as poly_commit,
 	compute_proof_single as open_single,
-	eval_poly,
 	new_kzg_settings,
 	KZGSettings as LKZGSettings,
 	default_kzg,
@@ -243,19 +242,19 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
     }
 
     fn compute_proof_single(&self, p: &ZPoly, x: &blsScalar) -> Result<ZkG1Projective, String> {
-    	Ok(open_single(p, x, self))
+    	open_single(p, x, self)
     }
 
     fn check_proof_single(&self, com: &ZkG1Projective, proof: &ZkG1Projective, x: &blsScalar, value: &blsScalar) -> Result<bool, String> {
-    	Ok(check_single(com, proof, x, value, self))
+    	check_single(com, proof, x, value, self)
     }
 
     fn compute_proof_multi(&self, p: &ZPoly, x: &blsScalar, n: usize) -> Result<ZkG1Projective, String> {
-    	Ok(open_multi(p, x, n, self))
+    	open_multi(p, x, n, self)
     }
 
     fn check_proof_multi(&self, com: &ZkG1Projective, proof: &ZkG1Projective, x: &blsScalar, values: &Vec<blsScalar>, n: usize) -> Result<bool, String> {
-    	Ok(check_multi(com, proof, x, values, n, self))
+    	check_multi(com, proof, x, values, n, self)
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> blsScalar {
