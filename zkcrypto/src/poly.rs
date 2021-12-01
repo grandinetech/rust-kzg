@@ -126,14 +126,15 @@ impl Poly<blsScalar> for ZPoly {
 		if self.coeffs.len() == 0 {
             return blsScalar::zero();
         } else if x.is_zero() {
-            return self.coeffs[0].clone();
+            return self.coeffs[0];
         }
 
-        let mut ret = self.coeffs[self.coeffs.len() - 1].clone();
+        let mut out = self.coeffs[self.coeffs.len() - 1];
         let mut i = self.coeffs.len() - 2;
+		
         loop {
-            let temp = ret.mul(&x);
-            ret = temp.add(&self.coeffs[i]);
+            let temp = out.mul(&x);
+            out = temp.add(&self.coeffs[i]);
 
             if i == 0 {
                 break;
@@ -141,7 +142,7 @@ impl Poly<blsScalar> for ZPoly {
             i -= 1;
         }
 
-        return ret; 
+        return out; 
 	
 	}
 
