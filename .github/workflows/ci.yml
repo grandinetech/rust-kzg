@@ -59,6 +59,12 @@ jobs:
         command: bench
         args: --manifest-path zkcrypto/Cargo.toml
 
+    - name: "[zkcrypto] Clippy"
+      uses: actions-rs/cargo@v1
+      with:
+       command: clippy
+       args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features --
+
     - name: "[zkcrypto] Formatting"
       uses: actions-rs/cargo@v1
       with:
