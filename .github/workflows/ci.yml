@@ -138,29 +138,36 @@ jobs:
 
 # 5th team ###########################################################
 
-    - name: "Run mcl-kzg10-rust Clippy"
+    - name: "[mcl-kzg10-rust] Build mcl for Linux"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd mcl-kzg/kzg && bash build.sh
+
+    - name: "[mcl-kzg10-rust] Run Clippy"
+      if: matrix.os == 'ubuntu-latest'
       uses: actions-rs/cargo@v1
       with:
         command: clippy
         args: --manifest-path mcl-kzg/kzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: "Run mcl-kzg10-rust bench Clippy"
+    - name: "[mcl-kzg10-rust] Run bench Clippy"
+      if: matrix.os == 'ubuntu-latest'
       uses: actions-rs/cargo@v1
       with:
         command: clippy
         args: --manifest-path mcl-kzg/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: Run mcl-kzg10-rust tests
+    - name: "[mcl-kzg10-rust] Run tests"
       if: matrix.os == 'ubuntu-latest'
       run: |
         cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
 
-    - name: Run mcl-kzg10-rust benches
+    - name: "[mcl-kzg10-rust] Run benches"
       if: matrix.os == 'ubuntu-latest'
       run: |
         cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
 
-    - name: Run mcl-kzg10-rust fmt
+    - name: "[mcl-kzg10-rust] Run fmt"
       if: matrix.os == 'ubuntu-latest'
       run: |
         cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml

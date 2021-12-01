@@ -4,6 +4,6 @@ use kzg::FFTFr;
 
 impl FFTFr<Fr> for FFTSettings {
     fn fft_fr(&self, data: &[Fr], inverse: bool) -> Result<Vec<Fr>, String>{
-        Ok(FFTSettings::fft_from_slice(self, data, inverse))
+        FFTSettings::fft(self, data, inverse)
     }
 }

@@ -1,7 +1,6 @@
 use criterion::Criterion;
-use kzg::{
-    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2,
-};
+use rand::{RngCore, thread_rng};
+use kzg::{FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2};
 
 pub const SECRET: [u8; 32usize] = [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
@@ -34,8 +33,9 @@ pub fn fk_single_da<
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
-    for scale in 5..12 {
-        let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    for scale in 5..9 {
+        let mut rng = thread_rng();
+        let coeffs: Vec<u64> = vec![rng.next_u64(); 1 << (scale - 1)];
         let poly_len: usize = coeffs.len();
         let n_len: usize = 1 << scale;
         let secrets_len = n_len + 1;
@@ -73,8 +73,9 @@ pub fn fk_single_da_optimized<
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
-    for scale in 5..12 {
-        let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    for scale in 5..9 {
+        let mut rng = thread_rng();
+        let coeffs: Vec<u64> = vec![rng.next_u64(); 1 << (scale - 1)];
         let poly_len: usize = coeffs.len();
         let n_len: usize = 1 << scale;
         let secrets_len = n_len + 1;
@@ -117,7 +118,7 @@ fn fk_multi_da<
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
     optimized: bool,
 ) {
-    for i in 5..8 {
+    for i in 5..9 {
         let n = 1 << i;
         let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
@@ -164,7 +165,7 @@ fn fk_multi_da<
         ks.commit_to_poly(&p).unwrap();
 
         // Compute the multi proofs, assuming that the polynomial will be extended with zeros
-        let id = format!("{} scale: '{}'", test_name, width);
+        let id = format!("{} scale: '{}'", test_name, i);
 
         if optimized == true {
             c.bench_function(&id, |b| {

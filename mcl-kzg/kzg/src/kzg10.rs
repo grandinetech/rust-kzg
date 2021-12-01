@@ -1,9 +1,7 @@
-use crate::data_converter::fr_converter::*;
 use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::fk20_fft::{FFTSettings, G1_GENERATOR};
 use crate::mcl_methods::{final_exp, mclBn_FrEvaluatePolynomial, pairing};
 use crate::utilities::{log_2, next_pow_of_2};
-use crate::BlstFr;
 use std::{cmp::min, iter, ops};
 
 const G1_GEN_X: &str = "3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507";
@@ -209,10 +207,12 @@ impl ops::Add<Fr> for Fr {
 pub struct Polynomial {
     pub coeffs: Vec<Fr>,
 }
+
 impl Polynomial {
     pub fn default() -> Self {
         Self { coeffs: vec![] }
     }
+
     pub fn new(size: usize) -> Self {
         Polynomial {
             coeffs: vec![Fr::default(); size],
@@ -222,6 +222,7 @@ impl Polynomial {
     pub fn from_fr(data: Vec<Fr>) -> Self {
         Self { coeffs: data }
     }
+
     pub fn from_i32(data: &[i32]) -> Self {
         Self {
             coeffs: data.iter().map(|x| Fr::from_int(*x)).collect(),
@@ -232,11 +233,6 @@ impl Polynomial {
         self.coeffs.len()
     }
 
-    pub fn eval_at_blst(&self, point: &BlstFr) -> BlstFr {
-        let point_from_blst = fr_from_blst(*point);
-        fr_to_blst(self.eval_at(&point_from_blst))
-    }
-
     pub fn eval_at(&self, point: &Fr) -> Fr {
         let mut result = Fr::default();
         unsafe {
@@ -245,7 +241,7 @@ impl Polynomial {
         result
     }
 
-    pub fn gen_proof_at(&self, g1_points: &[G1], point: &Fr) -> G1 {
+    pub fn gen_proof_at(&self, g1_points: &[G1], point: &Fr) -> Result<G1, String> {
         let divisor = vec![point.get_neg(), Fr::one()];
         let quotient_poly = self.long_division(&divisor).unwrap();
 
@@ -258,7 +254,7 @@ impl Polynomial {
                 min(g1_points.len(), quotient_poly.order()),
             )
         };
-        result
+        Ok(result)
     }
 
     pub fn poly_quotient_length(dividend: &[Fr], divisor: &[Fr]) -> usize {
@@ -374,7 +370,11 @@ impl Polynomial {
         }
     }
 
-    pub fn commit(&self, g1_points: &[G1]) -> G1 {
+    pub fn commit(&self, g1_points: &[G1]) -> Result<G1, String> {
+        if self.order() > g1_points.len() {
+            return Err(String::from("Provided polynomial is longer than G1!"));
+        }
+
         let mut result = G1::default();
         unsafe {
             mclBnG1_mulVec(
@@ -384,7 +384,7 @@ impl Polynomial {
                 min(g1_points.len(), self.order()),
             )
         };
-        result
+        Ok(result)
     }
 
     pub fn random(order: usize) -> Polynomial {
@@ -462,13 +462,13 @@ impl Polynomial {
 
         let a_pad = self.pad(a_len, length);
         let b_pad = b.pad(b_len, length);
-        let a_fft = ft.fft(&a_pad.coeffs, false);
-        let b_fft = ft.fft(&b_pad.coeffs, false);
+        let a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
+        let b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
         let mut ab_fft = a_fft;
         for i in 0..length {
             ab_fft[i] = ab_fft[i] * b_fft[i];
         }
-        let ab = ft.fft(&ab_fft, true);
+        let ab = ft.fft(&ab_fft, true).unwrap();
 
         let mut ret_coeffs: Vec<Fr> = ab;
 
@@ -624,7 +624,7 @@ impl Curve {
         let mut g1_points: Vec<G1> = vec![];
         let mut g2_points: Vec<G2> = vec![];
         for i in 0..order {
-            g1_points.push(secret_g1[i].clone());
+            g1_points.push(secret_g1[i]);
             g2_points.push(secret_g2[i].clone());
         }
 
@@ -639,7 +639,7 @@ impl Curve {
 
     pub fn is_proof_valid(&self, commitment: &G1, proof: &G1, x: &Fr, y: &Fr) -> bool {
         let secret_minus_x = &self.g2_points[1] - &(&self.g2_gen * x); // g2 * x to get x on g2
-        let commitment_minus_y = commitment - &(&self.g1_gen * y);
+        let commitment_minus_y = commitment - &(self.g1_gen * y);
 
         Curve::verify_pairing(&commitment_minus_y, &self.g2_gen, proof, &secret_minus_x)
     }

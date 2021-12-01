@@ -1,6 +1,6 @@
 use std::iter;
 use crate::data_types::{fr::*, g1::*, fp::*};
-use crate::utilities::next_pow_of_2;
+use crate::utilities::{is_power_of_2, next_pow_of_2};
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
 // PRIMITIVE_ROOT = 5
@@ -95,7 +95,7 @@ pub fn make_data(n: usize) -> Vec<G1> {
     if n == 0 {
         return vec![];
     }
-    let mut data: Vec<G1> = vec![G1_GENERATOR.clone()];
+    let mut data: Vec<G1> = vec![G1_GENERATOR];
     for _ in 1..n {
         let g1 = data.last().unwrap() + &G1_GENERATOR.clone();
         data.push(g1);
@@ -178,36 +178,40 @@ impl FFTSettings {
     /// # Safety
     ///
     /// use of mutable static is unsafe and requires unsafe function or block
-    pub fn new_custom_primitive_roots(max_scale: u8, root_strings: [&str; 32]) -> FFTSettings {
+    pub fn new_custom_primitive_roots(max_scale: u8, root_strings: [&str; 32]) -> Result<FFTSettings, String> {
         let root: Fr;
         unsafe {
             init_globals_custom(root_strings);
+            if max_scale as usize >= SCALE_2_ROOT_OF_UNITY.len() {
+                return Err(String::from("Scale is expected to be within root of unity matrix row size"));
+            }
             root = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
         }
+        
         let root_z = expand_root_of_unity(&root);
         let mut root_z_rev = root_z.clone();
         root_z_rev.reverse();
 
-        FFTSettings {
+        Ok(FFTSettings {
             max_width: 1 << max_scale,
             root_of_unity: root,
             exp_roots_of_unity: root_z,
             exp_roots_of_unity_rev: root_z_rev
-        }
+        })
     }
 
-    fn _fft(&self, values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
+    fn _fft(values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
         // check if correct value is checked in case of a bug!
         if out.len() <= 4 { // if the value count is small, run the unoptimized version instead. // TODO tune threshold.
-            return self._simple_ftt(values, offset, stride, roots_of_unity, root_stride, out);
+            return FFTSettings::_simple_ftt(values, offset, stride, roots_of_unity, root_stride, out);
         }
 
         let half = out.len() >> 1;
 
         // left
-        self._fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
+        FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
         // right
-        self._fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
+        FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
 
         for i in 0..half {
             let root = &roots_of_unity[i * root_stride];
@@ -217,7 +221,7 @@ impl FFTSettings {
         }
     }
 
-    fn _simple_ftt(&self, values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
+    fn _simple_ftt(values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
         let out_len = out.len();
         let init_last = values[offset] * roots_of_unity[0];
 
@@ -234,13 +238,12 @@ impl FFTSettings {
     }
 
     pub fn inplace_fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
-        
         if inv {
             let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter().copied().take(self.max_width).collect();
             let stride = self.max_width / values.len();
 
             let mut out = vec![Fr::default(); values.len()];
-            self._fft(values, 0, 1, &root_z, stride, &mut out);
+            FFTSettings::_fft(values, 0, 1, &root_z, stride, &mut out);
 
             let inv_len = Fr::from_int(values.len() as i32).get_inv();
             for item in out.iter_mut() {
@@ -252,13 +255,16 @@ impl FFTSettings {
             let stride = self.max_width / values.len();
 
             let mut out = vec![Fr::default(); values.len()];
-            self._fft(values, 0, 1, &root_z, stride, &mut out);
+            FFTSettings::_fft(values, 0, 1, &root_z, stride, &mut out);
 
             out
         }
     }
 
-    pub fn fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
+    pub fn fft(&self, values: &[Fr], inv: bool) -> Result<Vec<Fr>, String> {
+        if values.len() > self.max_width {
+            return Err(String::from("Supplied values is longer than the available max width"));
+        }
         let n = next_pow_of_2(values.len());
         
         let diff = n - values.len();
@@ -267,22 +273,24 @@ impl FFTSettings {
             .chain(tail)
             .collect();
 
-        self.inplace_fft(&values_copy, inv)
+        Ok(self.inplace_fft(&values_copy, inv))
     }
 
-    pub fn fft_from_slice(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
-        let n = next_pow_of_2(values.len());
-        
-        let diff = n - values.len();
-        let tail= iter::repeat(Fr::zero()).take(diff);
-        let values_copy: Vec<Fr> = values.iter().copied()
-            .chain(tail)
-            .collect();
-
-        self.inplace_fft(&values_copy, inv)
+    pub fn fft_fr_slow(result: &mut [Fr], values: &[Fr], stride: usize, passed_roots_of_unity: &[Fr], root_stride: usize) {
+        FFTSettings::_simple_ftt(values, 0, stride, passed_roots_of_unity, root_stride, result);
     }
 
-    pub fn fft_g1(&self, values: &[G1]) -> Vec<G1> {
+    pub fn fft_fr_fast(result: &mut [Fr], values: &[Fr], stride: usize, passed_roots_of_unity: &[Fr], root_stride: usize) {
+        FFTSettings::_fft(values, 0, stride, passed_roots_of_unity, root_stride, result);
+    }
+
+    pub fn fft_g1(&self, values: &[G1]) -> Result<Vec<G1>, String> {
+        if values.len() > self.max_width {
+            return Err(String::from("length of values is longer than the available max width"));
+        } 
+        if !is_power_of_2(values.len()) {
+            return Err(String::from("length of values must be a power of two"));
+        }
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
         
@@ -293,13 +301,19 @@ impl FFTSettings {
         let stride = self.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FFTSettings::_fft_g1(self, values, 0, 1, &root_z, stride, &mut out);
+        FFTSettings::_fft_g1(values, 0, 1, &root_z, stride, &mut out);
 
-        out
+        Ok(out)
     }
 
     //just copied of for fk20_matrix
-    pub fn fft_g1_inv(&self, values: &[G1]) -> Vec<G1> {
+    pub fn fft_g1_inv(&self, values: &[G1]) -> Result<Vec<G1>, String> {
+        if values.len() > self.max_width {
+            return Err(String::from("length of values is longer than the available max width"));
+        } 
+        if !is_power_of_2(values.len()) {
+            return Err(String::from("length of values must be a power of two"));
+        }
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
         
@@ -310,7 +324,7 @@ impl FFTSettings {
         let stride = self.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FFTSettings::_fft_g1(self, values, 0, 1, &root_z, stride, &mut out);
+        FFTSettings::_fft_g1(values, 0, 1, &root_z, stride, &mut out);
         
         let inv_len = Fr::from_int(values.len() as i32).get_inv();
         for item in out.iter_mut() {
@@ -318,10 +332,10 @@ impl FFTSettings {
             *item = &*item * &inv_len;
         }
 
-        out
+        Ok(out)
     }
 
-    fn _fft_g1(fft_settings: &FFTSettings, values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
+    fn _fft_g1(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         //TODO: fine tune for opt, maybe resolve number dinamically based on experiments
         if out.len() <= 4 {
             return FFTSettings::_fft_g1_simple(values, value_offset, value_stride, roots_of_unity, roots_stride, out);
@@ -330,18 +344,18 @@ impl FFTSettings {
         let half = out.len() >> 1;
 
         // left
-        FFTSettings::_fft_g1(fft_settings, values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[..half]);
+        FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[..half]);
         // right
-        FFTSettings::_fft_g1(fft_settings, values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]);
+        FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]);
 
         for i in 0..half {
-            let x = out[i].clone();
-            let y = out[i + half].clone();
+            let x = out[i];
+            let y = out[i + half];
             let root = &roots_of_unity[i * roots_stride];
 
-            let y_times_root = &y * root;
-            out[i] = &x + &y_times_root;
-            out[i + half] = &x - &y_times_root;
+            let y_times_root = y * root;
+            G1::add(&mut out[i], &x, &y_times_root);
+            out[i + half] = x - y_times_root;
         }
 
         
@@ -353,13 +367,21 @@ impl FFTSettings {
         for i in 0..l {
             // TODO: check this logic with a working brain, there could be a simpler way to write this;
             let mut v = &values[value_offset] * &roots_of_unity[0];
-            let mut last = v.clone();
+            let mut last = v;
             for j in 1..l {
                 v = &values[value_offset + j * value_stride] * &roots_of_unity[((i * j) % l) * roots_stride];
-                let temp = last.clone();
+                let temp = last;
                 last = &temp + &v;
             }
             out[i] = last;
         }
+    }
+
+    pub fn fft_g1_slow(out: &mut [G1], values: &[G1], stride: usize, passed_roots_of_unity: &[Fr], root_stride: usize, _n: usize) {
+        FFTSettings::_fft_g1_simple(values, 0, stride, passed_roots_of_unity, root_stride, out);
+    }
+
+    pub fn fft_g1_fast(out: &mut [G1], values: &[G1], stride: usize, passed_roots_of_unity: &[Fr], root_stride: usize, _n: usize) {
+        FFTSettings::_fft_g1(values, 0, stride, passed_roots_of_unity, root_stride, out);
     }
 }

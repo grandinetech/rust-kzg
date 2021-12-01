@@ -74,18 +74,18 @@ impl FFTSettings {
 
         // Do the last partial first: it is no longer than the others and the padding can remain in place for the rest.
         let mut partial_padded = pad_poly(len_out, &partials[partials.len() - 1]).unwrap();
-        let mut eval_result = self.fft(&partial_padded, false);
+        let mut eval_result = self.fft(&partial_padded, false).unwrap();
 
         for item in partials.iter().take(partials.len() - 1) {
             partial_padded = pad_poly(len_out, item).unwrap();
-            let evaluated_partial = self.fft(&partial_padded, false);
+            let evaluated_partial = self.fft(&partial_padded, false).unwrap();
 
             for j in 0..len_out {
                 eval_result[j] = eval_result[j] * evaluated_partial[j];
             }
         }
 
-        let coeffs = self.fft(&eval_result, true);
+        let coeffs = self.fft(&eval_result, true).unwrap();
         let ret = Polynomial::from_fr(coeffs[..(out_degree + 1)].to_vec());
 
         Ok(ret)
@@ -207,7 +207,7 @@ impl FFTSettings {
         }
 
         zero_poly.pad_coeffs_mut(zero_poly.order(), length);
-        zero_eval = self.fft(&zero_poly.coeffs, false);
+        zero_eval = self.fft(&zero_poly.coeffs, false).unwrap();
 
         Ok((zero_eval, zero_poly))
     }
