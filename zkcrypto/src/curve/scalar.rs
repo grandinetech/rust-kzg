@@ -529,6 +529,7 @@ impl Scalar {
     }
 
     /// Computes the square root of this element, if it exists.
+	#[allow(clippy::many_single_char_names)]
     pub fn sqrt(&self) -> CtOption<Self> {
         // Tonelli-Shank's algorithm for q mod 16 = 1
         // https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
@@ -710,7 +711,7 @@ impl Scalar {
 
         CtOption::new(t0, !self.ct_eq(&Self::zero()))
     }
-
+	#[allow(clippy::too_many_arguments)]
     #[inline(always)]
     const fn montgomery_reduce(
         r0: u64,
@@ -1036,6 +1037,7 @@ fn test_debug() {
 }
 
 #[test]
+#[allow(clippy::eq_op)]
 fn test_equality() {
     assert_eq!(Scalar::zero(), Scalar::zero());
     assert_eq!(Scalar::one(), Scalar::one());

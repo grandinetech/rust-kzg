@@ -743,7 +743,7 @@ impl<'a, 'b> Mul<&'b Scalar> for &'a G1Affine {
 impl_binops_additive!(G1Projective, G1Projective);
 impl_binops_multiplicative!(G1Projective, Scalar);
 impl_binops_multiplicative_mixed!(G1Affine, Scalar, G1Projective);
-
+#[allow(clippy::let_and_return)]
 #[inline(always)]
 fn mul_by_3b(a: Fp) -> Fp {
     let a = a + a; // 2
@@ -864,6 +864,7 @@ impl G1Projective {
     }
 
     /// Adds this point to another point in the affine model.
+	#[allow(clippy::needless_borrow)]
     pub fn add_mixed(&self, rhs: &G1Affine) -> G1Projective {
         // Algorithm 8, https://eprint.iacr.org/2015/1060.pdf
 
@@ -955,6 +956,7 @@ impl G1Projective {
 
     /// Converts a batch of `G1Projective` elements into `G1Affine` elements. This
     /// function will panic if `p.len() != q.len()`.
+	#[allow(clippy::needless_borrow)]
     pub fn batch_normalize(p: &[Self], q: &mut [G1Affine]) {
         assert_eq!(p.len(), q.len());
 
@@ -1824,6 +1826,7 @@ fn test_clear_cofactor() {
 }
 
 #[test]
+#[allow(clippy::many_single_char_names)]
 fn test_batch_normalize() {
     let a = G1Projective::generator().double();
     let b = a.double();

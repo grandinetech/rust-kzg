@@ -112,7 +112,7 @@ impl ZkFFTSettings {
         let max_width: usize = 1 << max_scale;
 
         Ok(ZkFFTSettings {
-            max_width: max_width,
+            max_width,
             ..FFTSettings::default()
         })
     }

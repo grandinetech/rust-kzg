@@ -557,7 +557,6 @@ impl Fp {
 
         Fp([r0, r1, r2, r3, r4, r5])
     }
-
     #[inline]
     pub const fn add(&self, rhs: &Fp) -> Fp {
         let (d0, carry) = adc(self.0[0], rhs.0[0], 0);
@@ -601,7 +600,7 @@ impl Fp {
     pub const fn sub(&self, rhs: &Fp) -> Fp {
         (&rhs.neg()).add(self)
     }
-
+	#[allow(clippy::too_many_arguments)]
     #[inline(always)]
     pub(crate) const fn montgomery_reduce(
         t0: u64,
@@ -795,6 +794,7 @@ fn test_conditional_selection() {
 }
 
 #[test]
+#[allow(clippy::needless_borrow)]
 fn test_equality() {
     fn is_equal(a: &Fp, b: &Fp) -> bool {
         let eq = a == b;

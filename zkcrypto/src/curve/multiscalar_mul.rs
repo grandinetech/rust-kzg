@@ -199,12 +199,12 @@ pub fn msm_variable_base(points: &[G1Affine], scalars: &[Scalar]) -> G1Projectiv
     let fr_one = Scalar::one();
 
     let zero = G1Projective::identity();
-    let window_starts: Vec<_> = (0..num_bits).step_by(c).collect();
+    let window_starts: Vec<_> = (0..num_bits).step_by(c);
 
     #[cfg(feature = "parallel")]
     let window_starts_iter = window_starts.into_par_iter();
     #[cfg(not(feature = "parallel"))]
-    let window_starts_iter = window_starts.into_iter();
+    let window_starts_iter = window_starts.into_iter().collect();
 
     // Each window is of size `c`.
     // We divide up the bits 0..num_bits into windows of size `c`, and
@@ -246,7 +246,7 @@ pub fn msm_variable_base(points: &[G1Affine], scalars: &[Scalar]) -> G1Projectiv
 
             let mut running_sum = G1Projective::identity();
             for b in buckets.into_iter().rev() {
-                running_sum = running_sum + b;
+                running_sum += b;
                 res += &running_sum;
             }
 
