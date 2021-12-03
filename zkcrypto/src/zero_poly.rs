@@ -2,23 +2,23 @@ use crate::fftsettings::ZkFFTSettings;
 use crate::poly::{ZPoly, pad};
 use crate::zkfr::blsScalar;
 use crate::utils::is_power_of_two;
-use kzg::{FFTFr, Fr, ZeroPoly, Poly};
+use kzg::{FFTFr, ZeroPoly};
 use std::cmp::min;
 use std::ops::Neg;
 
-pub(crate) fn pad_poly(poly: &ZPoly, new_length: usize) -> Result<Vec<blsScalar>, String> {
-    if new_length < poly.coeffs.len() {
-        return Err(String::from("Wanted length less than current"));
-    }
+// pub(crate) fn pad_poly(poly: &ZPoly, new_length: usize) -> Result<Vec<blsScalar>, String> {
+    // if new_length < poly.coeffs.len() {
+        // return Err(String::from("Wanted length less than current"));
+    // }
 
-    let mut out = poly.coeffs.to_vec();
+    // let mut out = poly.coeffs.to_vec();
 
-    for _i in poly.coeffs.len()..new_length {
-        out.push(blsScalar::zero())
-    }
+    // for _i in poly.coeffs.len()..new_length {
+        // out.push(blsScalar::zero())
+    // }
 
-    Ok(out)
-}
+    // Ok(out)
+// }
 
 impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
     fn do_zero_poly_mul_partial(&self, indices: &[usize], stride: usize) 

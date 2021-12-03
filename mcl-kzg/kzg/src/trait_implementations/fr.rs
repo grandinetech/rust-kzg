@@ -7,7 +7,7 @@ impl CommonFr for Fr {
     }
 
     fn null() -> Self {
-        Fr::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+        Fr::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX / 3])
     }
 
     fn zero() -> Self {
@@ -45,7 +45,8 @@ impl CommonFr for Fr {
     }
 
     fn is_null(&self) -> bool {
-        todo!()
+        let temp = Fr::null();
+        self.equals(&temp)
     }
 
     fn is_zero(&self) -> bool {
