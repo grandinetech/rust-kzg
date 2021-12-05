@@ -1,4 +1,6 @@
 use kzg::{FFTFr, Fr, G1Mul, Poly, FFTG1, G1};
+use std::sync::Arc;
+use std::thread;
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -27,8 +29,33 @@ impl FsFFTSettings {
         let coeffs_fft = self.fft_fr(&poly.coeffs, false).unwrap();
         let mut ret = Vec::new();
 
+        // TODO: can parallelize if G1mul is a long operation
+        // for i in 0..poly.len() {
+        //     ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
+        // }
+
+        // let output = Arc::new([FsG1::default(); x_ext_fft.len()]);
+        // let x_ext_fft_arc = Arc::new(x_ext_fft);
+        // let coeffs_fft_arc = Arc::new(coeffs_fft);
+        let mut join_handles = Vec::new();
+
+        // let input = x_ext_fft_arc.clone();
+        // let input_coeffs_fft = coeffs_fft_arc.clone();
+
         for i in 0..poly.len() {
-            ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
+            let g1_cl = x_ext_fft[i].clone();
+            let coeffs_fft_cl = coeffs_fft[i].clone();
+            join_handles.push(thread::spawn(move || g1_cl.mul(&coeffs_fft_cl) ));
+        }
+
+        for jh in join_handles {
+            match jh.join() {
+                Ok(ans) =>  { ret.push(ans); }
+                Err(_)  =>  { }
+            }
+            // if let Some(ans) = jh.join() {
+            //     ret.push(ans);
+            // }
         }
 
         ret
@@ -51,14 +78,17 @@ impl FsPoly {
         let k = n / stride;
         let k2 = k * 2;
 
-        let mut ret = FsPoly { coeffs: Vec::new() };
+        let mut ret = FsPoly::default();
         ret.coeffs.push(self.coeffs[n - 1 - offset]);
 
-        let mut i = 1;
-        while i < k + 2 && i < k2 {
+        let num_of_zeroes;
+        if k + 2 < k2 {
+            num_of_zeroes = k + 2 - 1;
+        } else {
+            num_of_zeroes = k2 - 1;
+        }
+        for _ in 0..num_of_zeroes {
             ret.coeffs.push(FsFr::zero());
-
-            i += 1;
         }
 
         let mut i = k + 2;

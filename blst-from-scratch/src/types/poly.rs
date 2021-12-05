@@ -43,14 +43,14 @@ impl Poly<FsFr> for FsPoly {
         if self.coeffs.is_empty() {
             return FsFr::zero();
         } else if x.is_zero() {
-            return self.coeffs[0];
+            return self.get_coeff_at(0);
         }
 
-        let mut ret = self.coeffs[self.coeffs.len() - 1];
-        let mut i = self.coeffs.len() - 2;
+        let mut ret = self.get_coeff_at(self.len() - 1);
+        let mut i = self.len() - 2;
         loop {
             let temp = ret.mul(x);
-            ret = temp.add(&self.coeffs[i]);
+            ret = temp.add(&self.get_coeff_at(i));
 
             if i == 0 {
                 break;
@@ -66,7 +66,7 @@ impl Poly<FsFr> for FsPoly {
         let inv_factor = scale_factor.inverse();
 
         let mut factor_power = FsFr::one();
-        for i in 0..self.coeffs.len() {
+        for i in 0..self.len() {
             factor_power = factor_power.mul(&inv_factor);
             self.coeffs[i] = self.coeffs[i].mul(&factor_power);
         }
@@ -76,7 +76,7 @@ impl Poly<FsFr> for FsPoly {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
 
         let mut factor_power = FsFr::one();
-        for i in 0..self.coeffs.len() {
+        for i in 0..self.len() {
             factor_power = factor_power.mul(&scale_factor);
             self.coeffs[i] = self.coeffs[i].mul(&factor_power);
         }
@@ -98,7 +98,7 @@ impl Poly<FsFr> for FsPoly {
             coeffs: vec![FsFr::zero(); output_len],
         };
         // If the input polynomial is constant, the remainder of the series is zero
-        if self.coeffs.len() == 1 {
+        if self.len() == 1 {
             ret.coeffs[0] = self.coeffs[0].eucl_inverse();
 
             return Ok(ret);
@@ -159,14 +159,12 @@ impl Poly<FsFr> for FsPoly {
     fn long_div(&mut self, divisor: &Self) -> Result<Self, String> {
         if divisor.coeffs.is_empty() {
             return Err(String::from("Can't divide by zero"));
-        } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
+        } else if divisor.coeffs[divisor.len() - 1].is_zero() {
             return Err(String::from("Highest coefficient must be non-zero"));
         }
 
         let out_length = self.poly_quotient_length(divisor);
-        let mut out: FsPoly = FsPoly {
-            coeffs: vec![FsFr::default(); out_length],
-        };
+        let mut out = FsPoly::new(out_length).unwrap();
         if out_length == 0 {
             return Ok(out);
         }
@@ -178,10 +176,10 @@ impl Poly<FsFr> for FsPoly {
         let mut a = self.coeffs.clone();
 
         while diff > 0 {
-            out.coeffs[diff] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
+            out.set_coeff_at(diff, &a[a_pos].div(&divisor.get_coeff_at(b_pos)).unwrap());
 
             for i in 0..(b_pos + 1) {
-                let tmp = out.coeffs[diff].mul(&divisor.coeffs[i]);
+                let tmp = out.get_coeff_at(diff).mul(&divisor.coeffs[i]);// TODO: if mul and sub take much time, they can both or either be parallelized
                 let tmp = a[diff + i].sub(&tmp);
                 a[diff + i] = tmp;
             }
@@ -190,7 +188,7 @@ impl Poly<FsFr> for FsPoly {
             a_pos -= 1;
         }
 
-        out.coeffs[0] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
+        out.set_coeff_at(0, &a[a_pos].div(&divisor.get_coeff_at(b_pos)).unwrap());
 
         Ok(out)
     }
@@ -198,7 +196,7 @@ impl Poly<FsFr> for FsPoly {
     fn fast_div(&mut self, divisor: &Self) -> Result<Self, String> {
         if divisor.coeffs.is_empty() {
             return Err(String::from("Cant divide by zero"));
-        } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
+        } else if divisor.coeffs[divisor.len() - 1].is_zero() {
             return Err(String::from("Highest coefficient must be non-zero"));
         }
 
@@ -207,16 +205,17 @@ impl Poly<FsFr> for FsPoly {
 
         // If the divisor is larger than the dividend, the result is zero-length
         if n > m {
-            return Ok(FsPoly { coeffs: Vec::new() });
+            return Ok(FsPoly::new(0).unwrap());
         }
 
         // Special case for divisor.length == 1 (it's a constant)
-        if divisor.len() == 1 {
-            let mut out = FsPoly {
-                coeffs: vec![FsFr::zero(); self.len()],
-            };
-            for i in 0..out.len() {
-                out.coeffs[i] = self.coeffs[i].div(&divisor.coeffs[0]).unwrap();
+        if n == 0 {
+            let mut out = FsPoly::default();
+
+            // TODO: if Fr div is a long operation, parallelize it, since the previous iteration does not depend on the next one
+            // note: create FsPoly::new(self.len()) first so indexes can be filled up independently
+            for i in 0..self.len() {
+                out.coeffs.push(self.get_coeff_at(i).div(&divisor.get_coeff_at(0)).unwrap());
             }
             return Ok(out);
         }
@@ -269,7 +268,7 @@ impl FsPoly {
     pub fn _poly_norm(&self) -> Self {
         let mut ret = self.clone();
 
-        let mut temp_len: usize = ret.coeffs.len();
+        let mut temp_len: usize = ret.len();
         while temp_len > 0 && ret.coeffs[temp_len - 1].is_zero() {
             temp_len -= 1;
         }
@@ -304,11 +303,9 @@ impl FsPoly {
     }
 
     pub fn flip(&self) -> Result<FsPoly, String> {
-        let mut ret = FsPoly {
-            coeffs: vec![FsFr::default(); self.len()],
-        };
+        let mut ret = FsPoly::default();
         for i in 0..self.len() {
-            ret.coeffs[i] = self.coeffs[self.coeffs.len() - i - 1]
+            ret.coeffs.push(self.coeffs[self.len() - i - 1]);
         }
 
         Ok(ret)
@@ -325,6 +322,8 @@ impl FsPoly {
         // Convert Poly to values
         let a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
         let b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
+
+        // TODO: can parallelize a_fft actions from b_fft but fft_fr must be very expensive for this to be useful
 
         // Multiply two value ranges
         let mut ab_fft = vec![FsFr::default(); length];
@@ -393,19 +392,21 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         // Construct E * Z_r,I: the loop makes the evaluation polynomial
         for i in 0..len_samples {
             if samples[i].is_none() {
-                poly_evaluations_with_zero.coeffs.push(FsFr::zero());
+                poly_evaluations_with_zero
+                    .coeffs
+                    .push(FsFr::zero());
             } else {
                 poly_evaluations_with_zero
                     .coeffs
                     .push(samples[i].unwrap().mul(&zero_eval[i]));
-            }
+            } // TODO: possible to parallelize but only worth if Fr.mul() is expensive
         }
         // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
         let mut poly_with_zero: FsPoly = FsPoly::default();
         poly_with_zero.coeffs = fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap();
 
         // x -> k * x
-        let len_zero_poly = zero_poly.coeffs.len();
+        let len_zero_poly = zero_poly.len();
         scale_poly(&mut poly_with_zero.coeffs, len_samples);
         scale_poly(&mut zero_poly.coeffs, len_zero_poly);
 
@@ -413,19 +414,21 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         let scaled_poly_with_zero = poly_with_zero.coeffs;
 
         // Q2 = Z_r,I(k * x)
-        let scaled_zero_poly = zero_poly.coeffs;
+        let scaled_zero_poly = zero_poly.coeffs; // could remove this as its only used once
 
         // Polynomial division by convolution: Q3 = Q1 / Q2
         let eval_scaled_poly_with_zero: Vec<FsFr> =
             fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
         let eval_scaled_zero_poly: Vec<FsFr> = fs.fft_fr(&scaled_zero_poly, false).unwrap();
 
+        // TODO: parallelize &eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i])
         let mut eval_scaled_reconstructed_poly = FsPoly::default();
         eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
         for i in 0..len_samples {
-            eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i]
+            eval_scaled_reconstructed_poly.set_coeff_at(i, &eval_scaled_poly_with_zero[i]
                 .div(&eval_scaled_zero_poly[i])
-                .unwrap();
+                .unwrap()
+            );
         }
 
         // The result of the division is D(k * x):
