@@ -1,5 +1,3 @@
-use std::thread;
-
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr, Poly, PolyRecover, ZeroPoly};
 
 use crate::consts::SCALE_FACTOR;
@@ -426,29 +424,12 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         // TODO: parallelize &eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i])
         let mut eval_scaled_reconstructed_poly = FsPoly::default();
         eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
-        let mut join_handles = Vec::new();
-
         for i in 0..len_samples {
-            let cl1 = eval_scaled_poly_with_zero[i];
-            let cl2 = eval_scaled_zero_poly[i];
-            join_handles.push(thread::spawn(move || {
-                (i, cl1.div(&cl2).unwrap())
-            }));
+            eval_scaled_reconstructed_poly.set_coeff_at(i, &eval_scaled_poly_with_zero[i]
+                .div(&eval_scaled_zero_poly[i])
+                .unwrap()
+            );
         }
-
-        for jh in join_handles {
-            match jh.join() {
-                Ok((i, ans)) =>  { eval_scaled_reconstructed_poly.set_coeff_at(i, &ans); }
-                Err(_)  =>  { }
-            }
-        }
-
-        // for i in 0..len_samples {
-        //     eval_scaled_reconstructed_poly.set_coeff_at(i, &eval_scaled_poly_with_zero[i]
-        //         .div(&eval_scaled_zero_poly[i])
-        //         .unwrap()
-        //     );
-        // }
 
         // The result of the division is D(k * x):
         let mut scaled_reconstructed_poly: Vec<FsFr> = fs

@@ -11,22 +11,42 @@ const SCALE_FACTOR: u64 = 5;
 pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
     let inv_factor = FsFr::inverse(&scale_factor);
-    let mut factor_power = FsFr::one();
+    // let mut factor_power = FsFr::one();
+
+    // for i in 1..len_p {
+    //     factor_power = factor_power.mul(&inv_factor);
+    //     p[i] = p[i].mul(&factor_power);
+    // }
+
+    let mut factor_powers = Vec::new();
+    factor_powers.push(FsFr::one());
+    for i in 1..len_p {
+        factor_powers.push(factor_powers[i-1].mul(&inv_factor));
+    }
 
     for i in 1..len_p {
-        factor_power = factor_power.mul(&inv_factor);
-        p[i] = p[i].mul(&factor_power);
+        p[i] = p[i].mul(&factor_powers[i]);
     }
 }
 
 #[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-    let mut factor_power = FsFr::one();
+    // let mut factor_power = FsFr::one();
+
+    // for i in 1..len_p {
+    //     factor_power = factor_power.mul(&scale_factor);
+    //     p[i] = p[i].mul(&factor_power);
+    // }
+
+    let mut factor_powers = Vec::new();
+    factor_powers.push(FsFr::one());
+    for i in 1..len_p {
+        factor_powers.push(factor_powers[i-1].mul(&scale_factor));
+    }
 
     for i in 1..len_p {
-        factor_power = factor_power.mul(&scale_factor);
-        p[i] = p[i].mul(&factor_power);
+        p[i] = p[i].mul(&factor_powers[i]);
     }
 }
 
