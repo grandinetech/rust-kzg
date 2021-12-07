@@ -17,8 +17,16 @@ impl FFTSettings {
                 ab[i] = tmp1;
             }
 
-            self.das_fft_extension_stride(&mut ab[..halfhalf], stride * 2);
-            self.das_fft_extension_stride(&mut ab[halfhalf..], stride * 2);
+            if ab.len() > 32{
+                let (mut lo, mut hi) = ab.split_at_mut(halfhalf);
+                rayon::join(
+                    || self.das_fft_extension_stride(&mut hi, stride * 2),
+                    || self.das_fft_extension_stride(&mut lo, stride * 2),
+                );
+            }else{
+                self.das_fft_extension_stride(&mut ab[..halfhalf], stride * 2); 
+                self.das_fft_extension_stride(&mut ab[halfhalf..], stride * 2);
+            }
 
             for i in 0..halfhalf{
                 let x = ab[i];
