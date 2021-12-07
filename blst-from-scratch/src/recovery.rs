@@ -6,47 +6,47 @@ use crate::types::poly::FsPoly;
 use crate::utils::is_power_of_two;
 
 const SCALE_FACTOR: u64 = 5;
+static mut INVERSE_FACTORS: Vec<FsFr> = Vec::new();
+static mut UNSCALE_FACTOR_POWERS: Vec<FsFr> = Vec::new();
 
 #[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
     let inv_factor = FsFr::inverse(&scale_factor);
-    // let mut factor_power = FsFr::one();
 
-    // for i in 1..len_p {
-    //     factor_power = factor_power.mul(&inv_factor);
-    //     p[i] = p[i].mul(&factor_power);
-    // }
+    unsafe {
+        if INVERSE_FACTORS.len() < len_p {
+            if INVERSE_FACTORS.is_empty() {
+                INVERSE_FACTORS.push(FsFr::one());
+            }
+            for i in (INVERSE_FACTORS.len())..len_p {
+                INVERSE_FACTORS.push(INVERSE_FACTORS[i-1].mul(&inv_factor));
+            }
+        }
 
-    let mut factor_powers = Vec::new();
-    factor_powers.push(FsFr::one());
-    for i in 1..len_p {
-        factor_powers.push(factor_powers[i-1].mul(&inv_factor));
-    }
-
-    for i in 1..len_p {
-        p[i] = p[i].mul(&factor_powers[i]);
+        for i in 1..len_p {
+            p[i] = p[i].mul(&INVERSE_FACTORS[i]);
+        }
     }
 }
 
 #[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
     let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-    // let mut factor_power = FsFr::one();
 
-    // for i in 1..len_p {
-    //     factor_power = factor_power.mul(&scale_factor);
-    //     p[i] = p[i].mul(&factor_power);
-    // }
+    unsafe {
+        if UNSCALE_FACTOR_POWERS.len() < len_p {
+            if UNSCALE_FACTOR_POWERS.is_empty() {
+                UNSCALE_FACTOR_POWERS.push(FsFr::one());
+            }
+            for i in (UNSCALE_FACTOR_POWERS.len())..len_p {
+                UNSCALE_FACTOR_POWERS.push(UNSCALE_FACTOR_POWERS[i-1].mul(&scale_factor));
+            }
+        }
 
-    let mut factor_powers = Vec::new();
-    factor_powers.push(FsFr::one());
-    for i in 1..len_p {
-        factor_powers.push(factor_powers[i-1].mul(&scale_factor));
-    }
-
-    for i in 1..len_p {
-        p[i] = p[i].mul(&factor_powers[i]);
+        for i in 1..len_p {
+            p[i] = p[i].mul(&UNSCALE_FACTOR_POWERS[i]);
+        }
     }
 }
 
