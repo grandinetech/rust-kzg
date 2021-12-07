@@ -82,6 +82,17 @@ pub fn make_data(data: usize) -> Vec<ArkG1> {
 
 impl FFTG1<ArkG1> for FFTSettings {
     fn fft_g1(&self, data: &[ArkG1], inverse: bool) -> Result<Vec<ArkG1>, String> {
+        
+        if data.len() > self.max_width {
+            return Err(String::from(
+                "data length is longer than allowed max width",
+            ));
+        }
+        if !data.len().is_power_of_two() {
+            return Err(String::from("data length is not power of 2"));
+        }
+
+
         let n = data.len();
 
         let stride: usize = self.max_width / data.len();

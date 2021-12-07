@@ -46,9 +46,15 @@ impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings
     fn new(ks: &KZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;
 
-        assert!(n2 <= ks.fs.max_width);
-        assert!(n2.is_power_of_two());
-        assert!(n2 >= 2);
+        if n2 > ks.fs.max_width{
+            return Err(String::from("n2 must be equal or less than kzg settings max width"));
+        }
+        if !n2.is_power_of_two(){
+            return Err(String::from("n2 must be power of 2"));
+        }
+        if n2 < 2{
+            return Err(String::from("n2 must be equal or greater than 2"));
+        }
 
         let mut x = Vec::new();
         for i in 0..(n-1) {
@@ -68,8 +74,12 @@ impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings
         let n = p.len();
         let n2 = n * 2;
 
-        assert!(n2 <= self.ks.fs.max_width);
-        assert!(n.is_power_of_two());
+        if n2 > self.ks.fs.max_width{
+            return Err(String::from("n2 must be equal or less than kzg settings max width"));
+        }
+        if !n.is_power_of_two(){
+            return Err(String::from("n2 must be power of 2"));
+        }
 
         let mut out = fk20_single_da_opt(p, self).unwrap();
         reverse_bit_order(&mut out);
@@ -92,12 +102,25 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
     }
 
     fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
-        assert!(n2 <= ks.fs.max_width);
-        assert!(n2.is_power_of_two());
-        assert!(n2 >= 2);
-        assert!(chunk_len <= n2 / 2);
-        assert!(chunk_len.is_power_of_two());
-        assert!(chunk_len > 0);
+
+        if n2 > ks.fs.max_width{
+            return Err(String::from("n2 must be equal or less than kzg settings max width"));
+        }
+        if !n2.is_power_of_two(){
+            return Err(String::from("n2 must be power of 2"));
+        }
+        if n2 < 2{
+            return Err(String::from("n2 must be equal or greater than 2"));
+        }
+        if chunk_len > n2 / 2{
+            return Err(String::from("chunk_len must be equal or less than n2/2"));
+        }
+        if !chunk_len.is_power_of_two(){
+            return Err(String::from("chunk_len must be power of 2"));
+        }
+        if chunk_len == 0{
+            return Err(String::from("chunk_len must be greater than 0"));
+        }
 
         let n = n2 / 2;
         let k = n / chunk_len;
@@ -138,8 +161,12 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
         let n = p.len();
         let n2 = n * 2;
 
-        assert!(n2 <= self.ks.fs.max_width);
-        assert!(n.is_power_of_two());
+        if n2 > self.ks.fs.max_width{
+            return Err(String::from("n2 must be equal or less than kzg settings max width"));
+        }
+        if !n.is_power_of_two(){
+            return Err(String::from("n2 must be power of 2"));
+        }
 
         let mut out = fk20_multi_da_opt(p, self).unwrap();
         // TRY(reverse_bit_order(out, sizeof out[0], n2 / fk->chunk_len));
@@ -157,8 +184,12 @@ pub fn fk20_single_da_opt(p: &PolyData, fk: &KzgFK20SingleSettings) -> Result<Ve
     let n = p.len();
     let n2 = n * 2;
 
-    assert!(n2 <= fk.ks.fs.max_width);
-    assert!(n.is_power_of_two());
+    if n2 > fk.ks.fs.max_width{
+        return Err(String::from("n2 must be equal or less than kzg settings max width"));
+    }
+    if !n.is_power_of_two(){
+        return Err(String::from("n2 must be power of 2"));
+    }
 
     let outlen = 2*p.len();
     let toeplitz_coeffs = toeplitz_coeffs_step(p, outlen).unwrap();
@@ -174,8 +205,12 @@ pub fn fk20_multi_da_opt(p: &PolyData, fk: &KzgFK20MultiSettings) -> Result<Vec<
     let n = p.len();
     let n2 = n * 2;
 
-    assert!(n2 <= fk.ks.fs.max_width);
-    assert!(n.is_power_of_two());
+    if n2 > fk.ks.fs.max_width{
+        return Err(String::from("n2 must be equal or less than kzg settings max width"));
+    }
+    if !n.is_power_of_two(){
+        return Err(String::from("n2 must be power of 2"));
+    }
 
     let n = n2 / 2;
     let k = n / fk.chunk_len;
@@ -214,12 +249,17 @@ pub fn toeplitz_coeffs_step(p: &PolyData, outlen: usize) -> Result<PolyData, Str
 pub fn toeplitz_coeffs_stride(poly: &PolyData, offset: usize, stride: usize, outlen: usize) -> Result<PolyData, String>{
     let n = poly.len();
 
-    assert!(stride > 0);
+    if stride == 0{
+        return Err(String::from("stride must be greater than 0"));
+    }
 
     let k = n / stride;
     let k2 = k * 2;
 
-    assert!(outlen >= k2);
+    if outlen < k2{
+        return Err(String::from("outlen must be equal or greater than k2"));
+    }
+
     let mut out = PolyData::new(outlen).unwrap();
     out.set_coeff_at(0, &poly.coeffs[n - 1 - offset]);
     let mut i = 1;
