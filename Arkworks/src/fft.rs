@@ -208,6 +208,15 @@ impl FFTFr<BlstFr> for FFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
         let width;
 
+        if data.len() > self.max_width {
+            return Err(String::from(
+                "data length is longer than allowed max width",
+            ));
+        }
+        if !data.len().is_power_of_two() {
+            return Err(String::from("data length is not power of 2"));
+        }
+
         if self.max_width > data.len() {
             width = data.len()
         } else {
