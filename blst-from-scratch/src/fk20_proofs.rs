@@ -1,6 +1,4 @@
 use kzg::{FFTFr, Fr, G1Mul, Poly, FFTG1, G1};
-use std::sync::Arc;
-use std::thread;
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -12,50 +10,21 @@ impl FsFFTSettings {
         let n = x.len();
         let n2 = n * 2;
         let mut x_ext = Vec::new();
-
         for &x_n in x[..n].iter() {
             x_ext.push(x_n);
         }
-
         for _ in n..n2 {
             x_ext.push(FsG1::identity());
         }
-
         self.fft_g1(&x_ext, false).unwrap()
     }
-
     /// poly and x_ext_fft should be of same length
     pub fn toeplitz_part_2(&self, poly: &FsPoly, x_ext_fft: &[FsG1]) -> Vec<FsG1> {
         let coeffs_fft = self.fft_fr(&poly.coeffs, false).unwrap();
         let mut ret = Vec::new();
 
-        // TODO: can parallelize if G1mul is a long operation
-        // for i in 0..poly.len() {
-        //     ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
-        // }
-
-        // let output = Arc::new([FsG1::default(); x_ext_fft.len()]);
-        // let x_ext_fft_arc = Arc::new(x_ext_fft);
-        // let coeffs_fft_arc = Arc::new(coeffs_fft);
-        let mut join_handles = Vec::new();
-
-        // let input = x_ext_fft_arc.clone();
-        // let input_coeffs_fft = coeffs_fft_arc.clone();
-
         for i in 0..poly.len() {
-            let g1_cl = x_ext_fft[i].clone();
-            let coeffs_fft_cl = coeffs_fft[i].clone();
-            join_handles.push(thread::spawn(move || g1_cl.mul(&coeffs_fft_cl) ));
-        }
-
-        for jh in join_handles {
-            match jh.join() {
-                Ok(ans) =>  { ret.push(ans); }
-                Err(_)  =>  { }
-            }
-            // if let Some(ans) = jh.join() {
-            //     ret.push(ans);
-            // }
+            ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
         }
 
         ret
@@ -64,10 +33,8 @@ impl FsFFTSettings {
     pub fn toeplitz_part_3(&self, h_ext_fft: &[FsG1]) -> Vec<FsG1> {
         let n2 = h_ext_fft.len();
         let n = n2 / 2;
-
         let mut ret = self.fft_g1(h_ext_fft, true).unwrap();
         ret[n..n2].copy_from_slice(&vec![FsG1::identity(); n2 - n]);
-
         ret
     }
 }
@@ -92,6 +59,7 @@ impl FsPoly {
         }
 
         let mut i = k + 2;
+
         let mut j = 2 * stride - offset - 1;
         while i < k2 {
             ret.coeffs.push(self.coeffs[j]);
@@ -99,9 +67,8 @@ impl FsPoly {
             i += 1;
             j += stride;
         }
-
         ret
-    }
+}
 
     pub fn toeplitz_coeffs_step(&self) -> FsPoly {
         self.toeplitz_coeffs_stride(0, 1)
