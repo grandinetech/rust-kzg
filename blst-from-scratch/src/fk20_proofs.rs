@@ -13,11 +13,14 @@ impl FsFFTSettings {
         for &x_n in x[..n].iter() {
             x_ext.push(x_n);
         }
+
         for _ in n..n2 {
             x_ext.push(FsG1::identity());
         }
+
         self.fft_g1(&x_ext, false).unwrap()
     }
+
     /// poly and x_ext_fft should be of same length
     pub fn toeplitz_part_2(&self, poly: &FsPoly, x_ext_fft: &[FsG1]) -> Vec<FsG1> {
         let coeffs_fft = self.fft_fr(&poly.coeffs, false).unwrap();
@@ -35,6 +38,7 @@ impl FsFFTSettings {
         let n = n2 / 2;
         let mut ret = self.fft_g1(h_ext_fft, true).unwrap();
         ret[n..n2].copy_from_slice(&vec![FsG1::identity(); n2 - n]);
+
         ret
     }
 }
@@ -59,7 +63,6 @@ impl FsPoly {
         }
 
         let mut i = k + 2;
-
         let mut j = 2 * stride - offset - 1;
         while i < k2 {
             ret.coeffs.push(self.coeffs[j]);
@@ -68,7 +71,7 @@ impl FsPoly {
             j += stride;
         }
         ret
-}
+    }
 
     pub fn toeplitz_coeffs_step(&self) -> FsPoly {
         self.toeplitz_coeffs_stride(0, 1)
