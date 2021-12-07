@@ -18,10 +18,10 @@ impl FFTSettings {
             }
 
             if ab.len() > 32{
-                let (mut lo, mut hi) = ab.split_at_mut(halfhalf);
+                let (lo, hi) = ab.split_at_mut(halfhalf);
                 rayon::join(
-                    || self.das_fft_extension_stride(&mut hi, stride * 2),
-                    || self.das_fft_extension_stride(&mut lo, stride * 2),
+                    || self.das_fft_extension_stride(hi, stride * 2),
+                    || self.das_fft_extension_stride(lo, stride * 2),
                 );
             }else{
                 self.das_fft_extension_stride(&mut ab[..halfhalf], stride * 2); 

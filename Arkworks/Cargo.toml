@@ -42,7 +42,7 @@ harness = false
 
 [[bench]]
 name = "poly"
-#harness = false
+harness = false
 
 [[bench]]
 name = "das"
