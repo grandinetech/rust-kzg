@@ -1,13 +1,11 @@
 use std::cmp::{min, Ordering};
-use std::thread;
 
-use kzg::{FFTFr, Fr, ZeroPoly, Poly};
+use kzg::{FFTFr, Fr, ZeroPoly};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::poly::FsPoly;
 use crate::utils::{is_power_of_two, next_power_of_two};
-
 
 /// Create a copy of the given poly and pad it with zeros
 pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
@@ -40,6 +38,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         let mut poly = FsPoly {
             coeffs: vec![FsFr::one(); idxs.len() + 1],
         };
+
         // For the first member, store -w_0 as constant term
         poly.coeffs[0] = self.expanded_roots_of_unity[idxs[0] * stride].negate();
 
@@ -64,7 +63,6 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
         Ok(poly)
     }
-
     /// Reduce partials using a specified domain size.
     /// Calculates the product of all polynomials via FFT and then applies an inverse FFT to produce a new Polynomial.
     fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
@@ -111,8 +109,13 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         domain_size: usize,
         missing_idxs: &[usize],
     ) -> Result<(Vec<FsFr>, FsPoly), String> {
+        let zero_eval: Vec<FsFr>;
+        let mut zero_poly: FsPoly;
+
         if missing_idxs.is_empty() {
-            return Ok((Vec::new(), FsPoly::default()));
+            zero_eval = Vec::new();
+            zero_poly = FsPoly { coeffs: Vec::new() };
+            return Ok((zero_eval, zero_poly));
         }
 
         if missing_idxs.len() >= domain_size {
@@ -125,17 +128,15 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             return Err(String::from("Domain size must be a power of 2"));
         }
 
-        let zero_eval: Vec<FsFr>;
-        let mut zero_poly: FsPoly;
         let degree_of_partial = 64; // Can be tuned & optimized (must be a power of 2)
         let missing_per_partial = degree_of_partial - 1; // Number of missing idxs needed per partial
         let domain_stride = self.max_width / domain_size;
+
         let mut partial_count = 1 + (missing_idxs.len() - 1) / missing_per_partial; // TODO: explain why -1 is used here
         let domain_ceiling = min(
             next_power_of_two(partial_count * degree_of_partial),
             domain_size,
         );
-
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
             // When all idxs fit into a single multiplication
