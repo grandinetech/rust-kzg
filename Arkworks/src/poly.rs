@@ -19,8 +19,14 @@ pub(crate) fn neg(n: BlstFr) -> BlstFr {
 }
 
 pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
-    assert!(!b.coeffs.is_empty());
-    assert!(!BlstFr::is_zero(&b.coeffs[0]));
+    // assert!(!b.coeffs.is_empty());
+    if b.coeffs.is_empty(){
+        return Err(String::from("b.coeffs is empty"));
+    }
+    // assert!(!BlstFr::is_zero(&b.coeffs[0]));
+    if BlstFr::is_zero(&b.coeffs[0]){
+        return Err(String::from("b.coeffs[0] is zero"));
+    }
 
     let mut output = PolyData {
         coeffs: vec![BlstFr::zero(); output_len],
@@ -71,7 +77,9 @@ pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, 
             output.coeffs[i] = tmp1.coeffs[i];
         }
     }
-    assert!(d + 1 == output_len);
+    if d + 1 != output_len{
+        return Err(String::from("d + 1 is not equals to output_len"));
+    }
     Ok(output)
 }
 
@@ -134,7 +142,9 @@ pub fn poly_mul_fft(a: &PolyData, b: &PolyData, fs: Option<&FFTSettings>, len: u
         fs_p = FFTSettings::new(scale).unwrap();
     }
 
-    assert!(length <= fs_p.max_width);
+    if length > fs_p.max_width{
+        return Err(String::from("length should be equals or less than FFTSettings max width"));
+    }
 
     let a = PolyData{coeffs: a.coeffs[..a_len].to_vec()};
     let b = PolyData{coeffs: b.coeffs[..b_len].to_vec()};
@@ -170,9 +180,13 @@ pub fn poly_mul_fft(a: &PolyData, b: &PolyData, fs: Option<&FFTSettings>, len: u
 }
 
 pub fn poly_fast_div(dividend: &PolyData, divisor: &PolyData) -> Result<PolyData, String> {
-    assert!(!divisor.coeffs.is_empty());
+    if divisor.coeffs.is_empty(){
+        return Err(String::from("divisor coeffs are empty"));
+    }
 
-    assert!(!&divisor.coeffs[divisor.coeffs.len() - 1].is_zero());
+    if divisor.coeffs[divisor.coeffs.len() - 1].is_zero(){
+        return Err(String::from("divisor coeffs last member is zero"));
+    }
 
     let m = dividend.coeffs.len() - 1;
     let n = divisor.coeffs.len() - 1;
@@ -181,7 +195,9 @@ pub fn poly_fast_div(dividend: &PolyData, divisor: &PolyData) -> Result<PolyData
         return PolyData::new(0);
     }
 
-    assert!(!&divisor.coeffs[divisor.coeffs.len() - 1].is_zero());
+    if divisor.coeffs[divisor.coeffs.len() - 1].is_zero(){
+        return Err(String::from("divisor coeffs last member is zero"));
+    }
 
     let mut out = PolyData::new(0).unwrap();
 
