@@ -10,6 +10,7 @@ impl FsFFTSettings {
         let n = x.len();
         let n2 = n * 2;
         let mut x_ext = Vec::new();
+
         for &x_n in x[..n].iter() {
             x_ext.push(x_n);
         }
@@ -36,6 +37,7 @@ impl FsFFTSettings {
     pub fn toeplitz_part_3(&self, h_ext_fft: &[FsG1]) -> Vec<FsG1> {
         let n2 = h_ext_fft.len();
         let n = n2 / 2;
+
         let mut ret = self.fft_g1(h_ext_fft, true).unwrap();
         ret[n..n2].copy_from_slice(&vec![FsG1::identity(); n2 - n]);
 
@@ -70,6 +72,7 @@ impl FsPoly {
             i += 1;
             j += stride;
         }
+
         ret
     }
 
