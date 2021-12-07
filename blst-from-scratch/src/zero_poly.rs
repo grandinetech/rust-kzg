@@ -63,6 +63,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
         Ok(poly)
     }
+
     /// Reduce partials using a specified domain size.
     /// Calculates the product of all polynomials via FFT and then applies an inverse FFT to produce a new Polynomial.
     fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
