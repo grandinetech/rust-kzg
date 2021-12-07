@@ -9,17 +9,17 @@ use crate::kzg_types::{ZkG1Projective as G1,
     pairings_verify, 
     G1_GENERATOR, 
     G2_GENERATOR, 
-    G1_IDENTITY
 };
 
 use kzg::{G1 as _G1, 
     G2 as _G2, 
-    G1Mul, 
     FFTSettings, 
     Poly as OtherPoly, 
     Fr, 
     FFTFr
 };
+
+use crate::curve::multiscalar_mul::msm_variable_base;
 
 pub struct KZGSettings {
     pub fs: ZkFFTSettings,
@@ -73,22 +73,17 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<
     (s1, s2)
 }
 
-fn g1_linear_combination(p: &Vec<G1>, coeffs: &Vec<Scalar>, len: usize) -> G1 {
-    let mut foo: G1;
-    let mut out = G1_IDENTITY;
-    for i in 0..len{
-        foo = G1Mul::mul(&p[i], &coeffs[i]);
-        out = out.add_or_dbl(&foo);
-    }
-    return out;
-}
-
 pub(crate) fn commit_to_poly(p: &Poly, ks: &KZGSettings) -> Result<G1, String> {
     if p.coeffs.len() > ks.secret_g1.len() {
         return Err(String::from("Poly given is too long"));
+    } 
+
+    else if p.is_zero() {
+        Ok(G1::identity())
     }
+
     else {
-        Ok(g1_linear_combination(&ks.secret_g1, &p.coeffs, p.coeffs.len()))
+        Ok(msm_variable_base(&ks.secret_g1, &p.coeffs))
     }
 }
 
