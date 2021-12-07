@@ -1,16 +1,8 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkG1, FsFr as BlstFr};
-use blst::{
-    blst_fp, blst_p1, blst_p1_mult, blst_scalar,
-    blst_scalar_from_fr,
-};
+use blst::{blst_fp, blst_p1};
 use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
-use std::mem::size_of;
-// use kzg::G1Mul;
-
-//Needed for g1_mul with Ark
-//use crate::utils::{blst_p1_into_pc_g1projective, pc_g1projective_into_blst_p1, blst_fr_into_pc_fr};
-//use std::ops::MulAssign;
+use kzg::G1Mul;
 
 pub const G1_NEGATIVE_GENERATOR: blst_p1 = blst_p1 {
     x: blst_fp {
@@ -100,8 +92,7 @@ impl FFTG1<ArkG1> for FFTSettings {
                 1
             );
             for i in out.iter_mut().take(n) {
-                *i = g1_mul(i, &inv_len);
-                // out[i] = out[i].mul(&inv_len);
+                *i = i.mul(&inv_len);
             }
         } else {
             fft_g1_fast(
@@ -132,11 +123,11 @@ pub fn fft_g1_slow(
     let mut r;
 
     for i in 0..data.len() {
-        last = g1_mul(&data[0], &roots[0]);
+        last = data[0].mul(&roots[0]);
         for j in 1..data.len() {
             jv = data[j * stride].clone();
             r = roots[((i * j) % data.len()) * roots_stride];
-            v = g1_mul(&jv, &r);
+            v = jv.mul(&r);
             last.add_or_dbl(&v);
             ret[i].0.x = last.0.x;
             ret[i].0.y = last.0.y;
@@ -156,17 +147,34 @@ pub fn fft_g1_fast(
     let half = ret.len() / 2;
 
     if half > 0 {
-        fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
-        fft_g1_fast(
-            &mut ret[half..],
-            &data[stride..],
-            stride * 2,
-            roots,
-            roots_stride * 2,
-            1
-        );
+        // fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
+        // fft_g1_fast(
+        //     &mut ret[half..],
+        //     &data[stride..],
+        //     stride * 2,
+        //     roots,
+        //     roots_stride * 2,
+        //     1
+        // );
+        if ret.len() > 8{
+            let (lo, hi) = ret.split_at_mut(half);
+            rayon::join(
+                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2, 1),
+                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2, 1),
+            );
+        }else{
+            fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
+            fft_g1_fast(
+                &mut ret[half..],
+                &data[stride..],
+                stride * 2,
+                roots,
+                roots_stride * 2,
+                1
+            );
+        }
         for i in 0..half {
-            let y_times_root = g1_mul(&ret[i + half], &roots[i * roots_stride]);
+            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
             ret[i + half] = ret[i].sub(&y_times_root);
             ret[i].add_or_dbl(&y_times_root);
         }
@@ -176,56 +184,6 @@ pub fn fft_g1_fast(
             ret[i].0.y = data[i].0.y;
             ret[i].0.z = data[i].0.z;
         }
-    }
-}
-
-// pub fn g1_sub(a: &ArkG1, b: &ArkG1) -> ArkG1 {
-//     let mut bneg = b.0;
-//     let mut out = blst_p1::default();
-//     unsafe {
-//         blst_p1_cneg(&mut bneg, true);
-//         blst_p1_add_or_double(&mut out, &a.0, &bneg);
-//     }
-//     ArkG1(out)
-// }
-
-// Slower than Blst but it is using Ark functions and less lines
-// pub fn g1_mul( a: &ArkG1, b: &BlstFr) -> ArkG1 {
-
-//     let mut ap1 = blst_p1_into_pc_g1projective(&a.0).unwrap();
-//     let bfr = blst_fr_into_pc_fr(&b);
-//     ap1.mul_assign(bfr);
-//     let result = pc_g1projective_into_blst_p1(ap1).unwrap();
-//     result
-// }
-
-pub fn g1_mul(a: &ArkG1, b: &BlstFr) -> ArkG1 {
-    let mut s: blst_scalar = blst_scalar::default();
-    unsafe {
-        blst_scalar_from_fr(&mut s, &b.0 as *const _);
-    }
-    // Count the number of bytes to be multiplied.
-    let mut i = size_of::<blst_scalar>();
-
-    while (i != 0) && (s.b[i - 1] == 0) {
-        i -= 1;
-    }
-    if i == 0 {
-        G1_IDENTITY
-    } else if i == 1 && s.b[0] == 1 {
-        ArkG1(a.0)
-    } else {
-        // Count the number of bits to be multiplied.
-        let mut out = blst_p1::default();
-        unsafe {
-            blst_p1_mult(
-                &mut out,
-                &a.0 as *const _,
-                &s.b as *const _,
-                8 * i - 7 + log_2_byte(s.b[i - 1]),
-            );
-        }
-        ArkG1(out)
     }
 }
 
