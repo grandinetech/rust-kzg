@@ -11,6 +11,7 @@ rand = "0.8.4"
 rand_pcg = "0.3.1"
 kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
+rayon = "1.5.1"
 
 [dev-dependencies]
 criterion = "0.3.5"

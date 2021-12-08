@@ -28,7 +28,9 @@ pub fn unscale_poly(p: &mut PolyData) {
 impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData{
     fn recover_poly_from_samples(samples: &[Option<BlstFr>], fs: &FFTSettings) -> Result<Self, String> {
 
-        assert!(samples.len().is_power_of_two());
+        if !samples.len().is_power_of_two(){
+            return Err(String::from("samples lenght has to be power of 2"));
+        }
 
         let mut missing = Vec::new();
 
@@ -46,7 +48,9 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData{
 
         // Check all is well
         for (i, item) in zero_eval.iter().enumerate().take(samples.len()) {
-            assert!(samples[i].is_none() == item.is_zero());
+            if samples[i].is_none() != item.is_zero(){
+                return Err(String::from("sample and item are both zero"));
+            }
         }
 
         // Construct E * Z_r,I: the loop makes the evaluation polynomial
@@ -101,7 +105,10 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData{
 
         // Check all is well
         for (i, sample) in samples.iter().enumerate() {
-            assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
+            // assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
+            if !sample.is_none() && !out.get_coeff_at(i).equals(&sample.unwrap()){
+                return Err(String::from("sample is zero and out coeff at i is not equals to sample"));
+            }
         }
         Ok(out)
     }

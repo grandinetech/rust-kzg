@@ -34,9 +34,17 @@ impl FsFFTSettings {
             evens[i] = tmp1;
         }
 
-        // Recurse
-        self.das_fft_extension_stride(&mut evens[..half], stride * 2);
-        self.das_fft_extension_stride(&mut evens[half..], stride * 2);
+        if evens.len() > 32{
+            let (lo, hi) = evens.split_at_mut(half);
+            rayon::join(
+                || self.das_fft_extension_stride(hi, stride * 2),
+                || self.das_fft_extension_stride(lo, stride * 2),
+            );
+        }else{
+            // Recurse
+            self.das_fft_extension_stride(&mut evens[..half], stride * 2);
+            self.das_fft_extension_stride(&mut evens[half..], stride * 2);
+        }
 
         for i in 0..half {
             let x = evens[i];

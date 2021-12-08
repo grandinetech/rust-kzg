@@ -32,7 +32,7 @@ extern "C" {
     pub fn mclBnG1_hashAndMapTo(x: *mut G1, buf: *const u8, bufSize: usize) -> c_int;
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct G1 {
     pub x: Fp,

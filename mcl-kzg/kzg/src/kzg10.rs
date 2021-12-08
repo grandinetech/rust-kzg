@@ -1,9 +1,7 @@
-use crate::data_converter::fr_converter::*;
 use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::fk20_fft::{FFTSettings, G1_GENERATOR};
 use crate::mcl_methods::{final_exp, mclBn_FrEvaluatePolynomial, pairing};
 use crate::utilities::{log_2, next_pow_of_2};
-use crate::BlstFr;
 use std::{cmp::min, iter, ops};
 
 const G1_GEN_X: &str = "3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507";
@@ -233,11 +231,6 @@ impl Polynomial {
 
     pub fn order(&self) -> usize {
         self.coeffs.len()
-    }
-
-    pub fn eval_at_blst(&self, point: &BlstFr) -> BlstFr {
-        let point_from_blst = fr_from_blst(*point);
-        fr_to_blst(self.eval_at(&point_from_blst))
     }
 
     pub fn eval_at(&self, point: &Fr) -> Fr {
@@ -644,7 +637,7 @@ impl Curve {
         let mut g1_points: Vec<G1> = vec![];
         let mut g2_points: Vec<G2> = vec![];
         for i in 0..order {
-            g1_points.push(secret_g1[i].clone());
+            g1_points.push(secret_g1[i]);
             g2_points.push(secret_g2[i].clone());
         }
 
@@ -659,7 +652,7 @@ impl Curve {
 
     pub fn is_proof_valid(&self, commitment: &G1, proof: &G1, x: &Fr, y: &Fr) -> bool {
         let secret_minus_x = &self.g2_points[1] - &(&self.g2_gen * x); // g2 * x to get x on g2
-        let commitment_minus_y = commitment - &(&self.g1_gen * y);
+        let commitment_minus_y = commitment - &(self.g1_gen * y);
 
         Curve::verify_pairing(&commitment_minus_y, &self.g2_gen, proof, &secret_minus_x)
     }

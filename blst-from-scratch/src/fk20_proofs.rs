@@ -51,14 +51,17 @@ impl FsPoly {
         let k = n / stride;
         let k2 = k * 2;
 
-        let mut ret = FsPoly { coeffs: Vec::new() };
+        let mut ret = FsPoly::default();
         ret.coeffs.push(self.coeffs[n - 1 - offset]);
 
-        let mut i = 1;
-        while i < k + 2 && i < k2 {
+        let num_of_zeroes;
+        if k + 2 < k2 {
+            num_of_zeroes = k + 2 - 1;
+        } else {
+            num_of_zeroes = k2 - 1;
+        }
+        for _ in 0..num_of_zeroes {
             ret.coeffs.push(FsFr::zero());
-
-            i += 1;
         }
 
         let mut i = k + 2;

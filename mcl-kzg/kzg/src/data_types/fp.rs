@@ -41,7 +41,7 @@ extern "C" {
 
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct Fp {
     pub d: [u64; crate::MCLBN_FP_UNIT_SIZE],
