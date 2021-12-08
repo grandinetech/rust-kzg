@@ -440,6 +440,8 @@ impl Polynomial {
         }
     }
 
+    /// @param[in]  n_in  The number of elements of @p in to take
+    /// @param[in]  n_out The length of @p out
     fn pad(&self, n_in: usize, n_out: usize) -> Polynomial {
         Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
     }
@@ -469,8 +471,19 @@ impl Polynomial {
 
         let a_pad = self.pad(a_len, length);
         let b_pad = b.pad(b_len, length);
-        let a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
-        let b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
+        let mut a_fft = vec![];
+        let mut b_fft = vec![];
+        
+        if length > 1024 {
+            rayon::join(
+                || a_fft = ft.fft(&a_pad.coeffs, false).unwrap(),
+                || b_fft = ft.fft(&b_pad.coeffs, false).unwrap(),
+            );
+        } else {
+            a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
+            b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
+        }
+        
         let mut ab_fft = a_fft;
         for i in 0..length {
             ab_fft[i] = ab_fft[i] * b_fft[i];
