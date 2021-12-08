@@ -38,6 +38,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         let mut poly = FsPoly {
             coeffs: vec![FsFr::one(); idxs.len() + 1],
         };
+
         // For the first member, store -w_0 as constant term
         poly.coeffs[0] = self.expanded_roots_of_unity[idxs[0] * stride].negate();
 
@@ -131,12 +132,12 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         let degree_of_partial = 64; // Can be tuned & optimized (must be a power of 2)
         let missing_per_partial = degree_of_partial - 1; // Number of missing idxs needed per partial
         let domain_stride = self.max_width / domain_size;
+
         let mut partial_count = 1 + (missing_idxs.len() - 1) / missing_per_partial; // TODO: explain why -1 is used here
         let domain_ceiling = min(
             next_power_of_two(partial_count * degree_of_partial),
             domain_size,
         );
-
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
             // When all idxs fit into a single multiplication

@@ -17,8 +17,16 @@ impl FFTSettings {
                 ab[i] = tmp1;
             }
 
-            self.das_fft_extension_stride(&mut ab[..halfhalf], stride * 2);
-            self.das_fft_extension_stride(&mut ab[halfhalf..], stride * 2);
+            if ab.len() > 32{
+                let (lo, hi) = ab.split_at_mut(halfhalf);
+                rayon::join(
+                    || self.das_fft_extension_stride(hi, stride * 2),
+                    || self.das_fft_extension_stride(lo, stride * 2),
+                );
+            }else{
+                self.das_fft_extension_stride(&mut ab[..halfhalf], stride * 2); 
+                self.das_fft_extension_stride(&mut ab[halfhalf..], stride * 2);
+            }
 
             for i in 0..halfhalf{
                 let x = ab[i];
@@ -39,9 +47,15 @@ impl FFTSettings {
 
 impl DAS<BlstFr> for FFTSettings {
     fn das_fft_extension(&self, vals: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
-        assert!(!vals.is_empty());
-        assert!(vals.len().is_power_of_two());
-        assert!(vals.len() * 2 <= self.max_width);
+        if vals.is_empty(){
+            return Err(String::from("vals can not be empty"));
+        }
+        if !vals.len().is_power_of_two(){
+            return Err(String::from("vals lenght has to be power of 2"));
+        }
+        if vals.len() * 2 > self.max_width{
+            return Err(String::from("vals lenght * 2 has to equal or less than FFTSetings max width"));
+        }
 
         let mut vals = vals.to_vec();
         let stride = self.max_width / (vals.len() * 2);
