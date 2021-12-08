@@ -185,6 +185,7 @@ fn to_radix_2w(scalar: &Scalar, w: usize) -> [i8; 43] {
 }
 
 /// Performs a Variable Base Multiscalar Multiplication.
+#[allow(clippy::needless_collect)]
 pub fn msm_variable_base(points: &[G1Projective], scalars: &[Scalar]) -> G1Projective {
     #[cfg(feature = "parallel")]
     use rayon::prelude::*;
@@ -246,7 +247,7 @@ pub fn msm_variable_base(points: &[G1Projective], scalars: &[Scalar]) -> G1Proje
 
             let mut running_sum = G1Projective::identity();
             for b in buckets.into_iter().rev() {
-                running_sum = running_sum + b;
+                running_sum += b;
                 res += &running_sum;
             }
 

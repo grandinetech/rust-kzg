@@ -55,14 +55,14 @@ impl Fr for blsScalar {
 	fn to_u64_arr(&self) -> [u64; 4] {
 		let bytes = self.to_bytes();
 
-        let limbs = [
+        /*let limbs =*/ [
             u64::from_le_bytes(bytes[0..8].try_into().unwrap()),
             u64::from_le_bytes(bytes[8..16].try_into().unwrap()),
             u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
             u64::from_le_bytes(bytes[24..32].try_into().unwrap()),
-        ];
+        ]
 		
-		limbs
+		//limbs
 
 	}
 	
@@ -90,21 +90,21 @@ impl Fr for blsScalar {
     }
 	
 	fn sqr(&self) -> Self {
-		blsScalar::square(&self)
+		blsScalar::square(self)
 	}
 	
     fn mul(&self, b: &Self) -> Self {
 		// let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
-			blsScalar::mul(&self, &b) // &b.0 or &ret.0?
+			blsScalar::mul(self, b) // &b.0 or &ret.0?
 	}
 	
 	fn add(&self, b: &Self) -> Self {
 		// let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
-			blsScalar::add(&self, &b)
+			blsScalar::add(self, b)
 	}
 	fn sub(&self, b: &Self) -> Self {
 		// let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
-		blsScalar::sub(&self, &b) // for this
+		blsScalar::sub(self, b) // for this
 	}
 	
 	fn eucl_inverse(&self) -> Self { 
@@ -112,15 +112,15 @@ impl Fr for blsScalar {
 		// blsScalar::invert(&self).unwrap()
 		
 		
-		let ret = self.invert().unwrap();
-		ret
-		
+		// let ret = self.invert().unwrap();
+		// ret
+		self.invert().unwrap()
 	}
 	
 	fn pow(&self, n: usize) -> Self {
 	// unfinished. bls12_381 scalar has pow method. 
 	// also for i in 1..n out.sqr();
-    let mut tmp = self.clone();
+    let mut tmp = *self;
     let mut out = Self::one(); // let mut out?
     let mut n2 = n;
     
@@ -128,7 +128,7 @@ impl Fr for blsScalar {
             if n2 & 1 == 1 {
                 out = out.mul(&tmp);
             }
-            n2 = n2 >> 1;
+            n2 >>= 1;
             if n2 == 0 {
                 break;
             }
@@ -147,13 +147,13 @@ impl Fr for blsScalar {
 		//let mut ret = <blsScalar as Fr>::default(); // Self::default()
 		// Self::invert(&self).unwrap()
 		
-		let ret = self.invert().unwrap();
-		ret
-		
+		// let ret = self.invert().unwrap();
+		// ret
+		self.invert().unwrap()
 	}
 	
 	fn div(&self, b: &Self) -> Result<Self, String> {
-		if <blsScalar as Fr>::is_zero(&b) {
+		if <blsScalar as Fr>::is_zero(b) {
 			return Ok(blsScalar::zero());
 		}
 		let tmp = b.eucl_inverse();

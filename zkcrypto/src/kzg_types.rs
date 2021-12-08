@@ -132,10 +132,10 @@ impl G1 for ZkG1Projective {
 			self.dbl()
 		}
 		else {
+			ZkG1Projective::add(self, b)
+		// let ret = ZkG1Projective::add(self, b);
 
-		let ret = ZkG1Projective::add(&self, &b);
-
-		ret
+		// ret
 		}
 	}
 
@@ -224,7 +224,7 @@ pub fn pairings_verify(a1: &ZkG1Projective, a2: &ZkG2Projective, b1: &ZkG1Projec
 
 	let new_point = MillerLoopResult::final_exponentiation(&gt_point);
 
-	return ZkFp12::eq(&ZkFp12::one(), &new_point.0);
+	ZkFp12::eq(&ZkFp12::one(), &new_point.0)
 
 }
 
@@ -238,7 +238,7 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
     }
 
 	fn commit_to_poly(&self, p: &ZPoly) -> Result<ZkG1Projective, String> {
-        Ok(poly_commit(&p, self).unwrap())
+        Ok(poly_commit(p, self).unwrap())
     }
 
     fn compute_proof_single(&self, p: &ZPoly, x: &blsScalar) -> Result<ZkG1Projective, String> {

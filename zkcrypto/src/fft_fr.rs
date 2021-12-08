@@ -31,12 +31,13 @@ pub fn fft_fr(data: &[blsScalar], inverse: bool, fft_settings: &ZkFFTSettings) -
     if inverse {
         let mut inv_len: blsScalar = blsScalar::from(data.len() as u64);
         inv_len = inv_len.inverse();
-        for i in 0..data.len() {
-            ret[i] = ret[i].mul(&inv_len);
+        for i in ret.iter_mut().take(data.len())/*0..data.len()*/ {
+            *i = i.mul(&inv_len);
+			//ret[i] = ret[i].mul(&inv_len);
         }
     }
 
-    return Ok(ret);
+    Ok(ret)
 }
 
 pub fn fft_fr_fast(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roots: &[blsScalar], roots_stride: usize) {
@@ -64,6 +65,6 @@ pub fn fft_fr_fast(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roo
             ret[i] = ret[i].add(&y_times_root);
         }
     } else {
-        ret[0] = data[0].clone();
+        ret[0] = data[0];
     }
 }

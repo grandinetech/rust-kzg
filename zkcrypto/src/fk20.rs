@@ -88,7 +88,7 @@ impl FK20SingleSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings
             return Err(String::from("n2 must be a power of two"));
         }
 
-        let toeplitz_coeffs = toeplitz_coeffs_step(&p);
+        let toeplitz_coeffs = toeplitz_coeffs_step(p);
         let h_ext_fft = toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft, &self.kzg_settings.fs);
         let h = toeplitz_part_3(&h_ext_fft, &self.kzg_settings.fs);
 
@@ -211,7 +211,7 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
         let mut h_ext_fft = vec![ZkG1Projective::identity(); k2];
 
         for i in 0..self.chunk_len {
-            let toeplitz_coeffs = toeplitz_coeffs_stride(i, self.chunk_len, &p);
+            let toeplitz_coeffs = toeplitz_coeffs_stride(i, self.chunk_len, p);
             let h_ext_fft_file = toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft_files[i], &self.kzg_settings.fs);
 
             for j in 0..k2 {
@@ -221,9 +221,10 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
 
         let mut h = toeplitz_part_3(&h_ext_fft, &self.kzg_settings.fs);
 
-        for i in k..k2 {
-            h[i] = ZkG1Projective::identity();
-        }
+        // for i in k..k2 {
+            // h[i] = ZkG1Projective::identity();
+        // }
+		h[k..k2].copy_from_slice(&vec![ZkG1Projective::identity(); k2 - k]);
 
         let out = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
 
@@ -238,16 +239,16 @@ pub fn toeplitz_part_1 (x: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<Zk
 	let n2 = x.len() * 2;
 	let mut x_ext = Vec::new();
 	
-	for i in 0..x.len() {
-		x_ext.push(x[i]);
+	for &x_i in x[..x.len()].iter() {
+		x_ext.push(x_i);
 	}
 	
 	for _i in x.len()..n2 {
 		x_ext.push(ZkG1Projective::identity());
 	}
 	
-	let out = fft_set.fft_g1(&x_ext, false).unwrap();
-	return out;
+	let out = fft_set.fft_g1(&x_ext, false);
+	out.unwrap()
 }
 pub fn toeplitz_part_2 (toeplitz: &ZPoly, x_ext_fft: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
 	
@@ -259,18 +260,21 @@ pub fn toeplitz_part_2 (toeplitz: &ZPoly, x_ext_fft: &[ZkG1Projective], fft_set:
 		out.push(x_ext_fft[i].mul(&fft_coeffs[i]));
 	}
 	
-	return out;
+	out
 }
 pub fn toeplitz_part_3 (h_ext_fft: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
 	// let n2 = h_ext_fft.len();
 	let n = h_ext_fft.len() / 2;
 	let mut out = fft_set.fft_g1(h_ext_fft, true).unwrap();
 	
-	for i in n..h_ext_fft.len() {
-		out[i] = ZkG1Projective::identity();
-	}
+	// for i in n..h_ext_fft.len() {
+		// out[i] = ZkG1Projective::identity();
+	// }
+	// out[n..h_ext_fft.len()].copy_from_slice(&[ZkG1Projective::identity()]);
 	
-	return out;
+	out[n..h_ext_fft.len()].copy_from_slice(&vec![ZkG1Projective::identity(); h_ext_fft.len() - n]);
+
+	out
 }
 
 pub fn toeplitz_coeffs_stride(offset: usize, stride: usize, poly: &ZPoly) -> ZPoly {
@@ -294,13 +298,13 @@ pub fn toeplitz_coeffs_stride(offset: usize, stride: usize, poly: &ZPoly) -> ZPo
 		j += stride;
 	}
 	
-	return out;
+	out
 	
 }
 
 pub fn toeplitz_coeffs_step(poly: &ZPoly) -> ZPoly {
    
-   return toeplitz_coeffs_stride(0, 1, poly);
+   toeplitz_coeffs_stride(0, 1, poly)
 }
 
 pub fn reverse_bit_order<T>(values: &mut Vec<T>) where T: Clone {

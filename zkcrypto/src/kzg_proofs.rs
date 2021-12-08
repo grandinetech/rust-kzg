@@ -75,7 +75,7 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<
 
 pub(crate) fn commit_to_poly(p: &Poly, ks: &KZGSettings) -> Result<G1, String> {
     if p.coeffs.len() > ks.secret_g1.len() {
-        return Err(String::from("Poly given is too long"));
+        Err(String::from("Poly given is too long"))
     } 
 
     else if p.is_zero() {
@@ -88,7 +88,7 @@ pub(crate) fn commit_to_poly(p: &Poly, ks: &KZGSettings) -> Result<G1, String> {
 }
 
 pub(crate) fn compute_proof_single(p: &Poly, x: &Scalar, ks: &KZGSettings) -> Result<G1, String> {
-    compute_proof_multi(p, x, 1, &ks)
+    compute_proof_multi(p, x, 1, ks)
 }
 
 pub(crate) fn check_proof_single(com: &G1, proof: &G1, x: &Scalar, value: &Scalar, ks: &KZGSettings) -> Result<bool, String> {
@@ -113,7 +113,7 @@ pub(crate) fn compute_proof_multi(p: &Poly, x: &Scalar, n: usize, ks: &KZGSettin
         coeffs: Vec::new() 
     };
 
-    let x_power_n = <Scalar as Fr>::pow(&x, n);
+    let x_power_n = <Scalar as Fr>::pow(x, n);
     p2.coeffs.push(x_power_n.negate());
 
     for _ in 1..n {
@@ -124,10 +124,10 @@ pub(crate) fn compute_proof_multi(p: &Poly, x: &Scalar, n: usize, ks: &KZGSettin
 
     let mut p = p.clone();
     let q = p.div(&p2).unwrap();
-    Ok(commit_to_poly(&q, &ks).unwrap())
+    Ok(commit_to_poly(&q, ks).unwrap())
 }
 
-pub(crate) fn check_proof_multi(com: &G1, proof: &G1, x: &Scalar, values: &Vec<Scalar>, n: usize, ks: &KZGSettings) -> Result<bool, String> {
+pub(crate) fn check_proof_multi(com: &G1, proof: &G1, x: &Scalar, values: &[Scalar], n: usize, ks: &KZGSettings) -> Result<bool, String> {
     if !is_power_of_two(n) {
         return Err(String::from("n has to be power of two"));
     }
@@ -145,7 +145,7 @@ pub(crate) fn check_proof_multi(com: &G1, proof: &G1, x: &Scalar, values: &Vec<S
     let xn2 = G2_GENERATOR.mul(&x_power);
     let xn_minus_yn = ks.secret_g2[n].sub(&xn2);
 
-    let g1 = commit_to_poly(&poly, &ks).unwrap();
+    let g1 = commit_to_poly(&poly, ks).unwrap();
     let commit_minus_interp = com.sub(&g1);
 
     Ok(pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn))

@@ -21,9 +21,10 @@ use std::ops::Neg;
 // }
 
 impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
+	#[allow(clippy::needless_range_loop)]
     fn do_zero_poly_mul_partial(&self, indices: &[usize], stride: usize) 
 	-> Result<ZPoly, String> {
-        if indices.len() == 0 {
+        if indices.is_empty() { //  == 0 
             return Err(String::from("index array length mustnt be zero"));
         }
         let mut poly = ZPoly { coeffs: vec![blsScalar::one(); indices.len() + 1] };
@@ -31,28 +32,28 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
 
         for i in 1..indices.len() {
             let neg_di = (self.expanded_roots_of_unity[indices[i] * stride]).neg();
-            poly.coeffs[i] = neg_di.clone();
+            poly.coeffs[i] = neg_di;
 
-            poly.coeffs[i] = poly.coeffs[i] + poly.coeffs[i - 1];
+            poly.coeffs[i] = poly.coeffs[i].add(&poly.coeffs[i - 1]);
 
             let mut j = i - 1;
             while j > 0 {
                 poly.coeffs[j] = poly.coeffs[j].mul(&neg_di);
-                poly.coeffs[j] = poly.coeffs[j] + poly.coeffs[j - 1];
+                poly.coeffs[j] = poly.coeffs[j].add(&poly.coeffs[j - 1]);
                 j -= 1;
             }
 
             poly.coeffs[0] = poly.coeffs[0].mul(&neg_di);
         }
 
-        return Ok(poly);
+        Ok(poly)
     }
-
+	#[allow(clippy::needless_range_loop)]
     fn reduce_partials(&self, length: usize, partials: &[ZPoly]) 
 	-> Result<ZPoly, String> {
         let mut out_degree: usize = 0;
-        for i in 0..partials.len() {
-            out_degree += partials[i].coeffs.len() - 1;
+        for partial in partials { // 0..partials.len()
+            out_degree += partial.coeffs.len() - 1;
         }
 		
 		if !is_power_of_two(length) {
@@ -79,15 +80,15 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
 
         let out = ZPoly { coeffs: coeffs[..(out_degree + 1)].to_vec() };
 
-        return Ok(out);
+        Ok(out)
     }
-
+	#[allow(clippy::comparison_chain)]
     fn zero_poly_via_multiplication(&self, length: usize, missing_indices: &[usize]) 
 	-> Result<(Vec<blsScalar>, ZPoly), String> {
         let zero_eval: Vec<blsScalar>;
         let mut zero_poly: ZPoly;
 
-        if missing_indices.len() == 0 {
+        if missing_indices.is_empty() { // .len() == 0
             zero_eval = Vec::new();
             zero_poly = ZPoly { coeffs: Vec::new() };
             return Ok((zero_eval, zero_poly));
@@ -110,7 +111,7 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
         let domain_ceiling = min((partial_count * degree_of_partial).next_power_of_two(), length);
 
         if missing_indices.len() <= missing_per_partial {
-            zero_poly = self.do_zero_poly_mul_partial(&missing_indices, domain_stride).unwrap();
+            zero_poly = self.do_zero_poly_mul_partial(missing_indices, domain_stride).unwrap();
         } 
 		else {
             let mut work = vec![blsScalar::zero(); (partial_count * degree_of_partial).next_power_of_two()];

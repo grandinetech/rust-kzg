@@ -17,7 +17,7 @@ pub mod tests {
         for i in 1..n {
             result[i] = result[i - 1].add_or_dbl(&G1_GENERATOR)
         }
-        return result;
+        result
     }
 
     #[test]

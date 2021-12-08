@@ -45,13 +45,13 @@ pub const NUM_ROOTS: usize = 32;
 
 pub fn expand_root_of_unity(root: &blsScalar, width: usize) -> Result<Vec<blsScalar>, String> {
     // let ret = <blsScalar as Fr>::one(); // blsScalar::default()
-	let mut generated_powers = vec![blsScalar::one(), root.clone()];
+	let mut generated_powers = vec![blsScalar::one(), *root];
 
     while !(generated_powers.last().unwrap().is_one()) {
         if generated_powers.len() > width {
             return Err(String::from("Root of unity multiplied for too long"));
         }
-        generated_powers.push(generated_powers.last().unwrap().mul(&root));
+        generated_powers.push(generated_powers.last().unwrap().mul(root));
     }
 
     Ok(generated_powers)
