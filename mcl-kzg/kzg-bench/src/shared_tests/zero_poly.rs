@@ -6,11 +6,9 @@ pub mod zero_poly_tests {
     use mcl_rust::kzg10::Polynomial;
     use mcl_rust::mcl_methods::init;
     use mcl_rust::CurveType;
-    use mcl_rust::mcl_methods::get_version;
 
     #[test]
     fn test_reduce_partials_() {
-        println!("mcl version={:04x}", get_version());
         assert!(init(CurveType::BLS12_381));
         test_reduce_partials::<Fr, FFTSettings, Polynomial>();
     }
