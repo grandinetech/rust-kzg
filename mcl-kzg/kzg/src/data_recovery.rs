@@ -27,7 +27,7 @@ impl Polynomial {
                 }
     
                 for (i, factor) in INVERSE_FACTORS.iter().enumerate().take(self.order()).skip(1) {
-                    self.coeffs[i] *= &factor;
+                    self.coeffs[i] *= factor;
                 }
             }
         }
@@ -61,7 +61,7 @@ impl Polynomial {
                 }
     
                 for (i, factor) in UNSHIFT_FACTOR_POWERS.iter().enumerate().take(self.order()).skip(1) {
-                    self.coeffs[i] *= &factor;
+                    self.coeffs[i] *= factor;
                 }
             }
         }
