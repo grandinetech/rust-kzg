@@ -26,6 +26,7 @@ impl FFTSettings {
         Ok(())
     }
 
+    // #[cfg(feature = "parallel")] 
     fn _das_fft_extension(&self, values: &mut [Fr], stride: usize) {
         if values.len() < 2 {
             return;
@@ -48,16 +49,27 @@ impl FFTSettings {
             values[i] = add;
         }
 
-        if values.len() > 32 {
-            let (lo, hi) = values.split_at_mut(half);
-            rayon::join(
-                || self._das_fft_extension(hi, stride * 2),
-                || self._das_fft_extension(lo, stride * 2),
-            );
-        } else {
+        #[cfg(feature = "parallel")]
+        {
+            if values.len() > 32 {
+                let (lo, hi) = values.split_at_mut(half);
+                rayon::join(
+                    || self._das_fft_extension(hi, stride * 2),
+                    || self._das_fft_extension(lo, stride * 2),
+                );
+            } else {
+                self._das_fft_extension(&mut values[..half], stride << 1);
+                self._das_fft_extension(&mut values[half..], stride << 1);
+            }
+        }
+        #[cfg(not(feature="parallel"))]
+        {
+            // left
             self._das_fft_extension(&mut values[..half], stride << 1);
+            // right
             self._das_fft_extension(&mut values[half..], stride << 1);
         }
+        
 
         for i in 0..half {
             let root = &self.exp_roots_of_unity[((i << 1) + 1) * stride];

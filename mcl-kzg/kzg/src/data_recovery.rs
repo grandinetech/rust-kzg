@@ -3,61 +3,87 @@ use crate::fk20_fft::*;
 use crate::data_types::fr::Fr;
 use crate::utilities::is_power_of_2;
 
+#[cfg(feature = "parallel")]
 static mut INVERSE_FACTORS: Vec<Fr> = Vec::new();
+#[cfg(feature = "parallel")]
 static mut UNSHIFT_FACTOR_POWERS: Vec<Fr> = Vec::new();
 
 impl Polynomial {
+    // #[cfg(feature = "parallel")] 
     pub fn shift_in_place(&mut self) {
         let inv_factor = Fr::from_int(PRIMITIVE_ROOT).get_inv();
-        unsafe {
-            if INVERSE_FACTORS.len() < self.order() {
-                if INVERSE_FACTORS.is_empty() {
-                    INVERSE_FACTORS.push(Fr::one());
+        #[cfg(feature = "parallel")]
+        {
+            unsafe {
+                if INVERSE_FACTORS.len() < self.order() {
+                    if INVERSE_FACTORS.is_empty() {
+                        INVERSE_FACTORS.push(Fr::one());
+                    }
+                    for i in (INVERSE_FACTORS.len())..self.order() {
+                        let mut res = Fr::zero();
+                        Fr::mul(&mut res, &INVERSE_FACTORS[i-1], &inv_factor);
+                        INVERSE_FACTORS.push(res);
+                    }
                 }
-                for i in (INVERSE_FACTORS.len())..self.order() {
-                    let mut res = Fr::zero();
-                    Fr::mul(&mut res, &INVERSE_FACTORS[i-1], &inv_factor);
-                    INVERSE_FACTORS.push(res);
+    
+                for i in 1..self.order() {
+                    self.coeffs[i] *= &INVERSE_FACTORS[i];
                 }
-            }
-
-            for i in 1..self.order() {
-                self.coeffs[i] *= &INVERSE_FACTORS[i];
             }
         }
-
-        // self._shift_in_place(&inv_factor);
+        #[cfg(not(feature="parallel"))]
+        {
+            self._shift_in_place(&inv_factor);
+        }
     }
 
+    // #[cfg(not(feature="parallel"))]
+    // pub fn shift_in_place(&mut self) {
+    //     self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT).get_inv());
+    // }
+
+    
+    // #[cfg(feature = "parallel")] 
     pub fn unshift_in_place(&mut self) {
         let scale_factor = Fr::from_int(PRIMITIVE_ROOT);
-        unsafe {
-            if UNSHIFT_FACTOR_POWERS.len() < self.order() {
-                if UNSHIFT_FACTOR_POWERS.is_empty() {
-                    UNSHIFT_FACTOR_POWERS.push(Fr::one());
+        #[cfg(feature = "parallel")]
+        {
+            unsafe {
+                if UNSHIFT_FACTOR_POWERS.len() < self.order() {
+                    if UNSHIFT_FACTOR_POWERS.is_empty() {
+                        UNSHIFT_FACTOR_POWERS.push(Fr::one());
+                    }
+                    for i in (UNSHIFT_FACTOR_POWERS.len())..self.order() {
+                        let mut res = Fr::zero();
+                        Fr::mul(&mut res, &UNSHIFT_FACTOR_POWERS[i-1], &scale_factor);
+                        UNSHIFT_FACTOR_POWERS.push(res);
+                    }
                 }
-                for i in (UNSHIFT_FACTOR_POWERS.len())..self.order() {
-                    let mut res = Fr::zero();
-                    Fr::mul(&mut res, &UNSHIFT_FACTOR_POWERS[i-1], &scale_factor);
-                    UNSHIFT_FACTOR_POWERS.push(res);
+    
+                for i in 1..self.order() {
+                    self.coeffs[i] *= &UNSHIFT_FACTOR_POWERS[i];
                 }
-            }
-
-            for i in 1..self.order() {
-                self.coeffs[i] *= &UNSHIFT_FACTOR_POWERS[i];
             }
         }
-        // self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT));
+        #[cfg(not(feature="parallel"))]
+        {
+            self._shift_in_place(&scale_factor);
+        }
     }
 
-    //TODO, use precalculated tables for factors?
-    // fn _shift_in_place(&mut self, factor: &Fr){
-    //     let mut factor_to_power = Fr::one();
-    //     for i in 0..self.order() {
-    //         self.coeffs[i] *= &factor_to_power;
-    //         factor_to_power *= factor;
-    //     }
+    // #[cfg(not(feature="parallel"))]
+    // pub fn unshift_in_place(&mut self) {
+    //     self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT));
     // }
+
+    //TODO, use precalculated tables for factors?
+    fn _shift_in_place(&mut self, factor: &Fr){
+        let mut factor_to_power = Fr::one();
+        for i in 0..self.order() {
+            self.coeffs[i] *= &factor_to_power;
+            factor_to_power *= factor;
+        }
+    }
 
     pub fn recover_from_samples(fft_settings: &FFTSettings, samples: &[Option<Fr>]) -> Result<Self, String> {
         if !is_power_of_2(samples.len()) {

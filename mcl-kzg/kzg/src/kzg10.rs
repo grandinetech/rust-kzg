@@ -439,6 +439,7 @@ impl Polynomial {
         Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
     }
 
+    // #[cfg(feature = "parallel")] 
     pub fn mul_fft(
         &self,
         b: &Self,
@@ -464,17 +465,32 @@ impl Polynomial {
 
         let a_pad = self.pad(a_len, length);
         let b_pad = b.pad(b_len, length);
-        let mut a_fft = vec![];
-        let mut b_fft = vec![];
-        
-        if length > 1024 {
-            rayon::join(
-                || a_fft = ft.fft(&a_pad.coeffs, false).unwrap(),
-                || b_fft = ft.fft(&b_pad.coeffs, false).unwrap(),
-            );
-        } else {
+        let a_fft: Vec<Fr>;
+        let b_fft: Vec<Fr>;
+
+        #[cfg(feature = "parallel")] 
+        {
+            if length > 1024 {
+                let mut a_fft_temp = vec![];
+                let mut b_fft_temp = vec![];
+
+                rayon::join(
+                    || a_fft_temp = ft.fft(&a_pad.coeffs, false).unwrap(),
+                    || b_fft_temp = ft.fft(&b_pad.coeffs, false).unwrap(),
+                );
+                
+                a_fft = a_fft_temp;
+                b_fft = b_fft_temp;
+            } else {
+                a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
+                b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
+            }
+
+        }
+        #[cfg(not(feature="parallel"))]
+        {
             a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
-            b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
+            b_fft = ft.fft(&b_pad.coeffs, false).unwrap(); 
         }
         
         let mut ab_fft = a_fft;
