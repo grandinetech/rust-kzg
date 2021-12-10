@@ -208,10 +208,16 @@ impl FFTSettings {
 
         let half = out.len() >> 1;
 
-        // left
-        FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
-        // right
-        FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
+        if half > 256 {
+            let (lo, hi) = out.split_at_mut(half);
+            rayon::join(
+                || FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, lo),
+                || FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, hi),
+            );
+        } else {
+            FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
+            FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
+        }
 
         for i in 0..half {
             let root = &roots_of_unity[i * root_stride];
@@ -343,10 +349,11 @@ impl FFTSettings {
 
         let half = out.len() >> 1;
 
-        // left
-        FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[..half]);
-        // right
-        FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]);
+        let (lo, hi) = out.split_at_mut(half);
+        rayon::join(
+            || FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, lo),
+            || FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, hi),
+        );
 
         for i in 0..half {
             let x = out[i];
