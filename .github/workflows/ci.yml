@@ -25,13 +25,19 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --manifest-path Arkworks/Cargo.toml
+        args: --manifest-path Arkworks/Cargo.toml --features parallel
 
-    - name: "[arkworks] Benchmark"
+    - name: "[arkworks] Benchmark without parallelization"
       uses: actions-rs/cargo@v1
       with:
         command: bench
         args: --manifest-path Arkworks/Cargo.toml
+
+    - name: "[arkworks] Benchmark with parallelization"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path Arkworks/Cargo.toml --features parallel
 
     - name: "[arkworks] Clippy"
       uses: actions-rs/cargo@v1

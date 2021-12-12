@@ -339,19 +339,6 @@ pub struct KZGSettings {
     pub rand2: Randomness<Fr, UniPoly_381>,
 }
 
-// impl Default for KZGSettings {
-//     fn default() -> KZGSettings {
-//         KZGSettings {
-//             fs: FFTSettings::default(),
-//             secret_g1: Vec::new(),
-//             secret_g2: Vec::new(),
-//             length: 0,
-//             params: KZG_Bls12_381::setup(1, false, &mut test_rng()).unwrap(),
-//             rand: test_rng(),
-//             rand2: Randomness::empty(),
-//         }
-//     }
-// }
 
 pub fn default_kzg() -> KZGSettings {
         KZGSettings {
@@ -365,20 +352,20 @@ pub fn default_kzg() -> KZGSettings {
     }
 }
 
-pub fn generate_trusted_setup(len: usize, _secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
-    let mut s_pow = Fr::from(1);
-    let s = Fr::rand(&mut test_rng());
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
-    for _i in 0..len{
-        let mut temp = g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y, true).into_projective();
-        temp.mul_assign(s_pow);
-        s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
-        let mut temp = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, true).into_projective();
-        temp.mul_assign(s_pow);
-        s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
-        s_pow *= s;
-    }
+pub fn generate_trusted_setup(_len: usize, _secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
+    // let mut s_pow = Fr::from(1);
+    // let s = Fr::rand(&mut test_rng());
+    let s1 = Vec::new();
+    let s2 = Vec::new();
+    // for _i in 0..len{
+    //     let mut temp = g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y, true).into_projective();
+    //     temp.mul_assign(s_pow);
+    //     s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
+    //     let mut temp = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, true).into_projective();
+    //     temp.mul_assign(s_pow);
+    //     s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
+    //     s_pow *= s;
+    // }
 
     (s1, s2)
 }
@@ -407,7 +394,7 @@ pub(crate) fn new_kzg_settings(
     ffs: &FFTSettings,
 ) -> KZGSettings {
     let length = length + 1;
-    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, true, &mut test_rng()).unwrap();
+    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut test_rng()).unwrap();
 
     let mut temp = Vec::new();
     for i in 0..length{

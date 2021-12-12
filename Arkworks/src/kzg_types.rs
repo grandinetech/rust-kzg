@@ -15,7 +15,7 @@ use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use std::ops::Neg;
 use std::ops::MulAssign;
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
-use ark_ec::ProjectiveCurve;
+use ark_ec::{ProjectiveCurve, AffineCurve};
 use ark_std::{UniformRand, One, Zero};
 use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, blst_p1_into_pc_g1projective,
 blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2};
@@ -51,7 +51,7 @@ impl G1 for ArkG1 {
 
 
     fn rand() -> Self {
-        let mut rng = ark_std::test_rng();
+        let mut rng = rand::thread_rng();
         pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
     }
 
@@ -84,10 +84,9 @@ impl G1 for ArkG1 {
 
 impl G1Mul<FsFr> for ArkG1 {
     fn mul(&self, b: &FsFr) -> Self {
-        let mut a = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        let a = blst_p1_into_pc_g1projective(&self.0).unwrap().into_affine();
         let b = blst_fr_into_pc_fr(b);
-        a.mul_assign(b);
-        pc_g1projective_into_blst_p1(a).unwrap()
+        pc_g1projective_into_blst_p1(a.mul(b)).unwrap()
     }
 }
 

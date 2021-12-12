@@ -18,12 +18,14 @@ pub(crate) fn neg(n: BlstFr) -> BlstFr {
     pc_fr_into_blst_fr(blst_fr_into_pc_fr(&n).neg())
 }
 
+
+
 pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
-    // assert!(!b.coeffs.is_empty());
+
     if b.coeffs.is_empty(){
         return Err(String::from("b.coeffs is empty"));
     }
-    // assert!(!BlstFr::is_zero(&b.coeffs[0]));
+
     if BlstFr::is_zero(&b.coeffs[0]){
         return Err(String::from("b.coeffs[0] is zero"));
     }
@@ -40,6 +42,11 @@ pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, 
     }
 
     let maxd = output_len - 1;
+    let scale = log2_pow2((2*output_len - 1).next_power_of_two());
+    let fs = FFTSettings::new(scale).unwrap();
+
+    let mut tmp0: PolyData;
+    let mut tmp1: PolyData;
 
     output.coeffs[0] = b.coeffs[0].inverse();
     let mut d: usize = 0;
@@ -51,9 +58,7 @@ pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, 
 
         let len_temp: usize = min(d + 1, b.coeffs.len() + output.coeffs.len() - 1);
 
-        let p1 = blst_poly_into_pc_poly(&output).unwrap();
-        let p2 = blst_poly_into_pc_poly(b).unwrap();
-        let mut tmp0 = pc_poly_into_blst_poly(&p1 * &p2).unwrap();
+        tmp0 = poly_mul(b, &output, Some(&fs), len_temp).unwrap();
 
         for i in 0..len_temp {
             tmp0.coeffs[i] = neg(tmp0.coeffs[i]);
@@ -61,14 +66,9 @@ pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, 
         let fr_two = pc_fr_into_blst_fr(Fr::from(2));
         tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
 
-        let p1 = blst_poly_into_pc_poly(&tmp0).unwrap();
-        let p2 = blst_poly_into_pc_poly(&output).unwrap();
-        let mut tmp1 = pc_poly_into_blst_poly(&p1 * &p2).unwrap();
-        // println!("tmp0 {:?}", tmp0.coeffs.len());
-        // println!("tmp1 {:?}", tmp1.coeffs.len());
-        // println!("output {:?}", output.coeffs.len());
-        // println!("len_temp {:?}", len_temp);
-        // println!("output_len {:?}", output_len);
+        let len_temp2: usize = d+1;
+        
+        tmp1 = poly_mul(&output, &tmp0, Some(&fs), len_temp2).unwrap();
 
         if tmp1.coeffs.len() > output_len {
             tmp1.coeffs = tmp1.coeffs[..output_len].to_vec();
@@ -111,12 +111,6 @@ pub(crate) fn poly_long_div(p1: &PolyData, p2: &PolyData) -> Result<PolyData, St
     )
 }
 
-// pub(crate) fn poly_fast_div(p1: &PolyData, p2: &PolyData) -> Result<PolyData, String> {
-//     pc_poly_into_blst_poly(
-//         &blst_poly_into_pc_poly(p1).unwrap() / &blst_poly_into_pc_poly(p2).unwrap(),
-//     )
-// }
-
 pub fn poly_mul(a: &PolyData, b: &PolyData, fs: Option<&FFTSettings>, len: usize)  -> Result<PolyData, String> {
     if a.coeffs.len() < 64 || b.coeffs.len() < 64 || len < 128 {
         poly_mul_direct(a, b, len)
@@ -151,10 +145,31 @@ pub fn poly_mul_fft(a: &PolyData, b: &PolyData, fs: Option<&FFTSettings>, len: u
     let a_pad = PolyData{coeffs: pad_poly(&a, length).unwrap()};
     let b_pad = PolyData{coeffs: pad_poly(&b, length).unwrap()};
 
+    let a_fft;
+    let b_fft;
+    #[cfg(feature = "parallel")]
+    {  
+        if length > 1024 {
+            let mut a_fft_temp = vec![];
+            let mut b_fft_temp = vec![];
 
-    let a_fft = fs_p.fft_fr(&a_pad.coeffs, false).unwrap();
-    let b_fft = fs_p.fft_fr(&b_pad.coeffs, false).unwrap();
+            rayon::join(
+                || a_fft_temp = fs_p.fft_fr(&a_pad.coeffs, false).unwrap(),
+                || b_fft_temp = fs_p.fft_fr(&b_pad.coeffs, false).unwrap(),
+            );
 
+            a_fft = a_fft_temp;
+            b_fft = b_fft_temp;
+        } else {
+            a_fft = fs_p.fft_fr(&a_pad.coeffs, false).unwrap();
+            b_fft = fs_p.fft_fr(&b_pad.coeffs, false).unwrap();
+        }
+    }
+    #[cfg(not(feature = "parallel"))]
+    {
+        a_fft = fs_p.fft_fr(&a_pad.coeffs, false).unwrap();
+        b_fft = fs_p.fft_fr(&b_pad.coeffs, false).unwrap();
+    }
     let mut ab_fft = a_pad;
     let mut ab = b_pad;
 
@@ -213,7 +228,6 @@ pub fn poly_fast_div(dividend: &PolyData, divisor: &PolyData) -> Result<PolyData
     let b_flip = poly_flip(divisor).unwrap();
 
     let inv_b_flip = poly_inverse(&b_flip, m - n + 1).unwrap();
-
     let q_flip = poly_mul(&a_flip, &inv_b_flip, None, m - n + 1).unwrap();
 
     out = poly_flip(&q_flip).unwrap();
