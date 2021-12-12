@@ -27,7 +27,7 @@ rayon = { version = "1", optional = true }
 criterion = "0.3.5"
 
 [features]
-default = [ "std", "parallel" ]
+default = ["std"]
 std = [ "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std"]
 print-trace = [ "ark-std/print-trace" ]
 parallel = [ "std", "ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel", "ark-std/parallel", "rayon" ]

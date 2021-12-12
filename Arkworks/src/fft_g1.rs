@@ -158,22 +158,28 @@ pub fn fft_g1_fast(
     let half = ret.len() / 2;
 
     if half > 0 {
-        // fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
-        // fft_g1_fast(
-        //     &mut ret[half..],
-        //     &data[stride..],
-        //     stride * 2,
-        //     roots,
-        //     roots_stride * 2,
-        //     1
-        // );
-        if ret.len() > 8{
-            let (lo, hi) = ret.split_at_mut(half);
-            rayon::join(
-                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2, 1),
-                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2, 1),
-            );
-        }else{
+        #[cfg(feature = "parallel")]
+        {
+            if ret.len() > 8{
+                let (lo, hi) = ret.split_at_mut(half);
+                rayon::join(
+                    || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2, 1),
+                    || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2, 1),
+                );
+            }else{
+                fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
+                fft_g1_fast(
+                    &mut ret[half..],
+                    &data[stride..],
+                    stride * 2,
+                    roots,
+                    roots_stride * 2,
+                    1
+                );
+            }
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
             fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
             fft_g1_fast(
                 &mut ret[half..],
