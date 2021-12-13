@@ -24,7 +24,7 @@ pub mod tests {
     fn roots_of_unity_are_plausible_slice_() {
         let mut items = Vec::new();
         for i in SCALE2_ROOT_OF_UNITY.iter(){
-            items.push(FsFr::from_u64_arr(&i))
+            items.push(FsFr::from_u64_arr(i))
         }
         roots_of_unity_are_plausible_slice::<FsFr>(items.as_slice());
     }
