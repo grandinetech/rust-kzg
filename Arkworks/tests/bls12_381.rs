@@ -2,7 +2,7 @@
 pub mod tests {
 	use kzg_bench::tests::bls12_381::*;
 	use arkworks::kzg_types::{FsFr, ArkG1, ArkG2};
-	use arkworks::fft_g1::log_2_byte;
+	use arkworks::fft_g1::{log_2_byte, g1_linear_combination};
     use arkworks::kzg_proofs::pairings_verify;
 	
 #[test]	
@@ -95,11 +95,15 @@ pub fn g1_identity_is_identity_() {
 
 }
 
-// #[test]
-// pub fn g1_make_linear_combination_() {
-// 	g1_make_linear_combination::<FsFr, ArkG1>(G1_GENERATOR, &g1_linear_combination);
-// }
+#[test]
+pub fn g1_make_linear_combination_() {
+	g1_make_linear_combination::<FsFr, ArkG1>(&g1_linear_combination);
+}
 
+#[test]
+pub fn g1_random_linear_combination_() {
+	g1_random_linear_combination::<FsFr, ArkG1>(&g1_linear_combination);
+}
 
 #[test]
 pub fn pairings_work_() {
