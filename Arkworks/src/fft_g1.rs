@@ -74,7 +74,7 @@ pub fn make_data(data: usize) -> Vec<ArkG1> {
     if data != 0 {
         vec.push(ArkG1(G1_GENERATOR));
         for i in 1..data as u64 {
-            let mut temp = vec[(i - 1) as usize].clone();
+            let mut temp = vec[(i - 1) as usize];
             vec.push(temp.add_or_dbl(&ArkG1(G1_GENERATOR)));
         }
     }
@@ -145,7 +145,7 @@ pub fn fft_g1_slow(
     for i in 0..data.len() {
         last = data[0].mul(&roots[0]);
         for j in 1..data.len() {
-            jv = data[j * stride].clone();
+            jv = data[j * stride];
             r = roots[((i * j) % data.len()) * roots_stride];
             v = jv.mul(&r);
             last.add_or_dbl(&v);
