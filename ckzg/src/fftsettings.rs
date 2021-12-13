@@ -3,6 +3,7 @@ use kzg::{DAS, FFTFr, FFTG1, FFTSettings, FFTSettingsPoly, Fr, G1, Poly, ZeroPol
 use crate::consts::{BlstP1, KzgRet};
 use crate::finite::BlstFr;
 use crate::poly::KzgPoly;
+use crate::RUN_PARALLEL;
 use crate::utils::{log_2, next_pow_of_2};
 
 #[repr(C)]
@@ -18,11 +19,11 @@ extern "C" {
     fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
     fn free_fft_settings(settings: *mut KzgFFTSettings);
     fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
-    fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings, run_parallel: bool) -> KzgRet;
     fn poly_mul_(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *mut KzgFFTSettings) -> KzgRet;
     fn fft_fr_fast(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn fft_fr_slow(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
-    fn fft_g1_fast(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
+    fn fft_g1_fast(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize, run_parallel: bool);
     fn fft_g1_slow(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn do_zero_poly_mul_partial(dst : *mut KzgPoly, indices: *const u64, len_indices: u64, stride: u64, fs: *const KzgFFTSettings) -> KzgRet;
     //fn pad_p(out: *mut BlstFr, out_len: u64, p: *const KzgPoly) -> KzgRet;
@@ -121,7 +122,7 @@ impl FFTG1<BlstP1> for KzgFFTSettings {
 fn _fft_g1(input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> Result<Vec<BlstP1>, KzgRet> {
     let mut output = vec![G1::default(); n as usize];
     unsafe {
-        match fft_g1(output.as_mut_ptr(), input, inverse, n, fs) {
+        match fft_g1(output.as_mut_ptr(), input, inverse, n, fs, RUN_PARALLEL) {
             KzgRet::KzgOk => Ok(output),
             e => Err(e)
         }
@@ -249,7 +250,7 @@ pub fn bound_fft_g1_fast(
 ) {
     unsafe {
         fft_g1_fast(ret.as_mut_ptr(), data.as_ptr(), stride,
-                    roots.as_ptr(), roots_stride, n);
+                    roots.as_ptr(), roots_stride, n, RUN_PARALLEL);
     }
 }
 
