@@ -24,7 +24,7 @@ unset CFLAGS
 cd ..
 
 print_msg "Cloning c-kzg"
-git clone --single-branch --branch openmp https://github.com/tesa4436/c-kzg
+git clone --single-branch --branch openmp-parallelized-functions https://github.com/tesa4436/c-kzg
 
 print_msg "Copying files from blst to c-kzg"
 cp -r blst/* c-kzg/lib/
