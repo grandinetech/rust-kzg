@@ -47,6 +47,15 @@ pub const G1_GENERATOR: blst_p1 = blst_p1 {
     },
 };
 
+pub fn g1_linear_combination(out: &mut ArkG1, p: &[ArkG1], coeffs: &[BlstFr], len: usize) {
+    let mut tmp;
+    *out = G1_IDENTITY;
+    for i in 0..len {
+        tmp = p[i].mul(&coeffs[i]);
+        *out = out.add_or_dbl(&tmp);
+    }
+}
+
 /** The G1 identity/infinity */
 pub(crate) const G1_IDENTITY: ArkG1 = ArkG1(blst_p1{
     x: blst_fp {

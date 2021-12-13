@@ -90,6 +90,8 @@ impl G1Mul<FsFr> for ArkG1 {
     }
 }
 
+impl Copy for ArkG1 {}
+
 #[derive(Debug)]
 pub struct ArkG2(pub blst::blst_p2);
 
