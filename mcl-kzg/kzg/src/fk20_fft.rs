@@ -200,6 +200,7 @@ impl FFTSettings {
         })
     }
 
+    // #[cfg(feature = "parallel")] 
     fn _fft(values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
         // check if correct value is checked in case of a bug!
         if out.len() <= 4 { // if the value count is small, run the unoptimized version instead. // TODO tune threshold.
@@ -208,16 +209,27 @@ impl FFTSettings {
 
         let half = out.len() >> 1;
 
-        if half > 256 {
-            let (lo, hi) = out.split_at_mut(half);
-            rayon::join(
-                || FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, lo),
-                || FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, hi),
-            );
-        } else {
-            FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
-            FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
+        #[cfg(feature = "parallel")] 
+        {
+            if half > 256 {
+                let (lo, hi) = out.split_at_mut(half);
+                rayon::join(
+                    || FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, lo),
+                    || FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, hi),
+                );
+            } else {
+                FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
+                FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
+            }
         }
+        #[cfg(not(feature="parallel"))]
+        {
+            // left
+            FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
+            // right
+            FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]); 
+        }
+        
 
         for i in 0..half {
             let root = &roots_of_unity[i * root_stride];
@@ -341,6 +353,7 @@ impl FFTSettings {
         Ok(out)
     }
 
+    // #[cfg(feature = "parallel")] 
     fn _fft_g1(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         //TODO: fine tune for opt, maybe resolve number dinamically based on experiments
         if out.len() <= 4 {
@@ -349,12 +362,23 @@ impl FFTSettings {
 
         let half = out.len() >> 1;
 
-        let (lo, hi) = out.split_at_mut(half);
-        rayon::join(
-            || FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, lo),
-            || FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, hi),
-        );
-
+        #[cfg(feature = "parallel")] 
+        {
+            let (lo, hi) = out.split_at_mut(half);
+            rayon::join(
+                || FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, lo),
+                || FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, hi),
+            );
+    
+        }
+        #[cfg(not(feature="parallel"))]
+        {
+            // left
+            FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[..half]);
+            // right
+            FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]); 
+        }
+        
         for i in 0..half {
             let x = out[i];
             let y = out[i + half];
@@ -364,10 +388,7 @@ impl FFTSettings {
             G1::add(&mut out[i], &x, &y_times_root);
             out[i + half] = x - y_times_root;
         }
-
-        
     }
-    
 
     fn _fft_g1_simple(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         let l = out.len();
