@@ -437,8 +437,18 @@ pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly ) -> Result<ZPoly, String> 
     let b_pad = pad(b, length);
 	
 	
-	let a_fft = fs.fft_fr(&a_pad, false).unwrap(); 
-	let b_fft = fs.fft_fr(&b_pad, false).unwrap();
+	let mut a_fft = vec![]; //fs.fft_fr(&a_pad, false).unwrap(); 
+	let mut b_fft = vec![]; //fs.fft_fr(&b_pad, false).unwrap();
+	
+	 if length > 1024 {
+            rayon::join(
+                || a_fft = fs.fft_fr(&a_pad, false).unwrap(),
+                || b_fft = fs.fft_fr(&b_pad, false).unwrap(),
+            );
+        } else {
+            a_fft = fs.fft_fr(&a_pad, false).unwrap();
+            b_fft = fs.fft_fr(&b_pad, false).unwrap();
+        }
 	
 	// let mut ab_fft = a_pad;
 	let mut ab_fft = vec![<blsScalar as Default>::default(); length];
