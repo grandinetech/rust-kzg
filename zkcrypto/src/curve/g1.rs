@@ -987,6 +987,7 @@ impl G1Projective {
           (s1, k1.to_bytes(), 0, k2.to_bytes())
       }
 
+      #[allow(clippy::needless_range_loop)]
       fn regular_recoding(&self, naf: &mut [i8; 128], sc: &mut [u8; 32], w: i32) {
           // Joux-Tunstall regular recoding algorithm for parameterized w.
           let mask = (1 << w) - 1;
@@ -1003,7 +1004,7 @@ impl G1Projective {
           }
           naf[len - 1] = sc[0] as i8;
       }
-
+      #[allow(clippy::clone_on_copy)]
       fn precompute(&self, table: &mut [G1Affine]) {
           let mut proj_table = [G1Projective::identity(); 1 << (G1_WIDTH - 2)];
           let double_point = self.double();
@@ -1036,9 +1037,9 @@ impl G1Projective {
           let mut table = [G1Affine::from(self); 1 << (G1_WIDTH - 2)];
 
           // Allocate longest possible vector, recode scalar and precompute table.
-          let mut naf1 = [0 as i8; 128];
-          let mut naf2 = [0 as i8; 128];
-          let (s1, mut k1, s2, mut k2) = self.glv_recoding(&by);
+          let mut naf1 = [0_i8; 128];
+          let mut naf2 = [0_i8; 128];
+          let (s1, mut k1, s2, mut k2) = self.glv_recoding(by);
           if G1_WIDTH > 2 {
               self.precompute(&mut table);
           }
@@ -1061,7 +1062,7 @@ impl G1Projective {
               // Negate point if either k1 or naf1[i] is negative.
               let flag = sign ^ s1;
               t = G1Affine::conditional_select(&t, &-t, Choice::from(-flag as u8));
-              acc = acc + t;
+              acc += t;
 
               let sign = naf2[i] >> 7;
               let index = ((naf2[i] ^ sign) - sign) >> 1;
@@ -1069,13 +1070,13 @@ impl G1Projective {
               // Negate point if either k2 or naf2[i] is negative.
               let flag = sign ^ s2;
               t = G1Affine::conditional_select(&t, &-t, Choice::from(-flag as u8));
-              t.x = t.x * BETA;
-              acc = acc + t;
+              t.x *= BETA;
+              acc += t;
           }
           // If the subscalars were even, fix result here.
           let t = G1Affine::conditional_select(&table[0], &-table[0], Choice::from(-s1 as u8));
           acc = G1Projective::conditional_select(&acc, &(acc - t), Choice::from(1u8 - bit1));
-          table[0].x = table[0].x * BETA;
+          table[0].x *= BETA;
           let t = G1Affine::conditional_select(&table[0], &-table[0], Choice::from(-s2 as u8));
           G1Projective::conditional_select(&acc, &(acc - t), Choice::from(1u8 - bit2))
       }
