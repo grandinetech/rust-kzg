@@ -44,27 +44,48 @@ pub fn fft_fr_fast(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roo
     let split: usize = ret.len() / 2;
 
     if split > 0 {
-        fft_fr_fast(
-            &mut ret[..split],
-            data,
-            stride * 2,
-            roots,
-            roots_stride * 2
-        );
-        fft_fr_fast(
-            &mut ret[split..],
-            &data[stride..],
-            stride * 2,
-            roots,
-            roots_stride * 2
-        );
+		if split > 256 {
+			let (lo, hi) = ret.split_at_mut(split);
+			rayon::join(
+				|| fft_fr_fast(
+					lo,
+					data,
+					stride * 2,
+					roots,
+					roots_stride * 2
+				),
+				|| fft_fr_fast(
+					hi,
+					&data[stride..],
+					stride * 2,
+					roots,
+					roots_stride * 2
+				),);
+		}
+		else {
+			fft_fr_fast(
+				&mut ret[..split],
+				data,
+				stride * 2,
+				roots,
+				roots_stride * 2
+			);
+			fft_fr_fast(
+				&mut ret[split..],
+				&data[stride..],
+				stride * 2,
+				roots,
+				roots_stride * 2
+			);
+		}
 
         for i in 0..split {
             let y_times_root = ret[i + split].mul(&roots[i * roots_stride]);
             ret[i + split] = ret[i].sub(&y_times_root);
             ret[i] = ret[i].add(&y_times_root);
         }
-    } else {
+    } 
+	else {
         ret[0] = data[0];
     }
 }
