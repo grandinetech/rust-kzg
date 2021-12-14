@@ -11,6 +11,9 @@ rand = "0.4"
 [dev-dependencies]
 criterion = "0.3.5"
 
+[features]
+parallel = []
+
 [[bench]]
 name = "fft"
 harness = false

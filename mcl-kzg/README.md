@@ -9,9 +9,15 @@ This repo also contains Herumi MCL, as I could not find a way to make the cargo 
 ## How to test/run
 
 First follow the steps in Herumi mcl (refer to the link above), then just run the following code in checked out dir:
+To test without rayon:
 
 ```bash
 cargo test -- --test-threads 1 --nocapture
+```
+
+With rayon:
+```bash
+cargo test --features mcl_rust/parallel -- --test-threads 1 --nocapture
 ```
 
 To run benchmarks, just run

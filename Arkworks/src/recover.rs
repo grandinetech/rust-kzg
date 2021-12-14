@@ -4,25 +4,69 @@ use crate::kzg_proofs::FFTSettings;
 use kzg::{Fr, Poly, ZeroPoly, FFTFr, PolyRecover};
 
 const SCALE_FACTOR: u64 = 5;
+#[cfg(feature = "parallel")]
+static mut INVERSE_FACTORS: Vec<BlstFr> = Vec::new();
+#[cfg(feature = "parallel")]
+static mut UNSCALE_FACTOR_POWERS: Vec<BlstFr> = Vec::new();
 
+#[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut PolyData){
     let scale_factor = BlstFr::from_u64(SCALE_FACTOR);
     let inv_factor = scale_factor.inverse();
-    let mut factor_power = BlstFr::one();
+    #[cfg(feature = "parallel")]
+    {
+        unsafe {
+                if INVERSE_FACTORS.len() < p.len() {
+                    if INVERSE_FACTORS.is_empty() {
+                        INVERSE_FACTORS.push(BlstFr::one());
+                    }
+                    for i in (INVERSE_FACTORS.len())..p.len() {
+                        INVERSE_FACTORS.push(INVERSE_FACTORS[i-1].mul(&inv_factor));
+                    }
+                }
 
-    for i in 1..p.len(){
-        factor_power = factor_power.mul(&inv_factor);
-        p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+                for i in 1..p.len() {
+                    p.coeffs[i] = p.coeffs[i].mul(&INVERSE_FACTORS[i]);
+                }
+            }
+    }
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut factor_power = BlstFr::one();
+        for i in 1..p.len(){
+            factor_power = factor_power.mul(&inv_factor);
+            p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+        }
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut PolyData) {
     let scale_factor = BlstFr::from_u64(SCALE_FACTOR);
-    let mut factor_power = BlstFr::one();
+    #[cfg(feature = "parallel")]
+    {
+        unsafe {
+            if UNSCALE_FACTOR_POWERS.len() < p.len() {
+                if UNSCALE_FACTOR_POWERS.is_empty() {
+                    UNSCALE_FACTOR_POWERS.push(BlstFr::one());
+                }
+                for i in (UNSCALE_FACTOR_POWERS.len())..p.len() {
+                    UNSCALE_FACTOR_POWERS.push(UNSCALE_FACTOR_POWERS[i-1].mul(&scale_factor));
+                }
+            }
 
-    for i in 1..p.len(){
-        factor_power = factor_power.mul(&scale_factor);
-        p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+            for i in 1..p.len() {
+                p.coeffs[i] = p.coeffs[i].mul(&UNSCALE_FACTOR_POWERS[i]);
+            }
+        }
+    }
+    #[cfg(not(feature = "parallel"))]
+    {   
+        let mut factor_power = BlstFr::one();
+        for i in 1..p.len(){
+            factor_power = factor_power.mul(&scale_factor);
+            p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+        }
     }
 }
 impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData{

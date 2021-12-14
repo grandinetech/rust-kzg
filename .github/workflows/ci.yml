@@ -25,13 +25,19 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --manifest-path Arkworks/Cargo.toml
+        args: --manifest-path Arkworks/Cargo.toml --features parallel
 
-    - name: "[arkworks] Benchmark"
+    - name: "[arkworks] Benchmark without parallelization"
       uses: actions-rs/cargo@v1
       with:
         command: bench
         args: --manifest-path Arkworks/Cargo.toml
+
+    - name: "[arkworks] Benchmark with parallelization"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path Arkworks/Cargo.toml --features parallel
 
     - name: "[arkworks] Clippy"
       uses: actions-rs/cargo@v1
@@ -130,12 +136,19 @@ jobs:
         command: test
         args: --manifest-path ckzg/Cargo.toml
 
-    - name: "[ckzg] Benchmark"
+    - name: "[ckzg] Benchmark without parallelization"
       uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: bench
         args: --manifest-path ckzg/Cargo.toml
+
+    - name: "[ckzg] Benchmark with parallelization"
+      uses: actions-rs/cargo@v1
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      with:
+        command: bench
+        args: --manifest-path ckzg/Cargo.toml --features parallel
 
     - name: "[ckzg] Clippy"
       uses: actions-rs/cargo@v1
@@ -175,15 +188,25 @@ jobs:
         command: clippy
         args: --manifest-path mcl-kzg/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: "[mcl-kzg10-rust] Run tests"
+    - name: "[mcl-kzg10-rust] Run tests without parallel"
       if: matrix.os == 'ubuntu-latest'
       run: |
         cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
 
-    - name: "[mcl-kzg10-rust] Run benches"
+    - name: "[mcl-kzg10-rust] Run tests with parallel"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel -- --test-threads 1
+
+    - name: "[mcl-kzg10-rust] Run benches without parallel"
       if: matrix.os == 'ubuntu-latest'
       run: |
         cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+
+    - name: "[mcl-kzg10-rust] Run benches with parallel"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel
 
     - name: "[mcl-kzg10-rust] Run fmt"
       if: matrix.os == 'ubuntu-latest'
