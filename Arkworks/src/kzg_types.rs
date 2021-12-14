@@ -454,3 +454,14 @@ impl Clone for LKZGSettings {
         LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, &self.fs.clone()).unwrap()
     }
 }
+
+pub fn expand_root_of_unity_mcl(root: &FsFr) -> Vec<FsFr> {
+    let mut root_z = vec![Fr::one(), *root];
+    let mut i = 1;
+    while !root_z[i].is_one() {
+        let next = &root_z[i].mul(root);
+        root_z.push(*next);
+        i += 1;
+    }
+    root_z
+}
