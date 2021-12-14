@@ -24,7 +24,7 @@ mod tests {
     #[test]
     fn test_roots_of_unity_are_plausible_slice() {
         roots_of_unity_are_plausible_slice::<BlstFr>(&SCALE2_ROOT_OF_UNITY.iter()
-            .map(|x| BlstFr::from_u64_arr(x))
+            .map(BlstFr::from_u64_arr)
             .collect::<Vec<_>>());
     }
 
@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_expand_roots_is_plausible_slice() {
         expand_roots_is_plausible_slice::<BlstFr>(&SCALE2_ROOT_OF_UNITY.iter()
-            .map(|x| BlstFr::from_u64_arr(x))
+            .map(BlstFr::from_u64_arr)
             .collect::<Vec<_>>(), &expand_root_of_unity_mcl);
     }
 
