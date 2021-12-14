@@ -130,12 +130,19 @@ jobs:
         command: test
         args: --manifest-path ckzg/Cargo.toml
 
-    - name: "[ckzg] Benchmark"
+    - name: "[ckzg] Benchmark without parallelization"
       uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: bench
         args: --manifest-path ckzg/Cargo.toml
+
+    - name: "[ckzg] Benchmark with parallelization"
+      uses: actions-rs/cargo@v1
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      with:
+        command: bench
+        args: --manifest-path ckzg/Cargo.toml --features parallel
 
     - name: "[ckzg] Clippy"
       uses: actions-rs/cargo@v1
