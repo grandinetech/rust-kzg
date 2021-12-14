@@ -37,7 +37,7 @@ pub mod tests {
     #[test]
     fn test_expand_roots_is_plausible_slice() {
         expand_roots_is_plausible_slice::<FsFr>(&SCALE2_ROOT_OF_UNITY.iter()
-            .map(|x| FsFr::from_u64_arr(x))
+            .map(FsFr::from_u64_arr)
             .collect::<Vec<_>>(), &expand_root_of_unity_mcl);
     }
 
