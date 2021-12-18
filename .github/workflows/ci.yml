@@ -45,12 +45,19 @@ jobs:
         fi
         echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
 
-    - name: "[ckzg] Tests"
+    - name: "[ckzg] Tests without parallelization"
       uses: actions-rs/cargo@v1
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       with:
         command: test
         args: --manifest-path ckzg/Cargo.toml
+
+    - name: "[ckzg] Tests with parallelization"
+      uses: actions-rs/cargo@v1
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      with:
+        command: test
+        args: --manifest-path ckzg/Cargo.toml --features parallel
 
     - name: "[ckzg] Benchmark without parallelization"
       uses: actions-rs/cargo@v1
