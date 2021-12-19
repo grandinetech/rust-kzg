@@ -449,32 +449,50 @@ pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly ) -> Result<ZPoly, String> 
             a_fft = fs.fft_fr(&a_pad, false).unwrap();
             b_fft = fs.fft_fr(&b_pad, false).unwrap();
         }
+
+        let mut ab_fft = vec![<blsScalar as Default>::default(); length];
+
+        for i in 0..length {
+            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+            assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
+        }
+
+        let ab = fs.fft_fr(&ab_fft, true).unwrap();
+
+        let mut output = ZPoly {coeffs: vec![blsScalar::zero(); out] };
+        let data_len = min_u64(out, length).unwrap();
+
+        // for i in 0..data_len {
+            // output.coeffs[i] = ab[i];//push(ab[i]);
+        // }
+        output.coeffs[..data_len].clone_from_slice(&ab[..data_len]);
+
+        Ok(output)
 	}
 
     #[cfg(not(feature = "parallel"))] {
         let a_fft = fs.fft_fr(&a_pad, false).unwrap();
     	let b_fft = fs.fft_fr(&b_pad, false).unwrap();
+
+        let mut ab_fft = vec![<blsScalar as Default>::default(); length];
+
+        for i in 0..length {
+            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+            assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
+        }
+
+        let ab = fs.fft_fr(&ab_fft, true).unwrap();
+
+        let mut output = ZPoly {coeffs: vec![blsScalar::zero(); out] };
+        let data_len = min_u64(out, length).unwrap();
+
+        // for i in 0..data_len {
+            // output.coeffs[i] = ab[i];//push(ab[i]);
+        // }
+        output.coeffs[..data_len].clone_from_slice(&ab[..data_len]);
+
+        Ok(output)
     }
-    
-	// let mut ab_fft = a_pad;
-	let mut ab_fft = vec![<blsScalar as Default>::default(); length];
-
-    for i in 0..length {
-		ab_fft[i] = a_fft[i].mul(&b_fft[i]);
-		assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
-    }
-
-    let ab = fs.fft_fr(&ab_fft, true).unwrap();
-
-    let mut output = ZPoly {coeffs: vec![blsScalar::zero(); out] };
-	let data_len = min_u64(out, length).unwrap();
-
-	// for i in 0..data_len {
-        // output.coeffs[i] = ab[i];//push(ab[i]);
-    // }
-	output.coeffs[..data_len].clone_from_slice(&ab[..data_len]);
-
-    Ok(output)
 }
 
 pub fn poly_mul_direct(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly, String> { // +

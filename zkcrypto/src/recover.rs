@@ -94,27 +94,43 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly{
                 eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
                 eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
             }
+
+            let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero.clone();
+            for i in 0..samples.len() {
+                eval_scaled_reconstructed_poly[i] = eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i]).unwrap();
+            }
+
+            let mut scaled_reconstructed_poly = ZPoly{coeffs:fs.fft_fr(&eval_scaled_reconstructed_poly, true).unwrap()};
+            unscale_poly(&mut scaled_reconstructed_poly);
+
+            let reconstructed_poly = scaled_reconstructed_poly; // Renaming
+            let out = ZPoly{coeffs: fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap()};
+
+            for (i, sample) in samples.iter().enumerate() {
+                assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
+            }
+            Ok(out)
         }
 
         #[cfg(not(feature = "parallel"))] {
             let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
             let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
-        }
-        
-        let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero.clone();
-        for i in 0..samples.len() {
-            eval_scaled_reconstructed_poly[i] = eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i]).unwrap();
-        }
 
-        let mut scaled_reconstructed_poly = ZPoly{coeffs:fs.fft_fr(&eval_scaled_reconstructed_poly, true).unwrap()};
-        unscale_poly(&mut scaled_reconstructed_poly);
+            let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero.clone();
+            for i in 0..samples.len() {
+                eval_scaled_reconstructed_poly[i] = eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i]).unwrap();
+            }
 
-        let reconstructed_poly = scaled_reconstructed_poly; // Renaming
-        let out = ZPoly{coeffs: fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap()};
+            let mut scaled_reconstructed_poly = ZPoly{coeffs:fs.fft_fr(&eval_scaled_reconstructed_poly, true).unwrap()};
+            unscale_poly(&mut scaled_reconstructed_poly);
 
-        for (i, sample) in samples.iter().enumerate() {
-            assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
+            let reconstructed_poly = scaled_reconstructed_poly; // Renaming
+            let out = ZPoly{coeffs: fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap()};
+
+            for (i, sample) in samples.iter().enumerate() {
+                assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
+            }
+            Ok(out)
         }
-        Ok(out)
     }
 }
