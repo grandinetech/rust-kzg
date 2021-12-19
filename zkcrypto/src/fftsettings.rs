@@ -42,17 +42,24 @@ impl ZkFFTSettings {
 					vals[i] = tmp1;
 				}
 
-				if vals.len() > 32 {
-				    let (lo, hi) = vals.split_at_mut(half_halved);
-				    rayon::join(
-				        || self.das_fft_extension_stride(hi, stride * 2),
-				        || self.das_fft_extension_stride(lo, stride * 2),
-				    );
-			        }
-				else {
-				    self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
-				    self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
-			        }
+                #[cfg(feature = "parallel")] {
+    				if vals.len() > 32 {
+    				    let (lo, hi) = vals.split_at_mut(half_halved);
+    				    rayon::join(
+    				        || self.das_fft_extension_stride(hi, stride * 2),
+    				        || self.das_fft_extension_stride(lo, stride * 2),
+    				    );
+    			        }
+    				else {
+    				    self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
+    				    self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
+    			    }
+                }
+
+                #[cfg(not(feature = "parallel"))] {
+                    self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
+                    self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
+                }
 
 				for i in 0..half_halved{
 					let x = vals[i];
