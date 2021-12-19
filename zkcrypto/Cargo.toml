@@ -29,6 +29,10 @@ default-features = false
 [dev-dependencies]
 criterion = "0.3.5"
 
+[features]
+parallel = []
+
+
 [[bench]]
 name = "zero_poly"
 harness = false

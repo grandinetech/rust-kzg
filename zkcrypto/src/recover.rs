@@ -54,18 +54,25 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly{
                 poly_evaluations_with_zero[i] = samples[i].unwrap().mul(&zero_eval[i]);
             }
         }
-	    
+
         let mut poly_with_zero = ZPoly{coeffs:fs.fft_fr(poly_evaluations_with_zero.as_slice(), true).unwrap()};
 
-        let optim = next_power_of_two(poly_with_zero.len() - 1);
+        #[cfg(feature = "parallel")] {
+            let optim = next_power_of_two(poly_with_zero.len() - 1);
 
-        if optim > 1024 {
-            rayon::join(
-                || scale_poly(&mut poly_with_zero),
-                || scale_poly(&mut zero_poly),
-            );
+            if optim > 1024 {
+                rayon::join(
+                    || scale_poly(&mut poly_with_zero),
+                    || scale_poly(&mut zero_poly),
+                );
+            }
+            else {
+                scale_poly(&mut poly_with_zero);
+                scale_poly(&mut zero_poly);
+            }
         }
-        else {
+
+        #[cfg(not(feature = "parallel"))] {
             scale_poly(&mut poly_with_zero);
             scale_poly(&mut zero_poly);
         }
@@ -73,21 +80,27 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly{
         let scaled_poly_with_zero = poly_with_zero;
         let scaled_zero_poly = zero_poly.coeffs; // Renaming
 
-        let mut eval_scaled_poly_with_zero = vec![];
-        let mut eval_scaled_zero_poly = vec![];
+        #[cfg(feature = "parallel")] {
+            let mut eval_scaled_poly_with_zero = vec![];
+            let mut eval_scaled_zero_poly = vec![];
 
-        if optim > 1024 {
-            rayon::join(
-                || eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap(),
-                || eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap(),
-            );
+            if optim > 1024 {
+                rayon::join(
+                    || eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap(),
+                    || eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap(),
+                );
+            }
+            else {
+                eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
+                eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+            }
         }
-        else {
-            eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
-            eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+
+        #[cfg(not(feature = "parallel"))] {
+            let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
+            let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
         }
         
-
         let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero.clone();
         for i in 0..samples.len() {
             eval_scaled_reconstructed_poly[i] = eval_scaled_poly_with_zero[i].div(&eval_scaled_zero_poly[i]).unwrap();

@@ -50,7 +50,7 @@ impl ZkFFTSettings {
 				    );
 			        }
 				else {
-				    self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2); 
+				    self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
 				    self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
 			        }
 
@@ -64,7 +64,7 @@ impl ZkFFTSettings {
 			}
 		}
 		// if vals.len() < 2 {
-            
+
         // }
 		// else if vals.len() == 2 {
             // let x = vals[0].add(&vals[1]);
@@ -74,7 +74,7 @@ impl ZkFFTSettings {
             // vals[0] = x.add(&tmp);
             // vals[1] = x.sub(&tmp);
 
-            
+
         // }
 		// else {
             // let half = vals.len();
@@ -88,7 +88,7 @@ impl ZkFFTSettings {
             // }
 
             // self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
-			
+
             // self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
 
             // for i in 0..half_halved{
@@ -106,11 +106,11 @@ impl FFTSettingsPoly<blsScalar, ZPoly, ZkFFTSettings> for ZkFFTSettings {
     fn poly_mul_fft(a: &ZPoly, b: &ZPoly, len: usize, _fs: Option<&ZkFFTSettings>) -> Result<ZPoly, String> {
 		poly_mul_fft(len, a, b)
 	}
-	
+
 }
 
 impl FFTFr<blsScalar> for ZkFFTSettings {
-	
+
 	fn fft_fr(&self, data: &[blsScalar], inverse: bool) -> Result<Vec<blsScalar>, String> {
 		if data.len() > self.max_width {
 			return Err(String::from( "The supplied list is longer than the available max width",
@@ -119,7 +119,7 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
 		else if !is_power_of_two(data.len()) {
 			return Err(String::from("A list with power-of-two length is expected"));
 		}
-	
+
 	// In case more roots are provided with fft_settings, use a larger stride
         let stride = self.max_width / data.len();
         let mut ret = vec![<blsScalar as Fr>::default(); data.len()];
@@ -143,9 +143,9 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
         }
 
         Ok(ret)
-	
+
 	}
-	
+
 }
 
 impl ZkFFTSettings {
@@ -174,7 +174,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
             reverse_roots_of_unity: Vec::new(),
         }
     }
-	
+
 	fn new(scale: usize) -> Result<ZkFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from("Scale is expected to be within root of unity matrix row size"));
@@ -198,7 +198,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
             reverse_roots_of_unity,
         })
     }
-	
+
 	fn get_max_width(&self) -> usize {
         self.max_width
     }
