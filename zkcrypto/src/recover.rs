@@ -70,17 +70,10 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly{
                 scale_poly(&mut poly_with_zero);
                 scale_poly(&mut zero_poly);
             }
-        }
 
-        #[cfg(not(feature = "parallel"))] {
-            scale_poly(&mut poly_with_zero);
-            scale_poly(&mut zero_poly);
-        }
+            let scaled_poly_with_zero = poly_with_zero;
+            let scaled_zero_poly = zero_poly.coeffs;
 
-        let scaled_poly_with_zero = poly_with_zero;
-        let scaled_zero_poly = zero_poly.coeffs; // Renaming
-
-        #[cfg(feature = "parallel")] {
             let mut eval_scaled_poly_with_zero = vec![];
             let mut eval_scaled_zero_poly = vec![];
 
@@ -113,6 +106,12 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly{
         }
 
         #[cfg(not(feature = "parallel"))] {
+            scale_poly(&mut poly_with_zero);
+            scale_poly(&mut zero_poly);
+
+            let scaled_poly_with_zero = poly_with_zero;
+            let scaled_zero_poly = zero_poly.coeffs;
+
             let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
             let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
 
