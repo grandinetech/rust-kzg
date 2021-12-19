@@ -59,11 +59,17 @@ jobs:
         command: test
         args: --manifest-path zkcrypto/Cargo.toml
 
-    - name: "[zkcrypto] Benches"
+    - name: "[zkcrypto] Benchmark without parallelization"
       uses: actions-rs/cargo@v1
       with:
         command: bench
         args: --manifest-path zkcrypto/Cargo.toml
+
+    - name: "[zkcrypto] Benchmark with parallelization"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path zkcrypto/Cargo.toml --features parallel
 
     - name: "[zkcrypto] Clippy"
       uses: actions-rs/cargo@v1
