@@ -15,20 +15,29 @@ pub fn scale_poly(p: &mut PolyData){
     let inv_factor = scale_factor.inverse();
     #[cfg(feature = "parallel")]
     {
-        unsafe {
-                if INVERSE_FACTORS.len() < p.len() {
-                    if INVERSE_FACTORS.is_empty() {
-                        INVERSE_FACTORS.push(BlstFr::one());
+        let optim = (p.len() - 1).next_power_of_two();
+        if optim <= 1024 {
+            unsafe {
+                    if INVERSE_FACTORS.len() < p.len() {
+                        if INVERSE_FACTORS.is_empty() {
+                            INVERSE_FACTORS.push(BlstFr::one());
+                        }
+                        for i in (INVERSE_FACTORS.len())..p.len() {
+                            INVERSE_FACTORS.push(INVERSE_FACTORS[i-1].mul(&inv_factor));
+                        }
                     }
-                    for i in (INVERSE_FACTORS.len())..p.len() {
-                        INVERSE_FACTORS.push(INVERSE_FACTORS[i-1].mul(&inv_factor));
-                    }
-                }
 
-                for i in 1..p.len() {
-                    p.coeffs[i] = p.coeffs[i].mul(&INVERSE_FACTORS[i]);
+                    for i in 1..p.len() {
+                        p.coeffs[i] = p.coeffs[i].mul(&INVERSE_FACTORS[i]);
+                    }
                 }
+        } else{
+            let mut factor_power = BlstFr::one();
+            for i in 1..p.len(){
+                factor_power = factor_power.mul(&inv_factor);
+                p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
             }
+        }
     }
     #[cfg(not(feature = "parallel"))]
     {
@@ -112,20 +121,64 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData{
         // TRY(fft_fr(poly_with_zero, poly_evaluations_with_zero, true, len_samples, fs));
         let mut poly_with_zero = PolyData{coeffs:fs.fft_fr(poly_evaluations_with_zero.as_slice(), true).unwrap()};
 
-        // x -> k * x
-        scale_poly(&mut poly_with_zero);
-        scale_poly(&mut zero_poly);
+        #[cfg(feature = "parallel")]
+        let optim = (poly_with_zero.len() - 1).next_power_of_two();
+
+        #[cfg(feature = "parallel")]
+        {
+            if optim > 1024 {
+                rayon::join(
+                    || scale_poly(&mut poly_with_zero),
+                    || scale_poly(&mut zero_poly),
+                );
+            }
+            else {
+                scale_poly(&mut poly_with_zero);
+                scale_poly(&mut zero_poly);
+            }
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            scale_poly(&mut poly_with_zero);
+            scale_poly(&mut zero_poly);
+        }
+
 
         // Q1 = (D * Z_r,I)(k * x)
         let scaled_poly_with_zero = poly_with_zero; // Renaming
         // Q2 = Z_r,I(k * x)
         let scaled_zero_poly = zero_poly.coeffs; // Renaming
 
-        // Polynomial division by convolution: Q3 = Q1 / Q2
-        // TRY(fft_fr(eval_scaled_poly_with_zero, scaled_poly_with_zero, false, len_samples, fs));
-        let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
-        // TRY(fft_fr(eval_scaled_zero_poly, scaled_zero_poly, false, len_samples, fs));
-        let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+        let eval_scaled_poly_with_zero;
+        let eval_scaled_zero_poly;
+
+        #[cfg(feature = "parallel")]
+        {
+            if optim > 1024 {
+                let mut eval_scaled_poly_with_zero_temp = vec![];
+                let mut eval_scaled_zero_poly_temp = vec![];
+                rayon::join(
+                    || eval_scaled_poly_with_zero_temp = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap(),
+                    || eval_scaled_zero_poly_temp = fs.fft_fr(&scaled_zero_poly, false).unwrap(),
+                );
+
+                eval_scaled_poly_with_zero = eval_scaled_poly_with_zero_temp;
+                eval_scaled_zero_poly = eval_scaled_zero_poly_temp;
+            }
+            else {
+                eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
+                eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+            }
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
+            eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+        }
+
+        // let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
+        // // TRY(fft_fr(eval_scaled_zero_poly, scaled_zero_poly, false, len_samples, fs));
+        // let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
 
         let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero.clone();
         for i in 0..samples.len() {

@@ -21,7 +21,25 @@ jobs:
 
 # 1st team #########################################################
 
-    - name: "[arkworks] Tests"
+    - name: "[arkworks] Clippy"
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
+
+    - name: "[arkworks] Formatting"
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path Arkworks/Cargo.toml
+        
+    - name: "[arkworks] Tests without parallel"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path Arkworks/Cargo.toml
+
+    - name: "[arkworks] Tests with parallel"
       uses: actions-rs/cargo@v1
       with:
         command: test
@@ -38,18 +56,6 @@ jobs:
       with:
         command: bench
         args: --manifest-path Arkworks/Cargo.toml --features parallel
-
-    - name: "[arkworks] Clippy"
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
-
-    - name: "[arkworks] Formatting"
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path Arkworks/Cargo.toml
 
 # 2nd team #########################################################
 
