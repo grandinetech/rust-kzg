@@ -59,11 +59,17 @@ jobs:
 
 # 2nd team #########################################################
 
-    - name: "[zkcrypto] Tests"
+    - name: "[zkcrypto] Tests without parallelization"
       uses: actions-rs/cargo@v1
       with:
         command: test
         args: --manifest-path zkcrypto/Cargo.toml
+        
+    - name: "[zkcrypto] Tests with parallelization"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path zkcrypto/Cargo.toml --features parallel
 
     - name: "[zkcrypto] Benchmark without parallelization"
       uses: actions-rs/cargo@v1
