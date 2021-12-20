@@ -3,6 +3,7 @@ use kzg::{Fr, Poly, PolyRecover};
 use crate::finite::BlstFr;
 use crate::consts::KzgRet;
 use crate::fftsettings::KzgFFTSettings;
+use crate::RUN_PARALLEL;
 
 extern "C" {
     fn new_poly(out: *mut KzgPoly, length: u64) -> KzgRet;
@@ -10,10 +11,10 @@ extern "C" {
     fn new_poly_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
     fn eval_poly(out: *mut BlstFr, p: *const KzgPoly, x: *const BlstFr);
     fn poly_inverse(out: *mut KzgPoly, b: *mut KzgPoly) -> KzgRet;
-    fn poly_mul(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly) -> KzgRet;
+    fn poly_mul(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, run_parallel: bool) -> KzgRet;
     fn poly_long_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
     fn poly_fast_div(out: *mut KzgPoly, dividend: *const KzgPoly, divisor: *const KzgPoly) -> KzgRet;
-    fn recover_poly_from_samples(reconstructed_data: *mut BlstFr, samples: *mut BlstFr, len_samples: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    fn recover_poly_from_samples(reconstructed_data: *mut BlstFr, samples: *mut BlstFr, len_samples: u64, fs: *const KzgFFTSettings, run_parallel: bool) -> KzgRet;
 }
 
 #[repr(C)]
@@ -122,7 +123,7 @@ impl Poly<BlstFr> for KzgPoly {
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
         let mut poly = Poly::new(len).unwrap();
         unsafe {
-            match poly_mul(&mut poly, self, x) {
+            match poly_mul(&mut poly, self, x, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in Poly::mul_direct ==> {:?}", e))
             }
@@ -150,7 +151,7 @@ impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
             optionless_samples.push(Fr::null());
         }
         unsafe {
-            match recover_poly_from_samples(reconstructed_data.as_mut_ptr(), optionless_samples.as_mut_ptr(), samples.len() as u64, fs) {
+            match recover_poly_from_samples(reconstructed_data.as_mut_ptr(), optionless_samples.as_mut_ptr(), samples.len() as u64, fs, RUN_PARALLEL) {
                 KzgRet::KzgOk => (),
                 e => return Err(format!("An error has occurred in PolyRecover::recover_poly_from_samples ==> {:?}", e))
             }
