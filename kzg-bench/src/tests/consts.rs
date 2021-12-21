@@ -20,7 +20,7 @@ pub fn roots_of_unity_are_plausible<TFr: Fr>(roots: &[[u64; 4]; 32]) {
         assert!(r.is_one());
     }
 }
-
+/*
 pub fn roots_of_unity_are_plausible_slice<TFr: Fr>(roots: &[TFr]) {
     for i in 0..roots.len() {
         let mut r = roots[i].clone();
@@ -30,7 +30,7 @@ pub fn roots_of_unity_are_plausible_slice<TFr: Fr>(roots: &[TFr]) {
 
         assert!(r.is_one());
     }
-}
+}*/
 
 /// Check if expanded root members follow symmetry and symmetrically multiply to produce a 1.
 pub fn expand_roots_is_plausible<TFr: Fr>(
@@ -52,7 +52,7 @@ pub fn expand_roots_is_plausible<TFr: Fr>(
         assert!(prod.is_one());
     }
 }
-
+/*
 pub fn expand_roots_is_plausible_slice<TFr: Fr>(
     roots: &[TFr],
     expand_root_of_unity: &dyn Fn(&TFr) -> Vec<TFr>,
@@ -71,7 +71,7 @@ pub fn expand_roots_is_plausible_slice<TFr: Fr>(
         let prod = expanded[i].mul(&expanded[width - i]);
         assert!(prod.is_one());
     }
-}
+}*/
 
 /// Check if generated reverse roots are reversed correctly and multiply with expanded roots to result in 1.
 pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() {

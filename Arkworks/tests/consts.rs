@@ -19,7 +19,7 @@ pub mod tests {
     fn roots_of_unity_are_plausible_() {
         roots_of_unity_are_plausible::<FsFr>(&SCALE2_ROOT_OF_UNITY);
     }
-
+/*
     #[test]
     fn roots_of_unity_are_plausible_slice_() {
         let mut items = Vec::new();
@@ -27,7 +27,7 @@ pub mod tests {
             items.push(FsFr::from_u64_arr(i))
         }
         roots_of_unity_are_plausible_slice::<FsFr>(items.as_slice());
-    }
+    }*/
 
     #[test]
     fn expand_roots_is_plausible_() {
