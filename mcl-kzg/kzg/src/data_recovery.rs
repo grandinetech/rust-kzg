@@ -1,8 +1,9 @@
 use crate::kzg10::*;
 use crate::fk20_fft::*;
 use crate::data_types::fr::Fr;
-//use crate::utilities::{is_power_of_2, next_pow_of_2};
 use crate::utilities::is_power_of_2;
+#[cfg(feature = "parallel")]
+use crate::utilities::next_pow_of_2;
 
 #[cfg(feature = "parallel")]
 static mut INVERSE_FACTORS: Vec<Fr> = Vec::new();
