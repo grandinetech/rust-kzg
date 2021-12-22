@@ -24,8 +24,8 @@ macro_rules! field_test {
         x.set_int(-124);
         assert!(x.is_negative());
 
-        let mut z = unsafe { <$t>::uninit() };
-        let mut w = unsafe { <$t>::uninit() };
+        let mut z = <$t>::zero();
+        let mut w = <$t>::zero();
 
         let a = 256;
         let b = 8;
@@ -85,13 +85,13 @@ macro_rules! ec_test {
         assert!(p1.is_zero());
         assert_ne!(p1, $p);
         <$t>::neg(&mut p1, &$p);
-        let mut x: $f = unsafe { <$f>::uninit() };
+        let mut x: $f = <$f>::zero();
         <$f>::neg(&mut x, &p1.y);
         assert_eq!(&x, &$p.y);
 
         <$t>::dbl(&mut p1, &$p);
-        let mut p2: $t = unsafe { <$t>::uninit() };
-        let mut p3: $t = unsafe { <$t>::uninit() };
+        let mut p2: $t = <$t>::zero();
+        let mut p3: $t = <$t>::zero();
         <$t>::add(&mut p2, &$p, &$p);
         assert_eq!(p2, p1);
         <$t>::add(&mut p3, &p2, &$p);
@@ -118,7 +118,7 @@ macro_rules! ec_test {
 macro_rules! serialize_test {
     ($t:ty, $x:expr) => {
         let buf = $x.serialize();
-        let mut y: $t = unsafe { <$t>::uninit() };
+        let mut y: $t = <$t>::zero();
         assert!(y.deserialize(&buf));
         assert_eq!($x, y);
     };

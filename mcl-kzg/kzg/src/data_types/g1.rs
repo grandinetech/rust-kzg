@@ -2,7 +2,6 @@ use crate::data_types::fp::Fp;
 use crate::data_types::fr::Fr;
 use crate::mcl_methods;
 use crate::utilities::arr64_6_to_g1_sum;
-use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
