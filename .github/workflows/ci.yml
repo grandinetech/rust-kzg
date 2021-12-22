@@ -21,93 +21,93 @@ jobs:
 
 # 1st team #########################################################
 
-#     - name: "[arkworks] Clippy"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: clippy
-#         args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
+    - name: "[arkworks] Clippy"
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
 
-#     - name: "[arkworks] Formatting"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: fmt
-#         args: --manifest-path Arkworks/Cargo.toml
+    - name: "[arkworks] Formatting"
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path Arkworks/Cargo.toml
         
-#     - name: "[arkworks] Tests without parallel"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: test
-#         args: --manifest-path Arkworks/Cargo.toml
+    - name: "[arkworks] Tests without parallel"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path Arkworks/Cargo.toml
 
-#     - name: "[arkworks] Tests with parallel"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: test
-#         args: --manifest-path Arkworks/Cargo.toml --features parallel
+    - name: "[arkworks] Tests with parallel"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path Arkworks/Cargo.toml --features parallel
 
-#     - name: "[arkworks] Benchmark without parallelization"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: bench
-#         args: --manifest-path Arkworks/Cargo.toml
+    - name: "[arkworks] Benchmark without parallelization"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path Arkworks/Cargo.toml
 
-#     - name: "[arkworks] Benchmark with parallelization"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: bench
-#         args: --manifest-path Arkworks/Cargo.toml --features parallel
+    - name: "[arkworks] Benchmark with parallelization"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path Arkworks/Cargo.toml --features parallel
 
-# # 2nd team #########################################################
+# 2nd team #########################################################
 
-#     - name: "[zkcrypto] Tests"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: test
-#         args: --manifest-path zkcrypto/Cargo.toml
+    - name: "[zkcrypto] Tests"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path zkcrypto/Cargo.toml
 
-#     - name: "[zkcrypto] Benches"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: bench
-#         args: --manifest-path zkcrypto/Cargo.toml
+    - name: "[zkcrypto] Benches"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path zkcrypto/Cargo.toml
 
-#     - name: "[zkcrypto] Clippy"
-#       uses: actions-rs/cargo@v1
-#       with:
-#        command: clippy
-#        args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
+    - name: "[zkcrypto] Clippy"
+      uses: actions-rs/cargo@v1
+      with:
+       command: clippy
+       args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
 
-#     - name: "[zkcrypto] Formatting"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: fmt
-#         args: --manifest-path zkcrypto/Cargo.toml
+    - name: "[zkcrypto] Formatting"
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path zkcrypto/Cargo.toml
 
-# # 3rd team #########################################################
+# 3rd team #########################################################
 
-#     - name: "[blst-from-scratch] Tests"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: test
-#         args: --manifest-path blst-from-scratch/Cargo.toml
+    - name: "[blst-from-scratch] Tests"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path blst-from-scratch/Cargo.toml
 
-#     - name: "[blst-from-scratch] Benchmark"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: bench
-#         args: --manifest-path blst-from-scratch/Cargo.toml
+    - name: "[blst-from-scratch] Benchmark"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path blst-from-scratch/Cargo.toml
 
-#     - name: "[blst-from-scratch] Clippy"
-#       uses: actions-rs/cargo@v1
-#       with:
-#        command: clippy
-#        args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features --
+    - name: "[blst-from-scratch] Clippy"
+      uses: actions-rs/cargo@v1
+      with:
+       command: clippy
+       args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features --
 
-#     - name: "[blst-from-scratch] Formatting"
-#       uses: actions-rs/cargo@v1
-#       with:
-#         command: fmt
-#         args: --manifest-path blst-from-scratch/Cargo.toml
+    - name: "[blst-from-scratch] Formatting"
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path blst-from-scratch/Cargo.toml
 
 # 4th team #########################################################
 
@@ -149,19 +149,19 @@ jobs:
         command: test
         args: --manifest-path ckzg/Cargo.toml --features parallel
 
-    # - name: "[ckzg] Benchmark without parallelization"
-    #   uses: actions-rs/cargo@v1
-    #   if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-    #   with:
-    #     command: bench
-    #     args: --manifest-path ckzg/Cargo.toml
+    - name: "[ckzg] Benchmark without parallelization"
+      uses: actions-rs/cargo@v1
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      with:
+        command: bench
+        args: --manifest-path ckzg/Cargo.toml
 
-    # - name: "[ckzg] Benchmark with parallelization"
-    #   uses: actions-rs/cargo@v1
-    #   if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-    #   with:
-    #     command: bench
-    #     args: --manifest-path ckzg/Cargo.toml --features parallel
+    - name: "[ckzg] Benchmark with parallelization"
+      uses: actions-rs/cargo@v1
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      with:
+        command: bench
+        args: --manifest-path ckzg/Cargo.toml --features parallel
 
     - name: "[ckzg] Clippy"
       uses: actions-rs/cargo@v1
@@ -182,49 +182,49 @@ jobs:
 
 # 5th team ###########################################################
 
-    # - name: "[mcl-kzg10-rust] Build mcl for Linux"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   run: |
-    #     cd mcl-kzg/kzg && bash build.sh
+    - name: "[mcl-kzg10-rust] Build mcl for Linux"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd mcl-kzg/kzg && bash build.sh
 
-    # - name: "[mcl-kzg10-rust] Run Clippy"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   uses: actions-rs/cargo@v1
-    #   with:
-    #     command: clippy
-    #     args: --manifest-path mcl-kzg/kzg/Cargo.toml --all-targets --all-features -- -D warnings
+    - name: "[mcl-kzg10-rust] Run Clippy"
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --manifest-path mcl-kzg/kzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-    # - name: "[mcl-kzg10-rust] Run bench Clippy"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   uses: actions-rs/cargo@v1
-    #   with:
-    #     command: clippy
-    #     args: --manifest-path mcl-kzg/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
+    - name: "[mcl-kzg10-rust] Run bench Clippy"
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --manifest-path mcl-kzg/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
 
-    # - name: "[mcl-kzg10-rust] Run tests without parallel"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   run: |
-    #     cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
+    - name: "[mcl-kzg10-rust] Run tests without parallel"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
 
-    # - name: "[mcl-kzg10-rust] Run tests with parallel"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   run: |
-    #     cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel -- --test-threads 1
+    - name: "[mcl-kzg10-rust] Run tests with parallel"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel -- --test-threads 1
 
-    # - name: "[mcl-kzg10-rust] Run benches without parallel"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   run: |
-    #     cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+    - name: "[mcl-kzg10-rust] Run benches without parallel"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
 
-    # - name: "[mcl-kzg10-rust] Run benches with parallel"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   run: |
-    #     cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel
+    - name: "[mcl-kzg10-rust] Run benches with parallel"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel
 
-    # - name: "[mcl-kzg10-rust] Run fmt"
-    #   if: matrix.os == 'ubuntu-latest'
-    #   run: |
-    #     cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+    - name: "[mcl-kzg10-rust] Run fmt"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
 
 # Common ###########################################################
 
