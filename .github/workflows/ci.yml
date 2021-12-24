@@ -21,49 +21,49 @@ jobs:
 
 # 1st team #########################################################
 
-    - name: "[arkworks] Tests"
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path Arkworks/Cargo.toml
+#     - name: "[arkworks] Tests"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: test
+#         args: --manifest-path Arkworks/Cargo.toml
 
-    - name: "[arkworks] Benchmark"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path Arkworks/Cargo.toml
+#     - name: "[arkworks] Benchmark"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: bench
+#         args: --manifest-path Arkworks/Cargo.toml
 
-    - name: "[arkworks] Clippy"
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
+#     - name: "[arkworks] Clippy"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: clippy
+#         args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: "[arkworks] Formatting"
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path Arkworks/Cargo.toml
+#     - name: "[arkworks] Formatting"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: fmt
+#         args: --manifest-path Arkworks/Cargo.toml
 
-# 2nd team #########################################################
+# # 2nd team #########################################################
 
-    - name: "[zkcrypto] Tests"
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path zkcrypto/Cargo.toml
+#     - name: "[zkcrypto] Tests"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: test
+#         args: --manifest-path zkcrypto/Cargo.toml
 
-    - name: "[zkcrypto] Benches"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path zkcrypto/Cargo.toml
+#     - name: "[zkcrypto] Benches"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: bench
+#         args: --manifest-path zkcrypto/Cargo.toml
 
-    - name: "[zkcrypto] Formatting"
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path zkcrypto/Cargo.toml
+#     - name: "[zkcrypto] Formatting"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: fmt
+#         args: --manifest-path zkcrypto/Cargo.toml
 
 # 3rd team #########################################################
 
@@ -73,11 +73,23 @@ jobs:
         command: test
         args: --manifest-path blst-from-scratch/Cargo.toml
 
+    - name: "[blst-from-scratch] Tests (parallel)"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
+
     - name: "[blst-from-scratch] Benchmark"
       uses: actions-rs/cargo@v1
       with:
         command: bench
         args: --manifest-path blst-from-scratch/Cargo.toml
+
+    - name: "[blst-from-scratch] Benchmark (parallel)"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
 
     - name: "[blst-from-scratch] Clippy"
       uses: actions-rs/cargo@v1
@@ -93,96 +105,96 @@ jobs:
 
 # 4th team #########################################################
 
-    - name: "[ckzg] Build native libs for Linux"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        echo "LIBOMP_PATH=$(find /usr/lib/llvm* -name libiomp5.so | head -n 1)" >> $GITHUB_ENV
-        echo "OMP_NUM_THREADS=$(nproc)" >> $GITHUB_ENV
-        cd ckzg && bash build.sh
+#     - name: "[ckzg] Build native libs for Linux"
+#       if: matrix.os == 'ubuntu-latest'
+#       run: |
+#         echo "LIBOMP_PATH=$(find /usr/lib/llvm* -name libiomp5.so | head -n 1)" >> $GITHUB_ENV
+#         echo "OMP_NUM_THREADS=$(nproc)" >> $GITHUB_ENV
+#         cd ckzg && bash build.sh
 
-    - name: "[ckzg] Build native libs for MacOS"
-      if: matrix.os == 'macos-11'
-      run: |
-        brew install libomp gnu-sed
-        echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
-        echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
-        cd ckzg && bash build.sh
+#     - name: "[ckzg] Build native libs for MacOS"
+#       if: matrix.os == 'macos-11'
+#       run: |
+#         brew install libomp gnu-sed
+#         echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
+#         echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
+#         cd ckzg && bash build.sh
 
-    - name: "[ckzg] Setup Env"
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      run: |
-        if [[ -z "$LIBOMP_PATH" ]]; then
-          echo "FAIL: LLVM OpenMP runtime was not found"
-          exit 1
-        fi
-        echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
+#     - name: "[ckzg] Setup Env"
+#       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+#       run: |
+#         if [[ -z "$LIBOMP_PATH" ]]; then
+#           echo "FAIL: LLVM OpenMP runtime was not found"
+#           exit 1
+#         fi
+#         echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
 
-    - name: "[ckzg] Tests"
-      uses: actions-rs/cargo@v1
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      with:
-        command: test
-        args: --manifest-path ckzg/Cargo.toml
+#     - name: "[ckzg] Tests"
+#       uses: actions-rs/cargo@v1
+#       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+#       with:
+#         command: test
+#         args: --manifest-path ckzg/Cargo.toml
 
-    - name: "[ckzg] Benchmark"
-      uses: actions-rs/cargo@v1
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      with:
-        command: bench
-        args: --manifest-path ckzg/Cargo.toml
+#     - name: "[ckzg] Benchmark"
+#       uses: actions-rs/cargo@v1
+#       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+#       with:
+#         command: bench
+#         args: --manifest-path ckzg/Cargo.toml
 
-    - name: "[ckzg] Clippy"
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --manifest-path ckzg/Cargo.toml --all-targets --all-features -- -D warnings
+#     - name: "[ckzg] Clippy"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: clippy
+#         args: --manifest-path ckzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: "[ckzg] Formatting"
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path ckzg/Cargo.toml
+#     - name: "[ckzg] Formatting"
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: fmt
+#         args: --manifest-path ckzg/Cargo.toml
 
-    - name: "[ckzg] Unset Env"
-      run: |
-        echo "RUSTFLAGS=" >> $GITHUB_ENV
-        echo "LIBOMP_PATH=" >> $GITHUB_ENV
+#     - name: "[ckzg] Unset Env"
+#       run: |
+#         echo "RUSTFLAGS=" >> $GITHUB_ENV
+#         echo "LIBOMP_PATH=" >> $GITHUB_ENV
 
-# 5th team ###########################################################
+# # 5th team ###########################################################
 
-    - name: "[mcl-kzg10-rust] Build mcl for Linux"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cd mcl-kzg/kzg && bash build.sh
+#     - name: "[mcl-kzg10-rust] Build mcl for Linux"
+#       if: matrix.os == 'ubuntu-latest'
+#       run: |
+#         cd mcl-kzg/kzg && bash build.sh
 
-    - name: "[mcl-kzg10-rust] Run Clippy"
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --manifest-path mcl-kzg/kzg/Cargo.toml --all-targets --all-features -- -D warnings
+#     - name: "[mcl-kzg10-rust] Run Clippy"
+#       if: matrix.os == 'ubuntu-latest'
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: clippy
+#         args: --manifest-path mcl-kzg/kzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: "[mcl-kzg10-rust] Run bench Clippy"
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --manifest-path mcl-kzg/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
+#     - name: "[mcl-kzg10-rust] Run bench Clippy"
+#       if: matrix.os == 'ubuntu-latest'
+#       uses: actions-rs/cargo@v1
+#       with:
+#         command: clippy
+#         args: --manifest-path mcl-kzg/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: "[mcl-kzg10-rust] Run tests"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
+#     - name: "[mcl-kzg10-rust] Run tests"
+#       if: matrix.os == 'ubuntu-latest'
+#       run: |
+#         cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml -- --test-threads 1
 
-    - name: "[mcl-kzg10-rust] Run benches"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+#     - name: "[mcl-kzg10-rust] Run benches"
+#       if: matrix.os == 'ubuntu-latest'
+#       run: |
+#         cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
 
-    - name: "[mcl-kzg10-rust] Run fmt"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+#     - name: "[mcl-kzg10-rust] Run fmt"
+#       if: matrix.os == 'ubuntu-latest'
+#       run: |
+#         cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
 
 # Common ###########################################################
 

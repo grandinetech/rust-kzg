@@ -3,7 +3,7 @@ use kzg::{FFTFr, Fr, Poly, ZeroPoly};
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::poly::FsPoly;
-use crate::utils::is_power_of_two;
+use crate::utils::{is_power_of_two, next_power_of_two};
 
 const SCALE_FACTOR: u64 = 5;
 static mut INVERSE_FACTORS: Vec<FsFr> = Vec::new();
@@ -97,8 +97,26 @@ pub fn recover_poly_from_samples(
 
     // x -> k * x
     let len_zero_poly = zero_poly.coeffs.len();
-    scale_poly(&mut poly_with_zero.coeffs, len_samples);
-    scale_poly(&mut zero_poly.coeffs, len_zero_poly);
+
+    let _zero_poly_scale = next_power_of_two(len_zero_poly - 1);
+    #[cfg(feature = "parallel")]
+    {
+        if _zero_poly_scale > 1024 {
+            rayon::join(
+                || scale_poly(&mut poly_with_zero.coeffs, len_samples),
+                || scale_poly(&mut zero_poly.coeffs, len_zero_poly),
+            );
+        } else {
+            scale_poly(&mut poly_with_zero.coeffs, len_samples);
+            scale_poly(&mut zero_poly.coeffs, len_zero_poly);
+        }
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        scale_poly(&mut poly_with_zero.coeffs, len_samples);
+        scale_poly(&mut zero_poly.coeffs, len_zero_poly);
+    }
 
     // Q1 = (D * Z_r,I)(k * x)
     let scaled_poly_with_zero = poly_with_zero.coeffs;
@@ -106,9 +124,29 @@ pub fn recover_poly_from_samples(
     // Q2 = Z_r,I(k * x)
     let scaled_zero_poly = zero_poly.coeffs;
 
+    #[allow(unused_assignments)]
+    let mut eval_scaled_poly_with_zero = vec![];
+    #[allow(unused_assignments)]
+    let mut eval_scaled_zero_poly = vec![];
+
     // Polynomial division by convolution: Q3 = Q1 / Q2
-    let eval_scaled_poly_with_zero: Vec<FsFr> = fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
-    let eval_scaled_zero_poly: Vec<FsFr> = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+    #[cfg(feature = "parallel")]
+    {
+        if _zero_poly_scale > 1024 {
+            rayon::join(
+                || eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero, false).unwrap(),
+                || eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap(),
+            );
+        } else {
+            eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
+            eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+        }
+    }
+    #[cfg(not(feature = "parallel"))]
+    {
+        eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
+        eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+    }
 
     let mut eval_scaled_reconstructed_poly = FsPoly::default();
     eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
