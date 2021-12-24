@@ -4,49 +4,42 @@ use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::poly::FsPoly;
 use crate::utils::{is_power_of_two, next_power_of_two};
+use once_cell::sync::OnceCell;
 
 const SCALE_FACTOR: u64 = 5;
-static mut INVERSE_FACTORS: Vec<FsFr> = Vec::new();
-static mut UNSCALE_FACTOR_POWERS: Vec<FsFr> = Vec::new();
+static INVERSE_FACTORS: OnceCell<Vec<FsFr>> = OnceCell::new();
+static UNSCALE_FACTOR_POWERS: OnceCell<Vec<FsFr>> = OnceCell::new();
 
 #[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
-    let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-    let inv_factor = FsFr::inverse(&scale_factor);
-
-    unsafe {
-        if INVERSE_FACTORS.len() < len_p {
-            if INVERSE_FACTORS.is_empty() {
-                INVERSE_FACTORS.push(FsFr::one());
-            }
-            for i in (INVERSE_FACTORS.len())..len_p {
-                INVERSE_FACTORS.push(INVERSE_FACTORS[i-1].mul(&inv_factor));
-            }
+    let factors = INVERSE_FACTORS.get_or_init(|| {
+        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
+        let inv_factor = FsFr::inverse(&scale_factor);
+        let mut temp: Vec<FsFr> = vec![FsFr::one()];
+        for i in 1..65536 {
+            temp.push(temp[i-1].mul(&inv_factor));
         }
+        temp
+    });
 
-        for i in 1..len_p {
-            p[i] = p[i].mul(&INVERSE_FACTORS[i]);
-        }
+    for i in 1..len_p {
+        p[i] = p[i].mul(&factors[i]);
     }
 }
 
 #[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
-    let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-
-    unsafe {
-        if UNSCALE_FACTOR_POWERS.len() < len_p {
-            if UNSCALE_FACTOR_POWERS.is_empty() {
-                UNSCALE_FACTOR_POWERS.push(FsFr::one());
-            }
-            for i in (UNSCALE_FACTOR_POWERS.len())..len_p {
-                UNSCALE_FACTOR_POWERS.push(UNSCALE_FACTOR_POWERS[i-1].mul(&scale_factor));
-            }
+    let factors = UNSCALE_FACTOR_POWERS.get_or_init(|| {
+        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
+        let mut temp: Vec<FsFr> = vec![FsFr::one()];
+        for i in 1..65536 {
+            temp.push(temp[i-1].mul(&scale_factor));
         }
+        temp
+    });
 
-        for i in 1..len_p {
-            p[i] = p[i].mul(&UNSCALE_FACTOR_POWERS[i]);
-        }
+    for i in 1..len_p {
+        p[i] = p[i].mul(&factors[i]);
     }
 }
 
