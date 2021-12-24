@@ -7,6 +7,19 @@ use crate::types::fr::FsFr;
 use crate::types::poly::FsPoly;
 use crate::utils::{is_power_of_two, next_power_of_two};
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+#[cfg(feature = "parallel")]
+use kzg::Poly;
+
+
+#[allow(dead_code)]
+struct ParRes {
+    a: Vec<FsFr>,
+    b: usize,
+    c: usize
+}
+
 /// Create a copy of the given poly and pad it with zeros
 pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
     if new_length < poly.coeffs.len() {
@@ -134,8 +147,10 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         let domain_stride = self.max_width / domain_size;
 
         let mut partial_count = 1 + (missing_idxs.len() - 1) / missing_per_partial; // TODO: explain why -1 is used here
+
+        let next_pow: usize = next_power_of_two(partial_count * degree_of_partial);
         let domain_ceiling = min(
-            next_power_of_two(partial_count * degree_of_partial),
+            next_pow,
             domain_size,
         );
         // Calculate zero poly
@@ -145,31 +160,79 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         } else {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
-            let mut work = vec![FsFr::zero(); next_power_of_two(partial_count * degree_of_partial)];
+            #[allow(unused_assignments)]
+            let mut work = Vec::new();
 
             let mut partial_lens = Vec::new();
             let mut partial_offsets = Vec::new();
 
-            let mut missing_offset = 0;
-            let mut work_offset = 0;
-            let max = missing_idxs.len();
+            #[cfg(not(feature = "parallel"))]
+            {
+                work = vec![FsFr::zero(); next_power_of_two(partial_count * degree_of_partial)];
 
-            // Insert all generated partial polynomials at degree_of_partial intervals in work vector
-            for _i in 0..partial_count {
-                let end = min(missing_offset + missing_per_partial, max);
+                let mut missing_offset = 0;
+                let mut work_offset = 0;
+                let max = missing_idxs.len();
 
-                let mut partial = self
-                    .do_zero_poly_mul_partial(&missing_idxs[missing_offset..end], domain_stride)?;
-                partial.coeffs = pad_poly(&partial, degree_of_partial)?;
-                work.splice(
-                    work_offset..(work_offset + degree_of_partial),
-                    partial.coeffs.to_vec(),
-                );
-                partial_lens.push(degree_of_partial);
-                partial_offsets.push(work_offset);
+                // Insert all generated partial polynomials at degree_of_partial intervals in work vector
+                for _i in 0..partial_count {
+                    let end = min(missing_offset + missing_per_partial, max);
 
-                missing_offset += missing_per_partial;
-                work_offset += degree_of_partial;
+                    let mut partial = self
+                        .do_zero_poly_mul_partial(&missing_idxs[missing_offset..end], domain_stride)?;
+                    partial.coeffs = pad_poly(&partial, degree_of_partial)?;
+                    work.splice(
+                        work_offset..(work_offset + degree_of_partial),
+                        partial.coeffs.to_vec(),
+                    );
+                    partial_lens.push(degree_of_partial);
+                    partial_offsets.push(work_offset);
+
+                    missing_offset += missing_per_partial;
+                    work_offset += degree_of_partial;
+                }
+            }
+
+            #[cfg(feature = "parallel")]
+            {
+                let mut out_res = vec![];
+                let max = missing_idxs.len();
+
+                // Insert all generated partial polynomials at degree_of_partial intervals in work vector
+                (0..partial_count).into_par_iter().map(move |i| {
+                    let missing_offset = missing_per_partial * i;
+                    let work_offset = degree_of_partial * i;
+                    let end = min(missing_offset + missing_per_partial, max);
+
+                    let res =
+                        self.do_zero_poly_mul_partial(&missing_idxs[missing_offset..end], domain_stride);
+
+                    let mut partial = FsPoly::default();
+                    if let Ok(result) = res {
+                        partial = result;
+                    } else {
+                        // Panic
+                    }
+
+                    let res = pad_poly(&partial, degree_of_partial);
+                    if let Ok(result) = res {
+                        partial.coeffs = result;
+                    } else {
+                        // Panic
+                    }
+
+                    ParRes { a: partial.coeffs, b: degree_of_partial, c: work_offset}
+                }).collect_into_vec(&mut out_res);
+
+                out_res.into_iter().for_each(|mut item| {
+                    work.append(&mut item.a);
+                    partial_lens.push(item.b);
+                    partial_offsets.push(item.c);
+                });
+
+                for _i in work.len()..next_pow {
+                    work.push(FsFr::zero());
+                }
             }
 
             // Adjust last length to match its actual length
