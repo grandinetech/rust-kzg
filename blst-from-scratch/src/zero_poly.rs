@@ -166,8 +166,8 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             let mut partial_lens = Vec::new();
             let mut partial_offsets = Vec::new();
 
-            #[cfg(not(feature = "parallel"))]
-            {
+            // #[cfg(not(feature = "parallel"))]
+            // {
                 work = vec![FsFr::zero(); next_power_of_two(partial_count * degree_of_partial)];
 
                 let mut missing_offset = 0;
@@ -191,49 +191,49 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                     missing_offset += missing_per_partial;
                     work_offset += degree_of_partial;
                 }
-            }
+            // }
 
-            #[cfg(feature = "parallel")]
-            {
-                let mut out_res = vec![];
-                let max = missing_idxs.len();
+            // #[cfg(feature = "parallel")]
+            // {
+            //     let mut out_res = vec![];
+            //     let max = missing_idxs.len();
 
-                // Insert all generated partial polynomials at degree_of_partial intervals in work vector
-                (0..partial_count).into_par_iter().map(move |i| {
-                    let missing_offset = missing_per_partial * i;
-                    let work_offset = degree_of_partial * i;
-                    let end = min(missing_offset + missing_per_partial, max);
+            //     // Insert all generated partial polynomials at degree_of_partial intervals in work vector
+            //     (0..partial_count).into_par_iter().map(move |i| {
+            //         let missing_offset = missing_per_partial * i;
+            //         let work_offset = degree_of_partial * i;
+            //         let end = min(missing_offset + missing_per_partial, max);
 
-                    let res =
-                        self.do_zero_poly_mul_partial(&missing_idxs[missing_offset..end], domain_stride);
+            //         let res =
+            //             self.do_zero_poly_mul_partial(&missing_idxs[missing_offset..end], domain_stride);
 
-                    let mut partial = FsPoly::default();
-                    if let Ok(result) = res {
-                        partial = result;
-                    } else {
-                        // Panic
-                    }
+            //         let mut partial = FsPoly::default();
+            //         if let Ok(result) = res {
+            //             partial = result;
+            //         } else {
+            //             // Panic
+            //         }
 
-                    let res = pad_poly(&partial, degree_of_partial);
-                    if let Ok(result) = res {
-                        partial.coeffs = result;
-                    } else {
-                        // Panic
-                    }
+            //         let res = pad_poly(&partial, degree_of_partial);
+            //         if let Ok(result) = res {
+            //             partial.coeffs = result;
+            //         } else {
+            //             // Panic
+            //         }
 
-                    ParRes { a: partial.coeffs, b: degree_of_partial, c: work_offset}
-                }).collect_into_vec(&mut out_res);
+            //         ParRes { a: partial.coeffs, b: degree_of_partial, c: work_offset}
+            //     }).collect_into_vec(&mut out_res);
 
-                out_res.into_iter().for_each(|mut item| {
-                    work.append(&mut item.a);
-                    partial_lens.push(item.b);
-                    partial_offsets.push(item.c);
-                });
+            //     out_res.into_iter().for_each(|mut item| {
+            //         work.append(&mut item.a);
+            //         partial_lens.push(item.b);
+            //         partial_offsets.push(item.c);
+            //     });
 
-                for _i in work.len()..next_pow {
-                    work.push(FsFr::zero());
-                }
-            }
+            //     for _i in work.len()..next_pow {
+            //         work.push(FsFr::zero());
+            //     }
+            // }
 
             // Adjust last length to match its actual length
             partial_lens[partial_count - 1] =
