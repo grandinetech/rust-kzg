@@ -1,7 +1,6 @@
-use blst::{
-    blst_final_exp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine,
-    blst_p2_affine, blst_p2_to_affine,
-};
+use std::ptr;
+
+use blst::{blst_final_exp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine, blst_p2_affine, blst_p2_to_affine, blst_scalar, limb_t};
 use kzg::{G1, G1Mul};
 
 use crate::consts::G1_IDENTITY;
@@ -10,71 +9,49 @@ use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 
 pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: usize) {
+    if len < 8 {
+        // Direct approach
+        let mut tmp;
+        *out = G1_IDENTITY;
+        for i in 0..len {
+            tmp = p[i].mul(&coeffs[i]);
+            *out = out.add_or_dbl(&tmp);
+        }
+    } else {
 
-    // Direct approach
-    let mut tmp;
-    *out = G1_IDENTITY;
-    for i in 0..len {
-        tmp = p[i].mul(&coeffs[i]);
-        *out = out.add_or_dbl(&tmp);
+        let mut scratch: Vec<u8>;
+        unsafe {
+            scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len) as usize * 2];
+        }
+
+        let mut p_affine = vec![blst_p1_affine::default(); len];
+        let mut scalars = vec![blst_scalar::default(); len];
+
+        let p_arg: [*const blst_p1; 2] = [&p[0].0, ptr::null()];
+        unsafe {
+            blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
+        }
+
+        for i in 0..len {
+            scalars[i] = blst_scalar {
+                b: coeffs[i].to_scalar(),
+            };
+        }
+
+        let scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), ptr::null()];
+        let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), ptr::null()];
+        unsafe {
+            blst_p1s_mult_pippenger(
+                &mut out.0,
+                points_arg.as_ptr(),
+                len,
+                scalars_arg.as_ptr() as *const *const u8,
+                256,
+                scratch.as_mut_ptr() as *mut limb_t,
+            );
+        }
+
     }
-
-    // TODO: find out why this fails and whether we can fix it
-    // if (tunable_parameter) {
-    //
-    // }
-    // else {
-    //     // Blst's implementation of the Pippenger method
-    //     //blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
-    //     let mut p_affine = vec![blst_p1_affine::default(); len];
-    //
-    //     // Transform the points to affine representation
-    //     //const blst_p1 *p_arg[2] = {p, NULL};
-    //     // let p_arg: const* = {p, null}
-    //     let mut parr: Vec<*const FsG1> = Vec::new();
-    //     for i in 0..p.len() {
-    //         parr.push(&p[i]);
-    //     }
-    //
-    //     let p_arg: [*const blst_p1; 2];
-    //     p_arg = [&p[0].0, &blst_p1::default()];
-    //
-    //     unsafe {
-    //         blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
-    //     }
-    //
-    //     let mut scalars = Vec::new();
-    //     // Transform the field elements to 256-bit scalars
-    //     for i in 0..len {
-    //         scalars.push(blst_scalar {
-    //             b: coeffs[i].to_scalar(),
-    //         });
-    //     }
-    //
-    //     // Call the Pippenger g1_mul implementation
-    //     //const byte *scalars_arg[2] = {(byte *)scalars, NULL};
-    //     let scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), &blst_scalar::default()];
-    //
-    //     //const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-    //     let points_arg: [*const blst_p1_affine; 2] =
-    //         [p_affine.as_ptr(), &blst_p1_affine::default()];
-    //
-    //     let mut scratch;
-    //     let new_arg = scalars_arg.as_ptr() as *const *const u8;
-    //     unsafe {
-    //         scratch = blst_p1s_mult_pippenger_scratch_sizeof(len) as u64;
-    //     }
-    //     unsafe {
-    //         blst_p1s_mult_pippenger(
-    //             &mut out.0,
-    //             points_arg.as_ptr(),
-    //             len,
-    //             new_arg,
-    //             256,
-    //             &mut scratch,
-    //         );
-    //     }
-    // }
 }
 
 pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
