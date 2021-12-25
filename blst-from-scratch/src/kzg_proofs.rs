@@ -21,7 +21,7 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
 
         let mut scratch: Vec<u8>;
         unsafe {
-            scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len) as usize * 2];
+            scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len) as usize];
         }
 
         let mut p_affine = vec![blst_p1_affine::default(); len];
