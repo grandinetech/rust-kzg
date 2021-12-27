@@ -4,6 +4,7 @@ use crate::consts::{KzgRet, BlstP1, BlstP2};
 use crate::fftsettings::KzgFFTSettings;
 use crate::finite::{BlstFr};
 use crate::poly::KzgPoly;
+use crate::RUN_PARALLEL;
 
 extern "C" {
     fn new_kzg_settings(ks: *mut KzgKZGSettings, secret_g1: *const BlstP1, secret_g2: *const BlstP2, length: u64, fs: *const KzgFFTSettings) -> KzgRet;
@@ -12,7 +13,7 @@ extern "C" {
     fn compute_proof_single(out: *mut BlstP1, p: *const KzgPoly, x0: *const BlstFr, ks: *const KzgKZGSettings) -> KzgRet;
     fn check_proof_single(out: *mut bool, commitment: *const BlstP1, proof: *const BlstP1, x: *const BlstFr, y: *const BlstFr, ks: *const KzgKZGSettings) -> KzgRet;
     fn compute_proof_multi(out: *mut BlstP1, p: *const KzgPoly, x0: *const BlstFr, n: u64, ks: *const KzgKZGSettings) -> KzgRet;
-    fn check_proof_multi(out: *mut bool, commitment: *const BlstP1, proof: *const BlstP1, x: *const BlstFr, ys: *const BlstFr, n: u64, ks: *const KzgKZGSettings) -> KzgRet;
+    fn check_proof_multi(out: *mut bool, commitment: *const BlstP1, proof: *const BlstP1, x: *const BlstFr, ys: *const BlstFr, n: u64, ks: *const KzgKZGSettings, run_parallel: bool) -> KzgRet;
     // Fr
     fn fr_from_scalar(out: *mut BlstFr, a: *const BlstScalar);
 }
@@ -95,7 +96,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     fn check_proof_multi(&self, com: &BlstP1, proof: &BlstP1, x: &BlstFr, values: &Vec<BlstFr>, n: usize) -> Result<bool, String> {
         let mut ret = false;
         unsafe {
-            match check_proof_multi(&mut ret, com, proof, x, values.as_ptr(), n as u64, self) {
+            match check_proof_multi(&mut ret, com, proof, x, values.as_ptr(), n as u64, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(ret),
                 e => Err(format!("An error has occurred in KZGSettings::check_proof_multi ==> {:?}", e))
             }

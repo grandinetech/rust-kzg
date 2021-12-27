@@ -23,8 +23,8 @@ pub mod tests {
 		commit_to_too_long_poly::<blsScalar, ZkG1Projective, ZkG2Projective, ZPoly, ZkFFTSettings, KZGSettings>(&generate_trusted_setup);
 	}
 
-// 	#[test]
-// 	fn test_proof_multi() {
-// 		proof_multi::<blsScalar, ZkG1Projective, ZkG2Projective, ZPoly, ZkFFTSettings, KZGSettings>(&generate_trusted_setup);
-// 	}
+	#[test]
+	fn test_proof_multi() {
+		proof_multi::<blsScalar, ZkG1Projective, ZkG2Projective, ZPoly, ZkFFTSettings, KZGSettings>(&generate_trusted_setup);
+	}
 }

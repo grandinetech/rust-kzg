@@ -46,8 +46,8 @@ impl FFTG1<ZkG1Projective> for ZkFFTSettings {
         if inverse {
             let mut inv_len: blsScalar = blsScalar::from_u64(data.len() as u64);
             inv_len = inv_len.inverse();
-            for i in 0..data.len() {
-                ret[i] = ret[i].mul(&inv_len);
+            for i in ret.iter_mut().take(data.len())/*0..data.len()*/ {
+                *i = i.mul(&inv_len);
             }
         }
 

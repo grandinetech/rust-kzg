@@ -366,7 +366,7 @@ impl MillerLoopResult {
 
 impl<'a, 'b> Add<&'b MillerLoopResult> for &'a MillerLoopResult {
     type Output = MillerLoopResult;
-
+	#[allow(clippy::suspicious_arithmetic_impl)]
     #[inline]
     fn add(self, rhs: &'b MillerLoopResult) -> MillerLoopResult {
         MillerLoopResult(self.0 * rhs.0)
@@ -376,12 +376,13 @@ impl<'a, 'b> Add<&'b MillerLoopResult> for &'a MillerLoopResult {
 impl_add_binop_specify_output!(MillerLoopResult, MillerLoopResult, MillerLoopResult);
 
 impl AddAssign<MillerLoopResult> for MillerLoopResult {
+	#[allow(clippy::op_ref)]	
     #[inline]
     fn add_assign(&mut self, rhs: MillerLoopResult) {
         *self = &*self + &rhs;
     }
 }
-
+	#[allow(clippy::op_ref)]
 impl<'b> AddAssign<&'b MillerLoopResult> for MillerLoopResult {
     #[inline]
     fn add_assign(&mut self, rhs: &'b MillerLoopResult) {
@@ -463,7 +464,8 @@ impl Neg for Gt {
 
 impl<'a, 'b> Add<&'b Gt> for &'a Gt {
     type Output = Gt;
-
+	
+	#[allow(clippy::suspicious_arithmetic_impl)]
     #[inline]
     fn add(self, rhs: &'b Gt) -> Gt {
         Gt(self.0 * rhs.0)
@@ -481,7 +483,7 @@ impl<'a, 'b> Sub<&'b Gt> for &'a Gt {
 
 impl<'a, 'b> Mul<&'b Scalar> for &'a Gt {
     type Output = Gt;
-
+	#[allow(clippy::suspicious_arithmetic_impl)]
     fn mul(self, other: &'b Scalar) -> Self::Output {
         let mut acc = Gt::identity();
 
@@ -809,6 +811,7 @@ pub fn multi_miller_loop(terms: &[(&G1Affine, &G2Prepared)]) -> MillerLoopResult
 }
 
 /// Invoke the pairing function without the use of precomputation and other optimizations.
+#[allow(clippy::needless_borrow)]
 #[cfg_attr(docsrs, doc(cfg(feature = "pairings")))]
 pub fn pairing(p: &G1Affine, q: &G2Affine) -> Gt {
     struct Adder {
@@ -1038,6 +1041,7 @@ fn test_gt_generator() {
 }
 
 #[test]
+#[allow(clippy::many_single_char_names)]
 fn test_bilinearity() {
     use super::scalar::Scalar;
 
@@ -1061,6 +1065,7 @@ fn test_bilinearity() {
 }
 
 #[test]
+#[allow(clippy::many_single_char_names)]
 fn test_unitary() {
     let g = G1Affine::generator();
     let h = G2Affine::generator();

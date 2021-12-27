@@ -31,39 +31,78 @@ pub fn fft_fr(data: &[blsScalar], inverse: bool, fft_settings: &ZkFFTSettings) -
     if inverse {
         let mut inv_len: blsScalar = blsScalar::from(data.len() as u64);
         inv_len = inv_len.inverse();
-        for i in 0..data.len() {
-            ret[i] = ret[i].mul(&inv_len);
+        for i in ret.iter_mut().take(data.len())/*0..data.len()*/ {
+            *i = i.mul(&inv_len);
+			//ret[i] = ret[i].mul(&inv_len);
         }
     }
 
-    return Ok(ret);
+    Ok(ret)
 }
 
 pub fn fft_fr_fast(ret: &mut [blsScalar], data: &[blsScalar], stride: usize, roots: &[blsScalar], roots_stride: usize) {
     let split: usize = ret.len() / 2;
 
     if split > 0 {
-        fft_fr_fast(
-            &mut ret[..split],
-            data,
-            stride * 2,
-            roots,
-            roots_stride * 2
-        );
-        fft_fr_fast(
-            &mut ret[split..],
-            &data[stride..],
-            stride * 2,
-            roots,
-            roots_stride * 2
-        );
-
+        #[cfg(not(feature = "parallel"))] {
+            fft_fr_fast(
+                &mut ret[..split],
+                data,
+                stride * 2,
+                roots,
+                roots_stride * 2
+            );
+            fft_fr_fast(
+                &mut ret[split..],
+                &data[stride..],
+                stride * 2,
+                roots,
+                roots_stride * 2
+            );
+        }
+        #[cfg(feature = "parallel")] {
+    		if split > 256 {
+    			let (lo, hi) = ret.split_at_mut(split);
+    			rayon::join(
+    				|| fft_fr_fast(
+    					lo,
+    					data,
+    					stride * 2,
+    					roots,
+    					roots_stride * 2
+    				),
+    				|| fft_fr_fast(
+    					hi,
+    					&data[stride..],
+    					stride * 2,
+    					roots,
+    					roots_stride * 2
+    				),);
+    		}
+    		else {
+    			fft_fr_fast(
+    				&mut ret[..split],
+    				data,
+    				stride * 2,
+    				roots,
+    				roots_stride * 2
+    			);
+    			fft_fr_fast(
+    				&mut ret[split..],
+    				&data[stride..],
+    				stride * 2,
+    				roots,
+    				roots_stride * 2
+    			);
+    		}
+        }
         for i in 0..split {
             let y_times_root = ret[i + split].mul(&roots[i * roots_stride]);
             ret[i + split] = ret[i].sub(&y_times_root);
             ret[i] = ret[i].add(&y_times_root);
         }
-    } else {
-        ret[0] = data[0].clone();
+    }
+	else {
+        ret[0] = data[0];
     }
 }

@@ -90,6 +90,17 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
     Ok(generated_powers)
 }
 
+pub fn expand_root_of_unity_mcl(root: &BlstFr) -> Vec<BlstFr> {
+    let mut root_z = vec![Fr::one(), *root];
+    let mut i = 1;
+    while !root_z[i].is_one() {
+        let next = &root_z[i].mul(root);
+        root_z.push(*next);
+        i += 1;
+    }
+    root_z
+}
+
 pub const G1_NEGATIVE_GENERATOR: BlstP1 = BlstP1 {
     x: BlstFp { l: [0x5cb38790fd530c16, 0x7817fc679976fff5, 0x154f95c7143ba1c1, 0xf0ae6acdf3d0e747, 0xedce6ecc21dbf440, 0x120177419e0bfb75] },
     y: BlstFp { l: [0xff526c2af318883a, 0x92899ce4383b0270, 0x89d7738d9fa9d055, 0x12caf35ba344c12a, 0x3cff1b76964b5317, 0x0e44d2ede9774430] },

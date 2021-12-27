@@ -3,6 +3,7 @@ use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr, };
 use crate::utils::PolyData;
 use crate::fft_g1::G1_IDENTITY;
 use kzg::{FK20MultiSettings, FK20SingleSettings, Poly, FFTG1, FFTFr, Fr, G1, KZGSettings as KZGST, G1Mul};
+// use chrono::Utc;
 
 
 #[repr(C)]
@@ -58,12 +59,15 @@ impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings
 
         let mut x = Vec::new();
         for i in 0..(n-1) {
-            x.push(ks.secret_g1[n - 2 - i].clone())
+            x.push(ks.secret_g1[n - 2 - i])
         }
         x.push(G1_IDENTITY);
 
+        let mut new_ks = KZGSettings::default();
+        new_ks.fs = ks.fs.clone();
+
         Ok(KzgFK20SingleSettings{
-            ks: ks.clone(),
+            ks: new_ks,
             x_ext_fft: toeplitz_part_1(&x, &ks.fs).unwrap(),
             x_ext_fft_len: n2,
         })
@@ -102,7 +106,8 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
     }
 
     fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
-
+        // let start_time = Utc::now().time();
+        // println!("New begins at {}", start_time);
         if n2 > ks.fs.max_width{
             return Err(String::from("n2 must be equal or less than kzg settings max width"));
         }
@@ -137,7 +142,7 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
             }
             let mut j = start;
             for i in x.iter_mut().take(k-1) {
-                i.0 = ks.secret_g1[j].clone().0;
+                i.0 = ks.secret_g1[j].0;
                 if j >= chunk_len{
                     j -= chunk_len;
                 }else{
@@ -146,11 +151,21 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
             }
             x[k - 1] = G1_IDENTITY;
 
-            x_ext_fft_files.push(toeplitz_part_1(&x, &ks.fs).unwrap())
+            // let start_time = Utc::now().time();
+            x_ext_fft_files.push(toeplitz_part_1(&x, &ks.fs).unwrap());
+            // let end_time = Utc::now().time();
+            // println!("Total time taken to run fft_g1 is {} and {}", start_time, end_time);
         }
 
+        // let start_time = Utc::now().time();
+        let mut new_ks = KZGSettings::default();
+        new_ks.fs = ks.fs.clone();
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to clone stuff is {} and {} ", start_time, end_time);
+
+
         Ok(KzgFK20MultiSettings{
-            ks: ks.clone(),
+            ks: new_ks,
             x_ext_fft_files,
             chunk_len,
             length: n //unsure if this is right
@@ -168,10 +183,14 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
             return Err(String::from("n2 must be power of 2"));
         }
 
+        // let start_time = Utc::now().time();
         let mut out = fk20_multi_da_opt(p, self).unwrap();
-        // TRY(reverse_bit_order(out, sizeof out[0], n2 / fk->chunk_len));
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to run fk20_multi_da_opt is {} and {}", start_time, end_time);
+        // let start_time = Utc::now().time();
         reverse_bit_order(&mut out);
-        // out.reverse();
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to run reverse_bit_order is {} and {}", start_time, end_time);
         Ok(out)
     }
 
@@ -223,23 +242,39 @@ pub fn fk20_multi_da_opt(p: &PolyData, fk: &KzgFK20MultiSettings) -> Result<Vec<
 
     let mut toeplitz_coeffs = PolyData::new(n2 / fk.chunk_len).unwrap();
     for i in 0..fk.chunk_len {
+        // let start_time = Utc::now().time();
         toeplitz_coeffs = toeplitz_coeffs_stride(p, i, fk.chunk_len, toeplitz_coeffs.len()).unwrap();
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to run toeplitz_coeffs_stride is {} and {}", start_time, end_time);
+        // let start_time = Utc::now().time();
         let h_ext_fft_file = toeplitz_part_2(&toeplitz_coeffs, &fk.x_ext_fft_files[i], &fk.ks.fs).unwrap();
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to run toeplitz_part_2 is {} and {}", start_time, end_time);
+        // let start_time = Utc::now().time();
         for j in 0..k2 {
             h_ext_fft[j].add_or_dbl(&h_ext_fft_file[j]);
         }
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to run add_or_dbl is {} and {}", start_time, end_time);
+
     }
 
 
     // Calculate `h`
-    let mut h = toeplitz_part_3(&h_ext_fft, &fk.ks.fs).unwrap();
+        // let start_time = Utc::now().time();
+        let mut h = toeplitz_part_3(&h_ext_fft, &fk.ks.fs).unwrap();
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to run toeplitz_part_3 is {} and {}", start_time, end_time);
 
     // Overwrite the second half of `h` with zero
     for i in h.iter_mut().take(k2).skip(k) {
         i.0 = G1_IDENTITY.0;
     }
 
-    fk.ks.fs.fft_g1(&h, false)
+        // let start_time = Utc::now().time();
+        fk.ks.fs.fft_g1(&h, false)
+        // let end_time = Utc::now().time();
+        // println!("Total time taken to run fft_g1 is {} and {}", start_time, end_time);
 }
 
 pub fn toeplitz_coeffs_step(p: &PolyData, outlen: usize) -> Result<PolyData, String>{
@@ -281,12 +316,11 @@ pub fn toeplitz_part_1(x: &[ArkG1], fs: &FFTSettings) -> Result<Vec<ArkG1>, Stri
 
     let mut x_ext = Vec::new();
     for i in x.iter().take(n) {
-        x_ext.push(i.clone());
+        x_ext.push(*i);
     }
     for _i in n..n2 {
         x_ext.push(G1_IDENTITY);
     }
-    
     fs.fft_g1(&x_ext, false)
 }
 
@@ -304,7 +338,12 @@ pub fn toeplitz_part_2(toeplitz_coeffs: &PolyData, x_ext_fft: &[ArkG1], fs: &FFT
 pub fn toeplitz_part_3(h_ext_fft: &[ArkG1], fs: &FFTSettings) -> Result<Vec<ArkG1>, String>{
     let n = h_ext_fft.len() / 2;
 
+    // let start_time = Utc::now().time();
     let mut out = fs.fft_g1(h_ext_fft, true).unwrap();
+    // let end_time = Utc::now().time();
+    // println!("Total time taken to run toeplitz_part_3 fft_g1 is {} and {}", start_time, end_time);
+    // println!("fft_g1 len is {}", h_ext_fft.len());
+    // println!("fs.max len is {}", fs.max_width);
 
     // Zero the second half of h
     for i in out.iter_mut().take(h_ext_fft.len()).skip(n) {

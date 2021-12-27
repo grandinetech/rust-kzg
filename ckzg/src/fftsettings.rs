@@ -3,6 +3,7 @@ use kzg::{DAS, FFTFr, FFTG1, FFTSettings, FFTSettingsPoly, Fr, G1, Poly, ZeroPol
 use crate::consts::{BlstP1, KzgRet};
 use crate::finite::BlstFr;
 use crate::poly::KzgPoly;
+use crate::RUN_PARALLEL;
 use crate::utils::{log_2, next_pow_of_2};
 
 #[repr(C)]
@@ -17,18 +18,18 @@ pub struct KzgFFTSettings {
 extern "C" {
     fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
     fn free_fft_settings(settings: *mut KzgFFTSettings);
-    fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
-    fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
-    fn poly_mul_(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *mut KzgFFTSettings) -> KzgRet;
-    fn fft_fr_fast(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
+    fn fft_fr(output: *mut BlstFr, input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings, run_parallel: bool) -> KzgRet;
+    fn fft_g1(output: *mut BlstP1, input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings, run_parallel: bool) -> KzgRet;
+    fn poly_mul_(out: *mut KzgPoly, a: *const KzgPoly, b: *const KzgPoly, fs: *mut KzgFFTSettings, run_parallel: bool) -> KzgRet;
+    fn fft_fr_fast(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize, run_parallel: bool);
     fn fft_fr_slow(output: *mut BlstFr, input: *const BlstFr, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
-    fn fft_g1_fast(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
+    fn fft_g1_fast(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize, run_parallel: bool);
     fn fft_g1_slow(output: *mut BlstP1, input: *const BlstP1, stride: usize, roots: *const BlstFr, roots_stride: usize, n: usize);
     fn do_zero_poly_mul_partial(dst : *mut KzgPoly, indices: *const u64, len_indices: u64, stride: u64, fs: *const KzgFFTSettings) -> KzgRet;
     //fn pad_p(out: *mut BlstFr, out_len: u64, p: *const KzgPoly) -> KzgRet;
-    fn reduce_partials(out: *mut KzgPoly, len_out: u64, scratch: *mut BlstFr, len_scratch: u64, partials: *const KzgPoly, partial_count: u64, fs: *const KzgFFTSettings) -> KzgRet;
-    fn zero_polynomial_via_multiplication(zero_eval: *mut BlstFr, zero_poly: *mut KzgPoly, length: u64, missing_indices: *const u64, len_missing: u64, fs: *const KzgFFTSettings) -> KzgRet;
-    fn das_fft_extension(vals: *mut BlstFr, n: u64, fs: *const KzgFFTSettings) -> KzgRet;
+    fn reduce_partials(out: *mut KzgPoly, len_out: u64, scratch: *mut BlstFr, len_scratch: u64, partials: *const KzgPoly, partial_count: u64, fs: *const KzgFFTSettings, run_parallel: bool) -> KzgRet;
+    fn zero_polynomial_via_multiplication(zero_eval: *mut BlstFr, zero_poly: *mut KzgPoly, length: u64, missing_indices: *const u64, len_missing: u64, fs: *const KzgFFTSettings, run_parallel: bool) -> KzgRet;
+    fn das_fft_extension(vals: *mut BlstFr, n: u64, fs: *const KzgFFTSettings, run_parallel: bool) -> KzgRet;
 }
 
 impl FFTSettings<BlstFr> for KzgFFTSettings {
@@ -102,7 +103,7 @@ impl FFTFr<BlstFr> for KzgFFTSettings {
 fn _fft_fr(input: *const BlstFr, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> Result<Vec<BlstFr>, KzgRet> {
     let mut output = vec![Fr::default(); n as usize];
     unsafe {
-        match fft_fr(output.as_mut_ptr(), input, inverse, n, fs) {
+        match fft_fr(output.as_mut_ptr(), input, inverse, n, fs, RUN_PARALLEL) {
             KzgRet::KzgOk => Ok(output),
             e => Err(e)
         }
@@ -121,7 +122,7 @@ impl FFTG1<BlstP1> for KzgFFTSettings {
 fn _fft_g1(input: *const BlstP1, inverse: bool, n: u64, fs: *const KzgFFTSettings) -> Result<Vec<BlstP1>, KzgRet> {
     let mut output = vec![G1::default(); n as usize];
     unsafe {
-        match fft_g1(output.as_mut_ptr(), input, inverse, n, fs) {
+        match fft_g1(output.as_mut_ptr(), input, inverse, n, fs, RUN_PARALLEL) {
             KzgRet::KzgOk => Ok(output),
             e => Err(e)
         }
@@ -138,7 +139,7 @@ impl FFTSettingsPoly<BlstFr, KzgPoly, KzgFFTSettings> for KzgFFTSettings {
         let mut fft = KzgFFTSettings::new(log_2(length)).unwrap();
         let mut poly = KzgPoly::new(len).unwrap();
         unsafe {
-            match poly_mul_(&mut poly, a, b, &mut fft) {
+            match poly_mul_(&mut poly, a, b, &mut fft, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in FFTSettingsPoly::poly_mul_fft ==> {:?}", e))
             }
@@ -166,7 +167,7 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
         unsafe {
             match reduce_partials(&mut poly, domain_size as u64,
                                   scratch.as_mut_ptr(), scratch_len as u64,
-                                  partials.as_ptr(), partials.len() as u64, self)
+                                  partials.as_ptr(), partials.len() as u64, self, RUN_PARALLEL)
             {
                 KzgRet::KzgOk => Ok(poly),
                 e => Err(format!("An error has occurred in ZeroPoly:reduce_partials ==> {:?}", e))
@@ -180,7 +181,7 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
         unsafe {
             match zero_polynomial_via_multiplication(zero_eval.as_mut_ptr(), &mut zero_poly, domain_size as u64,
                                                      idxs.as_ptr() as *const u64,
-                                                     idxs.len() as u64, self)
+                                                     idxs.len() as u64, self, RUN_PARALLEL)
             {
                 KzgRet::KzgOk => Ok((zero_eval, zero_poly)),
                 e => Err(format!("An error has occurred in ZeroPoly:zero_poly_via_multiplication ==> {:?}", e))
@@ -193,7 +194,7 @@ impl DAS<BlstFr> for KzgFFTSettings {
     fn das_fft_extension(&self, evens: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
         let mut values = evens.to_vec();
         unsafe {
-            match das_fft_extension(values.as_mut_ptr(), values.len() as u64, self) {
+            match das_fft_extension(values.as_mut_ptr(), values.len() as u64, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(values),
                 e => Err(format!("An error has occurred in DAS::das_fft_extension ==> {:?}", e))
             }
@@ -222,7 +223,7 @@ pub fn bound_fft_fr_fast(
 ) {
     unsafe {
         fft_fr_fast(ret.as_mut_ptr(), data.as_ptr(), stride,
-                    roots.as_ptr(), roots_stride, 4096);
+                    roots.as_ptr(), roots_stride, 4096, RUN_PARALLEL);
     }
 }
 
@@ -249,7 +250,7 @@ pub fn bound_fft_g1_fast(
 ) {
     unsafe {
         fft_g1_fast(ret.as_mut_ptr(), data.as_ptr(), stride,
-                    roots.as_ptr(), roots_stride, n);
+                    roots.as_ptr(), roots_stride, n, RUN_PARALLEL);
     }
 }
 

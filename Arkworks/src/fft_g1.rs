@@ -47,6 +47,15 @@ pub const G1_GENERATOR: blst_p1 = blst_p1 {
     },
 };
 
+pub fn g1_linear_combination(out: &mut ArkG1, p: &[ArkG1], coeffs: &[BlstFr], len: usize) {
+    let mut tmp;
+    *out = G1_IDENTITY;
+    for i in 0..len {
+        tmp = p[i].mul(&coeffs[i]);
+        *out = out.add_or_dbl(&tmp);
+    }
+}
+
 /** The G1 identity/infinity */
 pub(crate) const G1_IDENTITY: ArkG1 = ArkG1(blst_p1{
     x: blst_fp {
@@ -65,7 +74,7 @@ pub fn make_data(data: usize) -> Vec<ArkG1> {
     if data != 0 {
         vec.push(ArkG1(G1_GENERATOR));
         for i in 1..data as u64 {
-            let mut temp = vec[(i - 1) as usize].clone();
+            let mut temp = vec[(i - 1) as usize];
             vec.push(temp.add_or_dbl(&ArkG1(G1_GENERATOR)));
         }
     }
@@ -136,7 +145,7 @@ pub fn fft_g1_slow(
     for i in 0..data.len() {
         last = data[0].mul(&roots[0]);
         for j in 1..data.len() {
-            jv = data[j * stride].clone();
+            jv = data[j * stride];
             r = roots[((i * j) % data.len()) * roots_stride];
             v = jv.mul(&r);
             last.add_or_dbl(&v);
@@ -158,22 +167,28 @@ pub fn fft_g1_fast(
     let half = ret.len() / 2;
 
     if half > 0 {
-        // fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
-        // fft_g1_fast(
-        //     &mut ret[half..],
-        //     &data[stride..],
-        //     stride * 2,
-        //     roots,
-        //     roots_stride * 2,
-        //     1
-        // );
-        if ret.len() > 8{
-            let (lo, hi) = ret.split_at_mut(half);
-            rayon::join(
-                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2, 1),
-                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2, 1),
-            );
-        }else{
+        #[cfg(feature = "parallel")]
+        {
+            if ret.len() > 8{
+                let (lo, hi) = ret.split_at_mut(half);
+                rayon::join(
+                    || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2, 1),
+                    || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2, 1),
+                );
+            }else{
+                fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
+                fft_g1_fast(
+                    &mut ret[half..],
+                    &data[stride..],
+                    stride * 2,
+                    roots,
+                    roots_stride * 2,
+                    1
+                );
+            }
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
             fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
             fft_g1_fast(
                 &mut ret[half..],

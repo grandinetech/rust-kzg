@@ -9,14 +9,6 @@ use std::fmt;
 
 use core::fmt::Error;
 
-// pub use crate::kzg_types::ZkG1Affine; 
-// pub use crate::kzg_types::ZkG1Projective; 
-// pub use crate::kzg_types::ZkG2Affine; 
-// pub use crate::kzg_types::ZkG2Projective;
-// pub use crate::kzg_types::ZkFp;
-// pub use crate::kzg_types::ZkFp2;
-// pub use crate::kzg_types::ZkFp12;
-
 pub use crate::curve::g1::G1Affine as ZkG1Affine; 
 pub use crate::curve::g1::G1Projective as ZkG1Projective; 
 pub use crate::curve::g2::G2Affine as ZkG2Affine; 
@@ -24,7 +16,6 @@ pub use crate::curve::g2::G2Projective as ZkG2Projective;
 pub use crate::curve::fp::Fp as ZkFp;
 pub use crate::curve::fp2::Fp2 as ZkFp2;
 pub use crate::curve::fp12::Fp12 as ZkFp12;
-
 
 use crate::poly::ZPoly as Poly;
 
@@ -59,9 +50,10 @@ pub fn zk_fr_into_blst_fr(fr: &blsScalar) -> BlstFr {
 	unsafe {
 		blst::blst_fr_from_uint64(&mut ret, fr.0.as_ptr());
 	}
-	let temp = blst::blst_fr { l: fr.0};
-	// BlstFr(temp)
-	return temp;
+	// let temp = blst::blst_fr { l: fr.0};
+	// // BlstFr(temp)
+	// return temp;
+	blst::blst_fr { l: fr.0}
 	// BlstFr { l: fr.0 }
 }
 
@@ -72,8 +64,9 @@ pub fn blst_fr_into_zk_fr(fr: &BlstFr) -> blsScalar {
 	}
 	// // blst::blst_uint64_from_fr
 	
-	let zk_fr = blsScalar::from_u64_arr(&size);
-	return zk_fr;
+	// let zk_fr = blsScalar::from_u64_arr(&size);
+	// zk_fr
+	blsScalar::from_u64_arr(&size)
 }
 
 pub fn zk_fp_into_blst_fp(fp: ZkFp) -> BlstFp {
@@ -85,8 +78,9 @@ pub fn blst_fp_into_zk_fp(fp: &BlstFp) -> ZkFp {
 	unsafe {
 		blst::blst_uint64_from_fp(size.as_mut_ptr(), fp);
 	}
-    let zk_fp = ZkFp::from_raw_unchecked(size);
-	return zk_fp;
+    // let zk_fp = ZkFp::from_raw_unchecked(size);
+	// zk_fp
+	ZkFp::from_raw_unchecked(size)
 }
 
 // turbut reikia is zkcrypto i savo repo isidet visus fp ir t.t
@@ -155,12 +149,12 @@ pub fn log2_u64(n: usize) -> usize {
     let mut n2 = n;
     let mut r: usize = 0;
     while (n2 >> 1) != 0 {
-        n2 = n2 >> 1;
+        n2 >>= 1;
         r += 1;
     }
     r
 }
 
 pub fn min_u64(a: usize, b: usize) -> Result<usize, String> {
-    return if a < b {Ok(a)} else {Ok(b)};
+    if a < b {Ok(a)} else {Ok(b)}
 }

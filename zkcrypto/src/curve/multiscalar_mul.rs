@@ -1,6 +1,6 @@
 //! Multiscalar multiplication implementation using pippenger algorithm.
 use crate::curve::{
-    g1::{G1Affine, G1Projective},
+    g1::{G1Projective},
     scalar::Scalar,
 };
 // use dusk_bytes::Serializable;
@@ -185,7 +185,8 @@ fn to_radix_2w(scalar: &Scalar, w: usize) -> [i8; 43] {
 }
 
 /// Performs a Variable Base Multiscalar Multiplication.
-pub fn msm_variable_base(points: &[G1Affine], scalars: &[Scalar]) -> G1Projective {
+#[allow(clippy::needless_collect)]
+pub fn msm_variable_base(points: &[G1Projective], scalars: &[Scalar]) -> G1Projective {
     #[cfg(feature = "parallel")]
     use rayon::prelude::*;
 
@@ -222,7 +223,7 @@ pub fn msm_variable_base(points: &[G1Affine], scalars: &[Scalar]) -> G1Projectiv
                     if scalar == fr_one {
                         // We only process unit scalars once in the first window.
                         if w_start == 0 {
-                            res = res.add_mixed(base);
+                            res = res.add(base);
                         }
                     } else {
                         let mut scalar = scalar.reduce();
@@ -239,14 +240,14 @@ pub fn msm_variable_base(points: &[G1Affine], scalars: &[Scalar]) -> G1Projectiv
                         // (Recall that `buckets` doesn't have a zero bucket.)
                         if scalar != 0 {
                             buckets[(scalar - 1) as usize] =
-                                buckets[(scalar - 1) as usize].add_mixed(base);
+                                buckets[(scalar - 1) as usize].add(base);
                         }
                     }
                 });
 
             let mut running_sum = G1Projective::identity();
             for b in buckets.into_iter().rev() {
-                running_sum = running_sum + b;
+                running_sum += b;
                 res += &running_sum;
             }
 

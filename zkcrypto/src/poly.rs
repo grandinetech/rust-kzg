@@ -1,7 +1,7 @@
 //! This module provides an implementation of polinomials over bls12_381::Scalar
 pub use super::{ZPoly, BlsScalar};
 pub use kzg::{FFTFr, Poly, Fr, FFTSettings};
-use crate::zkfr::{blsScalar, fr_div}; 
+use crate::zkfr::{blsScalar, fr_div};
 //use crate::Fr;
 use crate::utils::*;
 use crate::fftsettings::{ZkFFTSettings};
@@ -97,21 +97,21 @@ impl Poly<blsScalar> for ZPoly {
     fn default() -> Self {
         // Self {
             // coeffs: vec![<blsScalar as Fr>::default(); 4] // blsScalar::default()
-			
+
 		// }
 		Self::new(0).unwrap()
-		
+
     }
 	fn new(size: usize) -> Result<Self, String> {
         Ok(Self{coeffs: vec![<blsScalar as Fr>::default(); size]}) // blsScalar::default()
     }
-	
+
 	fn get_coeff_at(&self, i: usize) -> blsScalar {
 		self.coeffs[i]
 	}
 
     fn set_coeff_at(&mut self, i: usize, x: &blsScalar) {
-		self.coeffs[i] = x.clone()
+		self.coeffs[i] = *x
 	}
 
     fn get_coeffs(&self) -> &[blsScalar] {
@@ -123,17 +123,18 @@ impl Poly<blsScalar> for ZPoly {
 	}
 
     fn eval(&self, x: &blsScalar) -> blsScalar {
-		if self.coeffs.len() == 0 {
+		if self.coeffs.is_empty() /*.len() == 0*/ {
             return blsScalar::zero();
         } else if x.is_zero() {
-            return self.coeffs[0].clone();
+            return self.coeffs[0];
         }
 
-        let mut ret = self.coeffs[self.coeffs.len() - 1].clone();
+        let mut out = self.coeffs[self.coeffs.len() - 1];
         let mut i = self.coeffs.len() - 2;
+
         loop {
-            let temp = ret.mul(&x);
-            ret = temp.add(&self.coeffs[i]);
+            let temp = out.mul(x);
+            out = temp.add(&self.coeffs[i]);
 
             if i == 0 {
                 break;
@@ -141,8 +142,8 @@ impl Poly<blsScalar> for ZPoly {
             i -= 1;
         }
 
-        return ret; 
-	
+        out
+
 	}
 
     fn scale(&mut self) {
@@ -167,8 +168,8 @@ impl Poly<blsScalar> for ZPoly {
     }
 
 	fn inverse(&mut self, new_len: usize) -> Result<Self, String> { // +
-		
-		if self.coeffs.len() == 0 {
+
+		if self.coeffs.is_empty() /*.len() == 0*/ {
             return Err(String::from("Can't inverse a zero-length poly"));
         } else if self.coeffs[0].is_zero() {
             return Err(String::from("First coefficient of polynomial mustn't be zero"));
@@ -213,42 +214,43 @@ impl Poly<blsScalar> for ZPoly {
             return Err(String::from("d+1 is bad"));
         }
 
-        return Ok(ret);
-		
+        Ok(ret)
+
 	}
 
-    fn div(&mut self, x: &Self) -> Result<Self, String> {	
-		let ret = new_poly_div(&self, &x);
-		return ret;
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
+		// let ret = new_poly_div(&self, &x);
+		// return ret;
+		new_poly_div(self, x)
 	}
-	
-	fn long_div(&mut self, x: &Self) -> Result<Self, String> {		
-		return poly_long_div(&self, &x);
+
+	fn long_div(&mut self, x: &Self) -> Result<Self, String> {
+		poly_long_div(self, x)
 	}
 
     fn fast_div(&mut self, x: &Self) -> Result<Self, String>{
-		return poly_fast_div(&self, &x);
+		poly_fast_div(self, x)
 	}
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String>{
-		return poly_mul_direct(&self, &x, len);
+		poly_mul_direct(self, x, len)
 	}
 }
 
 pub fn poly_long_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String> { // +
-    
-	if divisor.coeffs.len() == 0 {
+
+	if divisor.coeffs.is_empty() { //.len() == 0
         return Err(String::from("Can't divide by zero"));
-    } 
+    }
 	// else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
         // return Err(String::from("Highest coefficient must be non-zero"));
     // }
-	
+
     let mut a_pos = dividend.coeffs.len() - 1;
     let b_pos = divisor.coeffs.len() - 1;
     let mut diff: isize = (a_pos as isize) - (b_pos as isize);
 
-    let result = poly_quotient_length(&dividend, &divisor); // ar gera f-ija
+    let result = poly_quotient_length(dividend, divisor); // ar gera f-ija
     assert!(result.is_ok());
     let out_length = result.unwrap();
 	let mut out: ZPoly = ZPoly {coeffs: vec![<blsScalar as Default>::default(); out_length]}; // { coeffs: Vec::default() };
@@ -258,9 +260,11 @@ pub fn poly_long_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String>
     }
 
     let mut a = vec![<blsScalar as Default>::default(); dividend.coeffs.len()];// blsScalar::default()
-    for i in 0..a.len() { // dividend.coeffs.len()
-		a[i] = dividend.coeffs[i];
-    }
+    // for i in 0..a.len() { // dividend.coeffs.len()
+		// a[i] = dividend.coeffs[i];
+    // }
+	let a_size = a.len();
+	a.clone_from_slice(&dividend.coeffs[..a_size]);
 
     while diff > 0 {
         let result = fr_div(&a[a_pos], &divisor.coeffs[b_pos]);
@@ -272,7 +276,7 @@ pub fn poly_long_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String>
 				let tmp = a[(diff as usize) + i].sub(&tmp);
                 a[(diff as usize) + i] = tmp;
 				// a[diff + i] = a[diff + i].sub(&tmp);
-				
+
             }
         diff -= 1;
         a_pos -= 1;
@@ -285,9 +289,9 @@ pub fn poly_long_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String>
 
 pub fn poly_fast_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String> { // +
 
-	if divisor.coeffs.len() == 0 {
+	if divisor.coeffs.is_empty() { // .len() == 0
         return Err(String::from("Cant divide by zero"));
-    } 
+    }
 	// else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
         // return Err(String::from("Highest coefficient must be non-zero"));
     // }
@@ -297,7 +301,7 @@ pub fn poly_fast_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String>
     let n: usize = divisor.coeffs.len() - 1;
 
     if n > m {
-        return Ok(ZPoly {coeffs: Vec::new() });//ZPoly::default()  ); 
+        return Ok(ZPoly {coeffs: Vec::new() });//ZPoly::default()  );
     }
 
    if divisor.coeffs.len() == 1 {
@@ -308,11 +312,11 @@ pub fn poly_fast_div(dividend: &ZPoly, divisor: &ZPoly) -> Result<ZPoly, String>
         return Ok(out);
     }
 
-    let a_flip = poly_flip(&dividend).unwrap(); 
-    let mut b_flip = poly_flip(&divisor).unwrap(); 
-	let inv_b_flip = b_flip.inverse(m - n + 1).unwrap(); 
+    let a_flip = poly_flip(dividend).unwrap();
+    let mut b_flip = poly_flip(divisor).unwrap();
+	let inv_b_flip = b_flip.inverse(m - n + 1).unwrap();
     let q_flip = poly_mul(&a_flip, &inv_b_flip, m - n + 1).unwrap();
-	
+
     let out = poly_flip(&q_flip).unwrap();
 
     Ok(out)
@@ -339,11 +343,14 @@ pub fn new_poly_div(dividend_: &ZPoly, divisor_: &ZPoly) -> Result<ZPoly, String
     let divisor: ZPoly = result.unwrap();
 
     if divisor.coeffs.len() >= dividend.coeffs.len() || divisor.coeffs.len() < 128 { // Tunable paramter
-        let result = poly_long_div(&dividend, &divisor);
-        result
-    } else {
-        let result = poly_fast_div(&dividend, &divisor);
-        result
+        // let result = poly_long_div(&dividend, &divisor);
+        // result
+		poly_long_div(&dividend, &divisor)
+    }
+	else {
+        // let result = poly_fast_div(&dividend, &divisor);
+        // result
+		poly_fast_div(&dividend, &divisor)
     }
 }
 
@@ -364,7 +371,7 @@ pub fn poly_norm(p: &ZPoly) -> Result<ZPoly, String> { // +
 
 pub fn poly_quotient_length(dividend: &ZPoly, divisor: &ZPoly) -> Result<usize, String> { // +
     if dividend.coeffs.len() >= divisor.coeffs.len() {
-        return Ok(dividend.coeffs.len() - divisor.coeffs.len() + 1);
+        Ok(dividend.coeffs.len() - divisor.coeffs.len() + 1)
     }
 	else{
 		Ok(0)
@@ -375,26 +382,29 @@ pub fn pad(input: &ZPoly, length: usize) -> Vec<blsScalar> { // +
     // let num: usize = min_u64(n_in, n_out).unwrap();
     //let mut output: Vec<blsScalar> = Vec::default();
 	// let mut output = input.coeffs.to_vec();
-	let mut out = vec![blsScalar::zero(); length]; 
+	let mut out = vec![blsScalar::zero(); length];
     // for i in 0..num {
         // output[i] = input[i].clone();
     // }
     // for i in num..n_out {
         // output[i] = blsScalar::zero();
     // }
-	for i in 0..min_u64(input.len(), length).unwrap() {
-		out[i] = input.coeffs[i];
-	}
+	// for i in 0..min_u64(input.len(), length).unwrap() {
+		// out[i] = input.coeffs[i];
+	// }
+	out[..min_u64(input.len(), length).unwrap()]
+	.clone_from_slice(&input.coeffs[..min_u64(input.len(), length)
+	.unwrap()]);
     out
 }
 
 pub fn pad_(input: &ZPoly, length: usize) -> ZPoly { // +
-	let mut out = ZPoly { coeffs: vec![blsScalar::zero(); length] }; //vec![blsScalar::zero(); length]; 
-	
+	let mut out = ZPoly { coeffs: vec![blsScalar::zero(); length] }; //vec![blsScalar::zero(); length];
+
 	for i in 0..min_u64(input.len(), length).unwrap() {
 		out.coeffs[i] = input.coeffs[i];
 	}
-	
+
     out
 }
 pub fn pad_poly(input: &ZPoly, length: usize) -> Result<Vec<blsScalar>, String> { // +
@@ -402,48 +412,87 @@ pub fn pad_poly(input: &ZPoly, length: usize) -> Result<Vec<blsScalar>, String> 
 	if length < input.coeffs.len() {
 		return Err(String::from("new length must be longer or equal to poly length"));
 	}
-	
-	let mut out = vec![blsScalar::zero(); length]; 
 
-	for i in 0..min_u64(input.len(), length).unwrap() {
-		out[i] = input.coeffs[i];
-	}
+	let mut out = vec![blsScalar::zero(); length];
+
+	// for i in 0..min_u64(input.len(), length).unwrap() {
+		// out[i] = input.coeffs[i];
+	// }
+	out[..min_u64(input.len(), length).unwrap()]
+	.clone_from_slice(&input.coeffs[..min_u64(input.len(), length)
+	.unwrap()]);
+
     Ok(out)
 }
 
 pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly ) -> Result<ZPoly, String> { // +
 
 	let length = next_power_of_two(a.len() + b.len() - 1);
-	
+
 	let ft_size: usize = log2_pow2(length);
-	
-    let fs = ZkFFTSettings::new(ft_size).unwrap(); 
-    
-	let a_pad = pad(&a, length);
-    let b_pad = pad(&b, length);
-	
-	
-	let a_fft = fs.fft_fr(&a_pad, false).unwrap(); 
-	let b_fft = fs.fft_fr(&b_pad, false).unwrap();
-	
-	// let mut ab_fft = a_pad;
-	let mut ab_fft = vec![<blsScalar as Default>::default(); length];
-	
-    for i in 0..length {
-		ab_fft[i] = a_fft[i].mul(&b_fft[i]);
-		assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
-    }
-	
-    let ab = fs.fft_fr(&ab_fft, true).unwrap();
 
-    let mut output = ZPoly {coeffs: vec![blsScalar::zero(); out] };
-	let data_len = min_u64(out, length).unwrap(); 
+    let fs = ZkFFTSettings::new(ft_size).unwrap();
 
-	for i in 0..data_len {
-        output.coeffs[i] = ab[i];//push(ab[i]);
+	let a_pad = pad(a, length);
+    let b_pad = pad(b, length);
+
+	#[cfg(feature = "parallel")] {
+    	let mut a_fft = vec![]; //fs.fft_fr(&a_pad, false).unwrap();
+    	let mut b_fft = vec![]; //fs.fft_fr(&b_pad, false).unwrap();
+
+    	if length > 1024 {
+            rayon::join(
+                || a_fft = fs.fft_fr(&a_pad, false).unwrap(),
+                || b_fft = fs.fft_fr(&b_pad, false).unwrap(),
+            );
+        } else {
+            a_fft = fs.fft_fr(&a_pad, false).unwrap();
+            b_fft = fs.fft_fr(&b_pad, false).unwrap();
+        }
+
+        let mut ab_fft = vec![<blsScalar as Default>::default(); length];
+
+        for i in 0..length {
+            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+            assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
+        }
+
+        let ab = fs.fft_fr(&ab_fft, true).unwrap();
+
+        let mut output = ZPoly {coeffs: vec![blsScalar::zero(); out] };
+        let data_len = min_u64(out, length).unwrap();
+
+        // for i in 0..data_len {
+            // output.coeffs[i] = ab[i];//push(ab[i]);
+        // }
+        output.coeffs[..data_len].clone_from_slice(&ab[..data_len]);
+
+        Ok(output)
+	}
+
+    #[cfg(not(feature = "parallel"))] {
+        let a_fft = fs.fft_fr(&a_pad, false).unwrap();
+    	let b_fft = fs.fft_fr(&b_pad, false).unwrap();
+
+        let mut ab_fft = vec![<blsScalar as Default>::default(); length];
+
+        for i in 0..length {
+            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
+            assert!(a_fft[i].mul(&b_fft[i]).equals(&b_fft[i].mul(&a_fft[i])));
+        }
+
+        let ab = fs.fft_fr(&ab_fft, true).unwrap();
+
+        let mut output = ZPoly {coeffs: vec![blsScalar::zero(); out] };
+        let data_len = min_u64(out, length).unwrap();
+
+        // for i in 0..data_len {
+            // output.coeffs[i] = ab[i];//push(ab[i]);
+        // }
+        output.coeffs[..data_len].clone_from_slice(&ab[..data_len]);
+
+        Ok(output)
     }
-	
-    return Ok(output);
 }
 
 pub fn poly_mul_direct(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly, String> { // +
@@ -451,11 +500,11 @@ pub fn poly_mul_direct(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly,
 	if a.len() == 0 || b.len() == 0 {
 		return Ok(ZPoly::default());   //  ::new(0).unwrap()
 	}
-	
+
     let a_degree: usize = a.coeffs.len() - 1;
     let b_degree: usize = b.coeffs.len() - 1;
     let mut output = ZPoly { coeffs: vec![blsScalar::zero(); output_len] };
-	
+
     for i in 0..(a_degree + 1) {
         let mut j: usize = 0;
         while (j <= b_degree) && ((i + j) < output_len) {
@@ -472,10 +521,9 @@ pub fn poly_mul_direct(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly,
 
 pub fn poly_mul(a: &ZPoly, b: &ZPoly, output_len: usize) -> Result<ZPoly, String> { // +
 	if (a.len() < 64) || (b.len() < 64) || (output_len < 128) {
-		return poly_mul_direct(&a, &b, output_len); 
+		poly_mul_direct(a, b, output_len)
 	}
 	else {
-		return poly_mul_fft(output_len, &a, &b);
+		poly_mul_fft(output_len, a, b)
 	}
 }
-

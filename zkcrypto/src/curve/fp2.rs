@@ -567,6 +567,7 @@ fn test_conditional_selection() {
 }
 
 #[test]
+#[allow(clippy::needless_borrow)]
 fn test_equality() {
     fn is_equal(a: &Fp2, b: &Fp2) -> bool {
         let eq = a == b;

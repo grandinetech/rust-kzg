@@ -1,6 +1,7 @@
 // gonna have to change ZkFFTSettings to something different, because of lib.rs trait 'ZkFFTSettings'
 
 // use blst::blst_fr as BlstFr;
+use std::cmp::Ordering;
 use crate::consts::*;
 use crate::zkfr::blsScalar;
 use crate::fft_fr::*;
@@ -20,54 +21,103 @@ pub struct ZkFFTSettings {
 
 impl ZkFFTSettings {
     pub fn das_fft_extension_stride(&self, vals: &mut [blsScalar], stride: usize) {
-        
-		if vals.len() < 2 {
-            return;
-        }
-		else if vals.len() == 2 {
-            let x = vals[0].add(&vals[1]);
-            let y = vals[0].sub(&vals[1]);
-            let tmp = y.mul(&self.expanded_roots_of_unity[stride]);
+        match vals.len().cmp(&2) {
+			Ordering::Less => { },
+			Ordering::Equal => {
+				let x = vals[0].add(&vals[1]);
+				let y = vals[0].sub(&vals[1]);
+				let tmp = y.mul(&self.expanded_roots_of_unity[stride]);
 
-            vals[0] = x.add(&tmp);
-            vals[1] = x.sub(&tmp);
+				vals[0] = x.add(&tmp);
+				vals[1] = x.sub(&tmp);
+			},
+			_ => {
+				let half = vals.len();
+				let half_halved = half / 2;
 
-            return;
-        }else {
-            let half = vals.len();
-            let half_halved = half / 2;
+				for i in 0..half_halved{
+					let tmp1 = vals[i].add(&vals[half_halved+i]);
+					let tmp2 = vals[i].sub(&vals[half_halved+i]);
+					vals[half_halved + i] = tmp2.mul(&self.reverse_roots_of_unity[i * 2 * stride]);
+					vals[i] = tmp1;
+				}
 
-            for i in 0..half_halved{
-                let tmp1 = vals[i].add(&vals[half_halved+i]);
-                let tmp2 = vals[i].sub(&vals[half_halved+i]);
-                vals[half_halved + i] = tmp2.mul(&self.reverse_roots_of_unity[i * 2 * stride]);
-                vals[i] = tmp1;
-            }
+                #[cfg(feature = "parallel")] {
+    				if vals.len() > 32 {
+    				    let (lo, hi) = vals.split_at_mut(half_halved);
+    				    rayon::join(
+    				        || self.das_fft_extension_stride(hi, stride * 2),
+    				        || self.das_fft_extension_stride(lo, stride * 2),
+    				    );
+    			        }
+    				else {
+    				    self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
+    				    self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
+    			    }
+                }
 
-            self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
-			
-            self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
+                #[cfg(not(feature = "parallel"))] {
+                    self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
+                    self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
+                }
 
-            for i in 0..half_halved{
-                let x = vals[i];
-                let y = vals[half_halved + i];
-                let y_times_root = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
-                vals[i] = x.add(&y_times_root);
-                vals[half_halved + i] = x.sub(&y_times_root);
-            }
-        }
+				for i in 0..half_halved{
+					let x = vals[i];
+					let y = vals[half_halved + i];
+					let y_times_root = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
+					vals[i] = x.add(&y_times_root);
+					vals[half_halved + i] = x.sub(&y_times_root);
+				}
+			}
+		}
+		// if vals.len() < 2 {
+
+        // }
+		// else if vals.len() == 2 {
+            // let x = vals[0].add(&vals[1]);
+            // let y = vals[0].sub(&vals[1]);
+            // let tmp = y.mul(&self.expanded_roots_of_unity[stride]);
+
+            // vals[0] = x.add(&tmp);
+            // vals[1] = x.sub(&tmp);
+
+
+        // }
+		// else {
+            // let half = vals.len();
+            // let half_halved = half / 2;
+
+            // for i in 0..half_halved{
+                // let tmp1 = vals[i].add(&vals[half_halved+i]);
+                // let tmp2 = vals[i].sub(&vals[half_halved+i]);
+                // vals[half_halved + i] = tmp2.mul(&self.reverse_roots_of_unity[i * 2 * stride]);
+                // vals[i] = tmp1;
+            // }
+
+            // self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
+
+            // self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
+
+            // for i in 0..half_halved{
+                // let x = vals[i];
+                // let y = vals[half_halved + i];
+                // let y_times_root = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
+                // vals[i] = x.add(&y_times_root);
+                // vals[half_halved + i] = x.sub(&y_times_root);
+            // }
+        // }
     }
 }
 
 impl FFTSettingsPoly<blsScalar, ZPoly, ZkFFTSettings> for ZkFFTSettings {
     fn poly_mul_fft(a: &ZPoly, b: &ZPoly, len: usize, _fs: Option<&ZkFFTSettings>) -> Result<ZPoly, String> {
-		poly_mul_fft(len, &a, &b)
+		poly_mul_fft(len, a, b)
 	}
-	
+
 }
 
 impl FFTFr<blsScalar> for ZkFFTSettings {
-	
+
 	fn fft_fr(&self, data: &[blsScalar], inverse: bool) -> Result<Vec<blsScalar>, String> {
 		if data.len() > self.max_width {
 			return Err(String::from( "The supplied list is longer than the available max width",
@@ -76,7 +126,7 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
 		else if !is_power_of_two(data.len()) {
 			return Err(String::from("A list with power-of-two length is expected"));
 		}
-	
+
 	// In case more roots are provided with fft_settings, use a larger stride
         let stride = self.max_width / data.len();
         let mut ret = vec![<blsScalar as Fr>::default(); data.len()];
@@ -93,15 +143,16 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
         if inverse {
             let mut inv_len: blsScalar = blsScalar::from_u64(data.len() as u64);
             inv_len = inv_len.inverse();
-            for i in 0..data.len() {
-                ret[i] = ret[i].mul(&inv_len);
+            for i in ret.iter_mut().take(data.len())/*0..data.len()*/ {
+                *i = i.mul(&inv_len);
+				//ret[i] = ret[i].mul(&inv_len);
             }
         }
 
-        return Ok(ret);
-	
+        Ok(ret)
+
 	}
-	
+
 }
 
 impl ZkFFTSettings {
@@ -112,7 +163,7 @@ impl ZkFFTSettings {
         let max_width: usize = 1 << max_scale;
 
         Ok(ZkFFTSettings {
-            max_width: max_width,
+            max_width,
             ..FFTSettings::default()
         })
     }
@@ -130,7 +181,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
             reverse_roots_of_unity: Vec::new(),
         }
     }
-	
+
 	fn new(scale: usize) -> Result<ZkFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from("Scale is expected to be within root of unity matrix row size"));
@@ -154,7 +205,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
             reverse_roots_of_unity,
         })
     }
-	
+
 	fn get_max_width(&self) -> usize {
         self.max_width
     }
