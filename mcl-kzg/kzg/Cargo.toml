@@ -14,6 +14,7 @@ blst = {'git' = 'https://github.com/supranational/blst.git'}
 kzg = { path = "../../kzg" }
 primitive-types = "0.10.1"
 rayon = { version = "1.5.1", optional = true }
+once_cell = "1.4.0"
 
 [features]
 parallel = ["rayon"]
