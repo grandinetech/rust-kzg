@@ -2,6 +2,8 @@ use crate::kzg10::*;
 use crate::fk20_fft::*;
 use crate::data_types::fr::Fr;
 use crate::utilities::is_power_of_2;
+#[cfg(feature = "parallel")]
+use crate::utilities::next_pow_of_2;
 
 #[cfg(feature = "parallel")]
 static mut INVERSE_FACTORS: Vec<Fr> = Vec::new();
@@ -9,7 +11,6 @@ static mut INVERSE_FACTORS: Vec<Fr> = Vec::new();
 static mut UNSHIFT_FACTOR_POWERS: Vec<Fr> = Vec::new();
 
 impl Polynomial {
-    // #[cfg(feature = "parallel")] 
     pub fn shift_in_place(&mut self) {
         let inv_factor = Fr::from_int(PRIMITIVE_ROOT).get_inv();
         #[cfg(feature = "parallel")]
@@ -37,13 +38,6 @@ impl Polynomial {
         }
     }
 
-    // #[cfg(not(feature="parallel"))]
-    // pub fn shift_in_place(&mut self) {
-    //     self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT).get_inv());
-    // }
-
-    
-    // #[cfg(feature = "parallel")] 
     pub fn unshift_in_place(&mut self) {
         let scale_factor = Fr::from_int(PRIMITIVE_ROOT);
         #[cfg(feature = "parallel")]
@@ -70,11 +64,6 @@ impl Polynomial {
             self._shift_in_place(&scale_factor);
         }
     }
-
-    // #[cfg(not(feature="parallel"))]
-    // pub fn unshift_in_place(&mut self) {
-    //     self._shift_in_place(&Fr::from_int(PRIMITIVE_ROOT));
-    // }
 
     //TODO, use precalculated tables for factors?
     fn _shift_in_place(&mut self, factor: &Fr){
@@ -110,14 +99,62 @@ impl Polynomial {
 
         let poly_with_zero_coeffs = fft_settings.fft(&poly_evals_with_zero, true).unwrap();
         let mut poly_with_zero = Polynomial::from_fr(poly_with_zero_coeffs);
-        poly_with_zero.shift_in_place();
-
         let mut zero_poly = Polynomial::from_fr(zero_poly_coeffs.coeffs);
-        zero_poly.shift_in_place();
 
-        let eval_shifted_poly_with_zero = fft_settings.fft(&poly_with_zero.coeffs, false).unwrap();
-        let eval_shifted_zero_poly = fft_settings.fft(&zero_poly.coeffs, false).unwrap();
+        poly_with_zero.shift_in_place();
+        zero_poly.shift_in_place();
+        // #[cfg(not(feature="parallel"))]
+        // {
+        //     poly_with_zero.shift_in_place();
+        //     zero_poly.shift_in_place();
+        // }
+
+        // #[cfg(feature="parallel")]
+        // {
+        //     let optim = next_pow_of_2(poly_with_zero.order() - 1);
+
+        //     if optim > 1024 {
+        //         rayon::join(
+        //             || poly_with_zero.shift_in_place(),
+        //             || zero_poly.shift_in_place(),
+        //         );
+        //     }
+        //     else {
+        //         poly_with_zero.shift_in_place();
+        //         zero_poly.shift_in_place();
+        //     }
+        // }
+
+        let eval_shifted_poly_with_zero: Vec<Fr>;
+        let eval_shifted_zero_poly: Vec<Fr>;
         
+        #[cfg(not(feature="parallel"))]
+        {
+            eval_shifted_poly_with_zero = fft_settings.fft(&poly_with_zero.coeffs, false).unwrap();
+            eval_shifted_zero_poly = fft_settings.fft(&zero_poly.coeffs, false).unwrap();
+        }
+
+        #[cfg(feature="parallel")]
+        {
+            let optim = next_pow_of_2(poly_with_zero.order() - 1);
+            
+            if optim > 1024 {
+                let mut eval_shifted_poly_with_zero_temp = vec![];
+                let mut eval_shifted_zero_poly_temp = vec![];
+
+                rayon::join(
+                    || eval_shifted_poly_with_zero_temp = fft_settings.fft(&poly_with_zero.coeffs, false).unwrap(),
+                    || eval_shifted_zero_poly_temp = fft_settings.fft(&zero_poly.coeffs, false).unwrap(),
+                );
+
+                eval_shifted_poly_with_zero = eval_shifted_poly_with_zero_temp;
+                eval_shifted_zero_poly = eval_shifted_zero_poly_temp;
+            }
+            else {
+                eval_shifted_poly_with_zero = fft_settings.fft(&poly_with_zero.coeffs, false).unwrap();
+                eval_shifted_zero_poly = fft_settings.fft(&zero_poly.coeffs, false).unwrap();
+            }
+        }
     
         let eval_shifted_reconstructed_poly: Vec<Fr> = eval_shifted_poly_with_zero.iter()
             .zip(eval_shifted_zero_poly)

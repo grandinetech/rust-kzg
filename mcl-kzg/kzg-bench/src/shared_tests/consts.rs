@@ -8,6 +8,10 @@ pub mod consts_tests {
     use mcl_rust::mcl_methods::init;
     use mcl_rust::CurveType;
 
+    pub fn expand_root_of_unityarr(root: &Fr, _width: usize) -> Result<Vec<Fr>, String> {
+        Ok(expand_root_of_unity(root))
+    }
+
     #[test]
     fn roots_of_unity_out_of_bounds_fails_() {
         assert!(init(CurveType::BLS12_381));
@@ -17,9 +21,14 @@ pub mod consts_tests {
     #[test]
     fn roots_of_unity_are_plausible_() {
         assert!(init(CurveType::BLS12_381));
+        
         unsafe {
             init_globals();
-            roots_of_unity_are_plausible_slice::<Fr>(&SCALE_2_ROOT_OF_UNITY);
+            let mut scale2_root_of_unity_arr: [[u64; 4]; 32] = [[0; 4]; 32];
+            for i in 0..SCALE_2_ROOT_OF_UNITY.len(){
+                scale2_root_of_unity_arr[i] = SCALE_2_ROOT_OF_UNITY[i].to_u64_arr();
+            }
+            roots_of_unity_are_plausible::<Fr>(&scale2_root_of_unity_arr);
         }
     }
 
@@ -28,7 +37,11 @@ pub mod consts_tests {
         assert!(init(CurveType::BLS12_381));
         unsafe {
             init_globals();
-            expand_roots_is_plausible_slice::<Fr>(&SCALE_2_ROOT_OF_UNITY, &expand_root_of_unity);
+            let mut scale2_root_of_unity_arr: [[u64; 4]; 32] = [[0; 4]; 32];
+            for i in 0..SCALE_2_ROOT_OF_UNITY.len(){
+                scale2_root_of_unity_arr[i] = SCALE_2_ROOT_OF_UNITY[i].to_u64_arr();
+            }
+            expand_roots_is_plausible::<Fr>(&scale2_root_of_unity_arr, &expand_root_of_unityarr);
         }
     }
 
