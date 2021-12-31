@@ -6,24 +6,83 @@ use kzg::{Fr, Poly, ZeroPoly, FFTFr, PolyRecover};
 
 const SCALE_FACTOR: u64 = 5;
 
+#[cfg(feature = "parallel")]
+static mut INVERSE_FACTORS: Vec<Scalar> = Vec::new();
+#[cfg(feature = "parallel")]
+static mut UNSCALE_FACTOR_POWERS: Vec<Scalar> = Vec::new();
+
+#[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut ZPoly){
     let scale_factor = Scalar::from_u64(SCALE_FACTOR);
     let inv_factor = scale_factor.inverse();
-    let mut factor_power = Scalar::one();
 
-    for i in 1..p.len(){
-        factor_power = factor_power.mul(&inv_factor);
-        p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+    #[cfg(feature = "parallel")]
+    {
+        let optim = (p.len() - 1).next_power_of_two();
+        if optim <= 1024 {
+            unsafe {
+                if INVERSE_FACTORS.len() < p.len() {
+                    if INVERSE_FACTORS.is_empty() {
+                        INVERSE_FACTORS.push(Scalar::one());
+                    }
+                    for i in (INVERSE_FACTORS.len())..p.len() {
+                        INVERSE_FACTORS.push(INVERSE_FACTORS[i-1].mul(&inv_factor));
+                    }
+                }
+
+                for i in 1..p.len() {
+                    p.coeffs[i] = p.coeffs[i].mul(&INVERSE_FACTORS[i]);
+                }
+            }
+        } 
+        else {
+            let mut factor_power = Scalar::one();
+            for i in 1..p.len(){
+                factor_power = factor_power.mul(&inv_factor);
+                p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+            }
+        }
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut factor_power = Scalar::one();
+        for i in 1..p.len() {
+            factor_power = factor_power.mul(&inv_factor);
+            p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+        }
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut ZPoly) {
     let scale_factor = Scalar::from_u64(SCALE_FACTOR);
-    let mut factor_power = Scalar::one();
 
-    for i in 1..p.len(){
-        factor_power = factor_power.mul(&scale_factor);
-        p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+    #[cfg(feature = "parallel")]
+    {
+        unsafe {
+            if UNSCALE_FACTOR_POWERS.len() < p.len() {
+                if UNSCALE_FACTOR_POWERS.is_empty() {
+                    UNSCALE_FACTOR_POWERS.push(Scalar::one());
+                }
+                for i in (UNSCALE_FACTOR_POWERS.len())..p.len() {
+                    UNSCALE_FACTOR_POWERS.push(UNSCALE_FACTOR_POWERS[i-1].mul(&scale_factor));
+                }
+            }
+
+            for i in 1..p.len() {
+                p.coeffs[i] = p.coeffs[i].mul(&UNSCALE_FACTOR_POWERS[i]);
+            }
+        }
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {   
+        let mut factor_power = Scalar::one();
+        for i in 1..p.len() {
+            factor_power = factor_power.mul(&scale_factor);
+            p.set_coeff_at(i, &p.get_coeff_at(i).mul(&factor_power));
+        }
     }
 }
 
