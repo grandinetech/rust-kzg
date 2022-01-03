@@ -103,11 +103,23 @@ jobs:
         command: test
         args: --manifest-path blst-from-scratch/Cargo.toml
 
+    - name: "[blst-from-scratch] Tests (parallel)"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
+
     - name: "[blst-from-scratch] Benchmark"
       uses: actions-rs/cargo@v1
       with:
         command: bench
         args: --manifest-path blst-from-scratch/Cargo.toml
+
+    - name: "[blst-from-scratch] Benchmark (parallel)"
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
 
     - name: "[blst-from-scratch] Clippy"
       uses: actions-rs/cargo@v1

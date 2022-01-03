@@ -1,6 +1,8 @@
 #![allow(non_camel_case_types)]
 
 use std::borrow::Borrow;
+use rand::SeedableRng;
+
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_poly_commit::kzg10::{
     Commitment, Powers, Proof, Randomness, UniversalParams, VerifierKey, KZG10,
@@ -21,7 +23,7 @@ use ark_ec::{
     models::short_weierstrass_jacobian::GroupAffine, AffineCurve, PairingEngine, ProjectiveCurve,
     models::short_weierstrass_jacobian::GroupProjective,
 };
-use ark_ff::{PrimeField};
+use ark_ff::{PrimeField, BigInteger256};
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use blst::{blst_fp, blst_fp2};
 use kzg::{Fr as FrTrait, Poly, FFTSettings as FFTTrait, FFTFr, KZGSettings as KZGST};
@@ -93,22 +95,9 @@ where
             return Err(Error::DegreeIsZero);
         }
 
-        // let mut ret = blst::blst_fr::default();
-
-        // let secret = blst::blst_scalar{b:[0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
-        //                         0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        //                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]};
-
-        // unsafe{
-        //     blst::blst_fr_from_scalar(&mut ret, &secret)
-        // }
-        // let beta = blst_fr_into_pc_fr(&BlstFr(ret));
-
         let beta = Fr::rand(rng);
-        // let g: GroupProjective<g1::Parameters> = GroupProjective::rand(rng);
         let g = blst_p1_into_pc_g1projective(&G1_GENERATOR).unwrap();
         let gamma_g: GroupProjective<g1::Parameters> = GroupProjective::rand(rng);
-        // let h: GroupProjective<g2::Parameters> = GroupProjective::rand(rng);
         let h = blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
 
         let mut powers_of_beta = vec![Fr::one()];
@@ -352,21 +341,31 @@ pub fn default_kzg() -> KZGSettings {
     }
 }
 
-pub fn generate_trusted_setup(_len: usize, _secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
-    // let mut s_pow = Fr::from(1);
-    // let s = Fr::rand(&mut test_rng());
-    let s1 = Vec::new();
-    let s2 = Vec::new();
-    // for _i in 0..len{
-    //     let mut temp = g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y, true).into_projective();
-    //     temp.mul_assign(s_pow);
-    //     s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
-    //     let mut temp = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, true).into_projective();
-    //     temp.mul_assign(s_pow);
-    //     s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
-    //     s_pow *= s;
-    // }
+use std::convert::TryInto;
+fn read_be_u64(input: &mut &[u8]) -> u64 {
+    let (int_bytes, rest) = input.split_at(std::mem::size_of::<u64>());
+    *input = rest;
+    u64::from_be_bytes(int_bytes.try_into().unwrap())
+}
 
+pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
+    let mut s_pow = Fr::from(1);
+    let mut temp = vec![0; 4];
+    for i in 0..4{
+        temp[i] = read_be_u64(&mut &secret[i*8..(i+1)*8]);
+    }
+    let s = Fr::from_repr(BigInteger256::new([temp[0], temp[1], temp[2], temp[3]])).unwrap();
+    let mut s1 = Vec::new();
+    let mut s2 = Vec::new();
+    for _i in 0..len{
+        let mut temp = g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y, true).into_projective();
+        temp.mul_assign(s_pow);
+        s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
+        let mut temp = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, true).into_projective();
+        temp.mul_assign(s_pow);
+        s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
+        s_pow *= s;
+    }
     (s1, s2)
 }
 
@@ -387,14 +386,25 @@ pub fn generate_trusted_setup_test(len: usize, s: Fr) -> (Vec<GroupProjective<g1
     (s1, s2)
 }
 
+fn generate_rng_seed(secret_g1: &[ArkG1]) -> rand::prelude::StdRng{
+    let mut output = Vec::<u8>::new();
+    for val in &secret_g1[secret_g1.len()-1].0.x.l{
+        output.extend_from_slice(&val.to_be_bytes());
+    }
+    rand::rngs::StdRng::from_seed(output[..32].try_into().unwrap())
+} 
+
 pub(crate) fn new_kzg_settings(
-    _secret_g1: &[ArkG1],
+    secret_g1: &[ArkG1],
     _secret_g2: &[ArkG2],
     length: u64,
     ffs: &FFTSettings,
 ) -> KZGSettings {
     let length = length + 1;
-    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut test_rng()).unwrap();
+
+    let mut rng = generate_rng_seed(secret_g1);
+
+    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
 
     let mut temp = Vec::new();
     for i in 0..length{

@@ -322,9 +322,35 @@ impl FsPoly {
 
         let a_pad = self.pad(length);
         let b_pad = multiplier.pad(length);
-        // Convert Poly to values
-        let a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
-        let b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
+
+        let a_fft: Vec<FsFr>;
+        let b_fft: Vec<FsFr>;
+
+        #[cfg(feature = "parallel")]
+        {
+            if length > 1024 {
+                let mut a_fft_temp = vec![];
+                let mut b_fft_temp = vec![];
+
+                rayon::join(
+                    || a_fft_temp = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap(),
+                    || b_fft_temp = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap(),
+                );
+
+                a_fft = a_fft_temp;
+                b_fft = b_fft_temp;
+            } else {
+                a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
+            b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
+            }
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        {
+            // Convert Poly to values
+            a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
+            b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
+        }
 
         // Multiply two value ranges
         let mut ab_fft = vec![FsFr::default(); length];
