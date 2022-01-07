@@ -9,6 +9,9 @@ macro_rules! common_impl {
             pub fn zero() -> $t {
                 Default::default()
             }
+            pub fn uninit() -> std::mem::MaybeUninit::<$t> {
+                std::mem::MaybeUninit::uninit()
+            }
             pub fn clear(&mut self) {
                 *self = <$t>::zero()
             }
@@ -141,10 +144,10 @@ macro_rules! base_field_impl {
 macro_rules! add_op_impl {
     ($t:ty, $add_fn:ident, $sub_fn:ident, $neg_fn:ident) => {
         impl $t {
-            pub fn add(z: &mut $t, x: &$t, y: &$t) {
+            pub fn add(z: *mut $t, x: &$t, y: &$t) {
                 unsafe { $add_fn(z, x, y) }
             }
-            pub fn sub(z: &mut $t, x: &$t, y: &$t) {
+            pub fn sub(z: *mut $t, x: &$t, y: &$t) {
                 unsafe { $sub_fn(z, x, y) }
             }
             pub fn neg(y: &mut $t, x: &$t) {
@@ -154,33 +157,33 @@ macro_rules! add_op_impl {
         impl<'a> Add for &'a $t {
             type Output = $t;
             fn add(self, other: &$t) -> $t {
-                let mut v = <$t>::zero();
-                <$t>::add(&mut v, &self, &other);
-                v
+                let mut raw_v = <$t>::uninit();
+                <$t>::add(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                unsafe { raw_v.assume_init() }
             }
         }
         impl<'a> AddAssign<&'a $t> for $t {
             fn add_assign(&mut self, other: &$t) {
                 // how can I write this?
                 // unsafe { <$t>::add(&mut self, &self, &other); }
-                let mut v = <$t>::zero();
-                <$t>::add(&mut v, &self, &other);
-                *self = v;
+                let mut raw_v = <$t>::uninit();
+                <$t>::add(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                *self = unsafe { raw_v.assume_init() };
             }
         }
         impl<'a> Sub for &'a $t {
             type Output = $t;
             fn sub(self, other: &$t) -> $t {
-                let mut v = <$t>::zero();
-                <$t>::sub(&mut v, &self, &other);
-                v
+                let mut raw_v = <$t>::uninit();
+                <$t>::sub(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                unsafe { raw_v.assume_init() }
             }
         }
         impl<'a> SubAssign<&'a $t> for $t {
             fn sub_assign(&mut self, other: &$t) {
-                let mut v = <$t>::zero();
-                <$t>::sub(&mut v, &self, &other);
-                *self = v;
+                let mut raw_v = <$t>::uninit();
+                <$t>::sub(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                *self = unsafe { raw_v.assume_init() };
             }
         }
     };
@@ -189,10 +192,10 @@ macro_rules! add_op_impl {
 macro_rules! field_mul_op_impl {
     ($t:ty, $mul_fn:ident, $div_fn:ident, $inv_fn:ident, $sqr_fn:ident) => {
         impl $t {
-            pub fn mul(z: &mut $t, x: &$t, y: &$t) {
+            pub fn mul(z: *mut $t, x: &$t, y: &$t) {
                 unsafe { $mul_fn(z, x, y) }
             }
-            pub fn div(z: &mut $t, x: &$t, y: &$t) {
+            pub fn div(z: *mut $t, x: &$t, y: &$t) {
                 unsafe { $div_fn(z, x, y) }
             }
             pub fn inv(y: &mut $t, x: &$t) {
@@ -205,31 +208,31 @@ macro_rules! field_mul_op_impl {
         impl<'a> Mul for &'a $t {
             type Output = $t;
             fn mul(self, other: &$t) -> $t {
-                let mut v = <$t>::zero();
-                <$t>::mul(&mut v, &self, &other);
-                v
+                let mut raw_v = <$t>::uninit();
+                <$t>::mul(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                unsafe { raw_v.assume_init() }
             }
         }
         impl<'a> MulAssign<&'a $t> for $t {
             fn mul_assign(&mut self, other: &$t) {
-                let mut v = <$t>::zero();
-                <$t>::mul(&mut v, &self, &other);
-                *self = v;
+                let mut raw_v = <$t>::uninit();
+                <$t>::mul(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                *self = unsafe { raw_v.assume_init() };
             }
         }
         impl<'a> Div for &'a $t {
             type Output = $t;
             fn div(self, other: &$t) -> $t {
-                let mut v = <$t>::zero();
-                <$t>::div(&mut v, &self, &other);
-                v
+                let mut raw_v = <$t>::uninit();
+                <$t>::div(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                unsafe { raw_v.assume_init() }
             }
         }
         impl<'a> DivAssign<&'a $t> for $t {
             fn div_assign(&mut self, other: &$t) {
-                let mut v = <$t>::zero();
-                <$t>::div(&mut v, &self, &other);
-                *self = v;
+                let mut raw_v = <$t>::uninit();
+                <$t>::div(raw_v.as_mut_ptr().cast::<$t>(), &self, &other);
+                *self = unsafe { raw_v.assume_init() };
             }
         }
     };
