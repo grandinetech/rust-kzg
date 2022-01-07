@@ -41,6 +41,7 @@ impl Polynomial {
         }
     }
 
+    #[allow(clippy::needless_range_loop)]
     pub fn unshift_in_place(&mut self) {
         let scale_factor = Fr::from_int(PRIMITIVE_ROOT);
         #[cfg(feature = "parallel")]
