@@ -11,7 +11,6 @@ use crate::mcl_methods;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     fn mclBnGT_isEqual(x: *const GT, y: *const GT) -> i32;
     fn mclBnGT_isZero(x: *const GT) -> i32;

@@ -68,7 +68,7 @@ impl ops::Sub<G1> for G1 {
     type Output = G1;
     fn sub(self, rhs: G1) -> Self::Output {
         let mut g1 = G1::default();
-        G1::sub(&mut g1, &self, &rhs);
+        unsafe { G1::sub(&mut g1, &self, &rhs); }
 
         g1
     }
@@ -94,7 +94,7 @@ impl ops::Mul<GT> for GT {
     type Output = GT;
     fn mul(self, rhs: GT) -> Self::Output {
         let mut gt = GT::default();
-        GT::mul(&mut gt, &self, &rhs);
+        unsafe { GT::mul(&mut gt, &self, &rhs); }
 
         gt
     }
@@ -128,7 +128,7 @@ impl ops::Sub<G2> for G2 {
     type Output = G2;
     fn sub(self, rhs: G2) -> Self::Output {
         let mut g2 = G2::default();
-        G2::sub(&mut g2, &self, &rhs);
+        unsafe { G2::sub(&mut g2, &self, &rhs); }
 
         g2
     }
@@ -165,7 +165,7 @@ impl ops::Mul<Fr> for Fr {
     type Output = Fr;
     fn mul(self, rhs: Fr) -> Self::Output {
         let mut result = Fr::default();
-        Fr::mul(&mut result, &self, &rhs);
+        unsafe { Fr::mul(&mut result, &self, &rhs); }
 
         result
     }
@@ -175,7 +175,7 @@ impl ops::Div<Fr> for Fr {
     type Output = Fr;
     fn div(self, rhs: Fr) -> Self::Output {
         let mut result = Fr::default();
-        Fr::div(&mut result, &self, &rhs);
+        unsafe { Fr::div(&mut result, &self, &rhs); }
 
         result
     }
@@ -185,7 +185,7 @@ impl ops::Sub<Fr> for Fr {
     type Output = Fr;
     fn sub(self, rhs: Fr) -> Self::Output {
         let mut result = Fr::default();
-        Fr::sub(&mut result, &self, &rhs);
+        unsafe { Fr::sub(&mut result, &self, &rhs); }
 
         result
     }
@@ -195,7 +195,7 @@ impl ops::Add<Fr> for Fr {
     type Output = Fr;
     fn add(self, rhs: Fr) -> Self::Output {
         let mut result = Fr::default();
-        Fr::add(&mut result, &self, &rhs);
+        unsafe { Fr::add(&mut result, &self, &rhs); }
 
         result
     }

@@ -385,7 +385,7 @@ impl FFTSettings {
             let root = &roots_of_unity[i * roots_stride];
 
             let y_times_root = y * root;
-            G1::add(&mut out[i], &x, &y_times_root);
+            unsafe { G1::add(&mut out[i], &x, &y_times_root); }
             out[i + half] = x - y_times_root;
         }
     }

@@ -10,7 +10,6 @@ use crate::mcl_methods;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     fn mclBnG2_isEqual(x: *const G2, y: *const G2) -> i32;
     fn mclBnG2_isValid(x: *const G2) -> i32;

@@ -19,7 +19,7 @@ impl CommonG2 for G2 {
         if self == b {
             G2::dbl(&mut g2, self);
         } else {
-            G2::add(&mut g2, self, b);
+            unsafe { G2::add(&mut g2, self, b); }
         }
         g2
     }
@@ -32,7 +32,7 @@ impl CommonG2 for G2 {
 
     fn sub(&self, b: &Self) -> Self {
         let mut g2 = G2::zero();
-        G2::sub(&mut g2, self, b);
+        unsafe { G2::sub(&mut g2, self, b); }
         g2
     }
 

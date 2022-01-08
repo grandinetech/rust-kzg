@@ -28,7 +28,7 @@ impl CommonG1 for G1 {
         if self == b {
             G1::dbl(&mut g1, self);
         } else {
-            G1::add(&mut g1, self, b);
+            unsafe { G1::add(&mut g1, self, b); }
         }
         g1
     }
@@ -45,7 +45,7 @@ impl CommonG1 for G1 {
 
     fn sub(&self, b: &Self) -> Self {
         let mut g1 = G1::zero();
-        G1::sub(&mut g1, self, b);
+        unsafe { G1::sub(&mut g1, self, b); }
         g1
     }
 

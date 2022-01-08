@@ -36,7 +36,7 @@ impl CommonFr for Fr {
 	
 	fn div(&self, b: &Self) -> Result<Self, String>{
         let mut res = Fr::zero();
-        Fr::div(&mut res, self, b);
+        unsafe { Fr::div(&mut res, self, b); }
         Ok(res)
 	}
 	
@@ -70,19 +70,19 @@ impl CommonFr for Fr {
 
     fn mul(&self, b: &Self) -> Self {
         let mut res = Fr::zero();
-        Fr::mul(&mut res, self, b);
+        unsafe { Fr::mul(&mut res, self, b); }
         res
     }
 
     fn add(&self, b: &Self) -> Self {
         let mut res = Fr::zero();
-        Fr::add(&mut res, self, b);
+        unsafe { Fr::add(&mut res, self, b); }
         res
     }
 
     fn sub(&self, b: &Self) -> Self {
         let mut res = Fr::zero();
-        Fr::sub(&mut res, self, b);
+        unsafe { Fr::sub(&mut res, self, b); }
         res
     }
 

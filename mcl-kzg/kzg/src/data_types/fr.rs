@@ -10,7 +10,6 @@ use std::os::raw::c_int;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     fn mclBnFr_isEqual(x: *const Fr, y: *const Fr) -> i32;
     fn mclBnFr_isValid(x: *const Fr) -> i32;
