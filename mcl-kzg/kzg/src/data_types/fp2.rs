@@ -11,6 +11,7 @@ use crate::mcl_methods;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     fn mclBnFp2_isEqual(x: *const Fp2, y: *const Fp2) -> i32;
     fn mclBnFp2_isZero(x: *const Fp2) -> i32;
@@ -44,10 +45,7 @@ serialize_impl![
     mclBnFp2_deserialize
 ];
 str_impl![Fp2, 1024, mclBnFp2_getStr, mclBnFp2_setStr];
-
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![Fp2, mclBnFp2_add, mclBnFp2_sub, mclBnFp2_neg];
-
 field_mul_op_impl![Fp2, mclBnFp2_mul, mclBnFp2_div, mclBnFp2_inv, mclBnFp2_sqr];
 impl Fp2 {
     pub fn square_root(y: &mut Fp2, x: &Fp2) -> bool {

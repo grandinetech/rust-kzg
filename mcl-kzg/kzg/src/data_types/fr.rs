@@ -10,6 +10,7 @@ use std::os::raw::c_int;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     fn mclBnFr_isEqual(x: *const Fr, y: *const Fr) -> i32;
     fn mclBnFr_isValid(x: *const Fr) -> i32;
@@ -112,8 +113,5 @@ base_field_impl![
     mclBnFr_isNegative,
     mclBnFr_squareRoot
 ];
-
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![Fr, mclBnFr_add, mclBnFr_sub, mclBnFr_neg];
-
 field_mul_op_impl![Fr, mclBnFr_mul, mclBnFr_div, mclBnFr_inv, mclBnFr_sqr];

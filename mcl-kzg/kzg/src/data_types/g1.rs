@@ -10,6 +10,7 @@ use std::os::raw::c_int;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     pub fn mclBnG1_isEqual(x: *const G1, y: *const G1) -> i32;
     pub fn mclBnG1_isValid(x: *const G1) -> i32;
@@ -47,10 +48,7 @@ serialize_impl![
     mclBnG1_deserialize
 ];
 str_impl![G1, 1024, mclBnG1_getStr, mclBnG1_setStr];
-
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![G1, mclBnG1_add, mclBnG1_sub, mclBnG1_neg];
-
 ec_impl![
     G1,
     mclBnG1_dbl,

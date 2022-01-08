@@ -11,6 +11,7 @@ use crate::mcl_methods;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     fn mclBnGT_isEqual(x: *const GT, y: *const GT) -> i32;
     fn mclBnGT_isZero(x: *const GT) -> i32;
@@ -49,10 +50,7 @@ serialize_impl![
 ];
 str_impl![GT, 1024, mclBnGT_getStr, mclBnGT_setStr];
 int_impl![GT, mclBnGT_setInt32, mclBnGT_isOne];
-
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![GT, mclBnGT_add, mclBnGT_sub, mclBnGT_neg];
-
 field_mul_op_impl![GT, mclBnGT_mul, mclBnGT_div, mclBnGT_inv, mclBnGT_sqr];
 impl GT {
     pub fn pow(z: &mut GT, x: &GT, y: &Fr) {

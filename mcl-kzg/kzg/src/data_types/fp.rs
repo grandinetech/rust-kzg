@@ -71,7 +71,5 @@ base_field_impl![
     mclBnFp_isNegative,
     mclBnFp_squareRoot
 ];
-
 add_op_impl![Fp, mclBnFp_add, mclBnFp_sub, mclBnFp_neg];
-
 field_mul_op_impl![Fp, mclBnFp_mul, mclBnFp_div, mclBnFp_inv, mclBnFp_sqr];
