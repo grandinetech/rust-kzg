@@ -23,7 +23,7 @@ impl Polynomial {
                 let mut temp: Vec<Fr> = vec![Fr::one()];
                 for i in 1..65536 {
                     let mut res = Fr::zero();
-                    Fr::mul(&mut res, &temp[i - 1], &inv_factor);
+                    unsafe { Fr::mul(&mut res, &temp[i - 1], &inv_factor); }
 
                     temp.push(res);
                 }
@@ -50,7 +50,7 @@ impl Polynomial {
                 let mut temp: Vec<Fr> = vec![Fr::one()];
                 for i in 1..65536 {
                     let mut res = Fr::zero();
-                    Fr::mul(&mut res, &temp[i - 1], &scale_factor);
+                    unsafe { Fr::mul(&mut res, &temp[i - 1], &scale_factor); }
 
                     temp.push(res);
                 }
