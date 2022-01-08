@@ -144,9 +144,15 @@ macro_rules! base_field_impl {
 macro_rules! add_op_impl {
     ($t:ty, $add_fn:ident, $sub_fn:ident, $neg_fn:ident) => {
         impl $t {
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub unsafe fn add(z: *mut $t, x: &$t, y: &$t) {
                 $add_fn(z, x, y)
             }
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub unsafe fn sub(z: *mut $t, x: &$t, y: &$t) {
                 $sub_fn(z, x, y)
             }
@@ -201,9 +207,15 @@ macro_rules! add_op_impl {
 macro_rules! field_mul_op_impl {
     ($t:ty, $mul_fn:ident, $div_fn:ident, $inv_fn:ident, $sqr_fn:ident) => {
         impl $t {
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub unsafe fn mul(z: *mut $t, x: &$t, y: &$t) {
                 $mul_fn(z, x, y)
             }
+            /// # Safety
+            ///
+            /// MCL Function, unsure why it is unsafe
             pub unsafe fn div(z: *mut $t, x: &$t, y: &$t) {
                 $div_fn(z, x, y)
             }
