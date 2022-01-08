@@ -9,6 +9,7 @@ use crate::mcl_methods::*;
 #[link(name = "mclbn384_256", kind = "static")]
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 extern "C" {
     fn mclBnFp_isEqual(x: *const Fp, y: *const Fp) -> i32;
     fn mclBnFp_isValid(x: *const Fp) -> i32;
@@ -71,7 +72,6 @@ base_field_impl![
     mclBnFp_squareRoot
 ];
 
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![Fp, mclBnFp_add, mclBnFp_sub, mclBnFp_neg];
 
 field_mul_op_impl![Fp, mclBnFp_mul, mclBnFp_div, mclBnFp_inv, mclBnFp_sqr];
