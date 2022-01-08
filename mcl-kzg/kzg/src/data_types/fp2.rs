@@ -44,7 +44,10 @@ serialize_impl![
     mclBnFp2_deserialize
 ];
 str_impl![Fp2, 1024, mclBnFp2_getStr, mclBnFp2_setStr];
+
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![Fp2, mclBnFp2_add, mclBnFp2_sub, mclBnFp2_neg];
+
 field_mul_op_impl![Fp2, mclBnFp2_mul, mclBnFp2_div, mclBnFp2_inv, mclBnFp2_sqr];
 impl Fp2 {
     pub fn square_root(y: &mut Fp2, x: &Fp2) -> bool {

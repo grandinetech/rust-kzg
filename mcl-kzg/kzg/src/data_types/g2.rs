@@ -46,7 +46,10 @@ serialize_impl![
     mclBnG2_deserialize
 ];
 str_impl![G2, 1024, mclBnG2_getStr, mclBnG2_setStr];
+
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![G2, mclBnG2_add, mclBnG2_sub, mclBnG2_neg];
+
 ec_impl![
     G2,
     mclBnG2_dbl,

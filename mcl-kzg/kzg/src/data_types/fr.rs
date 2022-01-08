@@ -112,5 +112,8 @@ base_field_impl![
     mclBnFr_isNegative,
     mclBnFr_squareRoot
 ];
+
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 add_op_impl![Fr, mclBnFr_add, mclBnFr_sub, mclBnFr_neg];
+
 field_mul_op_impl![Fr, mclBnFr_mul, mclBnFr_div, mclBnFr_inv, mclBnFr_sqr];

@@ -141,7 +141,6 @@ macro_rules! base_field_impl {
     };
 }
 
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 macro_rules! add_op_impl {
     ($t:ty, $add_fn:ident, $sub_fn:ident, $neg_fn:ident) => {
         impl $t {
@@ -190,7 +189,6 @@ macro_rules! add_op_impl {
     };
 }
 
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 macro_rules! field_mul_op_impl {
     ($t:ty, $mul_fn:ident, $div_fn:ident, $inv_fn:ident, $sqr_fn:ident) => {
         impl $t {
