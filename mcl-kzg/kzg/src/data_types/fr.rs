@@ -1,6 +1,5 @@
 use crate::mcl_methods;
 use primitive_types::U256;
-use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};

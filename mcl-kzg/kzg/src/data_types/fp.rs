@@ -2,7 +2,6 @@ use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
-use std::mem::MaybeUninit;
 use std::os::raw::c_int;
 use crate::mcl_methods::*;
 

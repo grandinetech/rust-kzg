@@ -4,32 +4,35 @@ use crate::data_types::fr::Fr;
 use crate::utilities::is_power_of_2;
 #[cfg(feature = "parallel")]
 use crate::utilities::next_pow_of_2;
+#[cfg(feature = "parallel")]
+use once_cell::sync::OnceCell;
 
 #[cfg(feature = "parallel")]
-static mut INVERSE_FACTORS: Vec<Fr> = Vec::new();
+static INVERSE_FACTORS: OnceCell<Vec<Fr>> = OnceCell::new();
 #[cfg(feature = "parallel")]
-static mut UNSHIFT_FACTOR_POWERS: Vec<Fr> = Vec::new();
+static UNSHIFT_FACTOR_POWERS: OnceCell<Vec<Fr>> = OnceCell::new();
 
 impl Polynomial {
+
+    #[allow(clippy::needless_range_loop)]
     pub fn shift_in_place(&mut self) {
         let inv_factor = Fr::from_int(PRIMITIVE_ROOT).get_inv();
         #[cfg(feature = "parallel")]
         {
-            unsafe {
-                if INVERSE_FACTORS.len() < self.order() {
-                    if INVERSE_FACTORS.is_empty() {
-                        INVERSE_FACTORS.push(Fr::one());
-                    }
-                    for i in (INVERSE_FACTORS.len())..self.order() {
-                        let mut res = Fr::zero();
-                        Fr::mul(&mut res, &INVERSE_FACTORS[i-1], &inv_factor);
-                        INVERSE_FACTORS.push(res);
-                    }
+            let factors = INVERSE_FACTORS.get_or_init( || {
+                let mut temp: Vec<Fr> = vec![Fr::one()];
+                for i in 1..65536 {
+                    let mut res = Fr::zero();
+                    Fr::mul(&mut res, &temp[i - 1], &inv_factor);
+
+                    temp.push(res);
                 }
-    
-                for (i, factor) in INVERSE_FACTORS.iter().enumerate().take(self.order()).skip(1) {
-                    self.coeffs[i] *= factor;
-                }
+
+                temp
+            });
+
+            for i in 1..self.order() {
+                self.coeffs[i] *= &factors[i];
             }
         }
         #[cfg(not(feature="parallel"))]
@@ -38,25 +41,25 @@ impl Polynomial {
         }
     }
 
+    #[allow(clippy::needless_range_loop)]
     pub fn unshift_in_place(&mut self) {
         let scale_factor = Fr::from_int(PRIMITIVE_ROOT);
         #[cfg(feature = "parallel")]
         {
-            unsafe {
-                if UNSHIFT_FACTOR_POWERS.len() < self.order() {
-                    if UNSHIFT_FACTOR_POWERS.is_empty() {
-                        UNSHIFT_FACTOR_POWERS.push(Fr::one());
-                    }
-                    for i in (UNSHIFT_FACTOR_POWERS.len())..self.order() {
-                        let mut res = Fr::zero();
-                        Fr::mul(&mut res, &UNSHIFT_FACTOR_POWERS[i-1], &scale_factor);
-                        UNSHIFT_FACTOR_POWERS.push(res);
-                    }
+            let factors = UNSHIFT_FACTOR_POWERS.get_or_init( || {
+                let mut temp: Vec<Fr> = vec![Fr::one()];
+                for i in 1..65536 {
+                    let mut res = Fr::zero();
+                    Fr::mul(&mut res, &temp[i - 1], &scale_factor);
+
+                    temp.push(res);
                 }
-    
-                for (i, factor) in UNSHIFT_FACTOR_POWERS.iter().enumerate().take(self.order()).skip(1) {
-                    self.coeffs[i] *= factor;
-                }
+
+                temp
+            });
+
+            for i in 1..self.order() {
+                self.coeffs[i] *= &factors[i];
             }
         }
         #[cfg(not(feature="parallel"))]
@@ -101,29 +104,28 @@ impl Polynomial {
         let mut poly_with_zero = Polynomial::from_fr(poly_with_zero_coeffs);
         let mut zero_poly = Polynomial::from_fr(zero_poly_coeffs.coeffs);
 
-        poly_with_zero.shift_in_place();
-        zero_poly.shift_in_place();
-        // #[cfg(not(feature="parallel"))]
-        // {
-        //     poly_with_zero.shift_in_place();
-        //     zero_poly.shift_in_place();
-        // }
+        #[cfg(feature="parallel")]
+        let optim = next_pow_of_2(poly_with_zero.order() - 1);
 
-        // #[cfg(feature="parallel")]
-        // {
-        //     let optim = next_pow_of_2(poly_with_zero.order() - 1);
+        #[cfg(feature="parallel")]
+        {
+            if optim > 1024 {
+                rayon::join(
+                    || poly_with_zero.shift_in_place(),
+                    || zero_poly.shift_in_place(),
+                );
+            }
+            else {
+                poly_with_zero.shift_in_place();
+                zero_poly.shift_in_place();
+            }
+        }
 
-        //     if optim > 1024 {
-        //         rayon::join(
-        //             || poly_with_zero.shift_in_place(),
-        //             || zero_poly.shift_in_place(),
-        //         );
-        //     }
-        //     else {
-        //         poly_with_zero.shift_in_place();
-        //         zero_poly.shift_in_place();
-        //     }
-        // }
+        #[cfg(not(feature="parallel"))]
+        {
+            poly_with_zero.shift_in_place();
+            zero_poly.shift_in_place();
+        }
 
         let eval_shifted_poly_with_zero: Vec<Fr>;
         let eval_shifted_zero_poly: Vec<Fr>;
@@ -136,8 +138,6 @@ impl Polynomial {
 
         #[cfg(feature="parallel")]
         {
-            let optim = next_pow_of_2(poly_with_zero.order() - 1);
-            
             if optim > 1024 {
                 let mut eval_shifted_poly_with_zero_temp = vec![];
                 let mut eval_shifted_zero_poly_temp = vec![];

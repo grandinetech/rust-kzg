@@ -9,12 +9,6 @@ macro_rules! common_impl {
             pub fn zero() -> $t {
                 Default::default()
             }
-            /// # Safety
-            ///
-            /// MCL Function, unsure why it is unsafe
-            pub unsafe fn uninit() -> $t {
-                std::mem::MaybeUninit::uninit().assume_init()
-            }
             pub fn clear(&mut self) {
                 *self = <$t>::zero()
             }
@@ -72,7 +66,7 @@ macro_rules! str_impl {
     ($t:ty, $maxBufSize:expr, $get_str_fn:ident, $set_str_fn:ident) => {
         impl $t {
             pub fn from_str(s: &str, base: i32) -> Option<$t> {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 if v.set_str(s, base) {
                     return Some(v);
                 }
@@ -82,7 +76,7 @@ macro_rules! str_impl {
                 unsafe { $set_str_fn(self, s.as_ptr(), s.len(), base) == 0 }
             }
             pub fn get_str(&self, io_mode: i32) -> String {
-                let mut buf: [u8; $maxBufSize] = unsafe { MaybeUninit::uninit().assume_init() };
+                let mut buf: [u8; $maxBufSize] = [0; $maxBufSize];
                 let n: usize;
                 unsafe {
                     n = $get_str_fn(buf.as_mut_ptr(), buf.len(), self, io_mode);
@@ -100,7 +94,7 @@ macro_rules! int_impl {
     ($t:ty, $set_int_fn:ident, $is_one_fn:ident) => {
         impl $t {
             pub fn from_int(x: i32) -> $t {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 v.set_int(x);
                 v
             }
@@ -160,7 +154,7 @@ macro_rules! add_op_impl {
         impl<'a> Add for &'a $t {
             type Output = $t;
             fn add(self, other: &$t) -> $t {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::add(&mut v, &self, &other);
                 v
             }
@@ -169,7 +163,7 @@ macro_rules! add_op_impl {
             fn add_assign(&mut self, other: &$t) {
                 // how can I write this?
                 // unsafe { <$t>::add(&mut self, &self, &other); }
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::add(&mut v, &self, &other);
                 *self = v;
             }
@@ -177,14 +171,14 @@ macro_rules! add_op_impl {
         impl<'a> Sub for &'a $t {
             type Output = $t;
             fn sub(self, other: &$t) -> $t {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::sub(&mut v, &self, &other);
                 v
             }
         }
         impl<'a> SubAssign<&'a $t> for $t {
             fn sub_assign(&mut self, other: &$t) {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::sub(&mut v, &self, &other);
                 *self = v;
             }
@@ -211,14 +205,14 @@ macro_rules! field_mul_op_impl {
         impl<'a> Mul for &'a $t {
             type Output = $t;
             fn mul(self, other: &$t) -> $t {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::mul(&mut v, &self, &other);
                 v
             }
         }
         impl<'a> MulAssign<&'a $t> for $t {
             fn mul_assign(&mut self, other: &$t) {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::mul(&mut v, &self, &other);
                 *self = v;
             }
@@ -226,14 +220,14 @@ macro_rules! field_mul_op_impl {
         impl<'a> Div for &'a $t {
             type Output = $t;
             fn div(self, other: &$t) -> $t {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::div(&mut v, &self, &other);
                 v
             }
         }
         impl<'a> DivAssign<&'a $t> for $t {
             fn div_assign(&mut self, other: &$t) {
-                let mut v = unsafe { <$t>::uninit() };
+                let mut v = <$t>::zero();
                 <$t>::div(&mut v, &self, &other);
                 *self = v;
             }
@@ -263,7 +257,7 @@ macro_rules! ec_impl {
 
 macro_rules! get_str_impl {
     ($get_str_fn:ident) => {{
-        let mut buf: [u8; 256] = unsafe { MaybeUninit::uninit().assume_init() };
+        let mut buf: [u8; 256] = [0; 256];
         let n: usize;
         unsafe {
             n = $get_str_fn(buf.as_mut_ptr(), buf.len());

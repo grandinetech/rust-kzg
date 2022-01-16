@@ -43,7 +43,7 @@ fn mcl_test() {
 
     let x = Fr::from_int(3);
     let y = Fp::from_int(-1);
-    let mut e = unsafe { GT::uninit() };
+    let mut e = GT::zero();
     pairing(&mut e, &p, &q);
     serialize_test! {Fr, x};
     serialize_test! {Fp, y};
