@@ -21,23 +21,23 @@ jobs:
 
 # 3rd team #########################################################
 
-    - name: "[blst-from-scratch] Tests"
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path blst-from-scratch/Cargo.toml
-
-    - name: "[blst-from-scratch] Tests (parallel)"
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
-
     - name: "[blst-from-scratch] Clippy"
       uses: actions-rs/cargo@v1
       with:
        command: clippy
        args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features --
+
+    - name: "[blst-from-scratch] Tests"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast
+
+    - name: "[blst-from-scratch] Tests (parallel)"
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
 
     - name: "[blst-from-scratch] Formatting"
       uses: actions-rs/cargo@v1
