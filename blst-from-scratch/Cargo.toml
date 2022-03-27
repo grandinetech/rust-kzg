@@ -13,6 +13,7 @@ kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
 rayon = { version = "1.5.1", optional = true }
 once_cell = "1.4.0"
+num-bigint = "0.4"
 
 [dev-dependencies]
 criterion = "0.3.5"

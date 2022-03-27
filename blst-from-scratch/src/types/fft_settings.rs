@@ -1,6 +1,6 @@
 use kzg::{FFTSettings, Fr};
 
-use crate::consts::SCALE2_ROOT_OF_UNITY;
+use crate::consts::{NUM_ROOTS, roots_of_unity_arr};
 use crate::types::fr::FsFr;
 
 pub struct FsFFTSettings {
@@ -17,7 +17,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
 
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
     fn new(scale: usize) -> Result<FsFFTSettings, String> {
-        if scale >= SCALE2_ROOT_OF_UNITY.len() {
+        if scale >= NUM_ROOTS {
             return Err(String::from(
                 "Scale is expected to be within root of unity matrix row size",
             ));
@@ -25,7 +25,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
 
         // max_width = 2 ^ max_scale
         let max_width: usize = 1 << scale;
-        let root_of_unity = FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
+        let root_of_unity = FsFr::from_u64_arr(&roots_of_unity_arr()[scale]);
 
         // create max_width of roots & store them reversed as well
         let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
