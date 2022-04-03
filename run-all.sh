@@ -41,7 +41,7 @@ cd ../../
 
 # 2.2. kzg [prep-up]
 
-git clone https://github.com/sifraitech/kzg.git
+git clone --single-branch --branch research https://github.com/sifraitech/kzg
 cd kzg/
 
 # 2.2.1. arkworks
