@@ -8,7 +8,7 @@ paste_file="$paste_name.txt"
 rustup install 1.51
 rustup default 1.51
 
-neofetch > "$paste_file"
+neofetch >> "$paste_file"
 
 # 2. run individual benches
 
