@@ -99,8 +99,7 @@ impl FFTG1<ArkG1> for FFTSettings {
         let stride: usize = self.max_width / data.len();
         let mut out = vec![ArkG1::default(); data.len()];
         if inverse {
-            let mut inv_len:BlstFr;
-            inv_len = Fr::from_u64(data.len() as u64);
+            let mut inv_len: BlstFr = Fr::from_u64(data.len() as u64);
             inv_len = inv_len.inverse();
 
             fft_g1_fast(

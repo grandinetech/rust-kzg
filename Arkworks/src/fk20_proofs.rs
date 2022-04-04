@@ -134,12 +134,11 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
 
         for offset in 0..chunk_len {
             let mut x = vec![ArkG1::default(); k];
-            let start;
-            if n >= chunk_len + 1 + offset{
-                    start = n - chunk_len - 1 - offset ;
-            }else{
-                    start = 0;
-            }
+            let start = if n >= chunk_len + 1 + offset {
+                n - chunk_len - 1 - offset
+            } else {
+                0
+            };
             let mut j = start;
             for i in x.iter_mut().take(k-1) {
                 i.0 = ks.secret_g1[j].0;

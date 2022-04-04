@@ -206,8 +206,6 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
 
 impl FFTFr<BlstFr> for FFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
-        let width;
-
         if data.len() > self.max_width {
             return Err(String::from(
                 "data length is longer than allowed max width",
@@ -217,11 +215,11 @@ impl FFTFr<BlstFr> for FFTSettings {
             return Err(String::from("data length is not power of 2"));
         }
 
-        if self.max_width > data.len() {
-            width = data.len()
+        let width = if self.max_width > data.len() {
+            data.len()
         } else {
-            width = self.max_width as usize
-        }
+            self.max_width as usize
+        };
 
         let mut datafr = Vec::new();
         let mut dataeval = Vec::new();
@@ -261,7 +259,7 @@ pub fn fft_fr_fast(
     _roots_stride: usize,
 ) {
     let fft_settings = FFTSettings::from_scale(log2(data.len()) as usize).unwrap();
-    let temp = fft_settings.fft_fr(&data.to_vec(), false).unwrap();
+    let temp = fft_settings.fft_fr(data, false).unwrap();
     ret.clone_from_slice(&temp[..ret.len()]);
 }
 

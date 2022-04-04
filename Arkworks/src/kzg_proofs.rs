@@ -128,8 +128,7 @@ where
         );
         // Add an additional power of gamma_g, because we want to be able to support
         // up to D queries.
-        let temp: [u64; 4usize];
-        temp = beta.0.0;
+        let temp: [u64; 4usize] = beta.0.0;
         powers_of_gamma_g.push(powers_of_gamma_g.last().unwrap().mul(temp));
 
         let powers_of_g = GroupProjective::batch_normalization_into_affine(&powers_of_g);

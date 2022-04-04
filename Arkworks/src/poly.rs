@@ -127,14 +127,12 @@ pub fn poly_mul_fft(a: &PolyData, b: &PolyData, fs: Option<&FFTSettings>, len: u
 
     // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
 
-    let fs_p: FFTSettings;
-
-    if let Some(x) = fs{
-        fs_p = x.clone();
-    }else{
+    let fs_p = if let Some(x) = fs {
+        x.clone()
+    } else {
         let scale = log2_pow2(length);
-        fs_p = FFTSettings::new(scale).unwrap();
-    }
+        FFTSettings::new(scale).unwrap()
+    };
 
     if length > fs_p.max_width{
         return Err(String::from("length should be equals or less than FFTSettings max width"));
