@@ -27,12 +27,12 @@ cd c-kzg/src/
 
 # 2.1.1. c-kzg [original]
 
-printf "\n\n\n\n\n~~~~~~~~~~ c-kzg [original] ~~~~~~~~~~" >> ../../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ c-kzg [original]~~~~~~~~~~\n\n\n" >> ../../"$paste_file"
 make fft_fr_bench fft_g1_bench recover_bench zero_poly_bench kzg_proofs_bench poly_bench das_extension_bench >> ../../"$paste_file"
 
 # 2.1.2. c-kzg [parallelized]
 
-printf "\n\n\n\n\n~~~~~~~~~~ c-kzg [parallelized] ~~~~~~~~~~" >> ../../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ c-kzg [parallelized]~~~~~~~~~~\n\n\n" >> ../../"$paste_file"
 git checkout openmp
 eval "$(sed -i "s/KZG_CFLAGS =/KZG_CFLAGS = -fPIE -fopenmp/" Makefile)"
 eval "$(sed -i 's/KZG_CFLAGS += -O/KZG_CFLAGS += -Ofast/' Makefile)"
@@ -46,23 +46,23 @@ cd kzg/
 
 # 2.2.1. arkworks
 
-printf "\n\n\n\n\n~~~~~~~~~~ arkworks [original] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ arkworks [original]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path Arkworks/Cargo.toml >> ../"$paste_file"
-printf "\n\n\n\n\n~~~~~~~~~~ arkworks [parallelized] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ arkworks [parallelized]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path Arkworks/Cargo.toml --features parallel >> ../"$paste_file"
 
 # 2.2.2. zkcrypto
 
-printf "\n\n\n\n\n~~~~~~~~~~ zkcrypto [original] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ zkcrypto [original]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path zkcrypto/Cargo.toml >> ../"$paste_file"
-printf "\n\n\n\n\n~~~~~~~~~~ zkcrypto [parallelized] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ zkcrypto [parallelized]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path zkcrypto/Cargo.toml --features parallel >> ../"$paste_file"
 
 # 2.2.3. blst-from-scratch
 
-printf "\n\n\n\n\n~~~~~~~~~~ blst-from-scratch [original] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ blst-from-scratch [original]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path blst-from-scratch/Cargo.toml >> ../"$paste_file"
-printf "\n\n\n\n\n~~~~~~~~~~ blst-from-scratch [parallelized] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ blst-from-scratch [parallelized]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path blst-from-scratch/Cargo.toml --features parallel >> ../"$paste_file"
 
 # 2.2.4. ckzg
@@ -73,9 +73,9 @@ export "OMP_NUM_THREADS=$(nproc)"
 cd ckzg && bash build.sh
 cd ..
 
-printf "\n\n\n\n\n~~~~~~~~~~ ckzg [original] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ ckzg [original]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path ckzg/Cargo.toml >> ../"$paste_file"
-printf "\n\n\n\n\n~~~~~~~~~~ ckzg [parallelized] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ ckzg [parallelized]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path ckzg/Cargo.toml --features parallel >> ../"$paste_file"
 
 # 2.2.5. mcl-kzg10-rust
@@ -83,9 +83,9 @@ cargo bench --manifest-path ckzg/Cargo.toml --features parallel >> ../"$paste_fi
 cd mcl-kzg/kzg && bash build.sh
 cd ../..
 
-printf "\n\n\n\n\n~~~~~~~~~~ mcl-kzg10-rust [original] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ mcl-kzg10-rust [original]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml >> ../"$paste_file"
-printf "\n\n\n\n\n~~~~~~~~~~ mcl-kzg10-rust [parallelized] ~~~~~~~~~~" >> ../"$paste_file"
+printf "\n\n\n~~~~~~~~~~ mcl-kzg10-rust [parallelized]~~~~~~~~~~\n\n\n" >> ../"$paste_file"
 cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel >> ../"$paste_file"
 cd ..
 
