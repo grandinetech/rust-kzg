@@ -5,8 +5,8 @@ paste_file="$paste_name.txt"
 
 # 1.2. post shell restart
 
-rustup install 1.51
-rustup default 1.51
+rustup install 1.58.1
+rustup default 1.58.1
 
 neofetch >> "$paste_file"
 
