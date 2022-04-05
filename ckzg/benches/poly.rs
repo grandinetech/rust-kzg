@@ -7,5 +7,10 @@ fn bench_new_poly_div_(c: &mut Criterion) {
     bench_new_poly_div::<BlstFr, KzgPoly>(c);
 }
 
-criterion_group!(benches, bench_new_poly_div_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_new_poly_div_
+}
+
 criterion_main!(benches);

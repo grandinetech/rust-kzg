@@ -29,5 +29,10 @@ fn fk_multi_da_chunk_32_optimized_(c: &mut Criterion) {
     fk_multi_da_chunk_32_optimized::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20Matrix>(c, &KZGSettings::generate_trusted_setup)
 }
 
-criterion_group!(benches, fk_single_da_, fk_single_da_optimized_, fk_multi_da_chunk_32_, fk_multi_da_chunk_32_optimized_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = fk_single_da_, fk_single_da_optimized_, fk_multi_da_chunk_32_, fk_multi_da_chunk_32_optimized_
+}
+
 criterion_main!(benches);

@@ -11,5 +11,10 @@ fn kzg_proof_(c: &mut Criterion) {
     kzg_proof::<blsScalar, ZkG1Projective, ZkG2Projective, ZPoly, ZkFFTSettings, KZGSettings>(c, &generate_trusted_setup)
 }
 
-criterion_group!(benches, kzg_proof_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = kzg_proof_
+}
+
 criterion_main!(benches);

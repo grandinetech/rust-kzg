@@ -13,7 +13,7 @@ kzg-bench = { path = "../../kzg-bench" }
 
 [dev-dependencies]
 rand = "0.5"
-criterion = "0.3"
+criterion = "0.2.11"
 
 [[bench]]
 name = "shared_fk20"

@@ -8,5 +8,10 @@ fn bench_das_extension_(c: &mut Criterion) {
     bench_das_extension::<FsFr, FFTSettings>(c);
 }
 
-criterion_group!(benches, bench_das_extension_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_das_extension_
+}
+
 criterion_main!(benches);

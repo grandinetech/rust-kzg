@@ -9,7 +9,7 @@ kzg-bench = { path = "../kzg-bench" }
 rand = "0.4"
 
 [dev-dependencies]
-criterion = "0.3.5"
+criterion = "0.2.11"
 
 [features]
 parallel = []

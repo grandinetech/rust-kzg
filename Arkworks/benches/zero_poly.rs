@@ -9,5 +9,10 @@ fn bench_zero_poly_(c: &mut Criterion) {
     bench_zero_poly::<FsFr, FFTSettings, PolyData>(c);
 }
 
-criterion_group!(benches, bench_zero_poly_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_zero_poly_
+}
+
 criterion_main!(benches);

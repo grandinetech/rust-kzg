@@ -8,5 +8,10 @@ fn bench_zero_poly_(c: &mut Criterion) {
     bench_zero_poly::<BlstFr, KzgFFTSettings, KzgPoly>(c);
 }
 
-criterion_group!(benches, bench_zero_poly_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_zero_poly_
+}
+
 criterion_main!(benches);

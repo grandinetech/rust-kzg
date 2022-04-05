@@ -9,5 +9,10 @@ fn bench_recover_(c: &mut Criterion) {
     bench_recover::<FsFr, FFTSettings, PolyData, PolyData>(c);
 }
 
-criterion_group!(benches, bench_recover_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_recover_
+}
+
 criterion_main!(benches);

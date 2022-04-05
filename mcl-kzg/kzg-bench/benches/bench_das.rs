@@ -18,5 +18,10 @@ fn _set_up_and_bench(scale: u8, c: &mut Criterion) {
     c.bench_function(&id, |b| b.iter(|| settings.das_fft_extension(&mut data)));
 }
 
-criterion_group!(benches, bench_das_fft_extension);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_das_fft_extension
+}
+
 criterion_main!(benches);

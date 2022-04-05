@@ -24,5 +24,10 @@ fn bench_large_commit(c: &mut Criterion) {
     c.bench_function("bench_large_commit", |b| b.iter(|| poly.commit(&curve.g1_points)));
 }
 
-criterion_group!(benches, bench_simple_commit, bench_large_commit);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_simple_commit, bench_large_commit
+}
+
 criterion_main!(benches);

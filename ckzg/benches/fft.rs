@@ -12,5 +12,10 @@ fn bench_fft_g1_(c: &mut Criterion) {
     bench_fft_g1::<BlstFr, BlstP1, KzgFFTSettings>(c);
 }
 
-criterion_group!(benches, bench_fft_fr_, bench_fft_g1_);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(2);
+    targets = bench_fft_fr_, bench_fft_g1_
+}
+
 criterion_main!(benches);

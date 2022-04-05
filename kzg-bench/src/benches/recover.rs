@@ -6,10 +6,10 @@ use std::convert::TryInto;
 const BENCH_SCALE: usize = 15;
 
 pub fn bench_recover<
-    TFr: Fr,
-    TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TPoly: Poly<TFr>,
-    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>,
+    TFr: 'static + Fr,
+    TFTTSettings: 'static + FFTSettings<TFr> + FFTFr<TFr>,
+    TPoly: 'static + Poly<TFr>,
+    TPolyRecover: 'static + PolyRecover<TFr, TPoly, TFTTSettings>,
 >(
     c: &mut Criterion,
 ) {
@@ -39,7 +39,7 @@ pub fn bench_recover<
     }
 
     let id = format!("bench_recover scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, |b| b.iter(|| {
+    c.bench_function(&id, move |b| b.iter(|| {
         TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
     }));
 }
