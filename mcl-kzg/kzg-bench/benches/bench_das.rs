@@ -15,7 +15,7 @@ fn _set_up_and_bench(scale: u8, c: &mut Criterion) {
     let settings = FFTSettings::new(scale);
     let mut data: Vec<Fr> = (0..(settings.max_width >> 1)).map(|_| Fr::random()).collect();
     let id = format!("bench_das_fft_extension scale: '{}'", scale);
-    c.bench_function(&id, |b| b.iter(|| settings.das_fft_extension(&mut data)));
+    c.bench_function(&id, move |b| b.iter(|| settings.das_fft_extension(&mut data)));
 }
 
 criterion_group! {

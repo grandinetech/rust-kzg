@@ -11,8 +11,7 @@ fn bench_simple_commit(c: &mut Criterion) {
     let poly = Polynomial::from_i32(&coefficients);
     let secret = Fr::from_str("1927409816240961209460912649124", 10);
     let curve = Curve::new(&secret.unwrap(), poly.order());
-
-    c.bench_function("bench_simple_commit", |b| b.iter(|| poly.commit(&curve.g1_points)));
+    c.bench_function("bench_simple_commit", move |b| b.iter(|| poly.commit(&curve.g1_points)));
 }
 
 fn bench_large_commit(c: &mut Criterion) {
@@ -20,8 +19,7 @@ fn bench_large_commit(c: &mut Criterion) {
     let poly = Polynomial::random(2048);
     let secret = Fr::from_str("1927409816240961209460912649124", 10);
     let curve = Curve::new(&secret.unwrap(), poly.order());
-
-    c.bench_function("bench_large_commit", |b| b.iter(|| poly.commit(&curve.g1_points)));
+    c.bench_function("bench_large_commit", move |b| b.iter(|| poly.commit(&curve.g1_points)));
 }
 
 criterion_group! {
