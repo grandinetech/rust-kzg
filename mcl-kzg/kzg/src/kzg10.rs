@@ -451,13 +451,12 @@ impl Polynomial {
         let b_len = min(b.order(), len);
         let length = next_pow_of_2(a_len + b_len - 1);
 
-        let fft_settings;
         //TO DO remove temp_fft, can't find a nice way to declare fft and only use it as ref
         let temp_fft = FFTSettings::new(log_2(length) as u8);
-        match ft {
-            Some(x) => fft_settings = x,
-            None => fft_settings = &temp_fft,
-        }
+        let fft_settings = match ft {
+            Some(x) => x,
+            None => &temp_fft,
+        };
         let ft = fft_settings;
         if length > ft.max_width {
             return Err(String::from("Mul fft only good up to length < 32 bits"));
@@ -564,14 +563,12 @@ impl Polynomial {
         //if new length is 1, max d is 0
         let mut mask = 1 << log_2(maxd);
         while mask != 0 {
-            let mut poly_temp_0: Polynomial;
-            let poly_temp_1: Polynomial;
             d = 2 * d + ((maxd & mask) != 0) as usize;
             mask >>= 1;
 
             // b.c -> tmp0 (we're using out for c)
             let temp_0_len = min(d + 1, self.order() + out.order() - 1);
-            poly_temp_0 = self.mul_(&out, Some(&fs), temp_0_len).unwrap();
+            let mut poly_temp_0: Polynomial = self.mul_(&out, Some(&fs), temp_0_len).unwrap();
 
             // 2 - b.c -> tmp0
             for i in 0..temp_0_len {
@@ -583,7 +580,7 @@ impl Polynomial {
 
             // c.(2 - b.c) -> tmp1;
             let temp_1_len = d + 1;
-            poly_temp_1 = out.mul_(&poly_temp_0, Some(&fs), temp_1_len).unwrap();
+            let poly_temp_1: Polynomial = out.mul_(&poly_temp_0, Some(&fs), temp_1_len).unwrap();
 
             out = Polynomial::from_fr(poly_temp_1.coeffs);
         }
