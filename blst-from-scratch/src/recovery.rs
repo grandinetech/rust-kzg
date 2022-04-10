@@ -11,7 +11,7 @@ static INVERSE_FACTORS: OnceCell<Vec<FsFr>> = OnceCell::new();
 static UNSCALE_FACTOR_POWERS: OnceCell<Vec<FsFr>> = OnceCell::new();
 
 #[allow(clippy::needless_range_loop)]
-pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
+pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = INVERSE_FACTORS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
         let inv_factor = FsFr::inverse(&scale_factor);
@@ -28,7 +28,7 @@ pub fn scale_poly(p: &mut Vec<FsFr>, len_p: usize) {
 }
 
 #[allow(clippy::needless_range_loop)]
-pub fn unscale_poly(p: &mut Vec<FsFr>, len_p: usize) {
+pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = UNSCALE_FACTOR_POWERS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
         let mut temp: Vec<FsFr> = vec![FsFr::one()];
