@@ -89,7 +89,7 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Ve
     (s1, s2)
 }
 
-pub fn reverse_bit_order<T>(values: &mut Vec<T>)
+pub fn reverse_bit_order<T>(values: &mut [T])
 where
     T: Clone,
 {

@@ -23,7 +23,7 @@ pub struct KzgFK20MultiSettings {
     pub length: usize,
 }
 
-fn reverse_bit_order<T>(vals: &mut Vec<T>) where T : Clone {
+fn reverse_bit_order<T>(vals: &mut [T]) where T : Clone {
     let unused_bit_len = vals.len().leading_zeros() + 1;
     for i in 0..vals.len() - 1 {
         let r = i.reverse_bits() >> unused_bit_len;

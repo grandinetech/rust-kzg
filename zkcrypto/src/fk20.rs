@@ -307,7 +307,7 @@ pub fn toeplitz_coeffs_step(poly: &ZPoly) -> ZPoly {
    toeplitz_coeffs_stride(0, 1, poly)
 }
 
-pub fn reverse_bit_order<T>(values: &mut Vec<T>) where T: Clone {
+pub fn reverse_bit_order<T>(values: &mut [T]) where T: Clone {
     let unused_bit_len = values.len().leading_zeros() + 1;
     for i in 0..values.len() - 1 {
         let r = i.reverse_bits() >> unused_bit_len;

@@ -26,7 +26,7 @@ fn reverse_bits_limited(length: usize, value: usize) -> usize {
     value.reverse_bits() >> unused_bits
 }
 
-fn reverse_bit_order<T>(vals: &mut Vec<T>)
+fn reverse_bit_order<T>(vals: &mut [T])
 where
     T: Clone,
 {
