@@ -3,7 +3,7 @@ use crate::fk20_fft::*;
 use crate::utilities::is_power_of_2;
 
 impl FFTSettings {
-    pub fn das_fft_extension(&self, values: &mut Vec<Fr>) -> Result<(), String> {
+    pub fn das_fft_extension(&self, values: &mut [Fr]) -> Result<(), String> {
         if values.is_empty() {
             return Err(String::from("Values cannot be empty"));
         }

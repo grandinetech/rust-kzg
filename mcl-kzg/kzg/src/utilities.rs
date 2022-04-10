@@ -1,6 +1,6 @@
 use primitive_types::U512;
 
-pub fn order_by_rev_bit_order<T>(vals: &mut Vec<T>) where T : Clone {
+pub fn order_by_rev_bit_order<T>(vals: &mut [T]) where T : Clone {
     let unused_bit_len = vals.len().leading_zeros() + 1;
      for i in 0..vals.len() {
         let r = i.reverse_bits() >> unused_bit_len;
