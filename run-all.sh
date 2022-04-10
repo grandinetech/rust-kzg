@@ -36,7 +36,7 @@ cd c-kzg/src || exit
 # 2.1.1. c-kzg [original]
 
 print_msg "c-kzg [original]" ../../"$paste_file"
-make fft_fr_bench fft_g1_bench recover_bench zero_poly_bench kzg_proofs_bench poly_bench das_extension_bench >> ../../"$paste_file"
+make bench >> ../../"$paste_file"
 
 # 2.1.2. c-kzg [parallelized]
 
@@ -44,7 +44,7 @@ print_msg "c-kzg [parallelized]" ../../"$paste_file"
 git checkout openmp
 eval "$(sed -i "s/KZG_CFLAGS =/KZG_CFLAGS = -fPIE -fopenmp/" Makefile)"
 eval "$(sed -i 's/KZG_CFLAGS += -O/KZG_CFLAGS += -Ofast/' Makefile)"
-OMP_NUM_THREADS=$(nproc) make fft_fr_bench fft_g1_bench recover_bench zero_poly_bench kzg_proofs_bench poly_bench das_extension_bench >> ../../"$paste_file"
+OMP_NUM_THREADS=$(nproc) make bench >> ../../"$paste_file"
 cd ../..
 
 # 2.2. kzg [prep-up]
