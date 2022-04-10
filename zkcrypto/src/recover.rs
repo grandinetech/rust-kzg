@@ -1,4 +1,3 @@
-use crate::utils::next_power_of_two;
 use crate::zkfr::blsScalar as Scalar;
 use crate::poly::ZPoly;
 use crate::fftsettings::{ZkFFTSettings};

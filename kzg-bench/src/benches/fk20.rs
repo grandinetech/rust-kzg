@@ -7,7 +7,7 @@ pub const SECRET: [u8; 32usize] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
-const BENCH_SCALE: usize = 15;
+const BENCH_SCALE: usize = 14;
 
 fn is_power_of_two(n: usize) -> bool {
     n & (n - 1) == 0
@@ -57,51 +57,11 @@ pub fn fk_single_da<
     ks.commit_to_poly(&p).unwrap();
 
     // Generate the proofs
-    let id = format!("bench_fk_single_commit_da scale: '{}'", BENCH_SCALE);
+    let id = format!("bench_fk_single_da scale: '{}'", BENCH_SCALE);
     c.bench_function(&id, move |b| b.iter(|| fk.data_availability(&p).unwrap()));
 }
 
-pub fn fk_single_da_optimized<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
-    TFK20SingleSettings: 'static + FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
->(
-    c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-) {
-    let mut rng = thread_rng();
-    let coeffs: Vec<u64> = vec![rng.next_u64(); 1 << (BENCH_SCALE - 1)];
-    let poly_len: usize = coeffs.len();
-    let n_len: usize = 1 << BENCH_SCALE;
-    let secrets_len = n_len + 1;
-
-    assert!(n_len >= 2 * poly_len);
-    let mut p = TPoly::new(poly_len).unwrap();
-    for i in 0..poly_len {
-        p.set_coeff_at(i, &TFr::from_u64(coeffs[i]));
-    }
-
-    // Initialise the secrets and data structures
-    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
-    let fs = TFFTSettings::new(BENCH_SCALE).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
-    let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
-
-    // Commit to the polynomial
-    ks.commit_to_poly(&p).unwrap();
-
-    // Generate the proofs
-    let id = format!("bench_fk_single_commit_da_optimized scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, move |b| {
-        b.iter(|| fk.data_availability_optimized(&p).unwrap())
-    });
-}
-
-fn fk_multi_da<
+pub fn fk_multi_da<
     TFr: 'static + Fr,
     TG1: 'static + G1,
     TG2: 'static + G2,
@@ -110,13 +70,11 @@ fn fk_multi_da<
     TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
     TFK20MultiSettings: 'static + FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
 >(
-    chunk_len: usize,
-    test_name: String,
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-    optimized: bool,
 ) {
     let n = 1 << BENCH_SCALE;
+    let chunk_len = 16;
     let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
     assert!(is_power_of_two(n));
@@ -161,56 +119,6 @@ fn fk_multi_da<
     // Commit to the polynomial
     ks.commit_to_poly(&p).unwrap();
 
-    // Compute the multi proofs, assuming that the polynomial will be extended with zeros
-    let id = format!("{} scale: '{}'", test_name, BENCH_SCALE);
-
-    if optimized == true {
-        c.bench_function(&id, move |b| {
-            b.iter(|| fk.data_availability_optimized(&p).unwrap())
-        });
-    } else {
-        c.bench_function(&id, move |b| b.iter(|| fk.data_availability(&p).unwrap()));
-    }
-}
-
-pub fn fk_multi_da_chunk_32<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
-    TFK20MultiSettings: 'static + FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
->(
-    c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-) {
-    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(
-        32,
-        "bench_fk_multi_commit_da_chunk_32".to_string(),
-        c,
-        generate_trusted_setup,
-        false,
-    );
-}
-
-pub fn fk_multi_da_chunk_32_optimized<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
-    TFK20MultiSettings: 'static + FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
->(
-    c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
-) {
-    fk_multi_da::<TFr, TG1, TG2, TPoly, TFFTSettings, TKZGSettings, TFK20MultiSettings>(
-        32,
-        "bench_fk_multi_commit_da_chunk_32_optimized".to_string(),
-        c,
-        generate_trusted_setup,
-        false,
-    );
+    let id = format!("bench_fk_multi_da scale: '{}'", BENCH_SCALE);
+    c.bench_function(&id, move |b| b.iter(|| fk.data_availability(&p).unwrap()));
 }

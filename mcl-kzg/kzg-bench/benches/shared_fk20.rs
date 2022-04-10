@@ -8,31 +8,20 @@ use mcl_rust::mcl_methods::init;
 use mcl_rust::CurveType;
 use mcl_rust::fk20_matrix::{FK20Matrix, FK20SingleMatrix};
 
-
 fn fk_single_da_(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
     fk_single_da::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20SingleMatrix>(c, &KZGSettings::generate_trusted_setup)
 }
 
-fn fk_single_da_optimized_(c: &mut Criterion) {
+fn fk_multi_da_(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
-    fk_single_da_optimized::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20SingleMatrix>(c, &KZGSettings::generate_trusted_setup)
-}
-
-fn fk_multi_da_chunk_32_(c: &mut Criterion) {
-    assert!(init(CurveType::BLS12_381));
-    fk_multi_da_chunk_32::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20Matrix>(c, &KZGSettings::generate_trusted_setup)
-}
-
-fn fk_multi_da_chunk_32_optimized_(c: &mut Criterion) {
-    assert!(init(CurveType::BLS12_381));
-    fk_multi_da_chunk_32_optimized::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20Matrix>(c, &KZGSettings::generate_trusted_setup)
+    fk_multi_da::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20Matrix>(c, &KZGSettings::generate_trusted_setup)
 }
 
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(2);
-    targets = fk_single_da_, fk_single_da_optimized_, fk_multi_da_chunk_32_, fk_multi_da_chunk_32_optimized_
+    targets = fk_single_da_, fk_multi_da_
 }
 
 criterion_main!(benches);
