@@ -57,12 +57,12 @@ cd ../../..
 
 for (( i=0; i<jobs_count; i++ ));
 do
-  print_thread_msg "BENCHMARKING ON ${omp_thread_count[$i]} THREADS" ../../"$paste_file"
+  print_thread_msg "BENCHMARKING ON ${omp_thread_count[$i]} CORES" "$paste_file"
   export OMP_NUM_THREADS="${omp_thread_count[$i]}"
 
   # 2.3.1. c-kzg [original]
 
-  print_msg "c-kzg [original]" ../../"$paste_file"
+  print_msg "c-kzg [original]" "$paste_file"
   cd c-kzg/src || exit
   git restore Makefile
   git checkout main
@@ -80,35 +80,35 @@ do
   # rust crates
   cd kzg || exit
 
-  # 2.3.1. arkworks
+  # 2.3.3. arkworks
 
   print_msg "arkworks [original]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path Arkworks/Cargo.toml >> ../"$paste_file"
   print_msg "arkworks [parallelized]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path Arkworks/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 2.3.2. zkcrypto
+  # 2.3.4. zkcrypto
 
   print_msg "zkcrypto [original]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path zkcrypto/Cargo.toml >> ../"$paste_file"
   print_msg "zkcrypto [parallelized]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path zkcrypto/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 2.3.3. blst-from-scratch
+  # 2.3.5. blst-from-scratch
 
   print_msg "blst-from-scratch [original]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path blst-from-scratch/Cargo.toml >> ../"$paste_file"
   print_msg "blst-from-scratch [parallelized]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path blst-from-scratch/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 2.3.4. ckzg
+  # 2.3.6. ckzg
 
   print_msg "ckzg [original]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path ckzg/Cargo.toml >> ../"$paste_file"
   print_msg "ckzg [parallelized]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path ckzg/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 2.3.5. mcl-kzg10-rust
+  # 2.3.7. mcl-kzg10-rust
 
   print_msg "mcl-kzg10-rust [original]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml >> ../"$paste_file"
