@@ -79,7 +79,7 @@ do
 
   # rust crates
   cd kzg || exit
-  
+
   # 2.3.1. arkworks
 
   print_msg "arkworks [original]" ../"$paste_file"
