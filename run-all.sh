@@ -121,13 +121,7 @@ done
 
 # 3. collect results
 
-paste_url=$(
-  curl -d "api_paste_code=$(cat "$paste_file")" \
-       -d "api_paste_private=1" \
-       -d "api_paste_name=$paste_name" \
-       -d "api_dev_key=ba2fd41ca7923844193bf05d3b19ed32" \
-       -d "api_option=paste" "https://pastebin.com/api/api_post.php"
-)
+paste_url=$(curl --upload-file "$paste_file" "https://paste.c-net.org/")
 
 echo "=========================================="
 echo "Uploaded to $paste_url"
