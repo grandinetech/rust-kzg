@@ -5,6 +5,9 @@ use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::poly::FsPoly;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 impl FsFFTSettings {
     pub fn toeplitz_part_1(&self, x: &[FsG1]) -> Vec<FsG1> {
         let n = x.len();
@@ -25,13 +28,23 @@ impl FsFFTSettings {
     /// poly and x_ext_fft should be of same length
     pub fn toeplitz_part_2(&self, poly: &FsPoly, x_ext_fft: &[FsG1]) -> Vec<FsG1> {
         let coeffs_fft = self.fft_fr(&poly.coeffs, false).unwrap();
-        let mut ret = Vec::new();
 
-        for i in 0..poly.len() {
-            ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
+        #[cfg(feature = "parallel")]
+        {
+            let ret: Vec<_> = (0..poly.len()).into_par_iter().map(|i| {
+                x_ext_fft[i].mul(&coeffs_fft[i])
+            }).collect();
+            ret
         }
 
-        ret
+        #[cfg(not(feature = "parallel"))]
+        {
+            let mut ret = Vec::new();
+            for i in 0..poly.len() {
+                ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
+            }
+            ret
+        }
     }
 
     pub fn toeplitz_part_3(&self, h_ext_fft: &[FsG1]) -> Vec<FsG1> {

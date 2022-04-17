@@ -6,6 +6,9 @@ use crate::poly::ZPoly;
 use crate::utils::*;
 use kzg::{FK20SingleSettings, FK20MultiSettings, FFTFr, FFTG1, Poly, G1};
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 pub struct ZkFK20SingleSettings {
 	pub kzg_settings: KZGSettings,
 	pub x_ext_fft: Vec<ZkG1Projective>,
@@ -232,8 +235,6 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
     }
 }
 
-
-
 pub fn toeplitz_part_1 (x: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
 	
 	let n2 = x.len() * 2;
@@ -250,18 +251,28 @@ pub fn toeplitz_part_1 (x: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<Zk
 	let out = fft_set.fft_g1(&x_ext, false);
 	out.unwrap()
 }
+
 pub fn toeplitz_part_2 (toeplitz: &ZPoly, x_ext_fft: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
-	
 	let fft_coeffs = fft_set.fft_fr(&toeplitz.coeffs, false).unwrap();
-	let mut out = Vec::new();
-	
-	for i in 0..toeplitz.len() {
-		// out.push(x_ext_fft[i] * fft_coeffs[i]);
-		out.push(x_ext_fft[i].mul(&fft_coeffs[i]));
-	}
-	
-	out
+
+    #[cfg(feature = "parallel")]
+    {
+        let out: Vec<_> = (0..toeplitz.len()).into_par_iter().map(|i| {
+            x_ext_fft[i].mul(&fft_coeffs[i])
+        }).collect();
+        out
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut out = Vec::new();
+        for i in 0..toeplitz.len() {
+            out.push(x_ext_fft[i].mul(&fft_coeffs[i]));
+        }
+        out
+    }
 }
+
 pub fn toeplitz_part_3 (h_ext_fft: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
 	// let n2 = h_ext_fft.len();
 	let n = h_ext_fft.len() / 2;

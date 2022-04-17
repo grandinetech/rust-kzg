@@ -6,6 +6,9 @@ use crate::kzg10::*;
 use crate::fk20_fft::*;
 use crate::kzg_settings::KZGSettings;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 impl FFTSettings {
     pub fn toeplitz_part_1(&self, x: &[G1]) -> Result<Vec<G1>, String> {
         let n = x.len();
@@ -22,12 +25,22 @@ impl FFTSettings {
     pub fn toeplitz_part_2(&self, coeffs: &[Fr], x_ext_fft: &[G1]) -> Result<Vec<G1>, String> {
         let toeplitz_coeffs_fft = self.fft(coeffs, false).unwrap();
 
-        let h_ext_fft: Vec<G1> = x_ext_fft.iter()
-            .zip(toeplitz_coeffs_fft)
-            .map(|(g1, coeff)| g1 * &coeff)
-            .collect();
+        #[cfg(feature = "parallel")]
+        {
+            let ret: Vec<_> = (0..coeffs.len()).into_par_iter().map(|i| {
+                x_ext_fft[i] * &toeplitz_coeffs_fft[i]
+            }).collect();
+            Ok(ret)
+        }
 
-        Ok(h_ext_fft)
+        #[cfg(not(feature = "parallel"))]
+        {
+            let mut ret = Vec::new();
+            for i in 0..coeffs.len() {
+                ret.push(x_ext_fft[i] * &toeplitz_coeffs_fft[i]);
+            }
+            Ok(ret)
+        }
     }
     
     pub fn toeplitz_part_3(&self, h_ext_fft: &[G1]) -> Result<Vec<G1>, String> {

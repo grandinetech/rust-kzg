@@ -5,6 +5,8 @@ use crate::fft_g1::G1_IDENTITY;
 use kzg::{FK20MultiSettings, FK20SingleSettings, Poly, FFTG1, FFTFr, Fr, G1, KZGSettings as KZGST, G1Mul};
 // use chrono::Utc;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
 
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -325,13 +327,23 @@ pub fn toeplitz_part_1(x: &[ArkG1], fs: &FFTSettings) -> Result<Vec<ArkG1>, Stri
 
 pub fn toeplitz_part_2(toeplitz_coeffs: &PolyData, x_ext_fft: &[ArkG1], fs: &FFTSettings) -> Result<Vec<ArkG1>, String>{
     let toeplitz_coeffs_fft = fs.fft_fr(&toeplitz_coeffs.coeffs, false).unwrap();
-    let mut out = Vec::new();
 
-    for i in 0..toeplitz_coeffs.len() {
-        out.push(x_ext_fft[i].mul(&toeplitz_coeffs_fft[i]));
+    #[cfg(feature = "parallel")]
+    {
+        let out: Vec<_> = (0..poly.len()).into_par_iter().map(|i| {
+            x_ext_fft[i].mul(&toeplitz_coeffs_fft[i])
+        }).collect();
+        Ok(out)
     }
 
-    Ok(out)
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut out = Vec::new();
+        for i in 0..toeplitz_coeffs.len() {
+            out.push(x_ext_fft[i].mul(&toeplitz_coeffs_fft[i]));
+        }
+        Ok(out)
+    }
 }
 
 pub fn toeplitz_part_3(h_ext_fft: &[ArkG1], fs: &FFTSettings) -> Result<Vec<ArkG1>, String>{
