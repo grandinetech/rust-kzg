@@ -3,16 +3,14 @@ name = "zkcrypto"
 version = "0.1.0"
 edition = "2018"
 
-
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-
+[profile.bench]
+opt-level = 3
+debug = false
+lto = "thin"
 
 [dependencies]
 kzg = { path = "../kzg"}
 kzg-bench = { path = "../kzg-bench" }
-# bls12_381 = {'git' = 'https://github.com/dfaranha/bls12_381.git'}
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 pairing = "0.21.0"
 bls12_381 = "0.6.0"
