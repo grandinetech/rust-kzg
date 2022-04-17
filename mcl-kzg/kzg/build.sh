@@ -6,7 +6,7 @@ echo "Removing old mcl lib"
 rm -rf lib/*
 mkdir -p lib
 
-print_msg "Cloning mcl"
+echo "Cloning mcl"
 git clone https://github.com/herumi/mcl.git
 cd mcl || exit 1
 
