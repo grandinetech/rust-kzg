@@ -63,23 +63,38 @@ pub fn fft_g1_fast(
     roots_stride: usize,
 ) {
     let split = ret.len() / 2;
-
     if split > 0 {
-        fft_g1_fast(
-            &mut ret[..split],
-            data,
-            stride * 2,
-            roots,
-            roots_stride * 2
-        );
-        fft_g1_fast(
-            &mut ret[split..],
-            &data[stride..],
-            stride * 2,
-            roots,
-            roots_stride * 2,
-        );
+        #[cfg(feature = "parallel")]
+        {
+            if ret.len() > 8 {
+                let (lo, hi) = ret.split_at_mut(split);
+                rayon::join(
+                    || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
+                    || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+                );
+            } else {
+                fft_g1_fast(&mut ret[..split], data, stride * 2, roots, roots_stride * 2);
+                fft_g1_fast(
+                    &mut ret[split..],
+                    &data[stride..],
+                    stride * 2,
+                    roots,
+                    roots_stride * 2,
+                );
+            }
+        }
 
+        #[cfg(not(feature = "parallel"))]
+        {
+            fft_g1_fast(&mut ret[..split], data, stride * 2, roots, roots_stride * 2);
+            fft_g1_fast(
+                &mut ret[split..],
+                &data[stride..],
+                stride * 2,
+                roots,
+                roots_stride * 2,
+            );
+        }
         for i in 0..split {
             let y_times_root = ret[i + split].mul(&roots[i * roots_stride]);
             ret[i + split] = ret[i].sub(&y_times_root);
