@@ -330,7 +330,7 @@ pub fn toeplitz_part_2(toeplitz_coeffs: &PolyData, x_ext_fft: &[ArkG1], fs: &FFT
 
     #[cfg(feature = "parallel")]
     {
-        let out: Vec<_> = (0..poly.len()).into_par_iter().map(|i| {
+        let out: Vec<_> = (0..toeplitz_coeffs.len()).into_par_iter().map(|i| {
             x_ext_fft[i].mul(&toeplitz_coeffs_fft[i])
         }).collect();
         Ok(out)
