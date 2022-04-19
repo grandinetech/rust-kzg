@@ -11,7 +11,7 @@ fn bench_recover_(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(2);
+    config = Criterion::default().sample_size(5);
     targets = bench_recover_
 }
 

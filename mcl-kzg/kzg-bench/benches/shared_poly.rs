@@ -12,7 +12,7 @@ fn bench_new_poly_div_(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(2);
+    config = Criterion::default().sample_size(5);
     targets = bench_new_poly_div_
 }
 
