@@ -81,11 +81,11 @@ do
   cd c-kzg/src || exit
   git restore Makefile
   git checkout main
-  
+
   for (( j=0; j<jobs_count; j++ ));
   do
     make clean
-    taskset --cpu-list "${taskset_cpu_list[$i]}" bench_results="$(make bench)"
+    bench_results="$(taskset --cpu-list "${taskset_cpu_list[$i]}" make bench)"
     # append results to arrays
     mapfile -t -O "${#c_kzg_fft_fr[@]}"         c_kzg_fft_fr         < <(echo "$bench_results" | grep 'fft_fr/scale_15'         | cut -d ' ' -f 2)
     mapfile -t -O "${#c_kzg_fft_g1[@]}"         c_kzg_fft_g1         < <(echo "$bench_results" | grep 'fft_g1/scale_15'         | cut -d ' ' -f 2)
@@ -128,7 +128,7 @@ do
   for (( j=0; j<jobs_count; j++ ));
   do
     make clean
-    taskset --cpu-list "${taskset_cpu_list[$i]}" bench_results="$(make bench)"
+    bench_results="$(taskset --cpu-list "${taskset_cpu_list[$i]}" make bench)"
     # append results to arrays
     mapfile -t -O "${#c_kzg_fft_fr[@]}"         c_kzg_fft_fr         < <(echo "$bench_results" | grep 'fft_fr/scale_15'         | cut -d ' ' -f 2)
     mapfile -t -O "${#c_kzg_fft_g1[@]}"         c_kzg_fft_g1         < <(echo "$bench_results" | grep 'fft_g1/scale_15'         | cut -d ' ' -f 2)
