@@ -38,6 +38,44 @@ output_c_kzg () {
   echo "$1 $min ns/op" >> ../../"$paste_file"
 }
 
+bench_c_kzg () {
+  for (( j=0; j<jobs_count; j++ ));
+  do
+    make clean
+    bench_results="$(taskset --cpu-list "${taskset_cpu_list[$i]}" make bench)"
+    # append results to arrays
+    mapfile -t -O "${#c_kzg_fft_fr[@]}"         c_kzg_fft_fr         < <(echo "$bench_results" | grep 'fft_fr/scale_15'         | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_fft_g1[@]}"         c_kzg_fft_g1         < <(echo "$bench_results" | grep 'fft_g1/scale_15'         | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_recover[@]}"        c_kzg_recover        < <(echo "$bench_results" | grep 'recover/scale_15'        | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_zero_poly[@]}"      c_kzg_zero_poly      < <(echo "$bench_results" | grep 'zero_poly/scale_15'      | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_commit_to_poly[@]}" c_kzg_commit_to_poly < <(echo "$bench_results" | grep 'commit_to_poly/scale_15' | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_new_poly_div[@]}"   c_kzg_new_poly_div   < <(echo "$bench_results" | grep 'new_poly_div/scale_15'   | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_das_extension[@]}"  c_kzg_das_extension  < <(echo "$bench_results" | grep 'das_extension/scale_15'  | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_fk_single_da[@]}"   c_kzg_fk_single_da   < <(echo "$bench_results" | grep 'fk_single_da/scale_14'   | cut -d ' ' -f 2)
+    mapfile -t -O "${#c_kzg_fk_multi_da[@]}"    c_kzg_fk_multi_da    < <(echo "$bench_results" | grep 'fk_multi_da/scale_14'    | cut -d ' ' -f 2)
+  done
+
+  output_c_kzg "fft_fr/scale_15"         "${c_kzg_fft_fr[@]}"
+  output_c_kzg "fft_g1/scale_15"         "${c_kzg_fft_g1[@]}"
+  output_c_kzg "recover/scale_15"        "${c_kzg_recover[@]}"
+  output_c_kzg "zero_poly/scale_15"      "${c_kzg_zero_poly[@]}"
+  output_c_kzg "commit_to_poly/scale_15" "${c_kzg_commit_to_poly[@]}"
+  output_c_kzg "new_poly_div/scale_15"   "${c_kzg_new_poly_div[@]}"
+  output_c_kzg "das_extension/scale_15"  "${c_kzg_das_extension[@]}"
+  output_c_kzg "fk_single_da/scale_14"   "${c_kzg_fk_single_da[@]}"
+  output_c_kzg "fk_multi_da/scale_14"    "${c_kzg_fk_multi_da[@]}"
+
+  unset c_kzg_fft_fr
+  unset c_kzg_fft_g1
+  unset c_kzg_recover
+  unset c_kzg_zero_poly
+  unset c_kzg_commit_to_poly
+  unset c_kzg_new_poly_div
+  unset c_kzg_das_extension
+  unset c_kzg_fk_single_da
+  unset c_kzg_fk_multi_da
+}
+
 lscpu | grep "Model\ name" | head -n 1 >> "$paste_file"
 lscpu | grep "CPU(s)"      | head -n 1 >> "$paste_file"
 
@@ -77,46 +115,11 @@ do
 
   # 2.3.1. c-kzg [original]
 
-  print_msg "c-kzg [original]" "$paste_file"
   cd c-kzg/src || exit
+  print_msg "c-kzg [original]" ../../"$paste_file"
   git restore Makefile
   git checkout main
-
-  for (( j=0; j<jobs_count; j++ ));
-  do
-    make clean
-    bench_results="$(taskset --cpu-list "${taskset_cpu_list[$i]}" make bench)"
-    # append results to arrays
-    mapfile -t -O "${#c_kzg_fft_fr[@]}"         c_kzg_fft_fr         < <(echo "$bench_results" | grep 'fft_fr/scale_15'         | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_fft_g1[@]}"         c_kzg_fft_g1         < <(echo "$bench_results" | grep 'fft_g1/scale_15'         | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_recover[@]}"        c_kzg_recover        < <(echo "$bench_results" | grep 'recover/scale_15'        | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_zero_poly[@]}"      c_kzg_zero_poly      < <(echo "$bench_results" | grep 'zero_poly/scale_15'      | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_commit_to_poly[@]}" c_kzg_commit_to_poly < <(echo "$bench_results" | grep 'commit_to_poly/scale_15' | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_new_poly_div[@]}"   c_kzg_new_poly_div   < <(echo "$bench_results" | grep 'new_poly_div/scale_15'   | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_das_extension[@]}"  c_kzg_das_extension  < <(echo "$bench_results" | grep 'das_extension/scale_15'  | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_fk_single_da[@]}"   c_kzg_fk_single_da   < <(echo "$bench_results" | grep 'fk_single_da/scale_14'   | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_fk_multi_da[@]}"    c_kzg_fk_multi_da    < <(echo "$bench_results" | grep 'fk_multi_da/scale_14'    | cut -d ' ' -f 2)
-  done
-
-  output_c_kzg "fft_fr/scale_15"         "${c_kzg_fft_fr[@]}"
-  output_c_kzg "fft_g1/scale_15"         "${c_kzg_fft_g1[@]}"
-  output_c_kzg "recover/scale_15"        "${c_kzg_recover[@]}"
-  output_c_kzg "zero_poly/scale_15"      "${c_kzg_zero_poly[@]}"
-  output_c_kzg "commit_to_poly/scale_15" "${c_kzg_commit_to_poly[@]}"
-  output_c_kzg "new_poly_div/scale_15"   "${c_kzg_new_poly_div[@]}"
-  output_c_kzg "das_extension/scale_15"  "${c_kzg_das_extension[@]}"
-  output_c_kzg "fk_single_da/scale_14"   "${c_kzg_fk_single_da[@]}"
-  output_c_kzg "fk_multi_da/scale_14"    "${c_kzg_fk_multi_da[@]}"
-
-  unset c_kzg_fft_fr
-  unset c_kzg_fft_g1
-  unset c_kzg_recover
-  unset c_kzg_zero_poly
-  unset c_kzg_commit_to_poly
-  unset c_kzg_new_poly_div
-  unset c_kzg_das_extension
-  unset c_kzg_fk_single_da
-  unset c_kzg_fk_multi_da
+  bench_c_kzg
 
   # 2.3.2. c-kzg [parallelized]
 
@@ -124,43 +127,7 @@ do
   git checkout openmp
   eval "$(sed -i "s/KZG_CFLAGS =/KZG_CFLAGS = -fPIE -fopenmp/" Makefile)"
   eval "$(sed -i 's/KZG_CFLAGS += -O/KZG_CFLAGS += -Ofast/' Makefile)"
-
-  for (( j=0; j<jobs_count; j++ ));
-  do
-    make clean
-    bench_results="$(taskset --cpu-list "${taskset_cpu_list[$i]}" make bench)"
-    # append results to arrays
-    mapfile -t -O "${#c_kzg_fft_fr[@]}"         c_kzg_fft_fr         < <(echo "$bench_results" | grep 'fft_fr/scale_15'         | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_fft_g1[@]}"         c_kzg_fft_g1         < <(echo "$bench_results" | grep 'fft_g1/scale_15'         | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_recover[@]}"        c_kzg_recover        < <(echo "$bench_results" | grep 'recover/scale_15'        | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_zero_poly[@]}"      c_kzg_zero_poly      < <(echo "$bench_results" | grep 'zero_poly/scale_15'      | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_commit_to_poly[@]}" c_kzg_commit_to_poly < <(echo "$bench_results" | grep 'commit_to_poly/scale_15' | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_new_poly_div[@]}"   c_kzg_new_poly_div   < <(echo "$bench_results" | grep 'new_poly_div/scale_15'   | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_das_extension[@]}"  c_kzg_das_extension  < <(echo "$bench_results" | grep 'das_extension/scale_15'  | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_fk_single_da[@]}"   c_kzg_fk_single_da   < <(echo "$bench_results" | grep 'fk_single_da/scale_14'   | cut -d ' ' -f 2)
-    mapfile -t -O "${#c_kzg_fk_multi_da[@]}"    c_kzg_fk_multi_da    < <(echo "$bench_results" | grep 'fk_multi_da/scale_14'    | cut -d ' ' -f 2)
-  done
-
-  output_c_kzg "fft_fr/scale_15"         "${c_kzg_fft_fr[@]}"
-  output_c_kzg "fft_g1/scale_15"         "${c_kzg_fft_g1[@]}"
-  output_c_kzg "recover/scale_15"        "${c_kzg_recover[@]}"
-  output_c_kzg "zero_poly/scale_15"      "${c_kzg_zero_poly[@]}"
-  output_c_kzg "commit_to_poly/scale_15" "${c_kzg_commit_to_poly[@]}"
-  output_c_kzg "new_poly_div/scale_15"   "${c_kzg_new_poly_div[@]}"
-  output_c_kzg "das_extension/scale_15"  "${c_kzg_das_extension[@]}"
-  output_c_kzg "fk_single_da/scale_14"   "${c_kzg_fk_single_da[@]}"
-  output_c_kzg "fk_multi_da/scale_14"    "${c_kzg_fk_multi_da[@]}"
-
-  unset c_kzg_fft_fr
-  unset c_kzg_fft_g1
-  unset c_kzg_recover
-  unset c_kzg_zero_poly
-  unset c_kzg_commit_to_poly
-  unset c_kzg_new_poly_div
-  unset c_kzg_das_extension
-  unset c_kzg_fk_single_da
-  unset c_kzg_fk_multi_da
-
+  bench_c_kzg
   cd ../..
 
   # rust crates
