@@ -16,22 +16,11 @@ pub fn fft_g1_fast(
     if half > 0 {
         #[cfg(feature = "parallel")]
         {
-            if  ret.len() > 8 {
-                let (lo, hi) = ret.split_at_mut(half);
-                rayon::join(
-                    || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
-                    || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
-                );
-            } else {
-                fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
-                fft_g1_fast(
-                    &mut ret[half..],
-                    &data[stride..],
-                    stride * 2,
-                    roots,
-                    roots_stride * 2,
-                );
-            }
+            let (lo, hi) = ret.split_at_mut(half);
+            rayon::join(
+                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
+                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+            );
         }
 
         #[cfg(not(feature = "parallel"))]

@@ -21,7 +21,6 @@ pub fn fft_g1_slow(
     }
 }
 
-
 impl FFTG1<ZkG1Projective> for ZkFFTSettings {
     fn fft_g1(&self, data: &[ZkG1Projective], inverse: bool) -> Result<Vec<ZkG1Projective>, String> {
         if data.len() > self.max_width {
@@ -66,22 +65,11 @@ pub fn fft_g1_fast(
     if split > 0 {
         #[cfg(feature = "parallel")]
         {
-            if ret.len() > 8 {
-                let (lo, hi) = ret.split_at_mut(split);
-                rayon::join(
-                    || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
-                    || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
-                );
-            } else {
-                fft_g1_fast(&mut ret[..split], data, stride * 2, roots, roots_stride * 2);
-                fft_g1_fast(
-                    &mut ret[split..],
-                    &data[stride..],
-                    stride * 2,
-                    roots,
-                    roots_stride * 2,
-                );
-            }
+            let (lo, hi) = ret.split_at_mut(split);
+            rayon::join(
+                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
+                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+            );
         }
 
         #[cfg(not(feature = "parallel"))]
