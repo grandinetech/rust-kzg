@@ -319,7 +319,7 @@ impl FFTSettings {
         let stride = self.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FFTSettings::_fft_g1(values, 1, &root_z, stride, &mut out);
+        FFTSettings::_fft_g1(values, 0, 1, &root_z, stride, &mut out);
 
         Ok(out)
     }
@@ -342,7 +342,7 @@ impl FFTSettings {
         let stride = self.max_width /  values.len();
         let mut out = vec![G1::zero(); values.len()];
 
-        FFTSettings::_fft_g1(values, 1, &root_z, stride, &mut out);
+        FFTSettings::_fft_g1(values, 0, 1, &root_z, stride, &mut out);
         
         let inv_len = Fr::from_int(values.len() as i32).get_inv();
         for item in out.iter_mut() {
@@ -353,35 +353,40 @@ impl FFTSettings {
         Ok(out)
     }
 
-    fn _fft_g1(values: &[G1], value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
-        let half = out.len() / 2;
-        if half > 0 {
-            #[cfg(feature = "parallel")]
-            {
-                let (lo, hi) = out.split_at_mut(half);
-                rayon::join(
-                    || FFTSettings::_fft_g1(values, value_stride << 1, roots_of_unity, roots_stride << 1, lo),
-                    || FFTSettings::_fft_g1(values, value_stride << 1, roots_of_unity, roots_stride << 1, hi),
-                );
+    // #[cfg(feature = "parallel")] 
+    fn _fft_g1(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
+        //TODO: fine tune for opt, maybe resolve number dinamically based on experiments
+        if out.len() <= 4 {
+            return FFTSettings::_fft_g1_simple(values, value_offset, value_stride, roots_of_unity, roots_stride, out);
+        }
 
-            }
-            #[cfg(not(feature="parallel"))]
-            {
-                FFTSettings::_fft_g1(values, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[..half]);
-                FFTSettings::_fft_g1(values, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]);
-            }
+        let half = out.len() >> 1;
 
-            for i in 0..half {
-                let x = out[i];
-                let y = out[i + half];
-                let root = &roots_of_unity[i * roots_stride];
+        #[cfg(feature = "parallel")] 
+        {
+            let (lo, hi) = out.split_at_mut(half);
+            rayon::join(
+                || FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, lo),
+                || FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, hi),
+            );
+    
+        }
+        #[cfg(not(feature="parallel"))]
+        {
+            // left
+            FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[..half]);
+            // right
+            FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]); 
+        }
+        
+        for i in 0..half {
+            let x = out[i];
+            let y = out[i + half];
+            let root = &roots_of_unity[i * roots_stride];
 
-                let y_times_root = y * root;
-                G1::add(&mut out[i], &x, &y_times_root);
-                out[i + half] = x - y_times_root;
-            }
-        } else {
-            out[0] = values[0];
+            let y_times_root = y * root;
+            G1::add(&mut out[i], &x, &y_times_root);
+            out[i + half] = x - y_times_root;
         }
     }
 
@@ -405,6 +410,6 @@ impl FFTSettings {
     }
 
     pub fn fft_g1_fast(out: &mut [G1], values: &[G1], stride: usize, passed_roots_of_unity: &[Fr], root_stride: usize, _n: usize) {
-        FFTSettings::_fft_g1(values, stride, passed_roots_of_unity, root_stride, out);
+        FFTSettings::_fft_g1(values, 0, stride, passed_roots_of_unity, root_stride, out);
     }
 }
