@@ -136,21 +136,16 @@ pub fn fft_g1_slow(
     _width: usize,
 ) {
     let mut v;
-    let mut last;
     let mut jv;
-
     let mut r;
 
     for i in 0..data.len() {
-        last = data[0].mul(&roots[0]);
+        ret[i] = data[0].mul(&roots[0]);
         for j in 1..data.len() {
             jv = data[j * stride];
             r = roots[((i * j) % data.len()) * roots_stride];
             v = jv.mul(&r);
-            last.add_or_dbl(&v);
-            ret[i].0.x = last.0.x;
-            ret[i].0.y = last.0.y;
-            ret[i].0.z = last.0.z;
+            ret[i] = ret[i].add_or_dbl(&v);
         }
     }
 }
@@ -193,11 +188,7 @@ pub fn fft_g1_fast(
             ret[i].add_or_dbl(&y_times_root);
         }
     } else {
-        for i in 0..ret.len() {
-            ret[i].0.x = data[i].0.x;
-            ret[i].0.y = data[i].0.y;
-            ret[i].0.z = data[i].0.z;
-        }
+        ret[0] = data[0];
     }
 }
 
