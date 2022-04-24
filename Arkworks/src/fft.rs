@@ -1,12 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr};
 use crate::kzg_types::FsFr as BlstFr;
-use ark_bls12_381::Fr;
-use ark_poly::univariate::DensePolynomial as DensePoly;
-use ark_poly::EvaluationDomain;
-use ark_poly::Radix2EvaluationDomain;
-use ark_poly_commit::UVPolynomial;
-use ark_std::log2;
 use kzg::{FFTFr, Fr as FFr};
 
 pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
@@ -215,52 +208,69 @@ impl FFTFr<BlstFr> for FFTSettings {
             return Err(String::from("data length is not power of 2"));
         }
 
-        let width = if self.max_width > data.len() {
-            data.len()
+        let stride = self.max_width / data.len();
+        let mut ret = vec![BlstFr::default(); data.len()];
+
+        let roots = if inverse {
+            &self.reverse_roots_of_unity
         } else {
-            self.max_width as usize
+            &self.expanded_roots_of_unity
         };
 
-        let mut datafr = Vec::new();
-        let mut dataeval = Vec::new();
-        for x in data {
-            datafr.push(blst_fr_into_pc_fr(x));
-        }
-
-        let mut poly = DensePoly::from_coefficients_slice(&datafr);
-
-        let domain = Radix2EvaluationDomain::<Fr>::new(width as usize).unwrap();
+        fft_fr_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
-            let len = poly.coeffs.len();
-            for _x in 0..(data.len() - len) as u64 {
-                poly.coeffs.push(Fr::from(0));
-            }
-            let eval = domain.ifft(&poly.coeffs);
-            for x in eval {
-                dataeval.push(pc_fr_into_blst_fr(x));
-            }
-        } else {
-            let eval = domain.fft(&poly.coeffs);
-            for x in eval {
-                dataeval.push(pc_fr_into_blst_fr(x));
-            }
+            let inv_fr_len = BlstFr::from_u64(data.len() as u64).inverse();
+            ret[..data.len()].iter_mut().for_each(|f| *f = BlstFr::mul(f, &inv_fr_len));
         }
-        Ok(dataeval)
+
+        Ok(ret)
     }
 }
-
 
 pub fn fft_fr_fast(
     ret: &mut [BlstFr],
     data: &[BlstFr],
-    _stride: usize,
-    _roots: &[BlstFr],
-    _roots_stride: usize,
+    stride: usize,
+    roots: &[BlstFr],
+    roots_stride: usize,
 ) {
-    let fft_settings = FFTSettings::from_scale(log2(data.len()) as usize).unwrap();
-    let temp = fft_settings.fft_fr(data, false).unwrap();
-    ret.clone_from_slice(&temp[..ret.len()]);
+    let half: usize = ret.len() / 2;
+    if half > 0 {
+        #[cfg(not(feature = "parallel"))]
+        {
+            fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
+            fft_fr_fast(
+                &mut ret[half..],
+                &data[stride..],
+                stride * 2,
+                roots,
+                roots_stride * 2,
+            );
+        }
+
+        #[cfg(feature = "parallel")]
+        {
+            if half > 256 {
+                let (lo, hi) = ret.split_at_mut(half);
+                rayon::join(
+                    || fft_fr_fast(lo, data, stride * 2, roots, roots_stride * 2),
+                    || fft_fr_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+                );
+            } else {
+                fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
+                fft_fr_fast(&mut ret[half..], &data[stride..], stride * 2, roots, roots_stride * 2);
+            }
+        }
+
+        for i in 0..half {
+            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
+            ret[i + half] = ret[i].sub(&y_times_root);
+            ret[i] = ret[i].add(&y_times_root);
+        }
+    } else {
+        ret[0] = data[0];
+    }
 }
 
 pub fn fft_fr_slow( ret: &mut [BlstFr], data: &[BlstFr], stride: usize, roots: &[BlstFr], roots_stride: usize,) {
