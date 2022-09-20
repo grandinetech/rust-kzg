@@ -1,10 +1,10 @@
-pub mod utils;
 pub mod consts;
-pub mod finite;
-pub mod poly;
 pub mod fftsettings;
-pub mod kzgsettings;
+pub mod finite;
 pub mod fk20settings;
+pub mod kzgsettings;
+pub mod poly;
+pub mod utils;
 
 #[cfg(feature = "parallel")]
 const RUN_PARALLEL: bool = true;

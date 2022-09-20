@@ -1,4 +1,3 @@
-
 use mcl_rust::data_types::fr::Fr;
 use mcl_rust::kzg10::*;
 use mcl_rust::mcl_methods::init;
@@ -40,7 +39,7 @@ fn extend_poly_appends_fr_zero() {
     // Assert
     let expected = vec!["1", "2", "3", "4", "0", "0", "0", "0"];
     for (i, item) in expected.iter().enumerate().take(8) {
-    // for i in 0..8 {
+        // for i in 0..8 {
         assert_eq!(*item, extended.coeffs[i].get_str(10));
     }
 }

@@ -1,12 +1,12 @@
 #[cfg(test)]
 pub mod tests {
-	use zkcrypto::fft_g1::{fft_g1_fast,fft_g1_slow};
     use kzg::G1;
     use kzg_bench::tests::fft_g1::{compare_ft_fft, roundtrip_fft, stride_fft};
-    use zkcrypto::kzg_types::G1_GENERATOR;
-	use zkcrypto::zkfr::blsScalar;
+    use zkcrypto::fft_g1::{fft_g1_fast, fft_g1_slow};
+    use zkcrypto::fftsettings::ZkFFTSettings;
     use zkcrypto::kzg_types::ZkG1Projective;
-	use zkcrypto::fftsettings::ZkFFTSettings;
+    use zkcrypto::kzg_types::G1_GENERATOR;
+    use zkcrypto::zkfr::blsScalar;
 
     fn make_data(n: usize) -> Vec<ZkG1Projective> {
         if n == 0 {
@@ -32,6 +32,10 @@ pub mod tests {
 
     #[test]
     fn compare_sft_fft_() {
-        compare_ft_fft::<blsScalar, ZkG1Projective, ZkFFTSettings>(&fft_g1_slow, &fft_g1_fast, &make_data);
+        compare_ft_fft::<blsScalar, ZkG1Projective, ZkFFTSettings>(
+            &fft_g1_slow,
+            &fft_g1_fast,
+            &make_data,
+        );
     }
 }

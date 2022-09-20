@@ -1,8 +1,8 @@
 #[cfg(test)]
 pub mod tests {
-    use kzg_bench::tests::das::{das_extension_test_known, das_extension_test_random};
     use ckzg::fftsettings::KzgFFTSettings;
     use ckzg::finite::BlstFr;
+    use kzg_bench::tests::das::{das_extension_test_known, das_extension_test_random};
 
     #[test]
     fn das_extension_test_known_() {

@@ -2,21 +2,50 @@ use kzg::{FK20MultiSettings, FK20SingleSettings, KZGSettings, Poly, G1};
 
 use crate::consts::{BlstP1, BlstP2, KzgRet};
 use crate::fftsettings::KzgFFTSettings;
-use crate::kzgsettings::KzgKZGSettings;
 use crate::finite::BlstFr;
+use crate::kzgsettings::KzgKZGSettings;
 use crate::poly::KzgPoly;
 use crate::RUN_PARALLEL;
 
 extern "C" {
     // FK20 Single
-    fn new_fk20_single_settings(fk: *mut KzgFK20SingleSettings, n2: u64, ks: *const KzgKZGSettings) -> KzgRet;
-    fn da_using_fk20_single(out: *mut BlstP1, p: *const KzgPoly, fk: *const KzgFK20SingleSettings, run_parallel: bool) -> KzgRet;
-    fn fk20_single_da_opt(out: *mut BlstP1, p: *const KzgPoly, fk: *const KzgFK20SingleSettings, run_parallel: bool) -> KzgRet;
+    fn new_fk20_single_settings(
+        fk: *mut KzgFK20SingleSettings,
+        n2: u64,
+        ks: *const KzgKZGSettings,
+    ) -> KzgRet;
+    fn da_using_fk20_single(
+        out: *mut BlstP1,
+        p: *const KzgPoly,
+        fk: *const KzgFK20SingleSettings,
+        run_parallel: bool,
+    ) -> KzgRet;
+    fn fk20_single_da_opt(
+        out: *mut BlstP1,
+        p: *const KzgPoly,
+        fk: *const KzgFK20SingleSettings,
+        run_parallel: bool,
+    ) -> KzgRet;
     fn free_fk20_single_settings(fk: *mut KzgFK20SingleSettings);
     // FK20 Multi
-    fn new_fk20_multi_settings(fk: *mut KzgFK20MultiSettings, n2: u64, chunk_len: u64, ks: *const KzgKZGSettings) -> KzgRet;
-    fn da_using_fk20_multi(out: *mut BlstP1, p: *const KzgPoly, fk: *const KzgFK20MultiSettings, run_parallel: bool) -> KzgRet;
-    fn fk20_multi_da_opt(out: *mut BlstP1, p: *const KzgPoly, fk: *const KzgFK20MultiSettings, run_parallel: bool) -> KzgRet;
+    fn new_fk20_multi_settings(
+        fk: *mut KzgFK20MultiSettings,
+        n2: u64,
+        chunk_len: u64,
+        ks: *const KzgKZGSettings,
+    ) -> KzgRet;
+    fn da_using_fk20_multi(
+        out: *mut BlstP1,
+        p: *const KzgPoly,
+        fk: *const KzgFK20MultiSettings,
+        run_parallel: bool,
+    ) -> KzgRet;
+    fn fk20_multi_da_opt(
+        out: *mut BlstP1,
+        p: *const KzgPoly,
+        fk: *const KzgFK20MultiSettings,
+        run_parallel: bool,
+    ) -> KzgRet;
     fn free_fk20_multi_settings(fk: *mut KzgFK20MultiSettings);
 }
 
@@ -37,7 +66,9 @@ pub struct KzgFK20MultiSettings {
     pub length: u64,
 }
 
-impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings> for KzgFK20SingleSettings {
+impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings>
+    for KzgFK20SingleSettings
+{
     fn default() -> Self {
         Self {
             ks: &KZGSettings::default(),
@@ -51,7 +82,10 @@ impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGS
         unsafe {
             match new_fk20_single_settings(&mut settings, n2 as u64, ks) {
                 KzgRet::KzgOk => Ok(settings),
-                e => Err(format!("An error has occurred in FK20SingleSettings::new ==> {:?}", e))
+                e => Err(format!(
+                    "An error has occurred in FK20SingleSettings::new ==> {:?}",
+                    e
+                )),
             }
         }
     }
@@ -61,7 +95,10 @@ impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGS
         unsafe {
             match da_using_fk20_single(ret.as_mut_ptr(), p, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(ret),
-                e => Err(format!("An error has occurred in FK20SingleSettings::data_availability ==> {:?}", e))
+                e => Err(format!(
+                    "An error has occurred in FK20SingleSettings::data_availability ==> {:?}",
+                    e
+                )),
             }
         }
     }
@@ -87,13 +124,15 @@ impl Drop for KzgFK20SingleSettings {
     }
 }
 
-impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings> for KzgFK20MultiSettings {
+impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings>
+    for KzgFK20MultiSettings
+{
     fn default() -> Self {
         Self {
             ks: &KZGSettings::default(),
             chunk_len: 0,
             x_ext_fft_files: std::ptr::null_mut(),
-            length: 0
+            length: 0,
         }
     }
 
@@ -102,7 +141,10 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
         unsafe {
             match new_fk20_multi_settings(&mut settings, n2 as u64, chunk_len as u64, ks) {
                 KzgRet::KzgOk => Ok(settings),
-                e => Err(format!("An error has occurred in FK20MultiSettings::new ==> {:?}", e))
+                e => Err(format!(
+                    "An error has occurred in FK20MultiSettings::new ==> {:?}",
+                    e
+                )),
             }
         }
     }
@@ -112,7 +154,10 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
         unsafe {
             match da_using_fk20_multi(ret.as_mut_ptr(), p, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(ret),
-                e => Err(format!("An error has occurred in FK20MultiSettings::data_availability ==> {:?}", e))
+                e => Err(format!(
+                    "An error has occurred in FK20MultiSettings::data_availability ==> {:?}",
+                    e
+                )),
             }
         }
     }

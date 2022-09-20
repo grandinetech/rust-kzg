@@ -31,9 +31,10 @@ impl FsFFTSettings {
 
         #[cfg(feature = "parallel")]
         {
-            let ret: Vec<_> = (0..poly.len()).into_par_iter().map(|i| {
-                x_ext_fft[i].mul(&coeffs_fft[i])
-            }).collect();
+            let ret: Vec<_> = (0..poly.len())
+                .into_par_iter()
+                .map(|i| x_ext_fft[i].mul(&coeffs_fft[i]))
+                .collect();
             ret
         }
 
@@ -67,11 +68,7 @@ impl FsPoly {
         let mut ret = FsPoly::default();
         ret.coeffs.push(self.coeffs[n - 1 - offset]);
 
-        let num_of_zeroes = if k + 2 < k2 {
-            k + 2 - 1
-        } else {
-            k2 - 1
-        };
+        let num_of_zeroes = if k + 2 < k2 { k + 2 - 1 } else { k2 - 1 };
         for _ in 0..num_of_zeroes {
             ret.coeffs.push(FsFr::zero());
         }

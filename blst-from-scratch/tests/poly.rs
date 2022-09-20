@@ -3,10 +3,15 @@
 
 #[cfg(test)]
 pub mod tests {
-    use kzg_bench::tests::poly::{create_poly_of_length_ten, poly_div_by_zero, poly_div_fast_test, poly_div_long_test, poly_div_random, poly_eval_0_check, poly_eval_check, poly_eval_nil_check, poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test, poly_mul_random, poly_test_div};
     use blst_from_scratch::types::fft_settings::FsFFTSettings;
     use blst_from_scratch::types::fr::FsFr;
     use blst_from_scratch::types::poly::FsPoly;
+    use kzg_bench::tests::poly::{
+        create_poly_of_length_ten, poly_div_by_zero, poly_div_fast_test, poly_div_long_test,
+        poly_div_random, poly_eval_0_check, poly_eval_check, poly_eval_nil_check,
+        poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test,
+        poly_mul_random, poly_test_div,
+    };
 
     // Local tests
     // #[test]
@@ -79,44 +84,72 @@ pub mod tests {
 
     // Shared tests
     #[test]
-    fn create_poly_of_length_ten_() { create_poly_of_length_ten::<FsFr, FsPoly>() }
+    fn create_poly_of_length_ten_() {
+        create_poly_of_length_ten::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_eval_check_() { poly_eval_check::<FsFr, FsPoly>() }
+    fn poly_eval_check_() {
+        poly_eval_check::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_eval_0_check_() { poly_eval_0_check::<FsFr, FsPoly>() }
+    fn poly_eval_0_check_() {
+        poly_eval_0_check::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_eval_nil_check_() { poly_eval_nil_check::<FsFr, FsPoly>() }
+    fn poly_eval_nil_check_() {
+        poly_eval_nil_check::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_inverse_simple_0_() { poly_inverse_simple_0::<FsFr, FsPoly>() }
+    fn poly_inverse_simple_0_() {
+        poly_inverse_simple_0::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_inverse_simple_1_() { poly_inverse_simple_1::<FsFr, FsPoly>() }
+    fn poly_inverse_simple_1_() {
+        poly_inverse_simple_1::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_test_div_() { poly_test_div::<FsFr, FsPoly>() }
+    fn poly_test_div_() {
+        poly_test_div::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_div_by_zero_() { poly_div_by_zero::<FsFr, FsPoly>() }
+    fn poly_div_by_zero_() {
+        poly_div_by_zero::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_mul_direct_test_() { poly_mul_direct_test::<FsFr, FsPoly>() }
+    fn poly_mul_direct_test_() {
+        poly_mul_direct_test::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_mul_fft_test_() { poly_mul_fft_test::<FsFr, FsPoly, FsFFTSettings>() }
+    fn poly_mul_fft_test_() {
+        poly_mul_fft_test::<FsFr, FsPoly, FsFFTSettings>()
+    }
 
     #[test]
-    fn poly_mul_random_() { poly_mul_random::<FsFr, FsPoly, FsFFTSettings>() }
+    fn poly_mul_random_() {
+        poly_mul_random::<FsFr, FsPoly, FsFFTSettings>()
+    }
 
     #[test]
-    fn poly_div_random_() { poly_div_random::<FsFr, FsPoly>() }
+    fn poly_div_random_() {
+        poly_div_random::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_div_long_test_() { poly_div_long_test::<FsFr, FsPoly>() }
+    fn poly_div_long_test_() {
+        poly_div_long_test::<FsFr, FsPoly>()
+    }
 
     #[test]
-    fn poly_div_fast_test_() { poly_div_fast_test::<FsFr, FsPoly>() }
+    fn poly_div_fast_test_() {
+        poly_div_fast_test::<FsFr, FsPoly>()
+    }
 }

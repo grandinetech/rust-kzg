@@ -1,14 +1,12 @@
 use super::{Fp, P1};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
-use ark_bls12_381::{Fr, Fq, g1, g2};
-use ark_ec::{
-    models::short_weierstrass_jacobian::GroupProjective,
-};
+use ark_bls12_381::{g1, g2, Fq, Fr};
+use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ff::{biginteger::BigInteger256, biginteger::BigInteger384, Fp2, Fp384};
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use ark_poly::UVPolynomial;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Error;
 
 #[derive(Debug)]

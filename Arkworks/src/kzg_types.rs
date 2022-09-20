@@ -1,30 +1,30 @@
 use crate::fft::SCALE2_ROOT_OF_UNITY;
+use crate::fft_g1::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::{
-    check_proof_single as check_single, commit_to_poly as commit,
-    compute_proof_single as compute_single, default_kzg, eval_poly, expand_root_of_unity, compute_proof_multi as compute_multi,
-    new_kzg_settings, FFTSettings as LFFTSettings, KZGSettings as LKZGSettings, check_proof_multi as check_multi, G2_GENERATOR,
-    G2_NEGATIVE_GENERATOR
+    check_proof_multi as check_multi, check_proof_single as check_single, commit_to_poly as commit,
+    compute_proof_multi as compute_multi, compute_proof_single as compute_single, default_kzg,
+    eval_poly, expand_root_of_unity, new_kzg_settings, FFTSettings as LFFTSettings,
+    KZGSettings as LKZGSettings, G2_GENERATOR, G2_NEGATIVE_GENERATOR,
 };
-use crate::fft_g1::{G1_GENERATOR, G1_NEGATIVE_GENERATOR, G1_IDENTITY};
-use crate::poly::{poly_inverse, poly_fast_div, poly_mul_direct, poly_long_div, poly_mul_fft};
-use crate::utils::PolyData as LPoly;
+use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
-use ark_bls12_381::{Fr as ArkFr};
+use crate::utils::PolyData as LPoly;
+use crate::utils::{
+    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
+    pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
+};
+use ark_bls12_381::Fr as ArkFr;
+use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
+use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
-use std::ops::Neg;
+use ark_std::{One, UniformRand, Zero};
+use blst::{blst_fr, blst_p1};
+use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 use std::ops::MulAssign;
-use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
-use ark_ec::{ProjectiveCurve, AffineCurve};
-use ark_std::{UniformRand, One, Zero};
-use crate::utils::{blst_fr_into_pc_fr, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, blst_p1_into_pc_g1projective,
-blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2};
-use blst::{
-    blst_fr, blst_p1,
-};
-use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2, FFTSettingsPoly, G1Mul, G2Mul};
+use std::ops::Neg;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ArkG1(pub blst::blst_p1);
 
 impl Clone for ArkG1 {
@@ -39,7 +39,8 @@ impl G1 for ArkG1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()+blst_p1_into_pc_g1projective(&b.0).unwrap();
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
+            + blst_p1_into_pc_g1projective(&b.0).unwrap();
         let ret = pc_g1projective_into_blst_p1(temp).unwrap();
         self.0 = ret.0;
         ret
@@ -48,7 +49,6 @@ impl G1 for ArkG1 {
     fn equals(&self, b: &Self) -> bool {
         self.0.eq(&b.0)
     }
-
 
     fn rand() -> Self {
         let mut rng = rand::thread_rng();
@@ -78,7 +78,11 @@ impl G1 for ArkG1 {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        pc_g1projective_into_blst_p1(blst_p1_into_pc_g1projective(&self.0).unwrap() - blst_p1_into_pc_g1projective(&b.0).unwrap()).unwrap()
+        pc_g1projective_into_blst_p1(
+            blst_p1_into_pc_g1projective(&self.0).unwrap()
+                - blst_p1_into_pc_g1projective(&b.0).unwrap(),
+        )
+        .unwrap()
     }
 }
 
@@ -115,7 +119,8 @@ impl G2 for ArkG2 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let temp = blst_p2_into_pc_g2projective(self).unwrap()+blst_p2_into_pc_g2projective(b).unwrap();
+        let temp =
+            blst_p2_into_pc_g2projective(self).unwrap() + blst_p2_into_pc_g2projective(b).unwrap();
         let ret = pc_g2projective_into_blst_p2(temp).unwrap();
         self.0 = ret.0;
         ret
@@ -127,7 +132,10 @@ impl G2 for ArkG2 {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        pc_g2projective_into_blst_p2(blst_p2_into_pc_g2projective(self).unwrap() - blst_p2_into_pc_g2projective(b).unwrap()).unwrap()
+        pc_g2projective_into_blst_p2(
+            blst_p2_into_pc_g2projective(self).unwrap() - blst_p2_into_pc_g2projective(b).unwrap(),
+        )
+        .unwrap()
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -157,7 +165,14 @@ impl Fr for FsFr {
     }
 
     fn null() -> Self {
-        FsFr(blst_fr{l: [14526898868952669296, 2784871451429007392, 11493358522590675359, 7138715389977065193]})
+        FsFr(blst_fr {
+            l: [
+                14526898868952669296,
+                2784871451429007392,
+                11493358522590675359,
+                7138715389977065193,
+            ],
+        })
     }
 
     fn one() -> Self {
@@ -171,9 +186,9 @@ impl Fr for FsFr {
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
         let b = ArkFr::from_repr(BigInteger256::new(*u));
-        match b{
-            None => {FsFr(blst_fr { l: [0, 0, 0, 0] })},
-            Some(x) => {pc_fr_into_blst_fr(x)}
+        match b {
+            None => FsFr(blst_fr { l: [0, 0, 0, 0] }),
+            Some(x) => pc_fr_into_blst_fr(x),
         }
     }
 
@@ -182,28 +197,35 @@ impl Fr for FsFr {
         pc_fr_into_blst_fr(fr)
     }
 
-	fn to_u64_arr(&self) -> [u64; 4] {
+    fn to_u64_arr(&self) -> [u64; 4] {
         let b = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
         b.0
-	}
-	
-	fn div(&self, b: &Self) -> Result<Self, String>{
-		let a = blst_fr_into_pc_fr(self);
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let a = blst_fr_into_pc_fr(self);
         let b = blst_fr_into_pc_fr(b);
-        let div = a/b;
-        if div.0.0.is_empty(){
+        let div = a / b;
+        if div.0 .0.is_empty() {
             Ok(FsFr::zero())
-        }else{
-            Ok(pc_fr_into_blst_fr(div))    
+        } else {
+            Ok(pc_fr_into_blst_fr(div))
         }
-	}
-	
+    }
+
     fn is_one(&self) -> bool {
         blst_fr_into_pc_fr(self).is_one()
     }
 
     fn is_null(&self) -> bool {
-        self.equals(&FsFr(blst_fr{l: [14526898868952669296, 2784871451429007392, 11493358522590675359, 7138715389977065193]}))
+        self.equals(&FsFr(blst_fr {
+            l: [
+                14526898868952669296,
+                2784871451429007392,
+                11493358522590675359,
+                7138715389977065193,
+            ],
+        }))
     }
 
     fn is_zero(&self) -> bool {
@@ -324,7 +346,7 @@ impl Poly<FsFr> for LPoly {
         poly_mul_direct(self, x, len)
     }
 
-    fn fast_div(&mut self, x: &Self) -> Result<Self, String>  {
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
         poly_fast_div(self, x)
     }
 }
@@ -338,7 +360,12 @@ impl Clone for LPoly {
 }
 
 impl FFTSettingsPoly<FsFr, LPoly, LFFTSettings> for LFFTSettings {
-    fn poly_mul_fft(a: &LPoly, x: &LPoly, len: usize, fs: Option<&LFFTSettings>) -> Result<LPoly, String> {
+    fn poly_mul_fft(
+        a: &LPoly,
+        x: &LPoly,
+        len: usize,
+        fs: Option<&LFFTSettings>,
+    ) -> Result<LPoly, String> {
         poly_mul_fft(a, x, fs, len)
     }
 }
@@ -365,7 +392,7 @@ impl FFTSettings<FsFr> for LFFTSettings {
             root_of_unity: pc_fr_into_blst_fr(domain.group_gen),
             expanded_roots_of_unity: roots,
             reverse_roots_of_unity: reverse,
-            domain
+            domain,
         })
     }
 
@@ -428,7 +455,13 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         Ok(compute_single(p, x, self))
     }
 
-    fn check_proof_single(&self, com: &ArkG1, proof: &ArkG1, x: &FsFr, value: &FsFr) -> Result<bool, String> {
+    fn check_proof_single(
+        &self,
+        com: &ArkG1,
+        proof: &ArkG1,
+        x: &FsFr,
+        value: &FsFr,
+    ) -> Result<bool, String> {
         Ok(check_single(com, proof, x, value, self))
     }
 
@@ -436,7 +469,14 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         Ok(compute_multi(p, x, n, self))
     }
 
-    fn check_proof_multi(&self, com: &ArkG1, proof: &ArkG1, x: &FsFr, values: &Vec<FsFr>, n: usize) -> Result<bool, String> {
+    fn check_proof_multi(
+        &self,
+        com: &ArkG1,
+        proof: &ArkG1,
+        x: &FsFr,
+        values: &Vec<FsFr>,
+        n: usize,
+    ) -> Result<bool, String> {
         Ok(check_multi(com, proof, x, values, n, self))
     }
 
@@ -451,6 +491,12 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
 impl Clone for LKZGSettings {
     fn clone(&self) -> Self {
-        LKZGSettings::new(&self.secret_g1.clone(), &self.secret_g2.clone(), self.length as usize, &self.fs.clone()).unwrap()
+        LKZGSettings::new(
+            &self.secret_g1.clone(),
+            &self.secret_g2.clone(),
+            self.length as usize,
+            &self.fs.clone(),
+        )
+        .unwrap()
     }
 }

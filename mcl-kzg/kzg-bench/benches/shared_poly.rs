@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use kzg_bench::benches::poly::{bench_new_poly_div};
+use kzg_bench::benches::poly::bench_new_poly_div;
 use mcl_rust::data_types::fr::Fr;
 use mcl_rust::kzg10::Polynomial;
 use mcl_rust::mcl_methods::init;

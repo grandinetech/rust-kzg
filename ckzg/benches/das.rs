@@ -1,6 +1,6 @@
-use criterion::{criterion_group, criterion_main, Criterion};
 use ckzg::fftsettings::KzgFFTSettings;
 use ckzg::finite::BlstFr;
+use criterion::{criterion_group, criterion_main, Criterion};
 
 fn bench_das_extension(c: &mut Criterion) {
     kzg_bench::benches::das::bench_das_extension::<BlstFr, KzgFFTSettings>(c);

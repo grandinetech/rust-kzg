@@ -22,11 +22,13 @@ pub fn fft_g1_slow(
 }
 
 impl FFTG1<ZkG1Projective> for ZkFFTSettings {
-    fn fft_g1(&self, data: &[ZkG1Projective], inverse: bool) -> Result<Vec<ZkG1Projective>, String> {
+    fn fft_g1(
+        &self,
+        data: &[ZkG1Projective],
+        inverse: bool,
+    ) -> Result<Vec<ZkG1Projective>, String> {
         if data.len() > self.max_width {
-            return Err(String::from(
-                "Given data is longer than allowed max width",
-            ));
+            return Err(String::from("Given data is longer than allowed max width"));
         } else if !is_power_of_two(data.len()) {
             return Err(String::from("Given data is not power-of-two length"));
         }
@@ -45,7 +47,9 @@ impl FFTG1<ZkG1Projective> for ZkFFTSettings {
         if inverse {
             let mut inv_len: blsScalar = blsScalar::from_u64(data.len() as u64);
             inv_len = inv_len.inverse();
-            for i in ret.iter_mut().take(data.len())/*0..data.len()*/ {
+            for i in ret.iter_mut().take(data.len())
+            /*0..data.len()*/
+            {
                 *i = i.mul(&inv_len);
             }
         }

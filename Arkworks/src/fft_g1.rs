@@ -1,17 +1,41 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkG1, FsFr as BlstFr};
 use blst::{blst_fp, blst_p1};
-use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
 use kzg::G1Mul;
+use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
 
 pub const G1_NEGATIVE_GENERATOR: blst_p1 = blst_p1 {
     x: blst_fp {
-        l: [0x5cb38790fd530c16, 0x7817fc679976fff5, 0x154f95c7143ba1c1, 0xf0ae6acdf3d0e747, 0xedce6ecc21dbf440, 0x120177419e0bfb75,] },
+        l: [
+            0x5cb38790fd530c16,
+            0x7817fc679976fff5,
+            0x154f95c7143ba1c1,
+            0xf0ae6acdf3d0e747,
+            0xedce6ecc21dbf440,
+            0x120177419e0bfb75,
+        ],
+    },
     y: blst_fp {
-        l: [0xff526c2af318883a, 0x92899ce4383b0270, 0x89d7738d9fa9d055, 0x12caf35ba344c12a, 0x3cff1b76964b5317, 0x0e44d2ede9774430,] },
+        l: [
+            0xff526c2af318883a,
+            0x92899ce4383b0270,
+            0x89d7738d9fa9d055,
+            0x12caf35ba344c12a,
+            0x3cff1b76964b5317,
+            0x0e44d2ede9774430,
+        ],
+    },
     z: blst_fp {
-        l: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493,] },
-	};
+        l: [
+            0x760900000002fffd,
+            0xebf4000bc40c0002,
+            0x5f48985753c758ba,
+            0x77ce585370525745,
+            0x5c071a97a256ec6d,
+            0x15f65ec3fa80e493,
+        ],
+    },
+};
 
 /** The G1 generator */
 pub const G1_GENERATOR: blst_p1 = blst_p1 {
@@ -57,7 +81,7 @@ pub fn g1_linear_combination(out: &mut ArkG1, p: &[ArkG1], coeffs: &[BlstFr], le
 }
 
 /** The G1 identity/infinity */
-pub(crate) const G1_IDENTITY: ArkG1 = ArkG1(blst_p1{
+pub(crate) const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
     x: blst_fp {
         l: [0, 0, 0, 0, 0, 0],
     },
@@ -83,16 +107,12 @@ pub fn make_data(data: usize) -> Vec<ArkG1> {
 
 impl FFTG1<ArkG1> for FFTSettings {
     fn fft_g1(&self, data: &[ArkG1], inverse: bool) -> Result<Vec<ArkG1>, String> {
-        
         if data.len() > self.max_width {
-            return Err(String::from(
-                "data length is longer than allowed max width",
-            ));
+            return Err(String::from("data length is longer than allowed max width"));
         }
         if !data.len().is_power_of_two() {
             return Err(String::from("data length is not power of 2"));
         }
-
 
         let n = data.len();
 
@@ -108,7 +128,7 @@ impl FFTG1<ArkG1> for FFTSettings {
                 1,
                 self.get_reversed_roots_of_unity(),
                 stride,
-                1
+                1,
             );
             for i in out.iter_mut().take(n) {
                 *i = i.mul(&inv_len);
@@ -120,7 +140,7 @@ impl FFTG1<ArkG1> for FFTSettings {
                 1,
                 self.get_expanded_roots_of_unity(),
                 stride,
-                1
+                1,
             );
         }
         Ok(out)
@@ -171,14 +191,21 @@ pub fn fft_g1_fast(
 
         #[cfg(not(feature = "parallel"))]
         {
-            fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
+            fft_g1_fast(
+                &mut ret[..half],
+                data,
+                stride * 2,
+                roots,
+                roots_stride * 2,
+                1,
+            );
             fft_g1_fast(
                 &mut ret[half..],
                 &data[stride..],
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1
+                1,
             );
         }
 

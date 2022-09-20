@@ -3,7 +3,7 @@ pub mod fft_g1_tests {
     use kzg_bench::tests::fft_g1::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::data_types::g1::G1;
-    use mcl_rust::fk20_fft::{FFTSettings, make_data};
+    use mcl_rust::fk20_fft::{make_data, FFTSettings};
     use mcl_rust::mcl_methods::init;
     use mcl_rust::CurveType;
 
@@ -22,6 +22,10 @@ pub mod fft_g1_tests {
     #[test]
     fn compare_sft_fft_() {
         assert!(init(CurveType::BLS12_381));
-        compare_sft_fft::<Fr, G1, FFTSettings>(&FFTSettings::fft_g1_slow, &FFTSettings::fft_g1_fast, &make_data);
+        compare_sft_fft::<Fr, G1, FFTSettings>(
+            &FFTSettings::fft_g1_slow,
+            &FFTSettings::fft_g1_fast,
+            &make_data,
+        );
     }
 }

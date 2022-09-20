@@ -366,7 +366,7 @@ impl MillerLoopResult {
 
 impl<'a, 'b> Add<&'b MillerLoopResult> for &'a MillerLoopResult {
     type Output = MillerLoopResult;
-	#[allow(clippy::suspicious_arithmetic_impl)]
+    #[allow(clippy::suspicious_arithmetic_impl)]
     #[inline]
     fn add(self, rhs: &'b MillerLoopResult) -> MillerLoopResult {
         MillerLoopResult(self.0 * rhs.0)
@@ -376,13 +376,13 @@ impl<'a, 'b> Add<&'b MillerLoopResult> for &'a MillerLoopResult {
 impl_add_binop_specify_output!(MillerLoopResult, MillerLoopResult, MillerLoopResult);
 
 impl AddAssign<MillerLoopResult> for MillerLoopResult {
-	#[allow(clippy::op_ref)]	
+    #[allow(clippy::op_ref)]
     #[inline]
     fn add_assign(&mut self, rhs: MillerLoopResult) {
         *self = &*self + &rhs;
     }
 }
-	#[allow(clippy::op_ref)]
+#[allow(clippy::op_ref)]
 impl<'b> AddAssign<&'b MillerLoopResult> for MillerLoopResult {
     #[inline]
     fn add_assign(&mut self, rhs: &'b MillerLoopResult) {
@@ -464,8 +464,8 @@ impl Neg for Gt {
 
 impl<'a, 'b> Add<&'b Gt> for &'a Gt {
     type Output = Gt;
-	
-	#[allow(clippy::suspicious_arithmetic_impl)]
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
     #[inline]
     fn add(self, rhs: &'b Gt) -> Gt {
         Gt(self.0 * rhs.0)
@@ -483,7 +483,7 @@ impl<'a, 'b> Sub<&'b Gt> for &'a Gt {
 
 impl<'a, 'b> Mul<&'b Scalar> for &'a Gt {
     type Output = Gt;
-	#[allow(clippy::suspicious_arithmetic_impl)]
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn mul(self, other: &'b Scalar) -> Self::Output {
         let mut acc = Gt::identity();
 
@@ -546,7 +546,8 @@ impl Group for Gt {
 
     */
 
-    fn random(_rng: impl RngCore) -> Self { // was mut rng: impl rngCore
+    fn random(_rng: impl RngCore) -> Self {
+        // was mut rng: impl rngCore
         loop {
             // let inner = Fp12::random(&mut rng);
             let inner = Fp12::one();

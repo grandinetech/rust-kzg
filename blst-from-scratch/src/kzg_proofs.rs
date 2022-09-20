@@ -1,7 +1,12 @@
 use std::ptr;
 
-use blst::{blst_final_exp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine, blst_p2_affine, blst_p2_to_affine, blst_scalar, limb_t};
-use kzg::{G1, G1Mul};
+use blst::{
+    blst_final_exp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1,
+    blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p1s_mult_pippenger,
+    blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine, blst_p2_affine, blst_p2_to_affine,
+    blst_scalar, limb_t,
+};
+use kzg::{G1Mul, G1};
 
 use crate::consts::G1_IDENTITY;
 use crate::types::fr::FsFr;
@@ -18,7 +23,6 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
             *out = out.add_or_dbl(&tmp);
         }
     } else {
-
         let mut scratch: Vec<u8>;
         unsafe {
             scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len) as usize];
@@ -50,7 +54,6 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
                 scratch.as_mut_ptr() as *mut limb_t,
             );
         }
-
     }
 }
 

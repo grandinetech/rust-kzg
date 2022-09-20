@@ -9,15 +9,15 @@ mod poly;
 mod test;
 #[cfg(test)]
 mod shared_tests {
-    mod zero_poly;
+    mod bls12_381;
+    mod consts;
+    mod das;
     mod fft_fr;
     mod fft_g1;
-    mod das;
-    mod consts;
-    mod poly;
-    mod bls12_381;
-    mod kzg_proofs;
-    mod fk20_proofs;
-    mod recover;
     mod finite;
+    mod fk20_proofs;
+    mod kzg_proofs;
+    mod poly;
+    mod recover;
+    mod zero_poly;
 }

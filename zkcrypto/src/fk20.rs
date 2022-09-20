@@ -1,44 +1,46 @@
-use crate::kzg_types::{ZkG1Projective, ZkG2Projective};
-use crate::fftsettings::{ZkFFTSettings};
+use crate::fftsettings::ZkFFTSettings;
 use crate::kzg_proofs::KZGSettings;
-use crate::zkfr::blsScalar;
+use crate::kzg_types::{ZkG1Projective, ZkG2Projective};
 use crate::poly::ZPoly;
 use crate::utils::*;
-use kzg::{FK20SingleSettings, FK20MultiSettings, FFTFr, FFTG1, Poly, G1};
+use crate::zkfr::blsScalar;
+use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Poly, FFTG1, G1};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 pub struct ZkFK20SingleSettings {
-	pub kzg_settings: KZGSettings,
-	pub x_ext_fft: Vec<ZkG1Projective>,
+    pub kzg_settings: KZGSettings,
+    pub x_ext_fft: Vec<ZkG1Projective>,
 }
 
 impl Clone for ZkFK20SingleSettings {
     fn clone(&self) -> Self {
-        
-		Self {
+        Self {
             kzg_settings: self.kzg_settings.clone(),
             x_ext_fft: self.x_ext_fft.clone(),
         }
     }
 }
 
-impl FK20SingleSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly, KZGSettings> for ZkFK20SingleSettings {
+impl
+    FK20SingleSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly, KZGSettings>
+    for ZkFK20SingleSettings
+{
     fn default() -> Self {
-        
-		Self {
+        Self {
             kzg_settings: KZGSettings::default(),
             x_ext_fft: vec![],
         }
     }
 
     fn new(kzg_settings: &KZGSettings, n: usize) -> Result<Self, String> {
-        
-		let n2 = n / 2;
+        let n2 = n / 2;
 
         if n > kzg_settings.fs.max_width {
-            return Err(String::from("n must be less than or equal to kzg settings max width"));
+            return Err(String::from(
+                "n must be less than or equal to kzg settings max width",
+            ));
         } else if !is_power_of_two(n) {
             return Err(String::from("n must be a power of two"));
         } else if n < 2 {
@@ -63,14 +65,14 @@ impl FK20SingleSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings
     }
 
     fn data_availability(&self, p: &ZPoly) -> Result<Vec<ZkG1Projective>, String> {
-        
-		let n = p.len();
+        let n = p.len();
         let n2 = n * 2;
 
         if n2 > self.kzg_settings.fs.max_width {
-            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
-        } 
-		else if !is_power_of_two(n2) {
+            return Err(String::from(
+                "n2 must be less than or equal to kzg settings max width",
+            ));
+        } else if !is_power_of_two(n2) {
             return Err(String::from("n2 must be a power of two"));
         }
 
@@ -81,12 +83,13 @@ impl FK20SingleSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings
     }
 
     fn data_availability_optimized(&self, p: &ZPoly) -> Result<Vec<ZkG1Projective>, String> {
-        
-		let n = p.len();
+        let n = p.len();
         let n2 = n * 2;
 
         if n2 > self.kzg_settings.fs.max_width {
-            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to kzg settings max width",
+            ));
         } else if !is_power_of_two(n2) {
             return Err(String::from("n2 must be a power of two"));
         }
@@ -116,7 +119,9 @@ impl Clone for ZkFK20MultiSettings {
     }
 }
 
-impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly, KZGSettings> for ZkFK20MultiSettings {
+impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly, KZGSettings>
+    for ZkFK20MultiSettings
+{
     fn default() -> Self {
         Self {
             kzg_settings: KZGSettings::default(),
@@ -128,7 +133,9 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
     #[allow(clippy::many_single_char_names)]
     fn new(ks: &KZGSettings, n: usize, chunk_len: usize) -> Result<Self, String> {
         if n > ks.fs.max_width {
-            return Err(String::from("n must be less than or equal to kzg settings max width"));
+            return Err(String::from(
+                "n must be less than or equal to kzg settings max width",
+            ));
         } else if !is_power_of_two(n) {
             return Err(String::from("n must be a power of two"));
         } else if n < 2 {
@@ -186,7 +193,9 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
         let n2 = n * 2;
 
         if n2 > self.kzg_settings.fs.max_width {
-            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to kzg settings max width",
+            ));
         } else if !is_power_of_two(n2) {
             return Err(String::from("n2 must be a power of two"));
         }
@@ -202,7 +211,9 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
         let n2 = n * 2;
 
         if n2 > self.kzg_settings.fs.max_width {
-            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to kzg settings max width",
+            ));
         } else if !is_power_of_two(n2) {
             return Err(String::from("n2 must be a power of two"));
         }
@@ -215,7 +226,11 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
 
         for i in 0..self.chunk_len {
             let toeplitz_coeffs = toeplitz_coeffs_stride(i, self.chunk_len, p);
-            let h_ext_fft_file = toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft_files[i], &self.kzg_settings.fs);
+            let h_ext_fft_file = toeplitz_part_2(
+                &toeplitz_coeffs,
+                &self.x_ext_fft_files[i],
+                &self.kzg_settings.fs,
+            );
 
             for j in 0..k2 {
                 h_ext_fft[j] = h_ext_fft[j].add_or_dbl(&h_ext_fft_file[j]);
@@ -225,9 +240,9 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
         let mut h = toeplitz_part_3(&h_ext_fft, &self.kzg_settings.fs);
 
         // for i in k..k2 {
-            // h[i] = ZkG1Projective::identity();
+        // h[i] = ZkG1Projective::identity();
         // }
-		h[k..k2].copy_from_slice(&vec![ZkG1Projective::identity(); k2 - k]);
+        h[k..k2].copy_from_slice(&vec![ZkG1Projective::identity(); k2 - k]);
 
         let out = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
 
@@ -235,31 +250,35 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
     }
 }
 
-pub fn toeplitz_part_1 (x: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
-	
-	let n2 = x.len() * 2;
-	let mut x_ext = Vec::new();
-	
-	for &x_i in x[..x.len()].iter() {
-		x_ext.push(x_i);
-	}
-	
-	for _i in x.len()..n2 {
-		x_ext.push(ZkG1Projective::identity());
-	}
-	
-	let out = fft_set.fft_g1(&x_ext, false);
-	out.unwrap()
+pub fn toeplitz_part_1(x: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
+    let n2 = x.len() * 2;
+    let mut x_ext = Vec::new();
+
+    for &x_i in x[..x.len()].iter() {
+        x_ext.push(x_i);
+    }
+
+    for _i in x.len()..n2 {
+        x_ext.push(ZkG1Projective::identity());
+    }
+
+    let out = fft_set.fft_g1(&x_ext, false);
+    out.unwrap()
 }
 
-pub fn toeplitz_part_2 (toeplitz: &ZPoly, x_ext_fft: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
-	let fft_coeffs = fft_set.fft_fr(&toeplitz.coeffs, false).unwrap();
+pub fn toeplitz_part_2(
+    toeplitz: &ZPoly,
+    x_ext_fft: &[ZkG1Projective],
+    fft_set: &ZkFFTSettings,
+) -> Vec<ZkG1Projective> {
+    let fft_coeffs = fft_set.fft_fr(&toeplitz.coeffs, false).unwrap();
 
     #[cfg(feature = "parallel")]
     {
-        let out: Vec<_> = (0..toeplitz.len()).into_par_iter().map(|i| {
-            x_ext_fft[i].mul(&fft_coeffs[i])
-        }).collect();
+        let out: Vec<_> = (0..toeplitz.len())
+            .into_par_iter()
+            .map(|i| x_ext_fft[i].mul(&fft_coeffs[i]))
+            .collect();
         out
     }
 
@@ -273,52 +292,57 @@ pub fn toeplitz_part_2 (toeplitz: &ZPoly, x_ext_fft: &[ZkG1Projective], fft_set:
     }
 }
 
-pub fn toeplitz_part_3 (h_ext_fft: &[ZkG1Projective], fft_set: &ZkFFTSettings) -> Vec<ZkG1Projective> {
-	// let n2 = h_ext_fft.len();
-	let n = h_ext_fft.len() / 2;
-	let mut out = fft_set.fft_g1(h_ext_fft, true).unwrap();
-	
-	// for i in n..h_ext_fft.len() {
-		// out[i] = ZkG1Projective::identity();
-	// }
-	// out[n..h_ext_fft.len()].copy_from_slice(&[ZkG1Projective::identity()]);
-	
-	out[n..h_ext_fft.len()].copy_from_slice(&vec![ZkG1Projective::identity(); h_ext_fft.len() - n]);
+pub fn toeplitz_part_3(
+    h_ext_fft: &[ZkG1Projective],
+    fft_set: &ZkFFTSettings,
+) -> Vec<ZkG1Projective> {
+    // let n2 = h_ext_fft.len();
+    let n = h_ext_fft.len() / 2;
+    let mut out = fft_set.fft_g1(h_ext_fft, true).unwrap();
 
-	out
+    // for i in n..h_ext_fft.len() {
+    // out[i] = ZkG1Projective::identity();
+    // }
+    // out[n..h_ext_fft.len()].copy_from_slice(&[ZkG1Projective::identity()]);
+
+    out[n..h_ext_fft.len()].copy_from_slice(&vec![ZkG1Projective::identity(); h_ext_fft.len() - n]);
+
+    out
 }
 
 pub fn toeplitz_coeffs_stride(offset: usize, stride: usize, poly: &ZPoly) -> ZPoly {
-	
-	let n = poly.len();
-	assert!(stride > 0);
-	
-	let k = n / stride;
-	let k2 = k * 2;
-	
-	let mut out = ZPoly { coeffs: Vec::new() };
-	
-	out.coeffs.push(poly.coeffs[n - 1 - offset]);
-	for _i in 1..min_u64(k+2, k2).unwrap() { // is this good?
-		out.coeffs.push(blsScalar::zero());
-	}
-	
-	let mut j = 2 * stride - offset - 1;
-	for _i in (k + 2)..k2 { // is this good?
-		out.coeffs.push(poly.coeffs[j]);
-		j += stride;
-	}
-	
-	out
-	
+    let n = poly.len();
+    assert!(stride > 0);
+
+    let k = n / stride;
+    let k2 = k * 2;
+
+    let mut out = ZPoly { coeffs: Vec::new() };
+
+    out.coeffs.push(poly.coeffs[n - 1 - offset]);
+    for _i in 1..min_u64(k + 2, k2).unwrap() {
+        // is this good?
+        out.coeffs.push(blsScalar::zero());
+    }
+
+    let mut j = 2 * stride - offset - 1;
+    for _i in (k + 2)..k2 {
+        // is this good?
+        out.coeffs.push(poly.coeffs[j]);
+        j += stride;
+    }
+
+    out
 }
 
 pub fn toeplitz_coeffs_step(poly: &ZPoly) -> ZPoly {
-   
-   toeplitz_coeffs_stride(0, 1, poly)
+    toeplitz_coeffs_stride(0, 1, poly)
 }
 
-pub fn reverse_bit_order<T>(values: &mut [T]) where T: Clone {
+pub fn reverse_bit_order<T>(values: &mut [T])
+where
+    T: Clone,
+{
     let unused_bit_len = values.len().leading_zeros() + 1;
     for i in 0..values.len() - 1 {
         let r = i.reverse_bits() >> unused_bit_len;

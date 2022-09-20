@@ -1,9 +1,9 @@
 #[cfg(test)]
 pub mod tests {
-    use kzg_bench::tests::fft_g1::{stride_fft, roundtrip_fft, compare_sft_fft};
-    use arkworks::fft_g1::{make_data, fft_g1_slow, fft_g1_fast};
+    use arkworks::fft_g1::{fft_g1_fast, fft_g1_slow, make_data};
     use arkworks::kzg_proofs::FFTSettings;
     use arkworks::kzg_types::{ArkG1, FsFr};
+    use kzg_bench::tests::fft_g1::{compare_sft_fft, roundtrip_fft, stride_fft};
 
     #[test]
     fn roundtrip_fft_() {

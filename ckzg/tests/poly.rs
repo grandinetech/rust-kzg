@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::poly::*;
     use ckzg::fftsettings::KzgFFTSettings;
     use ckzg::finite::BlstFr;
     use ckzg::poly::KzgPoly;
+    use kzg_bench::tests::poly::*;
 
     #[test]
     fn test_create_poly_of_length_ten() {

@@ -25,7 +25,7 @@ impl Clone for FsFK20MultiSettings {
 }
 
 impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
-for FsFK20MultiSettings
+    for FsFK20MultiSettings
 {
     fn default() -> Self {
         Self {

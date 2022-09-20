@@ -1,6 +1,8 @@
-use kzg::{Fr, G1, G1Mul, G2, G2Mul};
-use rand::{Rng, thread_rng};
-use crate::consts::{BlstFp, BlstFp2, BlstP1, BlstP2, G1_NEGATIVE_GENERATOR, G2_NEGATIVE_GENERATOR};
+use crate::consts::{
+    BlstFp, BlstFp2, BlstP1, BlstP2, G1_NEGATIVE_GENERATOR, G2_NEGATIVE_GENERATOR,
+};
+use kzg::{Fr, G1Mul, G2Mul, G1, G2};
+use rand::{thread_rng, Rng};
 
 extern "C" {
     // Fr
@@ -34,13 +36,18 @@ extern "C" {
     fn g2_sub(out: *mut BlstP2, a: *const BlstP2, b: *const BlstP2);
     // Regular functions
     fn g1_linear_combination(out: *mut BlstP1, p: *const BlstP1, coeffs: *const BlstFr, len: u64);
-    fn pairings_verify(a1: *const BlstP1, a2: *const BlstP2, b1: *const BlstP1, b2: *const BlstP2) -> bool;
+    fn pairings_verify(
+        a1: *const BlstP1,
+        a2: *const BlstP2,
+        b1: *const BlstP1,
+        b2: *const BlstP2,
+    ) -> bool;
 }
 
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct BlstFr {
-    pub l: [u64; 4]
+    pub l: [u64; 4],
 }
 
 impl Fr for BlstFr {
@@ -49,7 +56,7 @@ impl Fr for BlstFr {
     }
 
     fn null() -> Self {
-        Self { l: [u64::MAX; 4]}
+        Self { l: [u64::MAX; 4] }
     }
 
     fn zero() -> Self {
@@ -67,7 +74,7 @@ impl Fr for BlstFr {
             rng.next_u64(),
             rng.next_u64(),
             rng.next_u64(),
-            rng.next_u64()
+            rng.next_u64(),
         ];
         unsafe {
             fr_from_uint64s(&mut ret, a.as_ptr());
@@ -100,21 +107,15 @@ impl Fr for BlstFr {
     }
 
     fn is_one(&self) -> bool {
-        unsafe {
-            fr_is_one(self)
-        }
+        unsafe { fr_is_one(self) }
     }
 
     fn is_zero(&self) -> bool {
-        unsafe {
-            fr_is_zero(self)
-        }
+        unsafe { fr_is_zero(self) }
     }
 
     fn is_null(&self) -> bool {
-        unsafe {
-            fr_is_null(self)
-        }
+        unsafe { fr_is_null(self) }
     }
 
     fn sqr(&self) -> Self {
@@ -178,9 +179,7 @@ impl Fr for BlstFr {
     }
 
     fn equals(&self, b: &Self) -> bool {
-        unsafe {
-            fr_equal(self, b)
-        }
+        unsafe { fr_equal(self, b) }
     }
 }
 
@@ -202,9 +201,7 @@ impl G1 for BlstP1 {
     }
 
     fn generator() -> Self {
-        unsafe {
-            *blst_p1_generator()
-        }
+        unsafe { *blst_p1_generator() }
     }
 
     fn negative_generator() -> Self {
@@ -229,9 +226,7 @@ impl G1 for BlstP1 {
     }
 
     fn is_inf(&self) -> bool {
-        unsafe {
-            g1_is_inf(self)
-        }
+        unsafe { g1_is_inf(self) }
     }
 
     fn dbl(&self) -> Self {
@@ -251,9 +246,7 @@ impl G1 for BlstP1 {
     }
 
     fn equals(&self, b: &Self) -> bool {
-        unsafe {
-            g1_equal(self, b)
-        }
+        unsafe { g1_equal(self, b) }
     }
 }
 
@@ -270,16 +263,20 @@ impl G1Mul<BlstFr> for BlstP1 {
 impl G2 for BlstP2 {
     fn default() -> Self {
         Self {
-            x: BlstFp2 { fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }] },
-            y: BlstFp2 { fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }] },
-            z: BlstFp2 { fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }] },
+            x: BlstFp2 {
+                fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }],
+            },
+            y: BlstFp2 {
+                fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }],
+            },
+            z: BlstFp2 {
+                fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }],
+            },
         }
     }
 
     fn generator() -> Self {
-        unsafe {
-            *blst_p2_generator()
-        }
+        unsafe { *blst_p2_generator() }
     }
 
     fn negative_generator() -> Self {
@@ -311,9 +308,7 @@ impl G2 for BlstP2 {
     }
 
     fn equals(&self, b: &Self) -> bool {
-        unsafe {
-            g2_equal(self, b)
-        }
+        unsafe { g2_equal(self, b) }
     }
 }
 
@@ -334,7 +329,5 @@ pub fn linear_combination_g1(out: &mut BlstP1, p: &[BlstP1], coeffs: &[BlstFr], 
 }
 
 pub fn verify_pairings(a1: &BlstP1, a2: &BlstP2, b1: &BlstP1, b2: &BlstP2) -> bool {
-    unsafe {
-        pairings_verify(a1, a2, b1, b2)
-    }
+    unsafe { pairings_verify(a1, a2, b1, b2) }
 }

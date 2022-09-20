@@ -5,8 +5,8 @@ pub mod tests {
         zero_poly_all_but_one, zero_poly_known, zero_poly_random,
     };
     use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::zkfr::blsScalar;
     use zkcrypto::poly::ZPoly;
+    use zkcrypto::zkfr::blsScalar;
 
     #[test]
     fn test_reduce_partials_() {

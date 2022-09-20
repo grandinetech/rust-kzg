@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::fft_g1::{roundtrip_fft, stride_fft, compare_sft_fft};
-    use ckzg::fftsettings::{KzgFFTSettings, make_data, bound_fft_g1_slow, bound_fft_g1_fast};
     use ckzg::consts::BlstP1;
+    use ckzg::fftsettings::{bound_fft_g1_fast, bound_fft_g1_slow, make_data, KzgFFTSettings};
     use ckzg::finite::BlstFr;
+    use kzg_bench::tests::fft_g1::{compare_sft_fft, roundtrip_fft, stride_fft};
 
     #[test]
     fn test_roundtrip_fft() {
@@ -17,6 +17,10 @@ mod tests {
 
     #[test]
     fn test_compare_sft_fft() {
-        compare_sft_fft::<BlstFr, BlstP1, KzgFFTSettings>(&bound_fft_g1_slow, &bound_fft_g1_fast, &make_data);
+        compare_sft_fft::<BlstFr, BlstP1, KzgFFTSettings>(
+            &bound_fft_g1_slow,
+            &bound_fft_g1_fast,
+            &make_data,
+        );
     }
 }

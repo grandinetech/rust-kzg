@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::zero_poly::*;
     use ckzg::fftsettings::KzgFFTSettings;
     use ckzg::finite::BlstFr;
     use ckzg::poly::KzgPoly;
+    use kzg_bench::tests::zero_poly::*;
 
     #[test]
     fn reduce_partials() {

@@ -11,15 +11,15 @@ pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
 //pub mod finite;
+pub mod das;
 pub mod fft;
 pub mod fft_g1;
+pub mod fk20_proofs;
 pub mod kzg_proofs;
 pub mod poly;
+pub mod recover;
 pub mod utils;
 pub mod zero_poly;
-pub mod das;
-pub mod recover;
-pub mod fk20_proofs;
 
 pub mod kzg_types;
 

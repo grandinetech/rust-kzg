@@ -2,13 +2,13 @@
 pub mod tests {
     use kzg_bench::tests::bls12_381::*;
     use mcl_rust::data_types::fr::Fr;
-    use mcl_rust::data_types::g1::G1;
     use mcl_rust::data_types::g1::mclBnG1_mulVec;
+    use mcl_rust::data_types::g1::G1;
     use mcl_rust::data_types::g2::G2;
+    use mcl_rust::kzg10::Curve;
     use mcl_rust::mcl_methods::init;
     use mcl_rust::utilities::log_2_byte;
     use mcl_rust::CurveType;
-    use mcl_rust::kzg10::Curve;
 
     #[test]
     pub fn log_2_byte_works_() {
@@ -121,13 +121,13 @@ pub mod tests {
     #[test]
     pub fn g1_make_linear_combination_() {
         assert!(init(CurveType::BLS12_381));
-    	g1_make_linear_combination::<Fr, G1>(&g1_linear_combination);
+        g1_make_linear_combination::<Fr, G1>(&g1_linear_combination);
     }
 
     #[test]
     pub fn g1_random_linear_combination_() {
         assert!(init(CurveType::BLS12_381));
-    	g1_random_linear_combination::<Fr, G1>(&g1_linear_combination);
+        g1_random_linear_combination::<Fr, G1>(&g1_linear_combination);
     }
 
     #[test]
@@ -136,14 +136,7 @@ pub mod tests {
         pairings_work::<Fr, G1, G2>(&Curve::verify_pairing);
     }
 
-    fn g1_linear_combination(result: &mut G1 , g1_points: &[G1], coeffs: &[Fr], n: usize) {
-        unsafe {
-            mclBnG1_mulVec(
-                result,
-                g1_points.as_ptr(),
-                coeffs.as_ptr(),
-                n
-            )
-        }
+    fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: usize) {
+        unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
     }
 }

@@ -200,9 +200,7 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
 impl FFTFr<BlstFr> for FFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
         if data.len() > self.max_width {
-            return Err(String::from(
-                "data length is longer than allowed max width",
-            ));
+            return Err(String::from("data length is longer than allowed max width"));
         }
         if !data.len().is_power_of_two() {
             return Err(String::from("data length is not power of 2"));
@@ -221,7 +219,9 @@ impl FFTFr<BlstFr> for FFTSettings {
 
         if inverse {
             let inv_fr_len = BlstFr::from_u64(data.len() as u64).inverse();
-            ret[..data.len()].iter_mut().for_each(|f| *f = BlstFr::mul(f, &inv_fr_len));
+            ret[..data.len()]
+                .iter_mut()
+                .for_each(|f| *f = BlstFr::mul(f, &inv_fr_len));
         }
 
         Ok(ret)
@@ -259,7 +259,13 @@ pub fn fft_fr_fast(
                 );
             } else {
                 fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
-                fft_fr_fast(&mut ret[half..], &data[stride..], stride * 2, roots, roots_stride * 2);
+                fft_fr_fast(
+                    &mut ret[half..],
+                    &data[stride..],
+                    stride * 2,
+                    roots,
+                    roots_stride * 2,
+                );
             }
         }
 
@@ -273,7 +279,13 @@ pub fn fft_fr_fast(
     }
 }
 
-pub fn fft_fr_slow( ret: &mut [BlstFr], data: &[BlstFr], stride: usize, roots: &[BlstFr], roots_stride: usize,) {
+pub fn fft_fr_slow(
+    ret: &mut [BlstFr],
+    data: &[BlstFr],
+    stride: usize,
+    roots: &[BlstFr],
+    roots_stride: usize,
+) {
     let mut v;
     let mut jv;
     let mut r;

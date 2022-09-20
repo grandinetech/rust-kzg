@@ -1,36 +1,40 @@
 #![allow(non_camel_case_types)]
 
-use std::borrow::Borrow;
 use rand::SeedableRng;
+use std::borrow::Borrow;
 
+use ark_ec::msm::{FixedBaseMSM, VariableBaseMSM};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_poly_commit::kzg10::{
     Commitment, Powers, Proof, Randomness, UniversalParams, VerifierKey, KZG10,
 };
 use ark_poly_commit::*;
-use ark_std::{marker::PhantomData, ops::Div, test_rng, vec, Zero, One, UniformRand, rand::RngCore};
-use ark_ec::msm::{FixedBaseMSM, VariableBaseMSM};
+use ark_std::{
+    marker::PhantomData, ops::Div, rand::RngCore, test_rng, vec, One, UniformRand, Zero,
+};
 
+use super::fft::SCALE2_ROOT_OF_UNITY;
 use super::utils::{
-    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_poly_into_pc_poly, pc_fr_into_blst_fr,
-    pc_g1projective_into_blst_p1, PolyData, blst_p2_into_pc_g2projective, pc_g2projective_into_blst_p2
+    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
+    blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
+    pc_g2projective_into_blst_p2, PolyData,
 };
-use super::{P2};
-use crate::fft_g1::{G1_IDENTITY, G1_GENERATOR};
-use crate::kzg_types::{FsFr as BlstFr, ArkG1, ArkG2};
-use ark_bls12_381::{g1, Bls12_381, Fr, g2};
+use super::P2;
+use crate::fft_g1::{G1_GENERATOR, G1_IDENTITY};
+use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
+use ark_bls12_381::{g1, g2, Bls12_381, Fr};
 use ark_ec::{
-    models::short_weierstrass_jacobian::GroupAffine, AffineCurve, PairingEngine, ProjectiveCurve,
-    models::short_weierstrass_jacobian::GroupProjective,
+    models::short_weierstrass_jacobian::GroupAffine,
+    models::short_weierstrass_jacobian::GroupProjective, AffineCurve, PairingEngine,
+    ProjectiveCurve,
 };
-use ark_ff::{PrimeField, BigInteger256};
+use ark_ff::{BigInteger256, PrimeField};
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use blst::{blst_fp, blst_fp2};
-use kzg::{Fr as FrTrait, Poly, FFTSettings as FFTTrait, FFTFr, KZGSettings as KZGST};
+use kzg::{FFTFr, FFTSettings as FFTTrait, Fr as FrTrait, KZGSettings as KZGST, Poly};
 use rand::rngs::StdRng;
-use std::ops::{Neg, MulAssign};
 use std::collections::BTreeMap;
-use super::fft::SCALE2_ROOT_OF_UNITY;
+use std::ops::{MulAssign, Neg};
 
 type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
 type KZG_Bls12_381 = KZG10<Bls12_381, UniPoly_381>;
@@ -69,10 +73,10 @@ pub struct KZG<E: PairingEngine, P: UVPolynomial<E::Fr>> {
     _poly: PhantomData<P>,
 }
 
-pub struct setup_type{
-    params: UniversalParams<Bls12_381>, 
-    g1_secret: Vec<GroupProjective<g1::Parameters>>, 
-    g2_secret: Vec<GroupProjective<g2::Parameters>>
+pub struct setup_type {
+    params: UniversalParams<Bls12_381>,
+    g1_secret: Vec<GroupProjective<g1::Parameters>>,
+    g2_secret: Vec<GroupProjective<g2::Parameters>>,
 }
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
@@ -128,7 +132,7 @@ where
         );
         // Add an additional power of gamma_g, because we want to be able to support
         // up to D queries.
-        let temp: [u64; 4usize] = beta.0.0;
+        let temp: [u64; 4usize] = beta.0 .0;
         powers_of_gamma_g.push(powers_of_gamma_g.last().unwrap().mul(temp));
 
         let powers_of_g = GroupProjective::batch_normalization_into_affine(&powers_of_g);
@@ -180,7 +184,11 @@ where
             prepared_h,
             prepared_beta_h,
         };
-        let res = setup_type{params: pp, g1_secret: s1, g2_secret: s2};
+        let res = setup_type {
+            params: pp,
+            g1_secret: s1,
+            g2_secret: s2,
+        };
         Ok(res)
     }
 
@@ -225,7 +233,6 @@ where
         let random_v = if let Some(_hiding_witness_polynomial) = hiding_witness_polynomial {
             let blinding_p = &randomness.blinding_polynomial;
             let blinding_evaluation = blinding_p.evaluate(&point);
-
 
             Some(blinding_evaluation)
         } else {
@@ -311,7 +318,7 @@ impl FFTSettings {
             root_of_unity: pc_fr_into_blst_fr(domain.group_gen),
             expanded_roots_of_unity: roots,
             reverse_roots_of_unity: reverse,
-            domain
+            domain,
         })
     }
 }
@@ -327,16 +334,15 @@ pub struct KZGSettings {
     pub rand2: Randomness<Fr, UniPoly_381>,
 }
 
-
 pub fn default_kzg() -> KZGSettings {
-        KZGSettings {
-            fs: FFTSettings::default(),
-            secret_g1: Vec::new(),
-            secret_g2: Vec::new(),
-            length: 0,
-            params: KZG_Bls12_381::setup(1, false, &mut test_rng()).unwrap(),
-            rand: test_rng(),
-            rand2: Randomness::empty(),
+    KZGSettings {
+        fs: FFTSettings::default(),
+        secret_g1: Vec::new(),
+        secret_g2: Vec::new(),
+        length: 0,
+        params: KZG_Bls12_381::setup(1, false, &mut test_rng()).unwrap(),
+        rand: test_rng(),
+        rand2: Randomness::empty(),
     }
 }
 
@@ -350,17 +356,19 @@ fn read_be_u64(input: &mut &[u8]) -> u64 {
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
     let mut s_pow = Fr::from(1);
     let mut temp = vec![0; 4];
-    for i in 0..4{
-        temp[i] = read_be_u64(&mut &secret[i*8..(i+1)*8]);
+    for i in 0..4 {
+        temp[i] = read_be_u64(&mut &secret[i * 8..(i + 1) * 8]);
     }
     let s = Fr::from_repr(BigInteger256::new([temp[0], temp[1], temp[2], temp[3]])).unwrap();
     let mut s1 = Vec::new();
     let mut s2 = Vec::new();
-    for _i in 0..len{
-        let mut temp = g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y, true).into_projective();
+    for _i in 0..len {
+        let mut temp =
+            g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y, true).into_projective();
         temp.mul_assign(s_pow);
         s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
-        let mut temp = g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, true).into_projective();
+        let mut temp =
+            g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, true).into_projective();
         temp.mul_assign(s_pow);
         s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
         s_pow *= s;
@@ -368,15 +376,21 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>,
     (s1, s2)
 }
 
-pub fn generate_trusted_setup_test(len: usize, s: Fr) -> (Vec<GroupProjective<g1::Parameters>>, Vec<GroupProjective<g2::Parameters>>) {
+pub fn generate_trusted_setup_test(
+    len: usize,
+    s: Fr,
+) -> (
+    Vec<GroupProjective<g1::Parameters>>,
+    Vec<GroupProjective<g2::Parameters>>,
+) {
     let mut s_pow = Fr::from(1);
     let mut s1 = Vec::new();
     let mut s2 = Vec::new();
-    for _i in 0..len{
+    for _i in 0..len {
         let mut temp = blst_p1_into_pc_g1projective(&G1_GENERATOR).unwrap();
         temp.mul_assign(s_pow);
         s1.push(temp);
-        let mut temp =  blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
+        let mut temp = blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
         temp.mul_assign(s_pow);
         s2.push(temp);
         s_pow *= s;
@@ -385,13 +399,13 @@ pub fn generate_trusted_setup_test(len: usize, s: Fr) -> (Vec<GroupProjective<g1
     (s1, s2)
 }
 
-fn generate_rng_seed(secret_g1: &[ArkG1]) -> rand::prelude::StdRng{
+fn generate_rng_seed(secret_g1: &[ArkG1]) -> rand::prelude::StdRng {
     let mut output = Vec::<u8>::new();
-    for val in &secret_g1[secret_g1.len()-1].0.x.l{
+    for val in &secret_g1[secret_g1.len() - 1].0.x.l {
         output.extend_from_slice(&val.to_be_bytes());
     }
     rand::rngs::StdRng::from_seed(output[..32].try_into().unwrap())
-} 
+}
 
 pub(crate) fn new_kzg_settings(
     secret_g1: &[ArkG1],
@@ -406,17 +420,17 @@ pub(crate) fn new_kzg_settings(
     let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
 
     let mut temp = Vec::new();
-    for i in 0..length{
+    for i in 0..length {
         temp.push(pc_g1projective_into_blst_p1(setup.g1_secret[i as usize]).unwrap());
     }
 
     let mut temp2 = Vec::new();
-    for i in 0..length{
+    for i in 0..length {
         temp2.push(pc_g2projective_into_blst_p2(setup.g2_secret[i as usize]).unwrap());
     }
 
     let mut temp3 = Vec::new();
-    for i in 0..length{
+    for i in 0..length {
         temp3.push(setup.g1_secret[i as usize].into_affine());
     }
 
@@ -439,13 +453,9 @@ pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, St
         Ok(G1_IDENTITY)
     } else {
         let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
-        let (com, _rand) = KZG_Bls12_381::commit(
-            &powers,
-            &blst_poly_into_pc_poly(p).unwrap(),
-            None,
-            None,
-        )
-        .unwrap();
+        let (com, _rand) =
+            KZG_Bls12_381::commit(&powers, &blst_poly_into_pc_poly(p).unwrap(), None, None)
+                .unwrap();
         Ok(pc_g1projective_into_blst_p1(com.0.into_projective()).unwrap())
     }
 }
@@ -479,7 +489,12 @@ pub(crate) fn check_proof_single(
     let affine = GroupAffine::<g1::Parameters>::from(projective);
     let mut com = Commitment::empty();
     com.0 = affine;
-    let arkproof = Proof{w: blst_p1_into_pc_g1projective(&proof.0).unwrap().into_affine(), random_v: None};
+    let arkproof = Proof {
+        w: blst_p1_into_pc_g1projective(&proof.0)
+            .unwrap()
+            .into_affine(),
+        random_v: None,
+    };
     KZG_Bls12_381::check(
         &vk,
         &com,
@@ -490,13 +505,8 @@ pub(crate) fn check_proof_single(
     .unwrap()
 }
 
-pub(crate) fn compute_proof_multi(
-    p: &PolyData,
-    x: &BlstFr,
-    n: usize,
-    ks: &KZGSettings,
-) -> ArkG1 {
-    let mut divisor = PolyData::new(n+1).unwrap();
+pub(crate) fn compute_proof_multi(p: &PolyData, x: &BlstFr, n: usize, ks: &KZGSettings) -> ArkG1 {
+    let mut divisor = PolyData::new(n + 1).unwrap();
     let x_pow_n = x.pow(n);
 
     divisor.set_coeff_at(0, &x_pow_n.negate());
@@ -536,59 +546,180 @@ pub(crate) fn check_proof_multi(
     let mut xn2 = ks.params.h.into_projective();
     xn2.mul_assign(blst_fr_into_pc_fr(&x_pow));
     let xn_minus_yn = blst_p2_into_pc_g2projective(&ks.secret_g2[n]).unwrap() - xn2;
-   
+
     let is1 = blst_p1_into_pc_g1projective(&commit_to_poly(&interp, ks).unwrap().0).unwrap();
 
     let commit_minus_interp = blst_p1_into_pc_g1projective(&com.0).unwrap() - is1;
-    pairings_verify(&pc_g1projective_into_blst_p1(commit_minus_interp).unwrap(), &pc_g2projective_into_blst_p2(ks.params.h.into_projective()).unwrap(), 
-    proof, &pc_g2projective_into_blst_p2(xn_minus_yn).unwrap())
+    pairings_verify(
+        &pc_g1projective_into_blst_p1(commit_minus_interp).unwrap(),
+        &pc_g2projective_into_blst_p2(ks.params.h.into_projective()).unwrap(),
+        proof,
+        &pc_g2projective_into_blst_p2(xn_minus_yn).unwrap(),
+    )
 }
 
-
-pub const G2_GENERATOR:ArkG2 = ArkG2(P2{x: blst_fp2{fp: [blst_fp{l: [0xf5f28fa202940a10, 0xb3f5fb2687b4961a, 0xa1a893b53e2ae580, 0x9894999d1a3caee9,
-                                     0x6f67b7631863366b, 0x058191924350bcd7]},
-                                    blst_fp{l:[0xa5a9c0759e23f606, 0xaaa0c59dbccd60c3, 0x3bb17e18e2867806, 0x1b1ab6cc8541b367,
-                                     0xc2b6ed0ef2158547, 0x11922a097360edf3]}]},
-                                  y: blst_fp2{fp:[blst_fp{l:[0x4c730af860494c4a, 0x597cfa1f5e369c5a, 0xe7e6856caa0a635a, 0xbbefb5e96e0d495f,
-                                     0x07d3a975f0ef25a2, 0x0083fd8e7e80dae5]},
-                                    blst_fp{l:[0xadc0fc92df64b05d, 0x18aa270a2b1461dc, 0x86adac6a3be4eba0, 0x79495c4ec93da33a,
-                                     0xe7175850a43ccaed, 0x0b2bc2a163de1bf2]}]},
-                                  z: blst_fp2{fp:[blst_fp{l:[0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745,
-                                     0x5c071a97a256ec6d, 0x15f65ec3fa80e493]},
-                                    blst_fp{l:[0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
-                                     0x0000000000000000, 0x0000000000000000]}]}});
-
-pub const G2_NEGATIVE_GENERATOR: ArkG2 = ArkG2(P2{
+pub const G2_GENERATOR: ArkG2 = ArkG2(P2 {
     x: blst_fp2 {
         fp: [
-            blst_fp { l: [0xf5f28fa202940a10, 0xb3f5fb2687b4961a, 0xa1a893b53e2ae580, 0x9894999d1a3caee9, 0x6f67b7631863366b, 0x058191924350bcd7] },
-            blst_fp { l: [0xa5a9c0759e23f606, 0xaaa0c59dbccd60c3, 0x3bb17e18e2867806, 0x1b1ab6cc8541b367, 0xc2b6ed0ef2158547, 0x11922a097360edf3] }
-        ]
+            blst_fp {
+                l: [
+                    0xf5f28fa202940a10,
+                    0xb3f5fb2687b4961a,
+                    0xa1a893b53e2ae580,
+                    0x9894999d1a3caee9,
+                    0x6f67b7631863366b,
+                    0x058191924350bcd7,
+                ],
+            },
+            blst_fp {
+                l: [
+                    0xa5a9c0759e23f606,
+                    0xaaa0c59dbccd60c3,
+                    0x3bb17e18e2867806,
+                    0x1b1ab6cc8541b367,
+                    0xc2b6ed0ef2158547,
+                    0x11922a097360edf3,
+                ],
+            },
+        ],
     },
     y: blst_fp2 {
         fp: [
-            blst_fp { l: [0x6d8bf5079fb65e61, 0xc52f05df531d63a5, 0x7f4a4d344ca692c9, 0xa887959b8577c95f, 0x4347fe40525c8734, 0x197d145bbaff0bb5] },
-            blst_fp { l: [0x0c3e036d209afa4e, 0x0601d8f4863f9e23, 0xe0832636bacc0a84, 0xeb2def362a476f84, 0x64044f659f0ee1e9, 0x0ed54f48d5a1caa7] }
-        ]
+            blst_fp {
+                l: [
+                    0x4c730af860494c4a,
+                    0x597cfa1f5e369c5a,
+                    0xe7e6856caa0a635a,
+                    0xbbefb5e96e0d495f,
+                    0x07d3a975f0ef25a2,
+                    0x0083fd8e7e80dae5,
+                ],
+            },
+            blst_fp {
+                l: [
+                    0xadc0fc92df64b05d,
+                    0x18aa270a2b1461dc,
+                    0x86adac6a3be4eba0,
+                    0x79495c4ec93da33a,
+                    0xe7175850a43ccaed,
+                    0x0b2bc2a163de1bf2,
+                ],
+            },
+        ],
     },
     z: blst_fp2 {
         fp: [
-            blst_fp { l: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493] },
-            blst_fp { l: [0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000] }
-        ]
+            blst_fp {
+                l: [
+                    0x760900000002fffd,
+                    0xebf4000bc40c0002,
+                    0x5f48985753c758ba,
+                    0x77ce585370525745,
+                    0x5c071a97a256ec6d,
+                    0x15f65ec3fa80e493,
+                ],
+            },
+            blst_fp {
+                l: [
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                ],
+            },
+        ],
     },
 });
 
-pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1:&ArkG1, b2: &ArkG2) -> bool {
-    let ark_a1_neg = blst_p1_into_pc_g1projective(&a1.0).unwrap().neg().into_affine();
+pub const G2_NEGATIVE_GENERATOR: ArkG2 = ArkG2(P2 {
+    x: blst_fp2 {
+        fp: [
+            blst_fp {
+                l: [
+                    0xf5f28fa202940a10,
+                    0xb3f5fb2687b4961a,
+                    0xa1a893b53e2ae580,
+                    0x9894999d1a3caee9,
+                    0x6f67b7631863366b,
+                    0x058191924350bcd7,
+                ],
+            },
+            blst_fp {
+                l: [
+                    0xa5a9c0759e23f606,
+                    0xaaa0c59dbccd60c3,
+                    0x3bb17e18e2867806,
+                    0x1b1ab6cc8541b367,
+                    0xc2b6ed0ef2158547,
+                    0x11922a097360edf3,
+                ],
+            },
+        ],
+    },
+    y: blst_fp2 {
+        fp: [
+            blst_fp {
+                l: [
+                    0x6d8bf5079fb65e61,
+                    0xc52f05df531d63a5,
+                    0x7f4a4d344ca692c9,
+                    0xa887959b8577c95f,
+                    0x4347fe40525c8734,
+                    0x197d145bbaff0bb5,
+                ],
+            },
+            blst_fp {
+                l: [
+                    0x0c3e036d209afa4e,
+                    0x0601d8f4863f9e23,
+                    0xe0832636bacc0a84,
+                    0xeb2def362a476f84,
+                    0x64044f659f0ee1e9,
+                    0x0ed54f48d5a1caa7,
+                ],
+            },
+        ],
+    },
+    z: blst_fp2 {
+        fp: [
+            blst_fp {
+                l: [
+                    0x760900000002fffd,
+                    0xebf4000bc40c0002,
+                    0x5f48985753c758ba,
+                    0x77ce585370525745,
+                    0x5c071a97a256ec6d,
+                    0x15f65ec3fa80e493,
+                ],
+            },
+            blst_fp {
+                l: [
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                    0x0000000000000000,
+                ],
+            },
+        ],
+    },
+});
+
+pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
+    let ark_a1_neg = blst_p1_into_pc_g1projective(&a1.0)
+        .unwrap()
+        .neg()
+        .into_affine();
     let ark_b1 = blst_p1_into_pc_g1projective(&b1.0).unwrap().into_affine();
     let ark_a2 = blst_p2_into_pc_g2projective(a2).unwrap().into_affine();
     let ark_b2 = blst_p2_into_pc_g2projective(b2).unwrap().into_affine();
 
-
     Bls12_381::product_of_pairings(&[
-            (ark_a1_neg.into(), ark_a2.into()),
-            (ark_b1.into(), ark_b2.into()),
-        ])
-        .is_one()
+        (ark_a1_neg.into(), ark_a2.into()),
+        (ark_b1.into(), ark_b2.into()),
+    ])
+    .is_one()
 }

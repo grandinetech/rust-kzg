@@ -39,7 +39,12 @@ pub fn fft_fr_fast(
                 );
             } else {
                 fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
-                fft_fr_fast(&mut ret[half..], &data[stride..], stride * 2, roots, roots_stride * 2,
+                fft_fr_fast(
+                    &mut ret[half..],
+                    &data[stride..],
+                    stride * 2,
+                    roots,
+                    roots_stride * 2,
                 );
             }
         }
@@ -82,7 +87,9 @@ impl FFTFr<FsFr> for FsFFTSettings {
 
         if inverse {
             let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
-            ret[..data.len()].iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
+            ret[..data.len()]
+                .iter_mut()
+                .for_each(|f| *f = f.mul(&inv_fr_len));
         }
 
         Ok(ret)

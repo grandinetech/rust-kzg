@@ -85,11 +85,11 @@ jobs:
         command: test
         args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
 
-    - name: "[blst-from-scratch] Clippy"
-      uses: actions-rs/cargo@v1
-      with:
-       command: clippy
-       args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
+#    - name: "[blst-from-scratch] Clippy"
+#      uses: actions-rs/cargo@v1
+#      with:
+#       command: clippy
+#       args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
 
     - name: "[blst-from-scratch] Formatting"
       uses: actions-rs/cargo@v1

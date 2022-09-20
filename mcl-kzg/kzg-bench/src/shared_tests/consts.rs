@@ -21,11 +21,11 @@ pub mod consts_tests {
     #[test]
     fn roots_of_unity_are_plausible_() {
         assert!(init(CurveType::BLS12_381));
-        
+
         unsafe {
             init_globals();
             let mut scale2_root_of_unity_arr: [[u64; 4]; 32] = [[0; 4]; 32];
-            for i in 0..SCALE_2_ROOT_OF_UNITY.len(){
+            for i in 0..SCALE_2_ROOT_OF_UNITY.len() {
                 scale2_root_of_unity_arr[i] = SCALE_2_ROOT_OF_UNITY[i].to_u64_arr();
             }
             roots_of_unity_are_plausible::<Fr>(&scale2_root_of_unity_arr);
@@ -38,7 +38,7 @@ pub mod consts_tests {
         unsafe {
             init_globals();
             let mut scale2_root_of_unity_arr: [[u64; 4]; 32] = [[0; 4]; 32];
-            for i in 0..SCALE_2_ROOT_OF_UNITY.len(){
+            for i in 0..SCALE_2_ROOT_OF_UNITY.len() {
                 scale2_root_of_unity_arr[i] = SCALE_2_ROOT_OF_UNITY[i].to_u64_arr();
             }
             expand_roots_is_plausible::<Fr>(&scale2_root_of_unity_arr, &expand_root_of_unityarr);

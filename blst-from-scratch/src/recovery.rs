@@ -17,7 +17,7 @@ pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
         let inv_factor = FsFr::inverse(&scale_factor);
         let mut temp: Vec<FsFr> = vec![FsFr::one()];
         for i in 1..65536 {
-            temp.push(temp[i-1].mul(&inv_factor));
+            temp.push(temp[i - 1].mul(&inv_factor));
         }
         temp
     });
@@ -33,7 +33,7 @@ pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
         let mut temp: Vec<FsFr> = vec![FsFr::one()];
         for i in 1..65536 {
-            temp.push(temp[i-1].mul(&scale_factor));
+            temp.push(temp[i - 1].mul(&scale_factor));
         }
         temp
     });

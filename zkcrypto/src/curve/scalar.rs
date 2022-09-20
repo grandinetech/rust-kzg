@@ -191,8 +191,6 @@ macro_rules! impl_binops_multiplicative {
     };
 }
 
-
-
 /// Represents an element of the scalar field $\mathbb{F}_q$ of the BLS12-381 elliptic
 /// curve construction.
 // The internal representation of this type is four 64-bit unsigned
@@ -529,7 +527,7 @@ impl Scalar {
     }
 
     /// Computes the square root of this element, if it exists.
-	#[allow(clippy::many_single_char_names)]
+    #[allow(clippy::many_single_char_names)]
     pub fn sqrt(&self) -> CtOption<Self> {
         // Tonelli-Shank's algorithm for q mod 16 = 1
         // https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
@@ -711,7 +709,7 @@ impl Scalar {
 
         CtOption::new(t0, !self.ct_eq(&Self::zero()))
     }
-	#[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     const fn montgomery_reduce(
         r0: u64,
@@ -835,7 +833,7 @@ impl Scalar {
 
         Scalar([d0 & mask, d1 & mask, d2 & mask, d3 & mask])
     }
-    
+
     /// Reduces the scalar and returns it multiplied by the montgomery
     /// radix.
     pub fn reduce(&self) -> Scalar {

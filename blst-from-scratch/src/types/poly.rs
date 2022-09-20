@@ -149,7 +149,8 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn div(&mut self, divisor: &Self) -> Result<Self, String> {
-        if divisor.len() >= self.len() || divisor.len() < 128 { // Tunable parameter
+        if divisor.len() >= self.len() || divisor.len() < 128 {
+            // Tunable parameter
             self.long_div(divisor)
         } else {
             self.fast_div(divisor)
@@ -260,7 +261,12 @@ impl Poly<FsFr> for FsPoly {
 }
 
 impl FFTSettingsPoly<FsFr, FsPoly, FsFFTSettings> for FsFFTSettings {
-    fn poly_mul_fft(a: &FsPoly, b: &FsPoly, len: usize, _fs: Option<&FsFFTSettings>) -> Result<FsPoly, String> {
+    fn poly_mul_fft(
+        a: &FsPoly,
+        b: &FsPoly,
+        len: usize,
+        _fs: Option<&FsFFTSettings>,
+    ) -> Result<FsPoly, String> {
         b.mul_fft(a, len)
     }
 }
@@ -341,7 +347,7 @@ impl FsPoly {
                 b_fft = b_fft_temp;
             } else {
                 a_fft = fft_settings.fft_fr(&a_pad.coeffs, false).unwrap();
-            b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
+                b_fft = fft_settings.fft_fr(&b_pad.coeffs, false).unwrap();
             }
         }
 
@@ -390,11 +396,16 @@ impl Clone for FsPoly {
 }
 
 impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
-    fn recover_poly_from_samples(samples: &[Option<FsFr>], fs: &FsFFTSettings) -> Result<Self, String> {
+    fn recover_poly_from_samples(
+        samples: &[Option<FsFr>],
+        fs: &FsFFTSettings,
+    ) -> Result<Self, String> {
         let len_samples = samples.len();
 
         if !is_power_of_two(len_samples) {
-            return Err(String::from("Samples must have a length that is a power of two"));
+            return Err(String::from(
+                "Samples must have a length that is a power of two",
+            ));
         }
 
         let mut missing: Vec<usize> = Vec::new();

@@ -1,9 +1,9 @@
 #[cfg(test)]
 pub mod recover_tests {
     use kzg_bench::tests::recover::*;
-    use zkcrypto::zkfr::blsScalar;
-    use zkcrypto::poly::{ZPoly};
     use zkcrypto::fftsettings::ZkFFTSettings;
+    use zkcrypto::poly::ZPoly;
+    use zkcrypto::zkfr::blsScalar;
 
     #[test]
     fn recover_simple_() {

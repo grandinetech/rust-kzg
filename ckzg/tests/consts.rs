@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::consts::*;
+    use ckzg::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
     use ckzg::fftsettings::KzgFFTSettings;
     use ckzg::finite::BlstFr;
-    use ckzg::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
+    use kzg_bench::tests::consts::*;
 
     #[test]
     fn test_roots_of_unity_is_the_expected_size() {

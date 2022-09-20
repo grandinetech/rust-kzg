@@ -950,7 +950,7 @@ impl G2Projective {
     }
 
     /// Adds this point to another point in the affine model.
-	#[allow(clippy::needless_borrow)]
+    #[allow(clippy::needless_borrow)]
     pub fn add_mixed(&self, rhs: &G2Affine) -> G2Projective {
         // Algorithm 8, https://eprint.iacr.org/2015/1060.pdf
 
@@ -1116,7 +1116,7 @@ impl G2Projective {
 
     /// Converts a batch of `G2Projective` elements into `G2Affine` elements. This
     /// function will panic if `p.len() != q.len()`.
-	#[allow(clippy::needless_borrow)]
+    #[allow(clippy::needless_borrow)]
     pub fn batch_normalize(p: &[Self], q: &mut [G2Affine]) {
         assert_eq!(p.len(), q.len());
 

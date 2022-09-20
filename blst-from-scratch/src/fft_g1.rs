@@ -68,7 +68,9 @@ impl FFTG1<FsG1> for FsFFTSettings {
 
         if inverse {
             let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
-            ret[..data.len()].iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
+            ret[..data.len()]
+                .iter_mut()
+                .for_each(|f| *f = f.mul(&inv_fr_len));
         }
 
         Ok(ret)

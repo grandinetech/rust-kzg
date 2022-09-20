@@ -1,5 +1,5 @@
-use std::cmp::Ordering;
 use kzg::{Fr, DAS};
+use std::cmp::Ordering;
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -21,7 +21,7 @@ impl FsFFTSettings {
                 evens[1] = x.sub(&y_times_root);
 
                 return;
-            },
+            }
             Ordering::Greater => {}
         }
 

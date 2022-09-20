@@ -600,7 +600,7 @@ impl Fp {
     pub const fn sub(&self, rhs: &Fp) -> Fp {
         (&rhs.neg()).add(self)
     }
-	#[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     pub(crate) const fn montgomery_reduce(
         t0: u64,

@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::bls12_381::*;
     use ckzg::consts::{BlstP1, BlstP2};
-    use ckzg::finite::{BlstFr, linear_combination_g1, verify_pairings};
+    use ckzg::finite::{linear_combination_g1, verify_pairings, BlstFr};
     use ckzg::utils::log_2_byte;
+    use kzg_bench::tests::bls12_381::*;
 
     #[test]
     fn test_log_2_byte_works() {

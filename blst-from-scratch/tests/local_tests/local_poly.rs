@@ -1,6 +1,6 @@
 use kzg::{Fr, Poly};
-use rand::{RngCore, SeedableRng};
 use rand::rngs::StdRng;
+use rand::{RngCore, SeedableRng};
 
 use blst_from_scratch::types::fr::FsFr;
 use blst_from_scratch::types::poly::FsPoly;

@@ -1,10 +1,6 @@
 //! Multiscalar multiplication implementation using pippenger algorithm.
-use crate::curve::{
-    g1::{G1Projective},
-    scalar::Scalar,
-};
+use crate::curve::{g1::G1Projective, scalar::Scalar};
 // use dusk_bytes::Serializable;
-
 
 // use alloc::vec::*;
 
