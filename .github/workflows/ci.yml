@@ -59,11 +59,11 @@ jobs:
         command: test
         args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast --features parallel
 
-    - name: "[zkcrypto] Clippy"
-      uses: actions-rs/cargo@v1
-      with:
-       command: clippy
-       args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
+#    - name: "[zkcrypto] Clippy"
+#      uses: actions-rs/cargo@v1
+#      with:
+#       command: clippy
+#       args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
 
     - name: "[zkcrypto] Formatting"
       uses: actions-rs/cargo@v1
