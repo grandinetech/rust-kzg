@@ -14,7 +14,7 @@ Support for multiple backend ECC libraries is implemented via [Traits](https://g
 
 # Benchmarks
 
-Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/ci.yml) on every Github build. However, it's best to run it on a dedicated machine. [Tautvydas](https://github.com/belijzajac) rendered nice charts for results he got on cloud servers:
+Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/benchmarks.yml) on every Github build. However, it's best to run it on a dedicated machine. [Tautvydas](https://github.com/belijzajac) rendered nice charts for results he got on cloud servers:
 
 ![fft fr](images/fft_fr.png)
 ![fft g1](images/fft_g1.png)
