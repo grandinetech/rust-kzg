@@ -27,7 +27,7 @@ ark-std = { version = "^0.3.0", default-features = false }
 rayon = { version = "1", optional = true }
 
 [dev-dependencies]
-criterion = "0.2.11"
+criterion = "0.4.0"
 
 [features]
 default = ["std"]
