@@ -11,7 +11,7 @@ fn kzg_proof_(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(10);
+    config = Criterion::default().sample_size(5);
     targets = kzg_proof_
 }
 

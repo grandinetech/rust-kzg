@@ -8,7 +8,7 @@ fn bench_zero_poly_(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(10);
+    config = Criterion::default().sample_size(5);
     targets = bench_zero_poly_
 }
 

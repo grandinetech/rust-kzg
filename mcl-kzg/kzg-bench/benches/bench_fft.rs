@@ -42,7 +42,7 @@ fn _fft_g1(scale: u8, c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(10);
+    config = Criterion::default().sample_size(2);
     targets = bench_fft_fr, bench_fft_g1
 }
 
