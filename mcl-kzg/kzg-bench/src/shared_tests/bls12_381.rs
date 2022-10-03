@@ -67,7 +67,7 @@ pub mod tests {
     #[test]
     pub fn fr_div_by_zero_() {
         assert!(init(CurveType::BLS12_381));
-        //fr_div_by_zero::<Fr>();
+        fr_div_by_zero::<Fr>();
     }
 
     #[test]
