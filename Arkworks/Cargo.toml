@@ -20,7 +20,7 @@ ark-poly = {version = "^0.3.0", default-features = false }
 ark-poly-commit = "0.3.0"
 ark-bls12-381 = { version = "^0.3.0", default-features = false, features = [ "curve" ] }
 
-merkle_light = "0.1.0"
+merkle_light = "0.4.0"
 rand = "0.8"
 ark-std = { version = "^0.3.0", default-features = false }
 
