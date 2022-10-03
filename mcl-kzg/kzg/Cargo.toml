@@ -15,7 +15,7 @@ lto = "thin"
 cc = "1.0"
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 kzg = { path = "../../kzg" }
-primitive-types = "0.10.1"
+primitive-types = "0.12.0"
 rayon = { version = "1.5.1", optional = true }
 once_cell = "1.4.0"
 
