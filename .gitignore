@@ -1,6 +1,6 @@
 # rust specific
 target
-#Cargo.lock
+# Cargo.lock
 
 # code editors
 .idea
