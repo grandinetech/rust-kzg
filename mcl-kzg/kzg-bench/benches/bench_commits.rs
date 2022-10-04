@@ -28,7 +28,7 @@ fn bench_large_commit(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(2);
+    config = Criterion::default().sample_size(10);
     targets = bench_simple_commit, bench_large_commit
 }
 

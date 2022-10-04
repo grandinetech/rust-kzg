@@ -34,7 +34,7 @@ fn fk_multi_da_(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(2);
+    config = Criterion::default().sample_size(10);
     targets = fk_single_da_, fk_multi_da_
 }
 

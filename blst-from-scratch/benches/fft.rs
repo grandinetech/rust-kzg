@@ -14,7 +14,7 @@ fn bench_fft_g1_(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(2);
+    config = Criterion::default().sample_size(10);
     targets = bench_fft_fr_, bench_fft_g1_
 }
 
