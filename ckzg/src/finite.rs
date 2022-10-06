@@ -2,7 +2,7 @@ use crate::consts::{
     BlstFp, BlstFp2, BlstP1, BlstP2, G1_NEGATIVE_GENERATOR, G2_NEGATIVE_GENERATOR,
 };
 use kzg::{Fr, G1Mul, G2Mul, G1, G2};
-use rand::{thread_rng, Rng};
+use rand::{thread_rng, RngCore};
 
 extern "C" {
     // Fr

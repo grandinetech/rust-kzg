@@ -11,7 +11,7 @@ lto = "thin"
 [dependencies]
 kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
-rand = "0.4"
+rand = "0.8.5"
 
 [dev-dependencies]
 criterion = "0.4.0"
