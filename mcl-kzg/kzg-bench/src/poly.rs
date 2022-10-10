@@ -109,11 +109,9 @@ fn poly_test_long_division() {
         let expected = Polynomial::from_fr(third);
 
         let result = dividend.long_division(&second).unwrap();
-        let expected_len: usize;
-        let result_len: usize;
 
-        expected_len = expected.coeffs.len();
-        result_len = result.coeffs.len();
+        let expected_len: usize = expected.coeffs.len();
+        let result_len: usize = result.coeffs.len();
 
         assert_eq!(expected_len, result_len);
         for j in 1..result_len {
