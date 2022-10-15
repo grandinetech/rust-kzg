@@ -8,3 +8,4 @@ pub mod recovery;
 pub mod types;
 pub mod utils;
 pub mod zero_poly;
+pub mod eip_4844;
