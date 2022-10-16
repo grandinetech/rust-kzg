@@ -27,7 +27,7 @@ use crate::types::poly::FsPoly;
  * @param[in]  len Length
  */
 
-fn fr_batch_inv(out : &mut Vec<FsFr>, a : &Vec<FsFr>, len: usize) {
+pub fn fr_batch_inv(out : &mut [FsFr], a : &[FsFr], len: usize) {
     let prod : &mut Vec<FsFr> = &mut vec![FsFr::default(); len];
     // let mut inv : &mut FsFr;
     let mut i: usize = 1;
@@ -39,7 +39,7 @@ fn fr_batch_inv(out : &mut Vec<FsFr>, a : &Vec<FsFr>, len: usize) {
         i += 1;
     }
 
-    let mut inv: &mut FsFr = &mut prod[len - 1].eucl_inverse();
+    let inv: &mut FsFr = &mut prod[len - 1].eucl_inverse();
 
     i = len - 1;
     while i > 0{
@@ -50,31 +50,27 @@ fn fr_batch_inv(out : &mut Vec<FsFr>, a : &Vec<FsFr>, len: usize) {
     out[0] = *inv;
 }
 
-fn bytes_to_bls_field(out : &mut FsFr, bytes: [u8; 32usize])
+pub fn bytes_to_bls_field(out : &mut FsFr, bytes: [u8; 32usize])
 {
     *out = FsFr::from_scalar(bytes);
 }
 
 
-fn g1_lincomb(out : &mut FsG1, points : &[FsG1], scalars : &[FsFr], num_points : usize){
+pub fn g1_lincomb(out : &mut FsG1, points : &[FsG1], scalars : &[FsFr], num_points : usize){
     g1_linear_combination(out, points, scalars, 
         num_points) 
 }
 
-fn blob_to_kzg_commitment(out : &mut FsG1, blob : Vec<FsFr>, s : &FsKZGSettings) {
+pub fn blob_to_kzg_commitment(out : &mut FsG1, blob : Vec<FsFr>, s : &FsKZGSettings) {
     g1_lincomb(out, &s.secret_g1, &blob, s.secret_g2.len());
   }
 
-fn verify_kzg_proof(out : &mut bool, polynomial_kzg : &FsG1, z : &FsFr,
+pub fn verify_kzg_proof(out : &mut bool, polynomial_kzg : &FsG1, z : &FsFr,
     y : &FsFr, kzg_proof : &FsG1, s : &FsKZGSettings){
-        *out = match s.check_proof_single(polynomial_kzg, kzg_proof, z, y) {
-            Ok(v) => v,
-            Err(_) => false,
-        };
+        *out = s.check_proof_single(polynomial_kzg, kzg_proof, z, y).unwrap_or(false)
 }
 
-
-fn compute_kzg_proof(out : &mut FsG1, p : &mut FsPoly,
+pub fn compute_kzg_proof(out : &mut FsG1, p : &mut FsPoly,
     x : &FsFr, s : &FsKZGSettings){
         if p.len() > s.secret_g1.len(){
             return;
@@ -83,7 +79,7 @@ fn compute_kzg_proof(out : &mut FsG1, p : &mut FsPoly,
         let mut y:FsFr = FsFr::default();
         evaluate_polynomial_in_evaluation_form(&mut y, p, x, s);
       
-        let mut tmp: FsFr = FsFr::default();
+        let mut tmp: FsFr;
         let roots_of_unity: &Vec<FsFr> = &s.fs.expanded_roots_of_unity; // gali buti ne tas
         let mut i: usize = 0;
         let mut m: usize = 0;
@@ -101,7 +97,7 @@ fn compute_kzg_proof(out : &mut FsG1, p : &mut FsPoly,
           // (p_i - y) / (ω_i - x)
           q.coeffs[i] = p.coeffs[i].sub(&y);
           inverses_in[i] = roots_of_unity[i].sub(x);
-          i = i + 1;
+          i += 1;
         }
       
         fr_batch_inv(&mut inverses, &inverses_in, q.len());
@@ -140,9 +136,9 @@ fn compute_kzg_proof(out : &mut FsG1, p : &mut FsPoly,
 }
 
 
-fn evaluate_polynomial_in_evaluation_form(out : &mut FsFr, p : &FsPoly, 
+pub fn evaluate_polynomial_in_evaluation_form(out : &mut FsFr, p : &FsPoly, 
     x : &FsFr, s : &FsKZGSettings) {
-    let mut tmp: FsFr = FsFr::default();
+    let mut tmp: FsFr;
 
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); p.len()];
     let mut inverses: Vec<FsFr> = vec![FsFr::default(); p.len()];
@@ -177,8 +173,20 @@ fn evaluate_polynomial_in_evaluation_form(out : &mut FsFr, p : &FsPoly,
     tmp = tmp.sub(&FsFr::one());
     *out = out.mul(&tmp);
   
-  }
+}
 
+pub fn compute_powers(base : &FsFr, num_powers : usize) -> Vec<FsFr> {
+    let mut powers: Vec<FsFr> = vec![FsFr::default(); num_powers];
+    powers[0] = FsFr::one();
+    for i in 1..num_powers {
+        powers[i] = powers[i - 1].mul(base);
+    }
+    powers
+}
+
+// pub fn bytes_to_bls_field<TFsFr: FsFr>(bytes: &[u8]) -> TFsFr {
+//     TFsFr::from_scalar(bytes)
+// }
 
 // kompiliavimo komanda: $env:CARGO_INCREMENTAL=0; cargo build
 // kita: cargo test --package blst_from_scratch --test eip_4844 -- tests::test_g1_lincomb --exact --nocapture

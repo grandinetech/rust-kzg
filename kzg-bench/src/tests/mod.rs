@@ -9,3 +9,4 @@ pub mod kzg_proofs;
 pub mod poly;
 pub mod recover;
 pub mod zero_poly;
+pub mod eip_4844;
