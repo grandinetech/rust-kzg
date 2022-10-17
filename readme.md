@@ -9,7 +9,7 @@ Support for multiple backend ECC libraries is implemented via [Traits](https://g
 * Arkworks - Rust implementation using [akrworks](https://github.com/arkworks-rs);
 * blst-from-scratch - Rust implementation using [blst](https://github.com/supranational/blst);
 * ckzg - bindings for [c-kzg](https://github.com/benjaminion/c-kzg) that uses [blst](https://github.com/supranational/blst);
-* mcl-kzg - Rust implementation using [mcl](https://github.com/herumi/mcl);
+* mcl - Rust implementation using [mcl](https://github.com/herumi/mcl);
 * zkcrypto - Rust implementation using [zkcrypto](https://github.com/zkcrypto).
 
 # Benchmarks

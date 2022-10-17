@@ -104,8 +104,8 @@ export "RUSTFLAGS=-C link-arg=""$LIBOMP_PATH"""
 cd ckzg && bash build.sh
 cd ..
 
-# 2.2.2. prep up mcl-kzg10-rust
-cd mcl-kzg/kzg && bash build.sh
+# 2.2.2. prep up mcl10-rust
+cd mcl/kzg && bash build.sh
 cd ../../..
 
 for (( i=0; i<jobs_count; i++ ));
@@ -161,12 +161,12 @@ do
   print_msg "ckzg [parallelized]" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path ckzg/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 2.3.7. mcl-kzg10-rust
+  # 2.3.7. mcl10-rust
 
-  print_msg "mcl-kzg10-rust [original]" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml >> ../"$paste_file"
-  print_msg "mcl-kzg10-rust [parallelized]" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel >> ../"$paste_file"
+  print_msg "mcl10-rust [original]" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml >> ../"$paste_file"
+  print_msg "mcl10-rust [parallelized]" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel >> ../"$paste_file"
 
   cd ..
   unset OMP_NUM_THREADS

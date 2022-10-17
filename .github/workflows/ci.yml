@@ -156,32 +156,32 @@ jobs:
 
 # 5th team ###########################################################
 
-    - name: "[mcl-kzg10-rust] Build mcl for Linux"
+    - name: "[mcl10-rust] Build mcl for Linux"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cd mcl-kzg/kzg && bash build.sh
+        cd mcl/kzg && bash build.sh
 
-    - name: "[mcl-kzg10-rust] Run tests without parallel"
+    - name: "[mcl10-rust] Run tests without parallel"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
+        cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
 
-    - name: "[mcl-kzg10-rust] Run tests with parallel"
+    - name: "[mcl10-rust] Run tests with parallel"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo test shared_tests --manifest-path mcl-kzg/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
+        cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
 
-    - name: "[mcl-kzg10-rust] Run Clippy"
+    - name: "[mcl10-rust] Run Clippy"
       if: matrix.os == 'ubuntu-latest'
       uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --manifest-path mcl-kzg/kzg/Cargo.toml --all-targets --all-features -- -D warnings
+        args: --manifest-path mcl/kzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-    - name: "[mcl-kzg10-rust] Run fmt"
+    - name: "[mcl10-rust] Run fmt"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo fmt --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+        cargo fmt --manifest-path mcl/kzg-bench/Cargo.toml
 
 # Common ###########################################################
 
