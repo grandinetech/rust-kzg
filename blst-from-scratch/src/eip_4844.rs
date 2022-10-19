@@ -279,12 +279,14 @@ pub fn evaluate_polynomial_in_evaluation_form(
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); p.len()];
     let mut inverses: Vec<FsFr> = vec![FsFr::default(); p.len()];
     let mut i: usize = 0;
-    let roots_of_unity: &Vec<FsFr> = &s.fs.expanded_roots_of_unity; // gali buti ne tas
+    let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
+
+    reverse_bit_order(& mut roots_of_unity);
 
     while i < p.len() {
         if x.equals(&roots_of_unity[i]) {
             *out = p.get_coeff_at(i);
-            // should return here
+            return;
         }
 
         inverses_in[i] = x.sub(&roots_of_unity[i]);

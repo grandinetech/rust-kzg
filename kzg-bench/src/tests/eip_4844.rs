@@ -1,5 +1,4 @@
 use std::convert::TryInto;
-use core::fmt::Debug;
 
 use kzg::{Fr, KZGSettings, Poly, G1, G2, FFTSettings};
 
@@ -76,9 +75,9 @@ pub fn compute_powers_test<TFr: Fr>
 pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     TG1: G1,
     TG2: G2,
-    TPoly: Poly<TFr> + Debug,
+    TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly> + Debug
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&mut TFr, &TPoly, &TFr, &TKZGSettings),
     bytes_to_bls_field: &dyn Fn(&mut TFr, [u8; 32usize]),
@@ -112,10 +111,8 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let mut y_bls = TFr::default();
 
     let ts = load_trusted_setup("tests/tiny_trusted_setup.txt");
-
-    // println!("ts: {:?}", ts);
     
     evaluate_polynomial_in_evaluation_form(&mut y_bls, &lvals_bls, &x_bls, &ts);
     
-    assert_eq!(y_bls.to_u64_arr(), [28, 13, 0, 0]);
+    assert_eq!(y_bls.to_u64_arr(),  [28, 13, 0, 0]);
 }
