@@ -4,7 +4,7 @@ use std::io::Read;
 
 use blst::{
     blst_p1, blst_p1_affine, blst_p1_from_affine, blst_p1_uncompress, blst_p2, blst_p2_affine,
-    blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR,
+    blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_p1_compress,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1};
 
@@ -92,6 +92,13 @@ pub fn bytes_to_g1(bytes: [u8; 48usize]) -> FsG1 {
     }
     FsG1(g1)
 }
+
+pub fn bytes_from_g1(out: &mut [u8; 48usize], g1: &FsG1) {
+    unsafe{
+        blst_p1_compress(out.as_mut_ptr(), &g1.0);
+        // nezinau ka .0 daro
+    }
+  }
 
 pub fn load_trusted_setup(filepath: &str) -> FsKZGSettings {
     let mut file = File::open(filepath).expect("Unable to open file");
@@ -182,12 +189,29 @@ pub fn bytes_to_bls_field(out: &mut FsFr, bytes: [u8; 32usize]) {
     *out = FsFr::from_scalar(bytes);
 }
 
+pub fn vector_lincomb(vectors : Vec<FsFr>, scalars: Vec<FsFr>, n : usize, m : usize) -> Vec<FsFr>{
+    let mut tmp: FsFr  = FsFr::default();
+    let mut out: Vec<FsFr> = vec![FsFr::zero(); m.try_into().unwrap()];
+    for i in 0..n {
+      for j in 0..m{
+        tmp = scalars[i].mul(&vectors[i * m + j]);
+        out[j] = out[j].add(&tmp);
+      }
+    };
+    out
+  }
+
+pub fn bytes_from_bls_field(out: &mut [u8; 32usize], fr: FsFr) {
+    
+    *out = fr.to_scalar();
+  }
+
 pub fn g1_lincomb(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], num_points: usize) {
     g1_linear_combination(out, points, scalars, num_points)
 }
 
-pub fn blob_to_kzg_commitment(out: &mut FsG1, blob: Vec<FsFr>, s: &FsKZGSettings) {
-    g1_lincomb(out, &s.secret_g1, &blob, s.secret_g2.len());
+pub fn blob_to_kzg_commitment(out: &mut FsG1, blob: &Vec<FsFr>, s: &FsKZGSettings) {
+    g1_lincomb(out, &s.secret_g1, blob, s.secret_g2.len());
 }
 
 pub fn verify_kzg_proof(
