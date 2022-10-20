@@ -189,19 +189,20 @@ pub fn bytes_to_bls_field(out: &mut FsFr, bytes: [u8; 32usize]) {
     *out = FsFr::from_scalar(bytes);
 }
 
-pub fn vector_lincomb(vectors : Vec<FsFr>, scalars: Vec<FsFr>, n : usize, m : usize) -> Vec<FsFr>{
-    let mut tmp: FsFr  = FsFr::default();
-    let mut out: Vec<FsFr> = vec![FsFr::zero(); m.try_into().unwrap()];
-    for i in 0..n {
-      for j in 0..m{
-        tmp = scalars[i].mul(&vectors[i * m + j]);
-        out[j] = out[j].add(&tmp);
-      }
-    };
+// look into &Vec<FsFr> vs &[FsFr] and whether to use &[Vec<FsFr>] or &[&[FsFr]]
+pub fn vector_lincomb(vectors : &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr>{
+    let mut tmp: FsFr;
+    let mut out: Vec<FsFr> = vec![FsFr::zero(); vectors[0].len()];
+    for (v, s) in vectors.iter().zip(scalars.iter()) {
+        for (i, x) in v.iter().enumerate() {
+            tmp = x.mul(s);
+            out[i] = out[i].add(&tmp);
+        }
+    }
     out
   }
 
-pub fn bytes_from_bls_field(out: &mut [u8; 32usize], fr: FsFr) {
+pub fn bytes_from_bls_field(out: &mut [u8; 32usize], fr: &FsFr) {
     
     *out = fr.to_scalar();
   }
@@ -210,8 +211,8 @@ pub fn g1_lincomb(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], num_points:
     g1_linear_combination(out, points, scalars, num_points)
 }
 
-pub fn blob_to_kzg_commitment(out: &mut FsG1, blob: &Vec<FsFr>, s: &FsKZGSettings) {
-    g1_lincomb(out, &s.secret_g1, blob, s.secret_g2.len());
+pub fn blob_to_kzg_commitment(out: &mut FsG1, blob: &[FsFr], s: &FsKZGSettings) {
+    g1_lincomb(out, &s.secret_g1, blob, s.secret_g1.len());
 }
 
 pub fn verify_kzg_proof(
@@ -236,7 +237,10 @@ pub fn compute_kzg_proof(out: &mut FsG1, p: &mut FsPoly, x: &FsFr, s: &FsKZGSett
     evaluate_polynomial_in_evaluation_form(&mut y, p, x, s);
 
     let mut tmp: FsFr;
-    let roots_of_unity: &Vec<FsFr> = &s.fs.expanded_roots_of_unity; // gali buti ne tas
+    let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
+
+    reverse_bit_order(& mut roots_of_unity);
+    //let roots_of_unity: &Vec<FsFr> = &s.fs.expanded_roots_of_unity; // gali buti ne tas
     let mut i: usize = 0;
     let mut m: usize = 0;
 
