@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::Read;
 
 use blst::{
-    blst_p1, blst_p1_affine, blst_p1_from_affine, blst_p1_uncompress, blst_p2, blst_p2_affine,
-    blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_p1_compress,
+    blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
+    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1};
 
@@ -17,69 +17,6 @@ use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 use crate::utils::reverse_bit_order;
-
-// is .h failo
-
-// typedef blst_p1 g1_t;         /**< Internal G1 group element type */
-// typedef blst_p2 g2_t;         /**< Internal G2 group element type */
-// typedef blst_fr fr_t;         /**< Internal Fr field element type */
-// typedef g1_t KZGCommitment;
-// typedef g1_t KZGProof;
-// typedef fr_t BLSFieldElement;
-
-/**
- * Montgomery batch inversion in finite field
- *
- * @param[out] out The inverses of @p a, length @p len
- * @param[in]  a   A vector of field elements, length @p len
- * @param[in]  len Length
- */
-
-/*
- C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
-  uint64_t n2, i;
-  int j; uint8_t c[96];
-  blst_p2_affine g2_affine;
-  g1_t *g1_projective;
-
-  fscanf(in, "%" SCNu64, &out->length);
-  fscanf(in, "%" SCNu64, &n2);
-
-  TRY(new_g1_array(&out->g1_values, out->length));
-  TRY(new_g2_array(&out->g2_values, n2));
-
-  TRY(new_g1_array(&g1_projective, out->length));
-
-  for (i = 0; i < out->length; i++) {
-    for (j = 0; j < 48; j++) {
-      fscanf(in, "%2hhx", &c[j]);
-    }
-    bytes_to_g1(&g1_projective[i], c);
-  }
-
-  for (i = 0; i < n2; i++) {
-    for (j = 0; j < 96; j++) {
-      fscanf(in, "%2hhx", &c[j]);
-    }
-    blst_p2_uncompress(&g2_affine, c);
-    blst_p2_from_affine(&out->g2_values[i], &g2_affine);
-  }
-
-  unsigned int max_scale = 0;
-  while (((uint64_t)1 << max_scale) < out->length) max_scale++;
-
-  out->fs = (FFTSettings*)malloc(sizeof(FFTSettings));
-
-  TRY(new_fft_settings((FFTSettings*)out->fs, max_scale));
-
-  TRY(fft_g1(out->g1_values, g1_projective, true, out->length, out->fs));
-
-  TRY(reverse_bit_order(out->g1_values, sizeof(g1_t), out->length));
-
-  free(g1_projective);
-
-  return C_KZG_OK;
-} */
 
 pub fn bytes_to_g1(bytes: [u8; 48usize]) -> FsG1 {
     let mut tmp = blst_p1_affine::default();
@@ -94,11 +31,10 @@ pub fn bytes_to_g1(bytes: [u8; 48usize]) -> FsG1 {
 }
 
 pub fn bytes_from_g1(out: &mut [u8; 48usize], g1: &FsG1) {
-    unsafe{
+    unsafe {
         blst_p1_compress(out.as_mut_ptr(), &g1.0);
-        // nezinau ka .0 daro
     }
-  }
+}
 
 pub fn load_trusted_setup(filepath: &str) -> FsKZGSettings {
     let mut file = File::open(filepath).expect("Unable to open file");
@@ -164,7 +100,6 @@ pub fn load_trusted_setup(filepath: &str) -> FsKZGSettings {
 
 pub fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
     let prod: &mut Vec<FsFr> = &mut vec![FsFr::default(); len];
-    // let mut inv : &mut FsFr;
     let mut i: usize = 1;
 
     prod[0] = a[0];
@@ -190,7 +125,7 @@ pub fn bytes_to_bls_field(out: &mut FsFr, bytes: [u8; 32usize]) {
 }
 
 // look into &Vec<FsFr> vs &[FsFr] and whether to use &[Vec<FsFr>] or &[&[FsFr]]
-pub fn vector_lincomb(vectors : &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr>{
+pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
     let mut tmp: FsFr;
     let mut out: Vec<FsFr> = vec![FsFr::zero(); vectors[0].len()];
     for (v, s) in vectors.iter().zip(scalars.iter()) {
@@ -200,12 +135,11 @@ pub fn vector_lincomb(vectors : &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr>{
         }
     }
     out
-  }
+}
 
 pub fn bytes_from_bls_field(out: &mut [u8; 32usize], fr: &FsFr) {
-    
     *out = fr.to_scalar();
-  }
+}
 
 pub fn g1_lincomb(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], num_points: usize) {
     g1_linear_combination(out, points, scalars, num_points)
@@ -239,8 +173,7 @@ pub fn compute_kzg_proof(out: &mut FsG1, p: &mut FsPoly, x: &FsFr, s: &FsKZGSett
     let mut tmp: FsFr;
     let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
 
-    reverse_bit_order(& mut roots_of_unity);
-    //let roots_of_unity: &Vec<FsFr> = &s.fs.expanded_roots_of_unity; // gali buti ne tas
+    reverse_bit_order(&mut roots_of_unity);
     let mut i: usize = 0;
     let mut m: usize = 0;
 
@@ -309,7 +242,7 @@ pub fn evaluate_polynomial_in_evaluation_form(
     let mut i: usize = 0;
     let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
 
-    reverse_bit_order(& mut roots_of_unity);
+    reverse_bit_order(&mut roots_of_unity);
 
     while i < p.len() {
         if x.equals(&roots_of_unity[i]) {
@@ -345,10 +278,3 @@ pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
     }
     powers
 }
-
-// pub fn bytes_to_bls_field<TFsFr: FsFr>(bytes: &[u8]) -> TFsFr {
-//     TFsFr::from_scalar(bytes)
-// }
-
-// kompiliavimo komanda: $env:CARGO_INCREMENTAL=0; cargo build
-// kita: cargo test --package blst_from_scratch --test eip_4844 -- tests::test_g1_lincomb --exact --nocapture

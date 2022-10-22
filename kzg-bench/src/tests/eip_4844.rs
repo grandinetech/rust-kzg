@@ -4,9 +4,6 @@ use kzg::{Fr, KZGSettings, Poly, G1, G2, FFTSettings};
 use rand::Rng;
 use ssz_rs::{U256, serialize};
 
-// use sha256::digest;
-
-// use hex_literal::hex;
 use sha2::{Sha256, Digest};
 
 // Tests taken from https://github.com/dankrad/c-kzg/blob/4844/min-bindings/python/tests.py
@@ -63,21 +60,6 @@ pub fn compute_powers_test<TFr: Fr>
         assert_eq!(expected_p, &p.to_u64_arr());        
     }
 }
-
-// ts = ckzg.load_trusted_setup("tiny_trusted_setup.txt")
-
-// lvals = [239807672958224171024, 239807672958224171018,
-//          3465144826073652318776269530687742778510060141723586134027,
-//          52435875175126190475982595682112313518914282969839895044573213904131443392524]
-
-// def int_to_bls_field(x):
-//     return ckzg.bytes_to_bls_field(x.to_bytes(32, "little"))
-
-// poly = ckzg.alloc_polynomial(tuple(map(int_to_bls_field, lvals)))
-
-// y = ckzg.evaluate_polynomial_in_evaluation_form(poly, int_to_bls_field(2), ts)
-
-// assert ckzg.int_from_bls_field(y) == 239807672958224171036
 
 pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     TG1: G1,
@@ -149,37 +131,14 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     const MAX_BLOBS_PER_BLOCK: usize = 16;
 
     // probably need a better way populate ssz_rs ADTs or don't use them at all
-    // https://github.com/ethereum/py-ssz/blob/36f3406f814a5e5f4efb059a6928afc2d9d253b4/ssz/codec.py
     let mut blobs_sedes: ssz_rs::List<ssz_rs::Vector<[u8; 32], BLOB_SIZE>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
-    // nezinau ar gerai, pythone teste buvo 48 baitai
     let mut kzg_commitments_sedes:ssz_rs::List<ssz_rs::Vector<u8, 48>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
-    // println!("{}", blobs_sedes.capacity());
-    // println!("{}", blobs_sedes.len());
-
-    // current directory is not kzg-bench. Proof below:
-    // let res = env::current_dir();
-    // let res_str = match res {
-    //     Ok(path) => path.into_os_string().into_string().unwrap(),
-    //     Err(_) => "FAILED".to_string()
-    // };
-    // println!("{}", res_str);
 
     // nustatyti, kad randomai butu vienodi (t.y. seed'a nustatyti)
     let mut rng = rand::thread_rng();
 
     let mut blobs = Vec::new();
 
-    // for _ in 0..3 {
-    //     let mut blob = Vec::new();
-    //     for _ in 0..BLOB_SIZE {
-    //         let mut fr = TFr::zero();
-    //         let mut bytes = [0u8; 32];
-    //         rng.fill_bytes(&mut bytes);
-    //         bytes_to_bls_field(&mut fr, bytes);
-    //         blob.push(fr);
-    //     }
-    //     blobs.push(blob);
-    // }
     let mut file = File::open("tests/fixed_values.txt").expect("Unable to open file");
     let mut file_bytes: Vec<u8> = Vec::new();
     file.read_to_end(&mut file_bytes).expect("Unable to read data");
@@ -214,12 +173,6 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         blob_to_kzg_commitment(&mut kzg_commitment, blob, &ts);
         kzg_commitment
         }).collect::<Vec<TG1>>();
-    // let mut kzg_commitments:Vec<TG1> = Vec::new();
-    // for blob in blobs.iter(){
-    //     let mut g1 : TG1 = TG1::default();
-    //     blob_to_kzg_commitment(&mut g1, blob, &ts);
-    //     kzg_commitments.push(g1);
-    // }
 
     for comm in kzg_commitments.iter(){
         let mut r: [u8; 48usize] = [0; 48];
@@ -231,9 +184,6 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         kzg_commitments_sedes.push(vec);
     }
 
-    // let mut s: [u8; 32usize] = default();
-        // // bytes_from_bls_field(s, )
-        // // kzg_commitments_sedes.push()
 
     // patikrinti ar yra Ok
     let encoded_blobs = match serialize(&blobs_sedes){
@@ -244,11 +194,6 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         Ok(v) => v,
         _ => panic!()
     };
-
-    // let input = "hello";
-    // let val = digest(&*encoded_blobs);
-    // let k = &*([encoded_blobs, encoded_commitments].concat());
-    // let hashed = digest(&*([encoded_blobs, encoded_commitments].concat())).result();
 
     let mut hasher = Sha256::new();
     let k = &*([encoded_blobs, encoded_commitments].concat());
@@ -359,11 +304,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
     assert!(!ans, "Verification should fail");
 
-
-
     //  Compute polynomial commitments for these blobs
     // We don't follow the spec exactly to get the hash, but it shouldn't matter since it's random data
-
-    // = blobs.iter().map(|&x| blob_to_kzg_commitment()).collect::<Vec<_>>();
 
 }
