@@ -19,7 +19,7 @@ mod tests {
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<FsFr>(&bytes_to_bls_field);
+        bytes_to_bls_field_test::<FsFr>(&bytes_to_bls_field, &bytes_from_bls_field);
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use std::{convert::TryInto, fs::File, io::Read};
+use std::convert::TryInto;
 
 use kzg::{Fr, KZGSettings, Poly, G1, G2, FFTSettings};
 use rand::Rng;
@@ -6,21 +6,25 @@ use ssz_rs::{U256, serialize};
 
 use sha2::{Sha256, Digest};
 
+fn u64_to_bytes(x: u64) -> [u8; 32] {
+    let mut bytes = [0u8; 32];
+    bytes[0..8].copy_from_slice(&x.to_le_bytes());
+    bytes
+}
+
 // Tests taken from https://github.com/dankrad/c-kzg/blob/4844/min-bindings/python/tests.py
 pub fn bytes_to_bls_field_test<TFr: Fr>
 (
-    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    bytes_from_bls_field: &dyn Fn(&TFr) -> [u8; 32usize]
 )
 {
-    let x: u64 = 329;
+    let x: u64 = 329;    
+    let x_bytes = u64_to_bytes(x);
     
-    let mut x_bytes: [u8; 32] = [0; 32];
-    x_bytes[..8].copy_from_slice(&x.to_le_bytes());
-    
-
-    // TODO use bytes_from_bls_field
     let x_bls = bytes_to_bls_field(&x_bytes);
     
+    assert_eq!(bytes_from_bls_field(&x_bls), x_bytes);
     assert_eq!(x, x_bls.to_u64_arr()[0]);
 }
 
@@ -48,15 +52,14 @@ pub fn compute_powers_test<TFr: Fr>
     let x: u64 = 32930439;
     let n = 11;
     
-    let mut x_bytes: [u8; 32] = [0; 32];
-    x_bytes[..8].copy_from_slice(&x.to_le_bytes());
+    let x_bytes: [u8; 32] = u64_to_bytes(x);
     
     let x_bls = bytes_to_bls_field(&x_bytes);
     
     let powers = compute_powers(&x_bls, n);
     
     for (p, expected_p) in powers.iter().zip(EXPECTED_POWERS.iter()) {
-        assert_eq!(expected_p, &p.to_u64_arr());        
+        assert_eq!(expected_p, &p.to_u64_arr());
     }
 }
 
@@ -72,14 +75,11 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr
 )
 {
-    // let lvals: [u64; 4] = [239807672958224171024, 239807672958224171018,
-    //                        3465144826073652318776269530687742778510060141723586134027,
-    //                        52435875175126190475982595682112313518914282969839895044573213904131443392524];
     let lvals: [[u64; 4]; 4] = [
-        [16, 13, 0, 0],
-        [10, 13, 0, 0],
-        [281474976710667, 17006436628450967565, 10183145419576640720, 0],
-        [18446462594437873676, 7474466853796666379, 11954817552772682548, 8353516859464449351]
+        [16, 13, 0, 0], // 239807672958224171024
+        [10, 13, 0, 0], // 239807672958224171018
+        [281474976710667, 17006436628450967565, 10183145419576640720, 0], // 3465144826073652318776269530687742778510060141723586134027
+        [18446462594437873676, 7474466853796666379, 11954817552772682548, 8353516859464449351] // 52435875175126190475982595682112313518914282969839895044573213904131443392524
     ];
 
     let mut lvals_bls: TPoly = TPoly::new(lvals.len()).unwrap();
@@ -90,8 +90,7 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     }
     
     let x: u64 = 2;
-    let mut x_bytes: [u8; 32] = [0; 32];
-    x_bytes[..8].copy_from_slice(&x.to_le_bytes());
+    let x_bytes: [u8; 32] = u64_to_bytes(x);
     let x_bls = bytes_to_bls_field(&x_bytes);
     
     let ts = load_trusted_setup("tests/tiny_trusted_setup.txt");
@@ -125,30 +124,23 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     const BLOB_SIZE: usize = 4096;
     const MAX_BLOBS_PER_BLOCK: usize = 16;
 
-    // probably need a better way populate ssz_rs ADTs or don't use them at all
-    let mut blobs_sedes: ssz_rs::List<ssz_rs::Vector<[u8; 32], BLOB_SIZE>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
-    let mut kzg_commitments_sedes:ssz_rs::List<ssz_rs::Vector<u8, 48>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
-
+    
     // nustatyti, kad randomai butu vienodi (t.y. seed'a nustatyti)
     let mut rng = rand::thread_rng();
-
+    
     let mut blobs = Vec::new();
+    
+    // let mut file = File::open("tests/fixed_values.txt").expect("Unable to open file");
+    // let mut file_bytes: Vec<u8> = Vec::new();
+    // file.read_to_end(&mut file_bytes).expect("Unable to read data");
 
-    let mut file = File::open("tests/fixed_values.txt").expect("Unable to open file");
-    let mut file_bytes: Vec<u8> = Vec::new();
-    file.read_to_end(&mut file_bytes).expect("Unable to read data");
-
-
+    let mut blobs_sedes: ssz_rs::List<ssz_rs::Vector<[u8; 32], BLOB_SIZE>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
     for _ in 0..3 {
         let mut vec = Vec::new();
         let mut vec_sedes: ssz_rs::Vector<[u8; 32], BLOB_SIZE> = ssz_rs::Vector::default();
         for j in 0 .. BLOB_SIZE{
-            let mut bytes: [u8; 32] = [0; 32];
-            for i in 0..32{
-                bytes[i] = rng.gen();
-            }
-            //let bytes: [u8; 32] = file_bytes[i * BLOB_SIZE * 32 + j * 32 .. i * BLOB_SIZE * 32 + j * 32 + 32].try_into().unwrap();
-       
+            let bytes: [u8; 32] = rng.gen();
+            
             let fr = bytes_to_bls_field(&bytes);
             
             let tmp_bytes: [u8; 32] = bytes_from_bls_field(&fr);
@@ -161,11 +153,11 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
     let ts = load_trusted_setup("tests/trusted_setup.txt");
 
-    let kzg_commitments = blobs.iter().map(|blob| {
-        let kzg_commitment = blob_to_kzg_commitment(blob, &ts);
-        kzg_commitment
-        }).collect::<Vec<TG1>>();
+    let kzg_commitments = blobs.iter().map(|blob| 
+        blob_to_kzg_commitment(blob, &ts)
+        ).collect::<Vec<TG1>>();
 
+    let mut kzg_commitments_sedes:ssz_rs::List<ssz_rs::Vector<u8, 48>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
     for comm in kzg_commitments.iter(){
         let r: [u8; 48usize] = bytes_from_g1(comm);
         let mut vec: ssz_rs::Vector<u8, 48> = ssz_rs::Vector::default();
@@ -174,25 +166,16 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         }
         kzg_commitments_sedes.push(vec);
     }
+    
+    //  Compute polynomial commitments for these blobs
+    // We don't follow the spec exactly to get the hash, but it shouldn't matter since it's random data
 
+    let encoded_blobs = serialize(&blobs_sedes).unwrap();
+    let encoded_commitments = serialize(&kzg_commitments_sedes).unwrap();
 
-    // patikrinti ar yra Ok
-    let encoded_blobs = match serialize(&blobs_sedes){
-        Ok(v) => v,
-        _ => panic!()
-    };
-    let encoded_commitments = match serialize(&kzg_commitments_sedes){
-        Ok(v) => v,
-        _ => panic!()
-    };
+    let hashed: [u8; 32] = Sha256::digest([encoded_blobs, encoded_commitments].concat()).into();
 
-    let mut hasher = Sha256::new();
-    let k = &*([encoded_blobs, encoded_commitments].concat());
-    hasher.update(k);
-    let finalized = hasher.finalize();
-    let hashed = finalized.as_slice();
-
-    let r: TFr = bytes_to_bls_field(hashed.try_into().expect("slice with incorrect length"));
+    let r: TFr = bytes_to_bls_field(&hashed);
 
     let r_powers = compute_powers(&r, blobs.len());
     
@@ -220,25 +203,18 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let encoded_polynomial = serialize(&values_sedes).unwrap();
     let encoded_polynomial_length = serialize(&values.len()).unwrap();
 
-    // there should be a better way
     let bytes: [u8; 48usize] = bytes_from_g1(&aggregated_poly_commitment);
 
     let mut vec: ssz_rs::Vector<u8, 48> = ssz_rs::Vector::default();
     for u in bytes.iter(){
         vec.push(*u);
     }
-    let encoded_commitment = match serialize(&vec) {
-        Ok(v) => v,
-        _ => panic!()
-    };
+    let encoded_commitment = serialize(&vec).unwrap();
 
-    let mut hasher = Sha256::new();
-    let k = &*([encoded_polynomial, encoded_polynomial_length, encoded_commitment].concat());
-    hasher.update(k);
-    let finalized = hasher.finalize();
-    let hashed_polynomial_and_commitment = finalized.as_slice();
+    let k = [encoded_polynomial, encoded_polynomial_length, encoded_commitment].concat();
+    let hashed_polynomial_and_commitment: [u8; 32] = Sha256::digest(k).into();
 
-    let x = bytes_to_bls_field(hashed_polynomial_and_commitment.try_into().unwrap());
+    let x = bytes_to_bls_field(&hashed_polynomial_and_commitment);
 
     let proof = compute_kzg_proof(&mut aggregated_poly, &x, &ts);
 
@@ -252,23 +228,14 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     
     assert!(verify_kzg_proof(&aggregated_poly_commitment, &x, &y, &proof, &ts), "Verification failed");
 
-    let mut x2_bytes: [u8; 32] = [0; 32];
-    for i in 0..32{
-        x2_bytes[i] = rng.gen();
-    }
+    let mut x2_bytes: [u8; 32] = rng.gen();
     while x2_bytes == hashed_polynomial_and_commitment {
-        for i in 0..32{
-            x2_bytes[i] = rng.gen();
-        }
+        x2_bytes = rng.gen();
     }
 
-    let x2 = bytes_to_bls_field(&x2_bytes.try_into().unwrap());
+    let x2 = bytes_to_bls_field(&x2_bytes);
 
     let y2 = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &x2, &ts);
 
     assert!(!verify_kzg_proof(&aggregated_poly_commitment, &x2, &y2, &proof, &ts), "Verification should fail");
-
-    //  Compute polynomial commitments for these blobs
-    // We don't follow the spec exactly to get the hash, but it shouldn't matter since it's random data
-
 }
