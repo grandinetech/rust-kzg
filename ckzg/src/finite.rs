@@ -1,10 +1,22 @@
 use crate::consts::{
-    BlstFp, BlstFp2, BlstP1, BlstP2, G1_NEGATIVE_GENERATOR, G2_NEGATIVE_GENERATOR,
+    BlstFp, BlstFp2, BlstP1, BlstP1Affine, BlstP2, BLST_ERROR, G1_NEGATIVE_GENERATOR,
+    G2_NEGATIVE_GENERATOR, BlstP2Affine,
 };
+
 use kzg::{Fr, G1Mul, G2Mul, G1, G2};
 use rand::{thread_rng, RngCore};
 
 extern "C" {
+    // typedef uint8_t byte;
+    // typedef uint64_t limb_t;
+
+    // typedef struct { limb_t l[256/8/sizeof(limb_t)]; } blst_fr;
+    // typedef struct { limb_t l[384/8/sizeof(limb_t)]; } blst_fp;
+    // /* 0 is "real" part, 1 is "imaginary" */
+    // typedef struct { blst_fp fp[2]; } blst_fp2;
+    // typedef struct { blst_fp2 fp2[3]; } blst_fp6;
+    // typedef struct { blst_fp6 fp6[2]; } blst_fp12;
+
     // Fr
     fn fr_from_uint64(out: *mut BlstFr, n: u64);
     fn fr_from_uint64s(out: *mut BlstFr, vals: *const u64);
@@ -27,6 +39,8 @@ extern "C" {
     fn g1_dbl(out: *mut BlstP1, a: *const BlstP1);
     fn g1_sub(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_is_inf(a: *const BlstP1) -> bool;
+    pub fn blst_p1_from_affine(out: *mut BlstP1, inp: *const BlstP1Affine);
+    pub fn blst_p1_uncompress(out: *mut BlstP1Affine, byte: *const u8) -> BLST_ERROR;
     // G2
     fn blst_p2_generator() -> *const BlstP2;
     fn g2_mul(out: *mut BlstP2, a: *const BlstP2, b: *const BlstFr);
@@ -34,6 +48,8 @@ extern "C" {
     fn g2_add_or_dbl(out: *mut BlstP2, a: *const BlstP2, b: *const BlstP2);
     fn g2_equal(a: *const BlstP2, b: *const BlstP2) -> bool;
     fn g2_sub(out: *mut BlstP2, a: *const BlstP2, b: *const BlstP2);
+    pub fn blst_p2_from_affine(out: *mut BlstP2, inp: *const BlstP2Affine);
+    pub fn blst_p2_uncompress(out: *mut BlstP2Affine, byte: *const u8) -> BLST_ERROR;
     // Regular functions
     fn g1_linear_combination(out: *mut BlstP1, p: *const BlstP1, coeffs: *const BlstFr, len: u64);
     fn pairings_verify(

@@ -194,6 +194,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
 
 impl Drop for KzgKZGSettings {
     fn drop(&mut self) {
+        println!("dropinu kzgKZGSettings");
         unsafe {
             if self.length > 0 {
                 free_kzg_settings(self);

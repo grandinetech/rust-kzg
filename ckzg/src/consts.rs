@@ -9,6 +9,20 @@ pub enum KzgRet {
     KzgError = 2,
     KzgMalloc = 3,
 }
+// will this this one later
+#[allow(non_camel_case_types)]
+#[repr(u8)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum BLST_ERROR {
+    BLST_SUCCESS = 0,
+    BLST_BAD_ENCODING,
+    BLST_POINT_NOT_ON_CURVE,
+    BLST_POINT_NOT_IN_GROUP,
+    BLST_AGGR_TYPE_MISMATCH,
+    BLST_VERIFY_FAIL,
+    BLST_PK_IS_INFINITY,
+    BLST_BAD_SCALAR,
+}
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
@@ -32,10 +46,24 @@ pub struct BlstP2 {
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
+pub struct BlstP2Affine {
+    pub x: BlstFp2,
+    pub y: BlstFp2,
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct BlstP1 {
     pub x: BlstFp,
     pub y: BlstFp,
     pub z: BlstFp,
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone)]
+pub struct BlstP1Affine {
+    pub x: BlstFp,
+    pub y: BlstFp,
 }
 
 pub const SCALE_FACTOR: u64 = 5;

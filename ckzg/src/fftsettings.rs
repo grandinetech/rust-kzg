@@ -16,7 +16,7 @@ pub struct KzgFFTSettings {
 }
 
 extern "C" {
-    fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
+    pub fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
     fn free_fft_settings(settings: *mut KzgFFTSettings);
     fn fft_fr(
         output: *mut BlstFr,
@@ -156,6 +156,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
 
 impl Drop for KzgFFTSettings {
     fn drop(&mut self) {
+        println!("dropinu KZGFFTSettings");
         unsafe {
             if self.max_width > 0 && self.max_width < (1 << 32) {
                 free_fft_settings(self);
