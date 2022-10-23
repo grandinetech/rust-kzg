@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 
 use kzg::{Fr, KZGSettings, Poly, G1, G2, FFTSettings};
-use rand::Rng;
+use rand::{Rng, rngs::StdRng, SeedableRng};
 use ssz_rs::{U256, serialize};
 
 use sha2::{Sha256, Digest};
@@ -93,7 +93,7 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let x_bytes: [u8; 32] = u64_to_bytes(x);
     let x_bls = bytes_to_bls_field(&x_bytes);
     
-    let ts = load_trusted_setup("tests/tiny_trusted_setup.txt");
+    let ts = load_trusted_setup("../kzg-bench/src/tests/tiny_trusted_setup.txt");
     
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     
@@ -124,15 +124,9 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     const BLOB_SIZE: usize = 4096;
     const MAX_BLOBS_PER_BLOCK: usize = 16;
 
-    
-    // nustatyti, kad randomai butu vienodi (t.y. seed'a nustatyti)
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::seed_from_u64(0);
     
     let mut blobs = Vec::new();
-    
-    // let mut file = File::open("tests/fixed_values.txt").expect("Unable to open file");
-    // let mut file_bytes: Vec<u8> = Vec::new();
-    // file.read_to_end(&mut file_bytes).expect("Unable to read data");
 
     let mut blobs_sedes: ssz_rs::List<ssz_rs::Vector<[u8; 32], BLOB_SIZE>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
     for _ in 0..3 {
@@ -151,7 +145,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         blobs.push(vec);
     }
 
-    let ts = load_trusted_setup("tests/trusted_setup.txt");
+    let ts = load_trusted_setup("../kzg-bench/src/tests/trusted_setup.txt");
 
     let kzg_commitments = blobs.iter().map(|blob| 
         blob_to_kzg_commitment(blob, &ts)

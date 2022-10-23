@@ -18,7 +18,7 @@ use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 use crate::utils::reverse_bit_order;
 
-pub fn bytes_to_g1(bytes: [u8; 48usize]) -> FsG1 {
+pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> FsG1 {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
     unsafe {
@@ -54,23 +54,23 @@ pub fn load_trusted_setup(filepath: &str) -> FsKZGSettings {
 
     for _ in 0..length {
         let line = lines.next().unwrap();
-        let bytes = (0..line.len())
+        assert!(line.len() == 96);
+        let bytes_array: [u8; 48] = (0..line.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>();
-        let mut bytes_array: [u8; 48] = [0; 48];
-        bytes_array.copy_from_slice(&bytes);
-        g1_projectives.push(bytes_to_g1(bytes_array));
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap();
+        g1_projectives.push(bytes_to_g1(&bytes_array));
     }
 
     for _ in 0..n2 {
         let line = lines.next().unwrap();
+        assert!(line.len() == 192);
         let bytes = (0..line.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
             .collect::<Vec<u8>>();
-        let mut bytes_array: [u8; 96] = [0; 96];
-        bytes_array.copy_from_slice(&bytes);
         let mut tmp = blst_p2_affine::default();
         let mut g2 = blst_p2::default();
         unsafe {
@@ -126,7 +126,6 @@ pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> FsFr {
     FsFr::from_scalar(*bytes)
 }
 
-// look into &Vec<FsFr> vs &[FsFr] and whether to use &[Vec<FsFr>] or &[&[FsFr]]
 pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
     let mut tmp: FsFr;
     let mut out: Vec<FsFr> = vec![FsFr::zero(); vectors[0].len()];
