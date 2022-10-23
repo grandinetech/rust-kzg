@@ -14,7 +14,7 @@ mod tests {
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<BlstFr>(&compute_powers, &bytes_to_bls_field);
+        compute_powers_test::<BlstFr>(&bytes_to_bls_field, &compute_powers);
     }
 
 }
