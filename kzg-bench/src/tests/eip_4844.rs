@@ -9,16 +9,17 @@ use sha2::{Sha256, Digest};
 // Tests taken from https://github.com/dankrad/c-kzg/blob/4844/min-bindings/python/tests.py
 pub fn bytes_to_bls_field_test<TFr: Fr>
 (
-    bytes_to_bls_field: &dyn Fn(&mut TFr, [u8; 32usize])
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr
 )
 {
     let x: u64 = 329;
-    let mut x_bls = TFr::default();
     
     let mut x_bytes: [u8; 32] = [0; 32];
     x_bytes[..8].copy_from_slice(&x.to_le_bytes());
     
-    bytes_to_bls_field(&mut x_bls, x_bytes);
+
+    // TODO use bytes_from_bls_field
+    let x_bls = bytes_to_bls_field(&x_bytes);
     
     assert_eq!(x, x_bls.to_u64_arr()[0]);
 }
@@ -40,19 +41,17 @@ const EXPECTED_POWERS: [[u64; 4usize]; 11] = [
 // Simple test of compute_powers
 pub fn compute_powers_test<TFr: Fr>
 ( 
-    compute_powers: &dyn Fn(&TFr, usize) -> Vec<TFr>,
-    bytes_to_bls_field: &dyn Fn(&mut TFr, [u8; 32usize])
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    compute_powers: &dyn Fn(&TFr, usize) -> Vec<TFr>
 ) 
 {
     let x: u64 = 32930439;
     let n = 11;
-
-    let mut x_bls = TFr::default();
     
     let mut x_bytes: [u8; 32] = [0; 32];
     x_bytes[..8].copy_from_slice(&x.to_le_bytes());
     
-    bytes_to_bls_field(&mut x_bls, x_bytes);
+    let x_bls = bytes_to_bls_field(&x_bytes);
     
     let powers = compute_powers(&x_bls, n);
     
@@ -68,9 +67,9 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
-    evaluate_polynomial_in_evaluation_form: &dyn Fn(&mut TFr, &TPoly, &TFr, &TKZGSettings),
-    bytes_to_bls_field: &dyn Fn(&mut TFr, [u8; 32usize]),
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr
 )
 {
     // let lvals: [u64; 4] = [239807672958224171024, 239807672958224171018,
@@ -85,23 +84,19 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
 
     let mut lvals_bls: TPoly = TPoly::new(lvals.len()).unwrap();
     for (i, lval) in lvals.iter().enumerate() {
-        let mut lval_bls = TFr::default();
         let lval_bytes: [u8; 32] = lval.iter().flat_map(|x| x.to_le_bytes()).collect::<Vec<u8>>().try_into().unwrap();
-        bytes_to_bls_field(&mut lval_bls, lval_bytes);
+        let lval_bls = bytes_to_bls_field(&lval_bytes);
         lvals_bls.set_coeff_at(i, &lval_bls);
     }
     
     let x: u64 = 2;
-    let mut x_bls = TFr::default();
     let mut x_bytes: [u8; 32] = [0; 32];
     x_bytes[..8].copy_from_slice(&x.to_le_bytes());
-    bytes_to_bls_field(&mut x_bls, x_bytes);
-
-    let mut y_bls = TFr::default();
-
+    let x_bls = bytes_to_bls_field(&x_bytes);
+    
     let ts = load_trusted_setup("tests/tiny_trusted_setup.txt");
     
-    evaluate_polynomial_in_evaluation_form(&mut y_bls, &lvals_bls, &x_bls, &ts);
+    let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     
     assert_eq!(y_bls.to_u64_arr(),  [28, 13, 0, 0]);
 }
@@ -113,17 +108,17 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
-    evaluate_polynomial_in_evaluation_form: &dyn Fn(&mut TFr, &TPoly, &TFr, &TKZGSettings),
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    bytes_to_bls_field: &dyn Fn(&mut TFr, [u8; 32usize]),
-    bytes_from_bls_field: &dyn Fn(&mut [u8; 32usize], &TFr),
-    blob_to_kzg_commitment: &dyn Fn(&mut TG1, &[TFr], &TKZGSettings),
-    bytes_from_g1: &dyn Fn(&mut [u8; 48usize], &TG1),
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    bytes_from_bls_field: &dyn Fn(&TFr) -> [u8; 32usize],
+    bytes_from_g1: &dyn Fn(&TG1) -> [u8; 48usize],
     compute_powers: &dyn Fn(&TFr, usize) -> Vec<TFr>,
     vector_lincomb: &dyn Fn(&[Vec<TFr>], &[TFr]) -> Vec<TFr>,
-    g1_lincomb: &dyn Fn(&mut TG1, &[TG1], &[TFr], usize),
-    compute_kzg_proof: &dyn Fn(&mut TG1, &mut TPoly, &TFr, &TKZGSettings),
-    verify_kzg_proof: &dyn Fn(&mut bool, &TG1, &TFr, &TFr, &TG1, &TKZGSettings)
+    g1_lincomb: &dyn Fn(&[TG1], &[TFr]) -> TG1,
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&mut TPoly, &TFr, &TKZGSettings) -> TG1,
+    verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
 )
 {
     // Commit to a few random blobs
@@ -154,11 +149,9 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
             }
             //let bytes: [u8; 32] = file_bytes[i * BLOB_SIZE * 32 + j * 32 .. i * BLOB_SIZE * 32 + j * 32 + 32].try_into().unwrap();
        
-            let mut fr = Fr::default();
-            bytes_to_bls_field(&mut fr, bytes);
+            let fr = bytes_to_bls_field(&bytes);
             
-            let mut tmp_bytes: [u8; 32] = [0; 32];
-            bytes_from_bls_field(&mut tmp_bytes, &fr);
+            let tmp_bytes: [u8; 32] = bytes_from_bls_field(&fr);
             vec.push(fr);
             vec_sedes[j] = tmp_bytes;
         }
@@ -169,14 +162,12 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let ts = load_trusted_setup("tests/trusted_setup.txt");
 
     let kzg_commitments = blobs.iter().map(|blob| {
-        let mut kzg_commitment = TG1::default();
-        blob_to_kzg_commitment(&mut kzg_commitment, blob, &ts);
+        let kzg_commitment = blob_to_kzg_commitment(blob, &ts);
         kzg_commitment
         }).collect::<Vec<TG1>>();
 
     for comm in kzg_commitments.iter(){
-        let mut r: [u8; 48usize] = [0; 48];
-        bytes_from_g1(& mut r, comm);
+        let r: [u8; 48usize] = bytes_from_g1(comm);
         let mut vec: ssz_rs::Vector<u8, 48> = ssz_rs::Vector::default();
         for (i, u) in r.iter().enumerate(){
             vec[i] = *u;
@@ -201,8 +192,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let finalized = hasher.finalize();
     let hashed = finalized.as_slice();
 
-    let mut r: TFr = TFr::default();
-    bytes_to_bls_field(& mut r, hashed.try_into().expect("slice with incorrect length"));
+    let r: TFr = bytes_to_bls_field(hashed.try_into().expect("slice with incorrect length"));
 
     let r_powers = compute_powers(&r, blobs.len());
     
@@ -213,20 +203,17 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         aggregated_poly.set_coeff_at(i, value);
     }
 
-    let mut aggregated_poly_commitment = TG1::default();
-    g1_lincomb(&mut aggregated_poly_commitment, &kzg_commitments, &r_powers, blobs.len()); // last argument might be wrong
+    let aggregated_poly_commitment = g1_lincomb(&kzg_commitments, &r_powers);
 
 
-    let mut simple_commitment = TG1::default();
-    blob_to_kzg_commitment(&mut simple_commitment, &values, &ts);
+    let simple_commitment = blob_to_kzg_commitment(&values, &ts);
 
     // Compute proof
 
     let mut values_sedes: ssz_rs::List<U256, BLOB_SIZE> = ssz_rs::List::default();
 
     for value in values.iter(){
-        let mut bytes: [u8; 32] = [0; 32];
-        bytes_from_bls_field(& mut bytes, value);
+        let bytes: [u8; 32] = bytes_from_bls_field(value);
         values_sedes.push(ssz_rs::U256(bytes));
     }
 
@@ -234,8 +221,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let encoded_polynomial_length = serialize(&values.len()).unwrap();
 
     // there should be a better way
-    let mut bytes: [u8; 48usize] = [0; 48usize];
-    bytes_from_g1(&mut bytes, &aggregated_poly_commitment);
+    let bytes: [u8; 48usize] = bytes_from_g1(&aggregated_poly_commitment);
 
     let mut vec: ssz_rs::Vector<u8, 48> = ssz_rs::Vector::default();
     for u in bytes.iter(){
@@ -252,36 +238,19 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let finalized = hasher.finalize();
     let hashed_polynomial_and_commitment = finalized.as_slice();
 
-    let mut x = TFr::default();
-    bytes_to_bls_field(&mut x, hashed_polynomial_and_commitment.try_into().unwrap());
+    let x = bytes_to_bls_field(hashed_polynomial_and_commitment.try_into().unwrap());
 
-    let mut proof = TG1::default();
-
-    compute_kzg_proof(&mut proof, &mut aggregated_poly, &x, &ts);
+    let proof = compute_kzg_proof(&mut aggregated_poly, &x, &ts);
 
     // Verify proof
 
-    let mut y = TFr::default();
+    let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &x, &ts);
 
-    evaluate_polynomial_in_evaluation_form(&mut y, &aggregated_poly, &x, &ts);
-
-    let mut simple_commitment_bytes: [u8; 48] = [0; 48];
-    bytes_from_g1(&mut simple_commitment_bytes, &simple_commitment);
-
-    let mut aggregated_poly_commitment_bytes: [u8; 48] = [0; 48];
-    bytes_from_g1(&mut aggregated_poly_commitment_bytes, &aggregated_poly_commitment);
-
-    assert_eq!(simple_commitment_bytes, aggregated_poly_commitment_bytes);
-
-    let mut ans = false;
-    verify_kzg_proof(&mut ans, &simple_commitment, &x, &y, &proof, &ts);  
-    assert!(ans, "Simple verification failed");  
-
-    //assert ckzg.verify_kzg_proof(aggregated_poly_commitment, x, y, proof, ts), 'Verification failed'
-
-    let mut ans = false;
-    verify_kzg_proof(&mut ans, &aggregated_poly_commitment, &x, &y, &proof, &ts);
-    assert!(ans, "Verification failed");
+    assert_eq!(bytes_from_g1(&simple_commitment),  bytes_from_g1(&aggregated_poly_commitment));
+     
+    assert!(verify_kzg_proof(&simple_commitment, &x, &y, &proof, &ts), "Simple verification failed");  
+    
+    assert!(verify_kzg_proof(&aggregated_poly_commitment, &x, &y, &proof, &ts), "Verification failed");
 
     let mut x2_bytes: [u8; 32] = [0; 32];
     for i in 0..32{
@@ -293,16 +262,11 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         }
     }
 
-    let mut x2 = TFr::default();
-    bytes_to_bls_field(&mut x2, x2_bytes.try_into().unwrap());
+    let x2 = bytes_to_bls_field(&x2_bytes.try_into().unwrap());
 
-    let mut y2 = TFr::default();
-    evaluate_polynomial_in_evaluation_form(&mut y2, &aggregated_poly, &x2, &ts);
+    let y2 = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &x2, &ts);
 
-    let mut ans = false;
-    verify_kzg_proof(&mut ans, &aggregated_poly_commitment, &x2, &y2, &proof, &ts);
-
-    assert!(!ans, "Verification should fail");
+    assert!(!verify_kzg_proof(&aggregated_poly_commitment, &x2, &y2, &proof, &ts), "Verification should fail");
 
     //  Compute polynomial commitments for these blobs
     // We don't follow the spec exactly to get the hash, but it shouldn't matter since it's random data

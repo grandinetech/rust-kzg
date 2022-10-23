@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<FsFr>(&compute_powers, &bytes_to_bls_field);
+        compute_powers_test::<FsFr>(&bytes_to_bls_field, &compute_powers);
     }
 
     #[test]
@@ -37,24 +37,24 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
         >(
-            &evaluate_polynomial_in_evaluation_form,
             &bytes_to_bls_field,
             &load_trusted_setup,
+            &evaluate_polynomial_in_evaluation_form,
         );
     }
 
     #[test]
     pub fn compute_commitment_for_blobs_test_() {
         compute_commitment_for_blobs_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
-            &evaluate_polynomial_in_evaluation_form,
             &load_trusted_setup,
             &bytes_to_bls_field,
             &bytes_from_bls_field,
-            &blob_to_kzg_commitment,
             &bytes_from_g1,
             &compute_powers,
             &vector_lincomb,
             &g1_lincomb,
+            &evaluate_polynomial_in_evaluation_form,
+            &blob_to_kzg_commitment,
             &compute_kzg_proof,
             &verify_kzg_proof,
         );
