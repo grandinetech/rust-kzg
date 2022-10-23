@@ -3,14 +3,14 @@
 mod tests {
 
     use ckzg::{
-        eip_4844::{bytes_to_bls_field, compute_powers, load_trusted_setup, evaluate_polynomial_in_evaluation_form},
+        eip_4844::{bytes_to_bls_field, compute_powers, load_trusted_setup, evaluate_polynomial_in_evaluation_form, bytes_from_bls_field},
         finite::BlstFr, kzgsettings::KzgKZGSettings, fftsettings::KzgFFTSettings, poly::KzgPoly, consts::{BlstP2, BlstP1},
     };
     use kzg_bench::tests::eip_4844::{bytes_to_bls_field_test, compute_powers_test, evaluate_polynomial_in_evaluation_form_test};
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<BlstFr>(&bytes_to_bls_field);
+        bytes_to_bls_field_test::<BlstFr>(&bytes_to_bls_field, &bytes_from_bls_field);
     }
 
     #[test]
