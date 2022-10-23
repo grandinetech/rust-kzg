@@ -5,6 +5,7 @@ pub mod fk20settings;
 pub mod kzgsettings;
 pub mod poly;
 pub mod utils;
+pub mod eip_4844;
 
 #[cfg(feature = "parallel")]
 const RUN_PARALLEL: bool = true;

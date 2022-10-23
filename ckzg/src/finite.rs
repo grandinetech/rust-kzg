@@ -45,7 +45,7 @@ extern "C" {
 }
 
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct BlstFr {
     pub l: [u64; 4],
 }
