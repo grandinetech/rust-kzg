@@ -23,7 +23,7 @@ static fr_zero: Fr = [0, 0, 0, 0];
 // [ ] compute_kzg_proof
 // [x] evaluate_polynomial_in_evaluation_form
 
-<<<<<<< HEAD
+
 enum C_KZG_RET{
     C_KZG_OK = 0,  // Success! 
     C_KZG_BADARGS, // The supplied data is invalid in some way 
@@ -33,10 +33,9 @@ enum C_KZG_RET{
 
 pub fn bytes_to_bls_field(out: &mut Fr, bytes: &[u8; 32]) {
     *out = Fr::from_scalar(bytes)
-=======
+
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Fr {
     Fr::from_scalar(bytes)
->>>>>>> c1f296c6f6c6ed07cbf7550181543b8582575738
 }
 
 pub fn vector_lincomb(out: &mut [Fr], vectors: &[Fr], scalars: &[Fr], n: usize, m: usize) {
