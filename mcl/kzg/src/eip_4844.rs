@@ -7,6 +7,14 @@ use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
 use std::convert::TryInto;
 
+
+type KZGProof = G1;
+type KZGCommitment = G1;
+type BLSFieldElement = Fr;
+
+/*The zero field element */
+static fr_zero: Fr = [0, 0, 0, 0];
+
 // [x] bytes_to_bls_field
 // [x] vector_lincomb
 // [x] g1_lincomb
@@ -15,8 +23,20 @@ use std::convert::TryInto;
 // [ ] compute_kzg_proof
 // [x] evaluate_polynomial_in_evaluation_form
 
+<<<<<<< HEAD
+enum C_KZG_RET{
+    C_KZG_OK = 0,  // Success! 
+    C_KZG_BADARGS, // The supplied data is invalid in some way 
+    C_KZG_ERROR,   // Internal error - this should never occur and may indicate a bug in the library 
+    C_KZG_MALLOC,  // Could not allocate memory 
+}
+
+pub fn bytes_to_bls_field(out: &mut Fr, bytes: &[u8; 32]) {
+    *out = Fr::from_scalar(bytes)
+=======
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Fr {
     Fr::from_scalar(bytes)
+>>>>>>> c1f296c6f6c6ed07cbf7550181543b8582575738
 }
 
 pub fn vector_lincomb(out: &mut [Fr], vectors: &[Fr], scalars: &[Fr], n: usize, m: usize) {
@@ -59,6 +79,85 @@ pub fn verify_kzg_proof(
 
     *out = Curve::verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x);
 }
+
+/**
+ * Compute KZG proof for polynomial in Lagrange form at position x
+ *
+ * @param[out] out The combined proof as a single G1 element
+ * @param[in]  p   The polynomial in Lagrange form
+ * @param[in]  x   The generator x-value for the evaluation points
+ * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_KZG_OK      All is well
+ * @retval C_KZG_ERROR   An internal error occurred
+ * @retval C_KZG_MALLOC  Memory allocation failed
+ */
+ 
+pub fn compute_kzg_proof(
+    out: &KZGProof, 
+    p: &Polynomial, 
+    x: &BLSFieldElement, 
+    s: &KZGSettings,
+) -> C_KZG_RET  {
+    let y: &mut BLSFieldElement;
+    //TRY(evaluate_polynomial_in_evaluation_form(y, p, x, s));
+  
+    let tmp: &mut Fr;
+    let q: &mut Polynomial;
+    let roots_of_unity: &Fr = &s.fft_settings.roots_of_unity;
+    let mut i: u64;
+    let mut m: u64 = 0;
+  
+    //TRY(alloc_polynomial(&q, p->length));
+  
+    let inverses: &mut Fr;
+    let inverses_in: &mut Fr;
+  
+    //TRY(new_fr_array(&inverses_in, p->length));
+    //TRY(new_fr_array(&inverses, p->length));
+  
+
+    for i in 1..&q.len() {
+        if(mclBnFr_isEqual(x, &roots_of_unity[i])) {
+            m = i + 1;
+            continue;
+        }
+        mclBnFr_sub(&q.values[i], &p.values[i], &y);
+        mclBnFr_sub(&inverses_in[i], &roots_of_unity[i], x);
+    }
+  
+    //TRY(fr_batch_inv(inverses, inverses_in, q.length));
+  
+    for i in 1..&q.length() {
+        mclBnFr_mul(&q.values[i], &q.values[i], &inverses[i]);
+    }
+  
+    if (m) { // ω_m == x
+      q.values[--m] = fr_zero;
+      for i in 1..&q.length() {
+        if (i == m) {
+            continue;
+        }
+        // (p_i - y) * ω_i / (x * (x - ω_i))
+        mclBnFr_sub(&tmp, x, &roots_of_unity[i]);
+        mclBnFr_mul(&inverses_in[i], &tmp, x);
+      }
+      //TRY(fr_batch_inv(inverses, inverses_in, q.length));
+      for i in 1..&q.length() {
+        mclBnFr_sub(&tmp, &p.values[i], &y);
+        mclBnFr_mul(&tmp, &tmp, &roots_of_unity[i]);
+        mclBnFr_mul(&tmp, &tmp, &inverses[i]);
+        mclBnFr_add(&q.values[m], &q.values[m], &tmp);
+      }
+    }
+  
+    //free(inverses_in);
+    //free(inverses);
+  
+    g1_lincomb(out, s.g1_values, q.values, q.length);
+  
+    return C_KZG_OK;
+}
+
 
 // TODO: add return value
 pub fn evaluate_polynomial_in_evaluation_form(
