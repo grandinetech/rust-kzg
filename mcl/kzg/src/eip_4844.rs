@@ -16,13 +16,13 @@ use std::convert::TryInto;
 // [x] evaluate_polynomial_in_evaluation_form
 
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Fr {
-    return Fr::from_scalar(bytes)
+    Fr::from_scalar(bytes)
 }
 
 pub fn vector_lincomb(out: &mut [Fr], vectors: &[Fr], scalars: &[Fr], n: usize, m: usize) {
     let mut tmp: Fr = Fr::default();
-    for j in 0..m {
-        out[j] = Fr::zero();
+    for o in out.iter_mut() {
+        *o = Fr::zero();
     }
     for i in 0..n {
         for j in 0..m {
@@ -34,7 +34,7 @@ pub fn vector_lincomb(out: &mut [Fr], vectors: &[Fr], scalars: &[Fr], n: usize, 
 }
 
 pub fn g1_lincomb(out: &mut G1, p: &[G1], coeffs: &[Fr], len: usize) {
-    return g1_linear_combination(out, p, coeffs, len);
+    g1_linear_combination(out, p, coeffs, len);
 }
 
 pub fn blob_to_kzg_commitment(out: &mut G1, blob: Vec<Fr>, s: &KZGSettings) {
