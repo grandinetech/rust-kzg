@@ -15,8 +15,8 @@ use std::convert::TryInto;
 // [ ] compute_kzg_proof
 // [x] evaluate_polynomial_in_evaluation_form
 
-pub fn bytes_to_bls_field(out: &mut Fr, bytes: &[u8; 32]) {
-    *out = Fr::from_scalar(bytes)
+pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Fr {
+    return Fr::from_scalar(bytes)
 }
 
 pub fn vector_lincomb(out: &mut [Fr], vectors: &[Fr], scalars: &[Fr], n: usize, m: usize) {
