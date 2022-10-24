@@ -28,11 +28,7 @@ enum C_KZG_RET{
     C_KZG_OK = 0,  // Success! 
     C_KZG_BADARGS, // The supplied data is invalid in some way 
     C_KZG_ERROR,   // Internal error - this should never occur and may indicate a bug in the library 
-    C_KZG_MALLOC,  // Could not allocate memory 
 }
-
-pub fn bytes_to_bls_field(out: &mut Fr, bytes: &[u8; 32]) {
-    *out = Fr::from_scalar(bytes)
 
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Fr {
     Fr::from_scalar(bytes)
