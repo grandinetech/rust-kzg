@@ -66,6 +66,8 @@ jobs:
       if: matrix.os == 'macos-11'
       run: |
         brew install libomp gnu-sed
+        ln -s /usr/local/opt/libomp/lib/libomp.dylib /usr/local/lib
+        ln -s /usr/local/opt/libomp/include/omp.h /usr/local/include
         echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
         echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
         cd ckzg && bash build.sh
