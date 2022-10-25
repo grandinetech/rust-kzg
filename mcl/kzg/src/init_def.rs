@@ -193,7 +193,11 @@ macro_rules! field_mul_op_impl {
                 unsafe { $mul_fn(z, x, y) }
             }
             pub fn div(z: &mut $t, x: &$t, y: &$t) {
-                unsafe { $div_fn(z, x, y) }
+                if <$t>::is_zero(y) {
+                    *z = <$t>::zero();
+                } else {
+                    unsafe { $div_fn(z, x, y) }
+                }
             }
             pub fn inv(y: &mut $t, x: &$t) {
                 unsafe { $inv_fn(y, x) }

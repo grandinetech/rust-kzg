@@ -52,6 +52,7 @@ pub mod trait_implementations {
 }
 pub mod das;
 pub mod data_recovery;
+pub mod eip_4844;
 pub mod fk20_fft;
 pub mod fk20_matrix;
 pub mod kzg10;
