@@ -6,14 +6,14 @@ use crate::data_types::{fr::*, g1::*, g2::*};
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
 use std::convert::TryInto;
-
+use crate::data_types::*;
 
 type KZGProof = G1;
 type KZGCommitment = G1;
 type BLSFieldElement = Fr;
 
 /*The zero field element */
-static fr_zero: Fr = [0, 0, 0, 0];
+static fr_zero: Fr = fr::Fr { d: [0, 0, 0, 0] };
 
 // [x] bytes_to_bls_field
 // [x] vector_lincomb
@@ -98,9 +98,10 @@ pub fn compute_kzg_proof(
   
     let tmp: &mut Fr;
     let q: &mut Polynomial;
-    let roots_of_unity: &Fr = &s.fft_settings.roots_of_unity;
+    let qlen = q.coeffs.len();
+    let roots_of_unity = &s.fft_settings.root_of_unity;
     let mut i: u64;
-    let mut m: u64 = 0;
+    let mut m = 0;
   
     //TRY(alloc_polynomial(&q, p->length));
   
@@ -111,46 +112,44 @@ pub fn compute_kzg_proof(
     //TRY(new_fr_array(&inverses, p->length));
   
 
-    for i in 1..&q.len() {
-        if(mclBnFr_isEqual(x, &roots_of_unity[i])) {
+    for i in 1..qlen {
+        if fr::mclBnFr_isEqual(x, &roots_of_unity[i]) !=0 {
             m = i + 1;
             continue;
         }
-        mclBnFr_sub(&q.values[i], &p.values[i], &y);
-        mclBnFr_sub(&inverses_in[i], &roots_of_unity[i], x);
+        fr::mclBnFr_sub(&q.coeffs[i], &p.coeffs[i], y);
+        fr::mclBnFr_sub(&inverses_in[i], &roots_of_unity[i], x);
     }
   
     //TRY(fr_batch_inv(inverses, inverses_in, q.length));
   
-    for i in 1..&q.length() {
-        mclBnFr_mul(&q.values[i], &q.values[i], &inverses[i]);
+    for i in 1..qlen {
+        fr::mclBnFr_mul(&q.coeffs[i], &q.coeffs[i], &inverses[i]);
     }
   
-    if (m) { // ω_m == x
-      q.values[--m] = fr_zero;
-      for i in 1..&q.length() {
-        if (i == m) {
+    if m !=0 { // ω_m == x
+        m = m - 1;
+      q.coeffs[m] = fr_zero;
+      for i in 1..qlen {
+        if i == m {
             continue;
         }
         // (p_i - y) * ω_i / (x * (x - ω_i))
-        mclBnFr_sub(&tmp, x, &roots_of_unity[i]);
-        mclBnFr_mul(&inverses_in[i], &tmp, x);
+        fr::mclBnFr_sub(&tmp, x, &roots_of_unity[i]);
+        fr::mclBnFr_mul(&inverses_in[i], &tmp, x);
       }
       //TRY(fr_batch_inv(inverses, inverses_in, q.length));
-      for i in 1..&q.length() {
-        mclBnFr_sub(&tmp, &p.values[i], &y);
-        mclBnFr_mul(&tmp, &tmp, &roots_of_unity[i]);
-        mclBnFr_mul(&tmp, &tmp, &inverses[i]);
-        mclBnFr_add(&q.values[m], &q.values[m], &tmp);
+      for i in 1..qlen {
+        fr::mclBnFr_sub(&tmp, &p.coeffs[i], &y);
+        fr::mclBnFr_mul(&tmp, &tmp, &roots_of_unity[i]);
+        fr::mclBnFr_mul(&tmp, &tmp, &inverses[i]);
+        fr::mclBnFr_add(&q.coeffs[m], &q.coeffs[m], &tmp);
       }
     }
   
-    //free(inverses_in);
-    //free(inverses);
+    g1_lincomb(out, s.curve.g1_points, q.coeffs, q.coeffs.len());
   
-    g1_lincomb(out, s.g1_values, q.values, q.length);
-  
-    return C_KZG_OK;
+    return C_KZG_RET;
 }
 
 

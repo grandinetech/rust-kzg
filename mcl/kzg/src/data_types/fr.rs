@@ -11,33 +11,33 @@ use std::os::raw::c_int;
 #[link(name = "stdc++")]
 #[allow(non_snake_case)]
 extern "C" {
-    fn mclBnFr_isEqual(x: *const Fr, y: *const Fr) -> i32;
-    fn mclBnFr_isValid(x: *const Fr) -> i32;
-    fn mclBnFr_isZero(x: *const Fr) -> i32;
-    fn mclBnFr_isOne(x: *const Fr) -> i32;
-    fn mclBnFr_isOdd(x: *const Fr) -> i32;
-    fn mclBnFr_isNegative(x: *const Fr) -> i32;
+    pub fn mclBnFr_isEqual(x: *const Fr, y: *const Fr) -> i32;
+    pub fn mclBnFr_isValid(x: *const Fr) -> i32;
+    pub fn mclBnFr_isZero(x: *const Fr) -> i32;
+    pub fn mclBnFr_isOne(x: *const Fr) -> i32;
+    pub fn mclBnFr_isOdd(x: *const Fr) -> i32;
+    pub fn mclBnFr_isNegative(x: *const Fr) -> i32;
 
-    fn mclBnFr_setStr(x: *mut Fr, buf: *const u8, bufSize: usize, ioMode: i32) -> c_int;
-    fn mclBnFr_getStr(buf: *mut u8, maxBufSize: usize, x: *const Fr, ioMode: i32) -> usize;
-    fn mclBnFr_serialize(buf: *mut u8, maxBufSize: usize, x: *const Fr) -> usize;
-    fn mclBnFr_deserialize(x: *mut Fr, buf: *const u8, bufSize: usize) -> usize;
+    pub fn mclBnFr_setStr(x: *mut Fr, buf: *const u8, bufSize: usize, ioMode: i32) -> c_int;
+    pub fn mclBnFr_getStr(buf: *mut u8, maxBufSize: usize, x: *const Fr, ioMode: i32) -> usize;
+    pub fn mclBnFr_serialize(buf: *mut u8, maxBufSize: usize, x: *const Fr) -> usize;
+    pub fn mclBnFr_deserialize(x: *mut Fr, buf: *const u8, bufSize: usize) -> usize;
 
-    fn mclBnFr_setInt32(x: *mut Fr, v: i32);
-    fn mclBnFr_setLittleEndian(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnFr_setLittleEndianMod(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnFr_setHashOf(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnFr_setByCSPRNG(x: *mut Fr);
+    pub fn mclBnFr_setInt32(x: *mut Fr, v: i32);
+    pub fn mclBnFr_setLittleEndian(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFr_setLittleEndianMod(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFr_setHashOf(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFr_setByCSPRNG(x: *mut Fr);
 
-    fn mclBnFr_add(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_sub(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_neg(y: *mut Fr, x: *const Fr);
+    pub fn mclBnFr_add(z: *mut Fr, x: *const Fr, y: *const Fr);
+    pub fn mclBnFr_sub(z: *mut Fr, x: *const Fr, y: *const Fr);
+    pub fn mclBnFr_neg(y: *mut Fr, x: *const Fr);
 
-    fn mclBnFr_mul(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_div(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_inv(y: *mut Fr, x: *const Fr);
-    fn mclBnFr_sqr(y: *mut Fr, x: *const Fr);
-    fn mclBnFr_squareRoot(y: *mut Fr, x: *const Fr) -> i32;
+    pub fn mclBnFr_mul(z: *mut Fr, x: *const Fr, y: *const Fr);
+    pub fn mclBnFr_div(z: *mut Fr, x: *const Fr, y: *const Fr);
+    pub fn mclBnFr_inv(y: *mut Fr, x: *const Fr);
+    pub fn mclBnFr_sqr(y: *mut Fr, x: *const Fr);
+    pub fn mclBnFr_squareRoot(y: *mut Fr, x: *const Fr) -> i32;
 }
 
 #[derive(Default, Debug, Clone, Copy)]
