@@ -18,7 +18,12 @@ fn shuffle(a: &mut [usize], n: usize) {
     }
 }
 
-fn random_missing<TFr: Fr>(with_missing: &mut [Option<TFr>], data: &[TFr], len_data: usize, known: usize) {
+fn random_missing<TFr: Fr>(
+    with_missing: &mut [Option<TFr>],
+    data: &[TFr],
+    len_data: usize,
+    known: usize,
+) {
     let mut missing_idx = Vec::new();
     for i in 0..len_data {
         missing_idx.push(i);
@@ -32,9 +37,9 @@ fn random_missing<TFr: Fr>(with_missing: &mut [Option<TFr>], data: &[TFr], len_d
 }
 
 pub fn recover_simple<
-    TFr: Fr, 
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, 
-    TPoly: Poly<TFr>, 
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
     TPolyRecover: PolyRecover<TFr, TPoly, TFFTSettings>,
 >() {
     let fs_query = TFFTSettings::new(2);
@@ -89,9 +94,9 @@ pub fn recover_simple<
 }
 
 pub fn recover_random<
-    TFr: Fr, 
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, 
-    TPoly: Poly<TFr>, 
+    TFr: Fr,
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
     TPolyRecover: PolyRecover<TFr, TPoly, TFFTSettings>,
 >() {
     let fs_query = TFFTSettings::new(12);
