@@ -4,7 +4,7 @@ mod tests {
     use zkcrypto::zkfr::blsScalar;
     use zkcrypto::{
         eip_4844::{
-            bytes_to_bls_field, bytes_from_bls_field,
+            bytes_to_bls_field, bytes_from_bls_field, compute_powers
         },
     };
     use kzg_bench::tests::eip_4844::{
@@ -15,5 +15,10 @@ mod tests {
     #[test]
     pub fn bytes_to_bls_field_test_() {
         bytes_to_bls_field_test::<blsScalar>(&bytes_to_bls_field, &bytes_from_bls_field);
+    }
+
+    #[test]
+    pub fn compute_powers_test_() {
+        compute_powers_test::<blsScalar>(&bytes_to_bls_field, &compute_powers);
     }
 }
