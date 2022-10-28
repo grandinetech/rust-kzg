@@ -35,7 +35,7 @@ pub fn bytes_to_g2(bytes: &[u8]) -> G2 {
 
 pub fn bytes_from_g1(g1: &G1) -> [u8; 48usize] {
     set_eth_serialization(1);
-    return G1::serialize(g1).try_into().unwrap();
+    G1::serialize(g1).try_into().unwrap()
 }
 
 pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
@@ -121,7 +121,7 @@ pub fn vector_lincomb(vectors: &[Vec<Fr>], scalars: &[Fr]) -> Vec<Fr> {
     for (v, s) in vectors.iter().zip(scalars.iter()) {
         for (i, x) in v.iter().enumerate() {
             tmp = x * s;
-            out[i] = &out[i] + &tmp;
+            out[i] = out[i] + tmp;
         }
     }
     out
@@ -137,7 +137,7 @@ pub fn g1_lincomb(p: &[G1], coeffs: &[Fr]) -> G1 {
 }
 
 pub fn blob_to_kzg_commitment(blob: &[Fr], s: &KZGSettings) -> G1 {
-    g1_lincomb(&s.curve.g1_points, &blob)
+    g1_lincomb(&s.curve.g1_points, blob)
 }
 
 pub fn verify_kzg_proof(
@@ -182,14 +182,14 @@ pub fn compute_kzg_proof(p: &mut Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
             m = i + 1;
             continue;
         }
-        q.coeffs[i] = &p.coeffs[i] - &y;
+        q.coeffs[i] = p.coeffs[i] - y;
         inverses_in[i] = &roots_of_unity[i] - x;
     }
   
     fr_batch_inv(&mut inverses, &inverses_in, qlen);
 
-    for i in 0..qlen {
-        q.coeffs[i] = &q.coeffs[i] * &inverses[i];
+    for (i, v) in inverses.iter().enumerate().take(qlen) {
+        q.coeffs[i] = &q.coeffs[i] * v;
     }
 
     if m != 0 {
@@ -207,10 +207,10 @@ pub fn compute_kzg_proof(p: &mut Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
         fr_batch_inv(&mut inverses, &inverses_in, qlen);
         
         for i in 0..qlen {
-            tmp = &p.coeffs[i] - &y;
-            tmp = &tmp * &roots_of_unity[i];
-            tmp = &tmp * &inverses[i];
-            q.coeffs[i] = &q.coeffs[i] + &tmp;
+            tmp = p.coeffs[i] - y;
+            tmp = tmp * roots_of_unity[i];
+            tmp = tmp * inverses[i];
+            q.coeffs[i] = q.coeffs[i] + tmp;
         }
     }
 

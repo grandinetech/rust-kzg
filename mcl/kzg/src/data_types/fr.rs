@@ -77,7 +77,7 @@ impl Fr {
         let mut t = Fr::default();
         t.set_little_endian(secret);
 
-        return t;
+        t
     }
 
     pub fn to_scalar(fr: &Self) -> [u8; 32] {
