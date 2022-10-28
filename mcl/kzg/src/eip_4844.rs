@@ -13,10 +13,11 @@ use std::io::Read;
 // [x] g1_lincomb
 // [x] blob_to_kzg_commitment
 // [x] verify_kzg_proof
-// [ ] compute_kzg_proof
+// [x] compute_kzg_proof
 // [x] evaluate_polynomial_in_evaluation_form
 
 pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> G1 {
+    set_eth_serialization(1);
     let mut g1 = G1::default();
     if !G1::deserialize(&mut g1, bytes) {
         panic!("failed to deserialize")
@@ -24,16 +25,20 @@ pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> G1 {
     g1
 }
 pub fn bytes_to_g2(bytes: &[u8]) -> G2 {
+    set_eth_serialization(1);
     let mut g2 = G2::default();
     if !G2::deserialize(&mut g2, bytes) {
         panic!("failed to deserialize")
     }
     g2
+} 
+
+pub fn bytes_from_g1(g1: &G1) -> [u8; 48usize] {
+    set_eth_serialization(1);
+    return G1::serialize(g1).try_into().unwrap();
 }
 
 pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
-    set_eth_serialization(1);
-
     let mut file = File::open(filepath).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -110,36 +115,38 @@ pub fn bytes_from_bls_field(fr: &Fr) -> [u8; 32usize] {
     Fr::to_scalar(fr)
 }
 
-pub fn vector_lincomb(out: &mut [Fr], vectors: &[Fr], scalars: &[Fr], n: usize, m: usize) {
-    let mut tmp: Fr = Fr::default();
-    for o in out.iter_mut() {
-        *o = Fr::zero();
-    }
-    for i in 0..n {
-        for j in 0..m {
-            Fr::mul(&mut tmp, &scalars[i], &vectors[i * m + j]);
-            let t: Fr = out[j];
-            Fr::add(&mut out[j], &t, &tmp);
+pub fn vector_lincomb(vectors: &[Vec<Fr>], scalars: &[Fr]) -> Vec<Fr> {
+    let mut out = vec![Fr::zero(); vectors[0].len()];
+    let mut tmp: Fr;
+    for (v, s) in vectors.iter().zip(scalars.iter()) {
+        for (i, x) in v.iter().enumerate() {
+            tmp = x * s;
+            out[i] = &out[i] + &tmp;
         }
     }
+    out
 }
 
-pub fn g1_lincomb(out: &mut G1, p: &[G1], coeffs: &[Fr], len: usize) {
-    g1_linear_combination(out, p, coeffs, len);
+pub fn g1_lincomb(p: &[G1], coeffs: &[Fr]) -> G1 {
+    assert!(p.len() == coeffs.len());
+
+    let mut out = G1::default();
+    g1_linear_combination(&mut out, p, coeffs, p.len());
+    
+    out
 }
 
-pub fn blob_to_kzg_commitment(out: &mut G1, blob: Vec<Fr>, s: &KZGSettings) {
-    g1_lincomb(out, &s.curve.g1_points, &blob, s.curve.g1_points.len());
+pub fn blob_to_kzg_commitment(blob: &[Fr], s: &KZGSettings) -> G1 {
+    g1_lincomb(&s.curve.g1_points, &blob)
 }
 
 pub fn verify_kzg_proof(
-    out: &mut bool,
     commitment: &G1,
     x: &Fr,
     y: &Fr,
     proof: &G1,
     ks: &KZGSettings,
-) {
+) -> bool {
     let (mut x_g2, mut s_minus_x) = (G2::default(), G2::default());
     let (mut y_g1, mut commitment_minus_y) = (G1::default(), G1::default());
 
@@ -148,84 +155,66 @@ pub fn verify_kzg_proof(
     G1::mul(&mut y_g1, &G1::gen(), y);
     G1::sub(&mut commitment_minus_y, commitment, &y_g1);
 
-    *out = Curve::verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x);
+    Curve::verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x)
 }
 
-/**
- * Compute KZG proof for polynomial in Lagrange form at position x
- *
- * @param[out] out The combined proof as a single G1 element
- * @param[in]  p   The polynomial in Lagrange form
- * @param[in]  x   The generator x-value for the evaluation points
- * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
- * @retval C_KZG_OK      All is well
- * @retval C_KZG_ERROR   An internal error occurred
- * @retval C_KZG_MALLOC  Memory allocation failed
- */
+pub fn compute_kzg_proof(p: &mut Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
+    assert!(p.coeffs.len() <= s.curve.g1_points.len());
  
-pub fn compute_kzg_proof(
-    out: &KZGProof, 
-    p: &Polynomial, 
-    x: &BLSFieldElement, 
-    s: &KZGSettings,
-) -> C_KZG_RET  {
-    let y: &mut BLSFieldElement;
-    //TRY(evaluate_polynomial_in_evaluation_form(y, p, x, s));
+    let y = evaluate_polynomial_in_evaluation_form(p, x, s);
   
-    let tmp: &mut Fr;
-    let q: &mut Polynomial;
-    let qlen = q.coeffs.len();
-    let roots_of_unity = &s.fft_settings.root_of_unity;
-    let mut i: u64;
+    let mut tmp: Fr;
+
+    let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
+    reverse_bit_order(&mut roots_of_unity);
+
     let mut m = 0;
   
-    //TRY(alloc_polynomial(&q, p->length));
+    let mut q = Polynomial::new(p.coeffs.len());
+    let plen = p.coeffs.len();
+    let qlen = q.coeffs.len();
   
-    let inverses: &mut Fr;
-    let inverses_in: &mut Fr;
-  
-    //TRY(new_fr_array(&inverses_in, p->length));
-    //TRY(new_fr_array(&inverses, p->length));
-  
+    let mut inverses_in: Vec<Fr> = vec![Fr::default(); plen];
+    let mut inverses: Vec<Fr> = vec![Fr::default(); plen];
 
-    for i in 1..qlen {
-        if fr::mclBnFr_isEqual(x, &roots_of_unity[i]) !=0 {
+    for i in 0..qlen {
+        if x == &roots_of_unity[i] {
             m = i + 1;
             continue;
         }
-        fr::mclBnFr_sub(&q.coeffs[i], &p.coeffs[i], y);
-        fr::mclBnFr_sub(&inverses_in[i], &roots_of_unity[i], x);
+        q.coeffs[i] = &p.coeffs[i] - &y;
+        inverses_in[i] = &roots_of_unity[i] - x;
     }
   
-    //TRY(fr_batch_inv(inverses, inverses_in, q.length));
-  
-    for i in 1..qlen {
-        fr::mclBnFr_mul(&q.coeffs[i], &q.coeffs[i], &inverses[i]);
+    fr_batch_inv(&mut inverses, &inverses_in, qlen);
+
+    for i in 0..qlen {
+        q.coeffs[i] = &q.coeffs[i] * &inverses[i];
     }
-  
-    if m !=0 { // ω_m == x
-        m = m - 1;
-      q.coeffs[m] = fr_zero;
-      for i in 1..qlen {
-        if i == m {
-            continue;
+
+    if m != 0 {
+        m -= 1;
+        p.coeffs[m] = Fr::zero();
+
+        for i in 0..qlen {
+            if i == m {
+                continue;
+            }
+            tmp = x - &roots_of_unity[i];
+            inverses_in[i] = &tmp * x;
         }
-        // (p_i - y) * ω_i / (x * (x - ω_i))
-        fr::mclBnFr_sub(&tmp, x, &roots_of_unity[i]);
-        fr::mclBnFr_mul(&inverses_in[i], &tmp, x);
-      }
-      //TRY(fr_batch_inv(inverses, inverses_in, q.length));
-      for i in 1..qlen {
-        fr::mclBnFr_sub(&tmp, &p.coeffs[i], &y);
-        fr::mclBnFr_mul(&tmp, &tmp, &roots_of_unity[i]);
-        fr::mclBnFr_mul(&tmp, &tmp, &inverses[i]);
-        fr::mclBnFr_add(&q.coeffs[m], &q.coeffs[m], &tmp);
-      }
+
+        fr_batch_inv(&mut inverses, &inverses_in, qlen);
+        
+        for i in 0..qlen {
+            tmp = &p.coeffs[i] - &y;
+            tmp = &tmp * &roots_of_unity[i];
+            tmp = &tmp * &inverses[i];
+            q.coeffs[i] = &q.coeffs[i] + &tmp;
+        }
     }
-  
-    g1_lincomb(out, s.curve.g1_points, q.coeffs, q.coeffs.len());
-  
-    return C_KZG_RET;
+
+    g1_lincomb(&s.curve.g1_points, q.coeffs.as_slice())
 }
 
 

@@ -15,6 +15,7 @@ pub fn test_bytes_to_bls_field() {
 
 #[test]
 pub fn test_compute_powers() {
+    assert!(init(CurveType::BLS12_381));
     compute_powers_test::<Fr>(&bytes_to_bls_field, &compute_powers);
 }
 
@@ -35,3 +36,23 @@ pub fn test_evaluate_polynomial_in_evaluation_form() {
             &evaluate_polynomial_in_evaluation_form,
         );
 }
+
+#[test]
+pub fn test_compute_commitment_for_blobs_test() {
+    assert!(init(CurveType::BLS12_381));
+
+    compute_commitment_for_blobs_test::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(
+        &load_trusted_setup,
+        &bytes_to_bls_field,
+        &bytes_from_bls_field,
+        &bytes_from_g1,
+        &compute_powers,
+        &vector_lincomb,
+        &g1_lincomb,
+        &evaluate_polynomial_in_evaluation_form,
+        &blob_to_kzg_commitment,
+        &compute_kzg_proof,
+        &verify_kzg_proof,
+    );
+}
+
