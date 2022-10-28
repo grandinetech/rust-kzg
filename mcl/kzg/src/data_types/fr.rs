@@ -81,6 +81,18 @@ impl Fr {
 
         Fr::from_u64_arr(&[value0, value1, value2, value3])
     }
+
+    pub fn to_scalar(fr: &Self) -> [u8; 32] {
+        let arr = Fr::to_u64_arr(fr);
+        let mut out: [u8; 32] = [0; 32];
+        for i in 0..arr.len() {
+            let bytes = arr[i].to_le_bytes();
+            for j in 0..8 {
+                out[i*8 + j] = bytes[j];
+            }
+        }
+        out
+    }
     
     pub fn to_u64_arr(&self) -> [u64; 4] {
         let string = self.get_str(10);

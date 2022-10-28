@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::env::set_current_dir;
 
 use kzg::{Fr, KZGSettings, Poly, G1, G2, FFTSettings};
 use rand::{Rng, rngs::StdRng, SeedableRng};
@@ -93,7 +94,8 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let x_bytes: [u8; 32] = u64_to_bytes(x);
     let x_bls = bytes_to_bls_field(&x_bytes);
     
-    let ts = load_trusted_setup("../kzg-bench/src/tests/tiny_trusted_setup.txt");
+    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let ts = load_trusted_setup("src/tests/tiny_trusted_setup.txt");
     
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     
@@ -145,7 +147,8 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         blobs.push(vec);
     }
 
-    let ts = load_trusted_setup("../kzg-bench/src/tests/trusted_setup.txt");
+    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let ts = load_trusted_setup("src/tests/trusted_setup.txt");
 
     let kzg_commitments = blobs.iter().map(|blob| 
         blob_to_kzg_commitment(blob, &ts)
