@@ -151,6 +151,85 @@ pub fn verify_kzg_proof(
     *out = Curve::verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x);
 }
 
+/**
+ * Compute KZG proof for polynomial in Lagrange form at position x
+ *
+ * @param[out] out The combined proof as a single G1 element
+ * @param[in]  p   The polynomial in Lagrange form
+ * @param[in]  x   The generator x-value for the evaluation points
+ * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_KZG_OK      All is well
+ * @retval C_KZG_ERROR   An internal error occurred
+ * @retval C_KZG_MALLOC  Memory allocation failed
+ */
+ 
+pub fn compute_kzg_proof(
+    out: &KZGProof, 
+    p: &Polynomial, 
+    x: &BLSFieldElement, 
+    s: &KZGSettings,
+) -> C_KZG_RET  {
+    let y: &mut BLSFieldElement;
+    //TRY(evaluate_polynomial_in_evaluation_form(y, p, x, s));
+  
+    let tmp: &mut Fr;
+    let q: &mut Polynomial;
+    let qlen = q.coeffs.len();
+    let roots_of_unity = &s.fft_settings.root_of_unity;
+    let mut i: u64;
+    let mut m = 0;
+  
+    //TRY(alloc_polynomial(&q, p->length));
+  
+    let inverses: &mut Fr;
+    let inverses_in: &mut Fr;
+  
+    //TRY(new_fr_array(&inverses_in, p->length));
+    //TRY(new_fr_array(&inverses, p->length));
+  
+
+    for i in 1..qlen {
+        if fr::mclBnFr_isEqual(x, &roots_of_unity[i]) !=0 {
+            m = i + 1;
+            continue;
+        }
+        fr::mclBnFr_sub(&q.coeffs[i], &p.coeffs[i], y);
+        fr::mclBnFr_sub(&inverses_in[i], &roots_of_unity[i], x);
+    }
+  
+    //TRY(fr_batch_inv(inverses, inverses_in, q.length));
+  
+    for i in 1..qlen {
+        fr::mclBnFr_mul(&q.coeffs[i], &q.coeffs[i], &inverses[i]);
+    }
+  
+    if m !=0 { // ω_m == x
+        m = m - 1;
+      q.coeffs[m] = fr_zero;
+      for i in 1..qlen {
+        if i == m {
+            continue;
+        }
+        // (p_i - y) * ω_i / (x * (x - ω_i))
+        fr::mclBnFr_sub(&tmp, x, &roots_of_unity[i]);
+        fr::mclBnFr_mul(&inverses_in[i], &tmp, x);
+      }
+      //TRY(fr_batch_inv(inverses, inverses_in, q.length));
+      for i in 1..qlen {
+        fr::mclBnFr_sub(&tmp, &p.coeffs[i], &y);
+        fr::mclBnFr_mul(&tmp, &tmp, &roots_of_unity[i]);
+        fr::mclBnFr_mul(&tmp, &tmp, &inverses[i]);
+        fr::mclBnFr_add(&q.coeffs[m], &q.coeffs[m], &tmp);
+      }
+    }
+  
+    g1_lincomb(out, s.curve.g1_points, q.coeffs, q.coeffs.len());
+  
+    return C_KZG_RET;
+}
+
+
+// TODO: add return value
 pub fn evaluate_polynomial_in_evaluation_form(
     p: &Polynomial,
     x: &Fr,
