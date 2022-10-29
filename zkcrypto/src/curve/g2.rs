@@ -442,8 +442,8 @@ impl G2Affine {
 
         let mut res = [0; 96];
 
-        (&mut res[0..48]).copy_from_slice(&x.c1.to_bytes()[..]);
-        (&mut res[48..96]).copy_from_slice(&x.c0.to_bytes()[..]);
+        res[0..48].copy_from_slice(&x.c1.to_bytes()[..]);
+        res[48..96].copy_from_slice(&x.c0.to_bytes()[..]);
 
         // This point is in compressed form, so we set the most significant bit.
         res[0] |= 1u8 << 7;

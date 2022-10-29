@@ -363,7 +363,7 @@ impl Fp2 {
             | (self.c1.is_zero() & self.c0.lexicographically_largest())
     }
 
-    pub const fn square(&self) -> Fp2 {
+    pub fn square(&self) -> Fp2 {
         // Complex squaring:
         //
         // v0  = c0 * c1
@@ -376,17 +376,17 @@ impl Fp2 {
         // c0' = (c0 + c1) * (c0 - c1)
         // c1' = 2 * c0 * c1
 
-        let a = (&self.c0).add(&self.c1);
-        let b = (&self.c0).sub(&self.c1);
-        let c = (&self.c0).add(&self.c0);
+        let a = self.c0.add(&self.c1);
+        let b = self.c0.sub(&self.c1);
+        let c = self.c0.add(&self.c0);
 
         Fp2 {
-            c0: (&a).mul(&b),
-            c1: (&c).mul(&self.c1),
+            c0: a.mul(&b),
+            c1: c.mul(&self.c1),
         }
     }
 
-    pub const fn mul(&self, rhs: &Fp2) -> Fp2 {
+    pub fn mul(&self, rhs: &Fp2) -> Fp2 {
         // Karatsuba multiplication:
         //
         // v0  = a0 * b0
@@ -403,16 +403,17 @@ impl Fp2 {
         // c0 = v0 + v1
         // c1 = (a0 + a1) * (b0 + b1) - v0 + v1
 
-        let v0 = (&self.c0).mul(&rhs.c0);
-        let v1 = (&(&self.c1).neg()).mul(&rhs.c1);
-        let c0 = (&v0).add(&v1);
-        let c1 = (&(&self.c0).add(&self.c1)).mul(&(&rhs.c0).add(&rhs.c1));
-        let c1 = (&c1).sub(&v0);
-        let c1 = (&c1).add(&v1);
+        let v0 = self.c0.mul(&rhs.c0);
+        let v1 = self.c1.neg().mul(&rhs.c1);
+        let c0 = v0.add(&v1);
+        let c1 = self.c0.add(&self.c1).mul(&rhs.c0.add(&rhs.c1));
+        let c1 = c1.sub(&v0);
+        let c1 = c1.add(&v1);
 
         Fp2 { c0, c1 }
     }
 
+    #[allow(clippy::all)]
     pub const fn add(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
             c0: (&self.c0).add(&rhs.c0),
@@ -420,17 +421,17 @@ impl Fp2 {
         }
     }
 
-    pub const fn sub(&self, rhs: &Fp2) -> Fp2 {
+    pub fn sub(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
-            c0: (&self.c0).sub(&rhs.c0),
-            c1: (&self.c1).sub(&rhs.c1),
+            c0: self.c0.sub(&rhs.c0),
+            c1: self.c1.sub(&rhs.c1),
         }
     }
 
-    pub const fn neg(&self) -> Fp2 {
+    pub fn neg(&self) -> Fp2 {
         Fp2 {
-            c0: (&self.c0).neg(),
-            c1: (&self.c1).neg(),
+            c0: self.c0.neg(),
+            c1: self.c1.neg(),
         }
     }
 
@@ -464,7 +465,7 @@ impl Fp2 {
                     c0: -x0.c1,
                     c1: x0.c0,
                 },
-                alpha.ct_eq(&(&Fp2::one()).neg()),
+                alpha.ct_eq(&Fp2::one().neg()),
             )
             // Otherwise, the correct solution is (1 + alpha)^((q - 1) // 2) * x0
             .or_else(|| {
