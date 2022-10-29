@@ -16,3 +16,14 @@ pub fn compute_powers(base: &blsScalar, num_powers: usize) -> Vec<blsScalar> {
     }
     powers
 }
+
+pub fn vector_lincomb(vectors: &[Vec<blsScalar>], scalars: &[blsScalar]) -> Vec<blsScalar> {
+    let mut tmp: blsScalar;
+    let mut out: Vec<blsScalar> = vec![blsScalar::zero(); vectors[0].len()];
+    for (v, s) in vectors.iter().zip(scalars.iter()) {
+        for (i, x) in v.iter().enumerate() {
+            tmp = x.mul(s);
+            out[i] = out[i].add(&tmp);
+        }
+    }
+}
