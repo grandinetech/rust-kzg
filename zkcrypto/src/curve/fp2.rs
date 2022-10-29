@@ -413,11 +413,10 @@ impl Fp2 {
         Fp2 { c0, c1 }
     }
 
-    #[allow(clippy::needless_borrow)]
-    pub const fn add(&self, rhs: &Fp2) -> Fp2 {
+    pub fn add(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
-            c0: (&self.c0).add(&rhs.c0),
-            c1: (&self.c1).add(&rhs.c1),
+            c0: self.c0.add(&rhs.c0),
+            c1: self.c1.add(&rhs.c1),
         }
     }
 

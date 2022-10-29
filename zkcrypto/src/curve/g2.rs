@@ -377,8 +377,6 @@ const B: Fp2 = Fp2 {
     ]),
 };
 
-const B3: Fp2 = Fp2::add(&Fp2::add(&B, &B), &B);
-
 impl G2Affine {
     /// Returns the identity of the group: the point at infinity.
     pub fn identity() -> G2Affine {
@@ -815,7 +813,8 @@ impl_binops_multiplicative_mixed!(G2Affine, Scalar, G2Projective);
 
 #[inline(always)]
 fn mul_by_3b(x: Fp2) -> Fp2 {
-    x * B3
+    let b3: Fp2 = Fp2::add(&Fp2::add(&B, &B), &B);
+    x * b3
 }
 
 impl G2Projective {
