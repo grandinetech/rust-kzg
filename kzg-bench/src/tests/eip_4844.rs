@@ -236,11 +236,3 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
     assert!(!verify_kzg_proof(&aggregated_poly_commitment, &x2, &y2, &proof, &ts), "Verification should fail");
 }
-
-pub fn load_trusted_setup_test(
-    load_trusted_setup: &dyn Fn(&str),
-)
-{    
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let _ts = load_trusted_setup("src/tests/tiny_trusted_setup.txt");
-}

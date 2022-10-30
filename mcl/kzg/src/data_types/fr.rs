@@ -74,12 +74,22 @@ impl Fr {
     }
 
     pub fn from_scalar(secret: &[u8; 32]) -> Self {
-        let value0 = u64::from_le_bytes([secret[0], secret[1], secret[2], secret[3], secret[4], secret[5], secret[6], secret[7]]);
-        let value1 = u64::from_le_bytes([secret[8], secret[9], secret[10], secret[11], secret[12], secret[13], secret[14], secret[15]]);
-        let value2 = u64::from_le_bytes([secret[16], secret[17], secret[18], secret[19], secret[20], secret[21], secret[22], secret[23]]);
-        let value3 = u64::from_le_bytes([secret[24], secret[25], secret[26], secret[27], secret[28], secret[29], secret[30], secret[31]]);
+        let mut t = Fr::default();
+        t.set_little_endian(secret);
 
-        Fr::from_u64_arr(&[value0, value1, value2, value3])
+        t
+    }
+
+    pub fn to_scalar(fr: &Self) -> [u8; 32] {
+        let arr = Fr::to_u64_arr(fr);
+        let mut out: [u8; 32] = [0; 32];
+        for i in 0..arr.len() {
+            let bytes = arr[i].to_le_bytes();
+            for j in 0..8 {
+                out[i*8 + j] = bytes[j];
+            }
+        }
+        out
     }
     
     pub fn to_u64_arr(&self) -> [u64; 4] {
