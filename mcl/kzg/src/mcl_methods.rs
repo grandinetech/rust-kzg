@@ -21,10 +21,15 @@ extern "C" {
     pub fn mclBn_millerLoop(z: *mut GT, x: *const G1, y: *const G2);
     pub fn mclBn_finalExp(y: *mut GT, x: *const GT);
     pub fn mclBn_FrEvaluatePolynomial(result: *mut Fr, poly: *const Fr, bufSize: usize, x: *const Fr);
+    pub fn mclBn_setETHserialization(v: i32);
 }
 
 pub fn get_version() -> u32 {
     unsafe { mclBn_getVersion() }
+}
+
+pub fn set_eth_serialization(v: i32) {
+    unsafe { mclBn_setETHserialization(v) }
 }
 
 pub fn init(curve: CurveType) -> bool {

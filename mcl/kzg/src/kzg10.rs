@@ -599,7 +599,6 @@ pub struct Curve {
     pub g2_gen: G2,
     pub g1_points: Vec<G1>,
     pub g2_points: Vec<G2>,
-    pub order: usize,
 }
 
 impl Curve {
@@ -608,14 +607,12 @@ impl Curve {
         let g2_gen = G2::gen();
         let g1_points: Vec<G1> = vec![];
         let g2_points: Vec<G2> = vec![];
-        let order = 0;
 
         Self {
             g1_gen,
             g2_gen,
             g1_points,
             g2_points,
-            order
         }
     }
 
@@ -639,7 +636,6 @@ impl Curve {
             g2_gen,
             g1_points,
             g2_points,
-            order
         }
     }
 
@@ -659,7 +655,6 @@ impl Curve {
             g2_gen,
             g1_points,
             g2_points,
-            order,
         }
     }
 

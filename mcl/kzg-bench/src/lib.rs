@@ -12,6 +12,7 @@ mod shared_tests {
     mod bls12_381;
     mod consts;
     mod das;
+    mod eip_4844;
     mod fft_fr;
     mod fft_g1;
     mod finite;
