@@ -26,4 +26,5 @@ pub fn vector_lincomb(vectors: &[Vec<blsScalar>], scalars: &[blsScalar]) -> Vec<
             out[i] = out[i].add(&tmp);
         }
     }
+    out
 }
