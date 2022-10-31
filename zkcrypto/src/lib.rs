@@ -5,6 +5,7 @@ extern crate alloc;
 
 pub mod consts;
 pub mod das;
+pub mod eip_4844;
 pub mod fft_fr;
 pub mod fft_g1;
 pub mod fftsettings;

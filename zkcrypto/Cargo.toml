@@ -12,8 +12,8 @@ lto = "thin"
 kzg = { path = "../kzg"}
 kzg-bench = { path = "../kzg-bench" }
 blst = {'git' = 'https://github.com/supranational/blst.git'}
-pairing = "0.21.0"
-bls12_381 = "0.6.0"
+pairing = "0.22.0"
+bls12_381 = "0.7.0"
 num-bigint = "0.4"
 rand = "0.8"
 rand_core = "0.6"
@@ -21,7 +21,7 @@ subtle = "2.2.1"
 rayon = "1.5.1"
 
 [dependencies.ff]
-version = "0.11"
+version = "0.12"
 default-features = false
 
 [dev-dependencies]
