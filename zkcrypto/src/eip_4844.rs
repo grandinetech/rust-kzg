@@ -113,8 +113,8 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &blsScalar, s: &KZ
     }
     tmp = blsScalar::from_u64(p.len().try_into().unwrap());
     out = out.div(&tmp).unwrap();
-    //calls zkcrypto::curve::scalar:Scalar pow instead of zkfr::blsScalar pow?
-    //tmp = x.pow(p.len());
+
+    tmp = <blsScalar as Fr>::pow(x, p.len());
     tmp = tmp.sub(&blsScalar::one());
     out = out.mul(&tmp);
     out
