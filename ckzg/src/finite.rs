@@ -29,8 +29,11 @@ extern "C" {
     fn fr_pow(out: *mut BlstFr, a: *const BlstFr, n: u64);
     fn fr_div(out: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_add(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
+    fn blst_fr_sub(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
     fn blst_fr_sqr(ret: *mut BlstFr, a: *const BlstFr);
     fn blst_fr_mul(ret: *mut BlstFr, a: *const BlstFr, b: *const BlstFr);
+    fn blst_fr_eucl_inverse(ret: *mut BlstFr, a: *const BlstFr);
+    fn blst_fr_inverse(retret: *mut BlstFr, a: *const BlstFr);
     // G1
     fn blst_p1_generator() -> *const BlstP1;
     fn g1_add_or_dbl(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
@@ -158,24 +161,41 @@ impl Fr for BlstFr {
         sum
     }
 
-    fn sub(&self, _b: &Self) -> Self {
-        todo!()
+    fn sub(&self, b: &Self) -> Self {
+        let mut ret = Fr::default();
+        unsafe {
+            blst_fr_sub(&mut ret, self, b);
+        }
+        ret
+
     }
 
     fn eucl_inverse(&self) -> Self {
-        todo!()
+        let mut ret = Fr::default();
+        unsafe {
+            blst_fr_eucl_inverse(&mut ret, self);
+        }
+
+        ret
+
     }
 
     fn negate(&self) -> Self {
         let mut ret = Fr::default();
         unsafe {
+            // man rodos, kad tokios nera
             fr_negate(&mut ret, self);
         }
         ret
     }
 
     fn inverse(&self) -> Self {
-        todo!()
+        let mut ret = Fr::default();
+        unsafe {
+            blst_fr_inverse(&mut ret, self);
+        }
+
+        ret
     }
 
     fn pow(&self, n: usize) -> Self {

@@ -1,5 +1,7 @@
+use std::cell::RefCell;
 use std::io::Read;
 
+use std::rc::Rc;
 use std::{convert::TryInto, fs::File, slice};
 
 use crate::consts::{BlstP1, BlstP1Affine, BlstP2, BLST_ERROR, BlstP2Affine};
@@ -49,7 +51,7 @@ pub fn load_trusted_setup(filepath: &str) -> KzgKZGSettings {
     let length = lines.next().unwrap().parse::<usize>().unwrap();
     let n2 = lines.next().unwrap().parse::<usize>().unwrap();
 
-    let mut g2_values: Vec<BlstP2> = Vec::new();
+    let mut g2_values = Box::new(Vec::new());
 
     let mut g1_projectives: Vec<BlstP1> = Vec::new();
 
@@ -90,33 +92,49 @@ pub fn load_trusted_setup(filepath: &str) -> KzgKZGSettings {
 
     println!("max_scale = {}", max_scale);
 
-    let  fs: &mut KzgFFTSettings = & mut KzgFFTSettings::default();
-    unsafe{
-        new_fft_settings(fs, max_scale.try_into().unwrap());
-    }
+    // kaip pointeris (neveikia)
+    // let  fs = & mut KzgFFTSettings::default() as *mut KzgFFTSettings;
+    // Note: Rc is not thread safe
+    // let mut fs = Rc::new(RefCell::new(KzgFFTSettings::default()));
+    let mut boxed = Box::new(KzgFFTSettings::new(max_scale).unwrap());
+    // man rodos, kad Box reikia isvalyti kazkur, nes antraip gaunasi memory leak
+    let mut fs = Box::into_raw(boxed);
+    println!("{:p}", fs);
+    // let v = fs.as_ptr();
+    // unsafe{
+    //     new_fft_settings(fs, max_scale.try_into().unwrap());
+    // }
     // new(max_scale).unwrap();
 
-    let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
+    // let v = fs.borrow().
+    let mut g1_values = Box::new(unsafe{
+        (*fs).fft_g1(&g1_projectives, true).unwrap()
+    });
+    println!("{:p}", g1_values.as_ptr());
+    
 
     println!("gavau projectivu: {}", g1_projectives.len());
 
     let vec = unsafe {
-        slice::from_raw_parts(fs.expanded_roots_of_unity, fs.max_width).to_vec()
+        slice::from_raw_parts((*fs).expanded_roots_of_unity, (*fs).max_width).to_vec()
     };
 
     println!("gavau reiksmiu: {}", vec.len());
 
-    println!("gą_length yra: {}", g1_values.len());
+    println!("g1_length yra: {}", g1_values.len());
 
     reverse_bit_order(&mut g1_values);
 
-    println!("cia paminiu, kad fs.max_width = {}", fs.max_width);
+    unsafe{
+        println!("cia paminiu, kad fs.max_width = {}", (*fs).max_width);
+    };
     KzgKZGSettings {
-        secret_g1: g1_values.as_mut_ptr(),
-        secret_g2: g2_values.as_mut_ptr(),
-        fs: &*fs,
         length: g1_values.len().try_into().unwrap(),
+        secret_g1: unsafe {(*(Box::into_raw(g1_values))).as_mut_ptr() },
+        secret_g2: unsafe {(*(Box::into_raw(g2_values))).as_mut_ptr() },
+        fs: fs,
     }
+    // fs.
 }
 
 fn fr_batch_inv(out: &mut [BlstFr], a: &[BlstFr], len: usize) {
@@ -175,7 +193,6 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &BlstFr, s: &KzgKZ
     }
     println!("Though i expected (from previous parts) 8");
     reverse_bit_order(&mut roots_of_unity);
-    println!("nebepasiekia, nes suluzo");
 
     while i < p.len() {
         if x.equals(&roots_of_unity[i]) {
@@ -200,6 +217,7 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &BlstFr, s: &KzgKZ
     tmp = x.pow(p.len());
     tmp = tmp.sub(&BlstFr::one());
     out = out.mul(&tmp);
+    println!("At the end of long day, I did reached the end of fn evaluate_polynomial_in_evaluation_form");
     out
 }
 
