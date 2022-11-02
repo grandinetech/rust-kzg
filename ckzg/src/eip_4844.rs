@@ -1,33 +1,16 @@
-use std::cell::RefCell;
 use std::io::Read;
 
-use std::rc::Rc;
 use std::{convert::TryInto, fs::File, slice};
 
 use crate::consts::{BlstP1, BlstP1Affine, BlstP2, BLST_ERROR, BlstP2Affine};
 use crate::finite::{blst_p1_from_affine, blst_p1_uncompress, BlstFr, blst_p2_from_affine, blst_p2_uncompress};
 
-use crate::fftsettings::{KzgFFTSettings, new_fft_settings};
+use crate::fftsettings::{KzgFFTSettings};
 use crate::kzgsettings::KzgKZGSettings;
 use crate::poly::KzgPoly;
 use crate::utils::reverse_bit_order;
 
-// use blst::{
-//     blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
-//     blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR,
-// };
-
 use kzg::{Fr, FFTSettings, FFTG1, Poly};
-
-// fn blst_fp2_to_BlstFP2(p2 : &blst)
-
-// fn blst_p2_to_BlstP2(p2: &blst_p2) -> BlstP2{
-//     BlstP2 {
-//         x : p2.x,
-//         y: p2.y,
-//         z: p2.z,
-//     }
-// }
 
 pub fn bytes_to_g1(bytes: [u8; 48usize]) -> BlstP1 {
     let mut tmp = BlstP1Affine::default();
@@ -90,44 +73,14 @@ pub fn load_trusted_setup(filepath: &str) -> KzgKZGSettings {
         max_scale += 1;
     }
 
-    println!("max_scale = {}", max_scale);
-
-    // kaip pointeris (neveikia)
-    // let  fs = & mut KzgFFTSettings::default() as *mut KzgFFTSettings;
-    // Note: Rc is not thread safe
-    // let mut fs = Rc::new(RefCell::new(KzgFFTSettings::default()));
-    let mut boxed = Box::new(KzgFFTSettings::new(max_scale).unwrap());
-    // man rodos, kad Box reikia isvalyti kazkur, nes antraip gaunasi memory leak
-    let mut fs = Box::into_raw(boxed);
-    println!("{:p}", fs);
-    // let v = fs.as_ptr();
-    // unsafe{
-    //     new_fft_settings(fs, max_scale.try_into().unwrap());
-    // }
-    // new(max_scale).unwrap();
-
-    // let v = fs.borrow().
+    let  boxed = Box::new(KzgFFTSettings::new(max_scale).unwrap());
+    let fs = Box::into_raw(boxed);
     let mut g1_values = Box::new(unsafe{
         (*fs).fft_g1(&g1_projectives, true).unwrap()
     });
-    println!("{:p}", g1_values.as_ptr());
-    
-
-    println!("gavau projectivu: {}", g1_projectives.len());
-
-    let vec = unsafe {
-        slice::from_raw_parts((*fs).expanded_roots_of_unity, (*fs).max_width).to_vec()
-    };
-
-    println!("gavau reiksmiu: {}", vec.len());
-
-    println!("g1_length yra: {}", g1_values.len());
 
     reverse_bit_order(&mut g1_values);
 
-    unsafe{
-        println!("cia paminiu, kad fs.max_width = {}", (*fs).max_width);
-    };
     KzgKZGSettings {
         length: g1_values.len().try_into().unwrap(),
         secret_g1: unsafe {(*(Box::into_raw(g1_values))).as_mut_ptr() },
@@ -187,11 +140,6 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &BlstFr, s: &KzgKZ
         slice::from_raw_parts((*s.fs).expanded_roots_of_unity, (*s.fs).max_width).to_vec()
     };
 
-    println!("number of roots is {}", roots_of_unity.len());
-    unsafe{
-        println!("number of roots should be (fs.max_width): {}", (*s.fs).max_width);
-    }
-    println!("Though i expected (from previous parts) 8");
     reverse_bit_order(&mut roots_of_unity);
 
     while i < p.len() {
@@ -217,7 +165,6 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &BlstFr, s: &KzgKZ
     tmp = x.pow(p.len());
     tmp = tmp.sub(&BlstFr::one());
     out = out.mul(&tmp);
-    println!("At the end of long day, I did reached the end of fn evaluate_polynomial_in_evaluation_form");
     out
 }
 

@@ -98,7 +98,6 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     
     assert_eq!(y_bls.to_u64_arr(),  [28, 13, 0, 0]);
-    println!("pasiekiau testo pabaiga");
 }
 
 pub fn compute_commitment_for_blobs_test<TFr : Fr,
