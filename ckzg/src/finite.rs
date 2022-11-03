@@ -1,6 +1,6 @@
 use crate::consts::{
-    BlstFp, BlstFp2, BlstP1, BlstP1Affine, BlstP2, BLST_ERROR, G1_NEGATIVE_GENERATOR,
-    G2_NEGATIVE_GENERATOR, BlstP2Affine,
+    BlstFp, BlstFp2, BlstP1, BlstP1Affine, BlstP2, BlstP2Affine, BLST_ERROR, G1_NEGATIVE_GENERATOR,
+    G2_NEGATIVE_GENERATOR,
 };
 
 use kzg::{Fr, G1Mul, G2Mul, G1, G2};
@@ -43,6 +43,7 @@ extern "C" {
     fn g1_sub(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_is_inf(a: *const BlstP1) -> bool;
     pub fn blst_p1_from_affine(out: *mut BlstP1, inp: *const BlstP1Affine);
+    pub fn blst_p1_compress(out: *mut u8, inp: *const BlstP1);
     pub fn blst_p1_uncompress(out: *mut BlstP1Affine, byte: *const u8) -> BLST_ERROR;
     // G2
     fn blst_p2_generator() -> *const BlstP2;
@@ -54,7 +55,12 @@ extern "C" {
     pub fn blst_p2_from_affine(out: *mut BlstP2, inp: *const BlstP2Affine);
     pub fn blst_p2_uncompress(out: *mut BlstP2Affine, byte: *const u8) -> BLST_ERROR;
     // Regular functions
-    fn g1_linear_combination(out: *mut BlstP1, p: *const BlstP1, coeffs: *const BlstFr, len: u64);
+    pub fn g1_linear_combination(
+        out: *mut BlstP1,
+        p: *const BlstP1,
+        coeffs: *const BlstFr,
+        len: u64,
+    );
     fn pairings_verify(
         a1: *const BlstP1,
         a2: *const BlstP2,
@@ -167,7 +173,6 @@ impl Fr for BlstFr {
             blst_fr_sub(&mut ret, self, b);
         }
         ret
-
     }
 
     fn eucl_inverse(&self) -> Self {
@@ -177,7 +182,6 @@ impl Fr for BlstFr {
         }
 
         ret
-
     }
 
     fn negate(&self) -> Self {

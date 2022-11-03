@@ -123,7 +123,7 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
 }
 
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> FsFr {
-    FsFr::from_scalar(*bytes)
+    FsFr::from_scalar(*bytes);
 }
 
 pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
