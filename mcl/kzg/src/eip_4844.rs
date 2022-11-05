@@ -158,7 +158,7 @@ pub fn verify_kzg_proof(
     Curve::verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x)
 }
 
-pub fn compute_kzg_proof(p: &mut Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
+pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
     assert!(p.coeffs.len() <= s.curve.g1_points.len());
  
     let y = evaluate_polynomial_in_evaluation_form(p, x, s);

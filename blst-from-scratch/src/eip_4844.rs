@@ -166,7 +166,7 @@ pub fn verify_kzg_proof(
         .unwrap_or(false)
 }
 
-pub fn compute_kzg_proof(p: &mut FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
+pub fn compute_kzg_proof(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
     assert!(p.len() <= s.secret_g1.len());
 
     let y: FsFr = evaluate_polynomial_in_evaluation_form(p, x, s);
@@ -276,10 +276,9 @@ pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
 }
 
 fn bytes_of_uint64(out : &mut [u8], mut n: u64) {
-    for i in 0..8 {
-        out[i] = (n & 0xFF) as u8;
+    for byte in out.iter_mut().take(8) {
+        *byte = (n & 0xff) as u8;
         n >>= 8;
-
     }
 }
 
@@ -293,9 +292,8 @@ pub fn hash_to_bytes(polys : &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32]{
 
 	let mut bytes: Vec<u8> = vec![0; np + n * 48];
 
-	for i in 0..16{
-		bytes[i] = FIAT_SHAMIR_PROTOCOL_DOMAIN[i] 
-	}
+    bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
+
 	bytes_of_uint64(&mut bytes[16..24], n.try_into().unwrap());
 	bytes_of_uint64(&mut bytes[24..32], FIELD_ELEMENTS_PER_BLOB.try_into().unwrap());
 
@@ -316,11 +314,10 @@ pub fn hash_to_bytes(polys : &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32]{
 		}
 	}
 
-	let out = hash(&bytes);
-	out
+	hash(&bytes)
 }
 
-pub fn poly_lincomb(vectors: &[FsPoly], scalars: &Vec<FsFr>, n: usize) -> FsPoly{
+pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly{
 	let mut tmp: FsFr;
 	let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
 	for j in 0..FIELD_ELEMENTS_PER_BLOB{
@@ -348,7 +345,42 @@ pub fn compute_aggregated_poly_and_commitment(
 
 	let poly_out = poly_lincomb(polys, &r_powers, n);
 
-	let comm_out = g1_lincomb(&kzg_commitments, &r_powers);
+	let comm_out = g1_lincomb(kzg_commitments, &r_powers);
 
 	(poly_out, comm_out, chal_out)
+}
+
+fn poly_from_blob(p: &mut FsPoly, blob: &[FsFr]) {
+    for (i, coeff) in blob.iter().enumerate() {
+        p.set_coeff_at(i, coeff);
+    }
+}
+
+fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
+    g1_lincomb(&s.secret_g1, &p.coeffs)
+}
+
+pub fn compute_aggregate_kzg_proof(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> FsG1 {
+    let mut commitments: Vec<FsG1> = vec![FsG1::default(); blobs.len()];
+    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); blobs.len()];
+    for i in 0..blobs.len(){
+        poly_from_blob(&mut polys[i], &blobs[i]);
+        commitments[i] = poly_to_kzg_commitment(&polys[i], ts);
+    }
+    let (aggregated_poly, _, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, &commitments, blobs.len());
+    compute_kzg_proof(&aggregated_poly, &evaluation_challenge, ts)
+}
+
+pub fn verify_aggregate_kzg_proof(
+    blobs: &[Vec<FsFr>],
+    expected_kzg_commitments: &[FsG1],
+    kzg_aggregated_proof: &FsG1,
+    ts: &FsKZGSettings) -> bool {
+    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); blobs.len()];
+    for i in 0..blobs.len(){
+        poly_from_blob(&mut polys[i], &blobs[i]);
+    }
+    let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
+    let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
+    verify_kzg_proof(&aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, ts)
 }

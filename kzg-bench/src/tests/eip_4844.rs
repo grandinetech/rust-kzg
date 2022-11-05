@@ -118,7 +118,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     g1_lincomb: &dyn Fn(&[TG1], &[TFr]) -> TG1,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
-    compute_kzg_proof: &dyn Fn(&mut TPoly, &TFr, &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TG1,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
 )
 {
