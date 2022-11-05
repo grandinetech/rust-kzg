@@ -194,7 +194,7 @@ pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
 
     if m != 0 {
         m -= 1;
-        p.coeffs[m] = Fr::zero();
+        q.coeffs[m] = Fr::zero();
 
         for i in 0..qlen {
             if i == m {
