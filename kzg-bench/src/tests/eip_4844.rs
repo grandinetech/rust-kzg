@@ -247,8 +247,8 @@ pub fn eip4844_test<TFr : Fr,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
 blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
-compute_aggregate_kzg_proof: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
-verify_aggregate_kzg_proof: &dyn Fn(&[TFr], &[TG1], &TG1) -> bool) {
+compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
+verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool) {
     const BLOB_SIZE: usize = 4096;
 
     let mut rng = StdRng::seed_from_u64(0);
@@ -262,7 +262,7 @@ verify_aggregate_kzg_proof: &dyn Fn(&[TFr], &[TG1], &TG1) -> bool) {
         .collect::<Vec<Vec<TFr>>>();
     
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/tests/tiny_trusted_setup.txt");
+    let ts = load_trusted_setup("src/tests/trusted_setup.txt");
 
     let kzg_commitments = blobs.iter().map(|blob| 
         blob_to_kzg_commitment(blob, &ts)
@@ -270,11 +270,11 @@ verify_aggregate_kzg_proof: &dyn Fn(&[TFr], &[TG1], &TG1) -> bool) {
     
     // Compute proof for these blobs
 
-    let proof = compute_aggregate_kzg_proof(&blobs.concat(), &ts);
+    let proof = compute_aggregate_kzg_proof(&blobs, &ts);
 
     // Verify proof
 
-    assert!(verify_aggregate_kzg_proof(&blobs.concat(), &kzg_commitments, &proof), "verify failed");
+    assert!(verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts), "verify failed");
 
     // Verification fails at wrong value
 
@@ -284,5 +284,5 @@ verify_aggregate_kzg_proof: &dyn Fn(&[TFr], &[TG1], &TG1) -> bool) {
         TFr::zero()
     };
 
-    assert!(!verify_aggregate_kzg_proof(&blobs.concat(), &kzg_commitments, &proof), "verify succeeded incorrectly");
+    assert!(!verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts), "verify succeeded incorrectly");
 }
