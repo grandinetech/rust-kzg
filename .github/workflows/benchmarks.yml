@@ -100,20 +100,20 @@ jobs:
         echo "RUSTFLAGS=" >> $GITHUB_ENV
         echo "LIBOMP_PATH=" >> $GITHUB_ENV
 
-    - name: "[mcl-kzg10-rust] Build mcl for Linux"
+    - name: "[mcl10-rust] Build mcl for Linux"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cd mcl-kzg/kzg && bash build.sh
+        cd mcl/kzg && bash build.sh
 
-    - name: "[mcl-kzg10-rust] Run benches without parallel"
+    - name: "[mcl10-rust] Run benches without parallel"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml
+        cargo bench --manifest-path mcl/kzg-bench/Cargo.toml
 
-    - name: "[mcl-kzg10-rust] Run benches with parallel"
+    - name: "[mcl10-rust] Run benches with parallel"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo bench --manifest-path mcl-kzg/kzg-bench/Cargo.toml --features mcl_rust/parallel
+        cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel
 
     - uses: actions-rs/cargo@v1
       with:

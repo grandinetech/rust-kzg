@@ -404,7 +404,7 @@ impl Scalar {
 
     /// Doubles this field element.
     #[inline]
-    pub const fn double(&self) -> Scalar {
+    pub fn double(&self) -> Scalar {
         // TODO: This can be achieved more efficiently with a bitshift.
         self.add(self)
     }
@@ -490,13 +490,13 @@ impl Scalar {
 
     /// Converts from an integer represented in little endian
     /// into its (congruent) `Scalar` representation.
-    pub const fn from_raw(val: [u64; 4]) -> Self {
-        (&Scalar(val)).mul(&R2)
+    pub fn from_raw(val: [u64; 4]) -> Self {
+        Scalar(val).mul(&R2)
     }
 
     /// Squares this element.
     #[inline]
-    pub const fn square(&self) -> Scalar {
+    pub fn square(&self) -> Scalar {
         let (r1, carry) = mac(0, self.0[0], self.0[1], 0);
         let (r2, carry) = mac(0, self.0[0], self.0[2], carry);
         let (r3, r4) = mac(0, self.0[0], self.0[3], carry);
@@ -711,7 +711,7 @@ impl Scalar {
     }
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    const fn montgomery_reduce(
+    fn montgomery_reduce(
         r0: u64,
         r1: u64,
         r2: u64,
@@ -754,12 +754,12 @@ impl Scalar {
         let (r7, _) = adc(r7, carry2, carry);
 
         // Result may be within MODULUS of the correct value
-        (&Scalar([r4, r5, r6, r7])).sub(&MODULUS)
+        Scalar([r4, r5, r6, r7]).sub(&MODULUS)
     }
 
     /// Multiplies `rhs` by `self`, returning the result.
     #[inline]
-    pub const fn mul(&self, rhs: &Self) -> Self {
+    pub fn mul(&self, rhs: &Self) -> Self {
         // Schoolbook multiplication
 
         let (r0, carry) = mac(0, self.0[0], rhs.0[0], 0);
@@ -805,7 +805,7 @@ impl Scalar {
 
     /// Adds `rhs` to `self`, returning the result.
     #[inline]
-    pub const fn add(&self, rhs: &Self) -> Self {
+    pub fn add(&self, rhs: &Self) -> Self {
         let (d0, carry) = adc(self.0[0], rhs.0[0], 0);
         let (d1, carry) = adc(self.0[1], rhs.0[1], carry);
         let (d2, carry) = adc(self.0[2], rhs.0[2], carry);
@@ -813,7 +813,7 @@ impl Scalar {
 
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
-        (&Scalar([d0, d1, d2, d3])).sub(&MODULUS)
+        Scalar([d0, d1, d2, d3]).sub(&MODULUS)
     }
 
     /// Negates `self`.

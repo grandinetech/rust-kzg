@@ -568,7 +568,7 @@ impl Fp {
 
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
-        (&Fp([d0, d1, d2, d3, d4, d5])).subtract_p()
+        Fp([d0, d1, d2, d3, d4, d5]).subtract_p()
     }
 
     #[inline]
@@ -597,8 +597,8 @@ impl Fp {
     }
 
     #[inline]
-    pub const fn sub(&self, rhs: &Fp) -> Fp {
-        (&rhs.neg()).add(self)
+    pub fn sub(&self, rhs: &Fp) -> Fp {
+        rhs.neg().add(self)
     }
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
@@ -676,7 +676,7 @@ impl Fp {
 
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
-        (&Fp([r6, r7, r8, r9, r10, r11])).subtract_p()
+        Fp([r6, r7, r8, r9, r10, r11]).subtract_p()
     }
 
     #[inline]
