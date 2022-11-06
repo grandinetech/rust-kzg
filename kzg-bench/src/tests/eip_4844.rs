@@ -95,7 +95,7 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let x_bls = bytes_to_bls_field(&x_bytes);
     
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/tests/tiny_trusted_setup.txt");
+    let ts = load_trusted_setup("src/trusted_setups/tiny_trusted_setup.txt");
     
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     
@@ -148,7 +148,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     }
 
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/tests/trusted_setup.txt");
+    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
     let kzg_commitments = blobs.iter().map(|blob| 
         blob_to_kzg_commitment(blob, &ts)
@@ -262,7 +262,7 @@ verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) ->
         .collect::<Vec<Vec<TFr>>>();
     
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/tests/trusted_setup.txt");
+    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
     let kzg_commitments = blobs.iter().map(|blob| 
         blob_to_kzg_commitment(blob, &ts)
