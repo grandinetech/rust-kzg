@@ -51,3 +51,7 @@ harness = false
 [[bench]]
 name = "zero_poly"
 harness = false
+
+[[bench]]
+name = "eip_4844"
+harness = false
