@@ -15,6 +15,12 @@ use crate::utils::reverse_bit_order;
 
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1};
 
+extern "C" {
+    fn bytes_to_bls_field(out: *mut BlstFr, bytes: *const u8);
+    // fn bytes_to_g1(out: *mut BlstP1, bytes: *const u8);
+    // fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
+}
+
 pub fn bytes_to_g1(bytes: [u8; 48usize]) -> BlstP1 {
     let mut tmp = BlstP1Affine::default();
     let mut g1 = BlstP1::default();
@@ -123,13 +129,12 @@ fn fr_batch_inv(out: &mut [BlstFr], a: &[BlstFr], len: usize) {
     out[0] = *inv;
 }
 
-pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> BlstFr {
-    let my_u64_vec = unsafe { (bytes[..32].align_to::<u64>().1).to_vec() };
-    let arr: [u64; 4] = match my_u64_vec.try_into() {
-        Ok(arr) => arr,
-        Err(_) => panic!(),
-    };
-    BlstFr::from_u64_arr(&arr)
+pub fn bound_bytes_to_bls_field(bytes: &[u8; 32usize]) -> BlstFr {
+    let mut out = BlstFr::default();
+    unsafe {
+        bytes_to_bls_field(&mut out, bytes.as_ptr());
+    }
+    out
 }
 
 pub fn vector_lincomb(vectors: &[Vec<BlstFr>], scalars: &[BlstFr]) -> Vec<BlstFr> {

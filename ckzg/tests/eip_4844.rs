@@ -5,7 +5,7 @@ mod tests {
     use ckzg::{
         consts::{BlstP1, BlstP2},
         eip_4844::{
-            blob_to_kzg_commitment, bytes_from_bls_field, bytes_from_g1, bytes_to_bls_field,
+            blob_to_kzg_commitment, bytes_from_bls_field, bytes_from_g1, bound_bytes_to_bls_field,
             compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form, g1_lincomb,
             load_trusted_setup, vector_lincomb, verify_kzg_proof,
         },
@@ -21,12 +21,12 @@ mod tests {
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<BlstFr>(&bytes_to_bls_field, &bytes_from_bls_field);
+        bytes_to_bls_field_test::<BlstFr>(&bound_bytes_to_bls_field, &bytes_from_bls_field);
     }
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<BlstFr>(&bytes_to_bls_field, &compute_powers);
+        compute_powers_test::<BlstFr>(&bound_bytes_to_bls_field, &compute_powers);
     }
 
     #[test]
@@ -39,7 +39,7 @@ mod tests {
             KzgFFTSettings,
             KzgKZGSettings,
         >(
-            &bytes_to_bls_field,
+            &bound_bytes_to_bls_field,
             &load_trusted_setup,
             &evaluate_polynomial_in_evaluation_form,
         );
@@ -56,7 +56,7 @@ mod tests {
             KzgKZGSettings,
         >(
             &load_trusted_setup,
-            &bytes_to_bls_field,
+            &bound_bytes_to_bls_field,
             &bytes_from_bls_field,
             &bytes_from_g1,
             &compute_powers,
