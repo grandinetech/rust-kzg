@@ -56,3 +56,14 @@ pub fn test_compute_commitment_for_blobs_test() {
     );
 }
 
+#[test]
+pub fn test_eip4844_simple_interface() {
+    assert!(init(CurveType::BLS12_381));
+
+    eip4844_test(
+        &load_trusted_setup,
+        &blob_to_kzg_commitment,
+        &compute_aggregate_kzg_proof,
+        &verify_aggregate_kzg_proof,
+    );
+}

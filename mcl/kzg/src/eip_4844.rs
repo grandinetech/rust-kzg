@@ -1,13 +1,15 @@
 use crate::data_types::g1::mclBnG1_mulVec;
-use crate::fk20_fft::*;
 use crate::data_types::{fr::*, g1::*, g2::*};
+use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
-use std::convert::TryInto;
-use std::usize;
 use crate::mcl_methods::*;
+use kzg::Poly as _;
+use sha2::{Digest as _, Sha256};
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
+use std::usize;
 
 // [x] bytes_to_bls_field
 // [x] vector_lincomb
@@ -32,7 +34,7 @@ pub fn bytes_to_g2(bytes: &[u8]) -> G2 {
         panic!("failed to deserialize")
     }
     g2
-} 
+}
 
 pub fn bytes_from_g1(g1: &G1) -> [u8; 48usize] {
     set_eth_serialization(1);
@@ -42,8 +44,7 @@ pub fn bytes_from_g1(g1: &G1) -> [u8; 48usize] {
 pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
     let mut file = File::open(filepath).expect("Unable to open file");
     let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Unable to read file");
+    file.read_to_string(&mut contents).expect("Unable to read file");
 
     let mut lines = contents.lines();
     let length = lines.next().unwrap().parse::<usize>().unwrap();
@@ -64,7 +65,6 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
             .unwrap();
         g1_projectives.push(bytes_to_g1(&bytes));
     }
-
 
     for _ in 0..n2 {
         let line = lines.next().unwrap();
@@ -90,11 +90,19 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
 
     KZGSettings {
         fft_settings: fs,
-        curve: Curve { g1_gen: G1::gen(), g2_gen: G2::gen(), g1_points: g1_values, g2_points: g2_values }
+        curve: Curve {
+            g1_gen: G1::gen(),
+            g2_gen: G2::gen(),
+            g1_points: g1_values,
+            g2_points: g2_values,
+        },
     }
 }
 
-pub fn reverse_bit_order<T>(values: &mut [T]) where T: Clone {
+pub fn reverse_bit_order<T>(values: &mut [T])
+where
+    T: Clone,
+{
     let unused_bit_len = values.len().leading_zeros() + 1;
     for i in 0..values.len() - 1 {
         let r = i.reverse_bits() >> unused_bit_len;
@@ -106,11 +114,9 @@ pub fn reverse_bit_order<T>(values: &mut [T]) where T: Clone {
     }
 }
 
-
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Fr {
     Fr::from_scalar(bytes)
 }
-
 
 pub fn bytes_from_bls_field(fr: &Fr) -> [u8; 32usize] {
     Fr::to_scalar(fr)
@@ -129,11 +135,12 @@ pub fn vector_lincomb(vectors: &[Vec<Fr>], scalars: &[Fr]) -> Vec<Fr> {
 }
 
 pub fn g1_lincomb(p: &[G1], coeffs: &[Fr]) -> G1 {
+    println!("{} == {}", p.len(), coeffs.len());
     assert!(p.len() == coeffs.len());
 
     let mut out = G1::default();
     g1_linear_combination(&mut out, p, coeffs, p.len());
-    
+
     out
 }
 
@@ -141,13 +148,7 @@ pub fn blob_to_kzg_commitment(blob: &[Fr], s: &KZGSettings) -> G1 {
     g1_lincomb(&s.curve.g1_points, blob)
 }
 
-pub fn verify_kzg_proof(
-    commitment: &G1,
-    x: &Fr,
-    y: &Fr,
-    proof: &G1,
-    ks: &KZGSettings,
-) -> bool {
+pub fn verify_kzg_proof(commitment: &G1, x: &Fr, y: &Fr, proof: &G1, ks: &KZGSettings) -> bool {
     let (mut x_g2, mut s_minus_x) = (G2::default(), G2::default());
     let (mut y_g1, mut commitment_minus_y) = (G1::default(), G1::default());
 
@@ -161,20 +162,20 @@ pub fn verify_kzg_proof(
 
 pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
     assert!(p.coeffs.len() <= s.curve.g1_points.len());
- 
+
     let y = evaluate_polynomial_in_evaluation_form(p, x, s);
-  
+
     let mut tmp: Fr;
 
     let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
     reverse_bit_order(&mut roots_of_unity);
 
     let mut m = 0;
-  
+
     let mut q = Polynomial::new(p.coeffs.len());
     let plen = p.coeffs.len();
     let qlen = q.coeffs.len();
-  
+
     let mut inverses_in: Vec<Fr> = vec![Fr::default(); plen];
     let mut inverses: Vec<Fr> = vec![Fr::default(); plen];
 
@@ -186,7 +187,7 @@ pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
         q.coeffs[i] = p.coeffs[i] - y;
         inverses_in[i] = &roots_of_unity[i] - x;
     }
-  
+
     fr_batch_inv(&mut inverses, &inverses_in, qlen);
 
     for (i, v) in inverses.iter().enumerate().take(qlen) {
@@ -206,7 +207,7 @@ pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
         }
 
         fr_batch_inv(&mut inverses, &inverses_in, qlen);
-        
+
         for i in 0..qlen {
             tmp = p.coeffs[i] - y;
             tmp = tmp * roots_of_unity[i];
@@ -218,13 +219,7 @@ pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
     g1_lincomb(&s.curve.g1_points, q.coeffs.as_slice())
 }
 
-
-// TODO: add return value
-pub fn evaluate_polynomial_in_evaluation_form(
-    p: &Polynomial,
-    x: &Fr,
-    s: &KZGSettings,
-) -> Fr {
+pub fn evaluate_polynomial_in_evaluation_form(p: &Polynomial, x: &Fr, s: &KZGSettings) -> Fr {
     let mut out;
     let mut tmp = Fr::default();
     let mut t: Fr;
@@ -234,7 +229,6 @@ pub fn evaluate_polynomial_in_evaluation_form(
     let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
 
     reverse_bit_order(&mut roots_of_unity);
-
 
     for i in 0..plen {
         if *x == roots_of_unity[i] {
@@ -302,130 +296,122 @@ fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: us
     unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
 }
 
-
-fn compute_aggregate_kzg_proof(
-    blob: &[Fr],
-    n: usize,
-    s: &KZGSettings
-    ) -> G1
-{
-
-    let mut KZGCommitments: Vec<G1> = Vec::new();
-    let mut polys = Polynomial::new(n);
-
-
-    for i in 0..n {
-        polys.coeffs.push(    (&poly_from_blob(blob)).coeffs[i]   );
-        KZGCommitments.push(  poly_to_kzg_commitment(polys, s)  );
-
+pub fn compute_aggregate_kzg_proof(blob: &[Vec<Fr>], s: &KZGSettings) -> G1 {
+    let mut commitments: Vec<G1> = vec![G1::default(); blob.len()];
+    let mut polys: Vec<Polynomial> = vec![Polynomial::new(FIELD_ELEMENTS_PER_BLOB); blob.len()];
+    for i in 0..blob.len() {
+        polys[i] = poly_from_blob(&blob[i]);
+        commitments[i] = poly_to_kzg_commitment(&polys[i], s);
     }
-
-
-    let mut aggregated_poly: Polynomial;
-    let mut aggregated_poly_commitment: G1;
-    let mut evaluation_challenge: Fr;
-    let mut out = compute_aggregated_poly_and_commitment( 
-        evaluation_challenge, 
-        &[polys], 
-        &KZGCommitments, 
-        n);
-
-
-    return compute_kzg_proof(&mut aggregated_poly, &evaluation_challenge, s);
+    let (mut aggregated_poly, _, evaluation_challenge) =
+        compute_aggregated_poly_and_commitment(&polys, &commitments, blob.len());
+    compute_kzg_proof(&mut aggregated_poly, &evaluation_challenge, s)
 }
 
-
-
-//- verify_aggregate_kzg_proof()
-/* 
-C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-    const Blob blobs[],
-    const KZGCommitment expected_kzg_commitments[],
-    size_t n,
-    const KZGProof *kzg_aggregated_proof,
-    const KZGSettings *s) {
-  Polynomial* polys = calloc(n, sizeof(Polynomial));
-  if (polys == NULL) return C_KZG_MALLOC;
-  for (size_t i = 0; i < n; i++)
-    poly_from_blob(polys[i], blobs[i]);
-
-  Polynomial aggregated_poly;
-  KZGCommitment aggregated_poly_commitment;
-  BLSFieldElement evaluation_challenge;
-  C_KZG_RET ret;
-  ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
-  free(polys);
-  if (ret != C_KZG_OK) return ret;
-
-  BLSFieldElement y;
-  TRY(evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s));
-
-  return verify_kzg_proof(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
+pub fn verify_aggregate_kzg_proof(
+    blobs: &[Vec<Fr>],
+    expected_kzg_commitments: &[G1],
+    kzg_aggregated_proof: &G1,
+    ts: &KZGSettings,
+) -> bool {
+    let mut polys: Vec<Polynomial> = vec![Polynomial::new(FIELD_ELEMENTS_PER_BLOB); blobs.len()];
+    for i in 0..blobs.len() {
+        polys[i] = poly_from_blob(&blobs[i]);
+    }
+    let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
+        compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
+    let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
+    verify_kzg_proof(
+        &aggregated_poly_commitment,
+        &evaluation_challenge,
+        &y,
+        kzg_aggregated_proof,
+        ts,
+    )
 }
-*/
 
 fn poly_from_blob(blob: &[Fr]) -> Polynomial {
-    let mut out = Polynomial::new(0);
-    for i in 0..420 { //Where to get the upper bound??
-        out.coeffs.push(
-            bytes_to_bls_field( 
-                &Fr::to_scalar(&blob[i])
-            )
-        );
+    let mut out = Polynomial::new(blob.len());
+    for i in 0..blob.len() {
+        out.coeffs[i] = blob[i];
     }
     out
 }
 
-
-
-fn poly_to_kzg_commitment(p: Polynomial, s: &KZGSettings) -> G1{
-    let mut out = G1::default();
-    out = g1_lincomb(&s.curve.g1_points, &p.coeffs);
-    out
+fn poly_to_kzg_commitment(p: &Polynomial, s: &KZGSettings) -> G1 {
+    g1_lincomb(&s.curve.g1_points, &p.coeffs)
 }
 
-
-fn compute_aggregated_poly_and_commitment( 
-    chal_out: Fr,
+fn compute_aggregated_poly_and_commitment(
     polys: &[Polynomial],
     kzg_commitments: &[G1],
-    n: usize)  -> (Polynomial, G1)
-{
-    let mut r_powers: &[Fr];
-    let mut hash: &[u8; 32];
+    n: usize,
+) -> (Polynomial, G1, Fr) {
+    let mut hash = [0u8; 32];
+    hash_to_bytes(&mut hash, polys, kzg_commitments); 
 
-    let mut polynomial_out: Polynomial;
-    let mut KZGCommitment_out: G1;
+    let r = bytes_to_bls_field(&hash);
+    let r_powers = compute_powers(&r, n);
 
-    hash_to_bytes(hash, polys, kzg_commitments, n); //Implementation missing
+    let chal_out = &r_powers[1] * &r_powers[n - 1];
 
-    r_powers[1] = bytes_to_bls_field(hash);
+    let poly_out = poly_lincomb(polys, &r_powers); 
 
-    compute_powers(&r_powers[0], n);
-    chal_out = &r_powers[1] * &r_powers[n - 1];
+    let comm_out = g1_lincomb(kzg_commitments, &r_powers);
 
-    poly_lincomb(polynomial_out, polys, r_powers, n); //Implementation missing, probably move polynomial_out out from argument list
-
-    KZGCommitment_out = g1_lincomb(kzg_commitments, r_powers);
-
-
-    (polynomial_out, KZGCommitment_out) 
+    (poly_out, comm_out, chal_out)
 }
 
-//Implement function
-fn hash_to_bytes(
-    a: u8, 
-    polys: &[Polynomial],
-    kzg_commitments: &[G1],
-    n: usize) { 
- 
+fn hash(md: &mut [u8; 32], input: &[u8]) {
+    let mut hasher = Sha256::new();
+    hasher.update(input);
+    hasher.finalize_into(md.try_into().unwrap());
 }
 
-//Implement function
-fn poly_lincomb(
-    out: Polynomial, 
-    vectors:  &[Polynomial], 
-    scalars: &[Fr], 
-    n: usize) {
-    
-  }
+fn hash_to_bytes(out: &mut [u8; 32], polys: &[Polynomial], comms: &[G1]) {
+    let n = polys.len();
+    let ni = FIAT_SHAMIR_PROTOCOL_DOMAIN.len() + 8 + 8;
+    let np = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
+
+    let mut bytes = vec![0u8; np + n * 48];
+
+    bytes[0..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
+    bytes[16..24].copy_from_slice(&n.to_le_bytes());
+    bytes[24..32].copy_from_slice(&FIELD_ELEMENTS_PER_BLOB.to_le_bytes());
+
+    for i in 0..n {
+        for j in 0..FIELD_ELEMENTS_PER_BLOB {
+            let pos = ni + i * BYTES_PER_FIELD_ELEMENT;
+            bytes[pos..pos + BYTES_PER_FIELD_ELEMENT]
+                .copy_from_slice(&bytes_from_bls_field(&polys[i].coeffs[j]));
+        }
+    }
+
+    for i in 0..n {
+        let pos = ni + i * BYTES_PER_FIELD_ELEMENT;
+        let data = &bytes_from_g1(&comms[i]);
+        bytes[pos..pos + data.len()].copy_from_slice(data);
+    }
+
+    hash(out, &bytes);
+}
+
+pub fn poly_lincomb(vectors: &[Polynomial], scalars: &[Fr]) -> Polynomial {
+    let mut res: Polynomial = Polynomial::new(FIELD_ELEMENTS_PER_BLOB);
+    let mut tmp: Fr;
+    for j in 0..FIELD_ELEMENTS_PER_BLOB {
+        res.set_coeff_at(j, &Fr::zero());
+    }
+    let n = vectors.len();
+    for i in 0..n {
+        for j in 0..FIELD_ELEMENTS_PER_BLOB {
+            tmp = scalars[i] * vectors[i].get_coeff_at(j);
+            res.set_coeff_at(j, &(res.get_coeff_at(j) + tmp));
+        }
+    }
+    res
+}
+
+pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
+pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95]; // "FSBLOBVERIFY_V1_"
+pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
