@@ -4,6 +4,7 @@ use crate::data_types::{fr::*, g1::*, g2::*};
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
 use std::convert::TryInto;
+use std::usize;
 use crate::mcl_methods::*;
 use std::fs::File;
 use std::io::Read;
@@ -300,3 +301,131 @@ fn fr_batch_inv(out: &mut [Fr], a: &[Fr], len: usize) {
 fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: usize) {
     unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
 }
+
+
+fn compute_aggregate_kzg_proof(
+    blob: &[Fr],
+    n: usize,
+    s: &KZGSettings
+    ) -> G1
+{
+
+    let mut KZGCommitments: Vec<G1> = Vec::new();
+    let mut polys = Polynomial::new(n);
+
+
+    for i in 0..n {
+        polys.coeffs.push(    (&poly_from_blob(blob)).coeffs[i]   );
+        KZGCommitments.push(  poly_to_kzg_commitment(polys, s)  );
+
+    }
+
+
+    let mut aggregated_poly: Polynomial;
+    let mut aggregated_poly_commitment: G1;
+    let mut evaluation_challenge: Fr;
+    let mut out = compute_aggregated_poly_and_commitment( 
+        evaluation_challenge, 
+        &[polys], 
+        &KZGCommitments, 
+        n);
+
+
+    return compute_kzg_proof(&mut aggregated_poly, &evaluation_challenge, s);
+}
+
+
+
+//- verify_aggregate_kzg_proof()
+/* 
+C_KZG_RET verify_aggregate_kzg_proof(bool *out,
+    const Blob blobs[],
+    const KZGCommitment expected_kzg_commitments[],
+    size_t n,
+    const KZGProof *kzg_aggregated_proof,
+    const KZGSettings *s) {
+  Polynomial* polys = calloc(n, sizeof(Polynomial));
+  if (polys == NULL) return C_KZG_MALLOC;
+  for (size_t i = 0; i < n; i++)
+    poly_from_blob(polys[i], blobs[i]);
+
+  Polynomial aggregated_poly;
+  KZGCommitment aggregated_poly_commitment;
+  BLSFieldElement evaluation_challenge;
+  C_KZG_RET ret;
+  ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
+  free(polys);
+  if (ret != C_KZG_OK) return ret;
+
+  BLSFieldElement y;
+  TRY(evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s));
+
+  return verify_kzg_proof(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
+}
+*/
+
+fn poly_from_blob(blob: &[Fr]) -> Polynomial {
+    let mut out = Polynomial::new(0);
+    for i in 0..420 { //Where to get the upper bound??
+        out.coeffs.push(
+            bytes_to_bls_field( 
+                &Fr::to_scalar(&blob[i])
+            )
+        );
+    }
+    out
+}
+
+
+
+fn poly_to_kzg_commitment(p: Polynomial, s: &KZGSettings) -> G1{
+    let mut out = G1::default();
+    out = g1_lincomb(&s.curve.g1_points, &p.coeffs);
+    out
+}
+
+
+fn compute_aggregated_poly_and_commitment( 
+    chal_out: Fr,
+    polys: &[Polynomial],
+    kzg_commitments: &[G1],
+    n: usize)  -> (Polynomial, G1)
+{
+    let mut r_powers: &[Fr];
+    let mut hash: &[u8; 32];
+
+    let mut polynomial_out: Polynomial;
+    let mut KZGCommitment_out: G1;
+
+    hash_to_bytes(hash, polys, kzg_commitments, n); //Implementation missing
+
+    r_powers[1] = bytes_to_bls_field(hash);
+
+    compute_powers(&r_powers[0], n);
+    chal_out = &r_powers[1] * &r_powers[n - 1];
+
+    poly_lincomb(polynomial_out, polys, r_powers, n); //Implementation missing, probably move polynomial_out out from argument list
+
+    KZGCommitment_out = g1_lincomb(kzg_commitments, r_powers);
+
+
+    (polynomial_out, KZGCommitment_out) 
+}
+
+//Implement function
+fn hash_to_bytes(
+    a: u8, 
+    polys: &[Polynomial],
+    kzg_commitments: &[G1],
+    n: usize) { 
+ 
+}
+
+//Implement function
+fn poly_lincomb(
+    out: Polynomial, 
+    vectors:  &[Polynomial], 
+    scalars: &[Fr], 
+    n: usize) {
+    
+  }
