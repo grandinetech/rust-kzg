@@ -84,6 +84,7 @@ dependencies = [
  "rand",
  "rand_pcg",
  "rayon",
+ "sha2 0.10.6",
 ]
 
 [[package]]

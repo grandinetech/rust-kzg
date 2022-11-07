@@ -95,7 +95,7 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let x_bls = bytes_to_bls_field(&x_bytes);
     
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/tests/tiny_trusted_setup.txt");
+    let ts = load_trusted_setup("src/trusted_setups/tiny_trusted_setup.txt");
     
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     
@@ -118,7 +118,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     g1_lincomb: &dyn Fn(&[TG1], &[TFr]) -> TG1,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
-    compute_kzg_proof: &dyn Fn(&mut TPoly, &TFr, &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TG1,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
 )
 {
@@ -148,7 +148,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     }
 
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/tests/trusted_setup.txt");
+    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
     let kzg_commitments = blobs.iter().map(|blob| 
         blob_to_kzg_commitment(blob, &ts)
@@ -235,4 +235,54 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let y2 = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &x2, &ts);
 
     assert!(!verify_kzg_proof(&aggregated_poly_commitment, &x2, &y2, &proof, &ts), "Verification should fail");
+}
+
+// Test for the simplified 4844 interface
+
+pub fn eip4844_test<TFr : Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
+>(load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
+verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool) {
+    const BLOB_SIZE: usize = 4096;
+
+    let mut rng = StdRng::seed_from_u64(0);
+
+    let mut blobs = (0..3)
+        .map(|_| {
+            (0..BLOB_SIZE)
+                .map(|_| TFr::from_u64_arr(&rng.gen()))
+                .collect::<Vec<TFr>>()
+        })
+        .collect::<Vec<Vec<TFr>>>();
+    
+    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+
+    let kzg_commitments = blobs.iter().map(|blob| 
+        blob_to_kzg_commitment(blob, &ts)
+        ).collect::<Vec<TG1>>();
+    
+    // Compute proof for these blobs
+
+    let proof = compute_aggregate_kzg_proof(&blobs, &ts);
+
+    // Verify proof
+
+    assert!(verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts), "verify failed");
+
+    // Verification fails at wrong value
+
+    blobs[0][0] = if blobs[0][0].equals(&TFr::zero()) {
+        TFr::one()
+    } else {
+        TFr::zero()
+    };
+
+    assert!(!verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts), "verify succeeded incorrectly");
 }
