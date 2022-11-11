@@ -492,6 +492,7 @@ dependencies = [
  "kzg",
  "once_cell",
  "primitive-types",
+ "sha2 0.10.6",
 ]
 
 [[package]]
