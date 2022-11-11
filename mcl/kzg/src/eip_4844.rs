@@ -303,9 +303,9 @@ pub fn compute_aggregate_kzg_proof(blob: &[Vec<Fr>], s: &KZGSettings) -> G1 {
         polys[i] = poly_from_blob(&blob[i]);
         commitments[i] = poly_to_kzg_commitment(&polys[i], s);
     }
-    let (mut aggregated_poly, _, evaluation_challenge) =
+    let (aggregated_poly, _, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, &commitments, blob.len());
-    compute_kzg_proof(&mut aggregated_poly, &evaluation_challenge, s)
+    compute_kzg_proof(&aggregated_poly, &evaluation_challenge, s)
 }
 
 pub fn verify_aggregate_kzg_proof(
@@ -332,9 +332,7 @@ pub fn verify_aggregate_kzg_proof(
 
 fn poly_from_blob(blob: &[Fr]) -> Polynomial {
     let mut out = Polynomial::new(blob.len());
-    for i in 0..blob.len() {
-        out.coeffs[i] = blob[i];
-    }
+    out.coeffs[..blob.len()].copy_from_slice(blob);
     out
 }
 
@@ -353,7 +351,7 @@ fn compute_aggregated_poly_and_commitment(
     let r = bytes_to_bls_field(&hash);
     let r_powers = compute_powers(&r, n);
 
-    let chal_out = &r_powers[1] * &r_powers[n - 1];
+    let chal_out = r_powers[1] * r_powers[n - 1];
 
     let poly_out = poly_lincomb(polys, &r_powers); 
 
@@ -379,17 +377,17 @@ fn hash_to_bytes(out: &mut [u8; 32], polys: &[Polynomial], comms: &[G1]) {
     bytes[16..24].copy_from_slice(&n.to_le_bytes());
     bytes[24..32].copy_from_slice(&FIELD_ELEMENTS_PER_BLOB.to_le_bytes());
 
-    for i in 0..n {
+    for (i, poly) in polys.iter().enumerate().take(n) {
         for j in 0..FIELD_ELEMENTS_PER_BLOB {
             let pos = ni + i * BYTES_PER_FIELD_ELEMENT;
             bytes[pos..pos + BYTES_PER_FIELD_ELEMENT]
-                .copy_from_slice(&bytes_from_bls_field(&polys[i].coeffs[j]));
+                .copy_from_slice(&bytes_from_bls_field(&poly.coeffs[j]));
         }
     }
 
-    for i in 0..n {
+    for (i, comm) in comms.iter().enumerate().take(n) {
         let pos = ni + i * BYTES_PER_FIELD_ELEMENT;
-        let data = &bytes_from_g1(&comms[i]);
+        let data = &bytes_from_g1(comm);
         bytes[pos..pos + data.len()].copy_from_slice(data);
     }
 
