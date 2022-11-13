@@ -7,6 +7,8 @@ use ssz_rs::{U256, serialize};
 
 use sha2::{Sha256, Digest};
 
+use crate::tests::fk20_proofs::reverse_bit_order;
+
 fn u64_to_bytes(x: u64) -> [u8; 32] {
     let mut bytes = [0u8; 32];
     bytes[0..8].copy_from_slice(&x.to_le_bytes());
@@ -285,4 +287,56 @@ verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) ->
     };
 
     assert!(!verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts), "verify succeeded incorrectly");
+}
+
+pub fn blob_to_kzg_commitment_test<
+    TFr : Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
+>(
+    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    bytes_from_g1: &dyn Fn(&TG1) -> [u8; 48usize],
+) {
+    const BLOB_SIZE: u64 = 4096;
+
+    let mut rng = StdRng::seed_from_u64(0);
+
+    let mut polynomial: TPoly = TPoly::new(BLOB_SIZE as usize).unwrap();
+
+    for i in 0..BLOB_SIZE {
+        polynomial.set_coeff_at(i as usize, &TFr::from_u64_arr(&rng.gen()));
+    }
+
+    let x: u64 = 9283547894352;
+
+    let y = polynomial.eval(&TFr::from_u64(x));
+
+    let expected_y = TFr::from_u64_arr(&[222763632366299915, 460490682938831241, 4083331670220749024, 8059712683068040737]);
+    assert!(y.equals(&expected_y));
+
+    let root_of_unity: TFr = TFr::from_u64_arr(&[16286944871763370758, 779461914329595798, 18176117771551122527, 6218356256323077364]);
+    let roots_of_unity = (0..BLOB_SIZE as usize).map(|i| root_of_unity.pow(i)).collect::<Vec<TFr>>();
+
+    let mut polynomial_l = roots_of_unity.iter().map(|w| polynomial.eval(w)).collect::<Vec<TFr>>();
+
+    
+    reverse_bit_order(&mut polynomial_l);
+    
+    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+
+    let commitment = blob_to_kzg_commitment(&polynomial_l, &ts);
+    let bytes = bytes_from_g1(&commitment);
+
+    let expected_bytes: [u8; 48] = 
+        [0x80, 0x80, 0x90, 0xf8, 0x46, 0x7c, 0xd, 0x83, 0xdc, 0xf5, 0x4e, 0x82, 
+        0x52, 0xcd, 0xd5, 0x46, 0xeb, 0x2f, 0xcb, 0xab, 0xbb, 0x14, 0x3a, 0x8e, 
+        0xf1, 0xb1, 0xf8, 0x96, 0x3b, 0xc, 0xd8, 0x7e, 0xe7, 0x4e, 0xc8, 0x2e, 
+        0xc3, 0x5d, 0x85, 0x59, 0x2d, 0x16, 0xb0, 0xfc, 0x8e, 0xa1, 0x70, 0x8e];
+    assert_eq!(bytes, expected_bytes);
+    
 }

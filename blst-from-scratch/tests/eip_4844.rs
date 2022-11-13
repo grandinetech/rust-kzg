@@ -4,8 +4,9 @@ mod tests {
     use blst_from_scratch::{
         eip_4844::{
             blob_to_kzg_commitment, bytes_from_bls_field, bytes_from_g1, bytes_to_bls_field,
-            compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form, g1_lincomb,
-            load_trusted_setup, vector_lincomb, verify_kzg_proof, compute_aggregate_kzg_proof, verify_aggregate_kzg_proof,
+            compute_aggregate_kzg_proof, compute_kzg_proof, compute_powers,
+            evaluate_polynomial_in_evaluation_form, g1_lincomb, load_trusted_setup, vector_lincomb,
+            verify_aggregate_kzg_proof, verify_kzg_proof,
         },
         types::{
             fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
@@ -13,8 +14,8 @@ mod tests {
         },
     };
     use kzg_bench::tests::eip_4844::{
-        bytes_to_bls_field_test, compute_commitment_for_blobs_test, compute_powers_test,
-        evaluate_polynomial_in_evaluation_form_test, eip4844_test,
+        blob_to_kzg_commitment_test, bytes_to_bls_field_test, compute_commitment_for_blobs_test,
+        compute_powers_test, eip4844_test, evaluate_polynomial_in_evaluation_form_test,
     };
 
     #[test]
@@ -66,7 +67,16 @@ mod tests {
             &load_trusted_setup,
             &blob_to_kzg_commitment,
             &compute_aggregate_kzg_proof,
-            &verify_aggregate_kzg_proof
+            &verify_aggregate_kzg_proof,
         );
+    }
+
+    #[test]
+    pub fn blob_to_kzg_commitment_test_() {
+        blob_to_kzg_commitment_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup,
+            &blob_to_kzg_commitment,
+            &bytes_from_g1,
+        )
     }
 }
