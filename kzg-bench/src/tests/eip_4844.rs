@@ -96,7 +96,6 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/tests/trusted_setup.txt");
-    println!("loaded trusted setup (probably) correctly");
     
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     

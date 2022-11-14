@@ -44,17 +44,13 @@ pub fn expand_roots_is_plausible<TFr: Fr>(
 
 /// Check if generated reverse roots are reversed correctly and multiply with expanded roots to result in 1.
 pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() {
-    println!("pradzia");
     let scale = 21;
     let width: usize = 1 << scale;
 
     let fft_settings = TFFTSettings::new(scale).unwrap();
     assert_eq!(fft_settings.get_max_width(), width);
 
-
-    println!("prasideda paskutinis ciklas");
     for i in 0..width {
-        println!("i = {}, width = {}", i, width);
         let prod = fft_settings
             .get_expanded_roots_of_unity_at(i)
             .mul(&fft_settings.get_reverse_roots_of_unity_at(i));

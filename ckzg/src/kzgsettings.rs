@@ -70,7 +70,7 @@ impl Default for KzgKZGSettings{
     fn default() -> Self {
         println!("mano defaultas");
         // I think this causes a memory leak
-        let v = Box::<KzgFFTSettings>::default();
+        let v = Box::new(KzgFFTSettings::default());
         let v1: *const KzgFFTSettings = Box::<KzgFFTSettings>::into_raw(v);
         Self {
             fs: v1,

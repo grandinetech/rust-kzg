@@ -77,7 +77,6 @@ pub struct BlstFr {
 
 impl Fr for BlstFr {
     fn default() -> Self {
-        println!("as nors sitame defaulte");
         Self { l: [0; 4] }
     }
 

@@ -12,7 +12,7 @@ mod tests {
         fftsettings::KzgFFTSettings,
         finite::BlstFr,
         kzgsettings::KzgKZGSettings,
-        poly::KzgPoly,
+        poly::KzgPoly, kzgsettings4844::KzgKZGSettings4844, fftsettings4844::KzgFFTSettings4844,
     };
     use kzg_bench::tests::eip_4844::{
         bytes_to_bls_field_test, compute_commitment_for_blobs_test, compute_powers_test,
@@ -36,8 +36,8 @@ mod tests {
             BlstP1,
             BlstP2,
             KzgPoly,
-            KzgFFTSettings,
-            KzgKZGSettings,
+            KzgFFTSettings4844,
+            KzgKZGSettings4844,
         >(
             &bound_bytes_to_bls_field,
             &load_trusted_setup_rust,
@@ -45,27 +45,27 @@ mod tests {
         );
     }
 
-    #[test]
-    pub fn compute_commitment_for_blobs_test_() {
-        compute_commitment_for_blobs_test::<
-            BlstFr,
-            BlstP1,
-            BlstP2,
-            KzgPoly,
-            KzgFFTSettings,
-            KzgKZGSettings,
-        >(
-            &load_trusted_setup_rust,
-            &bound_bytes_to_bls_field,
-            &bytes_from_bls_field,
-            &bytes_from_g1_rust,
-            &compute_powers,
-            &vector_lincomb,
-            &g1_lincomb,
-            &evaluate_polynomial_in_evaluation_form,
-            &blob_to_kzg_commitment,
-            &compute_kzg_proof,
-            &verify_kzg_proof,
-        )
-    }
+    // #[test]
+    // pub fn compute_commitment_for_blobs_test_() {
+    //     compute_commitment_for_blobs_test::<
+    //         BlstFr,
+    //         BlstP1,
+    //         BlstP2,
+    //         KzgPoly,
+    //         KzgFFTSettings,
+    //         KzgKZGSettings4844,
+    //     >(
+    //         &load_trusted_setup_rust,
+    //         &bound_bytes_to_bls_field,
+    //         &bytes_from_bls_field,
+    //         &bytes_from_g1_rust,
+    //         &compute_powers,
+    //         &vector_lincomb,
+    //         &g1_lincomb,
+    //         &evaluate_polynomial_in_evaluation_form,
+    //         &blob_to_kzg_commitment,
+    //         &compute_kzg_proof,
+    //         &verify_kzg_proof,
+    //     )
+    // }
 }
