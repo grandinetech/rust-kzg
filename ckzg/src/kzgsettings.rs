@@ -66,8 +66,24 @@ pub struct KzgKZGSettings {
     pub length: u64,
 }
 
+impl Default for KzgKZGSettings{
+    fn default() -> Self {
+        println!("mano defaultas");
+        // I think this causes a memory leak
+        let v = Box::<KzgFFTSettings>::default();
+        let v1: *const KzgFFTSettings = Box::<KzgFFTSettings>::into_raw(v);
+        Self {
+            fs: v1,
+            secret_g1: &mut G1::default(),
+            secret_g2: &mut G2::default(),
+            length: 0,
+        }
+    }    
+}
+
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSettings {
     fn default() -> Self {
+        assert!(false); // ne i mano defaulta turi neuzeiti
         Self {
             fs: &FFTSettings::default(),
             secret_g1: &mut G1::default(),

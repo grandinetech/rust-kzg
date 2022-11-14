@@ -4,19 +4,20 @@ use crate::poly::KzgPoly;
 use crate::utils::{log_2, next_pow_of_2};
 use crate::RUN_PARALLEL;
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr, Poly, ZeroPoly, DAS, FFTG1, G1};
+use std::ptr::null;
 use std::{cmp::min, slice};
 
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct KzgFFTSettings {
-    pub max_width: usize,
-    pub root_of_unity: BlstFr,
+    pub max_width: u64,
     pub expanded_roots_of_unity: *mut BlstFr,
     pub reverse_roots_of_unity: *mut BlstFr,
+    pub roots_of_unity: *mut BlstFr,
 }
 
 extern "C" {
-    pub fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
+    fn new_fft_settings(settings: *mut KzgFFTSettings, max_scale: u32) -> KzgRet;
     fn free_fft_settings(settings: *mut KzgFFTSettings);
     fn fft_fr(
         output: *mut BlstFr,
@@ -110,21 +111,44 @@ extern "C" {
     ) -> KzgRet;
 }
 
-impl FFTSettings<BlstFr> for KzgFFTSettings {
+impl Default for KzgFFTSettings{
     fn default() -> Self {
+        println!("o default tai tiktai boxa pirmame defaulte");
+        let fr1 = Box::new(BlstFr::default());
+        let v1 = Box::<BlstFr>::into_raw(fr1);
+        let fr2 = Box::new(BlstFr::default());
+        let v2 = Box::<BlstFr>::into_raw(fr2);
+        let fr3 = Box::new(BlstFr::default());
+        let v3 = Box::<BlstFr>::into_raw(fr3);
+        println!("v1, v2, v3 adresai: {:p} {:p} {:p}", v1, v2, v3);
+
         Self {
             max_width: 0,
-            root_of_unity: Fr::default(),
+            roots_of_unity: v1,
+            expanded_roots_of_unity: v2,
+            reverse_roots_of_unity: v3,
+        }
+    }
+}
+
+impl FFTSettings<BlstFr> for KzgFFTSettings {
+    fn default() -> Self {
+        println!("o default tai tiktai boxa antrame defaulte ");
+        Self {
+            max_width: 0,
+            roots_of_unity: &mut Fr::default(),
             expanded_roots_of_unity: &mut Fr::default(),
             reverse_roots_of_unity: &mut Fr::default(),
         }
     }
 
     fn new(scale: usize) -> Result<Self, String> {
-        let mut settings = FFTSettings::default();
+        println!("fftsettings gaminamas per new");
+        let mut settings = Box::<KzgFFTSettings>::default();
         unsafe {
-            match new_fft_settings(&mut settings, scale as u32) {
-                KzgRet::KzgOk => Ok(settings),
+            let v = Box::<KzgFFTSettings>::into_raw(settings);
+            match new_fft_settings(v, scale as u32) {
+                KzgRet::KzgOk => Ok(*Box::<KzgFFTSettings>::from_raw(v)),
                 e => Err(format!(
                     "An error has occurred in FFTSettings::new ==> {:?}",
                     e
@@ -134,15 +158,19 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn get_max_width(&self) -> usize {
-        self.max_width
+        self.max_width as usize
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
-        unsafe { *self.expanded_roots_of_unity.add(i) as BlstFr }
+        println!("galiausiai ateina i get_expanded_roots_of_unity_at");
+        assert!(!self.expanded_roots_of_unity.is_null());
+        assert!(!self.reverse_roots_of_unity.is_null());
+        println!("adresai: {:p} {:p} {:p}", self.expanded_roots_of_unity, self.reverse_roots_of_unity, self.roots_of_unity);
+        unsafe { *(self.expanded_roots_of_unity.add(i )) as BlstFr }
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {
-        unsafe { slice::from_raw_parts(self.expanded_roots_of_unity, self.max_width) }
+        unsafe { slice::from_raw_parts(self.expanded_roots_of_unity, self.max_width as usize) }
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> BlstFr {
@@ -150,7 +178,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn get_reversed_roots_of_unity(&self) -> &[BlstFr] {
-        unsafe { slice::from_raw_parts(self.reverse_roots_of_unity, self.max_width) }
+        unsafe { slice::from_raw_parts(self.reverse_roots_of_unity, self.max_width as usize) }
     }
 }
 

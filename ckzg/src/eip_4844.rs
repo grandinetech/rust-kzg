@@ -1,10 +1,14 @@
+use crate::eip_4844::BLST_ERROR::{BLST_SUCCESS, BLST_BAD_ENCODING, BLST_POINT_NOT_ON_CURVE, BLST_POINT_NOT_IN_GROUP, BLST_AGGR_TYPE_MISMATCH, BLST_VERIFY_FAIL, BLST_PK_IS_INFINITY, BLST_BAD_SCALAR};
+
+use crate::eip_4844::KzgRet::{KzgOk, KzgBadArgs, KzgError, KzgMalloc};
 use std::io::Read;
 
+use std::ptr::null;
 use std::{convert::TryInto, fs::File, slice};
 
-use crate::consts::{BlstP1, BlstP1Affine, BlstP2, BlstP2Affine, BLST_ERROR};
+use crate::consts::{BlstP1, BlstP2, BlstP2Affine, BLST_ERROR, KzgRet};
 use crate::finite::{
-    blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2_from_affine,
+    blst_p1_compress, blst_p2_from_affine,
     blst_p2_uncompress, g1_linear_combination, BlstFr,
 };
 
@@ -14,96 +18,154 @@ use crate::poly::KzgPoly;
 use crate::utils::reverse_bit_order;
 
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1};
+use libc::{fdopen, FILE, fgets};
+use std::ffi::CStr;
+use std::os::unix::io::IntoRawFd;
+
 
 extern "C" {
     fn bytes_to_bls_field(out: *mut BlstFr, bytes: *const u8);
-    // fn bytes_to_g1(out: *mut BlstP1, bytes: *const u8);
-    // fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
+    fn bytes_to_g1(out: *mut BlstP1, bytes: *const u8);
+    fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
+    fn load_trusted_setup(out: *mut KzgKZGSettings, inp: *mut FILE) -> KzgRet;
 }
 
-pub fn bytes_to_g1(bytes: [u8; 48usize]) -> BlstP1 {
-    let mut tmp = BlstP1Affine::default();
-    let mut g1 = BlstP1::default();
-    unsafe {
-        if blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-            panic!("blst_p1_uncompress failed");
-        }
-        blst_p1_from_affine(&mut g1, &tmp);
+pub fn bytes_to_g1_rust(bytes: [u8; 48usize]) -> BlstP1 {
+    unsafe{
+        let g1: Box<BlstP1> = Box::default();
+        let v = Box::<BlstP1>::into_raw(g1);
+        bytes_to_g1(v, bytes.as_ptr());
+        *Box::<BlstP1>::from_raw(v)
     }
-    g1
 }
 
-pub fn bytes_from_g1(g1: &BlstP1) -> [u8; 48usize] {
+pub fn bytes_from_g1_rust(g1: &BlstP1) -> [u8; 48usize] {
     let mut out: [u8; 48usize] = [0; 48];
     unsafe {
-        // it say that it is not FFI safe
-        blst_p1_compress(out.as_mut_ptr(), g1);
+        bytes_from_g1(out.as_mut_ptr(), g1);
     }
     out
 }
 
-pub fn load_trusted_setup(filepath: &str) -> KzgKZGSettings {
-    let mut file = File::open(filepath).expect("Unable to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Unable to read file");
+// fn fileChange() {
+//     let rust_file = File::open("/etc/passwd").unwrap();
+//     unsafe {
+//         let c_file = fdopen(
+//             rust_file.into_raw_fd(),
+//             CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
+//         );
+//         let mut buf = [0; 80];
+//         let ptr = buf.as_mut_ptr();
+//         fgets(ptr, 80, c_file);
+//         println!("{}", CStr::from_ptr(ptr).to_str().unwrap());
+//         fclose(c_file);
+//     }
+// }
 
-    let mut lines = contents.lines();
-    let length = lines.next().unwrap().parse::<usize>().unwrap();
-    let n2 = lines.next().unwrap().parse::<usize>().unwrap();
+pub fn load_trusted_setup_rust(filepath: &str) -> KzgKZGSettings {
+    // // https://www.reddit.com/r/rust/comments/8sfjp6/converting_between_file_and_stdfsfile/
+    unsafe{
+        let boxed: Box::<KzgKZGSettings> = Box::<KzgKZGSettings>::default();
+        let v = Box::<KzgKZGSettings>::into_raw(boxed);
+        
+        let mut rust_file = File::open(filepath).unwrap();
+        let c_file = fdopen(
+            rust_file.into_raw_fd(),
+            CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
+        );
 
-    let mut g2_values = Box::new(Vec::new());
+        // let mut buf = [0; 80];
+        // let ptr = buf.as_mut_ptr();
+        // fgets(ptr, 80, c_file);
+        // for i in buf{
+        //     println!("{}", i);
+        // }
 
-    let mut g1_projectives: Vec<BlstP1> = Vec::new();
+        assert!(!c_file.is_null());
 
-    for _ in 0..length {
-        let line = lines.next().unwrap();
-        let bytes = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>();
-        let mut bytes_array: [u8; 48] = [0; 48];
-        bytes_array.copy_from_slice(&bytes);
-        g1_projectives.push(bytes_to_g1(bytes_array));
-    }
+        let ret = load_trusted_setup(v, c_file);
+        println!("ret = {}", ret.eq(&KzgOk));
+        println!("ret = {}", ret.eq(&KzgBadArgs));
+        println!("ret = {}", ret.eq(&KzgError));
+        println!("ret = {}", ret.eq(&KzgMalloc));
+        // println!("ret = {}", ret.eq(&BLST_AGGR_TYPE_MISMATCH));
+        // println!("ret = {}", ret.eq(&BLST_VERIFY_FAIL));
+        // println!("ret = {}", ret.eq(&BLST_PK_IS_INFINITY));
+        // println!("ret = {}", ret.eq(&BLST_BAD_SCALAR));    
 
-    for _ in 0..n2 {
-        let line = lines.next().unwrap();
-        let bytes = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>();
-        let mut bytes_array: [u8; 96] = [0; 96];
-        bytes_array.copy_from_slice(&bytes);
-        let mut tmp = BlstP2Affine::default();
-        let mut g2 = BlstP2::default();
-        unsafe {
-            if blst_p2_uncompress(&mut tmp, bytes_array.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                panic!("blst_p2_uncompress failed");
-            }
-            blst_p2_from_affine(&mut g2, &tmp);
+        unsafe{
+            // for a in (*v).secret_g1{
+            //     println!("{}", a.)
+            // }
+            let a = (*v).length;
+            println!("a = {}", a);
         }
-        g2_values.push(g2);
+
+        let res = *Box::<KzgKZGSettings>::from_raw(v);
+        println!("{}", res.length);
+        res
     }
+    // let mut file = File::open(filepath).expect("Unable to open file");
+    // let mut contents = String::new();
+    // file.read_to_string(&mut contents)
+    //     .expect("Unable to read file");
 
-    let mut max_scale: usize = 0;
-    while (1 << max_scale) < length {
-        max_scale += 1;
-    }
+    // let mut lines = contents.lines();
+    // let length = lines.next().unwrap().parse::<usize>().unwrap();
+    // let n2 = lines.next().unwrap().parse::<usize>().unwrap();
 
-    let boxed = Box::new(KzgFFTSettings::new(max_scale).unwrap());
-    let fs = Box::into_raw(boxed);
-    let mut g1_values = Box::new(unsafe { (*fs).fft_g1(&g1_projectives, true).unwrap() });
+    // let mut g2_values = Box::new(Vec::new());
 
-    reverse_bit_order(&mut g1_values);
-    assert!(g2_values.len() == g2_values.len());
+    // let mut g1_projectives: Vec<BlstP1> = Vec::new();
 
-    KzgKZGSettings {
-        length: g1_values.len().try_into().unwrap(),
-        secret_g1: unsafe { (*(Box::into_raw(g1_values))).as_mut_ptr() },
-        secret_g2: unsafe { (*(Box::into_raw(g2_values))).as_mut_ptr() },
-        fs,
-    }
+    // for _ in 0..length {
+    //     let line = lines.next().unwrap();
+    //     let bytes = (0..line.len())
+    //         .step_by(2)
+    //         .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+    //         .collect::<Vec<u8>>();
+    //     let mut bytes_array: [u8; 48] = [0; 48];
+    //     bytes_array.copy_from_slice(&bytes);
+    //     g1_projectives.push(bytes_to_g1_rust(bytes_array));
+    // }
+
+    // for _ in 0..n2 {
+    //     let line = lines.next().unwrap();
+    //     let bytes = (0..line.len())
+    //         .step_by(2)
+    //         .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+    //         .collect::<Vec<u8>>();
+    //     let mut bytes_array: [u8; 96] = [0; 96];
+    //     bytes_array.copy_from_slice(&bytes);
+    //     let mut tmp = BlstP2Affine::default();
+    //     let mut g2 = BlstP2::default();
+    //     unsafe {
+    //         if blst_p2_uncompress(&mut tmp, bytes_array.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+    //             panic!("blst_p2_uncompress failed");
+    //         }
+    //         blst_p2_from_affine(&mut g2, &tmp);
+    //     }
+    //     g2_values.push(g2);
+    // }
+
+    // let mut max_scale: usize = 0;
+    // while (1 << max_scale) < length {
+    //     max_scale += 1;
+    // }
+
+    // let boxed = Box::new(KzgFFTSettings::new(max_scale).unwrap());
+    // let fs = Box::into_raw(boxed);
+    // let mut g1_values = Box::new(unsafe { (*fs).fft_g1(&g1_projectives, true).unwrap() });
+
+    // reverse_bit_order(&mut g1_values);
+    // assert!(g2_values.len() == g2_values.len());
+
+    // KzgKZGSettings {
+    //     length: g1_values.len().try_into().unwrap(),
+    //     secret_g1: unsafe { (*(Box::into_raw(g1_values))).as_mut_ptr() },
+    //     secret_g2: unsafe { (*(Box::into_raw(g2_values))).as_mut_ptr() },
+    //     fs,
+    // }
     // fs.
 }
 
@@ -277,9 +339,15 @@ pub fn evaluate_polynomial_in_evaluation_form(
     let mut inverses_in: Vec<BlstFr> = vec![BlstFr::default(); p.len()];
     let mut inverses: Vec<BlstFr> = vec![BlstFr::default(); p.len()];
     let mut i: usize = 0;
+    println!("will slice from raw parts, wish usafe program luck");
+    unsafe{
+        println!("(*s.fs).max_width = {}", (*s.fs).max_width);
+    }
     let mut roots_of_unity = unsafe {
-        slice::from_raw_parts((*s.fs).expanded_roots_of_unity, (*s.fs).max_width).to_vec()
+        slice::from_raw_parts((*s.fs).expanded_roots_of_unity, (*s.fs).max_width as usize).to_vec()
     };
+
+    println!("roots_of_unity.size() = {}", roots_of_unity.len());
 
     reverse_bit_order(&mut roots_of_unity);
 
