@@ -83,7 +83,6 @@ impl Default for KzgKZGSettings{
 
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSettings {
     fn default() -> Self {
-        assert!(false); // ne i mano defaulta turi neuzeiti
         Self {
             fs: &FFTSettings::default(),
             secret_g1: &mut G1::default(),
