@@ -18,7 +18,6 @@ pub struct KzgKZGSettings4844 {
     pub fs: *const KzgFFTSettings4844,
     pub secret_g1: *mut BlstP1, // G1
     pub secret_g2: *mut BlstP2, // G2
-    pub length: u64,
 }
 
 extern "C" {
@@ -27,12 +26,12 @@ extern "C" {
 
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZGSettings4844 {
     fn default() -> Self {
+    
     println!("fs created here is maybe dropped later");
         Self {
             fs: &FFTSettings::default(),
             secret_g1: &mut G1::default(),
             secret_g2: &mut G2::default(),
-            length: 0,
         }
     }
 
@@ -96,10 +95,11 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZG
 
 impl Drop for KzgKZGSettings4844 {
     fn drop(&mut self) {
-        unsafe {
-            if self.length > 0 {
-                free_trusted_setup(self);
-            }
-        }
+        println!("dropinu kzgKZGSettings4844");
+        // unsafe {
+        //     if self.length > 0 {
+        //         free_trusted_setup(self);
+        //     }
+        // }
     }
 }

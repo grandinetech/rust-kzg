@@ -95,6 +95,22 @@ pub fn load_trusted_setup(filepath: &str) -> FsKZGSettings {
 
     reverse_bit_order(&mut g1_values);
 
+    for i in 0..g1_values.len(){
+        for j in 0..6{
+            println!("{}", g1_values[i].0.x.l[j]);
+        }
+        println!("");
+        for j in 0..6{
+            println!("{}", g1_values[i].0.y.l[j]);
+        }
+        println!("");
+        for j in 0..6{
+            println!("{}", g1_values[i].0.z.l[j]);
+        }
+        println!("");
+    }
+    println!("len = {}", g1_values.len());
+
     FsKZGSettings {
         secret_g1: g1_values,
         secret_g2: g2_values,
@@ -152,7 +168,24 @@ pub fn g1_lincomb(points: &[FsG1], scalars: &[FsFr]) -> FsG1 {
 }
 
 pub fn blob_to_kzg_commitment(blob: &[FsFr], s: &FsKZGSettings) -> FsG1 {
-    g1_lincomb(&s.secret_g1, blob)
+    let out = g1_lincomb(&s.secret_g1, blob);
+    println!("outas yra:");
+    for j in 0..6{
+        // let v = (*res.secret_g1.add(i)).x.l[j];
+        println!("{}", out.0.x.l[j]);
+    }
+    println!("");
+    for j in 0..6{
+        println!("{}", out.0.y.l[j]);
+    }
+    println!("");
+    for j in 0..6{
+        println!("{}", out.0.z.l[j]);
+    }
+    println!("");
+
+    out
+
 }
 
 pub fn verify_kzg_proof(
