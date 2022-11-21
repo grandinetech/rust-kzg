@@ -69,8 +69,11 @@ impl Fr {
     }
 
     pub fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let res = U256([u[0], u[1], u[2], u[3]]);
-        Fr::from_str(&res.to_string(), 10).unwrap()
+        let mut arr = [0u8; 32];
+        for i in 0..4 {
+            arr[i*8..i*8+8].copy_from_slice(&u[i].to_le_bytes());
+        }
+        Fr::from_scalar(&arr)
     }
 
     pub fn from_scalar(secret: &[u8; 32]) -> Self {
