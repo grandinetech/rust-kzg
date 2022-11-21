@@ -6,7 +6,7 @@ mod tests {
         consts::{BlstP1, BlstP2},
         eip_4844::{
             blob_to_kzg_commitment, bytes_from_bls_field, bound_bytes_to_bls_field,
-            compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form, g1_lincomb,
+            compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form_rust, g1_lincomb,
             load_trusted_setup_rust, vector_lincomb, verify_kzg_proof, bytes_from_g1_rust,
         },
         fftsettings::KzgFFTSettings,
@@ -41,7 +41,7 @@ mod tests {
         >(
             &bound_bytes_to_bls_field,
             &load_trusted_setup_rust,
-            &evaluate_polynomial_in_evaluation_form,
+            &evaluate_polynomial_in_evaluation_form_rust,
         );
     }
 

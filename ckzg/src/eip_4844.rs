@@ -7,9 +7,7 @@ use std::ptr::null;
 use std::{convert::TryInto, fs::File, slice};
 
 use crate::consts::{BlstP1, BlstP2, BlstP2Affine, BLST_ERROR, KzgRet};
-use crate::finite::{
-    blst_p1_compress, blst_p2_from_affine,
-    blst_p2_uncompress, g1_linear_combination, BlstFr,
+use crate::finite::{g1_linear_combination, BlstFr,
 };
 
 use crate::fftsettings::KzgFFTSettings;
@@ -22,7 +20,7 @@ use crate::poly::KzgPoly;
 use crate::utils::reverse_bit_order;
 
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1};
-use libc::{fdopen, FILE, fgets};
+use libc::{fdopen, FILE};
 use std::ffi::CStr;
 use std::os::unix::io::IntoRawFd;
 
@@ -32,6 +30,7 @@ extern "C" {
     fn bytes_to_g1(out: *mut BlstP1, bytes: *const u8);
     fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
     fn load_trusted_setup(out: *mut KzgKZGSettings4844, inp: *mut FILE) -> KzgRet;
+    // fn evaluate_polynomial_in_evaluation_form(out: *mut BlstFr, p: *const KzgPoly, x: *const BlstFr, s: *const KzgKZGSettings4844) -> KzgRet;
 }
 
 pub fn bytes_to_g1_rust(bytes: [u8; 48usize]) -> BlstP1 {
@@ -245,52 +244,57 @@ pub fn compute_kzg_proof(p: &mut KzgPoly, x: &BlstFr, s: &KzgKZGSettings) -> Bls
     // g1_lincomb(&secret_g1, q.get_coeffs())
 }
 
-pub fn evaluate_polynomial_in_evaluation_form(
+pub fn evaluate_polynomial_in_evaluation_form_rust(
     p: &KzgPoly,
     x: &BlstFr,
     s: &KzgKZGSettings4844,
 ) -> BlstFr {
-    let mut tmp: BlstFr;
+    todo!()
 
-    let mut inverses_in: Vec<BlstFr> = vec![BlstFr::default(); p.len()];
-    let mut inverses: Vec<BlstFr> = vec![BlstFr::default(); p.len()];
-    let mut i: usize = 0;
-    println!("will slice from raw parts, wish usafe program luck");
-    unsafe{
-        println!("(*s.fs).max_width = {}", (*s.fs).max_width);
-    }
-    let mut roots_of_unity = unsafe {
-        slice::from_raw_parts((*s.fs).roots_of_unity, (*s.fs).max_width as usize).to_vec()
-    };
+    // let mut tmp: BlstFr = BlstFr::default();
+    // unsafe{
+    //     evaluate_polynomial_in_evaluation_form(&mut tmp, p, x, s);
+    // }
 
-    println!("roots_of_unity.size() = {}", roots_of_unity.len());
+    // let mut inverses_in: Vec<BlstFr> = vec![BlstFr::default(); p.len()];
+    // let mut inverses: Vec<BlstFr> = vec![BlstFr::default(); p.len()];
+    // let mut i: usize = 0;
+    // println!("will slice from raw parts, wish usafe program luck");
+    // unsafe{
+    //     println!("(*s.fs).max_width = {}", (*s.fs).max_width);
+    // }
+    // let mut roots_of_unity = unsafe {
+    //     slice::from_raw_parts((*s.fs).roots_of_unity, (*s.fs).max_width as usize).to_vec()
+    // };
 
-    // reverse_bit_order(&mut roots_of_unity);
+    // println!("roots_of_unity.size() = {}", roots_of_unity.len());
 
-    while i < p.len() {
-        if x.equals(&roots_of_unity[i]) {
-            return p.get_coeff_at(i);
-        }
+    // // reverse_bit_order(&mut roots_of_unity);
 
-        inverses_in[i] = x.sub(&roots_of_unity[i]);
-        i += 1;
-    }
-    fr_batch_inv(&mut inverses, &inverses_in, p.len());
+    // while i < p.len() {
+    //     if x.equals(&roots_of_unity[i]) {
+    //         return p.get_coeff_at(i);
+    //     }
 
-    let mut out = BlstFr::zero();
-    i = 0;
-    while i < p.len() {
-        tmp = inverses[i].mul(&roots_of_unity[i]);
-        tmp = tmp.mul(&p.get_coeff_at(i));
-        out = out.add(&tmp);
-        i += 1;
-    }
-    tmp = BlstFr::from_u64(p.len().try_into().unwrap());
-    out = out.div(&tmp).unwrap();
-    tmp = x.pow(p.len());
-    tmp = tmp.sub(&BlstFr::one());
-    out = out.mul(&tmp);
-    out
+    //     inverses_in[i] = x.sub(&roots_of_unity[i]);
+    //     i += 1;
+    // }
+    // fr_batch_inv(&mut inverses, &inverses_in, p.len());
+
+    // let mut out = BlstFr::zero();
+    // i = 0;
+    // while i < p.len() {
+    //     tmp = inverses[i].mul(&roots_of_unity[i]);
+    //     tmp = tmp.mul(&p.get_coeff_at(i));
+    //     out = out.add(&tmp);
+    //     i += 1;
+    // }
+    // tmp = BlstFr::from_u64(p.len().try_into().unwrap());
+    // out = out.div(&tmp).unwrap();
+    // tmp = x.pow(p.len());
+    // tmp = tmp.sub(&BlstFr::one());
+    // out = out.mul(&tmp);
+    // out
 }
 
 pub fn compute_powers(base: &BlstFr, num_powers: usize) -> Vec<BlstFr> {
