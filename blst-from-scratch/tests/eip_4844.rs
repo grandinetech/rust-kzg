@@ -15,7 +15,7 @@ mod tests {
     };
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test, compute_commitment_for_blobs_test,
-        compute_powers_test, eip4844_test, evaluate_polynomial_in_evaluation_form_test,
+        compute_powers_test, eip4844_test, evaluate_polynomial_in_evaluation_form_test, compute_aggregate_kzg_proof_test_empty, aggregate_proof_for_single_blob_test,
     };
 
     #[test]
@@ -78,5 +78,33 @@ mod tests {
             &blob_to_kzg_commitment,
             &bytes_from_g1,
         )
+    }
+
+    #[test]
+    pub fn compute_aggregate_kzg_proof_test_empty_() {
+        compute_aggregate_kzg_proof_test_empty::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup,
+            &compute_aggregate_kzg_proof,
+            &bytes_from_g1,
+        )
+    }
+
+    // #[test]
+    // pub fn verify_aggregate_kzg_proof_test_empty_() {
+    //     verify_aggregate_kzg_proof_test_empty::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+    //         &load_trusted_setup,
+    //         &compute_aggregate_kzg_proof,
+    //         &verify_aggregate_kzg_proof,
+    //     )
+    // }
+
+    #[test]
+    pub fn aggregate_proof_for_single_blob_test_() {
+        aggregate_proof_for_single_blob_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup,
+            &blob_to_kzg_commitment,
+            &compute_aggregate_kzg_proof,
+            &verify_aggregate_kzg_proof,
+        );
     }
 }
