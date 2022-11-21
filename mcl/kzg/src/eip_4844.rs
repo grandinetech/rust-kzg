@@ -135,7 +135,6 @@ pub fn vector_lincomb(vectors: &[Vec<Fr>], scalars: &[Fr]) -> Vec<Fr> {
 }
 
 pub fn g1_lincomb(p: &[G1], coeffs: &[Fr]) -> G1 {
-    println!("{} == {}", p.len(), coeffs.len());
     assert!(p.len() == coeffs.len());
 
     let mut out = G1::default();
