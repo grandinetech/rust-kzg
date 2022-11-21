@@ -268,6 +268,9 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &FsPoly, x: &FsFr, s: &FsKZGSet
 
 pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
     let mut powers: Vec<FsFr> = vec![FsFr::default(); num_powers];
+    if num_powers == 0 {
+        return powers;
+    }
     powers[0] = FsFr::one();
     for i in 1..num_powers {
         powers[i] = powers[i - 1].mul(base);
@@ -340,8 +343,13 @@ pub fn compute_aggregated_poly_and_commitment(
 	let hash = hash_to_bytes(polys, kzg_commitments, n);
 	let r = bytes_to_bls_field(&hash);
 
-	let r_powers = compute_powers(&r, n);
-	let chal_out = r_powers[1].mul(&r_powers[n - 1]);
+	let (r_powers, chal_out) = if n == 1 {
+        (vec![r], r)
+    } else {
+        let r_powers = compute_powers(&r, n);
+        let chal_out = r_powers[1].mul(&r_powers[n - 1]);
+        (r_powers, chal_out)
+    };
 
 	let poly_out = poly_lincomb(polys, &r_powers, n);
 
@@ -361,13 +369,17 @@ fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
 }
 
 pub fn compute_aggregate_kzg_proof(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> FsG1 {
-    let mut commitments: Vec<FsG1> = vec![FsG1::default(); blobs.len()];
-    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); blobs.len()];
-    for i in 0..blobs.len(){
+    let n = blobs.len();
+    if n == 0 {
+        return FsG1::identity();
+    }
+    let mut commitments: Vec<FsG1> = vec![FsG1::default(); n];
+    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); n];
+    for i in 0..n{
         poly_from_blob(&mut polys[i], &blobs[i]);
         commitments[i] = poly_to_kzg_commitment(&polys[i], ts);
     }
-    let (aggregated_poly, _, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, &commitments, blobs.len());
+    let (aggregated_poly, _, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, &commitments, n);
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, ts)
 }
 

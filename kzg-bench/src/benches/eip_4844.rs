@@ -16,13 +16,14 @@ pub fn bench_compute_aggregate_kzg_proof<
 >(
     c: &mut Criterion,
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1
+    compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
+    blob_count: usize,
 ) {
     const BLOB_SIZE: usize = 4096;
 
     let mut rng = StdRng::seed_from_u64(0);
 
-    let blobs = (0..3)
+    let blobs = (0..blob_count)
         .map(|_| {
             (0..BLOB_SIZE)
                 .map(|_| TFr::from_u64_arr(&rng.gen()))
@@ -33,7 +34,7 @@ pub fn bench_compute_aggregate_kzg_proof<
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-    let id = format!("bench_compute_aggregate_kzg_proof scale: '{}'", BENCH_SCALE);
+    let id = format!("bench_compute_aggregate_kzg_proof_{} scale: '{}'", blob_count, BENCH_SCALE);
     c.bench_function(&id, move |b| b.iter(|| compute_aggregate_kzg_proof(&blobs, &ts)));
 }
 
