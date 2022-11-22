@@ -4,7 +4,6 @@ use crate::poly::KzgPoly;
 use crate::utils::{log_2, next_pow_of_2};
 use crate::RUN_PARALLEL;
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr, Poly, ZeroPoly, DAS, FFTG1, G1};
-use std::ptr::null;
 use std::{cmp::min, slice};
 
 #[repr(C)]
@@ -122,7 +121,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn new(scale: usize) -> Result<Self, String> {
-        let mut settings = Box::new(KzgFFTSettings::default());
+        let settings = Box::new(KzgFFTSettings::default());
         unsafe {
             let v = Box::<KzgFFTSettings>::into_raw(settings);
             match new_fft_settings(v, scale as u32) {

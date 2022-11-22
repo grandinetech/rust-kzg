@@ -1,10 +1,10 @@
-use kzg::{FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, G1, G2};
+use kzg::{FFTSettings, KZGSettings, G1, G2};
 
-use crate::consts::{BlstP1, BlstP2, KzgRet};
+use crate::consts::{BlstP1, BlstP2};
 use crate::fftsettings4844::KzgFFTSettings4844;
 use crate::finite::BlstFr;
 use crate::poly::KzgPoly;
-use crate::RUN_PARALLEL;
+// use crate::RUN_PARALLEL;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -21,12 +21,13 @@ pub struct KzgKZGSettings4844 {
 }
 
 extern "C" {
-    fn free_trusted_setup(s: *mut KzgKZGSettings4844);
+    // fn free_trusted_setup(s: *mut KzgKZGSettings4844);
 }
 
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZGSettings4844 {
     fn default() -> Self {
     
+    println!("creating kzgsettings4844");
     println!("fs created here is maybe dropped later");
         Self {
             fs: &FFTSettings::default(),
@@ -35,11 +36,12 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZG
         }
     }
 
+    // underscore was added to avoid warnings when new is unused
     fn new(
-        secret_g1: &Vec<BlstP1>,
-        secret_g2: &Vec<BlstP2>,
-        length: usize,
-        fs: &KzgFFTSettings4844,
+        _secret_g1: &Vec<BlstP1>,
+        _secret_g2: &Vec<BlstP2>,
+        _length: usize,
+        _fs: &KzgFFTSettings4844,
     ) -> Result<Self, String> {
         todo!();
         // let mut settings = KzgKZGSettings4844::default();
@@ -55,35 +57,35 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZG
         // }
     }
 
-    fn commit_to_poly(&self, p: &KzgPoly) -> Result<BlstP1, String> {
+    fn commit_to_poly(&self, _p: &KzgPoly) -> Result<BlstP1, String> {
         todo!();
     }
 
-    fn compute_proof_single(&self, p: &KzgPoly, x: &BlstFr) -> Result<BlstP1, String> {
+    fn compute_proof_single(&self, _p: &KzgPoly, _x: &BlstFr) -> Result<BlstP1, String> {
         todo!();
     }
 
     fn check_proof_single(
         &self,
-        com: &BlstP1,
-        proof: &BlstP1,
-        x: &BlstFr,
-        value: &BlstFr,
+        _com: &BlstP1,
+        _proof: &BlstP1,
+        _x: &BlstFr,
+        _value: &BlstFr,
     ) -> Result<bool, String> {
         todo!();
     }
 
-    fn compute_proof_multi(&self, p: &KzgPoly, x: &BlstFr, n: usize) -> Result<BlstP1, String> {
+    fn compute_proof_multi(&self, _p: &KzgPoly, _x: &BlstFr, _n: usize) -> Result<BlstP1, String> {
         todo!();
     }
 
     fn check_proof_multi(
         &self,
-        com: &BlstP1,
-        proof: &BlstP1,
-        x: &BlstFr,
-        values: &Vec<BlstFr>,
-        n: usize,
+        _com: &BlstP1,
+        _proof: &BlstP1,
+        _x: &BlstFr,
+        _values: &Vec<BlstFr>,
+        _n: usize,
     ) -> Result<bool, String> {
         todo!();
     }

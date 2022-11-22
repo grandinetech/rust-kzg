@@ -1,25 +1,16 @@
-use crate::eip_4844::BLST_ERROR::{BLST_SUCCESS, BLST_BAD_ENCODING, BLST_POINT_NOT_ON_CURVE, BLST_POINT_NOT_IN_GROUP, BLST_AGGR_TYPE_MISMATCH, BLST_VERIFY_FAIL, BLST_PK_IS_INFINITY, BLST_BAD_SCALAR};
 
-use crate::eip_4844::KzgRet::{KzgOk, KzgBadArgs, KzgError, KzgMalloc};
-use std::io::Read;
 
-use std::ptr::null;
-use std::{convert::TryInto, fs::File, slice};
+use std::{convert::TryInto, fs::File};
 
-use crate::consts::{BlstP1, BlstP2, BlstP2Affine, BLST_ERROR, KzgRet};
-use crate::finite::{g1_linear_combination, BlstFr,
+use crate::consts::{BlstP1, KzgRet};
+use crate::finite::{BlstFr,
 };
 
-use crate::fftsettings::KzgFFTSettings;
-use crate::kzgsettings::KzgKZGSettings;
-
-use crate::fftsettings4844::KzgFFTSettings4844;
 use crate::kzgsettings4844::KzgKZGSettings4844;
 
-use crate::poly::KzgPoly;
-use crate::utils::reverse_bit_order;
+// use crate::utils::reverse_bit_order;
 
-use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1};
+use kzg::{Fr, KZGSettings};
 use libc::{fdopen, FILE};
 use std::ffi::CStr;
 use std::os::unix::io::IntoRawFd;
@@ -33,7 +24,7 @@ extern "C" {
     fn verify_aggregate_kzg_proof(out: *mut bool, blobs: *const *const BlstFr, expected_kzg_commitments: *const BlstP1, n: usize, kzg_aggregated_proof: *const BlstP1, s: *const KzgKZGSettings4844) -> KzgRet;
     fn blob_to_kzg_commitment(out: *mut BlstP1, blob: *const BlstFr, s: *const KzgKZGSettings4844);
     fn compute_aggregate_kzg_proof(out: *mut BlstP1, blobs: *const *const BlstFr, n: usize, s: *const KzgKZGSettings4844) -> KzgRet;
-    fn verify_kzg_proof(out: *mut bool, polynomial_kzg: *const BlstP1, z: *const BlstFr, y: *const BlstFr, kzg_proof: *const BlstP1, s: *const KzgKZGSettings4844) -> KzgRet;
+    // fn verify_kzg_proof(out: *mut bool, polynomial_kzg: *const BlstP1, z: *const BlstFr, y: *const BlstFr, kzg_proof: *const BlstP1, s: *const KzgKZGSettings4844) -> KzgRet;
 }
 
 pub fn bytes_to_g1_rust(bytes: [u8; 48usize]) -> BlstP1 {
@@ -72,9 +63,8 @@ pub fn load_trusted_setup_rust(filepath: &str) -> KzgKZGSettings4844 {
     // // https://www.reddit.com/r/rust/comments/8sfjp6/converting_between_file_and_stdfsfile/
     let boxed: Box::<KzgKZGSettings4844> = Box::new(KzgKZGSettings4844::default());
     let v = Box::<KzgKZGSettings4844>::into_raw(boxed);
-    let mut res = KzgKZGSettings4844::default();
-    unsafe{        
-        let mut rust_file = File::open(filepath).unwrap();
+    let res = unsafe{        
+        let rust_file = File::open(filepath).unwrap();
         let c_file = fdopen(
             rust_file.into_raw_fd(),
             CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
@@ -83,49 +73,49 @@ pub fn load_trusted_setup_rust(filepath: &str) -> KzgKZGSettings4844 {
         let ret = load_trusted_setup(v, c_file);
         println!("load ret = {:?}", ret);
 
-        res = *Box::<KzgKZGSettings4844>::from_raw(v);
-        for i in 0..4096{
-            for j in 0..6{
-                // let v = (*res.secret_g1.add(i)).x.l[j];
-                println!("{}", (*res.secret_g1.add(i)).x.l[j]);
-            }
-            println!("");
-            for j in 0..6{
-                println!("{}", (*res.secret_g1.add(i)).y.l[j]);
-            }
-            println!("");
-            for j in 0..6{
-                println!("{}", (*res.secret_g1.add(i)).z.l[j]);
-            }
-            println!("");
-        }
-    
-    }
+        *Box::<KzgKZGSettings4844>::from_raw(v)
+        // for i in 0..4096{
+        //     for j in 0..6{
+        //         // let v = (*res.secret_g1.add(i)).x.l[j];
+        //         println!("{}", (*res.secret_g1.add(i)).x.l[j]);
+        //     }
+        //     println!("");
+        //     for j in 0..6{
+        //         println!("{}", (*res.secret_g1.add(i)).y.l[j]);
+        //     }
+        //     println!("");
+        //     for j in 0..6{
+        //         println!("{}", (*res.secret_g1.add(i)).z.l[j]);
+        //     }
+        //     println!("");
+        // }
+            
+    };
     res
 
 }
 
-fn fr_batch_inv(out: &mut [BlstFr], a: &[BlstFr], len: usize) {
-    let prod: &mut Vec<BlstFr> = &mut vec![BlstFr::default(); len];
-    let mut i: usize = 1;
+// fn fr_batch_inv(out: &mut [BlstFr], a: &[BlstFr], len: usize) {
+//     let prod: &mut Vec<BlstFr> = &mut vec![BlstFr::default(); len];
+//     let mut i: usize = 1;
 
-    prod[0] = a[0];
+//     prod[0] = a[0];
 
-    while i < len {
-        prod[i] = a[i].mul(&prod[i - 1]);
-        i += 1;
-    }
+//     while i < len {
+//         prod[i] = a[i].mul(&prod[i - 1]);
+//         i += 1;
+//     }
 
-    let inv: &mut BlstFr = &mut prod[len - 1].eucl_inverse();
+//     let inv: &mut BlstFr = &mut prod[len - 1].eucl_inverse();
 
-    i = len - 1;
-    while i > 0 {
-        out[i] = prod[i - 1].mul(inv);
-        *inv = a[i].mul(inv);
-        i -= 1;
-    }
-    out[0] = *inv;
-}
+//     i = len - 1;
+//     while i > 0 {
+//         out[i] = prod[i - 1].mul(inv);
+//         *inv = a[i].mul(inv);
+//         i -= 1;
+//     }
+//     out[0] = *inv;
+// }
 
 pub fn bound_bytes_to_bls_field(bytes: &[u8; 32usize]) -> BlstFr {
     let mut out = BlstFr::default();
@@ -175,12 +165,9 @@ pub fn blob_to_kzg_commitment_rust(blob: &[BlstFr], s: &KzgKZGSettings4844) -> B
     //         }
     //         it += 8;
     //     }
-    //     // blob_vec.append(blob[i].l[3]);
-    //     // blob_vec.append(blob[i].l[2]);
-    //     // blob_vec.append(blob[i].l[1]);
-    //     // blob_vec.append(blob[i].l[0]);
     // }
     // assert!(it == 131072);
+    println!("blob_to_kzg_commitment fftsettings adresas: {:p}", s.fs);
     unsafe{
         blob_to_kzg_commitment(&mut out, blob.as_ptr(), s);
     }
@@ -203,19 +190,19 @@ pub fn blob_to_kzg_commitment_rust(blob: &[BlstFr], s: &KzgKZGSettings4844) -> B
     out
 }
 
-pub fn verify_kzg_proof_rust(
-    polynomial_kzg: &BlstP1,
-    z: &BlstFr,
-    y: &BlstFr,
-    kzg_proof: &BlstP1,
-    s: &KzgKZGSettings,
-) -> bool {
-    s.check_proof_single(polynomial_kzg, kzg_proof, z, y)
-        .unwrap_or(false)
-}
+// pub fn verify_kzg_proof_rust(
+//     polynomial_kzg: &BlstP1,
+//     z: &BlstFr,
+//     y: &BlstFr,
+//     kzg_proof: &BlstP1,
+//     s: &KzgKZGSettings,
+// ) -> bool {
+//     s.check_proof_single(polynomial_kzg, kzg_proof, z, y)
+//         .unwrap_or(false)
+// }
 
-pub fn compute_kzg_proof(p: &mut KzgPoly, x: &BlstFr, s: &KzgKZGSettings) -> BlstP1 {
-    todo!();
+// pub fn compute_kzg_proof(p: &mut KzgPoly, x: &BlstFr, s: &KzgKZGSettings) -> BlstP1 {
+    // todo!();
     // let secret_g1 =
     //     unsafe { slice::from_raw_parts(s.secret_g1, s.length.try_into().unwrap()).to_vec() };
 
@@ -288,14 +275,14 @@ pub fn compute_kzg_proof(p: &mut KzgPoly, x: &BlstFr, s: &KzgKZGSettings) -> Bls
     // }
 
     // g1_lincomb(&secret_g1, q.get_coeffs())
-}
+// }
 
-pub fn evaluate_polynomial_in_evaluation_form_rust(
-    p: &KzgPoly,
-    x: &BlstFr,
-    s: &KzgKZGSettings4844,
-) -> BlstFr {
-    todo!()
+// pub fn evaluate_polynomial_in_evaluation_form_rust(
+//     p: &KzgPoly,
+//     x: &BlstFr,
+//     s: &KzgKZGSettings4844,
+// ) -> BlstFr {
+//     todo!()
 
     // let mut tmp: BlstFr = BlstFr::default();
     // unsafe{
@@ -341,7 +328,7 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(
     // tmp = tmp.sub(&BlstFr::one());
     // out = out.mul(&tmp);
     // out
-}
+// }
 
 pub fn compute_powers(base: &BlstFr, num_powers: usize) -> Vec<BlstFr> {
     let mut powers: Vec<BlstFr> = vec![BlstFr::default(); num_powers];
@@ -360,6 +347,7 @@ pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<BlstFr>], ts: &KzgKZGSettin
     }
     unsafe{
         let ret = compute_aggregate_kzg_proof(&mut out, blob_arr.as_ptr(), blobs.len(), ts);
+        assert!(ret == KzgRet::KzgOk);
     }
     out
 }
