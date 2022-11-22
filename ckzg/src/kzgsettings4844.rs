@@ -16,8 +16,8 @@ pub struct BlstScalar {
 #[derive(Debug, Clone)]
 pub struct KzgKZGSettings4844 {
     pub fs: *const KzgFFTSettings4844,
-    pub secret_g1: *mut BlstP1, // G1
-    pub secret_g2: *mut BlstP2, // G2
+    pub g1_values: *mut BlstP1, // G1
+    pub g2_values: *mut BlstP2, // G2
 }
 
 extern "C" {
@@ -31,8 +31,8 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZG
     println!("fs created here is maybe dropped later");
         Self {
             fs: &FFTSettings::default(),
-            secret_g1: &mut G1::default(),
-            secret_g2: &mut G2::default(),
+            g1_values: &mut G1::default(),
+            g2_values: &mut G2::default(),
         }
     }
 
@@ -48,8 +48,8 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZG
         // unsafe {
         //     Ok(Self {
         //         fs,
-        //         secret_g1: secret_g1.as_ptr(),
-        //         secret_g2: secret_g2.as_ptr(),
+        //         g1_values: secret_g1.as_ptr(),
+        //         g2_values: secret_g2.as_ptr(),
         //         length: length as u64,
 
         //         }

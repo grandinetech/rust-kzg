@@ -168,6 +168,13 @@ pub fn g1_lincomb(points: &[FsG1], scalars: &[FsFr]) -> FsG1 {
 }
 
 pub fn blob_to_kzg_commitment(blob: &[FsFr], s: &FsKZGSettings) -> FsG1 {
+    for i in 0..blob.len()
+    {
+        for j in 0..4{
+            println!("{}", blob[i].l[j]);
+        }
+    }
+
     let out = g1_lincomb(&s.secret_g1, blob);
     println!("outas yra:");
     for j in 0..6{

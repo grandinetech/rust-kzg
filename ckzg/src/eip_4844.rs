@@ -149,6 +149,13 @@ pub fn bytes_from_bls_field(fr: &BlstFr) -> [u8; 32usize] {
 pub fn blob_to_kzg_commitment_rust(blob: &[BlstFr], s: &KzgKZGSettings4844) -> BlstP1 {
     let mut out = BlstP1::default();
 
+    for i in 0..blob.len()
+    {
+        for j in 0..4{
+            println!("{}", blob[i].l[j]);
+        }
+    }
+
     // let mut blob_arr: [u8; 131072usize] = [0; 131072usize];
     // let mut it = 0;
     // for i in 0..blob.len(){
