@@ -21,9 +21,9 @@ extern "C" {
     fn bytes_to_g1(out: *mut BlstP1, bytes: *const u8);
     fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
     fn load_trusted_setup(out: *mut KzgKZGSettings4844, inp: *mut FILE) -> KzgRet;
-    fn verify_aggregate_kzg_proof(out: *mut bool, blobs: *const *const BlstFr, expected_kzg_commitments: *const BlstP1, n: usize, kzg_aggregated_proof: *const BlstP1, s: *const KzgKZGSettings4844) -> KzgRet;
-    fn blob_to_kzg_commitment(out: *mut BlstP1, blob: *const BlstFr, s: *const KzgKZGSettings4844);
-    fn compute_aggregate_kzg_proof(out: *mut BlstP1, blobs: *const *const BlstFr, n: usize, s: *const KzgKZGSettings4844) -> KzgRet;
+    fn verify_aggregate_kzg_proof(out: *mut bool, blobs: *const u8, expected_kzg_commitments: *const BlstP1, n: usize, kzg_aggregated_proof: *const BlstP1, s: *const KzgKZGSettings4844) -> KzgRet;
+    fn blob_to_kzg_commitment(out: *mut BlstP1, blob: *const u8, s: *const KzgKZGSettings4844);
+    fn compute_aggregate_kzg_proof(out: *mut BlstP1, blobs: *const u8, n: usize, s: *const KzgKZGSettings4844) -> KzgRet;
     // fn verify_kzg_proof(out: *mut bool, polynomial_kzg: *const BlstP1, z: *const BlstFr, y: *const BlstFr, kzg_proof: *const BlstP1, s: *const KzgKZGSettings4844) -> KzgRet;
 }
 
@@ -149,12 +149,12 @@ pub fn bytes_from_bls_field(fr: &BlstFr) -> [u8; 32usize] {
 pub fn blob_to_kzg_commitment_rust(blob: &[BlstFr], s: &KzgKZGSettings4844) -> BlstP1 {
     let mut out = BlstP1::default();
 
-    for i in 0..blob.len()
-    {
-        for j in 0..4{
-            println!("{}", blob[i].l[j]);
-        }
-    }
+    // for i in 0..blob.len()
+    // {
+    //     for j in 0..4{
+    //         println!("{}", blob[i].l[j]);
+    //     }
+    // }
 
     // let mut blob_arr: [u8; 131072usize] = [0; 131072usize];
     // let mut it = 0;
@@ -175,8 +175,11 @@ pub fn blob_to_kzg_commitment_rust(blob: &[BlstFr], s: &KzgKZGSettings4844) -> B
     // }
     // assert!(it == 131072);
     println!("blob_to_kzg_commitment fftsettings adresas: {:p}", s.fs);
+    
+    let blob_arr: [u8; 131072usize] = blob.iter().flat_map(|x| bytes_from_bls_field(x)).collect::<Vec<u8>>().try_into().unwrap();
+
     unsafe{
-        blob_to_kzg_commitment(&mut out, blob.as_ptr(), s);
+        blob_to_kzg_commitment(&mut out, blob_arr.as_ptr(), s);
     }
 
     println!("outas yra:");
@@ -348,10 +351,13 @@ pub fn compute_powers(base: &BlstFr, num_powers: usize) -> Vec<BlstFr> {
 
 pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<BlstFr>], ts: &KzgKZGSettings4844) -> BlstP1 {
     let mut out = BlstP1::default();
-    let mut blob_arr = Vec::<*const BlstFr>::new();
-    for i in 0..blobs.len(){
-        blob_arr.push(blobs[i].as_ptr());
-    }
+    // let mut blob_arr = Vec::<*const BlstFr>::new();
+    // for i in 0..blobs.len(){
+    //     blob_arr.push(blobs[i].as_ptr());
+    // }
+
+    let blob_arr: Vec<u8> = blobs.concat().iter().flat_map(|x| bytes_from_bls_field(x)).collect::<Vec<u8>>();
+
     unsafe{
         let ret = compute_aggregate_kzg_proof(&mut out, blob_arr.as_ptr(), blobs.len(), ts);
         assert!(ret == KzgRet::KzgOk);
@@ -365,10 +371,13 @@ pub fn verify_aggregate_kzg_proof_rust(
     kzg_aggregated_proof: &BlstP1,
     ts: &KzgKZGSettings4844) -> bool {
     let mut out = false;
-    let mut blob_arr = Vec::<*const BlstFr>::new();
-    for i in 0..blobs.len(){
-        blob_arr.push(blobs[i].as_ptr());
-    }
+    // let mut blob_arr = Vec::<*const BlstFr>::new();
+    // for i in 0..blobs.len(){
+    //     blob_arr.push(blobs[i].as_ptr());
+    // }
+
+    let blob_arr: Vec<u8> = blobs.concat().iter().flat_map(|x| bytes_from_bls_field(x)).collect::<Vec<u8>>();
+
 
     unsafe{
         let ret = verify_aggregate_kzg_proof(&mut out, blob_arr.as_ptr(), expected_kzg_commitments.as_ptr(), blobs.len(), kzg_aggregated_proof as *const BlstP1, ts);
