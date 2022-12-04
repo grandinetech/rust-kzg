@@ -11,7 +11,7 @@ use kzg_bench::benches::eip_4844::{
     bench_compute_aggregate_kzg_proof, bench_verify_aggregate_kzg_proof,
 };
 
-fn bench_compute_aggregate_kzg_proof_3(c: &mut Criterion) {
+fn bench_compute_aggregate_kzg_proof_4(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<BlstFr, BlstP1, BlstP2, KzgPoly, KzgFFTSettings4844, KzgKZGSettings4844>(
         c,
         &load_trusted_setup_rust,
@@ -51,7 +51,7 @@ fn bench_verify_aggregate_kzg_proof_(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = bench_compute_aggregate_kzg_proof_3, bench_compute_aggregate_kzg_proof_8, bench_compute_aggregate_kzg_proof_16, bench_verify_aggregate_kzg_proof_
+    targets = bench_compute_aggregate_kzg_proof_4, bench_compute_aggregate_kzg_proof_8, bench_compute_aggregate_kzg_proof_16, bench_verify_aggregate_kzg_proof_
 }
 
 criterion_main!(benches);
