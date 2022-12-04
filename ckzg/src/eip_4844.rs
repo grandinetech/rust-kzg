@@ -36,10 +36,9 @@ extern "C" {
 
 pub fn bytes_to_g1_rust(bytes: [u8; 48usize]) -> BlstP1 {
     unsafe {
-        let g1: Box<BlstP1> = Box::default();
-        let v = Box::<BlstP1>::into_raw(g1);
-        bytes_to_g1(v, bytes.as_ptr());
-        *Box::<BlstP1>::from_raw(v)
+        let g1 = &mut BlstP1::default();
+        bytes_to_g1(g1, bytes.as_ptr());
+        *g1
     }
 }
 
