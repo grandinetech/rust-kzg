@@ -52,20 +52,16 @@ pub fn bytes_from_g1_rust(g1: &BlstP1) -> [u8; 48usize] {
 
 pub fn load_trusted_setup_rust(filepath: &str) -> KzgKZGSettings4844 {
     // // https://www.reddit.com/r/rust/comments/8sfjp6/converting_between_file_and_stdfsfile/
-    let boxed: Box<KzgKZGSettings4844> = Box::new(KzgKZGSettings4844::default());
-    let v = Box::<KzgKZGSettings4844>::into_raw(boxed);
-    let res = unsafe {
+    let mut v = KzgKZGSettings4844::default();
+    unsafe {
         let rust_file = File::open(filepath).unwrap();
         let c_file = fdopen(
             rust_file.into_raw_fd(),
             CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
         );
-
-        load_trusted_setup(v, c_file);
-
-        *Box::<KzgKZGSettings4844>::from_raw(v)
-    };
-    res
+        load_trusted_setup(&mut v, c_file);
+        v
+    }
 }
 
 pub fn bound_bytes_to_bls_field(bytes: &[u8; 32usize]) -> BlstFr {

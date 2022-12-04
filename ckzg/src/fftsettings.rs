@@ -157,7 +157,6 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
 
 impl Drop for KzgFFTSettings {
     fn drop(&mut self) {
-        println!("dropinu KZGFFTSettings");
         unsafe {
             if self.max_width > 0 && self.max_width < (1 << 32) {
                 free_fft_settings(self);
