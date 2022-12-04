@@ -20,81 +20,81 @@ jobs:
 
       # 1st team #########################################################
 
-      - name: "[arkworks] Tests without parallel"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path Arkworks/Cargo.toml --no-fail-fast
+      # - name: "[arkworks] Tests without parallel"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path Arkworks/Cargo.toml --no-fail-fast
 
-      - name: "[arkworks] Tests with parallel"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path Arkworks/Cargo.toml --no-fail-fast --features parallel
+      # - name: "[arkworks] Tests with parallel"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path Arkworks/Cargo.toml --no-fail-fast --features parallel
 
-      - name: "[arkworks] Clippy"
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
+      # - name: "[arkworks] Clippy"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: clippy
+      #     args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[arkworks] Formatting"
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --manifest-path Arkworks/Cargo.toml
+      # - name: "[arkworks] Formatting"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: fmt
+      #     args: --manifest-path Arkworks/Cargo.toml
 
-      # 2nd team #########################################################
+      # # 2nd team #########################################################
 
-      - name: "[zkcrypto] Tests without parallelization"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast
+      # - name: "[zkcrypto] Tests without parallelization"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast
 
-      - name: "[zkcrypto] Tests with parallelization"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast --features parallel
+      # - name: "[zkcrypto] Tests with parallelization"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast --features parallel
 
-      - name: "[zkcrypto] Clippy"
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
+      # - name: "[zkcrypto] Clippy"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: clippy
+      #     args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[zkcrypto] Formatting"
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --manifest-path zkcrypto/Cargo.toml
+      # - name: "[zkcrypto] Formatting"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: fmt
+      #     args: --manifest-path zkcrypto/Cargo.toml
 
-      # 3rd team #########################################################
+      # # 3rd team #########################################################
 
-      - name: "[blst-from-scratch] Tests"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast
+      # - name: "[blst-from-scratch] Tests"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast
 
-      - name: "[blst-from-scratch] Tests (parallel)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
+      # - name: "[blst-from-scratch] Tests (parallel)"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
 
-      - name: "[blst-from-scratch] Clippy"
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
+      # - name: "[blst-from-scratch] Clippy"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: clippy
+      #     args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[blst-from-scratch] Formatting"
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --manifest-path blst-from-scratch/Cargo.toml
+      # - name: "[blst-from-scratch] Formatting"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: fmt
+      #     args: --manifest-path blst-from-scratch/Cargo.toml
 
       # 4th team #########################################################
 
@@ -157,32 +157,32 @@ jobs:
 
       # 5th team ###########################################################
 
-      - name: "[mcl10-rust] Build mcl for Linux"
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cd mcl/kzg && bash build.sh
+      # - name: "[mcl10-rust] Build mcl for Linux"
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     cd mcl/kzg && bash build.sh
 
-      - name: "[mcl10-rust] Run tests without parallel"
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
+      # - name: "[mcl10-rust] Run tests without parallel"
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
 
-      - name: "[mcl10-rust] Run tests with parallel"
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
+      # - name: "[mcl10-rust] Run tests with parallel"
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
 
-      - name: "[mcl10-rust] Run Clippy"
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path mcl/kzg/Cargo.toml --all-targets --all-features -- -D warnings
+      # - name: "[mcl10-rust] Run Clippy"
+      #   if: matrix.os == 'ubuntu-latest'
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: clippy
+      #     args: --manifest-path mcl/kzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[mcl10-rust] Run fmt"
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo fmt --manifest-path mcl/kzg-bench/Cargo.toml
+      # - name: "[mcl10-rust] Run fmt"
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     cargo fmt --manifest-path mcl/kzg-bench/Cargo.toml
 
       # Common ###########################################################
 
