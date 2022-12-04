@@ -176,26 +176,11 @@ pub fn blob_to_kzg_commitment_rust(blob: &[BlstFr], s: &KzgKZGSettings4844) -> B
     // assert!(it == 131072);
     println!("blob_to_kzg_commitment fftsettings adresas: {:p}", s.fs);
     
-    let blob_arr: [u8; 131072usize] = blob.iter().flat_map(|x| bytes_from_bls_field(x)).collect::<Vec<u8>>().try_into().unwrap();
+    let blob_arr: [u8; 131072usize] = blob.iter().flat_map(bytes_from_bls_field).collect::<Vec<u8>>().try_into().unwrap();
 
     unsafe{
         blob_to_kzg_commitment(&mut out, blob_arr.as_ptr(), s);
     }
-
-    println!("outas yra:");
-    for j in 0..6{
-        // let v = (*res.secret_g1.add(i)).x.l[j];
-        println!("{}", out.x.l[j]);
-    }
-    println!("");
-    for j in 0..6{
-        println!("{}", out.y.l[j]);
-    }
-    println!("");
-    for j in 0..6{
-        println!("{}", out.z.l[j]);
-    }
-    println!("");
 
     out
 }
@@ -356,7 +341,7 @@ pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<BlstFr>], ts: &KzgKZGSettin
     //     blob_arr.push(blobs[i].as_ptr());
     // }
 
-    let blob_arr: Vec<u8> = blobs.concat().iter().flat_map(|x| bytes_from_bls_field(x)).collect::<Vec<u8>>();
+    let blob_arr: Vec<u8> = blobs.concat().iter().flat_map(bytes_from_bls_field).collect::<Vec<u8>>();
 
     unsafe{
         let ret = compute_aggregate_kzg_proof(&mut out, blob_arr.as_ptr(), blobs.len(), ts);
@@ -376,7 +361,7 @@ pub fn verify_aggregate_kzg_proof_rust(
     //     blob_arr.push(blobs[i].as_ptr());
     // }
 
-    let blob_arr: Vec<u8> = blobs.concat().iter().flat_map(|x| bytes_from_bls_field(x)).collect::<Vec<u8>>();
+    let blob_arr: Vec<u8> = blobs.concat().iter().flat_map(bytes_from_bls_field).collect::<Vec<u8>>();
 
 
     unsafe{

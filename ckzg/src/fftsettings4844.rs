@@ -30,7 +30,6 @@ impl FFTSettings<BlstFr> for KzgFFTSettings4844 {
     // underscore was added to avoid warnings when new is unused
     fn new(_scale: usize) -> Result<Self, String> {
         println!("AS NEW FFT4844 NETURECIAU BUTI");
-        assert!(false);
         todo!();
         // let mut settings = Box::new(KzgFFTSettings4844::default());
         // unsafe {
