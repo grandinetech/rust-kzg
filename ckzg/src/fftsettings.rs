@@ -139,7 +139,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
-        unsafe { *(self.expanded_roots_of_unity.add(i )) as BlstFr }
+        unsafe { *(self.expanded_roots_of_unity.add(i)) as BlstFr }
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {

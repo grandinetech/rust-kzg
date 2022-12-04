@@ -26,9 +26,8 @@ extern "C" {
 
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZGSettings4844 {
     fn default() -> Self {
-    
-    println!("creating kzgsettings4844");
-    println!("fs created here is maybe dropped later");
+        println!("creating kzgsettings4844");
+        println!("fs created here is maybe dropped later");
         Self {
             fs: &FFTSettings::default(),
             g1_values: &mut G1::default(),

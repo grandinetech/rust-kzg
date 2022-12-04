@@ -66,7 +66,7 @@ pub struct KzgKZGSettings {
     pub length: u64,
 }
 
-impl Default for KzgKZGSettings{
+impl Default for KzgKZGSettings {
     fn default() -> Self {
         println!("mano defaultas");
         // I think this causes a memory leak
@@ -78,7 +78,7 @@ impl Default for KzgKZGSettings{
             secret_g2: &mut G2::default(),
             length: 0,
         }
-    }    
+    }
 }
 
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSettings {

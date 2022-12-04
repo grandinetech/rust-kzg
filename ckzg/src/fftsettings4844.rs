@@ -3,7 +3,7 @@ use crate::finite::BlstFr;
 // use crate::utils::{log_2, next_pow_of_2};
 // use crate::RUN_PARALLEL;
 use kzg::{FFTSettings, Fr};
-use std::{slice};
+use std::slice;
 
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -14,8 +14,7 @@ pub struct KzgFFTSettings4844 {
     pub roots_of_unity: *mut BlstFr,
 }
 
-extern "C" {
-}
+extern "C" {}
 
 impl FFTSettings<BlstFr> for KzgFFTSettings4844 {
     fn default() -> Self {
@@ -49,7 +48,7 @@ impl FFTSettings<BlstFr> for KzgFFTSettings4844 {
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
-        unsafe { *(self.expanded_roots_of_unity.add(i )) as BlstFr }
+        unsafe { *(self.expanded_roots_of_unity.add(i)) as BlstFr }
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {
@@ -75,4 +74,3 @@ impl Drop for KzgFFTSettings4844 {
         // }
     }
 }
-
