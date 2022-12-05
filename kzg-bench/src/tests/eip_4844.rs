@@ -97,7 +97,7 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let x_bls = bytes_to_bls_field(&x_bytes);
     
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/tiny_trusted_setup.txt");
+    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
     
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
     
@@ -223,8 +223,8 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
     assert_eq!(bytes_from_g1(&simple_commitment),  bytes_from_g1(&aggregated_poly_commitment));
      
-    assert!(verify_kzg_proof(&simple_commitment, &x, &y, &proof, &ts), "Simple verification failed");  
-    
+    assert!(verify_kzg_proof(&simple_commitment, &x, &y, &proof, &ts), "Simple verification failed");
+
     assert!(verify_kzg_proof(&aggregated_poly_commitment, &x, &y, &proof, &ts), "Verification failed");
 
     let mut x2_bytes: [u8; 32] = rng.gen();

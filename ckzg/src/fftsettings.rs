@@ -121,10 +121,11 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn new(scale: usize) -> Result<Self, String> {
-        let mut settings = FFTSettings::default();
+        let settings = Box::new(KzgFFTSettings::default());
         unsafe {
-            match new_fft_settings(&mut settings, scale as u32) {
-                KzgRet::KzgOk => Ok(settings),
+            let v = Box::<KzgFFTSettings>::into_raw(settings);
+            match new_fft_settings(v, scale as u32) {
+                KzgRet::KzgOk => Ok(*Box::<KzgFFTSettings>::from_raw(v)),
                 e => Err(format!(
                     "An error has occurred in FFTSettings::new ==> {:?}",
                     e
@@ -134,11 +135,11 @@ impl FFTSettings<BlstFr> for KzgFFTSettings {
     }
 
     fn get_max_width(&self) -> usize {
-        self.max_width
+        self.max_width as usize
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> BlstFr {
-        unsafe { *self.expanded_roots_of_unity.add(i) as BlstFr }
+        unsafe { *(self.expanded_roots_of_unity.add(i)) as BlstFr }
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[BlstFr] {

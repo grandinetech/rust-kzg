@@ -66,6 +66,17 @@ pub struct KzgKZGSettings {
     pub length: u64,
 }
 
+impl Default for KzgKZGSettings {
+    fn default() -> Self {
+        Self {
+            fs: &KzgFFTSettings::default(),
+            secret_g1: &mut G1::default(),
+            secret_g2: &mut G2::default(),
+            length: 0,
+        }
+    }
+}
+
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSettings {
     fn default() -> Self {
         Self {
