@@ -16,7 +16,7 @@ fn bench_compute_aggregate_kzg_proof_4(c: &mut Criterion) {
         c,
         &load_trusted_setup_rust,
         &compute_aggregate_kzg_proof_rust,
-        3,
+        4,
     )
 }
 
