@@ -10,7 +10,6 @@ pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
-//pub mod finite;
 pub mod das;
 pub mod fft;
 pub mod fft_g1;
@@ -20,6 +19,7 @@ pub mod poly;
 pub mod recover;
 pub mod utils;
 pub mod zero_poly;
+pub mod eip_4844;
 
 pub mod kzg_types;
 

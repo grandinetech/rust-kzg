@@ -25,7 +25,7 @@ use std::ops::MulAssign;
 use std::ops::Neg;
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ArkG1(pub blst::blst_p1);
+pub struct ArkG1(pub blst_p1);
 
 impl Clone for ArkG1 {
     fn clone(&self) -> Self {
@@ -38,23 +38,6 @@ impl G1 for ArkG1 {
         Self(blst_p1::default())
     }
 
-    fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
-            + blst_p1_into_pc_g1projective(&b.0).unwrap();
-        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
-        self.0 = ret.0;
-        ret
-    }
-
-    fn equals(&self, b: &Self) -> bool {
-        self.0.eq(&b.0)
-    }
-
-    fn rand() -> Self {
-        let mut rng = rand::thread_rng();
-        pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
-    }
-
     fn identity() -> Self {
         G1_IDENTITY
     }
@@ -65,6 +48,19 @@ impl G1 for ArkG1 {
 
     fn negative_generator() -> Self {
         ArkG1(G1_NEGATIVE_GENERATOR)
+    }
+
+    fn rand() -> Self {
+        let mut rng = rand::thread_rng();
+        pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
+    }
+
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
+            + blst_p1_into_pc_g1projective(&b.0).unwrap();
+        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
+        self.0 = ret.0;
+        ret
     }
 
     fn is_inf(&self) -> bool {
@@ -83,6 +79,10 @@ impl G1 for ArkG1 {
                 - blst_p1_into_pc_g1projective(&b.0).unwrap(),
         )
         .unwrap()
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        self.0.eq(&b.0)
     }
 }
 
@@ -153,15 +153,11 @@ impl G2Mul<FsFr> for ArkG2 {
 }
 
 #[derive(Debug)]
-pub struct FsFr(pub blst::blst_fr);
+pub struct FsFr(pub blst_fr);
 
 impl Fr for FsFr {
     fn default() -> Self {
         Self(blst_fr::default())
-    }
-
-    fn zero() -> Self {
-        Self::from_u64(0)
     }
 
     fn null() -> Self {
@@ -173,6 +169,10 @@ impl Fr for FsFr {
                 7138715389977065193,
             ],
         })
+    }
+
+    fn zero() -> Self {
+        Self::from_u64(0)
     }
 
     fn one() -> Self {
@@ -202,19 +202,12 @@ impl Fr for FsFr {
         b.0
     }
 
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let a = blst_fr_into_pc_fr(self);
-        let b = blst_fr_into_pc_fr(b);
-        let div = a / b;
-        if div.0 .0.is_empty() {
-            Ok(FsFr::zero())
-        } else {
-            Ok(pc_fr_into_blst_fr(div))
-        }
-    }
-
     fn is_one(&self) -> bool {
         blst_fr_into_pc_fr(self).is_one()
+    }
+
+    fn is_zero(&self) -> bool {
+        blst_fr_into_pc_fr(self).is_zero()
     }
 
     fn is_null(&self) -> bool {
@@ -228,17 +221,9 @@ impl Fr for FsFr {
         }))
     }
 
-    fn is_zero(&self) -> bool {
-        blst_fr_into_pc_fr(self).is_zero()
-    }
-
     fn sqr(&self) -> Self {
         let temp = blst_fr_into_pc_fr(self);
         pc_fr_into_blst_fr(temp.square())
-    }
-
-    fn pow(&self, n: usize) -> Self {
-        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
     }
 
     fn mul(&self, b: &Self) -> Self {
@@ -271,8 +256,44 @@ impl Fr for FsFr {
         pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).inverse().unwrap())
     }
 
+    fn pow(&self, n: usize) -> Self {
+        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let a = blst_fr_into_pc_fr(self);
+        let b = blst_fr_into_pc_fr(b);
+        let div = a / b;
+        if div.0 .0.is_empty() {
+            Ok(FsFr::zero())
+        } else {
+            Ok(pc_fr_into_blst_fr(div))
+        }
+    }
+
     fn equals(&self, b: &Self) -> bool {
         blst_fr_into_pc_fr(self) == blst_fr_into_pc_fr(b)
+    }
+}
+
+impl FsFr {
+    pub fn to_scalar(&self) -> [u8; 32usize] {
+        let mut scalar = blst::blst_scalar::default();
+        unsafe {
+            blst::blst_scalar_from_fr(&mut scalar, &self.0)
+        }
+        scalar.b
+    }
+
+    pub fn from_scalar(scalar: [u8; 32usize]) -> Self {
+        let bls_scalar = blst::blst_scalar { b: scalar };
+        let mut fr = blst_fr::default();
+        unsafe {
+            blst::blst_fr_from_scalar(&mut fr, &bls_scalar);
+        }
+        let mut ret = Self::default();
+        ret.0 = fr;
+        ret
     }
 }
 
@@ -342,12 +363,12 @@ impl Poly<FsFr> for LPoly {
         poly_long_div(self, x)
     }
 
-    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        poly_mul_direct(self, x, len)
-    }
-
     fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
         poly_fast_div(self, x)
+    }
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        poly_mul_direct(self, x, len)
     }
 }
 
@@ -371,6 +392,16 @@ impl FFTSettingsPoly<FsFr, LPoly, LFFTSettings> for LFFTSettings {
 }
 
 impl FFTSettings<FsFr> for LFFTSettings {
+    fn default() -> Self {
+        LFFTSettings {
+            max_width: 0,
+            root_of_unity: FsFr::zero(),
+            expanded_roots_of_unity: Vec::new(),
+            reverse_roots_of_unity: Vec::new(),
+            domain: Radix2EvaluationDomain::<ArkFr>::new(0_usize).unwrap(),
+        }
+    }
+
     fn new(scale: usize) -> Result<LFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from(
@@ -411,18 +442,8 @@ impl FFTSettings<FsFr> for LFFTSettings {
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.reverse_roots_of_unity[i]
     }
-
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         self.reverse_roots_of_unity.as_slice()
-    }
-    fn default() -> Self {
-        LFFTSettings {
-            max_width: 0,
-            root_of_unity: FsFr::zero(),
-            expanded_roots_of_unity: Vec::new(),
-            reverse_roots_of_unity: Vec::new(),
-            domain: Radix2EvaluationDomain::<ArkFr>::new(0_usize).unwrap(),
-        }
     }
 }
 
@@ -438,6 +459,10 @@ impl Clone for LFFTSettings {
 }
 
 impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
+    fn default() -> Self {
+        default_kzg()
+    }
+
     fn new(
         secret_g1: &Vec<ArkG1>,
         secret_g2: &Vec<ArkG2>,
@@ -482,10 +507,6 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.fs.get_expanded_roots_of_unity_at(i)
-    }
-
-    fn default() -> Self {
-        default_kzg()
     }
 }
 
