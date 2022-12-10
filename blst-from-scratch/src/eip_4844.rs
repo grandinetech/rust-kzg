@@ -7,6 +7,7 @@ use blst::{
     blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sha2::{Sha256, Digest};
 
 use crate::consts::{FIELD_ELEMENTS_PER_BLOB, FIAT_SHAMIR_PROTOCOL_DOMAIN, BYTES_PER_FIELD_ELEMENT};
@@ -321,14 +322,11 @@ pub fn hash_to_bytes(polys : &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32]{
 }
 
 pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly{
-	let mut tmp: FsFr;
 	let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
-	for j in 0..FIELD_ELEMENTS_PER_BLOB{
-		out.set_coeff_at(j, &FsFr::zero());
-	}
+	out.coeffs = vec![FsFr::zero(); FIELD_ELEMENTS_PER_BLOB];
 	for i in 0..n {
 	  for j in 0..FIELD_ELEMENTS_PER_BLOB {
-		tmp = scalars[i].mul(&vectors[i].get_coeff_at(j));
+		let tmp = scalars[i].mul(&vectors[i].get_coeff_at(j));
 		out.set_coeff_at(j, &out.get_coeff_at(j).add(&tmp));
 	  }
 	}
@@ -358,10 +356,10 @@ pub fn compute_aggregated_poly_and_commitment(
 	(poly_out, comm_out, chal_out)
 }
 
-fn poly_from_blob(p: &mut FsPoly, blob: &[FsFr]) {
-    for (i, coeff) in blob.iter().enumerate() {
-        p.set_coeff_at(i, coeff);
-    }
+fn poly_from_blob(blob: &[FsFr]) -> FsPoly {
+    let mut p : FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+    p.coeffs = blob.to_vec();
+    p
 }
 
 fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
@@ -373,12 +371,9 @@ pub fn compute_aggregate_kzg_proof(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> F
     if n == 0 {
         return FsG1::identity();
     }
-    let mut commitments: Vec<FsG1> = vec![FsG1::default(); n];
-    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); n];
-    for i in 0..n{
-        poly_from_blob(&mut polys[i], &blobs[i]);
-        commitments[i] = poly_to_kzg_commitment(&polys[i], ts);
-    }
+    let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect();
+    
+    let commitments: Vec<FsG1> = polys.par_iter().map(|poly| poly_to_kzg_commitment(poly, ts)).collect();
     let (aggregated_poly, _, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, &commitments, n);
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, ts)
 }
@@ -388,10 +383,7 @@ pub fn verify_aggregate_kzg_proof(
     expected_kzg_commitments: &[FsG1],
     kzg_aggregated_proof: &FsG1,
     ts: &FsKZGSettings) -> bool {
-    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); blobs.len()];
-    for i in 0..blobs.len(){
-        poly_from_blob(&mut polys[i], &blobs[i]);
-    }
+    let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect(); 
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
     let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
     verify_kzg_proof(&aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, ts)
