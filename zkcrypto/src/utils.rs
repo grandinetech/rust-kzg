@@ -124,9 +124,9 @@ pub fn next_power_of_two(v: usize) -> usize {
 }
 
 pub fn log_2_byte(b: u8) -> usize {
-    let mut r = if b > 0xF { 1 } else { 0 } << 2;
+    let mut r = u8::from(b > 0xF) << 2;
     let mut b = b >> r;
-    let shift = if b > 0x3 { 1 } else { 0 } << 1;
+    let shift = u8::from(b > 0x3) << 1;
     b >>= shift + 1;
     r |= shift | b;
     r.into()
@@ -134,11 +134,11 @@ pub fn log_2_byte(b: u8) -> usize {
 
 pub fn log2_pow2(n: usize) -> usize {
     let bytes: [usize; 5] = [0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000];
-    let mut r: usize = if (n & bytes[0]) != 0 { 1 } else { 0 };
-    r |= if (n & bytes[1]) != 0 { 1 } else { 0 } << 1;
-    r |= if (n & bytes[2]) != 0 { 1 } else { 0 } << 2;
-    r |= if (n & bytes[3]) != 0 { 1 } else { 0 } << 3;
-    r |= if (n & bytes[4]) != 0 { 1 } else { 0 } << 4;
+    let mut r: usize = usize::from((n & bytes[0]) != 0);
+    r |= usize::from((n & bytes[1]) != 0) << 1;
+    r |= usize::from((n & bytes[2]) != 0) << 2;
+    r |= usize::from((n & bytes[3]) != 0) << 3;
+    r |= usize::from((n & bytes[4]) != 0) << 4;
     r
 }
 
