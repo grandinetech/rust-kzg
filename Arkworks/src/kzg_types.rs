@@ -19,7 +19,7 @@ use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
-use blst::{blst_fr, blst_p1};
+use blst::{blst_fr, blst_p1, blst_p2, blst_scalar, blst_scalar_from_fr, blst_fr_from_scalar, blst_fr_eucl_inverse};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 use std::ops::MulAssign;
 use std::ops::Neg;
@@ -97,7 +97,7 @@ impl G1Mul<FsFr> for ArkG1 {
 impl Copy for ArkG1 {}
 
 #[derive(Debug)]
-pub struct ArkG2(pub blst::blst_p2);
+pub struct ArkG2(pub blst_p2);
 
 impl Clone for ArkG2 {
     fn clone(&self) -> Self {
@@ -239,13 +239,11 @@ impl Fr for FsFr {
     }
 
     fn eucl_inverse(&self) -> Self {
-        // let mut ret = Self::default();
-        // unsafe {
-        //     blst_fr_eucl_inverse(&mut ret.0, &self.0);
-        // }
-
-        // return ret;
-        todo!()
+        let mut ret = Self::default();
+        unsafe {
+            blst_fr_eucl_inverse(&mut ret.0, &self.0);
+        }
+        ret
     }
 
     fn negate(&self) -> Self {
@@ -278,18 +276,18 @@ impl Fr for FsFr {
 
 impl FsFr {
     pub fn to_scalar(&self) -> [u8; 32usize] {
-        let mut scalar = blst::blst_scalar::default();
+        let mut scalar = blst_scalar::default();
         unsafe {
-            blst::blst_scalar_from_fr(&mut scalar, &self.0)
+            blst_scalar_from_fr(&mut scalar, &self.0)
         }
         scalar.b
     }
 
     pub fn from_scalar(scalar: [u8; 32usize]) -> Self {
-        let bls_scalar = blst::blst_scalar { b: scalar };
+        let bls_scalar = blst_scalar { b: scalar };
         let mut fr = blst_fr::default();
         unsafe {
-            blst::blst_fr_from_scalar(&mut fr, &bls_scalar);
+            blst_fr_from_scalar(&mut fr, &bls_scalar);
         }
         let mut ret = Self::default();
         ret.0 = fr;
