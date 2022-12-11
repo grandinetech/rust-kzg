@@ -14,7 +14,7 @@ rand = "0.8.4"
 rand_pcg = "0.3.1"
 kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
-rayon = { version = "1.5.1" }
+rayon = { version = "1.5.1", optional = true }
 once_cell = "1.4.0"
 sha2 = "0.10.6"
 
@@ -22,7 +22,7 @@ sha2 = "0.10.6"
 criterion = "0.4.0"
 
 [features]
-parallel = []
+parallel = [ "rayon" ]
 
 
 [[bench]]

@@ -7,7 +7,10 @@ use blst::{
     blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
+
+#[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+
 use sha2::{Sha256, Digest};
 
 use crate::consts::{FIELD_ELEMENTS_PER_BLOB, FIAT_SHAMIR_PROTOCOL_DOMAIN, BYTES_PER_FIELD_ELEMENT};
@@ -371,9 +374,17 @@ pub fn compute_aggregate_kzg_proof(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> F
     if n == 0 {
         return FsG1::identity();
     }
+
+    #[cfg(feature = "parallel")]
     let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect();
-    
+    #[cfg(feature = "parallel")]
     let commitments: Vec<FsG1> = polys.par_iter().map(|poly| poly_to_kzg_commitment(poly, ts)).collect();
+
+    #[cfg(not(feature = "parallel"))]
+    let polys: Vec<FsPoly> = blobs.iter().map(|blob| poly_from_blob(blob)).collect();
+    #[cfg(not(feature = "parallel"))]
+    let commitments: Vec<FsG1> = polys.iter().map(|poly| poly_to_kzg_commitment(poly, ts)).collect();
+
     let (aggregated_poly, _, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, &commitments, n);
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, ts)
 }
@@ -383,7 +394,12 @@ pub fn verify_aggregate_kzg_proof(
     expected_kzg_commitments: &[FsG1],
     kzg_aggregated_proof: &FsG1,
     ts: &FsKZGSettings) -> bool {
+    
+    #[cfg(feature = "parallel")]
     let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect(); 
+    #[cfg(not(feature = "parallel"))]
+    let polys: Vec<FsPoly> = blobs.iter().map(|blob| poly_from_blob(blob)).collect();
+    
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
     let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
     verify_kzg_proof(&aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, ts)
