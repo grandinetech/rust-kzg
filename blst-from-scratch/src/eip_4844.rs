@@ -10,6 +10,8 @@ use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+#[cfg(feature = "parallel")]
+use rayon::iter::IntoParallelIterator;
 
 use sha2::{Digest, Sha256};
 
@@ -128,6 +130,7 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
         i -= 1;
     }
     out[0] = *inv;
+
 }
 
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> FsFr {
@@ -135,6 +138,7 @@ pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> FsFr {
 }
 
 pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
+
     let mut tmp: FsFr;
     let mut out: Vec<FsFr> = vec![FsFr::zero(); vectors[0].len()];
     for (v, s) in vectors.iter().zip(scalars.iter()) {
@@ -258,6 +262,7 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &FsPoly, x: &FsFr, s: &FsKZGSet
 
     let mut out = FsFr::zero();
     i = 0;
+    
     while i < p.len() {
         tmp = inverses[i].mul(&roots_of_unity[i]);
         tmp = tmp.mul(&p.coeffs[i]);
@@ -281,6 +286,7 @@ pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
     for i in 1..num_powers {
         powers[i] = powers[i - 1].mul(base);
     }
+
     powers
 }
 
@@ -329,15 +335,32 @@ pub fn hash_to_bytes(polys: &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32] {
 }
 
 pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly {
-    let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
-    out.coeffs = vec![FsFr::zero(); FIELD_ELEMENTS_PER_BLOB];
-    for i in 0..n {
-        for j in 0..FIELD_ELEMENTS_PER_BLOB {
-            let tmp = scalars[i].mul(&vectors[i].get_coeff_at(j));
-            out.set_coeff_at(j, &out.get_coeff_at(j).add(&tmp));
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+        out.coeffs = vec![FsFr::zero(); FIELD_ELEMENTS_PER_BLOB];
+        for i in 0..n {
+            for j in 0..FIELD_ELEMENTS_PER_BLOB {
+                let tmp = scalars[i].mul(&vectors[i].get_coeff_at(j));
+                out.set_coeff_at(j, &out.get_coeff_at(j).add(&tmp));
+            }
         }
+        out    
     }
-    out
+    #[cfg(feature = "parallel")]
+    {
+        let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+        
+        out.coeffs = (0..FIELD_ELEMENTS_PER_BLOB).into_par_iter().map(|j|{
+            let mut tmp = FsFr::zero();
+            for i in 0..n{
+                tmp = tmp.add(&scalars[i].mul(&vectors[i].get_coeff_at(j)));
+            }
+            tmp
+        }).collect();    
+        out    
+
+    }
 }
 
 pub fn compute_aggregated_poly_and_commitment(
