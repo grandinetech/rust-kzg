@@ -108,7 +108,7 @@ fn bench_verify_aggregate_kzg_proof_16(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = bench_compute_aggregate_kzg_proof_1, bench_compute_aggregate_kzg_proof_2
+    targets = bench_compute_aggregate_kzg_proof_1, bench_compute_aggregate_kzg_proof_2,
         bench_compute_aggregate_kzg_proof_4, bench_compute_aggregate_kzg_proof_8, bench_compute_aggregate_kzg_proof_16, 
         bench_verify_aggregate_kzg_proof_1, bench_verify_aggregate_kzg_proof_2, 
         bench_verify_aggregate_kzg_proof_4, bench_verify_aggregate_kzg_proof_8, bench_verify_aggregate_kzg_proof_16
