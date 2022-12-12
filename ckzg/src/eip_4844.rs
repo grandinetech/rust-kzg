@@ -16,7 +16,7 @@ extern "C" {
     fn bytes_to_bls_field(out: *mut BlstFr, bytes: *const u8);
     fn bytes_to_g1(out: *mut BlstP1, bytes: *const u8);
     fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
-    fn load_trusted_setup(out: *mut KzgKZGSettings4844, inp: *mut FILE) -> KzgRet;
+    fn load_trusted_setup_file(out: *mut KzgKZGSettings4844, inp: *mut FILE) -> KzgRet;
     fn verify_aggregate_kzg_proof(
         out: *mut bool,
         blobs: *const u8,
@@ -59,7 +59,7 @@ pub fn load_trusted_setup_rust(filepath: &str) -> KzgKZGSettings4844 {
             rust_file.into_raw_fd(),
             CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
         );
-        load_trusted_setup(&mut v, c_file);
+        load_trusted_setup_file(&mut v, c_file);
         v
     }
 }
