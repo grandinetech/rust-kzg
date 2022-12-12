@@ -29,7 +29,7 @@ fn verify_aggregate_kzg_proof_bench(c: &mut Criterion) {
         &blob_to_kzg_commitment,
         &compute_aggregate_kzg_proof,
         &verify_aggregate_kzg_proof,
-        1,
+        3,
     )
 }
 
