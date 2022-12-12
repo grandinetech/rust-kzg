@@ -318,9 +318,9 @@ pub fn hash_to_bytes(polys: &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32] {
     for i in 0..n {
         for j in 0..FIELD_ELEMENTS_PER_BLOB {
             let v = bytes_from_bls_field(&polys[i].get_coeff_at(j));
-            for k in 0..32 {
-                bytes[ni + i * BYTES_PER_FIELD_ELEMENT as usize + k] = v[k];
-            }
+            bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) as usize
+                ..ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) + 32]
+                .copy_from_slice(&v);
         }
     }
 
