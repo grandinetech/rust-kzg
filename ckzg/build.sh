@@ -67,6 +67,7 @@ print_msg "Building 4844"
 cd ../../c-kzg-4844/src || exit 1
 
 make c_kzg_4844.o
+
 ar rc ../../c-kzg/src/libckzg.a c_kzg_4844.o
 
 print_msg "Preparing ckzg crate"

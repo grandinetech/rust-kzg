@@ -7,9 +7,17 @@ use blst::{
     blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
-use sha2::{Sha256, Digest};
 
-use crate::consts::{FIELD_ELEMENTS_PER_BLOB, FIAT_SHAMIR_PROTOCOL_DOMAIN, BYTES_PER_FIELD_ELEMENT};
+#[cfg(feature = "parallel")]
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+#[cfg(feature = "parallel")]
+use rayon::iter::IntoParallelIterator;
+
+use sha2::{Digest, Sha256};
+
+use crate::consts::{
+    BYTES_PER_FIELD_ELEMENT, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
+};
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
@@ -122,6 +130,7 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
         i -= 1;
     }
     out[0] = *inv;
+
 }
 
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> FsFr {
@@ -129,6 +138,7 @@ pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> FsFr {
 }
 
 pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
+
     let mut tmp: FsFr;
     let mut out: Vec<FsFr> = vec![FsFr::zero(); vectors[0].len()];
     for (v, s) in vectors.iter().zip(scalars.iter()) {
@@ -252,6 +262,7 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &FsPoly, x: &FsFr, s: &FsKZGSet
 
     let mut out = FsFr::zero();
     i = 0;
+    
     while i < p.len() {
         tmp = inverses[i].mul(&roots_of_unity[i]);
         tmp = tmp.mul(&p.coeffs[i]);
@@ -275,75 +286,92 @@ pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
     for i in 1..num_powers {
         powers[i] = powers[i - 1].mul(base);
     }
+
     powers
 }
 
-fn bytes_of_uint64(out : &mut [u8], mut n: u64) {
+fn bytes_of_uint64(out: &mut [u8], mut n: u64) {
     for byte in out.iter_mut().take(8) {
         *byte = (n & 0xff) as u8;
         n >>= 8;
     }
 }
 
-fn hash(x: &[u8]) ->[u8; 32]{
-	Sha256::digest(x).into()
+fn hash(x: &[u8]) -> [u8; 32] {
+    Sha256::digest(x).into()
 }
 
-pub fn hash_to_bytes(polys : &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32]{
-	let ni: usize = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
-	let np: usize = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
+pub fn hash_to_bytes(polys: &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32] {
+    let ni: usize = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
+    let np: usize = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
 
-	let mut bytes: Vec<u8> = vec![0; np + n * 48];
+    let mut bytes: Vec<u8> = vec![0; np + n * 48];
 
     bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
 
-	bytes_of_uint64(&mut bytes[16..24], n.try_into().unwrap());
-	bytes_of_uint64(&mut bytes[24..32], FIELD_ELEMENTS_PER_BLOB.try_into().unwrap());
+    bytes_of_uint64(&mut bytes[16..24], n.try_into().unwrap());
+    bytes_of_uint64(
+        &mut bytes[24..32],
+        FIELD_ELEMENTS_PER_BLOB.try_into().unwrap(),
+    );
 
-	for i in 0..n
-	{
-		for j in 0..FIELD_ELEMENTS_PER_BLOB{
-			let v = bytes_from_bls_field(&polys[i].get_coeff_at(j));
-			for k in 0..32{
-				bytes[ni + i * BYTES_PER_FIELD_ELEMENT as usize + k] = v[k];
-			}
-		}		
-	}
+    for i in 0..n {
+        for j in 0..FIELD_ELEMENTS_PER_BLOB {
+            let v = bytes_from_bls_field(&polys[i].get_coeff_at(j));
+            bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) as usize
+                ..ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) + 32]
+                .copy_from_slice(&v);
+        }
+    }
 
-	for i in 0..n{
-		let v = bytes_from_g1(&comms[i]);
-		for k in 0..48{
-			bytes[np + i * 48 + k] = v[k];
-		}
-	}
+    for i in 0..n {
+        let v = bytes_from_g1(&comms[i]);
+        for k in 0..48 {
+            bytes[np + i * 48 + k] = v[k];
+        }
+    }
 
-	hash(&bytes)
+    hash(&bytes)
 }
 
-pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly{
-	let mut tmp: FsFr;
-	let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
-	for j in 0..FIELD_ELEMENTS_PER_BLOB{
-		out.set_coeff_at(j, &FsFr::zero());
-	}
-	for i in 0..n {
-	  for j in 0..FIELD_ELEMENTS_PER_BLOB {
-		tmp = scalars[i].mul(&vectors[i].get_coeff_at(j));
-		out.set_coeff_at(j, &out.get_coeff_at(j).add(&tmp));
-	  }
-	}
-	out
-  }
+pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly {
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+        out.coeffs = vec![FsFr::zero(); FIELD_ELEMENTS_PER_BLOB];
+        for i in 0..n {
+            for j in 0..FIELD_ELEMENTS_PER_BLOB {
+                let tmp = scalars[i].mul(&vectors[i].get_coeff_at(j));
+                out.set_coeff_at(j, &out.get_coeff_at(j).add(&tmp));
+            }
+        }
+        out    
+    }
+    #[cfg(feature = "parallel")]
+    {
+        let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+        
+        out.coeffs = (0..FIELD_ELEMENTS_PER_BLOB).into_par_iter().map(|j|{
+            let mut tmp = FsFr::zero();
+            for i in 0..n{
+                tmp = tmp.add(&scalars[i].mul(&vectors[i].get_coeff_at(j)));
+            }
+            tmp
+        }).collect();    
+        out    
+
+    }
+}
 
 pub fn compute_aggregated_poly_and_commitment(
-	polys: &[FsPoly],
-	kzg_commitments: &[FsG1],
-	n: usize) -> (FsPoly, FsG1, FsFr) { 
+    polys: &[FsPoly],
+    kzg_commitments: &[FsG1],
+    n: usize,
+) -> (FsPoly, FsG1, FsFr) {
+    let hash = hash_to_bytes(polys, kzg_commitments, n);
+    let r = bytes_to_bls_field(&hash);
 
-	let hash = hash_to_bytes(polys, kzg_commitments, n);
-	let r = bytes_to_bls_field(&hash);
-
-	let (r_powers, chal_out) = if n == 1 {
+    let (r_powers, chal_out) = if n == 1 {
         (vec![r], r)
     } else {
         let r_powers = compute_powers(&r, n);
@@ -351,17 +379,17 @@ pub fn compute_aggregated_poly_and_commitment(
         (r_powers, chal_out)
     };
 
-	let poly_out = poly_lincomb(polys, &r_powers, n);
+    let poly_out = poly_lincomb(polys, &r_powers, n);
 
-	let comm_out = g1_lincomb(kzg_commitments, &r_powers);
+    let comm_out = g1_lincomb(kzg_commitments, &r_powers);
 
-	(poly_out, comm_out, chal_out)
+    (poly_out, comm_out, chal_out)
 }
 
-fn poly_from_blob(p: &mut FsPoly, blob: &[FsFr]) {
-    for (i, coeff) in blob.iter().enumerate() {
-        p.set_coeff_at(i, coeff);
-    }
+fn poly_from_blob(blob: &[FsFr]) -> FsPoly {
+    let mut p: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+    p.coeffs = blob.to_vec();
+    p
 }
 
 fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
@@ -373,13 +401,29 @@ pub fn compute_aggregate_kzg_proof(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> F
     if n == 0 {
         return FsG1::identity();
     }
-    let mut commitments: Vec<FsG1> = vec![FsG1::default(); n];
-    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); n];
-    for i in 0..n{
-        poly_from_blob(&mut polys[i], &blobs[i]);
-        commitments[i] = poly_to_kzg_commitment(&polys[i], ts);
-    }
-    let (aggregated_poly, _, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, &commitments, n);
+
+    #[cfg(feature = "parallel")]
+    let (polys, commitments): (Vec<_>, Vec<_>) = blobs
+        .par_iter()
+        .map(|blob| {
+            let poly = poly_from_blob(blob);
+            let commitment = poly_to_kzg_commitment(&poly, ts);
+            (poly, commitment)
+        })
+        .unzip();
+
+    #[cfg(not(feature = "parallel"))]
+    let (polys, commitments): (Vec<_>, Vec<_>) = blobs
+        .iter()
+        .map(|blob| {
+            let poly = poly_from_blob(blob);
+            let commitment = poly_to_kzg_commitment(&poly, ts);
+            (poly, commitment)
+        })
+        .unzip();
+
+    let (aggregated_poly, _, evaluation_challenge) =
+        compute_aggregated_poly_and_commitment(&polys, &commitments, n);
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, ts)
 }
 
@@ -387,12 +431,21 @@ pub fn verify_aggregate_kzg_proof(
     blobs: &[Vec<FsFr>],
     expected_kzg_commitments: &[FsG1],
     kzg_aggregated_proof: &FsG1,
-    ts: &FsKZGSettings) -> bool {
-    let mut polys: Vec<FsPoly> = vec![FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap(); blobs.len()];
-    for i in 0..blobs.len(){
-        poly_from_blob(&mut polys[i], &blobs[i]);
-    }
-    let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) = compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
+    ts: &FsKZGSettings,
+) -> bool {
+    #[cfg(feature = "parallel")]
+    let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect();
+    #[cfg(not(feature = "parallel"))]
+    let polys: Vec<FsPoly> = blobs.iter().map(|blob| poly_from_blob(blob)).collect();
+
+    let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
+        compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
     let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
-    verify_kzg_proof(&aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, ts)
+    verify_kzg_proof(
+        &aggregated_poly_commitment,
+        &evaluation_challenge,
+        &y,
+        kzg_aggregated_proof,
+        ts,
+    )
 }
