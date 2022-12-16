@@ -64,6 +64,19 @@ fn u64_to_bytes(x: u64) -> [u8; 32] {
 
 # Benchmarks
 
+The latest benchmarks on AMD 3900X:
+
+| Bench | Rust BLST  | Rust BLST parallel | C-KZG (Rust bindings) | Rust MCL   |
+| :---: |             :---: |     :---:     |          :---:        | :---: |
+| Compute (2 Blobs)  | 140.13 ms | 98.537 ms | 144.48 ms | 143.65 ms |
+| Compute (4 Blobs)  | 233.99 ms | 99.359 ms | 246.13 ms | 237.93 ms |
+| Compute (8 Blobs)  | 420.68 ms | 105.93 ms | 435.51 ms | 429.48 ms |
+| Compute (16 Blobs) | 794.75 ms | 142.87 ms | 827.55 ms | 813.36 ms |
+| Verify  (2 Blobs)  | 2.4682 ms | 2.4682 ms | 3.1103 ms | 6.8721 ms |
+| Verify  (4 Blobs)  | 3.1072 ms | 3.1072 ms | 4.7926 ms | 11.403 ms |
+| Verify  (8 Blobs)  | 4.2477 ms | 4.2477 ms | 7.9565 ms | 20.866 ms |
+| Verify  (16 Blobs) | 6.6977 ms | 6.6977 ms | 15.074 ms | 39.335 ms |
+
 Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/benchmarks.yml) on every Github build. However, it's best to run it on a dedicated machine. [Tautvydas](https://github.com/belijzajac) rendered nice charts for results he got on cloud servers:
 
 ![fft fr](images/fft_fr.png)
