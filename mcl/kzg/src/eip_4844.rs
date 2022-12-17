@@ -1,5 +1,5 @@
 use crate::data_types::g1::mclBnG1_mulVec;
-use crate::data_types::{fr::*, g1::*, g2::*};
+use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
@@ -10,6 +10,11 @@ use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use std::usize;
+
+#[cfg(feature = "parallel")]
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+#[cfg(feature = "parallel")]
+use rayon::iter::IntoParallelIterator;
 
 // [x] bytes_to_bls_field
 // [x] vector_lincomb
@@ -57,19 +62,28 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
 
     let mut g2_values: Vec<G2> = Vec::new();
 
-    let mut g1_projectives: Vec<G1> = Vec::new();
 
-    for _ in 0..length {
-        let line = lines.next().unwrap();
-        assert!(line.len() == 96);
+    let g1_lines = (0..length).map(|_|{
+        lines.next().unwrap() 
+    }).collect::<Vec<&str>>();
+
+    #[cfg(feature = "parallel")]
+    let iter = g1_lines.par_iter();
+    #[cfg(not(feature = "parallel"))]
+    let iter = g1_lines.iter();
+
+
+    let g1_projectives = iter.
+        map(|line|{
+         assert!(line.len() == 96);
         let bytes: [u8; 48] = (0..line.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
             .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
-        g1_projectives.push(bytes_to_g1(&bytes));
-    }
+        bytes_to_g1(&bytes)
+    }).collect::<Vec<G1>>();
 
     for _ in 0..n2 {
         let line = lines.next().unwrap();
@@ -161,7 +175,24 @@ pub fn verify_kzg_proof(commitment: &G1, x: &Fr, y: &Fr, proof: &G1, ks: &KZGSet
     G1::mul(&mut y_g1, &G1::gen(), y);
     G1::sub(&mut commitment_minus_y, commitment, &y_g1);
 
-    Curve::verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x)
+    verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x)
+}
+
+#[cfg(feature = "parallel")]
+fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
+    let g1 = [(a1, a2), (b1, b2)];
+
+    let mut pairings = g1.par_iter().map(|(v1, v2)|{
+        v1.pair(v2)
+    }).collect::<Vec<GT>>();
+    let result = (pairings.pop().unwrap() * pairings.pop().unwrap().get_inv()).get_final_exp();
+
+    result.is_one()
+}
+
+#[cfg(not(feature = "parallel"))]
+fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
+    Curve::verify_pairing(a1, a2, b1, b2)
 }
 
 pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
@@ -321,10 +352,13 @@ pub fn verify_aggregate_kzg_proof(
     kzg_aggregated_proof: &G1,
     ts: &KZGSettings,
 ) -> bool {
-    let mut polys: Vec<Polynomial> = vec![Polynomial::new(FIELD_ELEMENTS_PER_BLOB); blobs.len()];
-    for i in 0..blobs.len() {
-        polys[i] = poly_from_blob(&blobs[i]);
-    }
+    #[cfg(feature = "parallel")]
+    let iter = blobs.par_iter();
+    #[cfg(not(feature = "parallel"))]
+    let iter = blobs.iter();
+
+    let polys:Vec<Polynomial> = iter.map(|blob| poly_from_blob(blob)).collect();
+
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
     let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
@@ -401,10 +435,12 @@ fn hash_to_bytes(out: &mut [u8; 32], polys: &[Polynomial], comms: &[G1]) {
         let data = &bytes_from_g1(comm);
         bytes[pos..pos + data.len()].copy_from_slice(data);
     }
+        
 
     hash(out, &bytes);
 }
 
+#[cfg(not(feature = "parallel"))]
 pub fn poly_lincomb(vectors: &[Polynomial], scalars: &[Fr]) -> Polynomial {
     let mut res: Polynomial = Polynomial::new(FIELD_ELEMENTS_PER_BLOB);
     let mut tmp: Fr;
@@ -419,6 +455,20 @@ pub fn poly_lincomb(vectors: &[Polynomial], scalars: &[Fr]) -> Polynomial {
         }
     }
     res
+}
+
+#[cfg(feature = "parallel")]
+pub fn poly_lincomb(vectors: &[Polynomial], scalars: &[Fr]) -> Polynomial {
+    let n = vectors.len();
+    Polynomial {
+        coeffs: (0..FIELD_ELEMENTS_PER_BLOB).into_par_iter().map(|j|{
+            let mut out = Fr::zero();
+            for i in 0..n {
+                out += &(scalars[i] * vectors[i].get_coeff_at(j));
+            }
+            out
+        }).collect()
+    }
 }
 
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
