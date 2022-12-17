@@ -54,6 +54,9 @@ impl Fr {
     }
 
     pub fn pow(&self, n: usize) -> Self {
+        if n == 0 {
+            return Self::one();
+        }
         //No idea if this works
         let mut res = *self;
         for _ in 1 .. n {
@@ -78,7 +81,9 @@ impl Fr {
 
     pub fn from_scalar(secret: &[u8; 32]) -> Self {
         let mut t = Fr::default();
-        t.set_little_endian(secret);
+        if !t.set_little_endian_mod(secret) {
+            panic!("failed to set little endian");
+        }
 
         t
     }
