@@ -60,12 +60,7 @@ impl CommonFr for Fr {
     }
 
     fn pow(&self, n: usize) -> Self {
-        //No idea if this works
-        let mut res = *self;
-        for _ in 1 .. n {
-            res = res * *self;
-        }
-        res
+        Fr::pow(self, n)
     }
 
     fn mul(&self, b: &Self) -> Self {

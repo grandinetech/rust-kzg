@@ -19,6 +19,11 @@ use std::usize;
 // [x] compute_kzg_proof
 // [x] evaluate_polynomial_in_evaluation_form
 
+// pub fn g1h(g: &G1) -> String {
+//     let b = bytes_from_g1(g);
+//     format!("{:x}", md5::compute(&b)).split_off(24)
+// }
+
 pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> G1 {
     set_eth_serialization(1);
     let mut g1 = G1::default();
@@ -295,15 +300,18 @@ fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: us
     unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
 }
 
-pub fn compute_aggregate_kzg_proof(blob: &[Vec<Fr>], s: &KZGSettings) -> G1 {
-    let mut commitments: Vec<G1> = vec![G1::default(); blob.len()];
-    let mut polys: Vec<Polynomial> = vec![Polynomial::new(FIELD_ELEMENTS_PER_BLOB); blob.len()];
-    for i in 0..blob.len() {
-        polys[i] = poly_from_blob(&blob[i]);
+pub fn compute_aggregate_kzg_proof(blobs: &[Vec<Fr>], s: &KZGSettings) -> G1 {
+    if blobs.is_empty() {
+        return G1::G1_IDENTITY;
+    }
+    let mut commitments: Vec<G1> = vec![G1::default(); blobs.len()];
+    let mut polys: Vec<Polynomial> = vec![Polynomial::new(FIELD_ELEMENTS_PER_BLOB); blobs.len()];
+    for i in 0..blobs.len() {
+        polys[i] = poly_from_blob(&blobs[i]);
         commitments[i] = poly_to_kzg_commitment(&polys[i], s);
     }
     let (aggregated_poly, _, evaluation_challenge) =
-        compute_aggregated_poly_and_commitment(&polys, &commitments, blob.len());
+        compute_aggregated_poly_and_commitment(&polys, &commitments, blobs.len());
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, s)
 }
 
@@ -346,11 +354,15 @@ fn compute_aggregated_poly_and_commitment(
 ) -> (Polynomial, G1, Fr) {
     let mut hash = [0u8; 32];
     hash_to_bytes(&mut hash, polys, kzg_commitments); 
-
     let r = bytes_to_bls_field(&hash);
-    let r_powers = compute_powers(&r, n);
 
-    let chal_out = r_powers[1] * r_powers[n - 1];
+    let (r_powers, chal_out) = if n == 1 {
+        (vec![r], r)
+    } else {
+        let r_powers = compute_powers(&r, n);
+        let chal_out = r_powers[1] * r_powers[n - 1];
+        (r_powers, chal_out)
+    };
 
     let poly_out = poly_lincomb(polys, &r_powers); 
 
