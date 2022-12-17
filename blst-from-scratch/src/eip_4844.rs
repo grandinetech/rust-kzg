@@ -4,7 +4,7 @@ use std::io::Read;
 
 use blst::{
     blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
-    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR,
+    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
@@ -28,7 +28,7 @@ use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 use crate::utils::reverse_bit_order;
 
-pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> FsG1 {
+pub fn bytes_to_g1_rust(bytes: &[u8; 48usize]) -> FsG1 {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
     unsafe {
@@ -40,7 +40,7 @@ pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> FsG1 {
     FsG1(g1)
 }
 
-pub fn bytes_from_g1(g1: &FsG1) -> [u8; 48usize] {
+pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; 48usize] {
     let mut out: [u8; 48usize] = [0; 48];
     unsafe {
         blst_p1_compress(out.as_mut_ptr(), &g1.0);
@@ -48,7 +48,7 @@ pub fn bytes_from_g1(g1: &FsG1) -> [u8; 48usize] {
     out
 }
 
-pub fn load_trusted_setup(filepath: &str) -> FsKZGSettings {
+pub fn load_trusted_setup_rust(filepath: &str) -> FsKZGSettings {
     let mut file = File::open(filepath).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -71,7 +71,7 @@ pub fn load_trusted_setup(filepath: &str) -> FsKZGSettings {
             .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
-        g1_projectives.push(bytes_to_g1(&bytes_array));
+        g1_projectives.push(bytes_to_g1_rust(&bytes_array));
     }
 
     for _ in 0..n2 {
@@ -133,7 +133,7 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
 
 }
 
-pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> FsFr {
+pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> FsFr {
     FsFr::from_scalar(*bytes)
 }
 
@@ -161,11 +161,11 @@ pub fn g1_lincomb(points: &[FsG1], scalars: &[FsFr]) -> FsG1 {
     out
 }
 
-pub fn blob_to_kzg_commitment(blob: &[FsFr], s: &FsKZGSettings) -> FsG1 {
+pub fn blob_to_kzg_commitment_rust(blob: &[FsFr], s: &FsKZGSettings) -> FsG1 {
     g1_lincomb(&s.secret_g1, blob)
 }
 
-pub fn verify_kzg_proof(
+pub fn verify_kzg_proof_rust(
     polynomial_kzg: &FsG1,
     z: &FsFr,
     y: &FsFr,
@@ -325,7 +325,7 @@ pub fn hash_to_bytes(polys: &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32] {
     }
 
     for i in 0..n {
-        let v = bytes_from_g1(&comms[i]);
+        let v = bytes_from_g1_rust(&comms[i]);
         for k in 0..48 {
             bytes[np + i * 48 + k] = v[k];
         }
@@ -369,7 +369,7 @@ pub fn compute_aggregated_poly_and_commitment(
     n: usize,
 ) -> (FsPoly, FsG1, FsFr) {
     let hash = hash_to_bytes(polys, kzg_commitments, n);
-    let r = bytes_to_bls_field(&hash);
+    let r = bytes_to_bls_field_rust(&hash);
 
     let (r_powers, chal_out) = if n == 1 {
         (vec![r], r)
@@ -396,7 +396,7 @@ fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
     g1_lincomb(&s.secret_g1, &p.coeffs)
 }
 
-pub fn compute_aggregate_kzg_proof(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> FsG1 {
+pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> FsG1 {
     let n = blobs.len();
     if n == 0 {
         return FsG1::identity();
@@ -427,7 +427,7 @@ pub fn compute_aggregate_kzg_proof(blobs: &[Vec<FsFr>], ts: &FsKZGSettings) -> F
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, ts)
 }
 
-pub fn verify_aggregate_kzg_proof(
+pub fn verify_aggregate_kzg_proof_rust(
     blobs: &[Vec<FsFr>],
     expected_kzg_commitments: &[FsG1],
     kzg_aggregated_proof: &FsG1,
@@ -441,7 +441,7 @@ pub fn verify_aggregate_kzg_proof(
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
     let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
-    verify_kzg_proof(
+    verify_kzg_proof_rust(
         &aggregated_poly_commitment,
         &evaluation_challenge,
         &y,
@@ -449,3 +449,80 @@ pub fn verify_aggregate_kzg_proof(
         ts,
     )
 }
+
+#[no_mangle]
+pub extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) {
+    let mut tmp = [0u8; 48];
+    tmp.copy_from_slice(unsafe { std::slice::from_raw_parts(bytes, 48) });
+    unsafe {
+        *out = bytes_to_g1_rust(&tmp).0;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn bytes_from_g1(out: *mut u8, g1: *const blst_p1) {
+    let mut tmp = unsafe { bytes_from_g1_rust(&FsG1(*g1)) };
+    unsafe {
+        *out = *tmp.as_mut_ptr();
+        // std::ptr::copy_nonoverlapping(tmp.as_mut_ptr(), out, 48);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn bytes_to_bls_field(out: *mut blst_fr, bytes: *const u8) {
+    let mut tmp = [0u8; 32];
+    tmp.copy_from_slice(unsafe { std::slice::from_raw_parts(bytes, 32) });
+    unsafe {
+        *out = bytes_to_bls_field_rust(&tmp).0;
+    }
+}
+
+// #[no_mangle]
+// pub extern "C" fn load_trusted_setup_file(out: *mut FsKZGSettings, inp: *mut FILE) {
+//     let mut tmp = unsafe { load_trusted_setup_file_rust(inp) };
+//     unsafe {
+//         *out = *tmp.as_mut_ptr();
+//     }
+//     FsKZGRet::KZG_OK
+// }
+
+// #[no_mangle]
+// pub extern "C" fn verify_aggregate_kzg_proof(
+//     out: *mut bool,
+//     blobs: *const u8,
+//     expected_kzg_commitments: *const blst_p1,
+//     n: usize,
+//     kzg_aggregated_proof: *const blst_p1,
+//     s: *const FsKZGSettings,
+// ) {
+//     let mut tmp = unsafe {
+//         verify_aggregate_kzg_proof_rust(
+//             std::slice::from_raw_parts(blobs, n),
+//             std::slice::from_raw_parts(expected_kzg_commitments, n),
+//             &FsG1(*kzg_aggregated_proof),
+//             &FsKZGSettings(*s),
+//         )
+//     };
+//     unsafe {
+//         *out = tmp;
+//     }
+// }
+
+// fn bytes_to_bls_field(out: *mut BlstFr, bytes: *const u8);
+    // fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
+    // fn load_trusted_setup_file(out: *mut KzgKZGSettings4844, inp: *mut FILE) -> KzgRet;
+    // fn verify_aggregate_kzg_proof(
+    //     out: *mut bool,
+    //     blobs: *const u8,
+    //     expected_kzg_commitments: *const BlstP1,
+    //     n: usize,
+    //     kzg_aggregated_proof: *const BlstP1,
+    //     s: *const KzgKZGSettings4844,
+    // ) -> KzgRet;
+    // fn blob_to_kzg_commitment(out: *mut BlstP1, blob: *const u8, s: *const KzgKZGSettings4844);
+    // fn compute_aggregate_kzg_proof(
+    //     out: *mut BlstP1,
+    //     blobs: *const u8,
+    //     n: usize,
+    //     s: *const KzgKZGSettings4844,
+    // ) -> KzgRet;

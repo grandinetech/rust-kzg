@@ -1,7 +1,7 @@
 use blst_from_scratch::{
     eip_4844::{
-        blob_to_kzg_commitment, compute_aggregate_kzg_proof, load_trusted_setup,
-        verify_aggregate_kzg_proof,
+        blob_to_kzg_commitment_rust, compute_aggregate_kzg_proof_rust, load_trusted_setup_rust,
+        verify_aggregate_kzg_proof_rust,
     },
     types::{
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
@@ -16,8 +16,8 @@ use kzg_bench::benches::eip_4844::{
 fn bench_compute_aggregate_kzg_proof_1_(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &compute_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &compute_aggregate_kzg_proof_rust,
         1,
     )
 }
@@ -25,16 +25,16 @@ fn bench_compute_aggregate_kzg_proof_1_(c: &mut Criterion) {
 fn bench_compute_aggregate_kzg_proof_2_(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &compute_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &compute_aggregate_kzg_proof_rust,
         2,
     )
 }
 fn bench_compute_aggregate_kzg_proof_4_(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &compute_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &compute_aggregate_kzg_proof_rust,
         4,
     )
 }
@@ -42,8 +42,8 @@ fn bench_compute_aggregate_kzg_proof_4_(c: &mut Criterion) {
 fn bench_compute_aggregate_kzg_proof_8_(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &compute_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &compute_aggregate_kzg_proof_rust,
         8,
     )
 }
@@ -51,8 +51,8 @@ fn bench_compute_aggregate_kzg_proof_8_(c: &mut Criterion) {
 fn bench_compute_aggregate_kzg_proof_16_(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &compute_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &compute_aggregate_kzg_proof_rust,
         16,
     )
 }
@@ -60,50 +60,50 @@ fn bench_compute_aggregate_kzg_proof_16_(c: &mut Criterion) {
 fn bench_verify_aggregate_kzg_proof_1_(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &blob_to_kzg_commitment,
-        &compute_aggregate_kzg_proof,
-        &verify_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &blob_to_kzg_commitment_rust,
+        &compute_aggregate_kzg_proof_rust,
+        &verify_aggregate_kzg_proof_rust,
         1,
     )
 }
 fn bench_verify_aggregate_kzg_proof_2_(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &blob_to_kzg_commitment,
-        &compute_aggregate_kzg_proof,
-        &verify_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &blob_to_kzg_commitment_rust,
+        &compute_aggregate_kzg_proof_rust,
+        &verify_aggregate_kzg_proof_rust,
         2,
     )
 }
 fn bench_verify_aggregate_kzg_proof_4_(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &blob_to_kzg_commitment,
-        &compute_aggregate_kzg_proof,
-        &verify_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &blob_to_kzg_commitment_rust,
+        &compute_aggregate_kzg_proof_rust,
+        &verify_aggregate_kzg_proof_rust,
         4,
     )
 }
 fn bench_verify_aggregate_kzg_proof_8_(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &blob_to_kzg_commitment,
-        &compute_aggregate_kzg_proof,
-        &verify_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &blob_to_kzg_commitment_rust,
+        &compute_aggregate_kzg_proof_rust,
+        &verify_aggregate_kzg_proof_rust,
         8,
     )
 }
 fn bench_verify_aggregate_kzg_proof_16_(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup,
-        &blob_to_kzg_commitment,
-        &compute_aggregate_kzg_proof,
-        &verify_aggregate_kzg_proof,
+        &load_trusted_setup_rust,
+        &blob_to_kzg_commitment_rust,
+        &compute_aggregate_kzg_proof_rust,
+        &verify_aggregate_kzg_proof_rust,
         16,
     )
 }
