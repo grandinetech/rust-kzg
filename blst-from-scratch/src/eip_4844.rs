@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::ffi::{c_char, CStr};
 use std::fs::File;
 use std::io::Read;
 
@@ -502,6 +503,18 @@ fn fft_settings_to_rust(c_settings: &CFsFFTSettings) -> FsFFTSettings{
     }
 }
 
+fn fft_settings_to_c(rust_settings : &mut FsFFTSettings) -> CFsFFTSettings{
+    let mut roots_of_unity: Vec<FsFr> = rust_settings.expanded_roots_of_unity.clone();
+    reverse_bit_order(&mut roots_of_unity);
+
+    CFsFFTSettings{
+        max_width: rust_settings.max_width as u64,
+        expanded_roots_of_unity: rust_settings.expanded_roots_of_unity.as_mut_ptr(),
+        reverse_roots_of_unity: rust_settings.reverse_roots_of_unity.as_mut_ptr(),
+        roots_of_unity: roots_of_unity.as_mut_ptr(),
+    }
+}
+
 fn kzg_settings_to_rust(c_settings : &CFsKzgSettings) -> FsKZGSettings{
     let length = c_settings.fs.max_width as usize;
     FsKZGSettings{
@@ -511,21 +524,29 @@ fn kzg_settings_to_rust(c_settings : &CFsKzgSettings) -> FsKZGSettings{
     }
 }
 
+fn kzg_settings_to_c(rust_settings : &mut FsKZGSettings) -> CFsKzgSettings{
+    CFsKzgSettings{
+        fs: fft_settings_to_c(&mut rust_settings.fs),
+        g1_values: rust_settings.secret_g1.as_mut_ptr(),
+        g2_values: rust_settings.secret_g2.as_mut_ptr(),
+    }
+}
+
 const BLOB_SIZE: usize = 4096;
 #[no_mangle]
 pub extern "C" fn blob_to_kzg_commitment(blob: *const FsFr, s: &CFsKzgSettings) -> FsG1 {
     blob_to_kzg_commitment_rust(unsafe{ std::slice::from_raw_parts(blob, BLOB_SIZE) } , &kzg_settings_to_rust(s))
 }
 
-
-// #[no_mangle]
-// pub extern "C" fn load_trusted_setup_file(out: *mut FsKZGSettings, inp: *mut FILE) {
-//     let mut tmp = unsafe { load_trusted_setup_file_rust(inp) };
-//     unsafe {
-//         *out = *tmp.as_mut_ptr();
-//     }
-//     FsKZGRet::KZG_OK
-// }
+// getting *FILE seems impossible 
+// https://stackoverflow.com/questions/4862327/is-there-a-way-to-get-the-filename-from-a-file
+#[no_mangle]
+pub extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *const c_char) {
+    let c_str = unsafe { CStr::from_ptr(inp) };
+    let filename = c_str.to_str().map(|s| s.to_owned()).unwrap();
+    let mut settings = load_trusted_setup_rust(&filename);
+    unsafe{*out = kzg_settings_to_c(&mut settings)};
+}
 
 // #[no_mangle]
 // pub extern "C" fn verify_aggregate_kzg_proof(
