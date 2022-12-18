@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use std::ffi::{c_char, CStr};
+use std::ffi::{c_char, CStr, CString};
 use std::fs::File;
 use std::io::Read;
 
@@ -9,6 +9,7 @@ use blst::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
+use libc::{FILE, fileno, readlink};
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 #[cfg(feature = "parallel")]
@@ -489,7 +490,7 @@ pub struct CFsFFTSettings{
 }
 
 pub struct CFsKzgSettings{
-    pub fs: CFsFFTSettings,
+    pub fs: *const CFsFFTSettings,
     pub g1_values: *mut FsG1, // G1
     pub g2_values: *mut FsG2, // G2
 
@@ -501,7 +502,6 @@ fn fft_settings_to_rust(c_settings: &CFsFFTSettings) -> FsFFTSettings{
         root_of_unity: unsafe{ *(c_settings.expanded_roots_of_unity.add(1)) } ,
         expanded_roots_of_unity: unsafe{std::slice::from_raw_parts(c_settings.expanded_roots_of_unity, c_settings.max_width as usize).to_vec() },
         reverse_roots_of_unity: unsafe{std::slice::from_raw_parts(c_settings.reverse_roots_of_unity, c_settings.max_width as usize).to_vec() },
-
     }
 }
 
@@ -518,17 +518,18 @@ fn fft_settings_to_c(rust_settings : &mut FsFFTSettings) -> CFsFFTSettings{
 }
 
 fn kzg_settings_to_rust(c_settings : &CFsKzgSettings) -> FsKZGSettings{
-    let length = c_settings.fs.max_width as usize;
+    let length = unsafe { (*c_settings.fs).max_width as usize };
+    println!("length: {}", length);
     FsKZGSettings{
-        fs: fft_settings_to_rust(&c_settings.fs),
+        fs: unsafe { fft_settings_to_rust(&*c_settings.fs ) },
         secret_g1: unsafe{std::slice::from_raw_parts(c_settings.g1_values, length).to_vec() },
-        secret_g2: unsafe{std::slice::from_raw_parts(c_settings.g2_values, length).to_vec() }
+        secret_g2: unsafe{std::slice::from_raw_parts(c_settings.g2_values, 65).to_vec() }
     }
 }
 
 fn kzg_settings_to_c(rust_settings : &mut FsKZGSettings) -> CFsKzgSettings{
     CFsKzgSettings{
-        fs: fft_settings_to_c(&mut rust_settings.fs),
+        fs: &fft_settings_to_c(&mut rust_settings.fs) as *const CFsFFTSettings,
         g1_values: rust_settings.secret_g1.as_mut_ptr(),
         g2_values: rust_settings.secret_g2.as_mut_ptr(),
     }
@@ -539,8 +540,17 @@ const BLOB_SIZE: usize = 4096;
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn blob_to_kzg_commitment(blob: *const FsFr, s: &CFsKzgSettings) -> FsG1 {
-    blob_to_kzg_commitment_rust(std::slice::from_raw_parts(blob, BLOB_SIZE) , &kzg_settings_to_rust(s))
+pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: *const CFsKzgSettings) {
+    let blob_arr = std::slice::from_raw_parts(blob, BLOB_SIZE * 32)
+        .chunks(32).map(|x| {
+            let mut tmp = [0u8; 32];
+            tmp.copy_from_slice(x);
+            bytes_to_bls_field_rust(&tmp)
+        }).collect::<Vec<FsFr>>();
+    // println!("blob_to_kzg_commitment: {:?}", blob_arr);
+
+    let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(&*s));
+    *out = tmp.0;
 }
 
 // getting *FILE seems impossible 
@@ -549,34 +559,90 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(blob: *const FsFr, s: &CFsKzgSet
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *const c_char) {
-    let c_str = CStr::from_ptr(inp) ;
-    let filename = c_str.to_str().map(|s| s.to_owned()).unwrap();
+pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE) {
+    // let c_str = CStr::from_ptr(inp);
+    // let filename = c_str.to_str().map(|s| s.to_owned()).unwrap();
+    
+    let fd = fileno(inp);
+    let p = CString::new(format!("/proc/self/fd/{}", fd)).unwrap();
+    let path = p.as_ptr() as *const c_char;
+
+    println!("path: {}", CStr::from_ptr(path).to_str().unwrap());
+
+    // pub fn readlink(path: *const c_char, buf: *mut c_char, bufsz: ::size_t) -> ::ssize_t;
+    let filename = [0i8; 4096].as_mut_ptr();
+
+    if readlink(path, filename, 4096) == -1 {
+        panic!("readlink failed");
+    }
+    let filename = CStr::from_ptr(filename).to_str().unwrap();
+    println!("filename: {}", filename);
     let mut settings = load_trusted_setup_rust(&filename);
     *out = kzg_settings_to_c(&mut settings);
 }
 
-// #[no_mangle]
-// pub extern "C" fn verify_aggregate_kzg_proof(
-//     out: *mut bool,
-//     blobs: *const u8,
-//     expected_kzg_commitments: *const blst_p1,
-//     n: usize,
-//     kzg_aggregated_proof: *const blst_p1,
-//     s: *const FsKZGSettings,
-// ) {
-//     let mut tmp = unsafe {
-//         verify_aggregate_kzg_proof_rust(
-//             std::slice::from_raw_parts(blobs, n),
-//             std::slice::from_raw_parts(expected_kzg_commitments, n),
-//             &FsG1(*kzg_aggregated_proof),
-//             &FsKZGSettings(*s),
-//         )
-//     };
-//     unsafe {
-//         *out = tmp;
-//     }
-// }
+#[no_mangle]
+/// # Safety
+/// 
+/// This function should not be called before the horsemen are ready
+pub unsafe extern "C" fn compute_aggregate_kzg_proof(
+    out: *mut blst_p1,
+    blobs: *const u8,
+    n: usize,
+    s: &CFsKzgSettings,
+) {
+    let blob_arr = std::slice::from_raw_parts(blobs, n * BLOB_SIZE)
+        .chunks(BLOB_SIZE * 32)
+        .map(|blob| {
+            blob.chunks(32).map(|x| {
+                let mut tmp = [0u8; 32];
+                tmp.copy_from_slice(x);
+                bytes_to_bls_field_rust(&tmp)
+            }).collect::<Vec<FsFr>>()
+    }).collect::<Vec<Vec<FsFr>>>();
+    let tmp = compute_aggregate_kzg_proof_rust(&blob_arr,
+        &kzg_settings_to_rust(s),
+    );
+    *out = tmp.0;
+}
+
+// void free_trusted_setup(KZGSettings *s);
+#[no_mangle]
+pub extern "C" fn free_trusted_setup(_s: *mut CFsKzgSettings) {
+    println!("freeing trusted setup?");
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn verify_aggregate_kzg_proof(
+    out: *mut bool,
+    blobs: *const u8,
+    expected_kzg_commitments: *const blst_p1,
+    n: usize,
+    kzg_aggregated_proof: *const blst_p1,
+    s: &CFsKzgSettings,
+) {
+    let blob_arr = std::slice::from_raw_parts(blobs, n * BLOB_SIZE)
+        .chunks(BLOB_SIZE)
+        .map(|blob| {
+            blob.chunks(32).map(|x| {
+                let mut tmp = [0u8; 32];
+                tmp.copy_from_slice(x);
+                bytes_to_bls_field_rust(&tmp)
+            }).collect::<Vec<FsFr>>()
+    }).collect::<Vec<Vec<FsFr>>>();
+    let expected_kzg_commitments_arr = std::slice::from_raw_parts(expected_kzg_commitments, n)
+        .iter()
+        .map(|x| FsG1(*x))
+        .collect::<Vec<FsG1>>();
+    let kzg_aggregated_proof_arr = FsG1(*kzg_aggregated_proof);
+    let tmp = verify_aggregate_kzg_proof_rust(
+        &blob_arr,
+        &expected_kzg_commitments_arr,
+        &kzg_aggregated_proof_arr,
+        &kzg_settings_to_rust(s),
+    );
+    *out = tmp;
+}
 
 // fn bytes_to_bls_field(out: *mut BlstFr, bytes: *const u8);
     // fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);

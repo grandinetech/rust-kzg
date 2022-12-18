@@ -80,6 +80,7 @@ dependencies = [
  "criterion",
  "kzg",
  "kzg-bench",
+ "libc",
  "once_cell",
  "rand",
  "rand_pcg",
