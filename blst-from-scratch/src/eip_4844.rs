@@ -477,6 +477,47 @@ pub extern "C" fn bytes_to_bls_field(out: *mut blst_fr, bytes: *const u8) {
     }
 }
 
+pub struct CFsFFTSettings{
+    pub max_width: u64,
+    pub expanded_roots_of_unity: *mut FsFr,
+    pub reverse_roots_of_unity: *mut FsFr,
+    pub roots_of_unity: *mut FsFr,
+
+}
+
+pub struct CFsKzgSettings{
+    pub fs: CFsFFTSettings,
+    pub g1_values: *mut FsG1, // G1
+    pub g2_values: *mut FsG2, // G2
+
+}
+
+fn fft_settings_to_rust(c_settings: &CFsFFTSettings) -> FsFFTSettings{
+    FsFFTSettings{
+        max_width: c_settings.max_width as usize,
+        root_of_unity: unsafe{ *(c_settings.expanded_roots_of_unity.add(1)) } ,
+        expanded_roots_of_unity: unsafe{std::slice::from_raw_parts(c_settings.expanded_roots_of_unity, c_settings.max_width as usize).to_vec() },
+        reverse_roots_of_unity: unsafe{std::slice::from_raw_parts(c_settings.reverse_roots_of_unity, c_settings.max_width as usize).to_vec() },
+
+    }
+}
+
+fn kzg_settings_to_rust(c_settings : &CFsKzgSettings) -> FsKZGSettings{
+    let length = c_settings.fs.max_width as usize;
+    FsKZGSettings{
+        fs: fft_settings_to_rust(&c_settings.fs),
+        secret_g1: unsafe{std::slice::from_raw_parts(c_settings.g1_values, length).to_vec() },
+        secret_g2: unsafe{std::slice::from_raw_parts(c_settings.g2_values, length).to_vec() }
+    }
+}
+
+const BLOB_SIZE: usize = 4096;
+#[no_mangle]
+pub extern "C" fn blob_to_kzg_commitment(blob: *const FsFr, s: &CFsKzgSettings) -> FsG1 {
+    blob_to_kzg_commitment_rust(unsafe{ std::slice::from_raw_parts(blob, BLOB_SIZE) } , &kzg_settings_to_rust(s))
+}
+
+
 // #[no_mangle]
 // pub extern "C" fn load_trusted_setup_file(out: *mut FsKZGSettings, inp: *mut FILE) {
 //     let mut tmp = unsafe { load_trusted_setup_file_rust(inp) };
