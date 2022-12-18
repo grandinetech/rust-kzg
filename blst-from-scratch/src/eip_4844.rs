@@ -452,30 +452,32 @@ pub fn verify_aggregate_kzg_proof_rust(
 }
 
 #[no_mangle]
-pub extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) {
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready.
+pub unsafe extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) {
     let mut tmp = [0u8; 48];
-    tmp.copy_from_slice(unsafe { std::slice::from_raw_parts(bytes, 48) });
-    unsafe {
-        *out = bytes_to_g1_rust(&tmp).0;
-    }
+    tmp.copy_from_slice(std::slice::from_raw_parts(bytes, 48));
+    *out = bytes_to_g1_rust(&tmp).0;
 }
 
 #[no_mangle]
-pub extern "C" fn bytes_from_g1(out: *mut u8, g1: *const blst_p1) {
-    let mut tmp = unsafe { bytes_from_g1_rust(&FsG1(*g1)) };
-    unsafe {
-        *out = *tmp.as_mut_ptr();
-        // std::ptr::copy_nonoverlapping(tmp.as_mut_ptr(), out, 48);
-    }
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready.
+pub unsafe extern "C" fn bytes_from_g1(out: *mut u8, g1: *const blst_p1) {
+    let mut tmp = bytes_from_g1_rust(&FsG1(*g1));
+    *out = *tmp.as_mut_ptr();
 }
 
 #[no_mangle]
-pub extern "C" fn bytes_to_bls_field(out: *mut blst_fr, bytes: *const u8) {
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready.
+pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, bytes: *const u8) {
     let mut tmp = [0u8; 32];
-    tmp.copy_from_slice(unsafe { std::slice::from_raw_parts(bytes, 32) });
-    unsafe {
-        *out = bytes_to_bls_field_rust(&tmp).0;
-    }
+    tmp.copy_from_slice(std::slice::from_raw_parts(bytes, 32) );
+    *out = bytes_to_bls_field_rust(&tmp).0;
 }
 
 pub struct CFsFFTSettings{
@@ -533,19 +535,25 @@ fn kzg_settings_to_c(rust_settings : &mut FsKZGSettings) -> CFsKzgSettings{
 }
 
 const BLOB_SIZE: usize = 4096;
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub extern "C" fn blob_to_kzg_commitment(blob: *const FsFr, s: &CFsKzgSettings) -> FsG1 {
-    blob_to_kzg_commitment_rust(unsafe{ std::slice::from_raw_parts(blob, BLOB_SIZE) } , &kzg_settings_to_rust(s))
+pub unsafe extern "C" fn blob_to_kzg_commitment(blob: *const FsFr, s: &CFsKzgSettings) -> FsG1 {
+    blob_to_kzg_commitment_rust(std::slice::from_raw_parts(blob, BLOB_SIZE) , &kzg_settings_to_rust(s))
 }
 
 // getting *FILE seems impossible 
 // https://stackoverflow.com/questions/4862327/is-there-a-way-to-get-the-filename-from-a-file
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *const c_char) {
-    let c_str = unsafe { CStr::from_ptr(inp) };
+pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *const c_char) {
+    let c_str = CStr::from_ptr(inp) ;
     let filename = c_str.to_str().map(|s| s.to_owned()).unwrap();
     let mut settings = load_trusted_setup_rust(&filename);
-    unsafe{*out = kzg_settings_to_c(&mut settings)};
+    *out = kzg_settings_to_c(&mut settings);
 }
 
 // #[no_mangle]
