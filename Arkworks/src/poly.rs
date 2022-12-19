@@ -50,7 +50,7 @@ pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, 
     let mut mask: usize = 1 << log2(maxd);
 
     while mask != 0 {
-        d = 2 * d + (if (maxd & mask) != 0 { 1 } else { 0 });
+        d = 2 * d + usize::from((maxd & mask) != 0);
         mask >>= 1;
 
         let len_temp: usize = min(d + 1, b.coeffs.len() + output.coeffs.len() - 1);
