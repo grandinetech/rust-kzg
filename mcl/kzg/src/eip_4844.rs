@@ -1,4 +1,3 @@
-use crate::data_types::g1::mclBnG1_mulVec;
 use crate::data_types::{fr::*, g1::*, g2::*};
 use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
@@ -10,6 +9,7 @@ use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use std::usize;
+use std::ptr;
 
 // [x] bytes_to_bls_field
 // [x] vector_lincomb
@@ -291,8 +291,69 @@ fn fr_batch_inv(out: &mut [Fr], a: &[Fr], len: usize) {
     out[0] = inv;
 }
 
-fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: usize) {
-    unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
+fn g1_linear_combination(out: &mut G1, p: &[G1], coeffs: &[Fr], len: usize) {
+
+    //unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
+    
+    if len < 8 {
+        // Direct approach
+        let mut tmp;
+        *out = G1::G1_IDENTITY;
+
+        #[cfg(feature = "parallel")]
+        for i in 0..len {
+            tmp = p[i] * &coeffs[i];
+            *out += &tmp;
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        for i in 0..len {
+            tmp = p[i] * &coeffs[i];
+            *out += &tmp;
+        }
+        
+    } else {
+        let mut scratch: Vec<u8>;
+        unsafe {
+            //scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len) as usize];
+        }
+
+        let mut p_affine = vec![G1::default(); len];
+        let mut scalars = vec![Fr::default(); len];
+
+        let p_arg: [*const blst_p1; 2] = [&p[0].0, ptr::null()];
+        unsafe {
+            //blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
+        }
+
+        #[cfg(feature = "parallel")]
+        for i in 0..len {
+            scalars[i] = Fr {
+                b: coeffs[i].to_scalar(),
+            };
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        for i in 0..len {
+            scalars[i] = Fr {
+                b: coeffs[i].to_scalar(),
+            };
+        }
+
+        let scalars_arg: [*const blst_scalar; 2] = [scalars.as_ptr(), ptr::null()];
+        let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), ptr::null()];
+        unsafe {
+            blst_p1s_mult_pippenger(
+                &mut out.0,
+                points_arg.as_ptr(),
+                len,
+                scalars_arg.as_ptr() as *const *const u8,
+                256,
+                scratch.as_mut_ptr() as *mut limb_t,
+            );
+        }
+    }
+
 }
 
 pub fn compute_aggregate_kzg_proof(blob: &[Vec<Fr>], s: &KZGSettings) -> G1 {
