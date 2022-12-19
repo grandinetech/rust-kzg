@@ -1,5 +1,5 @@
 use crate::data_types::g1::mclBnG1_mulVec;
-use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
+use crate::data_types::{fr::*, g1::*, g2::*};
 use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
@@ -335,12 +335,17 @@ pub fn compute_aggregate_kzg_proof(blobs: &[Vec<Fr>], s: &KZGSettings) -> G1 {
     if blobs.is_empty() {
         return G1::G1_IDENTITY;
     }
-    let mut commitments: Vec<G1> = vec![G1::default(); blobs.len()];
-    let mut polys: Vec<Polynomial> = vec![Polynomial::new(FIELD_ELEMENTS_PER_BLOB); blobs.len()];
-    for i in 0..blobs.len() {
-        polys[i] = poly_from_blob(&blobs[i]);
-        commitments[i] = poly_to_kzg_commitment(&polys[i], s);
-    }
+
+    #[cfg(feature = "parallel")]
+    let iter = blobs.par_iter();
+    #[cfg(not(feature = "parallel"))]
+    let iter = blobs.iter();
+
+    let (polys, commitments): (Vec<_>, Vec<_>) = iter.map(|blob| {
+        let poly = poly_from_blob(blob);
+        let commitment = poly_to_kzg_commitment(&poly, s);
+        (poly, commitment)
+    }).unzip();
     let (aggregated_poly, _, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, &commitments, blobs.len());
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, s)
