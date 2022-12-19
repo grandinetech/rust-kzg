@@ -184,7 +184,7 @@ fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
 
     let mut pairings = g1.par_iter().map(|(v1, v2)|{
         v1.pair(v2)
-    }).collect::<Vec<GT>>();
+    }).collect::<Vec<crate::data_types::gt::GT>>();
     let result = (pairings.pop().unwrap() * pairings.pop().unwrap().get_inv()).get_final_exp();
 
     result.is_one()
