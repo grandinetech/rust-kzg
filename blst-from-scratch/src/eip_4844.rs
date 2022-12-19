@@ -539,40 +539,15 @@ fn kzg_settings_to_rust(c_settings : &CFsKzgSettings) -> FsKZGSettings{
     let secret_g1 = unsafe{std::slice::from_raw_parts(c_settings.g1_values, length).iter().map(|r| FsG1(*r)).collect::<Vec<FsG1>>() };
     let res = FsKZGSettings{
         fs: fft_settings_to_rust(c_settings.fs ),
-        secret_g1: secret_g1,
+        secret_g1,
         secret_g2: unsafe{std::slice::from_raw_parts(c_settings.g2_values, 65).iter().map(|r| FsG2(*r)).collect::<Vec<FsG2>>() }
     };
-
-    // let my_file = "/home/mdominykas/Desktop/Universitetas/Bloku grandiniu technologijos/c-kzg-4844/src/trusted_setup.txt";
-    // let from_file = load_trusted_setup_rust(my_file);
-    // assert!(from_file.secret_g1.len() == res.secret_g1.len());
-    // for i in 0..from_file.secret_g1.len(){
-    //     // println!("i = {}", i);
-    //     for j in 0..6{
-    //         assert!(res.secret_g1[i].0.x.l[j] == from_file.secret_g1[i].0.x.l[j]);
-    //         assert!(res.secret_g1[i].0.y.l[j] == from_file.secret_g1[i].0.y.l[j]);
-    //         assert!(res.secret_g1[i].0.z.l[j] == from_file.secret_g1[i].0.z.l[j]);
-    //     }
-    // }
-
-    // assert!(from_file.secret_g2.len() == res.secret_g2.len());
-    // for i in 0..from_file.secret_g2.len(){
-    //     for j in 0..6{
-    //         for k in 0..2{
-    //             assert!(res.secret_g2[i].0.x.fp[k].l[j] == from_file.secret_g2[i].0.x.fp[k].l[j]);
-    //             assert!(res.secret_g2[i].0.y.fp[k].l[j] == from_file.secret_g2[i].0.y.fp[k].l[j]);
-    //             assert!(res.secret_g2[i].0.z.fp[k].l[j] == from_file.secret_g2[i].0.z.fp[k].l[j]);    
-    //         }
-    //     }
-    // }
-
-
     res
 }
 
 fn kzg_settings_to_c(rust_settings : &FsKZGSettings) -> CFsKzgSettings{
     let g1_val = rust_settings.secret_g1.iter().map(|r| r.0).collect::<Vec<blst_p1>>();
-    let g1_val = Box::new(g1_val.clone());
+    let g1_val = Box::new(g1_val);
     let g2_val = rust_settings.secret_g2.iter().map(|r| r.0).collect::<Vec<blst_p2>>();
     let x = g2_val.into_boxed_slice();
     let stat_ref = Box::leak(x);
@@ -609,16 +584,10 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const 
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE) {
-    // let c_str = CStr::from_ptr(inp);
-    // let filename = c_str.to_str().map(|s| s.to_owned()).unwrap();
-    
     let fd = fileno(inp);
     let p = CString::new(format!("/proc/self/fd/{}", fd)).unwrap();
     let path = p.as_ptr() as *const c_char;
 
-    // println!("path: {}", CStr::from_ptr(path).to_str().unwrap());
-
-    // pub fn readlink(path: *const c_char, buf: *mut c_char, bufsz: ::size_t) -> ::ssize_t;
     let filename = [0i8; 4096].as_mut_ptr();
 
     if readlink(path, filename, 4096) == -1 {
@@ -626,8 +595,8 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
     }
     let filename = CStr::from_ptr(filename).to_str().unwrap();
     println!("filename: {}", filename);
-    let mut settings = load_trusted_setup_rust(&filename);
-    *out = kzg_settings_to_c(&mut settings);
+    let settings = load_trusted_setup_rust(filename);
+    *out = kzg_settings_to_c(&settings);
 
 }
 
@@ -654,25 +623,31 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
         &kzg_settings_to_rust(s),
     );
     *out = tmp.0;
-    return 0;
+    0
 }
 
 #[no_mangle]
-pub extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
-    let max_width = unsafe{(*(*s).fs).max_width as usize};
-    let rev = unsafe {Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).reverse_roots_of_unity, max_width)) };
+/// # Safety
+/// 
+/// This function should not be called before the horsemen are ready
+pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
+    let max_width = (*(*s).fs).max_width as usize;
+    let rev = Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).reverse_roots_of_unity, max_width));
     drop(rev);
-    let exp = unsafe {Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).expanded_roots_of_unity, max_width))};
+    let exp = Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).expanded_roots_of_unity, max_width));
     drop(exp);
-    let roots = unsafe {Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).roots_of_unity, max_width))};
+    let roots = Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).roots_of_unity, max_width));
     drop(roots);
-    let g1 = unsafe{Box::from_raw(std::slice::from_raw_parts_mut((*s).g1_values, max_width))};
+    let g1 = Box::from_raw(std::slice::from_raw_parts_mut((*s).g1_values, max_width));
     drop(g1);
-    let g2 = unsafe{Box::from_raw(std::slice::from_raw_parts_mut((*s).g2_values, 65))};
+    let g2 = Box::from_raw(std::slice::from_raw_parts_mut((*s).g2_values, 65));
     drop(g2);
 }
 
 #[no_mangle]
+/// # Safety
+/// 
+/// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     out: *mut bool,
     blobs: *const u8,
@@ -702,24 +677,5 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
         &kzg_settings_to_rust(s),
     );
     *out = tmp;
-    return 0;
+    0
 }
-
-// fn bytes_to_bls_field(out: *mut BlstFr, bytes: *const u8);
-    // fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
-    // fn load_trusted_setup_file(out: *mut KzgKZGSettings4844, inp: *mut FILE) -> KzgRet;
-    // fn verify_aggregate_kzg_proof(
-    //     out: *mut bool,
-    //     blobs: *const u8,
-    //     expected_kzg_commitments: *const BlstP1,
-    //     n: usize,
-    //     kzg_aggregated_proof: *const BlstP1,
-    //     s: *const KzgKZGSettings4844,
-    // ) -> KzgRet;
-    // fn blob_to_kzg_commitment(out: *mut BlstP1, blob: *const u8, s: *const KzgKZGSettings4844);
-    // fn compute_aggregate_kzg_proof(
-    //     out: *mut BlstP1,
-    //     blobs: *const u8,
-    //     n: usize,
-    //     s: *const KzgKZGSettings4844,
-    // ) -> KzgRet;
