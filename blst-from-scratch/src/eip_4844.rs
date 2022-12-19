@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256};
 use crate::consts::{
     BYTES_PER_FIELD_ELEMENT, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
 };
-use crate::types::fft_settings::FsFFTSettings;
+use crate::types::fft_settings::{FsFFTSettings};
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 
@@ -98,6 +98,8 @@ pub fn load_trusted_setup_rust(filepath: &str) -> FsKZGSettings {
     while (1 << max_scale) < length {
         max_scale += 1;
     }
+
+    assert!(max_scale == 12);
 
     let fs = FsFFTSettings::new(max_scale).unwrap();
 
@@ -180,7 +182,6 @@ pub fn verify_kzg_proof_rust(
 
 pub fn compute_kzg_proof(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
     assert!(p.len() <= s.secret_g1.len());
-    println!("compute_kzg_proof");
 
     let y: FsFr = evaluate_polynomial_in_evaluation_form(p, x, s);
 
@@ -188,7 +189,6 @@ pub fn compute_kzg_proof(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
     let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
 
     reverse_bit_order(&mut roots_of_unity);
-    println!("compute_kzg_proof 1");
     let mut i: usize = 0;
     let mut m: usize = 0;
 
@@ -207,10 +207,8 @@ pub fn compute_kzg_proof(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
         inverses_in[i] = roots_of_unity[i].sub(x);
         i += 1;
     }
-    println!("compute_kzg_proof 2");
     
     fr_batch_inv(&mut inverses, &inverses_in, q.len());
-    println!("compute_kzg_proof 3");
     
     i = 0;
     while i < q.len() {
@@ -218,7 +216,6 @@ pub fn compute_kzg_proof(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
         i += 1;
     }
     
-    println!("compute_kzg_proof 4");
     if m > 0 {
         // ω_m == x
         q.coeffs[m] = FsFr::zero();
@@ -233,9 +230,7 @@ pub fn compute_kzg_proof(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
             inverses_in[i] = tmp.mul(x);
             i += 1;
         }
-        println!("compute_kzg_proof 5");
         fr_batch_inv(&mut inverses, &inverses_in, q.coeffs.len());
-        println!("compute_kzg_proof 6");
         i = 0;
         while i < q.coeffs.len() {
             tmp = p.coeffs[i].sub(&y);
@@ -245,7 +240,6 @@ pub fn compute_kzg_proof(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
             i += 1;
         }
     }
-    println!("compute_kzg_proof done");
     g1_lincomb(&s.secret_g1, &q.coeffs)
 }
 
@@ -325,7 +319,6 @@ pub fn hash_to_bytes(polys: &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32] {
     );
 
     for i in 0..n {
-        println!("hash_to_bytes i: {}, polys[i].len(): {}", i, polys[i].len());
         for j in 0..FIELD_ELEMENTS_PER_BLOB {
             let v = bytes_from_bls_field(&polys[i].get_coeff_at(j));
             bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) as usize
@@ -350,7 +343,6 @@ pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly {
         let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
         out.coeffs = vec![FsFr::zero(); FIELD_ELEMENTS_PER_BLOB];
         for i in 0..n {
-            println!("i: {} vector.len: {}", i, vectors[i].len());
             for j in 0..FIELD_ELEMENTS_PER_BLOB {
                 let tmp = scalars[i].mul(&vectors[i].get_coeff_at(j));
                 out.set_coeff_at(j, &out.get_coeff_at(j).add(&tmp));
@@ -379,11 +371,8 @@ pub fn compute_aggregated_poly_and_commitment(
     kzg_commitments: &[FsG1],
     n: usize,
 ) -> (FsPoly, FsG1, FsFr) {
-    println!("compute_aggregated_poly_and_commitment 0");
     let hash = hash_to_bytes(polys, kzg_commitments, n);
-    println!("compute_aggregated_poly_and_commitment 1");
     let r = bytes_to_bls_field_rust(&hash);
-    println!("compute_aggregated_poly_and_commitment 2");
     
     let (r_powers, chal_out) = if n == 1 {
         (vec![r], r)
@@ -392,13 +381,10 @@ pub fn compute_aggregated_poly_and_commitment(
         let chal_out = r_powers[1].mul(&r_powers[n - 1]);
         (r_powers, chal_out)
     };
-    println!("compute_aggregated_poly_and_commitment 3");
     
     let poly_out = poly_lincomb(polys, &r_powers, n);
-    println!("compute_aggregated_poly_and_commitment 4");
     
     let comm_out = g1_lincomb(kzg_commitments, &r_powers);
-    println!("compute_aggregated_poly_and_commitment 5");
 
     (poly_out, comm_out, chal_out)
 }
@@ -429,7 +415,6 @@ pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<FsFr>], ts: &FsKZGSettings)
         })
         .unzip();
 
-    println!("compute_aggregate_kzg_proof_rust: n = {}", n);
     #[cfg(not(feature = "parallel"))]
     let (polys, commitments): (Vec<_>, Vec<_>) = blobs
         .iter()
@@ -439,11 +424,9 @@ pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<FsFr>], ts: &FsKZGSettings)
             (poly, commitment)
         })
         .unzip();
-    println!("compute_aggregate_kzg_proof_ after poly_to_kzg_commitment");
     
     let (aggregated_poly, _, evaluation_challenge) =
     compute_aggregated_poly_and_commitment(&polys, &commitments, n);
-    println!("after compute_aggregated_poly_and_commitment");
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, ts)
 }
 
@@ -457,14 +440,10 @@ pub fn verify_aggregate_kzg_proof_rust(
     let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect();
     #[cfg(not(feature = "parallel"))]
     let polys: Vec<FsPoly> = blobs.iter().map(|blob| poly_from_blob(blob)).collect();
-    println!("verify_aggregate_kzg_proof_rust");
-    println!("polys[0].len() = {}", polys[0].coeffs.len());
     
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
-    println!("verify_aggregate_kzg_proof_rust after compute_aggregated_poly_and_commitment");
     let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
-    println!("verify_aggregate_kzg_proof_rust after evaluate_polynomial_in_evaluation_form");
     verify_kzg_proof_rust(
         &aggregated_poly_commitment,
         &evaluation_challenge,
@@ -522,21 +501,25 @@ pub struct CFsKzgSettings{
 
 fn fft_settings_to_rust(c_settings: *const CFsFFTSettings) -> FsFFTSettings{
     let settings = unsafe{&*c_settings};
-    println!("length_fft__to_rust: {}", settings.max_width);
-    println!("root_of_unity_to_rust: {:?}", unsafe{std::slice::from_raw_parts(settings.reverse_roots_of_unity, settings.max_width as usize).iter().map(|r| FsFr(*r)).collect::<Vec<FsFr>>()[0] });
-    FsFFTSettings{
+    
+    let mut first_root = unsafe{ FsFr(*(settings.expanded_roots_of_unity.add(1))) };
+    let first_root_arr = [first_root; 1];
+    // reverse_bit_order(&mut first_root_arr);
+    first_root = first_root_arr[0];
+
+    let res = FsFFTSettings{
         max_width: settings.max_width as usize,
-        root_of_unity: unsafe{ FsFr(*(settings.expanded_roots_of_unity.add(1))) } ,
-        expanded_roots_of_unity: unsafe{std::slice::from_raw_parts(settings.expanded_roots_of_unity, settings.max_width as usize).iter().map(|r| FsFr(*r)).collect::<Vec<FsFr>>() },
-        reverse_roots_of_unity: unsafe{std::slice::from_raw_parts(settings.reverse_roots_of_unity, settings.max_width as usize).iter().map(|r| FsFr(*r)).collect::<Vec<FsFr>>() },
-    }
+        root_of_unity: first_root ,
+        expanded_roots_of_unity: unsafe{std::slice::from_raw_parts(settings.expanded_roots_of_unity, (settings.max_width + 1) as usize).iter().map(|r| FsFr(*r)).collect::<Vec<FsFr>>() },
+        reverse_roots_of_unity: unsafe{std::slice::from_raw_parts(settings.reverse_roots_of_unity, (settings.max_width + 1) as usize).iter().map(|r| FsFr(*r)).collect::<Vec<FsFr>>() },
+    };
+
+    res
 }
 
-fn fft_settings_to_c(rust_settings : &mut FsFFTSettings) -> *const CFsFFTSettings{
+fn fft_settings_to_c(rust_settings : &FsFFTSettings) -> *const CFsFFTSettings{
     let mut roots_of_unity: Vec<FsFr> = rust_settings.expanded_roots_of_unity.clone();
-    reverse_bit_order(&mut roots_of_unity);
-    println!("length_to_c: {}", rust_settings.max_width);
-    println!("root_of_unity_to_c: {:?}", rust_settings.reverse_roots_of_unity[0]);
+    reverse_bit_order(&mut roots_of_unity);    
 
     let expanded_roots_of_unity = Box::new(rust_settings.expanded_roots_of_unity.iter().map(|r| r.0).collect::<Vec<blst_fr>>());
     let reverse_roots_of_unity = Box::new(rust_settings.reverse_roots_of_unity.iter().map(|r| r.0).collect::<Vec<blst_fr>>());
@@ -553,19 +536,52 @@ fn fft_settings_to_c(rust_settings : &mut FsFFTSettings) -> *const CFsFFTSetting
 
 fn kzg_settings_to_rust(c_settings : &CFsKzgSettings) -> FsKZGSettings{
     let length = unsafe { (*c_settings.fs).max_width as usize };
-    println!("length_to_rust: {}", length);
-    FsKZGSettings{
+    let secret_g1 = unsafe{std::slice::from_raw_parts(c_settings.g1_values, length).iter().map(|r| FsG1(*r)).collect::<Vec<FsG1>>() };
+    let res = FsKZGSettings{
         fs: fft_settings_to_rust(c_settings.fs ),
-        secret_g1: unsafe{std::slice::from_raw_parts(c_settings.g1_values, length).iter().map(|r| FsG1(*r)).collect::<Vec<FsG1>>() },
+        secret_g1: secret_g1,
         secret_g2: unsafe{std::slice::from_raw_parts(c_settings.g2_values, 65).iter().map(|r| FsG2(*r)).collect::<Vec<FsG2>>() }
-    }
+    };
+
+    // let my_file = "/home/mdominykas/Desktop/Universitetas/Bloku grandiniu technologijos/c-kzg-4844/src/trusted_setup.txt";
+    // let from_file = load_trusted_setup_rust(my_file);
+    // assert!(from_file.secret_g1.len() == res.secret_g1.len());
+    // for i in 0..from_file.secret_g1.len(){
+    //     // println!("i = {}", i);
+    //     for j in 0..6{
+    //         assert!(res.secret_g1[i].0.x.l[j] == from_file.secret_g1[i].0.x.l[j]);
+    //         assert!(res.secret_g1[i].0.y.l[j] == from_file.secret_g1[i].0.y.l[j]);
+    //         assert!(res.secret_g1[i].0.z.l[j] == from_file.secret_g1[i].0.z.l[j]);
+    //     }
+    // }
+
+    // assert!(from_file.secret_g2.len() == res.secret_g2.len());
+    // for i in 0..from_file.secret_g2.len(){
+    //     for j in 0..6{
+    //         for k in 0..2{
+    //             assert!(res.secret_g2[i].0.x.fp[k].l[j] == from_file.secret_g2[i].0.x.fp[k].l[j]);
+    //             assert!(res.secret_g2[i].0.y.fp[k].l[j] == from_file.secret_g2[i].0.y.fp[k].l[j]);
+    //             assert!(res.secret_g2[i].0.z.fp[k].l[j] == from_file.secret_g2[i].0.z.fp[k].l[j]);    
+    //         }
+    //     }
+    // }
+
+
+    res
 }
 
-fn kzg_settings_to_c(rust_settings : &mut FsKZGSettings) -> CFsKzgSettings{
+fn kzg_settings_to_c(rust_settings : &FsKZGSettings) -> CFsKzgSettings{
+    let g1_val = rust_settings.secret_g1.iter().map(|r| r.0).collect::<Vec<blst_p1>>();
+    let g1_val = Box::new(g1_val.clone());
+    let g2_val = rust_settings.secret_g2.iter().map(|r| r.0).collect::<Vec<blst_p2>>();
+    let x = g2_val.into_boxed_slice();
+    let stat_ref = Box::leak(x);
+    let v = Box::into_raw(g1_val);
+    
     CFsKzgSettings{
-        fs: fft_settings_to_c(&mut rust_settings.fs),
-        g1_values: rust_settings.secret_g1.iter().map(|r| r.0).collect::<Vec<blst_p1>>().as_mut_ptr(),
-        g2_values: rust_settings.secret_g2.iter().map(|r| r.0).collect::<Vec<blst_p2>>().as_mut_ptr(),
+        fs: fft_settings_to_c(&rust_settings.fs),
+        g1_values: unsafe{(*v).as_mut_ptr()},
+        g2_values: stat_ref.as_mut_ptr(),
     }
 }
 
@@ -581,7 +597,6 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const 
             tmp.copy_from_slice(x);
             bytes_to_bls_field_rust(&tmp)
         }).collect::<Vec<FsFr>>();
-    // println!("blob_to_kzg_commitment: {:?}", blob_arr);
 
     let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(&*s));
     *out = tmp.0;
@@ -601,7 +616,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
     let p = CString::new(format!("/proc/self/fd/{}", fd)).unwrap();
     let path = p.as_ptr() as *const c_char;
 
-    println!("path: {}", CStr::from_ptr(path).to_str().unwrap());
+    // println!("path: {}", CStr::from_ptr(path).to_str().unwrap());
 
     // pub fn readlink(path: *const c_char, buf: *mut c_char, bufsz: ::size_t) -> ::ssize_t;
     let filename = [0i8; 4096].as_mut_ptr();
@@ -614,7 +629,6 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
     let mut settings = load_trusted_setup_rust(&filename);
     *out = kzg_settings_to_c(&mut settings);
 
-    println!("nepakeistas ilgis {}", (*(*out).fs).max_width);
 }
 
 #[no_mangle]
@@ -643,10 +657,19 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
     return 0;
 }
 
-// void free_trusted_setup(KZGSettings *s);
 #[no_mangle]
-pub extern "C" fn free_trusted_setup(_s: *mut CFsKzgSettings) {
-    println!("freeing trusted setup?");
+pub extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
+    let max_width = unsafe{(*(*s).fs).max_width as usize};
+    let rev = unsafe {Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).reverse_roots_of_unity, max_width)) };
+    drop(rev);
+    let exp = unsafe {Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).expanded_roots_of_unity, max_width))};
+    drop(exp);
+    let roots = unsafe {Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).roots_of_unity, max_width))};
+    drop(roots);
+    let g1 = unsafe{Box::from_raw(std::slice::from_raw_parts_mut((*s).g1_values, max_width))};
+    drop(g1);
+    let g2 = unsafe{Box::from_raw(std::slice::from_raw_parts_mut((*s).g2_values, 65))};
+    drop(g2);
 }
 
 #[no_mangle]
@@ -658,7 +681,6 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     kzg_aggregated_proof: *const blst_p1,
     s: &CFsKzgSettings,
 ) -> u8 {
-    println!("verify_aggregate_kzg_proof");
     let blob_arr = std::slice::from_raw_parts(blobs, n * BLOB_SIZE * 32)
         .chunks(BLOB_SIZE * 32)
         .map(|blob| {
@@ -668,12 +690,10 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
                 bytes_to_bls_field_rust(&tmp)
             }).collect::<Vec<FsFr>>()
     }).collect::<Vec<Vec<FsFr>>>();
-    println!("verify_aggregate_kzg_proof n={}, blobs.len()={}", n, blob_arr.len());
     let expected_kzg_commitments_arr = std::slice::from_raw_parts(expected_kzg_commitments, n)
         .iter()
         .map(|x| FsG1(*x))
         .collect::<Vec<FsG1>>();
-    println!("verify_aggregate_kzg_proof expected_kzg_commitments_arr.len()={}", expected_kzg_commitments_arr.len());
     let kzg_aggregated_proof_arr = FsG1(*kzg_aggregated_proof);
     let tmp = verify_aggregate_kzg_proof_rust(
         &blob_arr,
@@ -681,7 +701,6 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
         &kzg_aggregated_proof_arr,
         &kzg_settings_to_rust(s),
     );
-    println!("verify_aggregate_kzg_proof finsish");
     *out = tmp;
     return 0;
 }
