@@ -5,7 +5,7 @@ use std::io::Read;
 
 use blst::{
     blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
-    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr,
+    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr, blst_scalar, blst_scalar_from_lendian, blst_scalar_fr_check,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
@@ -50,7 +50,46 @@ pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; 48usize] {
     out
 }
 
-pub fn load_trusted_setup_rust(filepath: &str) -> FsKZGSettings {
+pub fn load_trusted_setup_rust(g1_bytes: &[u8], n1: usize, g2_bytes: &[u8], _n2: usize) -> FsKZGSettings {
+    let g1_projectives: Vec<FsG1> = g1_bytes.chunks(48).map(|chunk| {
+        let mut bytes_array: [u8; 48] = [0; 48];
+        bytes_array.copy_from_slice(chunk);
+        bytes_to_g1_rust(&bytes_array)
+    }).collect();
+
+    let g2_values: Vec<FsG2> = g2_bytes.chunks(96).map(|chunk| {
+        let mut bytes_array: [u8; 96] = [0; 96];
+        bytes_array.copy_from_slice(chunk);
+        let mut tmp = blst_p2_affine::default();
+        let mut g2 = blst_p2::default();
+        unsafe {
+            if blst_p2_uncompress(&mut tmp, bytes_array.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                panic!("blst_p2_uncompress failed");
+            }
+            blst_p2_from_affine(&mut g2, &tmp);
+        }
+        FsG2(g2)
+    }).collect();
+
+    let mut max_scale: usize = 0;
+    while (1 << max_scale) < n1 {
+        max_scale += 1;
+    }
+
+    let fs = FsFFTSettings::new(max_scale).unwrap();
+
+    let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
+
+    reverse_bit_order(&mut g1_values);
+
+    FsKZGSettings {
+        secret_g1: g1_values,
+        secret_g2: g2_values,
+        fs,
+    }
+}
+
+pub fn load_trusted_setup_file_rust(filepath: &str) -> FsKZGSettings {
     let mut file = File::open(filepath).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -565,16 +604,41 @@ const BLOB_SIZE: usize = 4096;
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: *const CFsKzgSettings) {
-    let blob_arr = std::slice::from_raw_parts(blob, BLOB_SIZE * 32)
+pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: *const CFsKzgSettings) -> u8 {
+    let blob_arr_res = std::slice::from_raw_parts(blob, BLOB_SIZE * 32)
         .chunks(32).map(|x| {
-            let mut tmp = [0u8; 32];
-            tmp.copy_from_slice(x);
-            bytes_to_bls_field_rust(&tmp)
-        }).collect::<Vec<FsFr>>();
+            let mut bytes = [0u8; 32];
+            bytes.copy_from_slice(x);
+            let mut tmp: blst_scalar = blst_scalar::default();
+            blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
+            if !blst_scalar_fr_check(&tmp) {
+                Err("Invalid scalar".to_string()) 
+            } else {
+                Ok(bytes_to_bls_field_rust(&bytes))
+            }
+        }).collect::<Result<Vec<FsFr>, String>>();
 
-    let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(&*s));
-    *out = tmp.0;
+    if let Ok(blob_arr) = blob_arr_res {
+        let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(&*s));
+        *out = tmp.0;
+        0
+    }
+    else {
+        1
+    }
+}
+
+pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings, 
+    g1_bytes: *const u8, 
+    n1: usize,
+    g2_bytes: *const u8, 
+    n2: usize) -> u8 {
+    println!("{}, {}", n1, n2);
+    let g1_bytes = std::slice::from_raw_parts(g1_bytes, n1);
+    let g2_bytes = std::slice::from_raw_parts(g2_bytes, n2);
+    let settings = load_trusted_setup_rust(g1_bytes, n1, g2_bytes, n2);
+    *out = kzg_settings_to_c(&settings);
+    0
 }
 
 // getting *FILE seems impossible 
@@ -595,7 +659,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
     }
     let filename = CStr::from_ptr(filename).to_str().unwrap();
     println!("filename: {}", filename);
-    let settings = load_trusted_setup_rust(filename);
+    let settings = load_trusted_setup_file_rust(filename);
     *out = kzg_settings_to_c(&settings);
 
 }
@@ -642,6 +706,26 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
     drop(g1);
     let g2 = Box::from_raw(std::slice::from_raw_parts_mut((*s).g2_values, 65));
     drop(g2);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn verify_kzg_proof(
+    out: *mut bool,
+    polynomial_kzg: *const blst_p1,
+    z: *const u8,
+    y: *const u8,
+    kzg_proof: *const blst_p1,
+    s: &CFsKzgSettings,
+) -> u8 {
+    let frz = bytes_to_bls_field_rust(std::slice::from_raw_parts(z, 32).try_into().unwrap());
+    let fry = bytes_to_bls_field_rust(std::slice::from_raw_parts(y, 32).try_into().unwrap());
+    *out = verify_kzg_proof_rust(&FsG1(*polynomial_kzg),
+        &frz,
+        &fry,
+        &FsG1(*kzg_proof),
+        &kzg_settings_to_rust(s),
+    );
+    0
 }
 
 #[no_mangle]
