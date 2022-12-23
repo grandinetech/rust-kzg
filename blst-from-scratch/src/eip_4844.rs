@@ -30,16 +30,16 @@ use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 use crate::utils::reverse_bit_order;
 
-pub fn bytes_to_g1_rust(bytes: &[u8; 48usize]) -> FsG1 {
+pub fn bytes_to_g1_rust(bytes: &[u8; 48usize]) -> Result<FsG1, String> {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
     unsafe {
         if blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-            panic!("blst_p1_uncompress failed");
+            return Err("blst_p1_uncompress failed".to_string());
         }
         blst_p1_from_affine(&mut g1, &tmp);
     }
-    FsG1(g1)
+    Ok(FsG1(g1))
 }
 
 pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; 48usize] {
@@ -54,7 +54,7 @@ pub fn load_trusted_setup_rust(g1_bytes: &[u8], n1: usize, g2_bytes: &[u8], _n2:
     let g1_projectives: Vec<FsG1> = g1_bytes.chunks(48).map(|chunk| {
         let mut bytes_array: [u8; 48] = [0; 48];
         bytes_array.copy_from_slice(chunk);
-        bytes_to_g1_rust(&bytes_array)
+        bytes_to_g1_rust(&bytes_array).unwrap()
     }).collect();
 
     let g2_values: Vec<FsG2> = g2_bytes.chunks(96).map(|chunk| {
@@ -112,7 +112,7 @@ pub fn load_trusted_setup_file_rust(filepath: &str) -> FsKZGSettings {
             .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
-        g1_projectives.push(bytes_to_g1_rust(&bytes_array));
+        g1_projectives.push(bytes_to_g1_rust(&bytes_array).unwrap());
     }
 
     for _ in 0..n2 {
@@ -496,10 +496,15 @@ pub fn verify_aggregate_kzg_proof_rust(
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready.
-pub unsafe extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) {
+pub unsafe extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) -> u8 {
     let mut tmp = [0u8; 48];
     tmp.copy_from_slice(std::slice::from_raw_parts(bytes, 48));
-    *out = bytes_to_g1_rust(&tmp).0;
+    if let Ok(g1) = bytes_to_g1_rust(&tmp) {
+        *out = g1.0;
+        0
+    } else {
+        1
+    }
 }
 
 #[no_mangle]
@@ -604,7 +609,7 @@ const BLOB_SIZE: usize = 4096;
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: *const CFsKzgSettings) -> u8 {
+pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: &CFsKzgSettings) -> u8 {
     let blob_arr_res = std::slice::from_raw_parts(blob, BLOB_SIZE * 32)
         .chunks(32).map(|x| {
             let mut bytes = [0u8; 32];
@@ -619,7 +624,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const 
         }).collect::<Result<Vec<FsFr>, String>>();
 
     if let Ok(blob_arr) = blob_arr_res {
-        let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(&*s));
+        let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(s));
         *out = tmp.0;
         0
     }
@@ -658,7 +663,6 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
         panic!("readlink failed");
     }
     let filename = CStr::from_ptr(filename).to_str().unwrap();
-    println!("filename: {}", filename);
     let settings = load_trusted_setup_file_rust(filename);
     *out = kzg_settings_to_c(&settings);
 
