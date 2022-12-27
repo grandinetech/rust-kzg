@@ -99,20 +99,18 @@ pub fn load_trusted_setup_file_rust(filepath: &str) -> FsKZGSettings {
     let length = lines.next().unwrap().parse::<usize>().unwrap();
     let n2 = lines.next().unwrap().parse::<usize>().unwrap();
 
-    let mut g2_values: Vec<FsG2> = Vec::new();
+    let mut g2_values: Vec<u8> = Vec::new();
 
-    let mut g1_projectives: Vec<FsG1> = Vec::new();
+    let mut g1_projectives: Vec<u8> = Vec::new();
 
     for _ in 0..length {
         let line = lines.next().unwrap();
         assert!(line.len() == 96);
-        let bytes_array: [u8; 48] = (0..line.len())
+        let bytes_array = (0..line.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>()
-            .try_into()
-            .unwrap();
-        g1_projectives.push(bytes_to_g1_rust(&bytes_array).unwrap());
+            .collect::<Vec<u8>>();
+        g1_projectives.extend_from_slice(&bytes_array);
     }
 
     for _ in 0..n2 {
@@ -122,35 +120,10 @@ pub fn load_trusted_setup_file_rust(filepath: &str) -> FsKZGSettings {
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
             .collect::<Vec<u8>>();
-        let mut tmp = blst_p2_affine::default();
-        let mut g2 = blst_p2::default();
-        unsafe {
-            if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                panic!("blst_p2_uncompress failed");
-            }
-            blst_p2_from_affine(&mut g2, &tmp);
-        }
-        g2_values.push(FsG2(g2));
+        g2_values.extend_from_slice(&bytes);
     }
 
-    let mut max_scale: usize = 0;
-    while (1 << max_scale) < length {
-        max_scale += 1;
-    }
-
-    assert!(max_scale == 12);
-
-    let fs = FsFFTSettings::new(max_scale).unwrap();
-
-    let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
-
-    reverse_bit_order(&mut g1_values);
-
-    FsKZGSettings {
-        secret_g1: g1_values,
-        secret_g2: g2_values,
-        fs,
-    }
+    load_trusted_setup_rust(&g1_projectives, length, &g2_values, n2)
 }
 
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
@@ -512,8 +485,8 @@ pub unsafe extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) -> u8 
 ///
 /// This function should not be called before the horsemen are ready.
 pub unsafe extern "C" fn bytes_from_g1(out: *mut u8, g1: *const blst_p1) {
-    let mut tmp = bytes_from_g1_rust(&FsG1(*g1));
-    *out = *tmp.as_mut_ptr();
+    let tmp = bytes_from_g1_rust(&FsG1(*g1));
+    std::slice::from_raw_parts_mut(out, 48).copy_from_slice(&tmp);
 }
 
 #[no_mangle]
@@ -633,14 +606,14 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const 
     }
 }
 
+#[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings, 
     g1_bytes: *const u8, 
     n1: usize,
     g2_bytes: *const u8, 
     n2: usize) -> u8 {
-    println!("{}, {}", n1, n2);
-    let g1_bytes = std::slice::from_raw_parts(g1_bytes, n1);
-    let g2_bytes = std::slice::from_raw_parts(g2_bytes, n2);
+    let g1_bytes = std::slice::from_raw_parts(g1_bytes, n1 * 48);
+    let g2_bytes = std::slice::from_raw_parts(g2_bytes, n2 * 96);
     let settings = load_trusted_setup_rust(g1_bytes, n1, g2_bytes, n2);
     *out = kzg_settings_to_c(&settings);
     0
