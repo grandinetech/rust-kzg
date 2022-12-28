@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use std::ffi::{c_char, CStr, CString};
+use std::ffi::{c_char, CString};
 use std::fs::File;
 use std::io::Read;
 
@@ -469,7 +469,7 @@ pub fn verify_aggregate_kzg_proof_rust(
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready.
-pub unsafe extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) -> u8 {
+pub unsafe extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) -> usize {
     let mut tmp = [0u8; 48];
     tmp.copy_from_slice(std::slice::from_raw_parts(bytes, 48));
     if let Ok(g1) = bytes_to_g1_rust(&tmp) {
@@ -582,7 +582,7 @@ const BLOB_SIZE: usize = 4096;
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: &CFsKzgSettings) -> u8 {
+pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: &CFsKzgSettings) -> usize {
     let blob_arr_res = std::slice::from_raw_parts(blob, BLOB_SIZE * 32)
         .chunks(32).map(|x| {
             let mut bytes = [0u8; 32];
@@ -611,7 +611,7 @@ pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings,
     g1_bytes: *const u8, 
     n1: usize,
     g2_bytes: *const u8, 
-    n2: usize) -> u8 {
+    n2: usize) -> usize {
     let g1_bytes = std::slice::from_raw_parts(g1_bytes, n1 * 48);
     let g2_bytes = std::slice::from_raw_parts(g2_bytes, n2 * 96);
     let settings = load_trusted_setup_rust(g1_bytes, n1, g2_bytes, n2);
@@ -632,13 +632,15 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
 
     let filename = [0i8; 4096].as_mut_ptr();
 
-    if readlink(path, filename, 4096) == -1 {
+    let bytes_read = readlink(path, filename, 4096);
+    if bytes_read == -1 {
         panic!("readlink failed");
     }
-    let filename = CStr::from_ptr(filename).to_str().unwrap();
-    let settings = load_trusted_setup_file_rust(filename);
+    let filename = String::from_utf8(std::slice::from_raw_parts(filename, bytes_read as usize)
+        .iter()
+        .map(|&c| c as u8).collect()).unwrap();
+    let settings = load_trusted_setup_file_rust(filename.as_str());
     *out = kzg_settings_to_c(&settings);
-
 }
 
 #[no_mangle]
@@ -693,7 +695,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
     y: *const u8,
     kzg_proof: *const blst_p1,
     s: &CFsKzgSettings,
-) -> u8 {
+) -> usize {
     let frz = bytes_to_bls_field_rust(std::slice::from_raw_parts(z, 32).try_into().unwrap());
     let fry = bytes_to_bls_field_rust(std::slice::from_raw_parts(y, 32).try_into().unwrap());
     *out = verify_kzg_proof_rust(&FsG1(*polynomial_kzg),
@@ -716,7 +718,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     n: usize,
     kzg_aggregated_proof: *const blst_p1,
     s: &CFsKzgSettings,
-) -> u8 {
+) -> usize {
     let blob_arr = std::slice::from_raw_parts(blobs, n * BLOB_SIZE * 32)
         .chunks(BLOB_SIZE * 32)
         .map(|blob| {
