@@ -24,6 +24,7 @@ criterion = "0.4.0"
 [features]
 parallel = [ "rayon" ]
 
+
 [[bench]]
 name = "das"
 harness = false

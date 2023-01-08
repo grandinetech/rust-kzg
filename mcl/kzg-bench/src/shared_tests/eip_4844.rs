@@ -67,3 +67,28 @@ pub fn test_eip4844_simple_interface() {
         &verify_aggregate_kzg_proof,
     );
 }
+
+#[test]
+pub fn test_blob_to_kzg_commitment() {
+    assert!(init(CurveType::BLS12_381));
+
+    blob_to_kzg_commitment_test(&load_trusted_setup, &blob_to_kzg_commitment, &bytes_from_g1)
+}
+
+#[test]
+pub fn test_aggregate_proof_for_single_blob() {
+    assert!(init(CurveType::BLS12_381));
+
+    aggregate_proof_for_single_blob_test(&load_trusted_setup, &blob_to_kzg_commitment, &compute_aggregate_kzg_proof, &verify_aggregate_kzg_proof);
+}
+
+#[test]
+pub fn compute_aggregate_kzg_proof_test_empty_() {
+    assert!(init(CurveType::BLS12_381));
+
+    compute_aggregate_kzg_proof_test_empty(
+        &load_trusted_setup,
+        &compute_aggregate_kzg_proof,
+        &bytes_from_g1,
+    )
+}

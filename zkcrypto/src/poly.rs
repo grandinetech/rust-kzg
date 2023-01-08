@@ -196,7 +196,7 @@ impl Poly<blsScalar> for ZPoly {
         let mut d: usize = 0;
         let mut mask: usize = 1 << log2_u64(maxd);
         while mask != 0 {
-            d = 2 * d + (if (maxd & mask) != 0 { 1 } else { 0 });
+            d = 2 * d + usize::from((maxd & mask) != 0);
             mask >>= 1; // mask = mask >> 1
 
             let len_temp = min_u64(d + 1, self.coeffs.len() + new_len - 1).unwrap();
