@@ -1,11 +1,26 @@
 use std::convert::TryInto;
+use std::fs::File;
+use std::io::Read;
 
 use crate::fk20::reverse_bit_order;
 use crate::poly::KzgPoly;
 use crate::kzg_proofs::KZGSettings;
-use crate::kzg_types::ZkG1Projective;
+use crate::kzg_types::{ZkG1Projective, ZkG2Projective};
 use crate::zkfr::blsScalar;
-use kzg::{G1, Poly, Fr};
+use kzg::{G1, Poly, Fr, FFTSettings, FFTG1};
+use crate::curve::g1::G1Affine;
+use crate::curve::g2::G2Affine;
+use crate::fftsettings::ZkFFTSettings;
+
+pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> ZkG1Projective {
+    let affine: G1Affine = G1Affine::from_compressed(bytes).unwrap();
+    ZkG1Projective::from(affine)
+}
+
+pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> ZkG2Projective {
+    let affine: G2Affine = G2Affine::from_compressed(bytes).unwrap();
+    ZkG2Projective::from(affine)
+}
 
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> blsScalar {
     blsScalar::from_bytes(bytes).unwrap()
@@ -37,7 +52,7 @@ pub fn vector_lincomb(vectors: &[Vec<blsScalar>], scalars: &[blsScalar]) -> Vec<
 }
 
 pub fn g1_lincomb(points: &[ZkG1Projective], scalars: &[blsScalar]) -> ZkG1Projective {
-    assert!(points.len() == scalars.len());
+    assert_eq!(points.len(), scalars.len());
     let mut out = G1::default();
     g1_linear_combination(&mut out, points, scalars, points.len());
     out
@@ -81,6 +96,60 @@ pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
         i -= 1;
     }
     out[0] = *inv;
+}
+
+pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
+    let mut file = File::open(filepath).expect("Unable to open file");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .expect("Unable to read file");
+
+    let mut lines = contents.lines();
+    let length = lines.next().unwrap().parse::<usize>().unwrap();
+    let n2 = lines.next().unwrap().parse::<usize>().unwrap();
+
+    let mut g1_projectives: Vec<ZkG1Projective> = Vec::new();
+    let mut g2_values: Vec<ZkG2Projective> = Vec::new();
+
+    for _ in 0..length {
+        let line = lines.next().unwrap();
+        assert_eq!(line.len(), 96);
+        let bytes_array: [u8; 48] = (0..line.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap();
+        g1_projectives.push(bytes_to_g1(&bytes_array));
+    }
+
+    for _ in 0..n2 {
+        let line = lines.next().unwrap();
+        assert_eq!(line.len(), 192);
+        let bytes_array: [u8; 96] = (0..line.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap();
+        g2_values.push(bytes_to_g2(&bytes_array));
+    }
+
+    let mut max_scale: usize = 0;
+    while (1 << max_scale) < length {
+        max_scale += 1;
+    }
+
+    let fs = ZkFFTSettings::new(max_scale).unwrap();
+    let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
+    reverse_bit_order(&mut g1_values);
+
+    KZGSettings {
+        secret_g1: g1_values,
+        secret_g2: g2_values,
+        fs,
+        length: 0,
+    }
 }
 
 pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &blsScalar, s: &KZGSettings) -> blsScalar {
