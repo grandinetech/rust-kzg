@@ -41,6 +41,18 @@ pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> ArkG1 {
     ArkG1(g1)
 }
 
+pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> ArkG2 {
+    let mut tmp = blst_p2_affine::default();
+    let mut g2 = blst_p2::default();
+    unsafe {
+        if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+            panic!("blst_p2_uncompress failed");
+        }
+        blst_p2_from_affine(&mut g2, &tmp);
+    }
+    ArkG2(g2)
+}
+
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
     let prod: &mut Vec<FsFr> = &mut vec![FsFr::default(); len];
     let mut i: usize = 1;
@@ -91,19 +103,13 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
     for _ in 0..n2 {
         let line = lines.next().unwrap();
         assert_eq!(line.len(), 192);
-        let bytes = (0..line.len())
+        let bytes_array: [u8; 96] = (0..line.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>();
-        let mut tmp = blst_p2_affine::default();
-        let mut g2 = blst_p2::default();
-        unsafe {
-            if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                panic!("blst_p2_uncompress failed");
-            }
-            blst_p2_from_affine(&mut g2, &tmp);
-        }
-        g2_values.push(ArkG2(g2));
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap();
+        g2_values.push(bytes_to_g2(&bytes_array));
     }
 
     let mut max_scale: usize = 0;
