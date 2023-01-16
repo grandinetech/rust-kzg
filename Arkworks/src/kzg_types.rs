@@ -1,5 +1,5 @@
 use crate::fft::SCALE2_ROOT_OF_UNITY;
-use crate::fft_g1::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
+use crate::fft_g1::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR, log_2_byte};
 use crate::kzg_proofs::{
     check_proof_multi as check_multi, check_proof_single as check_single, commit_to_poly as commit,
     compute_proof_multi as compute_multi, compute_proof_single as compute_single, default_kzg,
@@ -19,7 +19,10 @@ use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
-use blst::{blst_fr, blst_p1, blst_p2, blst_scalar, blst_scalar_from_fr, blst_fr_from_scalar, blst_fr_eucl_inverse};
+use blst::{
+    blst_fr, blst_p1, blst_p2, blst_scalar, blst_scalar_from_fr, blst_fr_from_scalar,
+    blst_fr_eucl_inverse, blst_p1_cneg, blst_p1_add_or_double, blst_p1_mult
+};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 use std::ops::MulAssign;
 use std::ops::Neg;
@@ -56,10 +59,10 @@ impl G1 for ArkG1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
-            + blst_p1_into_pc_g1projective(&b.0).unwrap();
-        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
-        self.0 = ret.0;
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
+        }
         ret
     }
 
@@ -74,11 +77,13 @@ impl G1 for ArkG1 {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        pc_g1projective_into_blst_p1(
-            blst_p1_into_pc_g1projective(&self.0).unwrap()
-                - blst_p1_into_pc_g1projective(&b.0).unwrap(),
-        )
-        .unwrap()
+        let mut b_negative: ArkG1 = *b;
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_cneg(&mut b_negative.0, true);
+            blst_p1_add_or_double(&mut ret.0, &self.0, &b_negative.0);
+            ret
+        }
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -88,9 +93,35 @@ impl G1 for ArkG1 {
 
 impl G1Mul<FsFr> for ArkG1 {
     fn mul(&self, b: &FsFr) -> Self {
-        let a = blst_p1_into_pc_g1projective(&self.0).unwrap().into_affine();
-        let b = blst_fr_into_pc_fr(b);
-        pc_g1projective_into_blst_p1(a.mul(b)).unwrap()
+        let mut scalar: blst_scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &b.0);
+        }
+
+        // Count the number of bytes to be multiplied
+        let mut i = scalar.b.len();
+        while i != 0 && scalar.b[i - 1] == 0 {
+            i -= 1;
+        }
+
+        let mut result = Self::default();
+        if i == 0 {
+            return G1_IDENTITY;
+        } else if i == 1 && scalar.b[0] == 1 {
+            return *self;
+        } else {
+            // Count the number of bits to be multiplied
+            unsafe {
+                blst_p1_mult(
+                    &mut result.0,
+                    &self.0,
+                    &(scalar.b[0]),
+                    8 * i - 7 + log_2_byte(scalar.b[i - 1]),
+                );
+            }
+        }
+
+        result
     }
 }
 
