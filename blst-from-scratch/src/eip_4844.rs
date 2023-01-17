@@ -448,6 +448,9 @@ pub fn verify_aggregate_kzg_proof_rust(
     kzg_aggregated_proof: &FsG1,
     ts: &FsKZGSettings,
 ) -> bool {
+    if blobs.len() == 0 {
+        return true;
+    }
     #[cfg(feature = "parallel")]
     let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect();
     #[cfg(not(feature = "parallel"))]
@@ -465,38 +468,26 @@ pub fn verify_aggregate_kzg_proof_rust(
     )
 }
 
-#[no_mangle]
-/// # Safety
-///
-/// This function should not be called before the horsemen are ready.
-pub unsafe extern "C" fn bytes_to_g1(out: *mut blst_p1, bytes: *const u8) -> usize {
-    let mut tmp = [0u8; 48];
-    tmp.copy_from_slice(std::slice::from_raw_parts(bytes, 48));
-    if let Ok(g1) = bytes_to_g1_rust(&tmp) {
-        *out = g1.0;
-        0
-    } else {
-        1
-    }
+const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
+
+#[repr(C)]
+pub struct Blob {
+    pub bytes: [u8; BYTES_PER_BLOB],
 }
 
-#[no_mangle]
-/// # Safety
-///
-/// This function should not be called before the horsemen are ready.
-pub unsafe extern "C" fn bytes_from_g1(out: *mut u8, g1: *const blst_p1) {
-    let tmp = bytes_from_g1_rust(&FsG1(*g1));
-    std::slice::from_raw_parts_mut(out, 48).copy_from_slice(&tmp);
+#[repr(C)]
+pub struct KZGCommitment {
+    pub bytes: [u8; 48],
 }
 
-#[no_mangle]
-/// # Safety
-///
-/// This function should not be called before the horsemen are ready.
-pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, bytes: *const u8) {
-    let mut tmp = [0u8; 32];
-    tmp.copy_from_slice(std::slice::from_raw_parts(bytes, 32) );
-    *out = bytes_to_bls_field_rust(&tmp).0;
+#[repr(C)]
+pub struct KZGProof {
+    pub bytes: [u8; 48],
+}
+
+#[repr(C)]
+pub struct BLSFieldElement {
+    pub bytes: [u8; 32],
 }
 
 #[repr(C)]
@@ -577,14 +568,12 @@ fn kzg_settings_to_c(rust_settings : &FsKZGSettings) -> CFsKzgSettings{
     }
 }
 
-const BLOB_SIZE: usize = 4096;
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const u8, s: &CFsKzgSettings) -> usize {
-    let blob_arr_res = std::slice::from_raw_parts(blob, BLOB_SIZE * 32)
-        .chunks(32).map(|x| {
+pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut KZGCommitment, blob: *const Blob, s: &CFsKzgSettings) -> usize {
+    let blob_arr_res = (*blob).bytes.chunks(32).map(|x| {
             let mut bytes = [0u8; 32];
             bytes.copy_from_slice(x);
             let mut tmp: blst_scalar = blst_scalar::default();
@@ -598,7 +587,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut blst_p1, blob: *const 
 
     if let Ok(blob_arr) = blob_arr_res {
         let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(s));
-        *out = tmp.0;
+        (*out).bytes = bytes_from_g1_rust(&tmp);
         0
     }
     else {
@@ -648,15 +637,15 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
 /// 
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn compute_aggregate_kzg_proof(
-    out: *mut blst_p1,
-    blobs: *const u8,
+    out: *mut KZGProof,
+    blobs: *const Blob,
     n: usize,
     s: &CFsKzgSettings,
 )->u8 {
-    let blob_arr = std::slice::from_raw_parts(blobs, n * BLOB_SIZE * 32)
-        .chunks(BLOB_SIZE * 32)
+    let blob_arr = std::slice::from_raw_parts(blobs, n)
+        .iter()
         .map(|blob| {
-            blob.chunks(32).map(|x| {
+            blob.bytes.chunks(32).map(|x| {
                 let mut tmp = [0u8; 32];
                 tmp.copy_from_slice(x);
                 bytes_to_bls_field_rust(&tmp)
@@ -665,7 +654,7 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
     let tmp = compute_aggregate_kzg_proof_rust(&blob_arr,
         &kzg_settings_to_rust(s),
     );
-    *out = tmp.0;
+    (*out).bytes = bytes_from_g1_rust(&tmp);
     0
 }
 
@@ -690,18 +679,20 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
 #[no_mangle]
 pub unsafe extern "C" fn verify_kzg_proof(
     out: *mut bool,
-    polynomial_kzg: *const blst_p1,
-    z: *const u8,
-    y: *const u8,
-    kzg_proof: *const blst_p1,
+    polynomial_kzg: *const KZGCommitment,
+    z: *const BLSFieldElement,
+    y: *const BLSFieldElement,
+    kzg_proof: *const KZGProof,
     s: &CFsKzgSettings,
 ) -> usize {
-    let frz = bytes_to_bls_field_rust(std::slice::from_raw_parts(z, 32).try_into().unwrap());
-    let fry = bytes_to_bls_field_rust(std::slice::from_raw_parts(y, 32).try_into().unwrap());
-    *out = verify_kzg_proof_rust(&FsG1(*polynomial_kzg),
+    let frz = bytes_to_bls_field_rust(&(*z).bytes);
+    let fry = bytes_to_bls_field_rust(&(*y).bytes);
+    let g1commitment = bytes_to_g1_rust(&(*polynomial_kzg).bytes).unwrap();
+    let g1proof = bytes_to_g1_rust(&(*kzg_proof).bytes).unwrap();
+    *out = verify_kzg_proof_rust(&g1commitment,
         &frz,
         &fry,
-        &FsG1(*kzg_proof),
+        &g1proof,
         &kzg_settings_to_rust(s),
     );
     0
@@ -713,26 +704,31 @@ pub unsafe extern "C" fn verify_kzg_proof(
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     out: *mut bool,
-    blobs: *const u8,
-    expected_kzg_commitments: *const blst_p1,
+    blobs: *const Blob,
+    expected_kzg_commitments: *const KZGCommitment,
     n: usize,
-    kzg_aggregated_proof: *const blst_p1,
+    kzg_aggregated_proof: *const KZGProof,
     s: &CFsKzgSettings,
 ) -> usize {
-    let blob_arr = std::slice::from_raw_parts(blobs, n * BLOB_SIZE * 32)
-        .chunks(BLOB_SIZE * 32)
+    let blob_arr = std::slice::from_raw_parts(blobs, n)
+        .iter()
         .map(|blob| {
-            blob.chunks(32).map(|x| {
+            blob.bytes.chunks(32).map(|x| {
                 let mut tmp = [0u8; 32];
                 tmp.copy_from_slice(x);
                 bytes_to_bls_field_rust(&tmp)
             }).collect::<Vec<FsFr>>()
     }).collect::<Vec<Vec<FsFr>>>();
-    let expected_kzg_commitments_arr = std::slice::from_raw_parts(expected_kzg_commitments, n)
-        .iter()
-        .map(|x| FsG1(*x))
-        .collect::<Vec<FsG1>>();
-    let kzg_aggregated_proof_arr = FsG1(*kzg_aggregated_proof);
+    let mut expected_kzg_commitments_arr = Vec::new();
+    let expected_kzg_commitments_raw = std::slice::from_raw_parts(expected_kzg_commitments, n);
+    for x in expected_kzg_commitments_raw.iter() {
+        let tmp = bytes_to_g1_rust(&x.bytes);
+        if tmp.is_err() {
+            return 1;
+        }
+        expected_kzg_commitments_arr.push(tmp.unwrap());
+    }
+    let kzg_aggregated_proof_arr = bytes_to_g1_rust(&(*kzg_aggregated_proof).bytes).unwrap();
     let tmp = verify_aggregate_kzg_proof_rust(
         &blob_arr,
         &expected_kzg_commitments_arr,
