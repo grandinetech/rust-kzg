@@ -457,7 +457,7 @@ pub fn verify_aggregate_kzg_proof_rust(
     kzg_aggregated_proof: &FsG1,
     ts: &FsKZGSettings,
 ) -> bool {
-    if blobs.len() == 0 {
+    if blobs.is_empty() {
         return true;
     }
     #[cfg(feature = "parallel")]
@@ -605,6 +605,9 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut KZGCommitment, blob: *
 }
 
 #[no_mangle]
+/// # Safety
+/// 
+/// This function should not be called before the horsemen are ready.
 pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings, 
     g1_bytes: *const u8, 
     n1: usize,
@@ -681,6 +684,9 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
 }
 
 #[no_mangle]
+/// # Safety
+/// 
+/// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn verify_kzg_proof(
     out: *mut bool,
     polynomial_kzg: *const KZGCommitment,
