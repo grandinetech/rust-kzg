@@ -84,6 +84,11 @@ jobs:
           command: test
           args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
 
+      - name: "[blst-from-scratch] Build native libs for MacOS"
+        if: matrix.os == 'macos-11'
+        run: |
+          brew install gnu-sed
+
       - name: "[blst-from-scratch] Tests (c-kzg-4844)"
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
         run: |
