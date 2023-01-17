@@ -13,6 +13,8 @@ use std::os::unix::prelude::FromRawFd;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::prelude::FromRawHandle;
+#[cfg(target_os = "windows")]
+use std::os::windows::raw::HANDLE;
 
 use libc::{FILE, fileno};
 #[cfg(feature = "parallel")]
@@ -633,7 +635,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
     let mut file = File::from_raw_fd(fd);
 
     #[cfg(target_os = "windows")]
-    let mut file = File::from_raw_handle(fd);
+    let mut file = File::from_raw_handle(fd as HANDLE);
 
     let settings = load_trusted_setup_file_rust(&mut file);
     *out = kzg_settings_to_c(&settings);
