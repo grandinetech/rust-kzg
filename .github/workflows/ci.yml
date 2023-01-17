@@ -84,6 +84,11 @@ jobs:
           command: test
           args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
 
+      - name: "[blst-from-scratch] Tests (c-kzg-4844)"
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+        run: |
+          cd blst-from-scratch && bash run-c-kzg-4844-tests.sh
+
       - name: "[blst-from-scratch] Clippy"
         uses: actions-rs/cargo@v1
         with:
