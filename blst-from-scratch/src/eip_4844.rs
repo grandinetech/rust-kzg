@@ -1,5 +1,4 @@
 use std::convert::TryInto;
-use std::ffi::{c_char, CString};
 use std::fs::File;
 use std::io::Read;
 
@@ -9,7 +8,13 @@ use blst::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
-use libc::{FILE, fileno, readlink};
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use std::os::unix::prelude::FromRawFd;
+
+#[cfg(target_os = "windows")]
+use std::os::windows::prelude::FromRawHandle;
+
+use libc::{FILE, fileno};
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 #[cfg(feature = "parallel")]
@@ -89,8 +94,7 @@ pub fn load_trusted_setup_rust(g1_bytes: &[u8], n1: usize, g2_bytes: &[u8], _n2:
     }
 }
 
-pub fn load_trusted_setup_file_rust(filepath: &str) -> FsKZGSettings {
-    let mut file = File::open(filepath).expect("Unable to open file");
+pub fn load_trusted_setup_file_rust(file: &mut File) -> FsKZGSettings {
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Unable to read file");
@@ -124,6 +128,11 @@ pub fn load_trusted_setup_file_rust(filepath: &str) -> FsKZGSettings {
     }
 
     load_trusted_setup_rust(&g1_projectives, length, &g2_values, n2)
+}
+
+pub fn load_trusted_setup_filename_rust(filename: &str) -> FsKZGSettings {
+    let mut file = File::open(filename).expect("Unable to open file");
+    load_trusted_setup_file_rust(&mut file)
 }
 
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
@@ -616,19 +625,14 @@ pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings,
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE) {
     let fd = fileno(inp);
-    let p = CString::new(format!("/proc/self/fd/{}", fd)).unwrap();
-    let path = p.as_ptr() as *const c_char;
 
-    let filename = [0i8; 4096].as_mut_ptr();
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    let mut file = File::from_raw_fd(fd);
 
-    let bytes_read = readlink(path, filename, 4096);
-    if bytes_read == -1 {
-        panic!("readlink failed");
-    }
-    let filename = String::from_utf8(std::slice::from_raw_parts(filename, bytes_read as usize)
-        .iter()
-        .map(|&c| c as u8).collect()).unwrap();
-    let settings = load_trusted_setup_file_rust(filename.as_str());
+    #[cfg(target_os = "windows")]
+    let mut file = File::from_raw_handle(fd);
+
+    let settings = load_trusted_setup_file_rust(&mut file);
     *out = kzg_settings_to_c(&settings);
 }
 
