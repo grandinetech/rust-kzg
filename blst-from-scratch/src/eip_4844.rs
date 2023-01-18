@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::ffi::c_char;
 use std::fs::File;
 use std::io::Read;
 
@@ -8,15 +9,7 @@ use blst::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-use std::os::unix::prelude::FromRawFd;
-
-#[cfg(target_os = "windows")]
-use std::os::windows::prelude::FromRawHandle;
-#[cfg(target_os = "windows")]
-use std::os::windows::raw::HANDLE;
-
-use libc::{FILE, fileno};
+use libc::{FILE, fscanf};
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 #[cfg(feature = "parallel")]
@@ -651,17 +644,38 @@ pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings,
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE) {
-    let fd = fileno(inp);
+pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE)  -> u8 {
+    let mut i: u64 = 0;
+    let mut num_matches = fscanf(inp, "%lu\0".as_ptr() as *const c_char, &mut i);
+    if num_matches != 1 || i != FIELD_ELEMENTS_PER_BLOB as u64 {
+        return 1;
+    }
+    num_matches = fscanf(inp, "%lu\0".as_ptr() as *const c_char, &mut i);
+    if num_matches != 1 || i != 65 {
+        return 1;
+    }
 
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
-    let mut file = File::from_raw_fd(fd);
+    let mut g2_bytes: [u8; 65 * 96] = [0; 65 * 96];
 
-    #[cfg(target_os = "windows")]
-    let mut file = File::from_raw_handle(fd as HANDLE);
+    let mut g1_bytes: [u8; FIELD_ELEMENTS_PER_BLOB * 48] = [0; FIELD_ELEMENTS_PER_BLOB * 48];
 
-    let settings = load_trusted_setup_file_rust(&mut file);
+    for i in 0..FIELD_ELEMENTS_PER_BLOB * 48 {
+        num_matches = fscanf(inp, "%2hhx\0".as_ptr() as *const c_char, &mut g1_bytes[i]);
+        if num_matches != 1 {
+            return 1;
+        }
+    }
+
+    for i in 0..65 * 96 {
+        num_matches = fscanf(inp, "%2hhx\0".as_ptr() as *const c_char, &mut g2_bytes[i]);
+        if num_matches != 1 {
+            return 1;
+        }
+    }
+
+    let settings = load_trusted_setup_rust(&g1_bytes, FIELD_ELEMENTS_PER_BLOB, &g2_bytes, 65);
     *out = kzg_settings_to_c(&settings);
+    0
 }
 
 #[no_mangle]
