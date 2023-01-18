@@ -16,6 +16,7 @@ mkdir -p lib
 print_msg "Cloning 4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
+git apply < ../c_kzg_4844.patch
 
 print_msg "Cloning blst"
 git submodule update --init

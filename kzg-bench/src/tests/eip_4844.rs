@@ -365,25 +365,24 @@ pub fn compute_aggregate_kzg_proof_test_empty<
     assert_eq!(bytes_from_g1(&empty_proof), expected_proof);
 }
 
-// unclear what the verify value should be with an empty blob
-// pub fn verify_aggregate_kzg_proof_test_empty<
-//     TFr : Fr,
-//     TG1: G1,
-//     TG2: G2,
-//     TPoly: Poly<TFr>,
-//     TFFTSettings: FFTSettings<TFr>,
-//     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
-// >(
-//     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
-//     compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
-//     verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool,
-// ) {
+pub fn verify_aggregate_kzg_proof_test_empty<
+    TFr : Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
+>(
+    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+    compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
+    verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool,
+) {
 
-//     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-//     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-//     assert!(verify_aggregate_kzg_proof(&[], &[], &compute_aggregate_kzg_proof(&[], &ts), &ts), "verify failed");
-// }
+    assert!(verify_aggregate_kzg_proof(&[], &[], &compute_aggregate_kzg_proof(&[], &ts), &ts), "verify failed");
+}
 
 pub fn aggregate_proof_for_single_blob_test<
     TFr : Fr,

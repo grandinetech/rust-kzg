@@ -8,6 +8,7 @@ use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::types::fr::FsFr;
 use crate::utils::log_2_byte;
 
+#[repr(C)]
 pub struct FsG1(pub blst::blst_p1);
 
 impl FsG1 {

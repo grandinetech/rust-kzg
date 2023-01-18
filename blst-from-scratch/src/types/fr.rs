@@ -5,6 +5,7 @@ use blst::{
 };
 use kzg::Fr;
 
+#[derive(Debug)]
 pub struct FsFr(pub blst::blst_fr);
 
 impl Fr for FsFr {
