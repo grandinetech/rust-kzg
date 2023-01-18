@@ -23,6 +23,7 @@ print_msg "Applying patches and building blst"
 cd src
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 make blst
+exit 1
 unset CFLAGS
 cd ..
 

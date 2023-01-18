@@ -18,14 +18,14 @@ fn u64_to_bytes(x: u64) -> [u8; 32] {
 // Tests taken from https://github.com/dankrad/c-kzg/blob/4844/min-bindings/python/tests.py
 pub fn bytes_to_bls_field_test<TFr: Fr>
 (
-    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
     bytes_from_bls_field: &dyn Fn(&TFr) -> [u8; 32usize]
 )
 {
     let x: u64 = 329;    
     let x_bytes = u64_to_bytes(x);
     
-    let x_bls = bytes_to_bls_field(&x_bytes);
+    let x_bls = bytes_to_bls_field(&x_bytes).unwrap();
     
     assert_eq!(bytes_from_bls_field(&x_bls), x_bytes);
     assert_eq!(x, x_bls.to_u64_arr()[0]);
@@ -48,7 +48,7 @@ const EXPECTED_POWERS: [[u64; 4usize]; 11] = [
 // Simple test of compute_powers
 pub fn compute_powers_test<TFr: Fr>
 ( 
-    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
     compute_powers: &dyn Fn(&TFr, usize) -> Vec<TFr>
 ) 
 {
@@ -57,7 +57,7 @@ pub fn compute_powers_test<TFr: Fr>
     
     let x_bytes: [u8; 32] = u64_to_bytes(x);
     
-    let x_bls = bytes_to_bls_field(&x_bytes);
+    let x_bls = bytes_to_bls_field(&x_bytes).unwrap();
     
     let powers = compute_powers(&x_bls, n);
     
@@ -73,7 +73,7 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
-    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr
 )
@@ -88,13 +88,13 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     let mut lvals_bls: TPoly = TPoly::new(lvals.len()).unwrap();
     for (i, lval) in lvals.iter().enumerate() {
         let lval_bytes: [u8; 32] = lval.iter().flat_map(|x| x.to_le_bytes()).collect::<Vec<u8>>().try_into().unwrap();
-        let lval_bls = bytes_to_bls_field(&lval_bytes);
+        let lval_bls = bytes_to_bls_field(&lval_bytes).unwrap();
         lvals_bls.set_coeff_at(i, &lval_bls);
     }
     
     let x: u64 = 2;
     let x_bytes: [u8; 32] = u64_to_bytes(x);
-    let x_bls = bytes_to_bls_field(&x_bytes);
+    let x_bls = bytes_to_bls_field(&x_bytes).unwrap();
     
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
@@ -112,7 +112,8 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
+    hash_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
     bytes_from_bls_field: &dyn Fn(&TFr) -> [u8; 32usize],
     bytes_from_g1: &dyn Fn(&TG1) -> [u8; 48usize],
     compute_powers: &dyn Fn(&TFr, usize) -> Vec<TFr>,
@@ -137,10 +138,18 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         let mut vec = Vec::new();
         let mut vec_sedes: ssz_rs::Vector<[u8; 32], BLOB_SIZE> = ssz_rs::Vector::default();
         for j in 0 .. BLOB_SIZE{
-            let bytes: [u8; 32] = rng.gen();
+            let mut bytes: [u8; 32] = rng.gen();
             
-            let fr = bytes_to_bls_field(&bytes);
+            let mut fr_res = bytes_to_bls_field(&bytes);
+            while fr_res.is_err()
+            {
+                bytes = rng.gen();
+                fr_res = bytes_to_bls_field(&bytes);
+            } 
             
+            assert!(fr_res.is_ok());
+            
+            let fr = fr_res.unwrap();
             let tmp_bytes: [u8; 32] = bytes_from_bls_field(&fr);
             vec.push(fr);
             vec_sedes[j] = tmp_bytes;
@@ -174,7 +183,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
     let hashed: [u8; 32] = Sha256::digest([encoded_blobs, encoded_commitments].concat()).into();
 
-    let r: TFr = bytes_to_bls_field(&hashed);
+    let r: TFr = hash_to_bls_field(&hashed);
 
     let r_powers = compute_powers(&r, blobs.len());
     
@@ -213,7 +222,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let k = [encoded_polynomial, encoded_polynomial_length, encoded_commitment].concat();
     let hashed_polynomial_and_commitment: [u8; 32] = Sha256::digest(k).into();
 
-    let x = bytes_to_bls_field(&hashed_polynomial_and_commitment);
+    let x = bytes_to_bls_field(&hashed_polynomial_and_commitment).unwrap();
 
     let proof = compute_kzg_proof(&mut aggregated_poly, &x, &ts);
 
@@ -232,7 +241,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         x2_bytes = rng.gen();
     }
 
-    let x2 = bytes_to_bls_field(&x2_bytes);
+    let x2 = hash_to_bls_field(&x2_bytes);
 
     let y2 = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &x2, &ts);
 

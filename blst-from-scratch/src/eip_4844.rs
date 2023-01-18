@@ -160,8 +160,12 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
 
 }
 
-pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> FsFr {
+pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> Result<FsFr, u8> {
     FsFr::from_scalar(*bytes)
+}
+
+pub fn hash_to_bls_field_rust(bytes: &[u8; 32usize]) -> FsFr{
+    FsFr::hash_to_bls_field(*bytes)
 }
 
 pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
@@ -395,7 +399,7 @@ pub fn compute_aggregated_poly_and_commitment(
     n: usize,
 ) -> (FsPoly, FsG1, FsFr) {
     let hash = hash_to_bytes(polys, kzg_commitments, n);
-    let r = bytes_to_bls_field_rust(&hash);
+    let r = hash_to_bls_field_rust(&hash);
     
     let (r_powers, chal_out) = if n == 1 {
         (vec![r], r)
@@ -592,7 +596,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut KZGCommitment, blob: *
             if !blst_scalar_fr_check(&tmp) {
                 Err("Invalid scalar".to_string()) 
             } else {
-                Ok(bytes_to_bls_field_rust(&bytes))
+                Ok(bytes_to_bls_field_rust(&bytes).unwrap())
             }
         }).collect::<Result<Vec<FsFr>, String>>();
 
@@ -651,15 +655,22 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
     n: usize,
     s: &CFsKzgSettings,
 )->u8 {
-    let blob_arr = std::slice::from_raw_parts(blobs, n)
-        .iter()
-        .map(|blob| {
-            blob.bytes.chunks(32).map(|x| {
-                let mut tmp = [0u8; 32];
-                tmp.copy_from_slice(x);
-                bytes_to_bls_field_rust(&tmp)
-            }).collect::<Vec<FsFr>>()
-    }).collect::<Vec<Vec<FsFr>>>();
+    let raw_blob_arr = std::slice::from_raw_parts(blobs, n);
+    let mut blob_arr: Vec<Vec<FsFr>> = Vec::<Vec<FsFr>>::default();
+    for i in 0..n{
+        blob_arr.push(Vec::<FsFr>::default());
+        let blob = &raw_blob_arr[i];
+        for x in blob.bytes.chunks(32){
+            let mut tmp = [0u8; 32];
+            tmp.copy_from_slice(x);
+            let ret = bytes_to_bls_field_rust(&tmp);
+            if ret.is_err()
+            {
+                return 1;
+            }
+            blob_arr[i].push(ret.unwrap());
+        }
+    }
     let tmp = compute_aggregate_kzg_proof_rust(&blob_arr,
         &kzg_settings_to_rust(s),
     );
@@ -697,8 +708,8 @@ pub unsafe extern "C" fn verify_kzg_proof(
     kzg_proof: *const KZGProof,
     s: &CFsKzgSettings,
 ) -> usize {
-    let frz = bytes_to_bls_field_rust(&(*z).bytes);
-    let fry = bytes_to_bls_field_rust(&(*y).bytes);
+    let frz = bytes_to_bls_field_rust(&(*z).bytes).unwrap();
+    let fry = bytes_to_bls_field_rust(&(*y).bytes).unwrap();
     let g1commitment = bytes_to_g1_rust(&(*polynomial_kzg).bytes).unwrap();
     let g1proof = bytes_to_g1_rust(&(*kzg_proof).bytes).unwrap();
     *out = verify_kzg_proof_rust(&g1commitment,
@@ -722,15 +733,36 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     kzg_aggregated_proof: *const KZGProof,
     s: &CFsKzgSettings,
 ) -> usize {
-    let blob_arr = std::slice::from_raw_parts(blobs, n)
-        .iter()
-        .map(|blob| {
-            blob.bytes.chunks(32).map(|x| {
-                let mut tmp = [0u8; 32];
-                tmp.copy_from_slice(x);
-                bytes_to_bls_field_rust(&tmp)
-            }).collect::<Vec<FsFr>>()
-    }).collect::<Vec<Vec<FsFr>>>();
+    let raw_blob_arr = std::slice::from_raw_parts(blobs, n);
+    let mut blob_arr: Vec<Vec<FsFr>> = Vec::<Vec<FsFr>>::default();
+    for i in 0..n{
+        blob_arr.push(Vec::<FsFr>::default());
+        let blob = &raw_blob_arr[i];
+        for x in blob.bytes.chunks(32){
+            let mut tmp = [0u8; 32];
+            tmp.copy_from_slice(x);
+            let ret = bytes_to_bls_field_rust(&tmp);
+            if ret.is_err()
+            {
+                return 1;
+            }
+            blob_arr[i].push(ret.unwrap());
+        }
+    }
+    // let blob_arr = std::slice::from_raw_parts(blobs, n)
+    //     .iter()
+    //     .map(|blob| {
+    //         blob.bytes.chunks(32).map(|x| {
+    //             let mut tmp = [0u8; 32];
+    //             tmp.copy_from_slice(x);
+    //             let ret = bytes_to_bls_field_rust(&tmp);
+    //             if ret.is_err()
+    //             {
+    //                 return 1;
+    //             }
+    //             ret.unwrap()
+    //         }).collect::<Vec<FsFr>>()
+    // }).collect::<Vec<Vec<FsFr>>>();
     let mut expected_kzg_commitments_arr = Vec::new();
     let expected_kzg_commitments_raw = std::slice::from_raw_parts(expected_kzg_commitments, n);
     for x in expected_kzg_commitments_raw.iter() {
