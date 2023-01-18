@@ -52,6 +52,13 @@ print_msg "Running rust tests"
 cargo test --release
 cd ../..
 
+print_msg "Rebuilding blst"
+cd src
+export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
+make blst
+unset CFLAGS
+cd ..
+
 print_msg "Modyfing python bindings makefile"
 cd bindings/python || exit 1
 eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
