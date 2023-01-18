@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 SED_LINUX="/usr/bin/sed"
 SED_MACOS="/usr/local/bin/gsed"
 
