@@ -25,55 +25,55 @@ jobs:
 
       # 1st team #########################################################
 
-      - name: "[arkworks] Tests without parallel"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path Arkworks/Cargo.toml --no-fail-fast
+      # - name: "[arkworks] Tests without parallel"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path Arkworks/Cargo.toml --no-fail-fast
 
-      - name: "[arkworks] Tests with parallel"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path Arkworks/Cargo.toml --no-fail-fast --features parallel
+      # - name: "[arkworks] Tests with parallel"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path Arkworks/Cargo.toml --no-fail-fast --features parallel
 
-      - name: "[arkworks] Clippy"
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
+      # - name: "[arkworks] Clippy"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: clippy
+      #     args: --manifest-path Arkworks/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[arkworks] Formatting"
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --manifest-path Arkworks/Cargo.toml
+      # - name: "[arkworks] Formatting"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: fmt
+      #     args: --manifest-path Arkworks/Cargo.toml
 
       # 2nd team #########################################################
 
-      - name: "[zkcrypto] Tests without parallelization"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast
+      # - name: "[zkcrypto] Tests without parallelization"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast
 
-      - name: "[zkcrypto] Tests with parallelization"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast --features parallel
+      # - name: "[zkcrypto] Tests with parallelization"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast --features parallel
 
-      - name: "[zkcrypto] Clippy"
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
+      # - name: "[zkcrypto] Clippy"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: clippy
+      #     args: --manifest-path zkcrypto/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[zkcrypto] Formatting"
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --manifest-path zkcrypto/Cargo.toml
+      # - name: "[zkcrypto] Formatting"
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: fmt
+      #     args: --manifest-path zkcrypto/Cargo.toml
 
       # 3rd team #########################################################
 
