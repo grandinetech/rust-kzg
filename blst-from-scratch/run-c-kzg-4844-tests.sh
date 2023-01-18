@@ -43,6 +43,15 @@ case $(uname -s) in
     exit 1
     ;;
 esac
+
+print_msg "Modyfing rust bindings build.rs"
+git apply < ../rust.patch
+cd bindings/rust || exit 1
+
+print_msg "Running rust tests"
+cargo test --release
+cd ../..
+
 print_msg "Modyfing python bindings makefile"
 cd bindings/python || exit 1
 eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"

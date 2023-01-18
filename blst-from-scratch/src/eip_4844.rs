@@ -4,7 +4,7 @@ use std::io::Read;
 
 use blst::{
     blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
-    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr, blst_scalar, blst_scalar_from_lendian, blst_scalar_fr_check,
+    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr, blst_scalar, blst_scalar_from_lendian, blst_scalar_fr_check, blst_fr_from_scalar,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
@@ -327,39 +327,6 @@ fn hash(x: &[u8]) -> [u8; 32] {
     Sha256::digest(x).into()
 }
 
-pub fn hash_to_bytes(polys: &[FsPoly], comms: &[FsG1], n: usize) -> [u8; 32] {
-    let ni: usize = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
-    let np: usize = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
-
-    let mut bytes: Vec<u8> = vec![0; np + n * 48];
-
-    bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
-
-    bytes_of_uint64(&mut bytes[16..24], n.try_into().unwrap());
-    bytes_of_uint64(
-        &mut bytes[24..32],
-        FIELD_ELEMENTS_PER_BLOB.try_into().unwrap(),
-    );
-
-    for i in 0..n {
-        for j in 0..FIELD_ELEMENTS_PER_BLOB {
-            let v = bytes_from_bls_field(&polys[i].get_coeff_at(j));
-            bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) as usize
-                ..ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) + 32]
-                .copy_from_slice(&v);
-        }
-    }
-
-    for i in 0..n {
-        let v = bytes_from_g1_rust(&comms[i]);
-        for k in 0..48 {
-            bytes[np + i * 48 + k] = v[k];
-        }
-    }
-
-    hash(&bytes)
-}
-
 pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly {
     #[cfg(not(feature = "parallel"))]
     {
@@ -389,21 +356,77 @@ pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly {
     }
 }
 
+fn hash_to_bls_field(x: &[u8]) -> FsFr {
+    let mut tmp = blst_scalar::default();
+    let mut out = blst_fr::default();
+    unsafe {
+        blst_scalar_from_lendian(&mut tmp, x.as_ptr());
+        blst_fr_from_scalar(&mut out, &tmp);
+    }
+    FsFr(out)
+}
+
+pub fn compute_challenges(
+    polys: &[FsPoly],
+    comms: &[FsG1],
+    n: usize,
+) -> (FsFr, Vec<FsFr>) {
+    let ni: usize = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
+    let np: usize = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
+
+    let mut bytes: Vec<u8> = vec![0; np + n * 48];
+
+    bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
+    
+    bytes_of_uint64(
+        &mut bytes[16..24],
+        FIELD_ELEMENTS_PER_BLOB.try_into().unwrap(),
+    );
+    bytes_of_uint64(&mut bytes[24..32], n.try_into().unwrap());
+
+    for i in 0..n {
+        for j in 0..FIELD_ELEMENTS_PER_BLOB {
+            let v = bytes_from_bls_field(&polys[i].get_coeff_at(j));
+            bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) as usize
+                ..ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j) + 32]
+                .copy_from_slice(&v);
+        }
+    }
+
+    for i in 0..n {
+        let v = bytes_from_g1_rust(&comms[i]);
+        for k in 0..48 {
+            bytes[np + i * 48 + k] = v[k];
+        }
+    }
+
+    let hashed_data: [u8; 32] = hash(&bytes);
+
+    let mut hash_input = [0u8; 33];
+
+    hash_input[..32].copy_from_slice(&hashed_data);
+    hash_input[32] = 0x0;
+
+    let r_bytes = hash(&hash_input);
+
+    let r = hash_to_bls_field(&r_bytes);
+
+    let r_powers = compute_powers(&r, n);
+
+    hash_input[32] = 0x1;
+    let eval_challenge = hash(&hash_input);
+    
+    let g1 = hash_to_bls_field(&eval_challenge);
+
+    (g1, r_powers)
+}
+
 pub fn compute_aggregated_poly_and_commitment(
     polys: &[FsPoly],
     kzg_commitments: &[FsG1],
     n: usize,
 ) -> (FsPoly, FsG1, FsFr) {
-    let hash = hash_to_bytes(polys, kzg_commitments, n);
-    let r = bytes_to_bls_field_rust(&hash);
-    
-    let (r_powers, chal_out) = if n == 1 {
-        (vec![r], r)
-    } else {
-        let r_powers = compute_powers(&r, n);
-        let chal_out = r_powers[1].mul(&r_powers[n - 1]);
-        (r_powers, chal_out)
-    };
+    let (chal_out, r_powers) = compute_challenges(polys, kzg_commitments, n);
     
     let poly_out = poly_lincomb(polys, &r_powers, n);
     
