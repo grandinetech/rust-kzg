@@ -10,7 +10,7 @@ use blst::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
-use libc::{FILE, fgets, strtoul, fgetc, EOF};
+use libc::{FILE, fgets, strtoul, fgetc, EOF, c_ulong};
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 #[cfg(feature = "parallel")]
@@ -350,7 +350,7 @@ pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly {
     }
 }
 
-fn hash_to_bls_field(x: &[u8]) -> FsFr {
+pub fn hash_to_bls_field(x: &[u8; 32]) -> FsFr {
     let mut tmp = blst_scalar::default();
     let mut out = blst_fr::default();
     unsafe {
@@ -648,7 +648,7 @@ pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings,
 pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE)  -> u8 {
     let mut buf: [c_char; 100] = [0; 100];
     let result = fgets(buf.as_mut_ptr(), 100, inp);
-    if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != FIELD_ELEMENTS_PER_BLOB as u64 {
+    if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != FIELD_ELEMENTS_PER_BLOB as c_ulong {
         return 1;
     }
     let result: *mut c_char = fgets(buf.as_mut_ptr(), 100, inp);
@@ -659,7 +659,6 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
     let mut g2_bytes: [u8; 65 * 96] = [0; 65 * 96];
     
     let mut g1_bytes: [u8; FIELD_ELEMENTS_PER_BLOB * 48] = [0; FIELD_ELEMENTS_PER_BLOB * 48];
-    
     
     let mut i: usize = 0;
     while i < FIELD_ELEMENTS_PER_BLOB * 48 {
