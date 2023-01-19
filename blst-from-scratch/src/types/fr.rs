@@ -1,7 +1,7 @@
 use blst::{
     blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_scalar,
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_scalar,
-    blst_scalar_from_fr, blst_uint64_from_fr,
+    blst_scalar_from_fr, blst_uint64_from_fr, blst_scalar_fr_check, blst_scalar_from_lendian,
 };
 use kzg::Fr;
 
@@ -197,7 +197,24 @@ impl FsFr {
         scalar.b
     }
 
-    pub fn from_scalar(scalar: [u8; 32usize]) -> Self {
+    pub fn from_scalar(scalar: [u8; 32usize]) -> Result<Self, u8> {
+        let mut bls_scalar = blst_scalar::default();
+        
+        let mut fr = blst_fr::default();
+        unsafe {
+            blst_scalar_from_lendian(& mut bls_scalar, scalar.as_ptr());
+            if !blst_scalar_fr_check(&bls_scalar)
+            {
+                return Err(1);
+            }
+            blst_fr_from_scalar(&mut fr, &bls_scalar);
+        }
+        let mut ret = Self::default();
+        ret.0 = fr;
+        Ok(ret)
+    }
+
+    pub fn hash_to_bls_field(scalar: [u8; 32usize]) -> Self {
         let bls_scalar = blst_scalar { b: scalar };
         let mut fr = blst_fr::default();
         unsafe {

@@ -140,7 +140,6 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
             let bytes: [u8; 32] = rng.gen();
             
             let fr = bytes_to_bls_field(&bytes);
-            
             let tmp_bytes: [u8; 32] = bytes_from_bls_field(&fr);
             vec.push(fr);
             vec_sedes[j] = tmp_bytes;

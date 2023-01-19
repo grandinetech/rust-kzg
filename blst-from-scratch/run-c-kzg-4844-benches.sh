@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 parallel=false
 
 while getopts "parallel" opt; do
@@ -48,8 +46,6 @@ cd ..
 case $(uname -s) in
   "Linux")
     sed=$SED_LINUX
-    CSHARP_PLATFORM=linux-x64
-    CLANG_PLATFORM=x86_64-linux
     ;;
   "Darwin")
     if [[ -z $(command -v "$SED_MACOS") ]]; then
@@ -58,9 +54,6 @@ case $(uname -s) in
       exit 1
     fi
     sed=$SED_MACOS
-    CSHARP_PLATFORM=osx-x64
-    CLANG_PLATFORM=x86_64-darwin
-
     ;;
   *)
     echo "FAIL: unsupported OS"
@@ -68,24 +61,12 @@ case $(uname -s) in
     ;;
 esac
 
-print_msg "Modyfying dotnet Makefile"
-git apply < ../csharp.patch
-
-print_msg "Building dotnet"
-cd bindings/csharp
-make -B ckzg CSHARP_PLATFORM=$CSHARP_PLATFORM CLANG_PLATFORM=$CLANG_PLATFORM
-dotnet restore
-
-print_msg "Running dotnet tests"
-dotnet test --configuration Release --no-restore
-cd ../..
-
 print_msg "Modyfing rust bindings build.rs"
 git apply < ../rust.patch
 cd bindings/rust || exit 1
 
 print_msg "Running rust tests"
-cargo test --release
+cargo bench
 cd ../..
 
 print_msg "Rebuilding blst"
@@ -95,34 +76,12 @@ make blst
 unset CFLAGS
 cd ..
 
-print_msg "Modyfing python bindings makefile"
-cd bindings/python || exit 1
-eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
-
-print_msg "Running python tests"
-make
-cd ../..
-
 print_msg "Modyfing java bindings makefile"
 cd bindings/java || exit 1
 eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
 
 print_msg "Running java tests and benchmarks"
-make build test
-cd ../..
-
-print_msg "Modyfing nodejs bindings"
-
-# There is a bug in node.js when generating trusted setup a newline is missing when changing from G1 points to G2.
-git apply < ../node.patch
-cd bindings/node.js || exit 1
-
-eval "$("$sed" -i "s/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" binding.gyp)"
-eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Makefile)"
-
-print_msg "Running nodejs tests"
-yarn install
-make
+make build benchmark
 cd ../..
 
 cd ..
