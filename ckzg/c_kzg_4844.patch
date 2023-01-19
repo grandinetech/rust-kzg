@@ -1,10 +1,10 @@
 diff --git a/src/c_kzg_4844.c b/src/c_kzg_4844.c
-index 847b2c1..5b73b99 100644
+index b67bad4..4c2835f 100644
 --- a/src/c_kzg_4844.c
 +++ b/src/c_kzg_4844.c
-@@ -792,11 +792,11 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
- 
- typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
+@@ -531,11 +531,11 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
+ // Bytes Conversion Helper Functions
+ ///////////////////////////////////////////////////////////////////////////////
  
 -static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
 +void bytes_from_g1(uint8_t out[48], const g1_t *in) {

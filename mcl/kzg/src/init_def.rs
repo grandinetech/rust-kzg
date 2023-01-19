@@ -111,10 +111,13 @@ macro_rules! int_impl {
 }
 
 macro_rules! base_field_impl {
-    ($t:ty,  $set_little_endian_fn:ident, $set_little_endian_mod_fn:ident, $set_hash_of_fn:ident, $set_by_csprng_fn:ident, $is_odd_fn:ident, $is_negative_fn:ident, $square_root_fn:ident) => {
+    ($t:ty,  $set_little_endian_fn:ident, $get_little_endian_fn:ident, $set_little_endian_mod_fn:ident, $set_hash_of_fn:ident, $set_by_csprng_fn:ident, $is_odd_fn:ident, $is_negative_fn:ident, $square_root_fn:ident) => {
         impl $t {
             pub fn set_little_endian(&mut self, buf: &[u8]) -> bool {
                 unsafe { $set_little_endian_fn(self, buf.as_ptr(), buf.len()) == 0 }
+            }
+            pub fn get_little_endian(&self, buf: &mut[u8]) -> bool {
+                unsafe { $get_little_endian_fn(buf.as_mut_ptr(), buf.len(), self) > 0 }
             }
             pub fn set_little_endian_mod(&mut self, buf: &[u8]) -> bool {
                 unsafe { $set_little_endian_mod_fn(self, buf.as_ptr(), buf.len()) == 0 }

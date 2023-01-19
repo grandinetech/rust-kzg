@@ -24,6 +24,7 @@ extern "C" {
 
     fn mclBnFp_setInt32(x: *mut Fp, v: i32);
     fn mclBnFp_setLittleEndian(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
+    fn mclBnFp_getLittleEndian(buf: *mut u8, bufSize: usize, x: *const Fp) -> i32;
     fn mclBnFp_setLittleEndianMod(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
     fn mclBnFp_setHashOf(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
     fn mclBnFp_setByCSPRNG(x: *mut Fp);
@@ -63,6 +64,7 @@ int_impl![Fp, mclBnFp_setInt32, mclBnFp_isOne];
 base_field_impl![
     Fp,
     mclBnFp_setLittleEndian,
+    mclBnFp_getLittleEndian,
     mclBnFp_setLittleEndianMod,
     mclBnFp_setHashOf,
     mclBnFp_setByCSPRNG,

@@ -1,5 +1,4 @@
 use crate::mcl_methods;
-use primitive_types::U256;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
@@ -25,6 +24,7 @@ extern "C" {
 
     fn mclBnFr_setInt32(x: *mut Fr, v: i32);
     fn mclBnFr_setLittleEndian(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
+    fn mclBnFr_getLittleEndian(buf: *mut u8, bufSize: usize, x: *const Fr) -> i32;
     fn mclBnFr_setLittleEndianMod(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
     fn mclBnFr_setHashOf(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
     fn mclBnFr_setByCSPRNG(x: *mut Fr);
@@ -54,6 +54,9 @@ impl Fr {
     }
 
     pub fn pow(&self, n: usize) -> Self {
+        if n == 0 {
+            return Self::one();
+        }
         //No idea if this works
         let mut res = *self;
         for _ in 1 .. n {
@@ -78,31 +81,26 @@ impl Fr {
 
     pub fn from_scalar(secret: &[u8; 32]) -> Self {
         let mut t = Fr::default();
-        t.set_little_endian(secret);
+        if !t.set_little_endian_mod(secret) {
+            panic!("failed to set little endian");
+        }
 
         t
     }
 
     pub fn to_scalar(fr: &Self) -> [u8; 32] {
-        let arr = Fr::to_u64_arr(fr);
-        let mut out: [u8; 32] = [0; 32];
-        for i in 0..arr.len() {
-            let bytes = arr[i].to_le_bytes();
-            for j in 0..8 {
-                out[i*8 + j] = bytes[j];
-            }
-        }
-        out
+        let mut buf = [0u8; 32];
+        assert!(fr.get_little_endian(&mut buf));
+        buf
     }
     
     pub fn to_u64_arr(&self) -> [u64; 4] {
-        let string = self.get_str(10);
-        let num = U256::from_dec_str(&string).unwrap();
-        let a = num.0[0];
-        let b = num.0[1];
-        let c = num.0[2];
-        let d = num.0[3];
-        [a,b,c,d]
+        use std::convert::TryInto;
+        let v: Vec<u64> = Fr::to_scalar(self).chunks(8).map(|ch|{
+            u64::from_le_bytes(ch.try_into().unwrap())
+        }).collect();
+    
+        v.try_into().unwrap()
     }
 }
 common_impl![Fr, mclBnFr_isEqual, mclBnFr_isZero];
@@ -118,6 +116,7 @@ int_impl![Fr, mclBnFr_setInt32, mclBnFr_isOne];
 base_field_impl![
     Fr,
     mclBnFr_setLittleEndian,
+    mclBnFr_getLittleEndian,
     mclBnFr_setLittleEndianMod,
     mclBnFr_setHashOf,
     mclBnFr_setByCSPRNG,

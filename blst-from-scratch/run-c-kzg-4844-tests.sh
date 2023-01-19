@@ -61,6 +61,29 @@ print_msg "Running dotnet tests"
 dotnet test --configuration Release --no-restore
 cd ../..
 
+print_msg "Modyfing rust bindings build.rs"
+git apply < ../rust.patch
+cd bindings/rust || exit 1
+
+print_msg "Running rust tests"
+cargo test --release
+cd ../..
+
+print_msg "Rebuilding blst"
+cd src
+export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
+make blst
+unset CFLAGS
+cd ..
+
+print_msg "Modyfing python bindings makefile"
+cd bindings/python || exit 1
+eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
+
+print_msg "Running python tests"
+make
+cd ../..
+
 print_msg "Modyfing java bindings makefile"
 cd bindings/java || exit 1
 eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
@@ -81,8 +104,8 @@ eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Mak
 print_msg "Running nodejs tests"
 yarn install
 make
-cd ../../..
+cd ../..
 
-
+cd ..
 print_msg "Cleaning up"
 rm -rf c-kzg-4844
