@@ -102,6 +102,11 @@ jobs:
         run: |
           cd blst-from-scratch && bash run-c-kzg-4844-tests.sh
 
+      - name: "[blst-from-scratch] Tests (c-kzg-4844 parallel)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd blst-from-scratch && bash run-c-kzg-4844-tests.sh -parallel
+
       - name: "[blst-from-scratch] Clippy"
         uses: actions-rs/cargo@v1
         with:
