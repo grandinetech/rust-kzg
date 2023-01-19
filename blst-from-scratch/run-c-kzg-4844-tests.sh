@@ -26,21 +26,11 @@ make blst
 unset CFLAGS
 cd ..
 
-print_msg "Modyfying dotnet Makefile"
-git apply < ../csharp.patch
-
-print_msg "Building dotnet"
-cd bindings/csharp
-make -B ckzg CSHARP_PLATFORM=linux-x64 CLANG_PLATFORM=x86_64-linux
-dotnet restore
-
-print_msg "Running dotnet tests"
-dotnet test --configuration Release --no-restore
-cd ../..
-
 case $(uname -s) in
   "Linux")
     sed=$SED_LINUX
+    CSHARP_PLATFORM=linux-x64
+    CLANG_PLATFORM=x86_64-linux
     ;;
   "Darwin")
     if [[ -z $(command -v "$SED_MACOS") ]]; then
@@ -49,12 +39,28 @@ case $(uname -s) in
       exit 1
     fi
     sed=$SED_MACOS
+    CSHARP_PLATFORM=osx-x64
+    CLANG_PLATFORM=x86_64-darwin
+
     ;;
   *)
     echo "FAIL: unsupported OS"
     exit 1
     ;;
 esac
+
+print_msg "Modyfying dotnet Makefile"
+git apply < ../csharp.patch
+
+print_msg "Building dotnet"
+cd bindings/csharp
+make -B ckzg CSHARP_PLATFORM=$CSHARP_PLATFORM CLANG_PLATFORM=$CLANG_PLATFORM
+dotnet restore
+
+print_msg "Running dotnet tests"
+dotnet test --configuration Release --no-restore
+cd ../..
+
 print_msg "Modyfing java bindings makefile"
 cd bindings/java || exit 1
 eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
