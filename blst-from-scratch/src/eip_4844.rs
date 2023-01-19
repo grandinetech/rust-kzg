@@ -158,10 +158,6 @@ pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> Result<FsFr, u8> {
     FsFr::from_scalar(*bytes)
 }
 
-pub fn hash_to_bls_field_rust(bytes: &[u8; 32usize]) -> FsFr{
-    FsFr::hash_to_bls_field(*bytes)
-}
-
 pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
 
     let mut tmp: FsFr;
