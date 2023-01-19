@@ -2,6 +2,7 @@ use std::convert::TryInto;
 use std::ffi::c_char;
 use std::fs::File;
 use std::io::Read;
+use std::ptr::null_mut;
 
 use blst::{
     blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
@@ -9,7 +10,7 @@ use blst::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
-use libc::{FILE, fscanf};
+use libc::{FILE, fgets, strtoul, fgetc, EOF};
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 #[cfg(feature = "parallel")]
@@ -645,32 +646,49 @@ pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings,
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE)  -> u8 {
-    let mut i: u64 = 0;
-    let mut num_matches = fscanf(inp, "%lu\0".as_ptr() as *const c_char, &mut i);
-    if num_matches != 1 || i != FIELD_ELEMENTS_PER_BLOB as u64 {
+    let mut buf: [c_char; 100] = [0; 100];
+    let result = fgets(buf.as_mut_ptr(), 100, inp);
+    if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != FIELD_ELEMENTS_PER_BLOB as u64 {
         return 1;
     }
-    num_matches = fscanf(inp, "%lu\0".as_ptr() as *const c_char, &mut i);
-    if num_matches != 1 || i != 65 {
+    let result: *mut c_char = fgets(buf.as_mut_ptr(), 100, inp);
+    if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != 65 {
         return 1;
     }
-
+    
     let mut g2_bytes: [u8; 65 * 96] = [0; 65 * 96];
-
+    
     let mut g1_bytes: [u8; FIELD_ELEMENTS_PER_BLOB * 48] = [0; FIELD_ELEMENTS_PER_BLOB * 48];
-
-    for i in 0..FIELD_ELEMENTS_PER_BLOB * 48 {
-        num_matches = fscanf(inp, "%2hhx\0".as_ptr() as *const c_char, &mut g1_bytes[i]);
-        if num_matches != 1 {
+    
+    
+    let mut i: usize = 0;
+    while i < FIELD_ELEMENTS_PER_BLOB * 48 {
+        let c1 = fgetc(inp) as c_char;
+        if c1 == '\n' as c_char {
+            continue;
+        }
+        let c2 = fgetc(inp) as c_char;
+        
+        if c1 == EOF as c_char || c2 == EOF as c_char {
             return 1;
         }
+        g1_bytes[i] = strtoul([c1, c2].as_ptr(), null_mut(), 16) as u8;
+        i += 1;
     }
 
-    for i in 0..65 * 96 {
-        num_matches = fscanf(inp, "%2hhx\0".as_ptr() as *const c_char, &mut g2_bytes[i]);
-        if num_matches != 1 {
+    i = 0;
+    while i < 65 * 96 {
+        let c1 = fgetc(inp) as c_char;
+        if c1 == '\n' as c_char {
+            continue;
+        }
+        let c2 = fgetc(inp) as c_char;
+        
+        if c1 == EOF as c_char || c2 == EOF as c_char {
             return 1;
         }
+        g2_bytes[i] = strtoul([c1, c2].as_ptr(), null_mut(), 16) as u8;
+        i += 1;
     }
 
     let settings = load_trusted_setup_rust(&g1_bytes, FIELD_ELEMENTS_PER_BLOB, &g2_bytes, 65);
