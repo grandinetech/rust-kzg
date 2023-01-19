@@ -424,18 +424,8 @@ pub fn compute_aggregated_poly_and_commitment(
     kzg_commitments: &[FsG1],
     n: usize,
 ) -> (FsPoly, FsG1, FsFr) {
-    let hash = hash_to_bytes(polys, kzg_commitments, n);
-    let r = hash_to_bls_field_rust(&hash);
-    
-    let (r_powers, chal_out) = if n == 1 {
-        (vec![r], r)
-    } else {
-        let r_powers = compute_powers(&r, n);
-        let chal_out = r_powers[1].mul(&r_powers[n - 1]);
-        (r_powers, chal_out)
-    };
 
-    // let (chal_out, r_powers) = compute_challenges(polys, kzg_commitments, n);
+    let (chal_out, r_powers) = compute_challenges(polys, kzg_commitments, n);
     
     let poly_out = poly_lincomb(polys, &r_powers, n);
     

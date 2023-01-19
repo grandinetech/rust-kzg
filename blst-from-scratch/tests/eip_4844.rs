@@ -4,10 +4,10 @@ mod tests {
     use blst_from_scratch::{
         eip_4844::{
             blob_to_kzg_commitment_rust, bytes_from_bls_field, bytes_from_g1_rust,
-            bytes_to_bls_field_rust, compute_aggregate_kzg_proof_rust, compute_kzg_proof,
+            compute_aggregate_kzg_proof_rust, compute_kzg_proof,
             compute_powers, evaluate_polynomial_in_evaluation_form, g1_lincomb,
             load_trusted_setup_filename_rust, vector_lincomb, verify_aggregate_kzg_proof_rust,
-            verify_kzg_proof_rust, hash_to_bls_field_rust,
+            verify_kzg_proof_rust, hash_to_bls_field,
         },
         types::{
             fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
@@ -23,12 +23,12 @@ mod tests {
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<FsFr>(&bytes_to_bls_field_rust, &bytes_from_bls_field);
+        bytes_to_bls_field_test::<FsFr>(&hash_to_bls_field, &bytes_from_bls_field);
     }
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<FsFr>(&bytes_to_bls_field_rust, &compute_powers);
+        compute_powers_test::<FsFr>(&hash_to_bls_field, &compute_powers);
     }
 
     #[test]
@@ -41,7 +41,7 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
         >(
-            &bytes_to_bls_field_rust,
+            &hash_to_bls_field,
             &load_trusted_setup_filename_rust,
             &evaluate_polynomial_in_evaluation_form,
         );
@@ -51,8 +51,7 @@ mod tests {
     pub fn compute_commitment_for_blobs_test_() {
         compute_commitment_for_blobs_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
-            &bytes_to_bls_field_rust,
-            &hash_to_bls_field_rust,
+            &hash_to_bls_field,
             &bytes_from_bls_field,
             &bytes_from_g1_rust,
             &compute_powers,
