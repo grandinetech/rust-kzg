@@ -1,0 +1,26 @@
+diff --git a/bindings/csharp/Makefile b/bindings/csharp/Makefile
+index 1364efa..10f3be6 100644
+--- a/bindings/csharp/Makefile
++++ b/bindings/csharp/Makefile
+@@ -24,7 +24,7 @@ endif
+ 
+ CLANG_FLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+ 
+-TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
++TARGETS=ckzg.c ../../../target/release/libblst_from_scratch.a  ../../blst/$(BLST_OBJ)
+ 
+ .blst:
+ 	cd ../../blst &&\
+@@ -38,12 +38,10 @@ TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
+ 
+ # Ckzg library
+ ckzg:
+-	@make .blst
+ 	@make .ckzg
+ 
+ # E2e tests as an executable
+ test:
+-	@make .blst
+ 	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) kzg_tests.c $(TARGETS)
+ 
+ # E2e tests are built and run

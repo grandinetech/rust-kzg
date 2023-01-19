@@ -23,9 +23,20 @@ print_msg "Applying patches and building blst"
 cd src
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 make blst
-exit 1
 unset CFLAGS
 cd ..
+
+print_msg "Modyfying dotnet Makefile"
+git apply < ../csharp.patch
+
+print_msg "Building dotnet"
+cd bindings/csharp
+make -B ckzg CSHARP_PLATFORM=linux-x64 CLANG_PLATFORM=x86_64-linux
+dotnet restore
+
+print_msg "Running dotnet tests"
+dotnet test --configuration Release --no-restore
+cd ../..
 
 case $(uname -s) in
   "Linux")
@@ -65,6 +76,7 @@ print_msg "Running nodejs tests"
 yarn install
 make
 cd ../../..
+
 
 print_msg "Cleaning up"
 rm -rf c-kzg-4844
