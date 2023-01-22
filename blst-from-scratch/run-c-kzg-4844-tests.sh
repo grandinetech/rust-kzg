@@ -112,11 +112,7 @@ make build test
 cd ../..
 
 print_msg "Modyfing nodejs bindings"
-
-# There is a bug in node.js when generating trusted setup a newline is missing when changing from G1 points to G2.
-git apply < ../node.patch
 cd bindings/node.js || exit 1
-
 eval "$("$sed" -i "s/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" binding.gyp)"
 eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Makefile)"
 
