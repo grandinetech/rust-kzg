@@ -37,11 +37,11 @@ pub fn init(curve: CurveType) -> bool {
 }
 
 pub fn get_fr_serialized_size() -> u32 {
-    unsafe { mclBn_getFrByteSize() as u32 }
+    unsafe { mclBn_getFrByteSize() }
 }
 
 pub fn get_fp_serialized_size() -> u32 {
-    unsafe { mclBn_getFpByteSize() as u32 }
+    unsafe { mclBn_getFpByteSize() }
 }
 
 pub fn get_g1_serialized_size() -> u32 {

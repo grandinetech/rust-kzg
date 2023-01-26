@@ -152,6 +152,7 @@ pub struct FFTSettings {
 }
 
 impl FFTSettings {
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         Self::new(0)
     }

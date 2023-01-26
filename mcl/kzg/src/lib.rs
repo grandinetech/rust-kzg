@@ -58,3 +58,4 @@ pub mod fk20_matrix;
 pub mod kzg10;
 pub mod zero_poly;
 pub mod kzg_settings;
+pub mod c_bindings;

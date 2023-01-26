@@ -92,6 +92,7 @@ impl FK20SingleMatrix {
         })
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         Self {
             kzg_settings: KZGSettings::default(),
@@ -143,6 +144,7 @@ pub struct FK20Matrix {
 }
 
 impl FK20Matrix {
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         Self {
             kzg_settings: KZGSettings::default(),
