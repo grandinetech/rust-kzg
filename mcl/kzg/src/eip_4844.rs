@@ -29,13 +29,14 @@ use rayon::iter::IntoParallelIterator;
 //     format!("{:x}", md5::compute(&b)).split_off(24)
 // }
 
-pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> G1 {
+pub fn bytes_to_g1(bytes: &[u8]) -> Result<G1,String> {
     set_eth_serialization(1);
     let mut g1 = G1::default();
-    if !G1::deserialize(&mut g1, bytes) {
-        panic!("failed to deserialize")
+    if G1::deserialize(&mut g1, bytes) {
+        Ok(g1)
+    } else {
+        Err("failed to deserialize".to_string())
     }
-    g1
 }
 pub fn bytes_to_g2(bytes: &[u8]) -> G2 {
     set_eth_serialization(1);
@@ -51,50 +52,53 @@ pub fn bytes_from_g1(g1: &G1) -> [u8; 48usize] {
     G1::serialize(g1).try_into().unwrap()
 }
 
-pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
-    let mut file = File::open(filepath).expect("Unable to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Unable to read file");
-
+pub fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
     let mut lines = contents.lines();
     let length = lines.next().unwrap().parse::<usize>().unwrap();
     let n2 = lines.next().unwrap().parse::<usize>().unwrap();
 
-    let mut g2_values: Vec<G2> = Vec::new();
+    let g1_bytes = (0..length)
+        .flat_map(|_|{
+            let line = lines.next().unwrap();
+            assert!(line.len() == 96);
+            (0..line.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+                .collect::<Vec<u8>>()
+        }).collect::<Vec<u8>>();
 
+    let g2_bytes = (0..n2)
+        .flat_map(|_|{
+            let line = lines.next().unwrap();
+            assert!(line.len() == 192);
+            (0..line.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+                .collect::<Vec<u8>>()
+        }).collect::<Vec<u8>>();
 
-    let g1_lines = (0..length).map(|_|{
-        lines.next().unwrap() 
-    }).collect::<Vec<&str>>();
+    (g1_bytes, g2_bytes)
+}
 
-    #[cfg(feature = "parallel")]
-    let iter = g1_lines.par_iter();
-    #[cfg(not(feature = "parallel"))]
-    let iter = g1_lines.iter();
+pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
 
+    let g1_projectives = g1_bytes
+        .chunks_exact(48)
+        .map(|bytes|{
+            bytes_to_g1(bytes).unwrap()
+        })
+        .collect::<Vec<G1>>();
 
-    let g1_projectives = iter.
-        map(|line|{
-         assert!(line.len() == 96);
-        let bytes: [u8; 48] = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>()
-            .try_into()
-            .unwrap();
-        bytes_to_g1(&bytes)
-    }).collect::<Vec<G1>>();
+    let g2_values = g2_bytes
+        .chunks_exact(96)
+        .map(|bytes|{
+            bytes_to_g2(bytes)
+        })
+        .collect::<Vec<G2>>();
 
-    for _ in 0..n2 {
-        let line = lines.next().unwrap();
-        assert!(line.len() == 192);
-        let bytes = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>();
-        g2_values.push(bytes_to_g2(bytes.as_slice()));
-    }
-
+    let length = g1_projectives.len();
+    //let n2 = g2_values.len();
+    
     let mut max_scale: usize = 0;
     while (1 << max_scale) < length {
         max_scale += 1;
@@ -116,6 +120,15 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
             g2_points: g2_values,
         },
     }
+}
+
+pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
+    let mut file = File::open(filepath).expect("Unable to open file");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).expect("Unable to read file");
+    
+    let (b1, b2) = load_trusted_setup_string(&contents);
+    load_trusted_setup_from_bytes(b1.as_slice(), b2.as_slice())
 }
 
 pub fn reverse_bit_order<T>(values: &mut [T])
@@ -154,7 +167,7 @@ pub fn vector_lincomb(vectors: &[Vec<Fr>], scalars: &[Fr]) -> Vec<Fr> {
 }
 
 pub fn g1_lincomb(p: &[G1], coeffs: &[Fr]) -> G1 {
-    assert!(p.len() == coeffs.len());
+    assert_eq!(p.len(), coeffs.len());
 
     let mut out = G1::default();
     g1_linear_combination(&mut out, p, coeffs, p.len());
@@ -299,6 +312,9 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &Polynomial, x: &Fr, s: &KZGSet
 
 pub fn compute_powers(x: &Fr, n: usize) -> Vec<Fr> {
     let mut out: Vec<Fr> = vec![Fr::default(); n];
+    if n == 0 {
+        return out;
+    }
     out[0] = Fr::one();
     for i in 1..n {
         out[i] = &out[i - 1] * x;
@@ -357,6 +373,9 @@ pub fn verify_aggregate_kzg_proof(
     kzg_aggregated_proof: &G1,
     ts: &KZGSettings,
 ) -> bool {
+    if blobs.is_empty() {
+        return true
+    }
     #[cfg(feature = "parallel")]
     let iter = blobs.par_iter();
     #[cfg(not(feature = "parallel"))]

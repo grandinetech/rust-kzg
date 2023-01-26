@@ -26,7 +26,7 @@ pub fn log_2(x: usize) -> usize {
     if x == 0 {
         return 0;
     }
-    num_bits::<usize>() as usize - (x.leading_zeros() as usize) - 1
+    num_bits::<usize>() - (x.leading_zeros() as usize) - 1
 }
 
 pub fn next_pow_of_2(x: usize) -> usize {
