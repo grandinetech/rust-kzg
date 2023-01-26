@@ -33,6 +33,7 @@ fi
 
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
+git checkout 8907fbcfe2573fc282ab1d35dd63b697e9035efe
 cd c-kzg-4844 || exit 1
 
 print_msg "Cloning blst"
