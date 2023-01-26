@@ -394,7 +394,6 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
 
     let (frs, ok) = blob_to_frs(blob);
     if !ok {
-        println!("not ok frs");
         return C_KZG_RET_C_KZG_BADARGS
     }
     let ms = cks_to_ks(s); 
