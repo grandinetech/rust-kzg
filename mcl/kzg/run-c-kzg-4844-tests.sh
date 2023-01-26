@@ -37,6 +37,7 @@ fi
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
+git checkout 4c115844e2fcf773fdf095b040e63082934df0f9
 git submodule update --init
 print_msg "Coping header files"
 cd blst
