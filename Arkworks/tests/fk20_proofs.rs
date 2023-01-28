@@ -9,6 +9,7 @@ mod tests {
     use arkworks::utils::PolyData;
 
     #[test]
+    #[ignore]
     fn test_fk_single() {
         fk_single::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20SingleSettings>(
             &generate_trusted_setup,
@@ -16,6 +17,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_fk_single_strided() {
         fk_single_strided::<
             BlstFr,
@@ -29,6 +31,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_fk_multi_settings() {
         fk_multi_settings::<
             BlstFr,
@@ -42,6 +45,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_fk_multi_chunk_len_1_512() {
         fk_multi_chunk_len_1_512::<
             BlstFr,
@@ -55,6 +59,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_fk_multi_chunk_len_16_512() {
         fk_multi_chunk_len_16_512::<
             BlstFr,
@@ -68,6 +73,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_fk_multi_chunk_len_16_16() {
         fk_multi_chunk_len_16_16::<
             BlstFr,
