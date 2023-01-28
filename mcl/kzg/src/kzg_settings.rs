@@ -11,6 +11,7 @@ pub struct KZGSettings {
 }
 
 impl KZGSettings {
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         Self {
            fft_settings: FFTSettings::default(),

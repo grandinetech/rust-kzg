@@ -1,3 +1,5 @@
+pub mod eip_4844;
+
 pub trait Fr: Clone {
     fn default() -> Self;
 

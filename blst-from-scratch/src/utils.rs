@@ -73,7 +73,7 @@ pub fn max_u64(a: usize, b: usize) -> usize {
 }
 
 pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Vec<FsG2>) {
-    let s = FsFr::from_scalar(secret);
+    let s = FsFr::hash_to_bls_field(secret);
     let mut s_pow = Fr::one();
 
     let mut s1 = Vec::new();

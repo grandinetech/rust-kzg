@@ -209,6 +209,7 @@ pub struct Polynomial {
 }
 
 impl Polynomial {
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         Self { coeffs: vec![] }
     }
@@ -602,6 +603,7 @@ pub struct Curve {
 }
 
 impl Curve {
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         let g1_gen = G1::gen();
         let g2_gen = G2::gen();
