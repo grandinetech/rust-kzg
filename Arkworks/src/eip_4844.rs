@@ -1,10 +1,11 @@
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
-use kzg::Poly;
-use blst::{BLST_ERROR, blst_p1, blst_p1_affine, blst_p1_from_affine, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress};
+use kzg::{G1, Poly};
+use blst::{BLST_ERROR, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress};
 use kzg::{Fr, FFTSettings as FFTSettingsT, FFTG1, KZGSettings as LKZGSettings};
 use kzg_bench::tests::fk20_proofs::reverse_bit_order;
+use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr};
 use crate::utils::{PolyData};
@@ -51,6 +52,37 @@ pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> ArkG2 {
         blst_p2_from_affine(&mut g2, &tmp);
     }
     ArkG2(g2)
+}
+
+pub fn bytes_from_g1(g1: &ArkG1) -> [u8; 48usize] {
+    let mut out: [u8; 48usize] = [0; 48];
+    unsafe {
+        blst_p1_compress(out.as_mut_ptr(), &g1.0);
+    }
+    out
+}
+
+pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
+    let mut tmp: FsFr;
+    let mut out: Vec<FsFr> = vec![FsFr::zero(); vectors[0].len()];
+    for (v, s) in vectors.iter().zip(scalars.iter()) {
+        for (i, x) in v.iter().enumerate() {
+            tmp = x.mul(s);
+            out[i] = out[i].add(&tmp);
+        }
+    }
+    out
+}
+
+pub fn g1_lincomb(points: &[ArkG1], scalars: &[FsFr]) -> ArkG1 {
+    assert_eq!(points.len(), scalars.len());
+    let mut out = ArkG1::default();
+    g1_linear_combination(&mut out, points, scalars, points.len());
+    out
+}
+
+pub fn blob_to_kzg_commitment(blob: &[FsFr], s: &KZGSettings) -> ArkG1 {
+    g1_lincomb(&s.secret_g1, blob)
 }
 
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
@@ -117,13 +149,13 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
         max_scale += 1;
     }
     let fs = FFTSettings::new(max_scale).unwrap();
-    let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
+    let mut g1_values = fs.fft_g1(g1_projectives.as_slice(), true).unwrap();
     reverse_bit_order(&mut g1_values);
 
     KZGSettings {
+        fs,
         secret_g1: g1_values,
         secret_g2: g2_values,
-        fs,
         ..KZGSettings::default()
     }
 }
@@ -162,4 +194,12 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &PolyData, x: &FsFr, s: &KZGSet
     tmp = tmp.sub(&FsFr::one());
     out = out.mul(&tmp);
     out
+}
+
+pub fn compute_kzg_proof(p: &PolyData, x: &FsFr, s: &KZGSettings) -> ArkG1 {
+    s.compute_proof_single(p, x).unwrap()
+}
+
+pub fn verify_kzg_proof(commitment: &ArkG1, x: &FsFr, y: &FsFr, proof: &ArkG1, ks: &KZGSettings) -> bool {
+    ks.check_proof_single(&commitment, &proof, &x, &y).unwrap()
 }
