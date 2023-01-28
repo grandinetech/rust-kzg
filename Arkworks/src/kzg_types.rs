@@ -15,7 +15,7 @@ use crate::utils::{
 };
 use ark_bls12_381::Fr as ArkFr;
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
-use ark_ec::{AffineCurve, ProjectiveCurve};
+use ark_ec::{ProjectiveCurve};
 use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};

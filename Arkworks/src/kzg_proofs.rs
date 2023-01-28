@@ -1,8 +1,6 @@
 #![allow(non_camel_case_types)]
 
 use rand::SeedableRng;
-use std::borrow::Borrow;
-
 use ark_ec::msm::{FixedBaseMSM, VariableBaseMSM};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_poly_commit::kzg10::{
@@ -28,15 +26,15 @@ use ark_ec::{
     models::short_weierstrass_jacobian::GroupProjective, AffineCurve, PairingEngine,
     ProjectiveCurve,
 };
-use ark_ff::{BigInteger256, PrimeField};
+use ark_ff::{PrimeField};
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use blst::{blst_fp, blst_fp2};
-use kzg::{FFTFr, FFTSettings as FFTTrait, Fr as FrTrait, KZGSettings as KZGST, Poly};
+use kzg::{FFTFr, FFTSettings as FFTTrait, Fr as FrTrait, KZGSettings as KZGST, Poly, G1Mul, G2Mul};
 use rand::rngs::StdRng;
 use std::collections::BTreeMap;
 use std::ops::{MulAssign, Neg};
 
-type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
+pub type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
 type KZG_Bls12_381 = KZG10<Bls12_381, UniPoly_381>;
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
@@ -74,9 +72,7 @@ pub struct KZG<E: PairingEngine, P: UVPolynomial<E::Fr>> {
 }
 
 pub struct setup_type {
-    params: UniversalParams<Bls12_381>,
-    g1_secret: Vec<GroupProjective<g1::Parameters>>,
-    g2_secret: Vec<GroupProjective<g2::Parameters>>,
+    pub(crate) params: UniversalParams<Bls12_381>
 }
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
@@ -132,8 +128,8 @@ where
         );
         // Add an additional power of gamma_g, because we want to be able to support
         // up to D queries.
-        let temp: [u64; 4usize] = beta.0 .0;
-        powers_of_gamma_g.push(powers_of_gamma_g.last().unwrap().mul(temp));
+        let temp: Fr = beta;
+        powers_of_gamma_g.push(powers_of_gamma_g.last().unwrap().mul(&temp));
 
         let powers_of_g = GroupProjective::batch_normalization_into_affine(&powers_of_g);
         let powers_of_gamma_g =
@@ -173,8 +169,6 @@ where
         let prepared_h = h.into();
         let prepared_beta_h = beta_h.into();
 
-        let (s1, s2) = generate_trusted_setup_test(max_degree, beta);
-
         let pp = UniversalParams {
             powers_of_g,
             powers_of_gamma_g,
@@ -185,9 +179,7 @@ where
             prepared_beta_h,
         };
         let res = setup_type {
-            params: pp,
-            g1_secret: s1,
-            g2_secret: s2,
+            params: pp
         };
         Ok(res)
     }
@@ -257,6 +249,7 @@ where
         }
     }
 }
+
 fn skip_leading_zeros_and_convert_to_bigints<F: PrimeField, P: UVPolynomial<F>>(
     p: &P,
 ) -> (usize, Vec<F::BigInt>) {
@@ -347,101 +340,48 @@ pub fn default_kzg() -> KZGSettings {
 }
 
 use std::convert::TryInto;
-fn read_be_u64(input: &mut &[u8]) -> u64 {
-    let (int_bytes, rest) = input.split_at(std::mem::size_of::<u64>());
-    *input = rest;
-    u64::from_be_bytes(int_bytes.try_into().unwrap())
-}
+use ark_ec::group::Group;
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
-    let mut s_pow = Fr::from(1);
-    let mut temp = vec![0; 4];
-    for i in 0..4 {
-        temp[i] = read_be_u64(&mut &secret[i * 8..(i + 1) * 8]);
-    }
-    let s = Fr::from_repr(BigInteger256::new([temp[0], temp[1], temp[2], temp[3]])).unwrap();
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
-    for _i in 0..len {
-        let mut temp =
-            g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y, true).into_projective();
-        temp.mul_assign(s_pow);
-        s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
-        let mut temp =
-            g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y, true).into_projective();
-        temp.mul_assign(s_pow);
-        s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
-        s_pow *= s;
-    }
-    (s1, s2)
-}
+    let s = BlstFr::from_scalar(secret);
+    let mut s_pow = BlstFr::one();
 
-pub fn generate_trusted_setup_test(
-    len: usize,
-    s: Fr,
-) -> (
-    Vec<GroupProjective<g1::Parameters>>,
-    Vec<GroupProjective<g2::Parameters>>,
-) {
-    let mut s_pow = Fr::from(1);
     let mut s1 = Vec::new();
     let mut s2 = Vec::new();
-    for _i in 0..len {
-        let mut temp = blst_p1_into_pc_g1projective(&G1_GENERATOR).unwrap();
-        temp.mul_assign(s_pow);
-        s1.push(temp);
-        let mut temp = blst_p2_into_pc_g2projective(&G2_GENERATOR).unwrap();
-        temp.mul_assign(s_pow);
-        s2.push(temp);
-        s_pow *= s;
+
+    for _ in 0..len {
+        s1.push(ArkG1(G1_GENERATOR).mul(&s_pow));
+        s2.push(ArkG2(G2_GENERATOR.0).mul(&s_pow));
+        s_pow = s_pow.mul(&s);
     }
 
     (s1, s2)
 }
 
-fn generate_rng_seed(secret_g1: &[ArkG1]) -> rand::prelude::StdRng {
+pub fn generate_rng_seed(secret_g1: &[ArkG1]) -> StdRng {
     let mut output = Vec::<u8>::new();
     for val in &secret_g1[secret_g1.len() - 1].0.x.l {
         output.extend_from_slice(&val.to_be_bytes());
     }
-    rand::rngs::StdRng::from_seed(output[..32].try_into().unwrap())
+    StdRng::from_seed(output[..32].try_into().unwrap())
 }
 
 pub(crate) fn new_kzg_settings(
     secret_g1: &[ArkG1],
-    _secret_g2: &[ArkG2],
+    secret_g2: &[ArkG2],
     length: u64,
     ffs: &FFTSettings,
 ) -> KZGSettings {
     let length = length + 1;
-
     let mut rng = generate_rng_seed(secret_g1);
-
-    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
-
-    let mut temp = Vec::new();
-    for i in 0..length {
-        temp.push(pc_g1projective_into_blst_p1(setup.g1_secret[i as usize]).unwrap());
-    }
-
-    let mut temp2 = Vec::new();
-    for i in 0..length {
-        temp2.push(pc_g2projective_into_blst_p2(setup.g2_secret[i as usize]).unwrap());
-    }
-
-    let mut temp3 = Vec::new();
-    for i in 0..length {
-        temp3.push(setup.g1_secret[i as usize].into_affine());
-    }
-
-    setup.params.powers_of_g = temp3;
+    let setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
 
     KZGSettings {
-        secret_g1: temp,
-        secret_g2: temp2,
+        fs: ffs.clone(),
+        secret_g1: secret_g1.to_vec(),
+        secret_g2: secret_g2.to_vec(),
         length,
         params: setup.params,
-        fs: ffs.borrow().clone(),
         ..KZGSettings::default()
     }
 }
@@ -452,8 +392,8 @@ pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, St
     } else if blst_poly_into_pc_poly(p).unwrap().is_zero() {
         Ok(G1_IDENTITY)
     } else {
-        let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
-        let (com, _rand) =
+        let (powers, _) = trim(&ks.params, p.coeffs.len()).unwrap();
+        let (com, _) =
             KZG_Bls12_381::commit(&powers, &blst_poly_into_pc_poly(p).unwrap(), None, None)
                 .unwrap();
         Ok(pc_g1projective_into_blst_p1(com.0.into_projective()).unwrap())
@@ -532,7 +472,6 @@ pub(crate) fn check_proof_multi(
     ks: &KZGSettings,
 ) -> bool {
     let mut interp = PolyData::new(n).unwrap();
-
     interp.coeffs = ks.fs.fft_fr(ys, true).unwrap();
 
     let inv_x = x.inverse();
@@ -546,10 +485,9 @@ pub(crate) fn check_proof_multi(
     let mut xn2 = ks.params.h.into_projective();
     xn2.mul_assign(blst_fr_into_pc_fr(&x_pow));
     let xn_minus_yn = blst_p2_into_pc_g2projective(&ks.secret_g2[n]).unwrap() - xn2;
-
     let is1 = blst_p1_into_pc_g1projective(&commit_to_poly(&interp, ks).unwrap().0).unwrap();
-
     let commit_minus_interp = blst_p1_into_pc_g1projective(&com.0).unwrap() - is1;
+
     pairings_verify(
         &pc_g1projective_into_blst_p1(commit_minus_interp).unwrap(),
         &pc_g2projective_into_blst_p2(ks.params.h.into_projective()).unwrap(),

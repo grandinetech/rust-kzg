@@ -2,7 +2,7 @@ use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkG1, FsFr as BlstFr};
 use blst::{blst_fp, blst_p1};
 use kzg::G1Mul;
-use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
+use kzg::{Fr, FFTG1, G1};
 
 pub const G1_NEGATIVE_GENERATOR: blst_p1 = blst_p1 {
     x: blst_fp {
