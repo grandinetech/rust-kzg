@@ -1,14 +1,16 @@
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
+use ark_bls12_381::Bls12_381;
+use ark_ec::ProjectiveCurve;
 use kzg::{G1, Poly};
 use blst::{BLST_ERROR, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress};
 use kzg::{Fr, FFTSettings as FFTSettingsT, FFTG1, KZGSettings as LKZGSettings};
 use kzg_bench::tests::fk20_proofs::reverse_bit_order;
 use crate::fft_g1::g1_linear_combination;
-use crate::kzg_proofs::{FFTSettings, KZGSettings};
+use crate::kzg_proofs::{FFTSettings, generate_rng_seed, KZG, KZGSettings, UniPoly_381};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr};
-use crate::utils::{PolyData};
+use crate::utils::{blst_p1_into_pc_g1projective, PolyData};
 
 pub fn bytes_from_bls_field(fr: &FsFr) -> [u8; 32usize] {
     fr.to_scalar()
@@ -152,10 +154,23 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
     let mut g1_values = fs.fft_g1(g1_projectives.as_slice(), true).unwrap();
     reverse_bit_order(&mut g1_values);
 
+    let length = g1_values.len();
+    let mut rng = generate_rng_seed(&g1_values);
+    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
+
+    let mut ark_secret_g1 = Vec::new();
+    for s in g1_values.iter() {
+        let ark_g1 = blst_p1_into_pc_g1projective(&s.0).unwrap();
+        ark_secret_g1.push(ark_g1.into_affine());
+    }
+    setup.params.powers_of_g = ark_secret_g1;
+
     KZGSettings {
         fs,
         secret_g1: g1_values,
         secret_g2: g2_values,
+        length: length as u64,
+        params: setup.params,
         ..KZGSettings::default()
     }
 }

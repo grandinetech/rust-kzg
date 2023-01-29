@@ -372,15 +372,21 @@ pub(crate) fn new_kzg_settings(
     length: u64,
     ffs: &FFTSettings,
 ) -> KZGSettings {
-    let length = length + 1;
     let mut rng = generate_rng_seed(secret_g1);
-    let setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
+    let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
+
+    let mut ark_secret_g1 = Vec::new();
+    for s in secret_g1.iter() {
+        let ark_g1 = blst_p1_into_pc_g1projective(&s.0).unwrap();
+        ark_secret_g1.push(ark_g1.into_affine());
+    }
+    setup.params.powers_of_g = ark_secret_g1;
 
     KZGSettings {
         fs: ffs.clone(),
         secret_g1: secret_g1.to_vec(),
         secret_g2: secret_g2.to_vec(),
-        length,
+        length: length,
         params: setup.params,
         ..KZGSettings::default()
     }
@@ -401,7 +407,7 @@ pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, St
 }
 
 pub(crate) fn compute_proof_single(p: &PolyData, x: &BlstFr, ks: &KZGSettings) -> ArkG1 {
-    let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
+    let (powers, _) = trim(&ks.params, ks.params.max_degree()).unwrap();
     let proof = KZG::<Bls12_381, UniPoly_381>::open(
         &powers,
         &blst_poly_into_pc_poly(p).unwrap(),
