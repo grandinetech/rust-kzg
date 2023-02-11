@@ -1,7 +1,7 @@
 #!/bin/bash
-unset CARGO_TARGET_DIR
 
 set -e
+unset CARGO_TARGET_DIR
 
 parallel=false
 
@@ -37,7 +37,7 @@ fi
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
-git checkout $C_KZG_4844_GIT_HASH
+git -c advice.detachedHead=false checkout $C_KZG_4844_GIT_HASH
 git submodule update --init
 
 print_msg "Coping header files"

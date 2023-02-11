@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 parallel=false
 
 while getopts "parallel" opt; do
@@ -32,7 +34,7 @@ fi
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
-git checkout $C_KZG_4844_GIT_HASH
+git -c advice.detachedHead=false checkout $C_KZG_4844_GIT_HASH
 
 print_msg "Cloning blst"
 git submodule update --init
