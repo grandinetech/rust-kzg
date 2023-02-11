@@ -1,0 +1,51 @@
+From c5a23b5f8c538e97281e50e09ba5b2145c5e7eff Mon Sep 17 00:00:00 2001
+From: belijzajac <tautvydas749@gmail.com>
+Date: Sat, 11 Feb 2023 17:36:01 +0200
+Subject: [PATCH] Bring back the bytes conversion functions
+
+---
+ src/c_kzg_4844.c | 12 ++++++++++++
+ src/c_kzg_4844.h |  4 ++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/src/c_kzg_4844.c b/src/c_kzg_4844.c
+index d31ffda..43c5952 100644
+--- a/src/c_kzg_4844.c
++++ b/src/c_kzg_4844.c
+@@ -464,6 +464,18 @@ static int log2_pow2(uint32_t n) {
+ // Bytes Conversion Helper Functions
+ ///////////////////////////////////////////////////////////////////////////////
+ 
++void bytes_from_g1_raw(uint8_t out[48], const g1_t *in) {
++    blst_p1_compress(out, in);
++}
++
++C_KZG_RET bytes_to_g1_raw(g1_t* out, const uint8_t bytes[48]) {
++    blst_p1_affine tmp;
++    if (blst_p1_uncompress(&tmp, bytes) != BLST_SUCCESS)
++        return C_KZG_BADARGS;
++    blst_p1_from_affine(out, &tmp);
++    return C_KZG_OK;
++}
++
+ /**
+  * Serialize a G1 group element into bytes.
+  *
+diff --git a/src/c_kzg_4844.h b/src/c_kzg_4844.h
+index b0e37ca..7fa7b77 100644
+--- a/src/c_kzg_4844.h
++++ b/src/c_kzg_4844.h
+@@ -132,6 +132,10 @@ typedef struct {
+ // Interface functions
+ ///////////////////////////////////////////////////////////////////////////////
+ 
++void bytes_from_g1_raw(uint8_t out[48], const g1_t *in);
++
++C_KZG_RET bytes_to_g1_raw(g1_t* out, const uint8_t bytes[48]);
++
+ C_KZG_RET load_trusted_setup(
+     KZGSettings *out,
+     const uint8_t *g1_bytes, /* n1 * 48 bytes */
+-- 
+2.39.1
+

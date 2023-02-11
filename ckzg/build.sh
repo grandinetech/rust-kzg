@@ -19,7 +19,7 @@ print_msg "Cloning 4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
 git -c advice.detachedHead=false checkout $C_KZG_4844_GIT_HASH
-git apply < ../c_kzg_4844.patch
+git apply < ../0001-Bring-back-the-bytes-conversion-functions.patch
 
 print_msg "Cloning blst"
 git submodule update --init
