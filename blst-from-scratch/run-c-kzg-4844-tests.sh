@@ -34,7 +34,7 @@ fi
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
-git checkout 4c115844e2fcf773fdf095b040e63082934df0f9
+git checkout $C_KZG_4844_GIT_HASH
 
 print_msg "Cloning blst"
 git submodule update --init
@@ -61,7 +61,6 @@ case $(uname -s) in
     sed=$SED_MACOS
     CSHARP_PLATFORM=osx-x64
     CLANG_PLATFORM=x86_64-darwin
-
     ;;
   *)
     echo "FAIL: unsupported OS"
@@ -120,8 +119,7 @@ eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Mak
 print_msg "Running nodejs tests"
 yarn install
 make
-cd ../..
+cd ../../..
 
-cd ..
 print_msg "Cleaning up"
 rm -rf c-kzg-4844

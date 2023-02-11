@@ -2,6 +2,9 @@ name: CI Build
 
 on: [push]
 
+env:
+  C_KZG_4844_GIT_HASH: 'fcea0faff6cf5f8f215743a77d58448437d5cffe'
+
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
@@ -201,12 +204,12 @@ jobs:
       - name: "[mcl10-rust] Binding tests (c-kzg-4844)"
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd mcl/kzg && ./run-c-kzg-4844-tests.sh
+          cd mcl/kzg && bash run-c-kzg-4844-tests.sh
 
       - name: "[mcl10-rust] Binding tests (c-kzg-4844 parallel)"
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd mcl/kzg && ./run-c-kzg-4844-tests.sh -parallel
+          cd mcl/kzg && bash run-c-kzg-4844-tests.sh -parallel
 
       - name: "[mcl10-rust] Run Clippy"
         if: matrix.os == 'ubuntu-latest'

@@ -2,6 +2,9 @@ name: Benchmarks
 
 on: [push]
 
+env:
+  C_KZG_4844_GIT_HASH: 'fcea0faff6cf5f8f215743a77d58448437d5cffe'
+
 jobs:
   benchmarks:
 

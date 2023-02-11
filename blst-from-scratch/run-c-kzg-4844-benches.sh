@@ -32,6 +32,7 @@ fi
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
+git checkout $C_KZG_4844_GIT_HASH
 
 print_msg "Cloning blst"
 git submodule update --init
@@ -82,8 +83,7 @@ eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/libb
 
 print_msg "Running java tests and benchmarks"
 make build benchmark
-cd ../..
+cd ../../..
 
-cd ..
 print_msg "Cleaning up"
 rm -rf c-kzg-4844
