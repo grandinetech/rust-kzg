@@ -4,7 +4,7 @@ mod tests {
     use blst_from_scratch::{
         eip_4844::{
             blob_to_kzg_commitment_rust, bytes_from_bls_field, bytes_from_g1_rust,
-            compute_aggregate_kzg_proof_rust, compute_kzg_proof,
+            compute_aggregate_kzg_proof_rust, compute_kzg_proof_rust,
             compute_powers, evaluate_polynomial_in_evaluation_form, g1_lincomb,
             load_trusted_setup_filename_rust, vector_lincomb, verify_aggregate_kzg_proof_rust,
             verify_kzg_proof_rust, hash_to_bls_field,
@@ -59,7 +59,7 @@ mod tests {
             &g1_lincomb,
             &evaluate_polynomial_in_evaluation_form,
             &blob_to_kzg_commitment_rust,
-            &compute_kzg_proof,
+            &compute_kzg_proof_rust,
             &verify_kzg_proof_rust,
         );
     }
