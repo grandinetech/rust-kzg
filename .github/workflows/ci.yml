@@ -3,7 +3,7 @@ name: CI Build
 on: [push]
 
 env:
-  C_KZG_4844_GIT_HASH: 'fcea0faff6cf5f8f215743a77d58448437d5cffe'
+  C_KZG_4844_GIT_HASH: '1493f2bf2fce6b61f654a314a4ba136fd3b7a277'
 
 jobs:
   ci:
