@@ -36,13 +36,13 @@ jobs:
 
       # 1st team #########################################################
 
-      - name: "[arkworks] Tests without parallel"
+      - name: "[arkworks] Tests"
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --manifest-path Arkworks/Cargo.toml --no-fail-fast
 
-      - name: "[arkworks] Tests with parallel"
+      - name: "[arkworks] Tests (parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test
@@ -62,13 +62,13 @@ jobs:
 
       # 2nd team #########################################################
 
-      - name: "[zkcrypto] Tests without parallelization"
+      - name: "[zkcrypto] Tests"
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast
 
-      - name: "[zkcrypto] Tests with parallelization"
+      - name: "[zkcrypto] Tests (parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test
@@ -142,7 +142,7 @@ jobs:
           echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
           cd ckzg && bash build.sh
 
-      - name: "[ckzg] Setup Env"
+      - name: "[ckzg] Set environment variables"
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
         run: |
           if [[ -z "$LIBOMP_PATH" ]]; then
@@ -151,14 +151,14 @@ jobs:
           fi
           echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
 
-      - name: "[ckzg] Tests without parallelization"
+      - name: "[ckzg] Tests"
         uses: actions-rs/cargo@v1
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
         with:
           command: test
           args: --manifest-path ckzg/Cargo.toml --no-fail-fast
 
-      - name: "[ckzg] Tests with parallelization"
+      - name: "[ckzg] Tests (parallel)"
         uses: actions-rs/cargo@v1
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
         with:
@@ -179,46 +179,46 @@ jobs:
           command: fmt
           args: --manifest-path ckzg/Cargo.toml
 
-      - name: "[ckzg] Unset Env"
+      - name: "[ckzg] Unset environment variables"
         run: |
           echo "RUSTFLAGS=" >> $GITHUB_ENV
           echo "LIBOMP_PATH=" >> $GITHUB_ENV
 
       # 5th team ###########################################################
 
-      - name: "[mcl10-rust] Build mcl for Linux"
+      - name: "[mcl10-rust] Build native libs for Linux"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd mcl/kzg && bash build.sh
 
-      - name: "[mcl10-rust] Run tests without parallel"
+      - name: "[mcl10-rust] Tests"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
 
-      - name: "[mcl10-rust] Run tests with parallel"
+      - name: "[mcl10-rust] Tests (parallel)"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
 
-      - name: "[mcl10-rust] Binding tests (c-kzg-4844)"
+      - name: "[mcl10-rust] Tests (c-kzg-4844)"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd mcl/kzg && bash run-c-kzg-4844-tests.sh
 
-      - name: "[mcl10-rust] Binding tests (c-kzg-4844 parallel)"
+      - name: "[mcl10-rust] Tests (c-kzg-4844 parallel)"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd mcl/kzg && bash run-c-kzg-4844-tests.sh -parallel
 
-      - name: "[mcl10-rust] Run Clippy"
+      - name: "[mcl10-rust] Clippy"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --manifest-path mcl/kzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[mcl10-rust] Run fmt"
+      - name: "[mcl10-rust] Formatting"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo fmt --manifest-path mcl/kzg-bench/Cargo.toml

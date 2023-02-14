@@ -7,129 +7,140 @@ env:
 
 jobs:
   benchmarks:
-
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-11]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        components: clippy, rustfmt
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy, rustfmt
 
-    - name: "[arkworks] Benchmark without parallelization"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path Arkworks/Cargo.toml
+      # 1st team #########################################################
 
-    - name: "[arkworks] Benchmark with parallelization"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path Arkworks/Cargo.toml --features parallel
+      - name: "[arkworks] Benchmark"
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
+          args: --manifest-path Arkworks/Cargo.toml
 
-    - name: "[zkcrypto] Benchmark without parallelization"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path zkcrypto/Cargo.toml
+      - name: "[arkworks] Benchmark (parallel)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
+          args: --manifest-path Arkworks/Cargo.toml --features parallel
 
-    - name: "[zkcrypto] Benchmark with parallelization"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path zkcrypto/Cargo.toml --features parallel
+      # 2nd team #########################################################
 
-    - name: "[blst-from-scratch] Benchmark"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path blst-from-scratch/Cargo.toml
+      - name: "[zkcrypto] Benchmark"
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
+          args: --manifest-path zkcrypto/Cargo.toml
 
-    - name: "[blst-from-scratch] Benchmark (parallel)"
-      uses: actions-rs/cargo@v1
-      with:
-        command: bench
-        args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
+      - name: "[zkcrypto] Benchmark (parallel)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
+          args: --manifest-path zkcrypto/Cargo.toml --features parallel
 
-    - name: "[blst-from-scratch] Benchmark (c-kzg-4844)"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cd blst-from-scratch && bash run-c-kzg-4844-benches.sh
-      
-    - name: "[blst-from-scratch] Benchmark (c-kzg-4844 parallel)"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cd blst-from-scratch && bash run-c-kzg-4844-benches.sh -parallel
+      # 3rd team #########################################################
 
-    - name: "[ckzg] Build native libs for Linux"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get install libomp-dev
-        echo "LIBOMP_PATH=$(find /usr/lib/llvm* -name libiomp5.so | head -n 1)" >> $GITHUB_ENV
-        echo "OMP_NUM_THREADS=$(nproc)" >> $GITHUB_ENV
-        cd ckzg && bash build.sh
+      - name: "[blst-from-scratch] Benchmark"
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
+          args: --manifest-path blst-from-scratch/Cargo.toml
 
-    - name: "[ckzg] Build native libs for MacOS"
-      if: matrix.os == 'macos-11'
-      run: |
-        brew install libomp gnu-sed
-        ln -s /usr/local/opt/libomp/lib/libomp.dylib /usr/local/lib
-        ln -s /usr/local/opt/libomp/include/omp.h /usr/local/include
-        echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
-        echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
-        cd ckzg && bash build.sh
+      - name: "[blst-from-scratch] Benchmark (parallel)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
+          args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
 
-    - name: "[ckzg] Setup Env"
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      run: |
-        if [[ -z "$LIBOMP_PATH" ]]; then
-          echo "FAIL: LLVM OpenMP runtime was not found"
-          exit 1
-        fi
-        echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
+      - name: "[blst-from-scratch] Benchmark (c-kzg-4844)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd blst-from-scratch && bash run-c-kzg-4844-benches.sh
+        
+      - name: "[blst-from-scratch] Benchmark (c-kzg-4844 parallel)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd blst-from-scratch && bash run-c-kzg-4844-benches.sh -parallel
 
-    - name: "[ckzg] Benchmark without parallelization"
-      uses: actions-rs/cargo@v1
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      with:
-        command: bench
-        args: --manifest-path ckzg/Cargo.toml
+      # 4th team #########################################################
 
-    - name: "[ckzg] Benchmark with parallelization"
-      uses: actions-rs/cargo@v1
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      with:
-        command: bench
-        args: --manifest-path ckzg/Cargo.toml --features parallel
+      - name: "[ckzg] Build native libs for Linux"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get install libomp-dev
+          echo "LIBOMP_PATH=$(find /usr/lib/llvm* -name libiomp5.so | head -n 1)" >> $GITHUB_ENV
+          echo "OMP_NUM_THREADS=$(nproc)" >> $GITHUB_ENV
+          cd ckzg && bash build.sh
 
-    - name: "[ckzg] Unset Env"
-      run: |
-        echo "RUSTFLAGS=" >> $GITHUB_ENV
-        echo "LIBOMP_PATH=" >> $GITHUB_ENV
+      - name: "[ckzg] Build native libs for MacOS"
+        if: matrix.os == 'macos-11'
+        run: |
+          brew install libomp gnu-sed
+          ln -s /usr/local/opt/libomp/lib/libomp.dylib /usr/local/lib
+          ln -s /usr/local/opt/libomp/include/omp.h /usr/local/include
+          echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
+          echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
+          cd ckzg && bash build.sh
 
-    - name: "[mcl10-rust] Build mcl for Linux"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cd mcl/kzg && bash build.sh
+      - name: "[ckzg] Set environment variables"
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+        run: |
+          if [[ -z "$LIBOMP_PATH" ]]; then
+            echo "FAIL: LLVM OpenMP runtime was not found"
+            exit 1
+          fi
+          echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
 
-    - name: "[mcl10-rust] Run benches without parallel"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo bench --manifest-path mcl/kzg-bench/Cargo.toml
+      - name: "[ckzg] Benchmark"
+        uses: actions-rs/cargo@v1
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+        with:
+          command: bench
+          args: --manifest-path ckzg/Cargo.toml
 
-    - name: "[mcl10-rust] Run benches with parallel"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel
+      - name: "[ckzg] Benchmark (parallel)"
+        uses: actions-rs/cargo@v1
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+        with:
+          command: bench
+          args: --manifest-path ckzg/Cargo.toml --features parallel
 
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path kzg-bench/Cargo.toml
+      - name: "[ckzg] Unset environment variables"
+        run: |
+          echo "RUSTFLAGS=" >> $GITHUB_ENV
+          echo "LIBOMP_PATH=" >> $GITHUB_ENV
+
+      # 5th team ###########################################################
+
+      - name: "[mcl10-rust] Build native libs for Linux"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd mcl/kzg && bash build.sh
+
+      - name: "[mcl10-rust] Benchmark"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo bench --manifest-path mcl/kzg-bench/Cargo.toml
+
+      - name: "[mcl10-rust] Benchmark (parallel)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel
+
+      # Common ###########################################################
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path kzg-bench/Cargo.toml
