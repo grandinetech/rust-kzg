@@ -7,6 +7,7 @@ use std::boxed::Box;
 use std::slice::from_raw_parts;
 
 pub type limb_t = u64;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct blst_fr {
@@ -47,9 +48,19 @@ pub type fr_t = blst_fr;
 
 const BYTES_PER_COMMITMENT: usize = 48;
 const BYTES_PER_PROOF: usize = 48;
-const BYTES_PER_FIELD_ELEMENT: usize = 32;
 const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
 
+#[repr(C)]
+pub struct Bytes32 {
+    pub bytes: [u8; 32],
+}
+
+#[repr(C)]
+pub struct Bytes48 {
+    pub bytes: [u8; 48],
+}
+
+#[repr(C)]
 pub struct Blob {
     pub bytes: [u8; BYTES_PER_BLOB],
 }
@@ -64,17 +75,13 @@ pub struct KZGProof {
     pub bytes: [u8; BYTES_PER_PROOF],
 }
 
-#[repr(C)]
-pub struct BLSFieldElement {
-    pub bytes: [u8; BYTES_PER_FIELD_ELEMENT],
-}
-
 pub const C_KZG_RET_C_KZG_OK: C_KZG_RET = 0;
 pub const C_KZG_RET_C_KZG_BADARGS: C_KZG_RET = 1;
 pub const C_KZG_RET_C_KZG_ERROR: C_KZG_RET = 2;
 pub const C_KZG_RET_C_KZG_MALLOC: C_KZG_RET = 3;
 pub type C_KZG_RET = ::std::os::raw::c_uint;
-#[doc = " Stores the setup and parameters needed for performing FFTs."]
+
+#[doc = "Stores the setup and parameters needed for performing FFTs."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct FFTSettings {
@@ -88,7 +95,7 @@ pub struct FFTSettings {
     pub roots_of_unity: *mut fr_t,
 }
 
-#[doc = " Stores the setup and parameters needed for computing KZG proofs."]
+#[doc = "Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct KZGSettings {
@@ -100,15 +107,15 @@ pub struct KZGSettings {
     pub g2_values: *mut g2_t,
 }
 
-
 /// # Safety
-fn g1_to_cg1(t: &G1,  out: *mut g1_t) {
+fn g1_to_cg1(t: &G1, out: *mut g1_t) {
     unsafe {
         (*out).x.l = t.x.d;
         (*out).y.l = t.y.d;
         (*out).z.l = t.z.d;
     }
 }
+
 /// # Safety
 fn cg1_to_g1(t: *const g1_t) -> G1 {
     unsafe {
@@ -120,51 +127,12 @@ fn cg1_to_g1(t: *const g1_t) -> G1 {
     }
 }
 
-// fn fp2_to_cfp2(t: &Fp2,  out: *mut blst_fp2) {
-//     unsafe {
-//         (*out).x.fp = t.d;
-//         (*out).y.fp = t.y.d;
-//         (*out).z.fp = t.z.d;
-//     }
-// }
-// fn cg2_to_g2(t: *const g2_t) -> G2 {
-//     unsafe {
-//         return G1 {
-//             x: Fp {d: (*t).x.l},
-//             y: Fp {d: (*t).y.l},
-//             z: Fp {d: (*t).z.l},
-//         };
-//     }
-// }
-
-// fn g2_to_cg2(t: &G2,  out: *mut g2_t) {
-//     unsafe {
-//         (*out).x.fp = [blst_fp{l: t.x.d[0].d}, blst_fp{l: t.x.d[1].d}];
-//         (*out).y.fp = [blst_fp{l: t.y.d[0].d}, blst_fp{l: t.y.d[1].d}];
-//         (*out).z.fp = [blst_fp{l: t.z.d[0].d}, blst_fp{l: t.z.d[1].d}];
-//     }
-// }
-// fn cg2_to_g2(t: *const g2_t) -> G2 {
-//     unsafe {
-//         return G2 {
-//             x: Fp2 {d: [Fp{d: (*t).x.fp[0].l}, Fp{d: (*t).x.fp[1].l}]},
-//             y: Fp2 {d: [Fp{d: (*t).y.fp[0].l}, Fp{d: (*t).y.fp[1].l}]},
-//             z: Fp2 {d: [Fp{d: (*t).z.fp[0].l}, Fp{d: (*t).z.fp[1].l}]},
-//         };
-//     }
-// }
-// fn fr_to_cfr(t: &Fr,  out: *mut fr_t) {
-//     unsafe {
-//         (*out).l = t.d;
-//     }
-// }
-
 fn ks_to_cks(t: &mut mKZGSettings, out: *mut KZGSettings) {
     assert_eq!(t.curve.g1_points.len(), t.fft_settings.max_width);
     unsafe {
         (*out).g1_values = t.curve.g1_points.as_mut_ptr() as _;
         (*out).g2_values = t.curve.g2_points.as_mut_ptr() as _;
-        let fs = FFTSettings{
+        let fs = FFTSettings {
             max_width: t.fft_settings.max_width as _,
             roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
             expanded_roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
@@ -174,6 +142,7 @@ fn ks_to_cks(t: &mut mKZGSettings, out: *mut KZGSettings) {
         (*out).fs = Box::into_raw(b);
     }
 }
+
 fn cks_to_ks(t: *const KZGSettings) -> mKZGSettings {
     unsafe {
         crate::fk20_fft::init_globals();
@@ -188,7 +157,7 @@ fn cks_to_ks(t: *const KZGSettings) -> mKZGSettings {
             },
             fft_settings: mFFTSettings {
                 max_width: mw,
-                root_of_unity: Fr::default(), 
+                root_of_unity: Fr::default(),
                 exp_roots_of_unity: Vec::from_raw_parts((*fs).expanded_roots_of_unity as _, mw+1, mw+1),
                 exp_roots_of_unity_rev: Vec::from_raw_parts((*fs).reverse_roots_of_unity as _, mw+1, mw+1),
             },
@@ -196,24 +165,12 @@ fn cks_to_ks(t: *const KZGSettings) -> mKZGSettings {
         ks.fft_settings.root_of_unity = ks.fft_settings.exp_roots_of_unity[1];
         ks
     }
-
 }
-
-// fn cg2_to_g2(t: *const g2_t) -> G2 {
-//     unsafe {
-//         return G2 {
-//             x: Fp2 {d: [Fp{d: (*t).x.fp[0].l}, Fp{d: (*t).x.fp[1].l}]},
-//             y: Fp2 {d: [Fp{d: (*t).y.fp[0].l}, Fp{d: (*t).y.fp[1].l}]},
-//             z: Fp2 {d: [Fp{d: (*t).z.fp[0].l}, Fp{d: (*t).z.fp[1].l}]},
-//         };
-//     }
-// }
 
 /// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn bytes_to_g1(out: *mut g1_t, in_: *const u8) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("bytes_to_g1");
     let arr;
     unsafe {
         arr = std::slice::from_raw_parts(in_, 48);
@@ -224,7 +181,6 @@ pub unsafe extern "C" fn bytes_to_g1(out: *mut g1_t, in_: *const u8) -> C_KZG_RE
     };
 
     g1_to_cg1(&t, out);
-
     C_KZG_RET_C_KZG_OK
 }
 
@@ -232,8 +188,6 @@ pub unsafe extern "C" fn bytes_to_g1(out: *mut g1_t, in_: *const u8) -> C_KZG_RE
 #[no_mangle]
 pub unsafe extern "C" fn bytes_from_g1(out: *mut u8, in_: *const g1_t) {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("bytes_from_g1");
-
     let b = crate::eip_4844::bytes_from_g1(&cg1_to_g1(in_));
     unsafe {
         let res = std::slice::from_raw_parts_mut(out, b.len()); 
@@ -251,8 +205,6 @@ pub unsafe extern "C" fn load_trusted_setup(
     n2: usize,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("load_trusted_setup");
-
     unsafe {
         let mut mks = crate::eip_4844::load_trusted_setup_from_bytes(
             std::slice::from_raw_parts(g1_bytes, n1 * 48),
@@ -268,7 +220,6 @@ pub unsafe extern "C" fn load_trusted_setup(
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut libc::FILE) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("load_trusted_setup_file");
     let mut buf = vec![0u8; 1024 * 1024];
     let len: usize;
     unsafe {
@@ -288,22 +239,16 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mu
 #[no_mangle]
 pub unsafe extern "C" fn free_trusted_setup(s: *mut KZGSettings) {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("free_trusted_setup");
-    // TODO
-    
     drop(cks_to_ks(s));
     let fs = Box::from_raw((*s).fs as *mut FFTSettings);
     drop(fs);
 }
-
 
 unsafe fn  blobs_to_frs(blobs: *const Blob, n: usize) -> (Vec<Vec<Fr>>, bool) {
     let mut ok = true;
     assert_eq!(std::mem::size_of::<Blob>(), BYTES_PER_BLOB);
     let frs = (0..n).map(|i| {
         let (frs, o) = blob_to_frs(blobs.add(i) as _);
-    // let frs = from_raw_parts(blobs, n).iter().map(|blob| {
-        //let (frs, o) = blob_to_frs(blob);
         ok &= o;
         frs
     }).collect::<Vec<Vec<Fr>>>();
@@ -319,7 +264,6 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
     s: *const KZGSettings,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("compute_aggregate_kzg_proof");
 
     let (frs, ok) = blobs_to_frs(blobs, n);
     if !ok {
@@ -339,26 +283,25 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
 pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     out: *mut bool,
     blobs: *const Blob,
-    expected_kzg_commitments: *const KZGCommitment,
+    commitments_bytes: *const Bytes48,
     n: usize,
-    kzg_aggregated_proof: *const KZGProof,
+    aggregated_proof_bytes: *const Bytes48,
     s: *const KZGSettings,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("verify_aggregate_kzg_proof");
 
     let (frs, ok) = blobs_to_frs(blobs, n);
     if !ok {
         return C_KZG_RET_C_KZG_BADARGS
     }
-    let res: Result<Vec<_>, _> = from_raw_parts(expected_kzg_commitments, n).iter().map(|c| {
+    let res: Result<Vec<_>, _> = from_raw_parts(commitments_bytes, n).iter().map(|c| {
         crate::eip_4844::bytes_to_g1(&c.bytes) 
     }).collect();
     let expected = match res {
         Ok(v) => v,
         Err(_) => return C_KZG_RET_C_KZG_BADARGS,
     };
-    let proof = match crate::eip_4844::bytes_to_g1(&(*kzg_aggregated_proof).bytes) {
+    let proof = match crate::eip_4844::bytes_to_g1(&(*aggregated_proof_bytes).bytes) {
         Ok(v) => v,
         Err(_) => return C_KZG_RET_C_KZG_BADARGS,
     };
@@ -378,7 +321,6 @@ unsafe fn blob_to_frs(blob: *const Blob) -> (Vec<Fr>, bool) {
         ok &= tmp.deserialize(&bytes);
         tmp
     }).collect::<Vec<Fr>>();
-
     (frs, ok)
 }
 
@@ -390,7 +332,6 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
     s: *const KZGSettings,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("blob_to_kzg_commitment");
 
     let (frs, ok) = blob_to_frs(blob);
     if !ok {
@@ -399,7 +340,6 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
     let ms = cks_to_ks(s); 
     let o = crate::eip_4844::blob_to_kzg_commitment(&frs, &ms);
     (*out).bytes = crate::eip_4844::bytes_from_g1(&o);
-
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
@@ -409,30 +349,53 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
 #[no_mangle]
 pub unsafe extern "C" fn verify_kzg_proof(
     out: *mut bool,
-    polynomial_kzg: *const KZGCommitment,
-    z: *const [u8; 32],
-    y: *const [u8; 32],
-    kzg_proof: *const KZGProof,
+    commitment_bytes: *const Bytes48,
+    z_bytes: *const Bytes32,
+    y_bytes: *const Bytes32,
+    proof_bytes: *const Bytes48,
     s: *const KZGSettings,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    // println!("verify_kzg_proof");
 
-    let poly = match crate::eip_4844::bytes_to_g1(&(*polynomial_kzg).bytes) {
+    let poly = match crate::eip_4844::bytes_to_g1(&(*commitment_bytes).bytes) {
         Ok(v) => v,
         Err(_) => return C_KZG_RET_C_KZG_BADARGS,
     };
 
-    let fz = crate::eip_4844::bytes_to_bls_field(&*z);
-    let fy = crate::eip_4844::bytes_to_bls_field(&*y);
-    let proof = match crate::eip_4844::bytes_to_g1(&(*kzg_proof).bytes) {
+    let fz = crate::eip_4844::bytes_to_bls_field(&(*z_bytes).bytes);
+    let fy = crate::eip_4844::bytes_to_bls_field(&(*y_bytes).bytes);
+    let proof = match crate::eip_4844::bytes_to_g1(&(*proof_bytes).bytes) {
         Ok(v) => v,
         Err(_) => return C_KZG_RET_C_KZG_BADARGS,
     };
-
 
     let ms = cks_to_ks(s); 
     *out = crate::eip_4844::verify_kzg_proof(&poly, &fz, &fy, &proof, &ms);
+    std::mem::forget(ms);
+
+    C_KZG_RET_C_KZG_OK
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_kzg_proof(
+    out: *mut KZGProof,
+    blob: *const Blob,
+    z_bytes: *const Bytes32,
+    s: *const KZGSettings,
+) -> C_KZG_RET {
+    assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
+
+    let (frs, ok) = blob_to_frs(blob);
+    if !ok {
+        return C_KZG_RET_C_KZG_BADARGS
+    }
+
+    let poly = crate::eip_4844::poly_from_blob(&frs);
+    let frz = crate::eip_4844::bytes_to_bls_field(&(*z_bytes).bytes);
+    let ms = cks_to_ks(s);
+    let tmp = crate::eip_4844::compute_kzg_proof(&poly, &frz, &ms);
+    (*out).bytes = crate::eip_4844::bytes_from_g1(&tmp);
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK

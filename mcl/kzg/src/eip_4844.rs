@@ -395,7 +395,7 @@ pub fn verify_aggregate_kzg_proof(
     )
 }
 
-fn poly_from_blob(blob: &[Fr]) -> Polynomial {
+pub fn poly_from_blob(blob: &[Fr]) -> Polynomial {
     let mut out = Polynomial::new(blob.len());
     out.coeffs[..blob.len()].copy_from_slice(blob);
     out
