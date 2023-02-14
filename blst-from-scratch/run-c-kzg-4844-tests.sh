@@ -2,6 +2,16 @@
 
 set -e
 
+LIB=libblst_from_scratch.a
+SED_LINUX="/usr/bin/sed"
+SED_MACOS="/usr/local/bin/gsed"
+
+print_msg () {
+  echo "[*]" "$1"
+}
+
+###################### parallel configuration ######################
+
 parallel=false
 
 while getopts "parallel" opt; do
@@ -15,12 +25,7 @@ while getopts "parallel" opt; do
   esac
 done
 
-SED_LINUX="/usr/bin/sed"
-SED_MACOS="/usr/local/bin/gsed"
-
-print_msg () {
-  echo "[*]" "$1"
-}
+###################### building static libs ######################
 
 print_msg "Compiling libblst_from_scratch"
 if [[ "$parallel" = true ]]; then
@@ -31,12 +36,12 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
+###################### cloning c-kzg-4844 ######################
+
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
 git -c advice.detachedHead=false checkout $C_KZG_4844_GIT_HASH
-
-print_msg "Cloning blst"
 git submodule update --init
 
 print_msg "Applying patches and building blst"
@@ -45,6 +50,8 @@ export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 make blst
 unset CFLAGS
 cd ..
+
+###################### detecting os ######################
 
 case $(uname -s) in
   "Linux")
@@ -68,6 +75,8 @@ case $(uname -s) in
     ;;
 esac
 
+###################### dotnet tests ######################
+
 print_msg "Modyfying dotnet Makefile"
 git apply < ../csharp.patch
 
@@ -79,6 +88,8 @@ dotnet restore
 print_msg "Running dotnet tests"
 dotnet test --configuration Release --no-restore
 cd ../..
+
+###################### rust tests ######################
 
 print_msg "Modyfing rust bindings build.rs"
 git apply < ../rust.patch
@@ -95,31 +106,39 @@ make blst
 unset CFLAGS
 cd ..
 
+###################### python tests ######################
+
 print_msg "Modyfing python bindings makefile"
 cd bindings/python || exit 1
-eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
+eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/$LIB/g" Makefile)"
 
 print_msg "Running python tests"
 make
 cd ../..
 
+###################### java tests ######################
+
 print_msg "Modyfing java bindings makefile"
 cd bindings/java || exit 1
-eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
+eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/$LIB/g" Makefile)"
 
 print_msg "Running java tests and benchmarks"
 make build test
 cd ../..
 
+###################### nodejs tests ######################
+
 print_msg "Modyfing nodejs bindings"
 cd bindings/node.js || exit 1
-eval "$("$sed" -i "s/c_kzg_4844.o/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" binding.gyp)"
+eval "$("$sed" -i "s/c_kzg_4844.o/..\/..\/..\/target\/release\/$LIB/g" binding.gyp)"
 eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Makefile)"
 
 print_msg "Running nodejs tests"
 yarn install
 make
 cd ../../..
+
+###################### cleaning up ######################
 
 print_msg "Cleaning up"
 rm -rf c-kzg-4844

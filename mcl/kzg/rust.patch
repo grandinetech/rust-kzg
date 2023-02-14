@@ -1,0 +1,24 @@
+diff --git a/bindings/rust/build.rs b/bindings/rust/build.rs
+index 8a7ac1b..107a82c 100644
+--- a/bindings/rust/build.rs
++++ b/bindings/rust/build.rs
+@@ -67,10 +67,17 @@ fn main() {
+     )
+     .unwrap();
+ 
++    std::fs::copy(
++        root_dir
++            .join("../target/release/libmcl_rust.a")
++            .as_path(),
++        out_dir.join("libmcl_rust.a").as_path(),
++    )
++    .unwrap();
++
+     println!("cargo:rustc-link-search={}", out_dir.display());
+     println!("cargo:rustc-link-search={}", out_dir.display());
+-    println!("cargo:rustc-link-lib=static=ckzg");
+-    println!("cargo:rustc-link-lib=static=blst");
++    println!("cargo:rustc-link-lib=mcl_rust");
+ 
+     // Write the compile time variable to a consts.rs file to be imported to the bindings module.
+     let const_file = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/consts.rs");
