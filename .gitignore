@@ -1,9 +1,5 @@
-# rust specific
-target
-# Cargo.lock
-
-# code editors
 .idea
-
-# team specific
+.directory
+target
 ckzg/lib/
+mcl/kzg/lib/
