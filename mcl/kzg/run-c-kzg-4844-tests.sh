@@ -99,13 +99,6 @@ cd ../..
 #cargo test --release
 #cd ../..
 
-#print_msg "Rebuilding blst"
-#cd src
-#export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
-#make blst
-#unset CFLAGS
-#cd ..
-
 ###################### python tests ######################
 
 print_msg "Modyfing python bindings makefile"

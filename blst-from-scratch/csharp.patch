@@ -16,7 +16,7 @@ index b94e455..2b1e958 100644
  CLANG_FLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
  
 -TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
-+TARGETS=ckzg.c ../../../target/release/libblst_from_scratch.a ../../blst/$(BLST_OBJ)
++TARGETS=ckzg.c ../../../target/release/libblst_from_scratch.a
  
  .blst:
  	cd ../../blst && $(BLST_BUILDSCRIPT)
