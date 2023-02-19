@@ -41,7 +41,7 @@ fi
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
-git -c advice.detachedHead=false checkout $C_KZG_4844_GIT_HASH
+git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
 print_msg "Applying patches and building blst"
@@ -122,7 +122,7 @@ print_msg "Modyfing java bindings makefile"
 cd bindings/java || exit 1
 eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/$LIB/g" Makefile)"
 
-print_msg "Running java tests and benchmarks"
+print_msg "Running java tests"
 make build test
 cd ../..
 

@@ -138,6 +138,16 @@ jobs:
         run: |
           cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel
 
+      - name: "[mcl10-rust] Benchmark (c-kzg-4844)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd mcl/kzg && bash run-c-kzg-4844-benches.sh
+
+      - name: "[mcl10-rust] Benchmark (c-kzg-4844 parallel)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd mcl/kzg && bash run-c-kzg-4844-benches.sh -parallel
+
       # Common ###########################################################
 
       - uses: actions-rs/cargo@v1

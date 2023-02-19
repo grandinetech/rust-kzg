@@ -2,7 +2,7 @@
 
 set -e
 
-LIB=libblst_from_scratch.a
+LIB=libmcl_rust.a
 SED_LINUX="/usr/bin/sed"
 SED_MACOS="/usr/local/bin/gsed"
 
@@ -27,7 +27,7 @@ done
 
 ###################### building static libs ######################
 
-print_msg "Compiling libblst_from_scratch"
+print_msg "Compiling libmcl_rust"
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
   cargo rustc --release --crate-type=staticlib --features=parallel
@@ -66,13 +66,13 @@ esac
 
 ###################### rust benchmarks ######################
 
-print_msg "Modyfing rust bindings build.rs"
-git apply < ../rust.patch
-cd bindings/rust || exit 1
+#print_msg "Modyfing rust bindings build.rs"
+#git apply < ../rust.patch
+#cd bindings/rust || exit 1
 
-print_msg "Running rust benchmarks"
-cargo bench
-cd ../..
+#print_msg "Running rust benchmarks"
+#cargo bench
+#cd ../..
 
 ###################### java benchmarks ######################
 
@@ -81,7 +81,7 @@ cd bindings/java || exit 1
 eval "$("$sed" -i "s|../../src/c_kzg_4844.c ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
 
 print_msg "Running java benchmarks"
-make build benchmark
+make CC_FLAGS=-lstdc++ build benchmark
 cd ../../..
 
 ###################### cleaning up ######################
