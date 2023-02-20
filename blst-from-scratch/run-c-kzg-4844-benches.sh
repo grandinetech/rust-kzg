@@ -66,7 +66,7 @@ esac
 
 ###################### rust benchmarks ######################
 
-print_msg "Modyfing rust bindings build.rs"
+print_msg "Patching rust binding"
 git apply < ../rust.patch
 cd bindings/rust || exit 1
 
@@ -76,12 +76,22 @@ cd ../..
 
 ###################### java benchmarks ######################
 
-print_msg "Modyfing java bindings makefile"
+print_msg "Patching java binding"
 cd bindings/java || exit 1
 eval "$("$sed" -i "s|../../src/c_kzg_4844.c ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
 
 print_msg "Running java benchmarks"
 make build benchmark
+cd ../..
+
+###################### go benchmarks ######################
+
+print_msg "Patching go binding"
+git apply < ../go.patch
+
+print_msg "Running go benchmarks"
+cd bindings/go || exit 1
+go test -run ^$ -bench .
 cd ../../..
 
 ###################### cleaning up ######################

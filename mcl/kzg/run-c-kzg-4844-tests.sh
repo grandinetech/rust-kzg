@@ -77,7 +77,7 @@ esac
 
 ###################### dotnet tests ######################
 
-print_msg "Modyfying dotnet Makefile"
+print_msg "Patching dotnet binding"
 git apply < ../csharp.patch
 
 print_msg "Building dotnet"
@@ -91,7 +91,7 @@ cd ../..
 
 ###################### rust tests ######################
 
-#print_msg "Modyfing rust bindings build.rs"
+#print_msg "Patching rust binding"
 #git apply < ../rust.patch
 #cd bindings/rust || exit 1
 
@@ -101,7 +101,7 @@ cd ../..
 
 ###################### python tests ######################
 
-print_msg "Modyfing python bindings makefile"
+print_msg "Patching python binding"
 cd bindings/python || exit 1
 eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/$LIB/g" Makefile)"
 
@@ -111,7 +111,7 @@ cd ../..
 
 ###################### java tests ######################
 
-print_msg "Modyfing java bindings makefile"
+print_msg "Patching java binding"
 cd bindings/java || exit 1
 eval "$("$sed" -i "s|../../src/c_kzg_4844.c ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
 
@@ -121,7 +121,7 @@ cd ../..
 
 ###################### nodejs tests ######################
 
-print_msg "Modyfing nodejs bindings"
+print_msg "Patching nodejs binding"
 cd bindings/node.js || exit 1
 eval "$("$sed" -i "s/c_kzg_4844.o/..\/..\/..\/target\/release\/$LIB/g" binding.gyp)"
 eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Makefile)"
@@ -129,6 +129,16 @@ eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Mak
 print_msg "Running nodejs tests"
 yarn install
 make
+cd ../..
+
+###################### go tests ######################
+
+print_msg "Patching go binding"
+git apply < ../go.patch
+
+print_msg "Running go tests"
+cd bindings/go || exit 1
+go test .
 cd ../../..
 
 ###################### cleaning up ######################

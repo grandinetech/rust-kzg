@@ -34,6 +34,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install py_ecc
 
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.19
+
       # 1st team #########################################################
 
       - name: "[arkworks] Tests"

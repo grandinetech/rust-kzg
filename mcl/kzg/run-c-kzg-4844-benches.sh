@@ -44,6 +44,13 @@ cd c-kzg-4844 || exit 1
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
+print_msg "Applying patches and building blst"
+cd src
+export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
+make blst
+unset CFLAGS
+cd ..
+
 ###################### detecting os ######################
 
 case $(uname -s) in
@@ -66,7 +73,7 @@ esac
 
 ###################### rust benchmarks ######################
 
-#print_msg "Modyfing rust bindings build.rs"
+#print_msg "Patching rust binding"
 #git apply < ../rust.patch
 #cd bindings/rust || exit 1
 
@@ -76,12 +83,22 @@ esac
 
 ###################### java benchmarks ######################
 
-print_msg "Modyfing java bindings makefile"
+print_msg "Patching java binding"
 cd bindings/java || exit 1
 eval "$("$sed" -i "s|../../src/c_kzg_4844.c ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
 
 print_msg "Running java benchmarks"
 make CC_FLAGS=-lstdc++ build benchmark
+cd ../..
+
+###################### go benchmarks ######################
+
+print_msg "Patching go binding"
+git apply < ../go.patch
+
+print_msg "Running go benchmarks"
+cd bindings/go || exit 1
+go test -run ^$ -bench .
 cd ../../..
 
 ###################### cleaning up ######################
