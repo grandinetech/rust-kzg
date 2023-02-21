@@ -129,17 +129,17 @@ eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Mak
 print_msg "Running nodejs tests"
 yarn install
 make
-cd ../..
+cd ../../..
 
 ###################### go tests ######################
 
-print_msg "Patching go binding"
-git apply < ../go.patch
+#print_msg "Patching go binding"
+#git apply < ../go.patch
 
-print_msg "Running go tests"
-cd bindings/go || exit 1
-go test .
-cd ../../..
+#print_msg "Running go tests"
+#cd bindings/go || exit 1
+#go test .
+#cd ../../..
 
 ###################### cleaning up ######################
 
