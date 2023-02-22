@@ -6,7 +6,9 @@ use std::ptr::null_mut;
 
 use blst::{
     blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
-    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr, blst_scalar, blst_scalar_from_lendian, blst_scalar_fr_check, blst_fr_from_scalar,
+    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr, blst_scalar,
+    blst_scalar_from_lendian, blst_scalar_fr_check, blst_fr_from_scalar, blst_p1_is_inf,
+    blst_p1_on_curve, blst_p1_in_g1
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
@@ -199,7 +201,7 @@ pub fn verify_kzg_proof_rust(
 pub fn compute_kzg_proof_rust(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
     assert!(p.len() <= s.secret_g1.len());
 
-    let y: FsFr = evaluate_polynomial_in_evaluation_form(p, x, s);
+    let y: FsFr = evaluate_polynomial_in_evaluation_form_rust(p, x, s);
 
     let mut tmp: FsFr;
     let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
@@ -259,7 +261,7 @@ pub fn compute_kzg_proof_rust(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
     g1_lincomb(&s.secret_g1, &q.coeffs)
 }
 
-pub fn evaluate_polynomial_in_evaluation_form(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsFr {
+pub fn evaluate_polynomial_in_evaluation_form_rust(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsFr {
     let mut tmp: FsFr;
 
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); p.len()];
@@ -486,7 +488,7 @@ pub fn verify_aggregate_kzg_proof_rust(
     
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
-    let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
+    let y = evaluate_polynomial_in_evaluation_form_rust(&aggregated_poly, &evaluation_challenge, ts);
     verify_kzg_proof_rust(
         &aggregated_poly_commitment,
         &evaluation_challenge,
@@ -536,6 +538,11 @@ pub struct CFsKzgSettings {
     pub fs: *const CFsFFTSettings,
     pub g1_values: *mut blst_p1, // G1
     pub g2_values: *mut blst_p2, // G2
+}
+
+#[repr(C)]
+pub struct CFsPoly {
+    pub evals: [blst_fr; FIELD_ELEMENTS_PER_BLOB],
 }
 
 fn fft_settings_to_rust(c_settings: *const CFsFFTSettings) -> FsFFTSettings {
@@ -594,6 +601,15 @@ fn kzg_settings_to_c(rust_settings : &FsKZGSettings) -> CFsKzgSettings {
         g1_values: unsafe{(*v).as_mut_ptr()},
         g2_values: stat_ref.as_mut_ptr(),
     }
+}
+
+fn poly_to_rust(c_poly : &CFsPoly) -> FsPoly {
+    let c_poly_coeffs = (*c_poly).evals;
+    let mut poly_rust = FsPoly::new(c_poly_coeffs.len()).unwrap();
+    for (pos, e) in c_poly_coeffs.iter().enumerate() {
+        poly_rust.set_coeff_at(pos, &FsFr(*e));
+    }
+    poly_rust
 }
 
 /// # Safety
@@ -841,5 +857,83 @@ pub unsafe extern "C" fn compute_kzg_proof(
     let frz = bytes_to_bls_field_rust(&(*z_bytes).bytes).unwrap();
     let tmp = compute_kzg_proof_rust(&poly, &frz, &kzg_settings_to_rust(s));
     (*out).bytes = bytes_from_g1_rust(&tmp);
+    0
+}
+
+#[no_mangle]
+/// # Safety
+/// 
+/// This function should not be called before the horsemen are ready
+pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
+    out: *mut blst_fr,
+    p: &CFsPoly,
+    x: &blst_fr,
+    s: &CFsKzgSettings,
+) -> u8 {
+    *out = evaluate_polynomial_in_evaluation_form_rust(&poly_to_rust(&p), &FsFr(*x), &kzg_settings_to_rust(s)).0;
+    0
+}
+
+#[no_mangle]
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready
+pub unsafe extern "C" fn bytes_to_bls_field(
+    out: *mut blst_fr,
+    b: &Bytes32,
+) -> u8 {
+    let fr = bytes_to_bls_field_rust(&(*b).bytes).unwrap();
+    *out = fr.0;
+    0
+}
+
+#[no_mangle]
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready
+pub unsafe extern "C" fn blob_to_polynomial(
+    p: *mut CFsPoly,
+    blob: *const Blob,
+) -> u8 {
+    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        let start = i * BYTES_PER_FIELD_ELEMENT;
+        let bytes_array: [u8; BYTES_PER_FIELD_ELEMENT] = (*blob).bytes[start..(start + BYTES_PER_FIELD_ELEMENT)].try_into().unwrap();
+        let bytes = Bytes32 { bytes: bytes_array };
+        let fr = bytes_to_bls_field_rust(&bytes.bytes).unwrap();
+        (*p).evals[i] = fr.0;
+    }
+    0
+}
+
+#[no_mangle]
+/// # Safety
+///
+/// This function should not be called before the horsemen are ready
+pub unsafe extern "C" fn validate_kzg_g1(
+    out: *mut blst_p1,
+    b: *const Bytes48,
+) -> u8 {
+    // Convert the bytes to a p1 point
+    let mut p1_affine = blst_p1_affine::default();
+    if blst_p1_uncompress(&mut p1_affine, (*b).bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+        return 1;
+    }
+    blst_p1_from_affine(out, &p1_affine);
+
+    // The point at infinity is accepted
+    if blst_p1_is_inf(out) {
+        return 0;
+    }
+
+    // The point must be on the curve
+    if !blst_p1_on_curve(out) {
+        return 1;
+    }
+
+    // The point must be on the right subgroup
+    if !blst_p1_in_g1(out) {
+        return 1;
+    }
+
     0
 }

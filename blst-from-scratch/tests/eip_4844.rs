@@ -5,7 +5,7 @@ mod tests {
         eip_4844::{
             blob_to_kzg_commitment_rust, bytes_from_bls_field, bytes_from_g1_rust,
             compute_aggregate_kzg_proof_rust, compute_kzg_proof_rust,
-            compute_powers, evaluate_polynomial_in_evaluation_form, g1_lincomb,
+            compute_powers, evaluate_polynomial_in_evaluation_form_rust, g1_lincomb,
             load_trusted_setup_filename_rust, vector_lincomb, verify_aggregate_kzg_proof_rust,
             verify_kzg_proof_rust, hash_to_bls_field,
         },
@@ -43,7 +43,7 @@ mod tests {
         >(
             &hash_to_bls_field,
             &load_trusted_setup_filename_rust,
-            &evaluate_polynomial_in_evaluation_form,
+            &evaluate_polynomial_in_evaluation_form_rust,
         );
     }
 
@@ -57,7 +57,7 @@ mod tests {
             &compute_powers,
             &vector_lincomb,
             &g1_lincomb,
-            &evaluate_polynomial_in_evaluation_form,
+            &evaluate_polynomial_in_evaluation_form_rust,
             &blob_to_kzg_commitment_rust,
             &compute_kzg_proof_rust,
             &verify_kzg_proof_rust,
