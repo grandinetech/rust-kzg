@@ -604,7 +604,7 @@ fn kzg_settings_to_c(rust_settings : &FsKZGSettings) -> CFsKzgSettings {
 }
 
 fn poly_to_rust(c_poly : &CFsPoly) -> FsPoly {
-    let c_poly_coeffs = (*c_poly).evals;
+    let c_poly_coeffs = c_poly.evals;
     let mut poly_rust = FsPoly::new(c_poly_coeffs.len()).unwrap();
     for (pos, e) in c_poly_coeffs.iter().enumerate() {
         poly_rust.set_coeff_at(pos, &FsFr(*e));
@@ -870,7 +870,7 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     x: &blst_fr,
     s: &CFsKzgSettings,
 ) -> u8 {
-    *out = evaluate_polynomial_in_evaluation_form_rust(&poly_to_rust(&p), &FsFr(*x), &kzg_settings_to_rust(s)).0;
+    *out = evaluate_polynomial_in_evaluation_form_rust(&poly_to_rust(p), &FsFr(*x), &kzg_settings_to_rust(s)).0;
     0
 }
 
@@ -882,7 +882,7 @@ pub unsafe extern "C" fn bytes_to_bls_field(
     out: *mut blst_fr,
     b: &Bytes32,
 ) -> u8 {
-    let fr = bytes_to_bls_field_rust(&(*b).bytes).unwrap();
+    let fr = bytes_to_bls_field_rust(&b.bytes).unwrap();
     *out = fr.0;
     0
 }
