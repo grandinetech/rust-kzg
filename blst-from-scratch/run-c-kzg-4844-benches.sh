@@ -14,15 +14,20 @@ print_msg () {
 
 parallel=false
 
-while getopts "parallel" opt; do
-  case $opt in
-    p)
+while [[ -n $# ]]; do
+  case $1 in
+    -p|--parallel)
       parallel=true
       ;;
-    \?)
+    -*)
+      echo "Unknown parameter: $1"
       exit 1
       ;;
-  esac
+    *)
+      break
+      ;;
+  esac;
+  shift
 done
 
 ###################### building static libs ######################
@@ -77,8 +82,8 @@ cd ../..
 ###################### java benchmarks ######################
 
 print_msg "Patching java binding"
+git apply < ../java.patch
 cd bindings/java || exit 1
-eval "$("$sed" -i "s|../../src/c_kzg_4844.c ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
 
 print_msg "Running java benchmarks"
 make build benchmark

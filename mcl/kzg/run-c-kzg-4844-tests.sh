@@ -14,15 +14,20 @@ print_msg () {
 
 parallel=false
 
-while getopts "parallel" opt; do
-  case $opt in
-    p)
+while [[ -n $# ]]; do
+  case $1 in
+    -p|--parallel)
       parallel=true
       ;;
-    \?)
+    -*)
+      echo "Unknown parameter: $1"
       exit 1
       ;;
-  esac
+    *)
+      break
+      ;;
+  esac;
+  shift
 done
 
 ###################### building static libs ######################
@@ -102,8 +107,8 @@ cd ../..
 ###################### python tests ######################
 
 print_msg "Patching python binding"
+git apply < ../python.patch
 cd bindings/python || exit 1
-eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.o/..\/..\/..\/target\/release\/$LIB/g" Makefile)"
 
 print_msg "Running python tests"
 make
@@ -112,8 +117,8 @@ cd ../..
 ###################### java tests ######################
 
 print_msg "Patching java binding"
+git apply < ../java.patch
 cd bindings/java || exit 1
-eval "$("$sed" -i "s|../../src/c_kzg_4844.c ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
 
 print_msg "Running java tests"
 make CC_FLAGS=-lstdc++ build test
@@ -122,9 +127,8 @@ cd ../..
 ###################### nodejs tests ######################
 
 print_msg "Patching nodejs binding"
+git apply < ../nodejs.patch
 cd bindings/node.js || exit 1
-eval "$("$sed" -i "s/c_kzg_4844.o/..\/..\/..\/target\/release\/$LIB/g" binding.gyp)"
-eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Makefile)"
 
 print_msg "Running nodejs tests"
 yarn install

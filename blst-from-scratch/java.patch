@@ -1,0 +1,24 @@
+From 8dceb719c2ca01583bd403a59d441949e7f2a695 Mon Sep 17 00:00:00 2001
+From: belijzajac <tautvydas749@gmail.com>
+Date: Thu, 23 Feb 2023 13:25:15 +0200
+Subject: [PATCH] Update linking
+
+---
+ bindings/java/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bindings/java/Makefile b/bindings/java/Makefile
+index 4eb21ce..184e501 100644
+--- a/bindings/java/Makefile
++++ b/bindings/java/Makefile
+@@ -1,6 +1,6 @@
+ INCLUDE_DIRS = ../../src ../../blst/bindings
+ 
+-TARGETS=c_kzg_4844_jni.c ../../src/c_kzg_4844.c ../../lib/libblst.a
++TARGETS=c_kzg_4844_jni.c ../../../target/release/libblst_from_scratch.a
+ 
+ CC_FLAGS=
+ OPTIMIZATION_LEVEL=-O2
+-- 
+2.39.2
+
