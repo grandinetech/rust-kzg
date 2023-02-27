@@ -16,7 +16,6 @@ impl Poly<Fr> for Polynomial {
 
     fn get_coeff_at(&self, i: usize) -> Fr {
         self.coeffs[i]
-        // self.coeffs.get(i)
     }
 
     fn set_coeff_at(&mut self, i: usize, x: &Fr) {

@@ -16,20 +16,7 @@ use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 #[cfg(feature = "parallel")]
 use rayon::iter::IntoParallelIterator;
 
-// [x] bytes_to_bls_field
-// [x] vector_lincomb
-// [x] g1_lincomb
-// [x] blob_to_kzg_commitment
-// [x] verify_kzg_proof
-// [x] compute_kzg_proof
-// [x] evaluate_polynomial_in_evaluation_form
-
-// pub fn g1h(g: &G1) -> String {
-//     let b = bytes_from_g1(g);
-//     format!("{:x}", md5::compute(&b)).split_off(24)
-// }
-
-pub fn bytes_to_g1(bytes: &[u8]) -> Result<G1,String> {
+pub fn bytes_to_g1(bytes: &[u8]) -> Result<G1, String> {
     set_eth_serialization(1);
     let mut g1 = G1::default();
     if G1::deserialize(&mut g1, bytes) {
@@ -97,18 +84,14 @@ pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSet
         .collect::<Vec<G2>>();
 
     let length = g1_projectives.len();
-    //let n2 = g2_values.len();
-    
+
     let mut max_scale: usize = 0;
     while (1 << max_scale) < length {
         max_scale += 1;
     }
 
-    //let fs = FFTSettings::new_custom_primitive_roots(max_scale as u8, SCALE_2_ROOT_OF_UNITY_PR5_STRINGS).unwrap();
     let fs = FFTSettings::new(max_scale as u8);
-
     let mut g1_values = fs.fft_g1_inv(&g1_projectives).unwrap();
-
     reverse_bit_order(&mut g1_values);
 
     KZGSettings {
@@ -146,7 +129,7 @@ where
     }
 }
 
-pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Fr {
+pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> Fr {
     Fr::from_scalar(bytes)
 }
 
@@ -211,15 +194,13 @@ fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
 pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
     assert!(p.coeffs.len() <= s.curve.g1_points.len());
 
-    let y = evaluate_polynomial_in_evaluation_form(p, x, s);
-
+    let y = evaluate_polynomial_in_evaluation_form_rust(p, x, s);
     let mut tmp: Fr;
 
     let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
     reverse_bit_order(&mut roots_of_unity);
 
     let mut m = 0;
-
     let mut q = Polynomial::new(p.coeffs.len());
     let plen = p.coeffs.len();
     let qlen = q.coeffs.len();
@@ -267,7 +248,7 @@ pub fn compute_kzg_proof(p: &Polynomial, x: &Fr, s: &KZGSettings) -> G1 {
     g1_lincomb(&s.curve.g1_points, q.coeffs.as_slice())
 }
 
-pub fn evaluate_polynomial_in_evaluation_form(p: &Polynomial, x: &Fr, s: &KZGSettings) -> Fr {
+pub fn evaluate_polynomial_in_evaluation_form_rust(p: &Polynomial, x: &Fr, s: &KZGSettings) -> Fr {
     let mut out;
     let mut tmp = Fr::default();
     let mut t: Fr;
@@ -385,7 +366,7 @@ pub fn verify_aggregate_kzg_proof(
 
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
-    let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
+    let y = evaluate_polynomial_in_evaluation_form_rust(&aggregated_poly, &evaluation_challenge, ts);
     verify_kzg_proof(
         &aggregated_poly_commitment,
         &evaluation_challenge,
@@ -412,7 +393,7 @@ fn compute_aggregated_poly_and_commitment(
 ) -> (Polynomial, G1, Fr) {
     let mut hash = [0u8; 32];
     hash_to_bytes(&mut hash, polys, kzg_commitments); 
-    let r = bytes_to_bls_field(&hash);
+    let r = bytes_to_bls_field_rust(&hash);
 
     let (r_powers, chal_out) = if n == 1 {
         (vec![r], r)
@@ -423,7 +404,6 @@ fn compute_aggregated_poly_and_commitment(
     };
 
     let poly_out = poly_lincomb(polys, &r_powers); 
-
     let comm_out = g1_lincomb(kzg_commitments, &r_powers);
 
     (poly_out, comm_out, chal_out)
@@ -459,7 +439,6 @@ fn hash_to_bytes(out: &mut [u8; 32], polys: &[Polynomial], comms: &[G1]) {
         let data = &bytes_from_g1(comm);
         bytes[pos..pos + data.len()].copy_from_slice(data);
     }
-        
 
     hash(out, &bytes);
 }
