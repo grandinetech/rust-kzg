@@ -1,3 +1,4 @@
+#![allow(non_camel_case_types)]
 use std::convert::TryInto;
 use std::ffi::c_char;
 use std::fs::File;
@@ -7,8 +8,7 @@ use std::ptr::null_mut;
 use blst::{
     blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
     blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr, blst_scalar,
-    blst_scalar_from_lendian, blst_scalar_fr_check, blst_fr_from_scalar, blst_p1_is_inf,
-    blst_p1_on_curve, blst_p1_in_g1
+    blst_scalar_from_lendian, blst_scalar_fr_check, blst_fr_from_scalar,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
@@ -80,7 +80,6 @@ pub fn load_trusted_setup_rust(g1_bytes: &[u8], n1: usize, g2_bytes: &[u8], _n2:
     }
 
     let fs = FsFFTSettings::new(max_scale).unwrap();
-
     let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
 
     reverse_bit_order(&mut g1_values);
@@ -102,12 +101,11 @@ pub fn load_trusted_setup_file_rust(file: &mut File) -> FsKZGSettings {
     let n2 = lines.next().unwrap().parse::<usize>().unwrap();
 
     let mut g2_values: Vec<u8> = Vec::new();
-
     let mut g1_projectives: Vec<u8> = Vec::new();
 
     for _ in 0..length {
         let line = lines.next().unwrap();
-        assert!(line.len() == 96);
+        assert_eq!(line.len(), 96);
         let bytes_array = (0..line.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
@@ -117,7 +115,7 @@ pub fn load_trusted_setup_file_rust(file: &mut File) -> FsKZGSettings {
 
     for _ in 0..n2 {
         let line = lines.next().unwrap();
-        assert!(line.len() == 192);
+        assert_eq!(line.len(), 192);
         let bytes = (0..line.len())
             .step_by(2)
             .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
@@ -177,7 +175,7 @@ pub fn bytes_from_bls_field(fr: &FsFr) -> [u8; 32usize] {
 }
 
 pub fn g1_lincomb(points: &[FsG1], scalars: &[FsFr]) -> FsG1 {
-    assert!(points.len() == scalars.len());
+    assert_eq!(points.len(), scalars.len());
     let mut out = FsG1::default();
     g1_linear_combination(&mut out, points, scalars, points.len());
     out
@@ -370,7 +368,6 @@ pub fn compute_challenges(
     let np: usize = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
 
     let mut bytes: Vec<u8> = vec![0; np + n * 48];
-
     bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
     
     bytes_of_uint64(
@@ -396,21 +393,17 @@ pub fn compute_challenges(
     }
 
     let hashed_data: [u8; 32] = hash(&bytes);
-
     let mut hash_input = [0u8; 33];
 
     hash_input[..32].copy_from_slice(&hashed_data);
     hash_input[32] = 0x0;
 
     let r_bytes = hash(&hash_input);
-
     let r = hash_to_bls_field(&r_bytes);
-
     let r_powers = compute_powers(&r, n);
 
     hash_input[32] = 0x1;
     let eval_challenge = hash(&hash_input);
-    
     let g1 = hash_to_bls_field(&eval_challenge);
 
     (g1, r_powers)
@@ -421,11 +414,8 @@ pub fn compute_aggregated_poly_and_commitment(
     kzg_commitments: &[FsG1],
     n: usize,
 ) -> (FsPoly, FsG1, FsFr) {
-
     let (chal_out, r_powers) = compute_challenges(polys, kzg_commitments, n);
-    
     let poly_out = poly_lincomb(polys, &r_powers, n);
-    
     let comm_out = g1_lincomb(kzg_commitments, &r_powers);
 
     (poly_out, comm_out, chal_out)
@@ -497,6 +487,12 @@ pub fn verify_aggregate_kzg_proof_rust(
         ts,
     )
 }
+
+pub const C_KZG_RET_C_KZG_OK: C_KZG_RET = 0;
+pub const C_KZG_RET_C_KZG_BADARGS: C_KZG_RET = 1;
+pub const C_KZG_RET_C_KZG_ERROR: C_KZG_RET = 2;
+pub const C_KZG_RET_C_KZG_MALLOC: C_KZG_RET = 3;
+pub type C_KZG_RET = ::std::os::raw::c_uint;
 
 const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
 
@@ -616,26 +612,29 @@ fn poly_to_rust(c_poly : &CFsPoly) -> FsPoly {
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut KZGCommitment, blob: *const Blob, s: &CFsKzgSettings) -> usize {
+pub unsafe extern "C" fn blob_to_kzg_commitment(
+    out: *mut KZGCommitment,
+    blob: *const Blob,
+    s: &CFsKzgSettings
+) -> C_KZG_RET {
     let blob_arr_res = (*blob).bytes.chunks(32).map(|x| {
-            let mut bytes = [0u8; 32];
-            bytes.copy_from_slice(x);
-            let mut tmp: blst_scalar = blst_scalar::default();
-            blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
-            if !blst_scalar_fr_check(&tmp) {
-                Err("Invalid scalar".to_string()) 
-            } else {
-                Ok(bytes_to_bls_field_rust(&bytes).unwrap())
-            }
-        }).collect::<Result<Vec<FsFr>, String>>();
+        let mut bytes = [0u8; 32];
+        bytes.copy_from_slice(x);
+        let mut tmp: blst_scalar = blst_scalar::default();
+        blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
+        if !blst_scalar_fr_check(&tmp) {
+            Err(C_KZG_RET_C_KZG_BADARGS)
+        } else {
+            Ok(bytes_to_bls_field_rust(&bytes).unwrap())
+        }
+    }).collect::<Result<Vec<FsFr>, C_KZG_RET>>();
 
     if let Ok(blob_arr) = blob_arr_res {
         let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(s));
         (*out).bytes = bytes_from_g1_rust(&tmp);
-        0
-    }
-    else {
-        1
+        C_KZG_RET_C_KZG_OK
+    } else {
+        blob_arr_res.err().unwrap()
     }
 }
 
@@ -643,16 +642,18 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(out: *mut KZGCommitment, blob: *
 /// # Safety
 /// 
 /// This function should not be called before the horsemen are ready.
-pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings,
+pub unsafe extern "C" fn load_trusted_setup(
+    out: *mut CFsKzgSettings,
     g1_bytes: *const u8,
     n1: usize,
     g2_bytes: *const u8,
-    n2: usize) -> usize {
+    n2: usize
+) -> C_KZG_RET {
     let g1_bytes = std::slice::from_raw_parts(g1_bytes, n1 * 48);
     let g2_bytes = std::slice::from_raw_parts(g2_bytes, n2 * 96);
     let settings = load_trusted_setup_rust(g1_bytes, n1, g2_bytes, n2);
     *out = kzg_settings_to_c(&settings);
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 // getting *FILE seems impossible 
@@ -661,15 +662,18 @@ pub unsafe extern "C" fn load_trusted_setup(out: *mut CFsKzgSettings,
 ///
 /// This function should not be called before the horsemen are ready.
 #[no_mangle]
-pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: *mut FILE) -> u8 {
+pub unsafe extern "C" fn load_trusted_setup_file(
+    out: *mut CFsKzgSettings,
+    inp: *mut FILE
+) -> C_KZG_RET {
     let mut buf: [c_char; 100] = [0; 100];
     let result = fgets(buf.as_mut_ptr(), 100, inp);
     if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != FIELD_ELEMENTS_PER_BLOB as c_ulong {
-        return 1;
+        return C_KZG_RET_C_KZG_BADARGS;
     }
     let result: *mut c_char = fgets(buf.as_mut_ptr(), 100, inp);
     if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != 65 {
-        return 1;
+        return C_KZG_RET_C_KZG_BADARGS;
     }
     
     let mut g2_bytes: [u8; 65 * 96] = [0; 65 * 96];
@@ -707,7 +711,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut CFsKzgSettings, inp: 
 
     let settings = load_trusted_setup_rust(&g1_bytes, FIELD_ELEMENTS_PER_BLOB, &g2_bytes, 65);
     *out = kzg_settings_to_c(&settings);
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
@@ -719,7 +723,7 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
     blobs: *const Blob,
     n: usize,
     s: &CFsKzgSettings,
-) -> u8 {
+) -> C_KZG_RET {
     let raw_blob_arr = std::slice::from_raw_parts(blobs, n);
     let mut blob_arr: Vec<Vec<FsFr>> = Vec::<Vec<FsFr>>::default();
     for i in 0..n {
@@ -739,7 +743,7 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
         &kzg_settings_to_rust(s),
     );
     (*out).bytes = bytes_from_g1_rust(&tmp);
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
@@ -771,7 +775,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
     y_bytes: *const Bytes32,
     proof_bytes: *const Bytes48,
     s: &CFsKzgSettings,
-) -> usize {
+) -> C_KZG_RET {
     let frz = bytes_to_bls_field_rust(&(*z_bytes).bytes).unwrap();
     let fry = bytes_to_bls_field_rust(&(*y_bytes).bytes).unwrap();
     let g1commitment = bytes_to_g1_rust(&(*commitment_bytes).bytes).unwrap();
@@ -782,7 +786,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
         &g1proof,
         &kzg_settings_to_rust(s),
     );
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
@@ -796,7 +800,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     n: usize,
     aggregated_proof_bytes: *const Bytes48,
     s: &CFsKzgSettings,
-) -> usize {
+) -> C_KZG_RET {
     let raw_blob_arr = std::slice::from_raw_parts(blobs, n);
     let mut blob_arr: Vec<Vec<FsFr>> = Vec::<Vec<FsFr>>::default();
     for i in 0..n {
@@ -807,7 +811,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
             tmp.copy_from_slice(x);
             let ret = bytes_to_bls_field_rust(&tmp);
             if ret.is_err() {
-                return 1;
+                return C_KZG_RET_C_KZG_BADARGS;
             }
             blob_arr[i].push(ret.unwrap());
         }
@@ -817,7 +821,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     for x in expected_kzg_commitments_raw.iter() {
         let tmp = bytes_to_g1_rust(&x.bytes);
         if tmp.is_err() {
-            return 1;
+            return C_KZG_RET_C_KZG_BADARGS;
         }
         expected_kzg_commitments_arr.push(tmp.unwrap());
     }
@@ -829,7 +833,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
         &kzg_settings_to_rust(s),
     );
     *out = tmp;
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
@@ -841,23 +845,28 @@ pub unsafe extern "C" fn compute_kzg_proof(
     blob: *const Blob,
     z_bytes: *const Bytes32,
     s: &CFsKzgSettings,
-) -> u8 {
+) -> C_KZG_RET {
     let blob_arr = (*blob).bytes.chunks(32).map(|x| {
         let mut bytes = [0u8; 32];
         bytes.copy_from_slice(x);
         let mut tmp: blst_scalar = blst_scalar::default();
         blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
         if !blst_scalar_fr_check(&tmp) {
-            Err("Invalid scalar".to_string()) 
+            Err(C_KZG_RET_C_KZG_ERROR)
         } else {
             Ok(bytes_to_bls_field_rust(&bytes).unwrap())
         }
-    }).collect::<Result<Vec<FsFr>, String>>();
+    }).collect::<Result<Vec<FsFr>, C_KZG_RET>>();
+
+    if blob_arr.is_err() {
+        return blob_arr.err().unwrap();
+    }
+
     let poly = poly_from_blob(&blob_arr.unwrap());
     let frz = bytes_to_bls_field_rust(&(*z_bytes).bytes).unwrap();
     let tmp = compute_kzg_proof_rust(&poly, &frz, &kzg_settings_to_rust(s));
     (*out).bytes = bytes_from_g1_rust(&tmp);
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
@@ -869,9 +878,9 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     p: &CFsPoly,
     x: &blst_fr,
     s: &CFsKzgSettings,
-) -> u8 {
+) -> C_KZG_RET {
     *out = evaluate_polynomial_in_evaluation_form_rust(&poly_to_rust(p), &FsFr(*x), &kzg_settings_to_rust(s)).0;
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
@@ -881,10 +890,10 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
 pub unsafe extern "C" fn bytes_to_bls_field(
     out: *mut blst_fr,
     b: &Bytes32,
-) -> u8 {
+) -> C_KZG_RET {
     let fr = bytes_to_bls_field_rust(&b.bytes).unwrap();
     *out = fr.0;
-    0
+    C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
@@ -894,7 +903,7 @@ pub unsafe extern "C" fn bytes_to_bls_field(
 pub unsafe extern "C" fn blob_to_polynomial(
     p: *mut CFsPoly,
     blob: *const Blob,
-) -> u8 {
+) -> C_KZG_RET {
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         let start = i * BYTES_PER_FIELD_ELEMENT;
         let bytes_array: [u8; BYTES_PER_FIELD_ELEMENT] = (*blob).bytes[start..(start + BYTES_PER_FIELD_ELEMENT)].try_into().unwrap();
@@ -902,38 +911,5 @@ pub unsafe extern "C" fn blob_to_polynomial(
         let fr = bytes_to_bls_field_rust(&bytes.bytes).unwrap();
         (*p).evals[i] = fr.0;
     }
-    0
-}
-
-#[no_mangle]
-/// # Safety
-///
-/// This function should not be called before the horsemen are ready
-pub unsafe extern "C" fn validate_kzg_g1(
-    out: *mut blst_p1,
-    b: *const Bytes48,
-) -> u8 {
-    // Convert the bytes to a p1 point
-    let mut p1_affine = blst_p1_affine::default();
-    if blst_p1_uncompress(&mut p1_affine, (*b).bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-        return 1;
-    }
-    blst_p1_from_affine(out, &p1_affine);
-
-    // The point at infinity is accepted
-    if blst_p1_is_inf(out) {
-        return 0;
-    }
-
-    // The point must be on the curve
-    if !blst_p1_on_curve(out) {
-        return 1;
-    }
-
-    // The point must be on the right subgroup
-    if !blst_p1_in_g1(out) {
-        return 1;
-    }
-
-    0
+    C_KZG_RET_C_KZG_OK
 }

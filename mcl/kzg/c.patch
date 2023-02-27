@@ -68,7 +68,7 @@ index 954d14c..db5aa53 100644
 +C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob);
 +
 +// copied from c_kzg_4844.c
-+static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
++C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
 +    /* Convert the bytes to a p1 point */
 +    blst_p1_affine p1_affine;
 +    if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
