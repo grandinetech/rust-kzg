@@ -13,12 +13,12 @@ index 4eb21ce..184e501 100644
 +++ b/bindings/java/Makefile
 @@ -1,6 +1,6 @@
  INCLUDE_DIRS = ../../src ../../blst/bindings
- 
+
 -TARGETS=c_kzg_4844_jni.c ../../src/c_kzg_4844.c ../../lib/libblst.a
-+TARGETS=c_kzg_4844_jni.c ../../../target/release/libblst_from_scratch.a
- 
++TARGETS=c_kzg_4844_jni.c ../../../../target/release/libblst_from_scratch.a
+
  CC_FLAGS=
  OPTIMIZATION_LEVEL=-O2
--- 
+--
 2.39.2
 

@@ -43,6 +43,9 @@ fi
 
 ###################### cloning c-kzg-4844 ######################
 
+print_msg "Removing existing c-kzg-4844"
+rm -rf c-kzg-4844
+
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1

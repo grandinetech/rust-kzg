@@ -13,36 +13,36 @@ index 1662ad4..8225013 100644
 --- a/src/Makefile
 +++ b/src/Makefile
 @@ -10,11 +10,11 @@ FIELD_ELEMENTS_PER_BLOB ?= 4096
- 
+
  # The base compiler flags. More can be added on command line.
  CFLAGS += -I../inc
 -CFLAGS += -Wall -Wextra -Werror -O2
 +CFLAGS += -Wextra -Werror -O2
  CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
- 
+
  # Compiler flags for including blst. Put after source files.
 -BLST = -L../lib -lblst
-+RUST_KZG_LIB = -L../../target/release -lblst_from_scratch -lm
- 
++RUST_KZG_LIB = -L../../../target/release -lblst_from_scratch -lm
+
  # Compiler flags for generating coverage data.
  COVERAGE = -fprofile-instr-generate -fcoverage-mapping
 @@ -44,14 +44,14 @@ all: c_kzg_4844.o
  %.o: %.c
  	@$(CC) $(CFLAGS) -c $<
- 
+
 -test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
 -	@$(CC) $(CFLAGS) -o $@ $< $(BLST)
 +test_c_kzg_4844: test_c_kzg_4844.c
 +	@$(CC) $(CFLAGS) -o $@ $< $(RUST_KZG_LIB)
- 
+
  test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
 -	@$(CC) $(CFLAGS) $(COVERAGE) -o $@ $< $(BLST)
 +	@$(CC) $(CFLAGS) $(COVERAGE) -o $@ $<
- 
+
  test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
 -	@$(CC) $(CFLAGS) $(PROFILE) -o $@ $< $(BLST) $(PROFILER)
 +	@$(CC) $(CFLAGS) $(PROFILE) -o $@ $< $(PROFILER)
- 
+
  .PHONY: blst
  blst:
 diff --git a/src/test_c_kzg_4844.c b/src/test_c_kzg_4844.c
@@ -56,12 +56,12 @@ index 954d14c..693934a 100644
 -#include "c_kzg_4844.c"
 +#include "c_kzg_4844.h"
  #include "tinytest.h"
- 
+
  #include <assert.h>
 @@ -22,6 +22,103 @@ KZGSettings s;
  // Helper functions
  ///////////////////////////////////////////////////////////////////////////////
- 
+
 +// forward declare
 +C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
 +C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s);
@@ -168,9 +168,9 @@ index 954d14c..693934a 100644
      RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
 -    RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
 +    //RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
- 
+
      /*
       * These functions are only executed if we're profiling. To me, it makes
--- 
+--
 2.39.2
 
