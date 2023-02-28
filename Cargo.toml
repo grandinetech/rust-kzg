@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "Arkworks",
+    "blst-from-scratch",
+    "ckzg",
+    "kzg",
+    "kzg-bench",
+    "mcl/kzg",
+    "mcl/kzg-bench",
+    "zkcrypto",
+]
