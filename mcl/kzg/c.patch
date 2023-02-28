@@ -22,7 +22,7 @@ index 1662ad4..8062b1c 100644
  
  # Compiler flags for including blst. Put after source files.
 -BLST = -L../lib -lblst
-+RUST_KZG_LIB = -L../../target/release -lmcl_rust -lstdc++
++RUST_KZG_LIB = -L../../target/release -lmcl_rust -lm -lstdc++
  
  # Compiler flags for generating coverage data.
  COVERAGE = -fprofile-instr-generate -fcoverage-mapping
