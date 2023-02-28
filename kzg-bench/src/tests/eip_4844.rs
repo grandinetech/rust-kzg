@@ -22,11 +22,11 @@ pub fn bytes_to_bls_field_test<TFr: Fr>
     bytes_from_bls_field: &dyn Fn(&TFr) -> [u8; 32usize]
 )
 {
-    let x: u64 = 329;    
+    let x: u64 = 329;
     let x_bytes = u64_to_bytes(x);
-    
+
     let x_bls = bytes_to_bls_field(&x_bytes);
-    
+
     assert_eq!(bytes_from_bls_field(&x_bls), x_bytes);
     assert_eq!(x, x_bls.to_u64_arr()[0]);
 }
@@ -47,20 +47,20 @@ const EXPECTED_POWERS: [[u64; 4usize]; 11] = [
 
 // Simple test of compute_powers
 pub fn compute_powers_test<TFr: Fr>
-( 
+(
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> TFr,
     compute_powers: &dyn Fn(&TFr, usize) -> Vec<TFr>
-) 
+)
 {
     let x: u64 = 32930439;
     let n = 11;
-    
+
     let x_bytes: [u8; 32] = u64_to_bytes(x);
-    
+
     let x_bls = bytes_to_bls_field(&x_bytes);
-    
+
     let powers = compute_powers(&x_bls, n);
-    
+
     for (p, expected_p) in powers.iter().zip(EXPECTED_POWERS.iter()) {
         assert_eq!(expected_p, &p.to_u64_arr());
     }
@@ -91,16 +91,16 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
         let lval_bls = bytes_to_bls_field(&lval_bytes);
         lvals_bls.set_coeff_at(i, &lval_bls);
     }
-    
+
     let x: u64 = 2;
     let x_bytes: [u8; 32] = u64_to_bytes(x);
     let x_bls = bytes_to_bls_field(&x_bytes);
-    
+
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
-    
+
     let y_bls = evaluate_polynomial_in_evaluation_form(&lvals_bls, &x_bls, &ts);
-    
+
     assert_eq!(y_bls.to_u64_arr(),  [28, 13, 0, 0]);
 }
 
@@ -129,7 +129,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     const MAX_BLOBS_PER_BLOCK: usize = 16;
 
     let mut rng = StdRng::seed_from_u64(0);
-    
+
     let mut blobs = Vec::new();
 
     let mut blobs_sedes: ssz_rs::List<ssz_rs::Vector<[u8; 32], BLOB_SIZE>, MAX_BLOBS_PER_BLOCK> = ssz_rs::List::default();
@@ -138,7 +138,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         let mut vec_sedes: ssz_rs::Vector<[u8; 32], BLOB_SIZE> = ssz_rs::Vector::default();
         for j in 0 .. BLOB_SIZE{
             let bytes: [u8; 32] = rng.gen();
-            
+
             let fr = bytes_to_bls_field(&bytes);
             let tmp_bytes: [u8; 32] = bytes_from_bls_field(&fr);
             vec.push(fr);
@@ -151,7 +151,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-    let kzg_commitments = blobs.iter().map(|blob| 
+    let kzg_commitments = blobs.iter().map(|blob|
         blob_to_kzg_commitment(blob, &ts)
         ).collect::<Vec<TG1>>();
 
@@ -164,7 +164,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
         }
         kzg_commitments_sedes.push(vec);
     }
-    
+
     //  Compute polynomial commitments for these blobs
     // We don't follow the spec exactly to get the hash, but it shouldn't matter since it's random data
 
@@ -176,7 +176,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let r: TFr = bytes_to_bls_field(&hashed);
 
     let r_powers = compute_powers(&r, blobs.len());
-    
+
     let values = vector_lincomb(&blobs, &r_powers);
 
     let mut aggregated_poly: TPoly = TPoly::new(values.len()).unwrap();
@@ -195,7 +195,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
     for value in values.iter(){
         let bytes: [u8; 32] = bytes_from_bls_field(value);
-        values_sedes.push(ssz_rs::U256(bytes));
+        values_sedes.push(U256::from_bytes_le(bytes));
     }
 
     let encoded_polynomial = serialize(&values_sedes).unwrap();
@@ -203,11 +203,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
     let bytes: [u8; 48usize] = bytes_from_g1(&aggregated_poly_commitment);
 
-    let mut vec: ssz_rs::Vector<u8, 48> = ssz_rs::Vector::default();
-    for u in bytes.iter(){
-        vec.push(*u);
-    }
-    let encoded_commitment = serialize(&vec).unwrap();
+    let encoded_commitment = bytes.to_vec();
 
     let k = [encoded_polynomial, encoded_polynomial_length, encoded_commitment].concat();
     let hashed_polynomial_and_commitment: [u8; 32] = Sha256::digest(k).into();
@@ -221,7 +217,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
     let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &x, &ts);
 
     assert_eq!(bytes_from_g1(&simple_commitment),  bytes_from_g1(&aggregated_poly_commitment));
-     
+
     assert!(verify_kzg_proof(&simple_commitment, &x, &y, &proof, &ts), "Simple verification failed");
 
     assert!(verify_kzg_proof(&aggregated_poly_commitment, &x, &y, &proof, &ts), "Verification failed");
@@ -246,7 +242,7 @@ pub fn eip4844_test<TFr : Fr,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
->(load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+>(load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
 blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
 compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
 verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool) {
@@ -261,14 +257,14 @@ verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) ->
                 .collect::<Vec<TFr>>()
         })
         .collect::<Vec<Vec<TFr>>>();
-    
+
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-    let kzg_commitments = blobs.iter().map(|blob| 
+    let kzg_commitments = blobs.iter().map(|blob|
         blob_to_kzg_commitment(blob, &ts)
         ).collect::<Vec<TG1>>();
-    
+
     // Compute proof for these blobs
 
     let proof = compute_aggregate_kzg_proof(&blobs, &ts);
@@ -296,7 +292,7 @@ pub fn blob_to_kzg_commitment_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_from_g1: &dyn Fn(&TG1) -> [u8; 48usize],
 ) {
@@ -322,22 +318,22 @@ pub fn blob_to_kzg_commitment_test<
 
     let mut polynomial_l = roots_of_unity.iter().map(|w| polynomial.eval(w)).collect::<Vec<TFr>>();
 
-    
+
     reverse_bit_order(&mut polynomial_l);
-    
+
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
     let commitment = blob_to_kzg_commitment(&polynomial_l, &ts);
     let bytes = bytes_from_g1(&commitment);
 
-    let expected_bytes: [u8; 48] = 
-        [0x80, 0x80, 0x90, 0xf8, 0x46, 0x7c, 0xd, 0x83, 0xdc, 0xf5, 0x4e, 0x82, 
-        0x52, 0xcd, 0xd5, 0x46, 0xeb, 0x2f, 0xcb, 0xab, 0xbb, 0x14, 0x3a, 0x8e, 
-        0xf1, 0xb1, 0xf8, 0x96, 0x3b, 0xc, 0xd8, 0x7e, 0xe7, 0x4e, 0xc8, 0x2e, 
+    let expected_bytes: [u8; 48] =
+        [0x80, 0x80, 0x90, 0xf8, 0x46, 0x7c, 0xd, 0x83, 0xdc, 0xf5, 0x4e, 0x82,
+        0x52, 0xcd, 0xd5, 0x46, 0xeb, 0x2f, 0xcb, 0xab, 0xbb, 0x14, 0x3a, 0x8e,
+        0xf1, 0xb1, 0xf8, 0x96, 0x3b, 0xc, 0xd8, 0x7e, 0xe7, 0x4e, 0xc8, 0x2e,
         0xc3, 0x5d, 0x85, 0x59, 0x2d, 0x16, 0xb0, 0xfc, 0x8e, 0xa1, 0x70, 0x8e];
     assert_eq!(bytes, expected_bytes);
-    
+
 }
 
 pub fn compute_aggregate_kzg_proof_test_empty<
@@ -348,7 +344,7 @@ pub fn compute_aggregate_kzg_proof_test_empty<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
     bytes_from_g1: &dyn Fn(&TG1) -> [u8; 48usize],
 ) {
@@ -372,7 +368,7 @@ pub fn verify_aggregate_kzg_proof_test_empty<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
     verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool,
 ) {
@@ -391,7 +387,7 @@ pub fn aggregate_proof_for_single_blob_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings, 
+    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
     verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool,
@@ -406,7 +402,7 @@ pub fn aggregate_proof_for_single_blob_test<
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
     let commitments = blobs.iter().map(|blob| blob_to_kzg_commitment(blob, &ts)).collect::<Vec<TG1>>();
-    
+
     let proof = compute_aggregate_kzg_proof(&blobs, &ts);
 
     assert!(verify_aggregate_kzg_proof(&blobs, &commitments, &proof, &ts));
