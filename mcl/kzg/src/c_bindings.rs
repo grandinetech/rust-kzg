@@ -249,6 +249,7 @@ pub unsafe extern "C" fn load_trusted_setup(
         from_raw_parts(g2_bytes, n2 * 96),
     );
     ks_to_cks(&mut mks, out);
+    std::mem::forget(mks);
     C_KZG_RET_C_KZG_OK
 }
 
@@ -264,6 +265,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mu
     let (b1, b2) = crate::eip_4844::load_trusted_setup_string(&s);
     let mut mks = crate::eip_4844::load_trusted_setup_from_bytes(b1.as_slice(), b2.as_slice());
     ks_to_cks(&mut mks, out);
+    std::mem::forget(mks);
 
     C_KZG_RET_C_KZG_OK
 }
@@ -295,6 +297,7 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
     let ms = cks_to_ks(s); 
     let proof = crate::eip_4844::compute_aggregate_kzg_proof(&frs, &ms);
     (*out).bytes = crate::eip_4844::bytes_from_g1(&proof);
+    std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
 }
@@ -329,6 +332,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
 
     let ms = cks_to_ks(s); 
     *out = crate::eip_4844::verify_aggregate_kzg_proof(&frs, &expected, &proof, &ms);
+    std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
 }
@@ -349,6 +353,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
     let ms = cks_to_ks(s); 
     let o = crate::eip_4844::blob_to_kzg_commitment(&frs, &ms);
     (*out).bytes = crate::eip_4844::bytes_from_g1(&o);
+    std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
 }
@@ -379,6 +384,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
 
     let ms = cks_to_ks(s); 
     *out = crate::eip_4844::verify_kzg_proof(&poly, &fz, &fy, &proof, &ms);
+    std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
 }
@@ -403,6 +409,7 @@ pub unsafe extern "C" fn compute_kzg_proof(
     let ms = cks_to_ks(s);
     let tmp = crate::eip_4844::compute_kzg_proof(&poly, &frz, &ms);
     (*out).bytes = crate::eip_4844::bytes_from_g1(&tmp);
+    std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
 }
@@ -422,6 +429,7 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     let ms = cks_to_ks(s);
     let result = crate::eip_4844::evaluate_polynomial_in_evaluation_form_rust(&poly, &frx, &ms);
     *out = blst_fr { l: result.d };
+    std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
 }

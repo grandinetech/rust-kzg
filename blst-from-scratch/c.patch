@@ -1,6 +1,6 @@
-From 32a6dec5d04a3a5280256ef715e0ebf159667d5f Mon Sep 17 00:00:00 2001
+From 90597148d60c573db45e2c3eeedf5870627fc6c0 Mon Sep 17 00:00:00 2001
 From: belijzajac <tautvydas749@gmail.com>
-Date: Sun, 26 Feb 2023 18:02:33 +0200
+Date: Tue, 28 Feb 2023 12:21:53 +0200
 Subject: [PATCH] Hook up C tests
 
 ---
@@ -46,7 +46,7 @@ index 1662ad4..8225013 100644
  .PHONY: blst
  blst:
 diff --git a/src/test_c_kzg_4844.c b/src/test_c_kzg_4844.c
-index 954d14c..8bc0253 100644
+index 954d14c..693934a 100644
 --- a/src/test_c_kzg_4844.c
 +++ b/src/test_c_kzg_4844.c
 @@ -1,7 +1,7 @@
@@ -74,16 +74,16 @@ index 954d14c..8bc0253 100644
 +    if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
 +        return C_KZG_BADARGS;
 +    blst_p1_from_affine(out, &p1_affine);
-+    
++
 +    /* The point at infinity is accepted! */
 +    if (blst_p1_is_inf(out)) return C_KZG_OK;
-+    
++
 +    /* The point must be on the curve */
 +    if (!blst_p1_on_curve(out)) return C_KZG_BADARGS;
-+    
++
 +    /* The point must be on the right subgroup */
 +    if (!blst_p1_in_g1(out)) return C_KZG_BADARGS;
-+    
++
 +    return C_KZG_OK;
 +}
 +
