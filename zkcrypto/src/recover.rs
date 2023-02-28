@@ -1,5 +1,7 @@
 use crate::fftsettings::ZkFFTSettings;
 use crate::poly::ZPoly;
+#[cfg(feature = "parallel")]
+use crate::utils::next_power_of_two;
 use crate::zkfr::blsScalar as Scalar;
 use kzg::{FFTFr, Fr, Poly, PolyRecover, ZeroPoly};
 
