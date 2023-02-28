@@ -439,8 +439,8 @@ impl Clone for LFFTSettings {
 
 impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
     fn new(
-        secret_g1: &Vec<ArkG1>,
-        secret_g2: &Vec<ArkG2>,
+        secret_g1: &[ArkG1],
+        secret_g2: &[ArkG2],
         length: usize,
         fs: &LFFTSettings,
     ) -> Result<LKZGSettings, String> {
@@ -474,7 +474,7 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         com: &ArkG1,
         proof: &ArkG1,
         x: &FsFr,
-        values: &Vec<FsFr>,
+        values: &[FsFr],
         n: usize,
     ) -> Result<bool, String> {
         Ok(check_multi(com, proof, x, values, n, self))

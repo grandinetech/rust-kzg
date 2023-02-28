@@ -1,5 +1,6 @@
 use kzg::{FFTFr, FFTSettings, Fr, FFTG1, G1};
 
+#[allow(clippy::type_complexity)]
 pub fn compare_ft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>(
     fft_g1_slow: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize),
     fft_g1_fast: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize),
@@ -7,7 +8,7 @@ pub fn compare_ft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<T
 ) {
     let size: usize = 6;
     let fs = TFFTSettings::new(size).unwrap();
-    assert_eq!(fs.get_max_width(), 2 << size - 1);
+    assert_eq!(fs.get_max_width(), 2 << (size - 1));
 
     let data = make_data(fs.get_max_width());
     let stride = fs.get_max_width() / data.len();
@@ -40,7 +41,7 @@ pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG
 ) {
     let size: usize = 10;
     let fs = TFFTSettings::new(size).unwrap();
-    assert_eq!(fs.get_max_width(), 2 << size - 1);
+    assert_eq!(fs.get_max_width(), 2 << (size - 1));
 
     // Make data
     let expected = make_data(fs.get_max_width());
@@ -48,9 +49,9 @@ pub fn roundtrip_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG
 
     // Forward and reverse FFT
     let coeffs = fs.fft_g1(&data, false).unwrap();
-    assert_eq!(coeffs.len(), 2 << size - 1);
+    assert_eq!(coeffs.len(), 2 << (size - 1));
     data = fs.fft_g1(&coeffs, true).unwrap();
-    assert_eq!(data.len(), 2 << size - 1);
+    assert_eq!(data.len(), 2 << (size - 1));
 
     // Verify that the result is still ascending values of i
     for i in 0..fs.get_max_width() {
@@ -70,9 +71,9 @@ pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>
     };
 
     let fs1 = TFFTSettings::new(size1).unwrap();
-    assert_eq!(fs1.get_max_width(), 2 << size1 - 1);
+    assert_eq!(fs1.get_max_width(), 2 << (size1 - 1));
     let fs2 = TFFTSettings::new(size2).unwrap();
-    assert_eq!(fs2.get_max_width(), 2 << size2 - 1);
+    assert_eq!(fs2.get_max_width(), 2 << (size2 - 1));
 
     let data = make_data(width as usize);
 
@@ -86,6 +87,7 @@ pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     fft_g1_slow: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize, usize),
     fft_g1_fast: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize, usize),

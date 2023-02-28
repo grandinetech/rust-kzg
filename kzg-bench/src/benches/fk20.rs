@@ -43,8 +43,8 @@ pub fn fk_single_da<
 
     assert!(n_len >= 2 * poly_len);
     let mut p = TPoly::new(poly_len).unwrap();
-    for i in 0..poly_len {
-        p.set_coeff_at(i, &TFr::from_u64(coeffs[i]));
+    for (i, &coeff) in coeffs.iter().enumerate() {
+        p.set_coeff_at(i, &TFr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures

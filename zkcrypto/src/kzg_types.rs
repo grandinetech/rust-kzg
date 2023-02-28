@@ -347,8 +347,8 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
     }
 
     fn new(
-        secret_g1: &Vec<ZkG1Projective>,
-        secret_g2: &Vec<ZkG2Projective>,
+        secret_g1: &[ZkG1Projective],
+        secret_g2: &[ZkG2Projective],
         length: usize,
         fs: &ZkFFTSettings,
     ) -> Result<LKZGSettings, String> {
@@ -392,7 +392,7 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
         com: &ZkG1Projective,
         proof: &ZkG1Projective,
         x: &blsScalar,
-        values: &Vec<blsScalar>,
+        values: &[blsScalar],
         n: usize,
     ) -> Result<bool, String> {
         check_multi(com, proof, x, values, n, self)

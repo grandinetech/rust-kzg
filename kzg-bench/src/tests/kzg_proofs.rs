@@ -23,8 +23,8 @@ pub fn proof_single<
 
     // Create the polynomial
     let mut p = TPoly::new(poly_len).unwrap();
-    for x in 0..poly_len {
-        p.set_coeff_at(x, &TFr::from_u64(coeffs[x]));
+    for (x, &coeff) in coeffs.iter().enumerate() {
+        p.set_coeff_at(x, &TFr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures
@@ -144,18 +144,16 @@ pub fn proof_multi<
     let coset_len = 1 << coset_scale;
     let mut y: Vec<TFr> = Vec::new();
 
-    let secrets_len;
-
-    if poly_len > coset_len {
-        secrets_len = poly_len + 1;
+    let secrets_len = if poly_len > coset_len {
+        poly_len + 1
     } else {
-        secrets_len = coset_len + 1;
-    }
+        coset_len + 1
+    };
 
     // Create the polynomial
     let mut p = TPoly::new(poly_len).unwrap();
-    for x in 0..poly_len {
-        p.set_coeff_at(x, &TFr::from_u64(coeffs[x]));
+    for (x, &coeff) in coeffs.iter().enumerate() {
+        p.set_coeff_at(x, &TFr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures
@@ -183,7 +181,7 @@ pub fn proof_multi<
     let result = ks2
         .check_proof_multi(&commitment, &proof, &x, &y, coset_len)
         .unwrap();
-    assert_eq!(result, true);
+    assert!(result);
 
     // Change a value and check that the proof fails
     let temp = TFr::add(&y[4], &TFr::one());
@@ -191,5 +189,5 @@ pub fn proof_multi<
     let result = ks2
         .check_proof_multi(&commitment, &proof, &x, &y, coset_len)
         .unwrap();
-    assert_eq!(result, false);
+    assert!(!result);
 }

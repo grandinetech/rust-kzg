@@ -11,8 +11,8 @@ pub fn roots_of_unity_out_of_bounds_fails<TFr: Fr, TFFTSettings: FFTSettings<TFr
 
 /// Raise each root to the power of 2 ^ i and see if it equals 1
 pub fn roots_of_unity_are_plausible<TFr: Fr>(roots: &[[u64; 4]; 32]) {
-    for i in 0..32 {
-        let mut r = TFr::from_u64_arr(&roots[i]);
+    for (i, root) in roots.iter().enumerate() {
+        let mut r = TFr::from_u64_arr(root);
         for _j in 0..i {
             r = r.sqr();
         }
@@ -22,6 +22,7 @@ pub fn roots_of_unity_are_plausible<TFr: Fr>(roots: &[[u64; 4]; 32]) {
 }
 
 /// Check if expanded root members follow symmetry and symmetrically multiply to produce a 1.
+#[allow(clippy::type_complexity)]
 pub fn expand_roots_is_plausible<TFr: Fr>(
     roots: &[[u64; 4]; 32],
     expand_root_of_unity: &dyn Fn(&TFr, usize) -> Result<Vec<TFr>, String>,

@@ -62,9 +62,9 @@ pub fn test_reduce_partials<
     let partial_idxs: [[usize; 2]; 4] = [[1, 3], [7, 8], [9, 10], [12, 13]];
     let mut poly_partials = Vec::new();
 
-    for i in 0..4 {
+    for partial_idxs in partial_idxs.iter() {
         let temp = fft_settings
-            .do_zero_poly_mul_partial(&partial_idxs[i], 1)
+            .do_zero_poly_mul_partial(partial_idxs, 1)
             .unwrap();
         poly_partials.push(temp);
     }
@@ -98,10 +98,7 @@ pub fn reduce_partials_random<
             let point_count = fft_settings.get_max_width();
             let missing_count = (point_count as f32 * missing_ratio) as usize;
 
-            let mut missing = vec![0; point_count];
-            for i in 0..point_count {
-                missing[i] = i;
-            }
+            let mut missing = (0..point_count).collect::<Vec<_>>();
             missing.shuffle(&mut thread_rng());
 
             let missing_per_partial = 63;
@@ -159,8 +156,8 @@ pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPo
         expected_poly.set_coeff_at(i, &TFr::from_u64_arr(&EXPECTED_POLY_U64[i]));
     }
 
-    for i in 0..16 {
-        if !EXISTS[i] {
+    for (i, &exists) in EXISTS.iter().enumerate() {
+        if !exists {
             let tmp = expected_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(i));
             assert!(tmp.is_zero());
         }
@@ -172,11 +169,12 @@ pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPo
     }
 
     let tmp_poly = fft_settings
-        .fft_fr(&expected_eval.get_coeffs(), true)
+        .fft_fr(expected_eval.get_coeffs(), true)
         .unwrap();
 
-    for i in 0..16 {
-        assert!(tmp_poly[i].equals(&expected_poly.get_coeff_at(i)));
+    assert_eq!(tmp_poly.len(), 16);
+    for (i, tmp_poly) in tmp_poly.iter().enumerate() {
+        assert!(tmp_poly.equals(&expected_poly.get_coeff_at(i)));
     }
 }
 
@@ -192,11 +190,11 @@ pub fn zero_poly_known<
     let mut expected_eval = TPoly::new(16).unwrap();
     let mut expected_poly = TPoly::new(16).unwrap();
 
-    for i in 0..16 {
+    for (i, &exists) in EXISTS.iter().enumerate() {
         expected_eval.set_coeff_at(i, &TFr::from_u64_arr(&EXPECTED_EVAL_U64[i]));
         expected_poly.set_coeff_at(i, &TFr::from_u64_arr(&EXPECTED_POLY_U64[i]));
 
-        if !EXISTS[i] {
+        if !exists {
             missing_idxs.push(i);
         }
     }
@@ -205,8 +203,9 @@ pub fn zero_poly_known<
         .zero_poly_via_multiplication(16, &missing_idxs)
         .unwrap();
 
-    for i in 0..expected_eval.len() {
-        assert!(expected_eval.get_coeff_at(i).equals(&zero_eval[i]));
+    assert_eq!(zero_eval.len(), 16);
+    for (i, zero_eval) in zero_eval.iter().enumerate() {
+        assert!(expected_eval.get_coeff_at(i).equals(zero_eval));
         assert!(expected_poly
             .get_coeff_at(i)
             .equals(&zero_poly.get_coeff_at(i)));
@@ -239,18 +238,20 @@ pub fn zero_poly_random<
                 .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs)
                 .unwrap();
 
-            for i in 0..missing_idxs.len() {
+            for missing_idx in missing_idxs {
                 let out =
-                    zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idxs[i]));
+                    zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
                 assert!(out.is_zero());
             }
 
             let zero_eval_fft = fft_settings.fft_fr(&zero_eval, true).unwrap();
 
+            #[allow(clippy::needless_range_loop)]
             for i in 0..zero_poly.len() {
                 assert!(zero_poly.get_coeff_at(i).equals(&zero_eval_fft[i]));
             }
 
+            #[allow(clippy::needless_range_loop)]
             for i in zero_poly.len()..fft_settings.get_max_width() {
                 assert!(zero_eval_fft[i].is_zero());
             }
@@ -276,17 +277,19 @@ pub fn zero_poly_all_but_one<
         .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs)
         .unwrap();
 
-    for i in 0..missing_idxs.len() {
-        let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idxs[i]));
+    for missing_idx in missing_idxs {
+        let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
         assert!(ret.is_zero());
     }
 
     let zero_eval_fft = fft_settings.fft_fr(&zero_eval, true).unwrap();
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..zero_poly.len() {
         assert!(zero_poly.get_coeff_at(i).equals(&zero_eval_fft[i]));
     }
 
+    #[allow(clippy::needless_range_loop)]
     for i in zero_poly.len()..fft_settings.get_max_width() {
         assert!(zero_eval_fft[i].is_zero());
     }
@@ -300,29 +303,28 @@ pub fn zero_poly_252<
 >() {
     let fft_settings = TFFTSettings::new(8).unwrap();
 
-    let mut missing_idxs = Vec::new();
-    for i in 0..252 {
-        missing_idxs.push(i);
-    }
+    let missing_idxs = (0..252).collect::<Vec<_>>();
 
     let (zero_eval, zero_poly) = fft_settings
         .zero_poly_via_multiplication(
             fft_settings.get_max_width(),
-            &missing_idxs[..missing_idxs.len()],
+            &missing_idxs,
         )
         .unwrap();
 
-    for i in 0..252 {
-        let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idxs[i]));
+    for missing_idx in missing_idxs {
+        let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
         assert!(ret.is_zero());
     }
 
     let zero_eval_fft = fft_settings.fft_fr(&zero_eval, true).unwrap();
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..zero_poly.len() {
         assert!(zero_poly.get_coeff_at(i).equals(&zero_eval_fft[i]));
     }
 
+    #[allow(clippy::needless_range_loop)]
     for i in zero_poly.len()..fft_settings.get_max_width() {
         assert!(zero_eval_fft[i].is_zero());
     }

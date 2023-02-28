@@ -30,7 +30,7 @@ pub fn bench_compute_aggregate_kzg_proof<
                 .collect::<Vec<TFr>>()
         })
         .collect::<Vec<Vec<TFr>>>();
-    
+
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
@@ -38,6 +38,7 @@ pub fn bench_compute_aggregate_kzg_proof<
     c.bench_function(&id, move |b| b.iter(|| compute_aggregate_kzg_proof(&blobs, &ts)));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn bench_verify_aggregate_kzg_proof<
     TFr: 'static + Fr,
     TG1: 'static + G1,
@@ -64,14 +65,14 @@ pub fn bench_verify_aggregate_kzg_proof<
                 .collect::<Vec<TFr>>()
         })
         .collect::<Vec<Vec<TFr>>>();
-    
+
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-    let kzg_commitments = blobs.iter().map(|blob| 
+    let kzg_commitments = blobs.iter().map(|blob|
         blob_to_kzg_commitment(blob, &ts)
         ).collect::<Vec<TG1>>();
-    
+
     // Compute proof for these blobs
 
     let proof = compute_aggregate_kzg_proof(&blobs, &ts);

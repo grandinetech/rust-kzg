@@ -104,6 +104,8 @@ pub fn evaluate_polynomial_in_evaluation_form_test<TFr: Fr,
     assert_eq!(y_bls.to_u64_arr(),  [28, 13, 0, 0]);
 }
 
+#[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments)]
 pub fn compute_commitment_for_blobs_test<TFr : Fr,
     TG1: G1,
     TG2: G2,
@@ -236,6 +238,7 @@ pub fn compute_commitment_for_blobs_test<TFr : Fr,
 
 // Test for the simplified 4844 interface
 
+#[allow(clippy::type_complexity)]
 pub fn eip4844_test<TFr : Fr,
     TG1: G1,
     TG2: G2,
@@ -360,6 +363,7 @@ pub fn compute_aggregate_kzg_proof_test_empty<
     assert_eq!(bytes_from_g1(&empty_proof), expected_proof);
 }
 
+#[allow(clippy::type_complexity)]
 pub fn verify_aggregate_kzg_proof_test_empty<
     TFr : Fr,
     TG1: G1,
@@ -379,6 +383,7 @@ pub fn verify_aggregate_kzg_proof_test_empty<
     assert!(verify_aggregate_kzg_proof(&[], &[], &compute_aggregate_kzg_proof(&[], &ts), &ts), "verify failed");
 }
 
+#[allow(clippy::type_complexity)]
 pub fn aggregate_proof_for_single_blob_test<
     TFr : Fr,
     TG1: G1,

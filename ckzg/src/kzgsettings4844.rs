@@ -35,8 +35,8 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZG
 
     // underscore was added to avoid warnings when new is unused
     fn new(
-        _secret_g1: &Vec<BlstP1>,
-        _secret_g2: &Vec<BlstP2>,
+        _secret_g1: &[BlstP1],
+        _secret_g2: &[BlstP2],
         _length: usize,
         _fs: &KzgFFTSettings4844,
     ) -> Result<Self, String> {
@@ -81,7 +81,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZG
         _com: &BlstP1,
         _proof: &BlstP1,
         _x: &BlstFr,
-        _values: &Vec<BlstFr>,
+        _values: &[BlstFr],
         _n: usize,
     ) -> Result<bool, String> {
         todo!();
