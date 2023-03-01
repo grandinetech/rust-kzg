@@ -2,8 +2,8 @@
 
 set -e
 
-SED_LINUX="/usr/bin/sed"
-SED_MACOS="/usr/local/bin/gsed"
+SED_LINUX="sed"
+SED_MACOS="gsed"
 OPENMP_LINUX="-fopenmp"
 OPENMP_MACOS="-Xpreprocessor -fopenmp"
 
@@ -14,6 +14,10 @@ print_msg () {
 print_msg "Removing old libs"
 rm -rf lib/*
 mkdir -p lib
+
+print_msg "Removing old cloned repos"
+rm -rf c-kzg-4844
+rm -rf c-kzg
 
 print_msg "Cloning 4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
@@ -49,7 +53,7 @@ case $(uname -s) in
     ;;
   "Darwin")
     if [[ -z $(command -v "$SED_MACOS") ]]; then
-      echo "FAIL: gsed was not found"
+      echo "FAIL: $SED_MACOS was not found"
       echo "HELP: to fix this, run \"brew install gnu-sed\""
       exit 1
     fi

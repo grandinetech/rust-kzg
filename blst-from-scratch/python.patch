@@ -21,11 +21,11 @@ index bf969cb..a9230a6 100644
                  define_macros=[("FIELD_ELEMENTS_PER_BLOB", "4096")],
 -                library_dirs=["../../lib"],
 -                libraries=["blst"])])
-+                library_dirs=["../../lib", "../../../target/release"],
++                library_dirs=["../../lib", "../../../../target/release"],
 +                libraries=["blst_from_scratch"])])
- 
+
  if __name__ == "__main__":
      main()
--- 
+--
 2.39.2
 

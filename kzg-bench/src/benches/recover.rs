@@ -19,16 +19,16 @@ pub fn bench_recover<
 
     let mut poly = vec![TFr::zero(); max_width];
 
-    for i in 0..(max_width / 2) {
-        poly[i] = TFr::from_u64(i.try_into().unwrap());
+    for (i, p) in poly.iter_mut().enumerate().take(max_width / 2) {
+        *p = TFr::from_u64(i.try_into().unwrap());
     }
 
-    let data = fs.fft_fr(&poly, false).unwrap();
-    let mut samples: Vec<Option<TFr>> = vec![];
-
-    for i in 0..max_width {
-        samples.push(Some(data[i].clone()));
-    }
+    let mut samples = fs
+        .fft_fr(&poly, false)
+        .unwrap()
+        .into_iter()
+        .map(Some)
+        .collect::<Vec<_>>();
 
     for _ in 0..(max_width / 2) {
         let mut j: usize = rng.gen::<usize>() % max_width;

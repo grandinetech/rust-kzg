@@ -88,8 +88,8 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     }
 
     fn new(
-        secret_g1: &Vec<BlstP1>,
-        secret_g2: &Vec<BlstP2>,
+        secret_g1: &[BlstP1],
+        secret_g2: &[BlstP2],
         length: usize,
         fs: &KzgFFTSettings,
     ) -> Result<Self, String> {
@@ -174,7 +174,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
         com: &BlstP1,
         proof: &BlstP1,
         x: &BlstFr,
-        values: &Vec<BlstFr>,
+        values: &[BlstFr],
         n: usize,
     ) -> Result<bool, String> {
         let mut ret = false;

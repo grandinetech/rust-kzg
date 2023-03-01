@@ -17,17 +17,17 @@ index dcc6a37..918b0fa 100644
  // #cgo CFLAGS: -DFIELD_ELEMENTS_PER_BLOB=4096
 -// #include "c_kzg_4844.c"
 +// #include "c_kzg_4844.h"
-+// #cgo LDFLAGS: -L${SRCDIR}/../../../target/release -lblst_from_scratch -lm
++// #cgo LDFLAGS: -L${SRCDIR}/../../../../target/release -lblst_from_scratch -lm
  import "C"
- 
+
  import (
  	"unsafe"
 -
 -	// So its functions are available during compilation.
 -	_ "github.com/supranational/blst/bindings/go"
  )
- 
+
  const (
--- 
+--
 2.39.2
 

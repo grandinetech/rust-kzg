@@ -3,11 +3,6 @@ name = "mcl_kzg_bench"
 version = "0.1.0"
 edition = "2018"
 
-[profile.bench]
-opt-level = 3
-debug = false
-lto = "thin"
-
 [dependencies]
 mcl_rust = { path = '../kzg' }
 blst = {'git' = 'https://github.com/supranational/blst.git'}

@@ -51,8 +51,8 @@ pub fn fr_equal_works<TFr: Fr>() {
     let a: TFr = TFr::from_u64_arr(&aa);
     let b: TFr = TFr::from_u64_arr(&bb);
 
-    assert_eq!(true, a.equals(&a));
-    assert_eq!(false, a.equals(&b));
+    assert!(a.equals(&a));
+    assert!(!a.equals(&b));
 }
 
 pub fn fr_negate_works<TFr: Fr>() {
@@ -163,6 +163,7 @@ pub fn g1_identity_is_identity<TG1: G1>() {
     assert!(actual.equals(&TG1::generator()));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
     g1_linear_combination: &dyn Fn(&mut TG1, &[TG1], &[TFr], usize),
 ) {
@@ -185,6 +186,7 @@ pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
     assert!(exp.equals(&res));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
     g1_linear_combination: &dyn Fn(&mut TG1, &[TG1], &[TFr], usize),
 ) {
@@ -225,6 +227,6 @@ pub fn pairings_work<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2 + G2Mul<TFr>>(
     let g2_3 = TG2::generator().mul(&three);
     let g2_5 = TG2::generator().mul(&five);
 
-    assert_eq!(true, pairings_verify(&g1_3, &g2_5, &g1_5, &g2_3));
-    assert_eq!(false, pairings_verify(&g1_3, &g2_3, &g1_5, &g2_5));
+    assert!(pairings_verify(&g1_3, &g2_5, &g1_5, &g2_3));
+    assert!(!pairings_verify(&g1_3, &g2_3, &g1_5, &g2_5));
 }

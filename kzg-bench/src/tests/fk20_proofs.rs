@@ -60,8 +60,8 @@ pub fn fk_single<
 
     assert!(n_len >= 2 * poly_len);
     let mut p = TPoly::new(poly_len).unwrap();
-    for i in 0..poly_len {
-        p.set_coeff_at(i, &TFr::from_u64(coeffs[i]));
+    for (i, &coeff) in coeffs.iter().enumerate() {
+        p.set_coeff_at(i, &TFr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures
@@ -83,7 +83,7 @@ pub fn fk_single<
         let x = fs.get_expanded_roots_of_unity_at(i);
         let y = p.eval(&x);
         let proof = &all_proofs[reverse_bits_limited(2 * poly_len - 1, i)];
-        assert!(ks.check_proof_single(&commitment, &proof, &x, &y).unwrap());
+        assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
     }
 
     // 2. Exactly the same thing again with `fk20_single_da_opt`
@@ -92,11 +92,10 @@ pub fn fk_single<
     let all_proofs = fk.data_availability_optimized(&p).unwrap();
 
     // Verify the proof at each root of unity
-    for i in 0..(2 * poly_len) {
+    for (i, proof) in all_proofs.iter().enumerate().take(2 * poly_len) {
         let x = fs.get_expanded_roots_of_unity_at(i);
         let y = p.eval(&x);
-        let proof = &all_proofs[i];
-        assert!(ks.check_proof_single(&commitment, &proof, &x, &y).unwrap());
+        assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
     }
 }
 
@@ -120,8 +119,8 @@ pub fn fk_single_strided<
 
     assert!(n_len >= 2 * poly_len);
     let mut p = TPoly::new(poly_len).unwrap();
-    for i in 0..poly_len {
-        p.set_coeff_at(i, &TFr::from_u64(coeffs[i]));
+    for (i, &coeff) in coeffs.iter().enumerate() {
+        p.set_coeff_at(i, &TFr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures
@@ -141,7 +140,7 @@ pub fn fk_single_strided<
         let x = fs.get_expanded_roots_of_unity_at(i * stride);
         let y = p.eval(&x);
         let proof = &all_proofs[reverse_bits_limited(2 * poly_len - 1, i)];
-        assert!(ks.check_proof_single(&commitment, &proof, &x, &y).unwrap());
+        assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
     }
 }
 
@@ -227,12 +226,9 @@ fn fk_multi_case<
     let all_proofs = fk.data_availability(&p).unwrap();
 
     // Now actually extend the polynomial with zeros
-    let mut extended_coeffs = vec![Fr::default(); 2 * n];
-    for i in 0..n {
-        extended_coeffs[i] = p.get_coeff_at(i);
-    }
-    for i in n..(2 * n) {
-        extended_coeffs[i] = TFr::zero();
+    let mut extended_coeffs = vec![TFr::zero(); 2 * n];
+    for (i, extended_coeff) in extended_coeffs.iter_mut().enumerate().take(n) {
+        *extended_coeff = p.get_coeff_at(i);
     }
     let mut extended_coeffs_fft = fs.fft_fr(&extended_coeffs, false).unwrap();
     reverse_bit_order(&mut extended_coeffs_fft);
@@ -253,21 +249,21 @@ fn fk_multi_case<
 
         // Now recreate the ys by evaluating the polynomial in the sub-domain range
         let stride = fs.get_max_width() / chunk_len;
-        for i in 0..chunk_len {
+        for (i, ys2) in ys2.iter_mut().enumerate() {
             let z = x.mul(&fs.get_expanded_roots_of_unity_at(i * stride));
-            ys2[i] = p.eval(&z);
+            *ys2 = p.eval(&z);
         }
 
         // ys and ys2 should be equal
-        for i in 0..chunk_len {
-            assert!(ys[i].equals(&ys2[i]));
+        for (ys, ys2) in ys.iter().zip(&ys2) {
+            assert!(ys.equals(ys2));
         }
 
         // Verify this proof
         let result = ks
             .check_proof_multi(&commitment, &all_proofs[pos], &x, &ys, chunk_len)
             .unwrap();
-        assert_eq!(result, true);
+        assert!(result);
     }
 }
 

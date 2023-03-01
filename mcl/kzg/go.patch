@@ -17,10 +17,10 @@ index dcc6a37..d63cb81 100644
  // #cgo CFLAGS: -DFIELD_ELEMENTS_PER_BLOB=4096
 -// #include "c_kzg_4844.c"
 +// #include "c_kzg_4844.h"
-+// #cgo LDFLAGS: -L${SRCDIR}/../../../target/release -L${SRCDIR}/../../lib -lmcl_rust -lstdc++ -lblst -lm
++// #cgo LDFLAGS: -L${SRCDIR}/../../../../../target/release -L${SRCDIR}/../../lib -lmcl_rust -lstdc++ -lblst -lm
  import "C"
- 
+
  import (
--- 
+--
 2.39.2
 

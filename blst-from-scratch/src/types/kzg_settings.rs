@@ -36,8 +36,8 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn new(
-        secret_g1: &Vec<FsG1>,
-        secret_g2: &Vec<FsG2>,
+        secret_g1: &[FsG1],
+        secret_g2: &[FsG2],
         length: usize,
         fft_settings: &FsFFTSettings,
     ) -> Result<Self, String> {
@@ -138,7 +138,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         com: &FsG1,
         proof: &FsG1,
         x: &FsFr,
-        ys: &Vec<FsFr>,
+        ys: &[FsFr],
         n: usize,
     ) -> Result<bool, String> {
         if !is_power_of_two(n) {

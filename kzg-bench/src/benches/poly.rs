@@ -32,7 +32,7 @@ pub fn bench_new_poly_div<
     let id = format!("bench_new_poly_div scale: '{}'", BENCH_SCALE);
     c.bench_function(&id, move |b| {
         b.iter(|| {
-            dividend.div(&mut divisor).unwrap();
+            dividend.div(&divisor).unwrap();
         })
     });
 }

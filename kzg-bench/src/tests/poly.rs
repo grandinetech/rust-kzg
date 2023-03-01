@@ -66,7 +66,7 @@ pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     for i in 0..d {
         let mut tmp = q.get_coeff_at(i);
         if i & 1 != 0 {
-            tmp = TFr::negate(&mut tmp);
+            tmp = TFr::negate(&tmp);
         }
         assert!(tmp.is_one());
     }
@@ -123,8 +123,7 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
 
 fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>) -> TPoly {
     let mut p = TPoly::new(coeffs.len()).unwrap();
-    for i in 0..coeffs.len() {
-        let coeff: i32 = coeffs[i];
+    for (i, &coeff) in coeffs.iter().enumerate() {
         if coeff >= 0 {
             let c = TFr::from_u64(coeff as u64);
             p.set_coeff_at(i, &c);

@@ -3,11 +3,6 @@ name = "ckzg"
 version = "0.1.0"
 edition = "2018"
 
-[profile.bench]
-opt-level = 3
-debug = false
-lto = "thin"
-
 [dependencies]
 kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
