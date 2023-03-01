@@ -78,22 +78,13 @@ impl Default for KzgKZGSettings {
 }
 
 impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSettings {
-    fn default() -> Self {
-        Self {
-            fs: &FFTSettings::default(),
-            secret_g1: &mut G1::default(),
-            secret_g2: &mut G2::default(),
-            length: 0,
-        }
-    }
-
     fn new(
         secret_g1: &[BlstP1],
         secret_g2: &[BlstP2],
         length: usize,
         fs: &KzgFFTSettings,
     ) -> Result<Self, String> {
-        let mut settings = KZGSettings::default();
+        let mut settings = Self::default();
         unsafe {
             match new_kzg_settings(
                 &mut settings,
@@ -218,7 +209,7 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>
     blst_scalar.b[..secret.len()].clone_from_slice(&secret[..]);
 
     let mut s_pow: BlstFr = Fr::one();
-    let mut s = Fr::default();
+    let mut s = BlstFr::default();
     unsafe { fr_from_scalar(&mut s, &blst_scalar) };
 
     let mut s1 = vec![G1::default(); 0];

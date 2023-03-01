@@ -9,6 +9,7 @@ use crate::types::g2::FsG2;
 use crate::types::poly::FsPoly;
 use crate::utils::is_power_of_two;
 
+#[derive(Debug, Clone, Default)]
 pub struct FsKZGSettings {
     pub fs: FsFFTSettings,
     // Both secret_g1 and secret_g2 have the same number of elements
@@ -16,25 +17,7 @@ pub struct FsKZGSettings {
     pub secret_g2: Vec<FsG2>,
 }
 
-impl Clone for FsKZGSettings {
-    fn clone(&self) -> Self {
-        Self {
-            fs: self.fs.clone(),
-            secret_g1: self.secret_g1.clone(),
-            secret_g2: self.secret_g2.clone(),
-        }
-    }
-}
-
 impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
-    fn default() -> Self {
-        Self {
-            secret_g1: Vec::new(),
-            secret_g2: Vec::new(),
-            fs: FsFFTSettings::default(),
-        }
-    }
-
     fn new(
         secret_g1: &[FsG1],
         secret_g2: &[FsG2],

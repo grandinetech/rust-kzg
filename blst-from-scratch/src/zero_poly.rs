@@ -8,8 +8,6 @@ use crate::types::poly::FsPoly;
 use crate::utils::{is_power_of_two, next_power_of_two};
 
 #[cfg(feature = "parallel")]
-use kzg::Poly;
-#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 #[allow(dead_code)]

@@ -9,8 +9,8 @@ use crate::types::fr::FsFr;
 use crate::utils::log_2_byte;
 
 #[repr(C)]
-#[derive(Debug)]
-pub struct FsG1(pub blst::blst_p1);
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct FsG1(pub blst_p1);
 
 impl FsG1 {
     pub(crate) const fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
@@ -74,14 +74,6 @@ impl G1 for FsG1 {
         unsafe { blst_p1_is_equal(&self.0, &b.0) }
     }
 }
-
-impl Clone for FsG1 {
-    fn clone(&self) -> Self {
-        FsG1(self.0)
-    }
-}
-
-impl Copy for FsG1 {}
 
 impl G1Mul<FsFr> for FsG1 {
     fn mul(&self, b: &FsFr) -> Self {

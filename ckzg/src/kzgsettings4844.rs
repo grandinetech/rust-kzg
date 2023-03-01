@@ -24,15 +24,17 @@ extern "C" {
     fn free_trusted_setup(s: *mut KzgKZGSettings4844);
 }
 
-impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZGSettings4844 {
+impl Default for KzgKZGSettings4844 {
     fn default() -> Self {
         Self {
-            fs: &FFTSettings::default(),
+            fs: &KzgFFTSettings4844::default(),
             g1_values: &mut G1::default(),
             g2_values: &mut G2::default(),
         }
     }
+}
 
+impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings4844, KzgPoly> for KzgKZGSettings4844 {
     // underscore was added to avoid warnings when new is unused
     fn new(
         _secret_g1: &[BlstP1],

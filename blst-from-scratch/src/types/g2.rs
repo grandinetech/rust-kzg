@@ -7,7 +7,8 @@ use kzg::{G2Mul, G2};
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::types::fr::FsFr;
 
-pub struct FsG2(pub blst::blst_p2);
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct FsG2(pub blst_p2);
 
 impl G2Mul<FsFr> for FsG2 {
     fn mul(&self, b: &FsFr) -> Self {
@@ -79,11 +80,3 @@ impl FsG2 {
         Self(blst_p2::default())
     }
 }
-
-impl Clone for FsG2 {
-    fn clone(&self) -> Self {
-        FsG2(self.0)
-    }
-}
-
-impl Copy for FsG2 {}

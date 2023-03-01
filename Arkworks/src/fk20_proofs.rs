@@ -3,7 +3,7 @@ use crate::kzg_proofs::{FFTSettings, KZGSettings};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
 use crate::utils::PolyData;
 use kzg::{
-    FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, KZGSettings as KZGST, Poly, FFTG1, G1,
+    FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1,
 };
 // use chrono::Utc;
 
@@ -11,7 +11,7 @@ use kzg::{
 use rayon::prelude::*;
 
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct KzgFK20SingleSettings {
     pub ks: KZGSettings,
     pub x_ext_fft: Vec<ArkG1>,
@@ -19,7 +19,7 @@ pub struct KzgFK20SingleSettings {
 }
 
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct KzgFK20MultiSettings {
     pub ks: KZGSettings,
     pub chunk_len: usize,
@@ -45,14 +45,6 @@ where
 impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
     for KzgFK20SingleSettings
 {
-    fn default() -> Self {
-        Self {
-            ks: KZGSettings::default(),
-            x_ext_fft: Vec::new(),
-            x_ext_fft_len: 0,
-        }
-    }
-
     fn new(ks: &KZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;
 
@@ -74,8 +66,10 @@ impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings
         }
         x.push(G1_IDENTITY);
 
-        let mut new_ks = KZGSettings::default();
-        new_ks.fs = ks.fs.clone();
+        let new_ks = KZGSettings {
+            fs: ks.fs.clone(),
+            ..KZGSettings::default()
+        };
 
         Ok(KzgFK20SingleSettings {
             ks: new_ks,
@@ -110,15 +104,6 @@ impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings
 impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
     for KzgFK20MultiSettings
 {
-    fn default() -> Self {
-        Self {
-            ks: KZGSettings::default(),
-            chunk_len: 0,
-            x_ext_fft_files: Vec::new(),
-            length: 0,
-        }
-    }
-
     fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         // let start_time = Utc::now().time();
         // println!("New begins at {}", start_time);
@@ -173,8 +158,10 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
         }
 
         // let start_time = Utc::now().time();
-        let mut new_ks = KZGSettings::default();
-        new_ks.fs = ks.fs.clone();
+        let new_ks = KZGSettings {
+            fs: ks.fs.clone(),
+            ..KZGSettings::default()
+        };
         // let end_time = Utc::now().time();
         // println!("Total time taken to clone stuff is {} and {} ", start_time, end_time);
 

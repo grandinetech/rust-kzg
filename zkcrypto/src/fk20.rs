@@ -9,31 +9,16 @@ use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Poly, FFTG1, G1};
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
+#[derive(Debug, Clone, Default)]
 pub struct ZkFK20SingleSettings {
     pub kzg_settings: KZGSettings,
     pub x_ext_fft: Vec<ZkG1Projective>,
-}
-
-impl Clone for ZkFK20SingleSettings {
-    fn clone(&self) -> Self {
-        Self {
-            kzg_settings: self.kzg_settings.clone(),
-            x_ext_fft: self.x_ext_fft.clone(),
-        }
-    }
 }
 
 impl
     FK20SingleSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly, KZGSettings>
     for ZkFK20SingleSettings
 {
-    fn default() -> Self {
-        Self {
-            kzg_settings: KZGSettings::default(),
-            x_ext_fft: vec![],
-        }
-    }
-
     fn new(kzg_settings: &KZGSettings, n: usize) -> Result<Self, String> {
         let n2 = n / 2;
 
@@ -103,25 +88,14 @@ impl
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ZkFK20MultiSettings {
     pub kzg_settings: KZGSettings,
     pub chunk_len: usize,
     pub x_ext_fft_files: Vec<Vec<ZkG1Projective>>,
 }
 
-impl Clone for ZkFK20MultiSettings {
-    fn clone(&self) -> Self {
-        Self {
-            kzg_settings: self.kzg_settings.clone(),
-            chunk_len: self.chunk_len,
-            x_ext_fft_files: self.x_ext_fft_files.clone(),
-        }
-    }
-}
-
-impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly, KZGSettings>
-    for ZkFK20MultiSettings
-{
+impl Default for ZkFK20MultiSettings {
     fn default() -> Self {
         Self {
             kzg_settings: KZGSettings::default(),
@@ -129,7 +103,11 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
             x_ext_fft_files: vec![],
         }
     }
+}
 
+impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly, KZGSettings>
+    for ZkFK20MultiSettings
+{
     #[allow(clippy::many_single_char_names)]
     fn new(ks: &KZGSettings, n: usize, chunk_len: usize) -> Result<Self, String> {
         if n > ks.fs.max_width {

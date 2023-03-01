@@ -8,7 +8,7 @@ use crate::kzgsettings4844::KzgKZGSettings4844;
 // use crate::utils::reverse_bit_order;
 
 use kzg::eip_4844::{Blob, KZGCommitment, KZGProof};
-use kzg::{Fr, KZGSettings};
+use kzg::Fr;
 use libc::{fdopen, FILE};
 use std::ffi::CStr;
 use std::os::unix::io::IntoRawFd;

@@ -3,7 +3,7 @@ use crate::finite::BlstFr;
 use crate::poly::KzgPoly;
 use crate::utils::{log_2, next_pow_of_2};
 use crate::RUN_PARALLEL;
-use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr, Poly, ZeroPoly, DAS, FFTG1, G1};
+use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Poly, ZeroPoly, DAS, FFTG1, G1};
 use std::{cmp::min, slice};
 
 #[repr(C)]
@@ -110,16 +110,18 @@ extern "C" {
     ) -> KzgRet;
 }
 
-impl FFTSettings<BlstFr> for KzgFFTSettings {
+impl Default for KzgFFTSettings {
     fn default() -> Self {
         Self {
             max_width: 0,
-            root_of_unity: Fr::default(),
-            expanded_roots_of_unity: &mut Fr::default(),
-            reverse_roots_of_unity: &mut Fr::default(),
+            root_of_unity: BlstFr::default(),
+            expanded_roots_of_unity: &mut BlstFr::default(),
+            reverse_roots_of_unity: &mut BlstFr::default(),
         }
     }
+}
 
+impl FFTSettings<BlstFr> for KzgFFTSettings {
     fn new(scale: usize) -> Result<Self, String> {
         let settings = Box::new(KzgFFTSettings::default());
         unsafe {
@@ -183,7 +185,7 @@ fn _fft_fr(
     n: u64,
     fs: *const KzgFFTSettings,
 ) -> Result<Vec<BlstFr>, KzgRet> {
-    let mut output = vec![Fr::default(); n as usize];
+    let mut output = vec![BlstFr::default(); n as usize];
     unsafe {
         match fft_fr(output.as_mut_ptr(), input, inverse, n, fs, RUN_PARALLEL) {
             KzgRet::KzgOk => Ok(output),
@@ -268,7 +270,7 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
     fn reduce_partials(&self, domain_size: usize, partials: &[KzgPoly]) -> Result<KzgPoly, String> {
         let mut poly = KzgPoly::new(domain_size).unwrap();
         let scratch_len = domain_size * 3;
-        let mut scratch = vec![Fr::default(); scratch_len];
+        let mut scratch = vec![BlstFr::default(); scratch_len];
         unsafe {
             match reduce_partials(
                 &mut poly,
@@ -295,7 +297,7 @@ impl ZeroPoly<BlstFr, KzgPoly> for KzgFFTSettings {
         idxs: &[usize],
     ) -> Result<(Vec<BlstFr>, KzgPoly), String> {
         let mut zero_poly = KzgPoly::new(domain_size).unwrap();
-        let mut zero_eval = vec![Fr::default(); domain_size];
+        let mut zero_eval = vec![BlstFr::default(); domain_size];
         unsafe {
             match zero_polynomial_via_multiplication(
                 zero_eval.as_mut_ptr(),

@@ -16,7 +16,7 @@ pub fn bytes_from_bls_field(fr: &blsScalar) -> [u8; 32usize] {
 }
 
 pub fn compute_powers(base: &blsScalar, num_powers: usize) -> Vec<blsScalar> {
-    let mut powers: Vec<blsScalar> = vec![<blsScalar as Fr>::default(); num_powers];
+    let mut powers: Vec<blsScalar> = vec![blsScalar::default(); num_powers];
     powers[0] = blsScalar::one();
     for i in 1..num_powers {
         powers[i] = powers[i - 1].mul(base);
@@ -62,7 +62,7 @@ pub fn blob_to_kzg_commitment(blob: &[blsScalar], s: &KZGSettings) -> ZkG1Projec
 }
 
 pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
-    let prod: &mut Vec<blsScalar> = &mut vec![<blsScalar as Fr>::default(); len];
+    let prod: &mut Vec<blsScalar> = &mut vec![blsScalar::default(); len];
     let mut i: usize = 1;
 
     prod[0] = a[0];
@@ -86,8 +86,8 @@ pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
 pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &blsScalar, s: &KZGSettings) -> blsScalar {
     let mut tmp: blsScalar;
 
-    let mut inverses_in: Vec<blsScalar> = vec![<blsScalar as Fr>::default(); p.len()];
-    let mut inverses: Vec<blsScalar> = vec![<blsScalar as Fr>::default(); p.len()];
+    let mut inverses_in: Vec<blsScalar> = vec![blsScalar::default(); p.len()];
+    let mut inverses: Vec<blsScalar> = vec![blsScalar::default(); p.len()];
     let mut i: usize = 0;
     let mut roots_of_unity: Vec<blsScalar> = s.fs.expanded_roots_of_unity.clone();
 

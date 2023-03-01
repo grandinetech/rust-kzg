@@ -151,11 +151,13 @@ pub struct FFTSettings {
     pub exp_roots_of_unity_rev: Vec<Fr>
 }
 
-impl FFTSettings {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
+impl Default for FFTSettings {
+    fn default() -> Self {
         Self::new(0)
     }
+}
+
+impl FFTSettings {
     //fix this mess
     /// # Safety
     ///
@@ -190,7 +192,7 @@ impl FFTSettings {
             }
             root = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
         }
-        
+
         let root_z = expand_root_of_unity(&root);
         let mut root_z_rev = root_z.clone();
         root_z_rev.reverse();
@@ -203,7 +205,7 @@ impl FFTSettings {
         })
     }
 
-    // #[cfg(feature = "parallel")] 
+    // #[cfg(feature = "parallel")]
     fn _fft(values: &[Fr], offset: usize, stride: usize, roots_of_unity: &[Fr], root_stride: usize, out: &mut [Fr]) {
         // check if correct value is checked in case of a bug!
         if out.len() <= 4 { // if the value count is small, run the unoptimized version instead. // TODO tune threshold.
@@ -212,7 +214,7 @@ impl FFTSettings {
 
         let half = out.len() >> 1;
 
-        #[cfg(feature = "parallel")] 
+        #[cfg(feature = "parallel")]
         {
             if half > 256 {
                 let (lo, hi) = out.split_at_mut(half);
@@ -230,9 +232,9 @@ impl FFTSettings {
             // left
             FFTSettings::_fft(values, offset, stride << 1, roots_of_unity, root_stride << 1, &mut out[..half]);
             // right
-            FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]); 
+            FFTSettings::_fft(values, offset + stride, stride << 1, roots_of_unity, root_stride << 1, &mut out[half..]);
         }
-        
+
 
         for i in 0..half {
             let root = &roots_of_unity[i * root_stride];
@@ -287,7 +289,7 @@ impl FFTSettings {
             return Err(String::from("Supplied values is longer than the available max width"));
         }
         let n = next_pow_of_2(values.len());
-        
+
         let diff = n - values.len();
         let tail= iter::repeat(Fr::zero()).take(diff);
         let values_copy: Vec<Fr> = values.iter().copied()
@@ -308,13 +310,13 @@ impl FFTSettings {
     pub fn fft_g1(&self, values: &[G1]) -> Result<Vec<G1>, String> {
         if values.len() > self.max_width {
             return Err(String::from("length of values is longer than the available max width"));
-        } 
+        }
         if !is_power_of_2(values.len()) {
             return Err(String::from("length of values must be a power of two"));
         }
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
-        
+
         let root_z: Vec<Fr> = self.exp_roots_of_unity.iter()
             .take(self.max_width).copied()
             .collect();
@@ -331,13 +333,13 @@ impl FFTSettings {
     pub fn fft_g1_inv(&self, values: &[G1]) -> Result<Vec<G1>, String> {
         if values.len() > self.max_width {
             return Err(String::from("length of values is longer than the available max width"));
-        } 
+        }
         if !is_power_of_2(values.len()) {
             return Err(String::from("length of values must be a power of two"));
         }
         // TODO: check if copy can be removed, opt?
         // let vals_copy = values.clone();
-        
+
         let root_z: Vec<Fr> = self.exp_roots_of_unity_rev.iter()
             .take(self.max_width).copied()
             .collect();
@@ -346,7 +348,7 @@ impl FFTSettings {
         let mut out = vec![G1::zero(); values.len()];
 
         FFTSettings::_fft_g1(values, 0, 1, &root_z, stride, &mut out);
-        
+
         let inv_len = Fr::from_int(values.len() as i32).get_inv();
         for item in out.iter_mut() {
         // for i in 0..out.len() {
@@ -356,7 +358,7 @@ impl FFTSettings {
         Ok(out)
     }
 
-    // #[cfg(feature = "parallel")] 
+    // #[cfg(feature = "parallel")]
     fn _fft_g1(values: &[G1], value_offset: usize, value_stride: usize, roots_of_unity: &[Fr], roots_stride: usize, out: &mut [G1]) {
         //TODO: fine tune for opt, maybe resolve number dinamically based on experiments
         if out.len() <= 4 {
@@ -365,23 +367,23 @@ impl FFTSettings {
 
         let half = out.len() >> 1;
 
-        #[cfg(feature = "parallel")] 
+        #[cfg(feature = "parallel")]
         {
             let (lo, hi) = out.split_at_mut(half);
             rayon::join(
                 || FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, lo),
                 || FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, hi),
             );
-    
+
         }
         #[cfg(not(feature="parallel"))]
         {
             // left
             FFTSettings::_fft_g1(values, value_offset, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[..half]);
             // right
-            FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]); 
+            FFTSettings::_fft_g1(values, value_offset + value_stride, value_stride << 1, roots_of_unity, roots_stride << 1, &mut out[half..]);
         }
-        
+
         for i in 0..half {
             let x = out[i];
             let y = out[i + half];

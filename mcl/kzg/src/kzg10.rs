@@ -203,17 +203,12 @@ impl ops::Add<Fr> for Fr {
 
 // KZG 10 Impl
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Polynomial {
     pub coeffs: Vec<Fr>,
 }
 
 impl Polynomial {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self { coeffs: vec![] }
-    }
-
     pub fn new(size: usize) -> Self {
         Polynomial {
             coeffs: vec![Fr::default(); size],
@@ -440,7 +435,7 @@ impl Polynomial {
         Polynomial::from_fr(Polynomial::pad_coeffs(&self.coeffs, n_in, n_out))
     }
 
-    // #[cfg(feature = "parallel")] 
+    // #[cfg(feature = "parallel")]
     pub fn mul_fft(
         &self,
         b: &Self,
@@ -468,7 +463,7 @@ impl Polynomial {
         let a_fft: Vec<Fr>;
         let b_fft: Vec<Fr>;
 
-        #[cfg(feature = "parallel")] 
+        #[cfg(feature = "parallel")]
         {
             if length > 1024 {
                 let mut a_fft_temp = vec![];
@@ -478,7 +473,7 @@ impl Polynomial {
                     || a_fft_temp = ft.fft(&a_pad.coeffs, false).unwrap(),
                     || b_fft_temp = ft.fft(&b_pad.coeffs, false).unwrap(),
                 );
-                
+
                 a_fft = a_fft_temp;
                 b_fft = b_fft_temp;
             } else {
@@ -490,9 +485,9 @@ impl Polynomial {
         #[cfg(not(feature="parallel"))]
         {
             a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
-            b_fft = ft.fft(&b_pad.coeffs, false).unwrap(); 
+            b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
         }
-        
+
         let mut ab_fft = a_fft;
         for i in 0..length {
             ab_fft[i] = ab_fft[i] * b_fft[i];
@@ -602,9 +597,8 @@ pub struct Curve {
     pub g2_points: Vec<G2>,
 }
 
-impl Curve {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
+impl Default for Curve {
+    fn default() -> Self {
         let g1_gen = G1::gen();
         let g2_gen = G2::gen();
         let g1_points: Vec<G1> = vec![];
@@ -617,7 +611,9 @@ impl Curve {
             g2_points,
         }
     }
+}
 
+impl Curve {
     pub fn new(secret: &Fr, order: usize) -> Self {
         let g1_gen = G1::gen();
         let g2_gen = G2::gen();
@@ -649,7 +645,7 @@ impl Curve {
         let mut g2_points: Vec<G2> = vec![];
         for i in 0..order {
             g1_points.push(secret_g1[i]);
-            g2_points.push(secret_g2[i].clone());
+            g2_points.push(secret_g2[i]);
         }
 
         Self {
@@ -661,7 +657,7 @@ impl Curve {
     }
 
     pub fn is_proof_valid(&self, commitment: &G1, proof: &G1, x: &Fr, y: &Fr) -> bool {
-        let secret_minus_x = &self.g2_points[1] - &(&self.g2_gen * x); // g2 * x to get x on g2
+        let secret_minus_x = self.g2_points[1] - (&self.g2_gen * x); // g2 * x to get x on g2
         let commitment_minus_y = commitment - &(self.g1_gen * y);
 
         Curve::verify_pairing(&commitment_minus_y, &self.g2_gen, proof, &secret_minus_x)

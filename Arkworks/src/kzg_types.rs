@@ -2,7 +2,7 @@ use crate::fft::SCALE2_ROOT_OF_UNITY;
 use crate::fft_g1::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::{
     check_proof_multi as check_multi, check_proof_single as check_single, commit_to_poly as commit,
-    compute_proof_multi as compute_multi, compute_proof_single as compute_single, default_kzg,
+    compute_proof_multi as compute_multi, compute_proof_single as compute_single,
     eval_poly, expand_root_of_unity, new_kzg_settings, FFTSettings as LFFTSettings,
     KZGSettings as LKZGSettings, G2_GENERATOR, G2_NEGATIVE_GENERATOR,
 };
@@ -152,14 +152,10 @@ impl G2Mul<FsFr> for ArkG2 {
     }
 }
 
-#[derive(Debug)]
-pub struct FsFr(pub blst::blst_fr);
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+pub struct FsFr(pub blst_fr);
 
 impl Fr for FsFr {
-    fn default() -> Self {
-        Self(blst_fr::default())
-    }
-
     fn zero() -> Self {
         Self::from_u64(0)
     }
@@ -276,22 +272,10 @@ impl Fr for FsFr {
     }
 }
 
-impl Clone for FsFr {
-    fn clone(&self) -> Self {
-        FsFr(self.0)
-    }
-}
-
-impl Copy for FsFr {}
-
 pub const SCALE_FACTOR: u64 = 5;
 pub const NUM_ROOTS: usize = 32;
 
 impl Poly<FsFr> for LPoly {
-    fn default() -> Self {
-        Self::new(1).unwrap()
-    }
-
     fn new(size: usize) -> Result<Self, String> {
         Ok(Self {
             coeffs: vec![FsFr::default(); size],
@@ -351,14 +335,6 @@ impl Poly<FsFr> for LPoly {
     }
 }
 
-impl Clone for LPoly {
-    fn clone(&self) -> Self {
-        LPoly {
-            coeffs: self.coeffs.clone(),
-        }
-    }
-}
-
 impl FFTSettingsPoly<FsFr, LPoly, LFFTSettings> for LFFTSettings {
     fn poly_mul_fft(
         a: &LPoly,
@@ -367,6 +343,18 @@ impl FFTSettingsPoly<FsFr, LPoly, LFFTSettings> for LFFTSettings {
         fs: Option<&LFFTSettings>,
     ) -> Result<LPoly, String> {
         poly_mul_fft(a, x, fs, len)
+    }
+}
+
+impl Default for LFFTSettings {
+    fn default() -> Self {
+        Self {
+            max_width: 0,
+            root_of_unity: FsFr::zero(),
+            expanded_roots_of_unity: Vec::new(),
+            reverse_roots_of_unity: Vec::new(),
+            domain: Radix2EvaluationDomain::<ArkFr>::new(0_usize).unwrap(),
+        }
     }
 }
 
@@ -415,26 +403,6 @@ impl FFTSettings<FsFr> for LFFTSettings {
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         self.reverse_roots_of_unity.as_slice()
     }
-    fn default() -> Self {
-        LFFTSettings {
-            max_width: 0,
-            root_of_unity: FsFr::zero(),
-            expanded_roots_of_unity: Vec::new(),
-            reverse_roots_of_unity: Vec::new(),
-            domain: Radix2EvaluationDomain::<ArkFr>::new(0_usize).unwrap(),
-        }
-    }
-}
-
-impl Clone for LFFTSettings {
-    fn clone(&self) -> Self {
-        let mut output = LFFTSettings::new(0).unwrap();
-        output.max_width = self.max_width;
-        output.root_of_unity = self.root_of_unity;
-        output.expanded_roots_of_unity = self.expanded_roots_of_unity.clone();
-        output.reverse_roots_of_unity = self.reverse_roots_of_unity.clone();
-        output
-    }
 }
 
 impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
@@ -482,21 +450,5 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.fs.get_expanded_roots_of_unity_at(i)
-    }
-
-    fn default() -> Self {
-        default_kzg()
-    }
-}
-
-impl Clone for LKZGSettings {
-    fn clone(&self) -> Self {
-        LKZGSettings::new(
-            &self.secret_g1.clone(),
-            &self.secret_g2.clone(),
-            self.length as usize,
-            &self.fs.clone(),
-        )
-        .unwrap()
     }
 }

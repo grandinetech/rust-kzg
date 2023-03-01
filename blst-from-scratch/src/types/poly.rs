@@ -7,16 +7,12 @@ use crate::types::fr::FsFr;
 use crate::utils::is_power_of_two;
 use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
 
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct FsPoly {
     pub coeffs: Vec<FsFr>,
 }
 
 impl Poly<FsFr> for FsPoly {
-    fn default() -> Self {
-        // Not perfect, but shouldn't fail
-        Self::new(0).unwrap()
-    }
-
     fn new(size: usize) -> Result<Self, String> {
         Ok(Self {
             coeffs: vec![FsFr::default(); size],
@@ -387,14 +383,6 @@ impl FsPoly {
     }
 }
 
-impl Clone for FsPoly {
-    fn clone(&self) -> Self {
-        FsPoly {
-            coeffs: self.coeffs.clone(),
-        }
-    }
-}
-
 impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
     fn recover_poly_from_samples(
         samples: &[Option<FsFr>],
@@ -438,8 +426,9 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
             }
         }
         // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
-        let mut poly_with_zero: FsPoly = FsPoly::default();
-        poly_with_zero.coeffs = fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap();
+        let mut poly_with_zero = FsPoly {
+            coeffs: fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap(),
+        };
 
         // x -> k * x
         let len_zero_poly = zero_poly.coeffs.len();
@@ -457,8 +446,9 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
             fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
         let eval_scaled_zero_poly: Vec<FsFr> = fs.fft_fr(&scaled_zero_poly, false).unwrap();
 
-        let mut eval_scaled_reconstructed_poly = FsPoly::default();
-        eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
+        let mut eval_scaled_reconstructed_poly = FsPoly {
+            coeffs: eval_scaled_poly_with_zero.clone(),
+        };
         for i in 0..len_samples {
             eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i]
                 .div(&eval_scaled_zero_poly[i])

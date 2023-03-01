@@ -6,10 +6,6 @@ use crate::kzg_settings::KZGSettings;
 use kzg::{FK20MultiSettings, FK20SingleSettings};
 
 impl FK20SingleSettings<Fr, G1, G2, FFTSettings, Polynomial, KZGSettings> for FK20SingleMatrix {
-    fn default() -> Self {
-        FK20SingleMatrix::default()
-    }
-
     fn new(ks: &KZGSettings, n2: usize) -> Result<Self, String> {
         FK20SingleMatrix::new(ks, n2)
     }
@@ -24,10 +20,6 @@ impl FK20SingleSettings<Fr, G1, G2, FFTSettings, Polynomial, KZGSettings> for FK
 }
 
 impl FK20MultiSettings<Fr, G1, G2, FFTSettings, Polynomial, KZGSettings> for FK20Matrix {
-    fn default() -> Self {
-        FK20Matrix::default()
-    }
-
     fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         FK20Matrix::new(ks, n2, chunk_len)
     }

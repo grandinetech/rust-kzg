@@ -9,7 +9,7 @@ use ark_poly::UVPolynomial;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct PolyData {
     pub coeffs: Vec<BlstFr>,
 }
