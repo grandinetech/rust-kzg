@@ -44,8 +44,7 @@ cp -r c-kzg-4844/blst/bindings/*.h c-kzg/inc/
 
 print_msg "Preparing c-kzg's makefile"
 cd c-kzg/src/ || exit 1
-sed=""
-openmp=""
+
 case $(uname -s) in
   "Linux")
     sed=$SED_LINUX

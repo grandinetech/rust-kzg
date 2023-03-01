@@ -3,8 +3,6 @@
 set -e
 
 LIB=libmcl_rust.a
-SED_LINUX="/usr/bin/sed"
-SED_MACOS="/usr/local/bin/gsed"
 
 print_msg () {
   echo "[*]" "$1"
@@ -60,17 +58,10 @@ cd ..
 
 case $(uname -s) in
   "Linux")
-    sed=$SED_LINUX
     CSHARP_PLATFORM=linux-x64
     CLANG_PLATFORM=x86_64-linux
     ;;
   "Darwin")
-    if [[ -z $(command -v "$SED_MACOS") ]]; then
-      echo "FAIL: gsed was not found"
-      echo "HELP: to fix this, run \"brew install gnu-sed\""
-      exit 1
-    fi
-    sed=$SED_MACOS
     CSHARP_PLATFORM=osx-x64
     CLANG_PLATFORM=x86_64-darwin
     ;;

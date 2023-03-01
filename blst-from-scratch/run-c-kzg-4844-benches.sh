@@ -3,8 +3,6 @@
 set -e
 
 LIB=libblst_from_scratch.a
-SED_LINUX="/usr/bin/sed"
-SED_MACOS="/usr/local/bin/gsed"
 
 print_msg () {
   echo "[*]" "$1"
@@ -48,26 +46,6 @@ git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
-
-###################### detecting os ######################
-
-case $(uname -s) in
-  "Linux")
-    sed=$SED_LINUX
-    ;;
-  "Darwin")
-    if [[ -z $(command -v "$SED_MACOS") ]]; then
-      echo "FAIL: gsed was not found"
-      echo "HELP: to fix this, run \"brew install gnu-sed\""
-      exit 1
-    fi
-    sed=$SED_MACOS
-    ;;
-  *)
-    echo "FAIL: unsupported OS"
-    exit 1
-    ;;
-esac
 
 ###################### rust benchmarks ######################
 

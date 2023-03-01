@@ -3,8 +3,6 @@
 set -e
 
 LIB=libmcl_rust.a
-SED_LINUX="/usr/bin/sed"
-SED_MACOS="/usr/local/bin/gsed"
 
 print_msg () {
   echo "[*]" "$1"
@@ -55,26 +53,6 @@ export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 make blst
 unset CFLAGS
 cd ..
-
-###################### detecting os ######################
-
-case $(uname -s) in
-  "Linux")
-    sed=$SED_LINUX
-    ;;
-  "Darwin")
-    if [[ -z $(command -v "$SED_MACOS") ]]; then
-      echo "FAIL: gsed was not found"
-      echo "HELP: to fix this, run \"brew install gnu-sed\""
-      exit 1
-    fi
-    sed=$SED_MACOS
-    ;;
-  *)
-    echo "FAIL: unsupported OS"
-    exit 1
-    ;;
-esac
 
 ###################### rust benchmarks ######################
 
