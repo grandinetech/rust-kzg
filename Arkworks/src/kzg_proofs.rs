@@ -31,7 +31,7 @@ use ark_ec::{
 use ark_ff::{BigInteger256, PrimeField};
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use blst::{blst_fp, blst_fp2};
-use kzg::{FFTFr, FFTSettings as FFTTrait, Fr as FrTrait, KZGSettings as KZGST, Poly};
+use kzg::{FFTFr, Fr as FrTrait, Poly};
 use rand::rngs::StdRng;
 use std::collections::BTreeMap;
 use std::ops::{MulAssign, Neg};
@@ -273,7 +273,7 @@ fn convert_to_bigints<F: PrimeField>(p: &[F]) -> Vec<F::BigInt> {
     coeffs
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FFTSettings {
     pub max_width: usize,
     pub root_of_unity: BlstFr,
@@ -323,7 +323,7 @@ impl FFTSettings {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KZGSettings {
     pub fs: FFTSettings,
     pub secret_g1: Vec<ArkG1>,
@@ -334,15 +334,17 @@ pub struct KZGSettings {
     pub rand2: Randomness<Fr, UniPoly_381>,
 }
 
-pub fn default_kzg() -> KZGSettings {
-    KZGSettings {
-        fs: FFTSettings::default(),
-        secret_g1: Vec::new(),
-        secret_g2: Vec::new(),
-        length: 0,
-        params: KZG_Bls12_381::setup(1, false, &mut test_rng()).unwrap(),
-        rand: test_rng(),
-        rand2: Randomness::empty(),
+impl Default for KZGSettings {
+    fn default() -> Self {
+        Self {
+            fs: FFTSettings::default(),
+            secret_g1: Vec::new(),
+            secret_g2: Vec::new(),
+            length: 0,
+            params: KZG_Bls12_381::setup(1, false, &mut test_rng()).unwrap(),
+            rand: test_rng(),
+            rand2: Randomness::empty(),
+        }
     }
 }
 

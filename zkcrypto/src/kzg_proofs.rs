@@ -8,35 +8,16 @@ use crate::kzg_types::{
     pairings_verify, ZkG1Projective as G1, ZkG2Projective as G2, G1_GENERATOR, G2_GENERATOR,
 };
 
-use kzg::{FFTFr, FFTSettings, Fr, Poly as OtherPoly, G1 as _G1, G2 as _G2};
+use kzg::{FFTFr, Fr, Poly as OtherPoly, G1 as _G1, G2 as _G2};
 
 use crate::curve::multiscalar_mul::msm_variable_base;
 
+#[derive(Debug, Clone, Default)]
 pub struct KZGSettings {
     pub fs: ZkFFTSettings,
     pub secret_g1: Vec<G1>,
     pub secret_g2: Vec<G2>,
     pub length: u64,
-}
-
-impl Default for KZGSettings {
-    fn default() -> KZGSettings {
-        KZGSettings {
-            fs: ZkFFTSettings::default(),
-            secret_g1: Vec::new(),
-            secret_g2: Vec::new(),
-            length: 0,
-        }
-    }
-}
-
-pub fn default_kzg() -> KZGSettings {
-    KZGSettings {
-        fs: ZkFFTSettings::default(),
-        secret_g1: Vec::new(),
-        secret_g2: Vec::new(),
-        length: 0,
-    }
 }
 
 pub(crate) fn new_kzg_settings(

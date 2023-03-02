@@ -1,4 +1,4 @@
-use kzg::{FK20MultiSettings, KZGSettings, Poly, FFTG1, G1};
+use kzg::{FK20MultiSettings, Poly, FFTG1, G1};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -24,9 +24,7 @@ impl Clone for FsFK20MultiSettings {
     }
 }
 
-impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
-    for FsFK20MultiSettings
-{
+impl Default for FsFK20MultiSettings {
     fn default() -> Self {
         Self {
             kzg_settings: FsKZGSettings::default(),
@@ -34,7 +32,11 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             x_ext_fft_files: vec![],
         }
     }
+}
 
+impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
+    for FsFK20MultiSettings
+{
     #[allow(clippy::many_single_char_names)]
     fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         if n2 > ks.fs.max_width {

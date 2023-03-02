@@ -6,10 +6,6 @@ use kzg::PolyRecover;
 use crate::fk20_fft::FFTSettings;
 
 impl Poly<Fr> for Polynomial {
-    fn default() -> Self {
-        Polynomial { coeffs: vec![] }
-    }
-
     fn new(size: usize) -> Result<Self, String> {
         Ok(Polynomial::new(size))
     }
@@ -46,7 +42,7 @@ impl Poly<Fr> for Polynomial {
         Polynomial::inverse(self, new_len)
     }
 
-    fn div(&mut self, x: &Self) -> Result<Self, String> { 
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
         Polynomial::div(self, &x.coeffs)
     }
 

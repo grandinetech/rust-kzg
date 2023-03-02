@@ -44,16 +44,18 @@ pub struct KzgPoly {
     pub length: u64,
 }
 
-impl Poly<BlstFr> for KzgPoly {
+impl Default for KzgPoly {
     fn default() -> Self {
         Self {
-            coeffs: &mut Fr::default(),
+            coeffs: &mut BlstFr::default(),
             length: 0,
         }
     }
+}
 
+impl Poly<BlstFr> for KzgPoly {
     fn new(size: usize) -> Result<Self, String> {
-        let mut poly = Poly::default();
+        let mut poly = Self::default();
         unsafe {
             match new_poly(&mut poly, size as u64) {
                 KzgRet::KzgOk => Ok(poly),
@@ -81,7 +83,7 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn eval(&self, x: &BlstFr) -> BlstFr {
-        let mut out = Fr::default();
+        let mut out = BlstFr::default();
         unsafe {
             eval_poly(&mut out, self, x);
         }
@@ -110,7 +112,7 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn div(&mut self, x: &Self) -> Result<Self, String> {
-        let mut poly = Poly::default();
+        let mut poly = Self::default();
         unsafe {
             match new_poly_div(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
@@ -120,7 +122,7 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn long_div(&mut self, x: &Self) -> Result<Self, String> {
-        let mut poly = Poly::new(self.len()).unwrap();
+        let mut poly = Self::new(self.len()).unwrap();
         unsafe {
             match poly_long_div(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
@@ -133,7 +135,7 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
-        let mut poly = Poly::new(self.len()).unwrap();
+        let mut poly = Self::new(self.len()).unwrap();
         unsafe {
             match poly_fast_div(&mut poly, self, x) {
                 KzgRet::KzgOk => Ok(poly),
@@ -146,7 +148,7 @@ impl Poly<BlstFr> for KzgPoly {
     }
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        let mut poly = Poly::new(len).unwrap();
+        let mut poly = Self::new(len).unwrap();
         unsafe {
             match poly_mul(&mut poly, self, x, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(poly),
@@ -172,7 +174,7 @@ impl PolyRecover<BlstFr, KzgPoly, KzgFFTSettings> for KzgPoly {
         samples: &[Option<BlstFr>],
         fs: &KzgFFTSettings,
     ) -> Result<KzgPoly, String> {
-        let mut reconstructed_data = vec![Fr::default(); samples.len()];
+        let mut reconstructed_data = vec![BlstFr::default(); samples.len()];
         let mut optionless_samples = Vec::new();
         for s in samples {
             if s.is_some() {

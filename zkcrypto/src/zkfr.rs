@@ -13,10 +13,6 @@ use std::convert::TryInto;
 pub use crate::curve::scalar::Scalar as blsScalar;
 
 impl Fr for blsScalar {
-    fn default() -> Self {
-        <blsScalar as Default>::default()
-    }
-
     fn zero() -> Self {
         blsScalar::zero()
     }
@@ -37,7 +33,7 @@ impl Fr for blsScalar {
         let val: [u64; 4] = rand::random();
         blsScalar::from_raw(val)
 
-        // let ret = blsScalar::random(<blsScalar as Fr>::default());
+        // let ret = blsScalar::random(blsScalar::default());
         // ret
 
         // let mut ret = Self::default();
@@ -91,16 +87,16 @@ impl Fr for blsScalar {
     }
 
     fn mul(&self, b: &Self) -> Self {
-        // let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
+        // let mut ret = blsScalar::default(); // Self::default() is this needed?
         blsScalar::mul(self, b) // &b.0 or &ret.0?
     }
 
     fn add(&self, b: &Self) -> Self {
-        // let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
+        // let mut ret = blsScalar::default(); // Self::default() is this needed?
         blsScalar::add(self, b)
     }
     fn sub(&self, b: &Self) -> Self {
-        // let mut ret = <blsScalar as Fr>::default(); // Self::default() is this needed?
+        // let mut ret = blsScalar::default(); // Self::default() is this needed?
         blsScalar::sub(self, b) // for this
     }
 
@@ -140,7 +136,7 @@ impl Fr for blsScalar {
     }
 
     fn inverse(&self) -> Self {
-        //let mut ret = <blsScalar as Fr>::default(); // Self::default()
+        //let mut ret = blsScalar::default(); // Self::default()
         // Self::invert(&self).unwrap()
 
         // let ret = self.invert().unwrap();

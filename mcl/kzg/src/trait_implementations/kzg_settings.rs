@@ -5,10 +5,6 @@ use crate::kzg_settings::KZGSettings;
 use kzg::KZGSettings as CommonKZGSettings;
 
 impl CommonKZGSettings<Fr, G1, G2, FFTSettings, Polynomial> for KZGSettings {
-    fn default() -> Self {
-        KZGSettings::default()
-    }
-
     fn new(secret_g1: &[G1], secret_g2: &[G2], length: usize, fs: &FFTSettings) -> Result<Self, String> {
         KZGSettings::new(secret_g1, secret_g2, length, fs)
     }

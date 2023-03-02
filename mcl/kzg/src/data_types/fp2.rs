@@ -31,7 +31,7 @@ extern "C" {
     fn mclBnFp2_squareRoot(y: *mut Fp2, x: *const Fp2) -> i32;
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct Fp2 {
     pub d: [Fp; 2],

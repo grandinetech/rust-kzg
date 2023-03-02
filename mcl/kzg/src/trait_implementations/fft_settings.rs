@@ -3,10 +3,6 @@ use crate::fk20_fft::{FFTSettings, SCALE_2_ROOT_OF_UNITY_PR7_STRINGS};
 use kzg::FFTSettings as CommonFFTSettings;
 
 impl CommonFFTSettings<Fr> for FFTSettings {
-    fn default() -> Self {
-        FFTSettings::default()
-    }
-
     fn new(scale: usize) -> Result<FFTSettings, String> {
         //currently alawys use PR 7 for shared tests
         FFTSettings::new_custom_primitive_roots(scale as u8, SCALE_2_ROOT_OF_UNITY_PR7_STRINGS)

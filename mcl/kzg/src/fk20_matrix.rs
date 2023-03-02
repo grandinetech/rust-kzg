@@ -21,7 +21,7 @@ impl FFTSettings {
 
         self.fft_g1(&x_ext)
     }
-    
+
     pub fn toeplitz_part_2(&self, coeffs: &[Fr], x_ext_fft: &[G1]) -> Result<Vec<G1>, String> {
         let toeplitz_coeffs_fft = self.fft(coeffs, false).unwrap();
 
@@ -42,7 +42,7 @@ impl FFTSettings {
             Ok(ret)
         }
     }
-    
+
     pub fn toeplitz_part_3(&self, h_ext_fft: &[G1]) -> Result<Vec<G1>, String> {
         let n2 = h_ext_fft.len();
         let n = n2 / 2;
@@ -57,25 +57,25 @@ impl FFTSettings {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct FK20SingleMatrix {
     pub x_ext_fft: Vec<G1>,
     pub kzg_settings: KZGSettings
 }
 
 impl FK20SingleMatrix {
- pub fn new(kzg_settings: &KZGSettings, n2: usize) -> Result<Self, String> {
+    pub fn new(kzg_settings: &KZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 >> 1; // div by 2
 
         if !is_power_of_2(n2) {
             return Err(String::from("n2 must be a power of two"));
-        } 
+        }
         if n2 < 2 {
             return Err(String::from("n2 must be greater than or equal to 2"));
         }
         if n2 > kzg_settings.fft_settings.max_width {
             return Err(String::from("n2 must be less than or equal to fft settings max width"));
-        } 
+        }
 
         let mut x = Vec::new();
         for i in 0..n - 1 {
@@ -92,14 +92,6 @@ impl FK20SingleMatrix {
         })
     }
 
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self {
-            kzg_settings: KZGSettings::default(),
-            x_ext_fft: vec![]
-        }
-    }
-
     pub fn dau_using_fk20_single(&self, polynomial: &Polynomial) -> Result<Vec<G1>, String> {
         let n = polynomial.order();
         let n2 = n << 1;
@@ -109,14 +101,14 @@ impl FK20SingleMatrix {
         }
         if n2 > self.kzg_settings.fft_settings.max_width {
             return Err(String::from("n2 must be less than or equal to fft settings max width"));
-        } 
+        }
 
         let mut proofs = self.fk20_single_dao_optimized(polynomial).unwrap();
         order_by_rev_bit_order(&mut proofs);
 
         Ok(proofs)
     }
-    
+
     pub fn fk20_single_dao_optimized(&self, polynomial: &Polynomial) -> Result<Vec<G1>, String> {
         let n = polynomial.order();
         let n2 = n * 2;
@@ -126,7 +118,7 @@ impl FK20SingleMatrix {
         }
         if n2 > self.kzg_settings.fft_settings.max_width {
             return Err(String::from("n2 must be less than or equal to fft settings max width"));
-        } 
+        }
 
         let toeplitz_coeffs = polynomial.toeplitz_coeffs_step_strided(0, 1);
         let h_ext_fft = self.kzg_settings.fft_settings.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft).unwrap();
@@ -143,20 +135,21 @@ pub struct FK20Matrix {
     pub kzg_settings: KZGSettings
 }
 
-impl FK20Matrix {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
+impl Default for FK20Matrix {
+    fn default() -> Self {
         Self {
             kzg_settings: KZGSettings::default(),
             chunk_len: 1,
             x_ext_fft_files: vec![],
         }
     }
+}
 
+impl FK20Matrix {
     pub fn new(kzg_settings: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         let n = n2 >> 1; // div by 2
         let k = n / chunk_len;
-        
+
         if !is_power_of_2(n2) {
             return Err(String::from("n2 must be a power of two"));
         }
@@ -191,7 +184,7 @@ impl FK20Matrix {
     #[allow(clippy::many_single_char_names)]
     fn x_ext_fft_precompute(fft_settings: &FFTSettings, curve: &Curve, n: usize, k: usize, chunk_len: usize, offset: usize) -> Result<Vec<G1>, String> {
         let mut x: Vec<G1> = vec![G1::default(); k];
-        
+
         let mut start = 0;
         let temp = chunk_len + 1 + offset;
         if n >= temp {
@@ -202,14 +195,14 @@ impl FK20Matrix {
         let mut j = start + chunk_len;
 
         while i + 1 < k {
-            // hack to remove overflow checking, 
+            // hack to remove overflow checking,
             // could just move this to the bottom and define j as start, but then need to check for overflows
             // basically last j -= chunk_len overflows, but it's not used to access the array, as the i + 1 < k is false
             j -= chunk_len;
             x[i] = curve.g1_points[j];
             i += 1;
         }
-        
+
         x[k - 1] = G1::zero();
 
         fft_settings.toeplitz_part_1(&x)
@@ -245,7 +238,7 @@ impl FK20Matrix {
         if n2 > self.kzg_settings.fft_settings.max_width {
             return Err(String::from("n2 must be less than or equal to fft settings max width"));
         }
-        
+
         let mut h_ext_fft = vec![G1::zero(); k2];
         // TODO: this operates on an extended poly, but doesn't use the extended values?
         // literally just using the poly without the zero trailing tail, makes more sense to take it in as a param, or use without the tail;
@@ -260,7 +253,7 @@ impl FK20Matrix {
                 h_ext_fft[j] = tmp;
             }
         }
-        
+
         let tail = iter::repeat(G1::zero()).take(k);
         let h: Vec<G1> = self.kzg_settings.fft_settings.toeplitz_part_3(&h_ext_fft)
             .unwrap()
@@ -268,7 +261,7 @@ impl FK20Matrix {
             .take(k)
             .chain(tail)
             .collect();
-        
+
         self.kzg_settings.fft_settings.fft_g1(&h)
     }
 }
@@ -285,10 +278,10 @@ impl Polynomial {
         result
     }
 
-    pub fn get_extended(&self, size: usize) -> Polynomial { 
+    pub fn get_extended(&self, size: usize) -> Polynomial {
         Polynomial::from_fr(Polynomial::extend(&self.coeffs, size))
     }
-    
+
     fn toeplitz_coeffs_step_strided(&self, offset: usize, stride: usize) -> Vec<Fr> {
         let n = self.order();
         let k = n / stride;
@@ -297,7 +290,7 @@ impl Polynomial {
         // [last] + [0]*(n+1) + [1 .. n-2]
         let mut toeplitz_coeffs = vec![Fr::zero(); k2];
         toeplitz_coeffs[0] = self.coeffs[n - 1 - offset];
-        
+
         let mut j = (stride << 1) - offset - 1;
         for item in toeplitz_coeffs.iter_mut().take(k2).skip(k+2) {
             *item = self.coeffs[j];

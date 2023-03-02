@@ -1,4 +1,4 @@
-use kzg::{FFTFr, Fr, Poly, ZeroPoly};
+use kzg::{FFTFr, Fr, ZeroPoly};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -85,8 +85,9 @@ pub fn recover_poly_from_samples(
         }
     }
     // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
-    let mut poly_with_zero: FsPoly = FsPoly::default();
-    poly_with_zero.coeffs = fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap();
+    let mut poly_with_zero = FsPoly {
+        coeffs: fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap(),
+    };
 
     // x -> k * x
     let len_zero_poly = zero_poly.coeffs.len();
@@ -141,8 +142,9 @@ pub fn recover_poly_from_samples(
         eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
     }
 
-    let mut eval_scaled_reconstructed_poly = FsPoly::default();
-    eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
+    let mut eval_scaled_reconstructed_poly = FsPoly {
+        coeffs: eval_scaled_poly_with_zero.clone(),
+    };
     for i in 0..len_samples {
         eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i]
             .div(&eval_scaled_zero_poly[i])
