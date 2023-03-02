@@ -64,7 +64,7 @@ impl G1 {
         g1.z.set_str(&arr64_6_to_g1_sum(&u[2]).to_string(), 10);
         g1
     }
-    
+
     pub const G1_IDENTITY: G1 = G1 {
         x: Fp {
             d: [0, 0, 0, 0, 0, 0],

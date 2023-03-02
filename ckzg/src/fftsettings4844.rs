@@ -52,6 +52,5 @@ impl FFTSettings<BlstFr> for KzgFFTSettings4844 {
 }
 
 impl Drop for KzgFFTSettings4844 {
-    fn drop(&mut self) {
-    }
+    fn drop(&mut self) {}
 }

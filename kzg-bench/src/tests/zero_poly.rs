@@ -239,8 +239,7 @@ pub fn zero_poly_random<
                 .unwrap();
 
             for missing_idx in missing_idxs {
-                let out =
-                    zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
+                let out = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
                 assert!(out.is_zero());
             }
 
@@ -306,10 +305,7 @@ pub fn zero_poly_252<
     let missing_idxs = (0..252).collect::<Vec<_>>();
 
     let (zero_eval, zero_poly) = fft_settings
-        .zero_poly_via_multiplication(
-            fft_settings.get_max_width(),
-            &missing_idxs,
-        )
+        .zero_poly_via_multiplication(fft_settings.get_max_width(), &missing_idxs)
         .unwrap();
 
     for missing_idx in missing_idxs {

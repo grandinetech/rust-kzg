@@ -6,24 +6,24 @@ use std::io::Read;
 use std::ptr::null_mut;
 
 use blst::{
-    blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_uncompress, blst_p2,
-    blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR, blst_fr, blst_scalar,
-    blst_scalar_from_lendian, blst_scalar_fr_check, blst_fr_from_scalar,
+    blst_fr, blst_fr_from_scalar, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
+    blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress,
+    blst_scalar, blst_scalar_fr_check, blst_scalar_from_lendian, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1};
 
-use libc::{FILE, fgets, strtoul, fgetc, EOF, c_ulong};
-#[cfg(feature = "parallel")]
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use libc::{c_ulong, fgetc, fgets, strtoul, EOF, FILE};
 #[cfg(feature = "parallel")]
 use rayon::iter::IntoParallelIterator;
+#[cfg(feature = "parallel")]
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
 use sha2::{Digest, Sha256};
 
 use crate::consts::{
     BYTES_PER_FIELD_ELEMENT, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
 };
-use crate::types::fft_settings::{FsFFTSettings};
+use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 
@@ -53,26 +53,37 @@ pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; 48usize] {
     out
 }
 
-pub fn load_trusted_setup_rust(g1_bytes: &[u8], n1: usize, g2_bytes: &[u8], _n2: usize) -> FsKZGSettings {
-    let g1_projectives: Vec<FsG1> = g1_bytes.chunks(48).map(|chunk| {
-        let mut bytes_array: [u8; 48] = [0; 48];
-        bytes_array.copy_from_slice(chunk);
-        bytes_to_g1_rust(&bytes_array).unwrap()
-    }).collect();
+pub fn load_trusted_setup_rust(
+    g1_bytes: &[u8],
+    n1: usize,
+    g2_bytes: &[u8],
+    _n2: usize,
+) -> FsKZGSettings {
+    let g1_projectives: Vec<FsG1> = g1_bytes
+        .chunks(48)
+        .map(|chunk| {
+            let mut bytes_array: [u8; 48] = [0; 48];
+            bytes_array.copy_from_slice(chunk);
+            bytes_to_g1_rust(&bytes_array).unwrap()
+        })
+        .collect();
 
-    let g2_values: Vec<FsG2> = g2_bytes.chunks(96).map(|chunk| {
-        let mut bytes_array: [u8; 96] = [0; 96];
-        bytes_array.copy_from_slice(chunk);
-        let mut tmp = blst_p2_affine::default();
-        let mut g2 = blst_p2::default();
-        unsafe {
-            if blst_p2_uncompress(&mut tmp, bytes_array.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                panic!("blst_p2_uncompress failed");
+    let g2_values: Vec<FsG2> = g2_bytes
+        .chunks(96)
+        .map(|chunk| {
+            let mut bytes_array: [u8; 96] = [0; 96];
+            bytes_array.copy_from_slice(chunk);
+            let mut tmp = blst_p2_affine::default();
+            let mut g2 = blst_p2::default();
+            unsafe {
+                if blst_p2_uncompress(&mut tmp, bytes_array.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                    panic!("blst_p2_uncompress failed");
+                }
+                blst_p2_from_affine(&mut g2, &tmp);
             }
-            blst_p2_from_affine(&mut g2, &tmp);
-        }
-        FsG2(g2)
-    }).collect();
+            FsG2(g2)
+        })
+        .collect();
 
     let mut max_scale: usize = 0;
     while (1 << max_scale) < n1 {
@@ -151,7 +162,6 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
         i -= 1;
     }
     out[0] = *inv;
-
 }
 
 pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> Result<FsFr, u8> {
@@ -223,15 +233,15 @@ pub fn compute_kzg_proof_rust(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
         inverses_in[i] = roots_of_unity[i].sub(x);
         i += 1;
     }
-    
+
     fr_batch_inv(&mut inverses, &inverses_in, q.len());
-    
+
     i = 0;
     while i < q.len() {
         q.coeffs[i] = q.coeffs[i].mul(&inverses[i]);
         i += 1;
     }
-    
+
     if m > 0 {
         // ω_m == x
         q.coeffs[m] = FsFr::zero();
@@ -259,7 +269,11 @@ pub fn compute_kzg_proof_rust(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
     g1_lincomb(&s.secret_g1, &q.coeffs)
 }
 
-pub fn evaluate_polynomial_in_evaluation_form_rust(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsFr {
+pub fn evaluate_polynomial_in_evaluation_form_rust(
+    p: &FsPoly,
+    x: &FsFr,
+    s: &FsKZGSettings,
+) -> FsFr {
     let mut tmp: FsFr;
 
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); p.len()];
@@ -281,7 +295,7 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(p: &FsPoly, x: &FsFr, s: &FsK
 
     let mut out = FsFr::zero();
     i = 0;
-    
+
     while i < p.len() {
         tmp = inverses[i].mul(&roots_of_unity[i]);
         tmp = tmp.mul(&p.coeffs[i]);
@@ -331,21 +345,23 @@ pub fn poly_lincomb(vectors: &[FsPoly], scalars: &[FsFr], n: usize) -> FsPoly {
                 out.set_coeff_at(j, &out.get_coeff_at(j).add(&tmp));
             }
         }
-        out    
+        out
     }
     #[cfg(feature = "parallel")]
     {
         let mut out: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
-        
-        out.coeffs = (0..FIELD_ELEMENTS_PER_BLOB).into_par_iter().map(|j|{
-            let mut tmp = FsFr::zero();
-            for i in 0..n{
-                tmp = tmp.add(&scalars[i].mul(&vectors[i].get_coeff_at(j)));
-            }
-            tmp
-        }).collect();    
-        out    
 
+        out.coeffs = (0..FIELD_ELEMENTS_PER_BLOB)
+            .into_par_iter()
+            .map(|j| {
+                let mut tmp = FsFr::zero();
+                for i in 0..n {
+                    tmp = tmp.add(&scalars[i].mul(&vectors[i].get_coeff_at(j)));
+                }
+                tmp
+            })
+            .collect();
+        out
     }
 }
 
@@ -359,17 +375,13 @@ pub fn hash_to_bls_field(x: &[u8; 32]) -> FsFr {
     FsFr(out)
 }
 
-pub fn compute_challenges(
-    polys: &[FsPoly],
-    comms: &[FsG1],
-    n: usize,
-) -> (FsFr, Vec<FsFr>) {
+pub fn compute_challenges(polys: &[FsPoly], comms: &[FsG1], n: usize) -> (FsFr, Vec<FsFr>) {
     let ni: usize = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
     let np: usize = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
 
     let mut bytes: Vec<u8> = vec![0; np + n * 48];
     bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
-    
+
     bytes_of_uint64(
         &mut bytes[16..24],
         FIELD_ELEMENTS_PER_BLOB.try_into().unwrap(),
@@ -456,9 +468,9 @@ pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<FsFr>], ts: &FsKZGSettings)
             (poly, commitment)
         })
         .unzip();
-    
+
     let (aggregated_poly, _, evaluation_challenge) =
-    compute_aggregated_poly_and_commitment(&polys, &commitments, n);
+        compute_aggregated_poly_and_commitment(&polys, &commitments, n);
     compute_kzg_proof_rust(&aggregated_poly, &evaluation_challenge, ts)
 }
 
@@ -475,10 +487,11 @@ pub fn verify_aggregate_kzg_proof_rust(
     let polys: Vec<FsPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect();
     #[cfg(not(feature = "parallel"))]
     let polys: Vec<FsPoly> = blobs.iter().map(|blob| poly_from_blob(blob)).collect();
-    
+
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
-    let y = evaluate_polynomial_in_evaluation_form_rust(&aggregated_poly, &evaluation_challenge, ts);
+    let y =
+        evaluate_polynomial_in_evaluation_form_rust(&aggregated_poly, &evaluation_challenge, ts);
     verify_kzg_proof_rust(
         &aggregated_poly_commitment,
         &evaluation_challenge,
@@ -542,26 +555,54 @@ pub struct CFsPoly {
 }
 
 fn fft_settings_to_rust(c_settings: *const CFsFFTSettings) -> FsFFTSettings {
-    let settings = unsafe{&*c_settings};
-    let mut first_root = unsafe{ FsFr(*(settings.expanded_roots_of_unity.add(1))) };
+    let settings = unsafe { &*c_settings };
+    let mut first_root = unsafe { FsFr(*(settings.expanded_roots_of_unity.add(1))) };
     let first_root_arr = [first_root; 1];
     first_root = first_root_arr[0];
 
     let res = FsFFTSettings {
         max_width: settings.max_width as usize,
-        root_of_unity: first_root ,
-        expanded_roots_of_unity: unsafe{std::slice::from_raw_parts(settings.expanded_roots_of_unity, (settings.max_width + 1) as usize).iter().map(|r| FsFr(*r)).collect::<Vec<FsFr>>() },
-        reverse_roots_of_unity: unsafe{std::slice::from_raw_parts(settings.reverse_roots_of_unity, (settings.max_width + 1) as usize).iter().map(|r| FsFr(*r)).collect::<Vec<FsFr>>() },
+        root_of_unity: first_root,
+        expanded_roots_of_unity: unsafe {
+            std::slice::from_raw_parts(
+                settings.expanded_roots_of_unity,
+                (settings.max_width + 1) as usize,
+            )
+            .iter()
+            .map(|r| FsFr(*r))
+            .collect::<Vec<FsFr>>()
+        },
+        reverse_roots_of_unity: unsafe {
+            std::slice::from_raw_parts(
+                settings.reverse_roots_of_unity,
+                (settings.max_width + 1) as usize,
+            )
+            .iter()
+            .map(|r| FsFr(*r))
+            .collect::<Vec<FsFr>>()
+        },
     };
 
     res
 }
 
-fn fft_settings_to_c(rust_settings : &FsFFTSettings) -> *const CFsFFTSettings {
+fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFsFFTSettings {
     let mut roots_of_unity: Vec<FsFr> = rust_settings.expanded_roots_of_unity.clone();
-    reverse_bit_order(&mut roots_of_unity);    
-    let expanded_roots_of_unity = Box::new(rust_settings.expanded_roots_of_unity.iter().map(|r| r.0).collect::<Vec<blst_fr>>());
-    let reverse_roots_of_unity = Box::new(rust_settings.reverse_roots_of_unity.iter().map(|r| r.0).collect::<Vec<blst_fr>>());
+    reverse_bit_order(&mut roots_of_unity);
+    let expanded_roots_of_unity = Box::new(
+        rust_settings
+            .expanded_roots_of_unity
+            .iter()
+            .map(|r| r.0)
+            .collect::<Vec<blst_fr>>(),
+    );
+    let reverse_roots_of_unity = Box::new(
+        rust_settings
+            .reverse_roots_of_unity
+            .iter()
+            .map(|r| r.0)
+            .collect::<Vec<blst_fr>>(),
+    );
     let roots_of_unity = Box::new(roots_of_unity.iter().map(|r| r.0).collect::<Vec<blst_fr>>());
 
     let b = Box::new(CFsFFTSettings {
@@ -573,33 +614,51 @@ fn fft_settings_to_c(rust_settings : &FsFFTSettings) -> *const CFsFFTSettings {
     Box::into_raw(b)
 }
 
-fn kzg_settings_to_rust(c_settings : &CFsKzgSettings) -> FsKZGSettings {
+fn kzg_settings_to_rust(c_settings: &CFsKzgSettings) -> FsKZGSettings {
     let length = unsafe { (*c_settings.fs).max_width as usize };
-    let secret_g1 = unsafe{std::slice::from_raw_parts(c_settings.g1_values, length).iter().map(|r| FsG1(*r)).collect::<Vec<FsG1>>() };
+    let secret_g1 = unsafe {
+        std::slice::from_raw_parts(c_settings.g1_values, length)
+            .iter()
+            .map(|r| FsG1(*r))
+            .collect::<Vec<FsG1>>()
+    };
     let res = FsKZGSettings {
         fs: fft_settings_to_rust(c_settings.fs),
         secret_g1,
-        secret_g2: unsafe{std::slice::from_raw_parts(c_settings.g2_values, 65).iter().map(|r| FsG2(*r)).collect::<Vec<FsG2>>() }
+        secret_g2: unsafe {
+            std::slice::from_raw_parts(c_settings.g2_values, 65)
+                .iter()
+                .map(|r| FsG2(*r))
+                .collect::<Vec<FsG2>>()
+        },
     };
     res
 }
 
-fn kzg_settings_to_c(rust_settings : &FsKZGSettings) -> CFsKzgSettings {
-    let g1_val = rust_settings.secret_g1.iter().map(|r| r.0).collect::<Vec<blst_p1>>();
+fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CFsKzgSettings {
+    let g1_val = rust_settings
+        .secret_g1
+        .iter()
+        .map(|r| r.0)
+        .collect::<Vec<blst_p1>>();
     let g1_val = Box::new(g1_val);
-    let g2_val = rust_settings.secret_g2.iter().map(|r| r.0).collect::<Vec<blst_p2>>();
+    let g2_val = rust_settings
+        .secret_g2
+        .iter()
+        .map(|r| r.0)
+        .collect::<Vec<blst_p2>>();
     let x = g2_val.into_boxed_slice();
     let stat_ref = Box::leak(x);
     let v = Box::into_raw(g1_val);
-    
+
     CFsKzgSettings {
         fs: fft_settings_to_c(&rust_settings.fs),
-        g1_values: unsafe{(*v).as_mut_ptr()},
+        g1_values: unsafe { (*v).as_mut_ptr() },
         g2_values: stat_ref.as_mut_ptr(),
     }
 }
 
-fn poly_to_rust(c_poly : &CFsPoly) -> FsPoly {
+fn poly_to_rust(c_poly: &CFsPoly) -> FsPoly {
     let c_poly_coeffs = c_poly.evals;
     let mut poly_rust = FsPoly::new(c_poly_coeffs.len()).unwrap();
     for (pos, e) in c_poly_coeffs.iter().enumerate() {
@@ -615,19 +674,23 @@ fn poly_to_rust(c_poly : &CFsPoly) -> FsPoly {
 pub unsafe extern "C" fn blob_to_kzg_commitment(
     out: *mut KZGCommitment,
     blob: *const Blob,
-    s: &CFsKzgSettings
+    s: &CFsKzgSettings,
 ) -> C_KZG_RET {
-    let blob_arr_res = (*blob).bytes.chunks(32).map(|x| {
-        let mut bytes = [0u8; 32];
-        bytes.copy_from_slice(x);
-        let mut tmp: blst_scalar = blst_scalar::default();
-        blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
-        if !blst_scalar_fr_check(&tmp) {
-            Err(C_KZG_RET_C_KZG_BADARGS)
-        } else {
-            Ok(bytes_to_bls_field_rust(&bytes).unwrap())
-        }
-    }).collect::<Result<Vec<FsFr>, C_KZG_RET>>();
+    let blob_arr_res = (*blob)
+        .bytes
+        .chunks(32)
+        .map(|x| {
+            let mut bytes = [0u8; 32];
+            bytes.copy_from_slice(x);
+            let mut tmp: blst_scalar = blst_scalar::default();
+            blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
+            if !blst_scalar_fr_check(&tmp) {
+                Err(C_KZG_RET_C_KZG_BADARGS)
+            } else {
+                Ok(bytes_to_bls_field_rust(&bytes).unwrap())
+            }
+        })
+        .collect::<Result<Vec<FsFr>, C_KZG_RET>>();
 
     if let Ok(blob_arr) = blob_arr_res {
         let tmp = blob_to_kzg_commitment_rust(&blob_arr, &kzg_settings_to_rust(s));
@@ -640,14 +703,14 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
 
 #[no_mangle]
 /// # Safety
-/// 
+///
 /// This function should not be called before the horsemen are ready.
 pub unsafe extern "C" fn load_trusted_setup(
     out: *mut CFsKzgSettings,
     g1_bytes: *const u8,
     n1: usize,
     g2_bytes: *const u8,
-    n2: usize
+    n2: usize,
 ) -> C_KZG_RET {
     let g1_bytes = std::slice::from_raw_parts(g1_bytes, n1 * 48);
     let g2_bytes = std::slice::from_raw_parts(g2_bytes, n2 * 96);
@@ -656,7 +719,7 @@ pub unsafe extern "C" fn load_trusted_setup(
     C_KZG_RET_C_KZG_OK
 }
 
-// getting *FILE seems impossible 
+// getting *FILE seems impossible
 // https://stackoverflow.com/questions/4862327/is-there-a-way-to-get-the-filename-from-a-file
 /// # Safety
 ///
@@ -664,21 +727,23 @@ pub unsafe extern "C" fn load_trusted_setup(
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(
     out: *mut CFsKzgSettings,
-    inp: *mut FILE
+    inp: *mut FILE,
 ) -> C_KZG_RET {
     let mut buf: [c_char; 100] = [0; 100];
     let result = fgets(buf.as_mut_ptr(), 100, inp);
-    if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != FIELD_ELEMENTS_PER_BLOB as c_ulong {
+    if result.is_null()
+        || strtoul(buf.as_ptr(), null_mut(), 10) != FIELD_ELEMENTS_PER_BLOB as c_ulong
+    {
         return C_KZG_RET_C_KZG_BADARGS;
     }
     let result: *mut c_char = fgets(buf.as_mut_ptr(), 100, inp);
     if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != 65 {
         return C_KZG_RET_C_KZG_BADARGS;
     }
-    
+
     let mut g2_bytes: [u8; 65 * 96] = [0; 65 * 96];
     let mut g1_bytes: [u8; FIELD_ELEMENTS_PER_BLOB * 48] = [0; FIELD_ELEMENTS_PER_BLOB * 48];
-    
+
     let mut i: usize = 0;
     while i < FIELD_ELEMENTS_PER_BLOB * 48 {
         let c1 = fgetc(inp) as c_char;
@@ -686,7 +751,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
             continue;
         }
         let c2 = fgetc(inp) as c_char;
-        
+
         if c1 == EOF as c_char || c2 == EOF as c_char {
             return 1;
         }
@@ -701,7 +766,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
             continue;
         }
         let c2 = fgetc(inp) as c_char;
-        
+
         if c1 == EOF as c_char || c2 == EOF as c_char {
             return 1;
         }
@@ -716,7 +781,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 
 #[no_mangle]
 /// # Safety
-/// 
+///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn compute_aggregate_kzg_proof(
     out: *mut KZGProof,
@@ -739,24 +804,31 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
             blob_arr[i].push(ret.unwrap());
         }
     }
-    let tmp = compute_aggregate_kzg_proof_rust(&blob_arr,
-        &kzg_settings_to_rust(s),
-    );
+    let tmp = compute_aggregate_kzg_proof_rust(&blob_arr, &kzg_settings_to_rust(s));
     (*out).bytes = bytes_from_g1_rust(&tmp);
     C_KZG_RET_C_KZG_OK
 }
 
 #[no_mangle]
 /// # Safety
-/// 
+///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
     let max_width = (*(*s).fs).max_width as usize;
-    let rev = Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).reverse_roots_of_unity, max_width));
+    let rev = Box::from_raw(std::slice::from_raw_parts_mut(
+        (*(*s).fs).reverse_roots_of_unity,
+        max_width,
+    ));
     drop(rev);
-    let exp = Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).expanded_roots_of_unity, max_width));
+    let exp = Box::from_raw(std::slice::from_raw_parts_mut(
+        (*(*s).fs).expanded_roots_of_unity,
+        max_width,
+    ));
     drop(exp);
-    let roots = Box::from_raw(std::slice::from_raw_parts_mut((*(*s).fs).roots_of_unity, max_width));
+    let roots = Box::from_raw(std::slice::from_raw_parts_mut(
+        (*(*s).fs).roots_of_unity,
+        max_width,
+    ));
     drop(roots);
     let g1 = Box::from_raw(std::slice::from_raw_parts_mut((*s).g1_values, max_width));
     drop(g1);
@@ -766,7 +838,7 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
 
 #[no_mangle]
 /// # Safety
-/// 
+///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn verify_kzg_proof(
     out: *mut bool,
@@ -780,7 +852,8 @@ pub unsafe extern "C" fn verify_kzg_proof(
     let fry = bytes_to_bls_field_rust(&(*y_bytes).bytes).unwrap();
     let g1commitment = bytes_to_g1_rust(&(*commitment_bytes).bytes).unwrap();
     let g1proof = bytes_to_g1_rust(&(*proof_bytes).bytes).unwrap();
-    *out = verify_kzg_proof_rust(&g1commitment,
+    *out = verify_kzg_proof_rust(
+        &g1commitment,
         &frz,
         &fry,
         &g1proof,
@@ -791,7 +864,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
 
 #[no_mangle]
 /// # Safety
-/// 
+///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     out: *mut bool,
@@ -806,7 +879,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
     for i in 0..n {
         blob_arr.push(Vec::<FsFr>::default());
         let blob = &raw_blob_arr[i];
-        for x in blob.bytes.chunks(32){
+        for x in blob.bytes.chunks(32) {
             let mut tmp = [0u8; 32];
             tmp.copy_from_slice(x);
             let ret = bytes_to_bls_field_rust(&tmp);
@@ -838,7 +911,7 @@ pub unsafe extern "C" fn verify_aggregate_kzg_proof(
 
 #[no_mangle]
 /// # Safety
-/// 
+///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn compute_kzg_proof(
     out: *mut KZGProof,
@@ -846,17 +919,21 @@ pub unsafe extern "C" fn compute_kzg_proof(
     z_bytes: *const Bytes32,
     s: &CFsKzgSettings,
 ) -> C_KZG_RET {
-    let blob_arr = (*blob).bytes.chunks(32).map(|x| {
-        let mut bytes = [0u8; 32];
-        bytes.copy_from_slice(x);
-        let mut tmp: blst_scalar = blst_scalar::default();
-        blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
-        if !blst_scalar_fr_check(&tmp) {
-            Err(C_KZG_RET_C_KZG_ERROR)
-        } else {
-            Ok(bytes_to_bls_field_rust(&bytes).unwrap())
-        }
-    }).collect::<Result<Vec<FsFr>, C_KZG_RET>>();
+    let blob_arr = (*blob)
+        .bytes
+        .chunks(32)
+        .map(|x| {
+            let mut bytes = [0u8; 32];
+            bytes.copy_from_slice(x);
+            let mut tmp: blst_scalar = blst_scalar::default();
+            blst_scalar_from_lendian(&mut tmp, bytes.as_ptr());
+            if !blst_scalar_fr_check(&tmp) {
+                Err(C_KZG_RET_C_KZG_ERROR)
+            } else {
+                Ok(bytes_to_bls_field_rust(&bytes).unwrap())
+            }
+        })
+        .collect::<Result<Vec<FsFr>, C_KZG_RET>>();
 
     if blob_arr.is_err() {
         return blob_arr.err().unwrap();
@@ -871,7 +948,7 @@ pub unsafe extern "C" fn compute_kzg_proof(
 
 #[no_mangle]
 /// # Safety
-/// 
+///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     out: *mut blst_fr,
@@ -879,7 +956,12 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     x: &blst_fr,
     s: &CFsKzgSettings,
 ) -> C_KZG_RET {
-    *out = evaluate_polynomial_in_evaluation_form_rust(&poly_to_rust(p), &FsFr(*x), &kzg_settings_to_rust(s)).0;
+    *out = evaluate_polynomial_in_evaluation_form_rust(
+        &poly_to_rust(p),
+        &FsFr(*x),
+        &kzg_settings_to_rust(s),
+    )
+    .0;
     C_KZG_RET_C_KZG_OK
 }
 
@@ -887,10 +969,7 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready
-pub unsafe extern "C" fn bytes_to_bls_field(
-    out: *mut blst_fr,
-    b: &Bytes32,
-) -> C_KZG_RET {
+pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, b: &Bytes32) -> C_KZG_RET {
     let fr = bytes_to_bls_field_rust(&b.bytes).unwrap();
     *out = fr.0;
     C_KZG_RET_C_KZG_OK
@@ -900,13 +979,13 @@ pub unsafe extern "C" fn bytes_to_bls_field(
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready
-pub unsafe extern "C" fn blob_to_polynomial(
-    p: *mut CFsPoly,
-    blob: *const Blob,
-) -> C_KZG_RET {
+pub unsafe extern "C" fn blob_to_polynomial(p: *mut CFsPoly, blob: *const Blob) -> C_KZG_RET {
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         let start = i * BYTES_PER_FIELD_ELEMENT;
-        let bytes_array: [u8; BYTES_PER_FIELD_ELEMENT] = (*blob).bytes[start..(start + BYTES_PER_FIELD_ELEMENT)].try_into().unwrap();
+        let bytes_array: [u8; BYTES_PER_FIELD_ELEMENT] = (*blob).bytes
+            [start..(start + BYTES_PER_FIELD_ELEMENT)]
+            .try_into()
+            .unwrap();
         let bytes = Bytes32 { bytes: bytes_array };
         let fr = bytes_to_bls_field_rust(&bytes.bytes).unwrap();
         (*p).evals[i] = fr.0;

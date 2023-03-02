@@ -270,8 +270,10 @@ pub const TRUSTED_SETUP_GENERATOR: [u8; 32usize] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
-pub const FIELD_ELEMENTS_PER_BLOB:usize = 4096;
+pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95]; // "FSBLOBVERIFY_V1_"
+pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
+    70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
+]; // "FSBLOBVERIFY_V1_"
 
-pub const BYTES_PER_FIELD_ELEMENT:usize = 32;
+pub const BYTES_PER_FIELD_ELEMENT: usize = 32;

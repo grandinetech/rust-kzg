@@ -1,11 +1,11 @@
 use std::convert::TryInto;
 
 use crate::fk20::reverse_bit_order;
-use crate::poly::KzgPoly;
 use crate::kzg_proofs::KZGSettings;
 use crate::kzg_types::ZkG1Projective;
+use crate::poly::KzgPoly;
 use crate::zkfr::blsScalar;
-use kzg::{G1, Poly, Fr};
+use kzg::{Fr, Poly, G1};
 
 pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> blsScalar {
     blsScalar::from_bytes(bytes).unwrap()
@@ -83,7 +83,11 @@ pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
     out[0] = *inv;
 }
 
-pub fn evaluate_polynomial_in_evaluation_form(p: &KzgPoly, x: &blsScalar, s: &KZGSettings) -> blsScalar {
+pub fn evaluate_polynomial_in_evaluation_form(
+    p: &KzgPoly,
+    x: &blsScalar,
+    s: &KZGSettings,
+) -> blsScalar {
     let mut tmp: blsScalar;
 
     let mut inverses_in: Vec<blsScalar> = vec![blsScalar::default(); p.len()];

@@ -10,7 +10,8 @@ fn main() {
         .current_dir(out_dir.clone())
         .status()
         .expect("Failed to build")
-        .success() {
+        .success()
+    {
         panic!("Built script failed");
     }
 

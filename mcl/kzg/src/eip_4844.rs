@@ -12,9 +12,9 @@ use std::io::Read;
 use std::usize;
 
 #[cfg(feature = "parallel")]
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-#[cfg(feature = "parallel")]
 use rayon::iter::IntoParallelIterator;
+#[cfg(feature = "parallel")]
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
 pub fn bytes_to_g1(bytes: &[u8]) -> Result<G1, String> {
     set_eth_serialization(1);
@@ -45,42 +45,39 @@ pub fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
     let n2 = lines.next().unwrap().parse::<usize>().unwrap();
 
     let g1_bytes = (0..length)
-        .flat_map(|_|{
+        .flat_map(|_| {
             let line = lines.next().unwrap();
             assert!(line.len() == 96);
             (0..line.len())
                 .step_by(2)
                 .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
                 .collect::<Vec<u8>>()
-        }).collect::<Vec<u8>>();
+        })
+        .collect::<Vec<u8>>();
 
     let g2_bytes = (0..n2)
-        .flat_map(|_|{
+        .flat_map(|_| {
             let line = lines.next().unwrap();
             assert!(line.len() == 192);
             (0..line.len())
                 .step_by(2)
                 .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
                 .collect::<Vec<u8>>()
-        }).collect::<Vec<u8>>();
+        })
+        .collect::<Vec<u8>>();
 
     (g1_bytes, g2_bytes)
 }
 
 pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
-
     let g1_projectives = g1_bytes
         .chunks_exact(48)
-        .map(|bytes|{
-            bytes_to_g1(bytes).unwrap()
-        })
+        .map(|bytes| bytes_to_g1(bytes).unwrap())
         .collect::<Vec<G1>>();
 
     let g2_values = g2_bytes
         .chunks_exact(96)
-        .map(|bytes|{
-            bytes_to_g2(bytes)
-        })
+        .map(|bytes| bytes_to_g2(bytes))
         .collect::<Vec<G2>>();
 
     let length = g1_projectives.len();
@@ -108,8 +105,9 @@ pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSet
 pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
     let mut file = File::open(filepath).expect("Unable to open file");
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Unable to read file");
-    
+    file.read_to_string(&mut contents)
+        .expect("Unable to read file");
+
     let (b1, b2) = load_trusted_setup_string(&contents);
     load_trusted_setup_from_bytes(b1.as_slice(), b2.as_slice())
 }
@@ -178,9 +176,10 @@ pub fn verify_kzg_proof(commitment: &G1, x: &Fr, y: &Fr, proof: &G1, ks: &KZGSet
 fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
     let g1 = [(a1, a2), (b1, b2)];
 
-    let mut pairings = g1.par_iter().map(|(v1, v2)|{
-        v1.pair(v2)
-    }).collect::<Vec<crate::data_types::gt::GT>>();
+    let mut pairings = g1
+        .par_iter()
+        .map(|(v1, v2)| v1.pair(v2))
+        .collect::<Vec<crate::data_types::gt::GT>>();
     let result = (pairings.pop().unwrap() * pairings.pop().unwrap().get_inv()).get_final_exp();
 
     result.is_one()
@@ -338,11 +337,13 @@ pub fn compute_aggregate_kzg_proof(blobs: &[Vec<Fr>], s: &KZGSettings) -> G1 {
     #[cfg(not(feature = "parallel"))]
     let iter = blobs.iter();
 
-    let (polys, commitments): (Vec<_>, Vec<_>) = iter.map(|blob| {
-        let poly = poly_from_blob(blob);
-        let commitment = poly_to_kzg_commitment(&poly, s);
-        (poly, commitment)
-    }).unzip();
+    let (polys, commitments): (Vec<_>, Vec<_>) = iter
+        .map(|blob| {
+            let poly = poly_from_blob(blob);
+            let commitment = poly_to_kzg_commitment(&poly, s);
+            (poly, commitment)
+        })
+        .unzip();
     let (aggregated_poly, _, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, &commitments, blobs.len());
     compute_kzg_proof(&aggregated_poly, &evaluation_challenge, s)
@@ -355,18 +356,19 @@ pub fn verify_aggregate_kzg_proof(
     ts: &KZGSettings,
 ) -> bool {
     if blobs.is_empty() {
-        return true
+        return true;
     }
     #[cfg(feature = "parallel")]
     let iter = blobs.par_iter();
     #[cfg(not(feature = "parallel"))]
     let iter = blobs.iter();
 
-    let polys:Vec<Polynomial> = iter.map(|blob| poly_from_blob(blob)).collect();
+    let polys: Vec<Polynomial> = iter.map(|blob| poly_from_blob(blob)).collect();
 
     let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
         compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
-    let y = evaluate_polynomial_in_evaluation_form_rust(&aggregated_poly, &evaluation_challenge, ts);
+    let y =
+        evaluate_polynomial_in_evaluation_form_rust(&aggregated_poly, &evaluation_challenge, ts);
     verify_kzg_proof(
         &aggregated_poly_commitment,
         &evaluation_challenge,
@@ -392,7 +394,7 @@ fn compute_aggregated_poly_and_commitment(
     n: usize,
 ) -> (Polynomial, G1, Fr) {
     let mut hash = [0u8; 32];
-    hash_to_bytes(&mut hash, polys, kzg_commitments); 
+    hash_to_bytes(&mut hash, polys, kzg_commitments);
     let r = bytes_to_bls_field_rust(&hash);
 
     let (r_powers, chal_out) = if n == 1 {
@@ -403,7 +405,7 @@ fn compute_aggregated_poly_and_commitment(
         (r_powers, chal_out)
     };
 
-    let poly_out = poly_lincomb(polys, &r_powers); 
+    let poly_out = poly_lincomb(polys, &r_powers);
     let comm_out = g1_lincomb(kzg_commitments, &r_powers);
 
     (poly_out, comm_out, chal_out)
@@ -464,16 +466,21 @@ pub fn poly_lincomb(vectors: &[Polynomial], scalars: &[Fr]) -> Polynomial {
 pub fn poly_lincomb(vectors: &[Polynomial], scalars: &[Fr]) -> Polynomial {
     let n = vectors.len();
     Polynomial {
-        coeffs: (0..FIELD_ELEMENTS_PER_BLOB).into_par_iter().map(|j|{
-            let mut out = Fr::zero();
-            for i in 0..n {
-                out += &(scalars[i] * vectors[i].get_coeff_at(j));
-            }
-            out
-        }).collect()
+        coeffs: (0..FIELD_ELEMENTS_PER_BLOB)
+            .into_par_iter()
+            .map(|j| {
+                let mut out = Fr::zero();
+                for i in 0..n {
+                    out += &(scalars[i] * vectors[i].get_coeff_at(j));
+                }
+                out
+            })
+            .collect(),
     }
 }
 
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95]; // "FSBLOBVERIFY_V1_"
+pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
+    70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
+]; // "FSBLOBVERIFY_V1_"
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;

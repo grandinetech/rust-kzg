@@ -2,9 +2,7 @@ use crate::fft_g1::G1_IDENTITY;
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
 use crate::utils::PolyData;
-use kzg::{
-    FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1,
-};
+use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1};
 // use chrono::Utc;
 
 #[cfg(feature = "parallel")]

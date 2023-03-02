@@ -1,11 +1,11 @@
-use crate::data_types::fr::Fr;
 use crate::data_types::fp::Fp;
+use crate::data_types::fr::Fr;
+use crate::mcl_methods;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
-use crate::mcl_methods;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -32,7 +32,7 @@ extern "C" {
     fn mclBnGT_inv(y: *mut GT, x: *const GT);
     fn mclBnGT_sqr(y: *mut GT, x: *const GT);
 
-    fn mclBnGT_pow(z: *mut GT, x: *const GT, y: *const Fr); 
+    fn mclBnGT_pow(z: *mut GT, x: *const GT, y: *const Fr);
 }
 
 #[derive(Default, Debug, Clone)]

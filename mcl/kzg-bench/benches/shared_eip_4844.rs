@@ -91,8 +91,6 @@ fn verify_aggregate_kzg_proof_bench_16(c: &mut Criterion) {
     )
 }
 
-
-
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);

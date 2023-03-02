@@ -18,15 +18,26 @@ impl KZGSettings {
         }
     }
 
-    pub fn new(secret_g1: &[G1], secret_g2: &[G2], length: usize, fft_settings: &FFTSettings) -> Result<Self, String> {
+    pub fn new(
+        secret_g1: &[G1],
+        secret_g2: &[G2],
+        length: usize,
+        fft_settings: &FFTSettings,
+    ) -> Result<Self, String> {
         if length < fft_settings.max_width {
-            return Err(String::from("length must be equal to or greater than fft settings max width"));
+            return Err(String::from(
+                "length must be equal to or greater than fft settings max width",
+            ));
         }
         if secret_g1.len() < fft_settings.max_width {
-            return Err(String::from("secret g1 must have a length equal to or greater than fft settings max width"));
+            return Err(String::from(
+                "secret g1 must have a length equal to or greater than fft settings max width",
+            ));
         }
         if secret_g2.len() < fft_settings.max_width {
-            return Err(String::from("secret g2 must have a length equal to or greater than fft settings max width"));
+            return Err(String::from(
+                "secret g2 must have a length equal to or greater than fft settings max width",
+            ));
         }
 
         let mut secret1: Vec<G1> = vec![];
@@ -66,7 +77,14 @@ impl KZGSettings {
         Ok(q.commit(&self.curve.g1_points).unwrap())
     }
 
-    pub fn check_proof_multi(&self, commitment: &G1, proof: &G1, x: &Fr, ys: &[Fr], n: usize) -> Result<bool, String> {
+    pub fn check_proof_multi(
+        &self,
+        commitment: &G1,
+        proof: &G1,
+        x: &Fr,
+        ys: &[Fr],
+        n: usize,
+    ) -> Result<bool, String> {
         if !is_power_of_2(n) {
             return Err(String::from("n must be a power of 2"));
         }
@@ -86,7 +104,12 @@ impl KZGSettings {
         let xn_minus_yn = self.curve.g2_points[n] - xn2;
         let is1 = interpolation_poly.commit(&self.curve.g1_points).unwrap();
         let commit_minus_interp = commitment - &is1;
-        Ok(Curve::verify_pairing(&commit_minus_interp, &self.curve.g2_gen, proof, &xn_minus_yn))
+        Ok(Curve::verify_pairing(
+            &commit_minus_interp,
+            &self.curve.g2_gen,
+            proof,
+            &xn_minus_yn,
+        ))
     }
 
     pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
