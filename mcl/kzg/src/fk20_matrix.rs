@@ -1,10 +1,10 @@
-use std::iter;
-use crate::data_types::g1::G1;
 use crate::data_types::fr::Fr;
-use crate::utilities::*;
-use crate::kzg10::*;
+use crate::data_types::g1::G1;
 use crate::fk20_fft::*;
+use crate::kzg10::*;
 use crate::kzg_settings::KZGSettings;
+use crate::utilities::*;
+use std::iter;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -14,10 +14,8 @@ impl FFTSettings {
         let n = x.len();
 
         // extend x with zeroes
-        let tail= vec![G1::zero(); n];
-        let x_ext: Vec<G1> = x.iter().cloned()
-            .chain(tail)
-            .collect();
+        let tail = vec![G1::zero(); n];
+        let x_ext: Vec<G1> = x.iter().cloned().chain(tail).collect();
 
         self.fft_g1(&x_ext)
     }
@@ -27,9 +25,10 @@ impl FFTSettings {
 
         #[cfg(feature = "parallel")]
         {
-            let ret: Vec<_> = (0..coeffs.len()).into_par_iter().map(|i| {
-                x_ext_fft[i] * &toeplitz_coeffs_fft[i]
-            }).collect();
+            let ret: Vec<_> = (0..coeffs.len())
+                .into_par_iter()
+                .map(|i| x_ext_fft[i] * &toeplitz_coeffs_fft[i])
+                .collect();
             Ok(ret)
         }
 
@@ -60,7 +59,7 @@ impl FFTSettings {
 #[derive(Debug, Clone, Default)]
 pub struct FK20SingleMatrix {
     pub x_ext_fft: Vec<G1>,
-    pub kzg_settings: KZGSettings
+    pub kzg_settings: KZGSettings,
 }
 
 impl FK20SingleMatrix {
@@ -74,7 +73,9 @@ impl FK20SingleMatrix {
             return Err(String::from("n2 must be greater than or equal to 2"));
         }
         if n2 > kzg_settings.fft_settings.max_width {
-            return Err(String::from("n2 must be less than or equal to fft settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to fft settings max width",
+            ));
         }
 
         let mut x = Vec::new();
@@ -88,7 +89,7 @@ impl FK20SingleMatrix {
 
         Ok(Self {
             kzg_settings,
-            x_ext_fft
+            x_ext_fft,
         })
     }
 
@@ -100,7 +101,9 @@ impl FK20SingleMatrix {
             return Err(String::from("n2 must be a power of two"));
         }
         if n2 > self.kzg_settings.fft_settings.max_width {
-            return Err(String::from("n2 must be less than or equal to fft settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to fft settings max width",
+            ));
         }
 
         let mut proofs = self.fk20_single_dao_optimized(polynomial).unwrap();
@@ -117,12 +120,22 @@ impl FK20SingleMatrix {
             return Err(String::from("n2 must be a power of two"));
         }
         if n2 > self.kzg_settings.fft_settings.max_width {
-            return Err(String::from("n2 must be less than or equal to fft settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to fft settings max width",
+            ));
         }
 
         let toeplitz_coeffs = polynomial.toeplitz_coeffs_step_strided(0, 1);
-        let h_ext_fft = self.kzg_settings.fft_settings.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft).unwrap();
-        let h = self.kzg_settings.fft_settings.toeplitz_part_3(&h_ext_fft).unwrap();
+        let h_ext_fft = self
+            .kzg_settings
+            .fft_settings
+            .toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft)
+            .unwrap();
+        let h = self
+            .kzg_settings
+            .fft_settings
+            .toeplitz_part_3(&h_ext_fft)
+            .unwrap();
 
         self.kzg_settings.fft_settings.fft_g1(&h)
     }
@@ -132,7 +145,7 @@ impl FK20SingleMatrix {
 pub struct FK20Matrix {
     pub x_ext_fft_files: Vec<Vec<G1>>,
     pub chunk_len: usize,
-    pub kzg_settings: KZGSettings
+    pub kzg_settings: KZGSettings,
 }
 
 impl Default for FK20Matrix {
@@ -160,10 +173,14 @@ impl FK20Matrix {
             return Err(String::from("n2 must be greater than or equal to 2"));
         }
         if n2 > kzg_settings.fft_settings.max_width {
-            return Err(String::from("n2 must be less than or equal to kzg settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to kzg settings max width",
+            ));
         }
         if n2 > kzg_settings.fft_settings.max_width {
-            return Err(String::from("n2 must be less than or equal to fft settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to fft settings max width",
+            ));
         }
         if chunk_len > n2 / 2 {
             return Err(String::from("chunk_len must be greater or equal to n2 / 2"));
@@ -171,7 +188,15 @@ impl FK20Matrix {
 
         let mut x_ext_fft_files: Vec<Vec<G1>> = vec![vec![]; chunk_len];
         for (i, item) in x_ext_fft_files.iter_mut().enumerate().take(chunk_len) {
-            *item = FK20Matrix::x_ext_fft_precompute(&kzg_settings.fft_settings, &kzg_settings.curve, n, k,chunk_len, i).unwrap();
+            *item = FK20Matrix::x_ext_fft_precompute(
+                &kzg_settings.fft_settings,
+                &kzg_settings.curve,
+                n,
+                k,
+                chunk_len,
+                i,
+            )
+            .unwrap();
         }
 
         Ok(FK20Matrix {
@@ -182,7 +207,14 @@ impl FK20Matrix {
     }
 
     #[allow(clippy::many_single_char_names)]
-    fn x_ext_fft_precompute(fft_settings: &FFTSettings, curve: &Curve, n: usize, k: usize, chunk_len: usize, offset: usize) -> Result<Vec<G1>, String> {
+    fn x_ext_fft_precompute(
+        fft_settings: &FFTSettings,
+        curve: &Curve,
+        n: usize,
+        k: usize,
+        chunk_len: usize,
+        offset: usize,
+    ) -> Result<Vec<G1>, String> {
         let mut x: Vec<G1> = vec![G1::default(); k];
 
         let mut start = 0;
@@ -208,7 +240,7 @@ impl FK20Matrix {
         fft_settings.toeplitz_part_1(&x)
     }
 
-    pub fn dau_using_fk20_multi(&self, polynomial: &Polynomial)  -> Result<Vec<G1>, String> {
+    pub fn dau_using_fk20_multi(&self, polynomial: &Polynomial) -> Result<Vec<G1>, String> {
         let n = polynomial.order();
         let n2 = n << 1;
 
@@ -216,7 +248,9 @@ impl FK20Matrix {
             return Err(String::from("n2 must be a power of two"));
         }
         if n2 > self.kzg_settings.fft_settings.max_width {
-            return Err(String::from("n2 must be less than or equal to fft settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to fft settings max width",
+            ));
         }
 
         let extended_poly = polynomial.get_extended(n2);
@@ -236,7 +270,9 @@ impl FK20Matrix {
             return Err(String::from("n2 must be a power of two"));
         }
         if n2 > self.kzg_settings.fft_settings.max_width {
-            return Err(String::from("n2 must be less than or equal to fft settings max width"));
+            return Err(String::from(
+                "n2 must be less than or equal to fft settings max width",
+            ));
         }
 
         let mut h_ext_fft = vec![G1::zero(); k2];
@@ -246,7 +282,11 @@ impl FK20Matrix {
 
         for i in 0..self.chunk_len {
             let toeplitz_coeffs = reduced_poly.toeplitz_coeffs_step_strided(i, self.chunk_len);
-            let h_ext_fft_file = self.kzg_settings.fft_settings.toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft_files[i]).unwrap();
+            let h_ext_fft_file = self
+                .kzg_settings
+                .fft_settings
+                .toeplitz_part_2(&toeplitz_coeffs, &self.x_ext_fft_files[i])
+                .unwrap();
 
             for j in 0..k2 {
                 let tmp = &h_ext_fft[j] + &h_ext_fft_file[j];
@@ -255,7 +295,10 @@ impl FK20Matrix {
         }
 
         let tail = iter::repeat(G1::zero()).take(k);
-        let h: Vec<G1> = self.kzg_settings.fft_settings.toeplitz_part_3(&h_ext_fft)
+        let h: Vec<G1> = self
+            .kzg_settings
+            .fft_settings
+            .toeplitz_part_3(&h_ext_fft)
             .unwrap()
             .into_iter()
             .take(k)
@@ -292,7 +335,7 @@ impl Polynomial {
         toeplitz_coeffs[0] = self.coeffs[n - 1 - offset];
 
         let mut j = (stride << 1) - offset - 1;
-        for item in toeplitz_coeffs.iter_mut().take(k2).skip(k+2) {
+        for item in toeplitz_coeffs.iter_mut().take(k2).skip(k + 2) {
             *item = self.coeffs[j];
             j += stride;
         }

@@ -39,7 +39,9 @@ pub fn bench_recover<
     }
 
     let id = format!("bench_recover scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, move |b| b.iter(|| {
-        TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
-    }));
+    c.bench_function(&id, move |b| {
+        b.iter(|| {
+            TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
+        })
+    });
 }

@@ -480,9 +480,8 @@ impl Polynomial {
                 a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
                 b_fft = ft.fft(&b_pad.coeffs, false).unwrap();
             }
-
         }
-        #[cfg(not(feature="parallel"))]
+        #[cfg(not(feature = "parallel"))]
         {
             a_fft = ft.fft(&a_pad.coeffs, false).unwrap();
             b_fft = ft.fft(&b_pad.coeffs, false).unwrap();

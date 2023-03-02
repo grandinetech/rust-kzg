@@ -1,9 +1,9 @@
 use crate::data_types::fr::Fr;
-use crate::kzg10::Polynomial;
-use kzg::Poly;
-use kzg::FFTSettingsPoly;
-use kzg::PolyRecover;
 use crate::fk20_fft::FFTSettings;
+use crate::kzg10::Polynomial;
+use kzg::FFTSettingsPoly;
+use kzg::Poly;
+use kzg::PolyRecover;
 
 impl Poly<Fr> for Polynomial {
     fn new(size: usize) -> Result<Self, String> {
@@ -60,7 +60,12 @@ impl Poly<Fr> for Polynomial {
 }
 
 impl FFTSettingsPoly<Fr, Polynomial, FFTSettings> for FFTSettings {
-    fn poly_mul_fft(a: &Polynomial, x: &Polynomial, len: usize, fs: Option<&FFTSettings>) -> Result<Polynomial, String> {
+    fn poly_mul_fft(
+        a: &Polynomial,
+        x: &Polynomial,
+        len: usize,
+        fs: Option<&FFTSettings>,
+    ) -> Result<Polynomial, String> {
         Polynomial::mul_fft(a, x, fs, len)
     }
 }

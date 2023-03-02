@@ -1,6 +1,7 @@
 pub mod bls12_381;
 pub mod consts;
 pub mod das;
+pub mod eip_4844;
 pub mod fft_fr;
 pub mod fft_g1;
 pub mod finite;
@@ -9,4 +10,3 @@ pub mod kzg_proofs;
 pub mod poly;
 pub mod recover;
 pub mod zero_poly;
-pub mod eip_4844;

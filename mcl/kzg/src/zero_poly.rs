@@ -131,7 +131,7 @@ impl FFTSettings {
         } else {
             // Work space for building and reducing the partials
             let mut work = vec![Fr::zero(); next_pow_of_2(partial_count * degree_of_partial)];
-            
+
             // Build the partials from the missing indices
             // Just allocate pointers here since we're re-using `work` for the partial processing
             // Combining partials can be done mostly in-place, using a scratchpad.
@@ -162,7 +162,7 @@ impl FFTSettings {
             partial_lens[partial_count - 1] =
                 1 + missing_indices.len() - (partial_count - 1) * missing_per_partial;
 
-             // Reduce all the partials to a single polynomial
+            // Reduce all the partials to a single polynomial
             let reduction_factor = 4; // must be a power of 2 (for sake of the FFTs in reduce_partials)
             while partial_count > 1 {
                 let reduced_count = 1 + (partial_count - 1) / reduction_factor;

@@ -1,5 +1,5 @@
-use std::{env, fs};
 use std::process::Command;
+use std::{env, fs};
 
 fn main() {
     let cargo_manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
@@ -8,14 +8,16 @@ fn main() {
     fs::copy(
         format!("{cargo_manifest_dir}/0001-Bring-back-the-bytes-conversion-functions.patch"),
         format!("{out_dir}/0001-Bring-back-the-bytes-conversion-functions.patch"),
-    ).unwrap();
+    )
+    .unwrap();
 
     if !Command::new("sh")
         .arg(format!("{}/build.sh", cargo_manifest_dir))
         .current_dir(out_dir.clone())
         .status()
         .expect("Failed to build")
-        .success() {
+        .success()
+    {
         panic!("Built script failed");
     }
 

@@ -173,7 +173,10 @@ pub trait Poly<Coeff: Fr>: Default + Clone {
 }
 
 pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
-    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: &FSettings) -> Result<Polynomial, String>;
+    fn recover_poly_from_samples(
+        samples: &[Option<Coeff>],
+        fs: &FSettings,
+    ) -> Result<Polynomial, String>;
 }
 
 pub trait KZGSettings<

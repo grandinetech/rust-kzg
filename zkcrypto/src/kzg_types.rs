@@ -39,8 +39,7 @@ use kzg::FFTSettings;
 use crate::kzg_proofs::{
     check_proof_multi as check_multi, check_proof_single as check_single,
     commit_to_poly as poly_commit, compute_proof_multi as open_multi,
-    compute_proof_single as open_single, new_kzg_settings,
-    KZGSettings as LKZGSettings,
+    compute_proof_single as open_single, new_kzg_settings, KZGSettings as LKZGSettings,
 };
 
 pub const G1_GENERATOR: ZkG1Projective = ZkG1Projective {

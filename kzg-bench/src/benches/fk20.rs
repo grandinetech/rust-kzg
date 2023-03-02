@@ -1,6 +1,8 @@
 use criterion::Criterion;
-use rand::{RngCore, thread_rng};
-use kzg::{FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2};
+use kzg::{
+    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2,
+};
+use rand::{thread_rng, RngCore};
 
 pub const SECRET: [u8; 32usize] = [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,

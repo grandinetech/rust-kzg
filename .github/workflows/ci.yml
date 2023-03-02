@@ -20,12 +20,12 @@ jobs:
           profile: minimal
           toolchain: stable
           components: clippy, rustfmt
-      
+
       - uses: actions/setup-java@v3
         with:
           distribution: "temurin"
           java-version: "11"
-      
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
@@ -62,7 +62,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path Arkworks/Cargo.toml
+          args: --manifest-path Arkworks/Cargo.toml -- --check
 
       # 2nd team #########################################################
 
@@ -88,7 +88,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path zkcrypto/Cargo.toml
+          args: --manifest-path zkcrypto/Cargo.toml -- --check
 
       # 3rd team #########################################################
 
@@ -124,7 +124,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path blst-from-scratch/Cargo.toml
+          args: --manifest-path blst-from-scratch/Cargo.toml -- --check
 
       # 4th team #########################################################
 
@@ -181,7 +181,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
         with:
           command: fmt
-          args: --manifest-path ckzg/Cargo.toml
+          args: --manifest-path ckzg/Cargo.toml -- --check
 
       - name: "[ckzg] Unset environment variables"
         run: |
@@ -232,4 +232,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path kzg-bench/Cargo.toml
+          args: --manifest-path kzg-bench/Cargo.toml -- --check

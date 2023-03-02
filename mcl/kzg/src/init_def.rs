@@ -116,7 +116,7 @@ macro_rules! base_field_impl {
             pub fn set_little_endian(&mut self, buf: &[u8]) -> bool {
                 unsafe { $set_little_endian_fn(self, buf.as_ptr(), buf.len()) == 0 }
             }
-            pub fn get_little_endian(&self, buf: &mut[u8]) -> bool {
+            pub fn get_little_endian(&self, buf: &mut [u8]) -> bool {
                 unsafe { $get_little_endian_fn(buf.as_mut_ptr(), buf.len(), self) > 0 }
             }
             pub fn set_little_endian_mod(&mut self, buf: &[u8]) -> bool {
@@ -260,7 +260,6 @@ macro_rules! ec_impl {
         }
     };
 }
-
 
 macro_rules! get_str_impl {
     ($get_str_fn:ident) => {{
