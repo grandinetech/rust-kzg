@@ -25,13 +25,15 @@ pub fn bytes_to_g1(bytes: &[u8]) -> Result<G1, String> {
         Err("failed to deserialize".to_string())
     }
 }
-pub fn bytes_to_g2(bytes: &[u8]) -> G2 {
+
+pub fn bytes_to_g2(bytes: &[u8]) -> Result<G2, String> {
     set_eth_serialization(1);
     let mut g2 = G2::default();
-    if !G2::deserialize(&mut g2, bytes) {
-        panic!("failed to deserialize")
+    if G2::deserialize(&mut g2, bytes) {
+        Ok(g2)
+    } else {
+        Err("failed to deserialize".to_string())
     }
-    g2
 }
 
 pub fn bytes_from_g1(g1: &G1) -> [u8; 48usize] {
@@ -77,7 +79,7 @@ pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSet
 
     let g2_values = g2_bytes
         .chunks_exact(96)
-        .map(|bytes| bytes_to_g2(bytes))
+        .map(|bytes| bytes_to_g2(bytes).unwrap())
         .collect::<Vec<G2>>();
 
     let length = g1_projectives.len();
