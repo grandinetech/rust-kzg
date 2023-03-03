@@ -95,7 +95,6 @@ impl Fr {
     }
 
     pub fn to_u64_arr(&self) -> [u64; 4] {
-        use std::convert::TryInto;
         let v: Vec<u64> = Fr::to_scalar(self)
             .chunks(8)
             .map(|ch| u64::from_le_bytes(ch.try_into().unwrap()))
