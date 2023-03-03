@@ -1,12 +1,11 @@
 [package]
 name = "blst_from_scratch"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 blst = { 'git' = 'https://github.com/supranational/blst.git' }
 rand = "0.8.4"
-rand_pcg = "0.3.1"
 kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
 rayon = { version = "1.5.1", optional = true }
