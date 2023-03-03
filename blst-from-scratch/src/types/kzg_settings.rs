@@ -12,7 +12,6 @@ use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 use crate::types::poly::FsPoly;
-use crate::utils::is_power_of_two;
 
 #[derive(Debug, Clone, Default)]
 pub struct FsKZGSettings {
@@ -90,7 +89,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn compute_proof_multi(&self, p: &FsPoly, x0: &FsFr, n: usize) -> Result<FsG1, String> {
-        if !is_power_of_two(n) {
+        if !n.is_power_of_two() {
             return Err(String::from("n must be a power of two"));
         }
 
@@ -129,7 +128,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         ys: &[FsFr],
         n: usize,
     ) -> Result<bool, String> {
-        if !is_power_of_two(n) {
+        if !n.is_power_of_two() {
             return Err(String::from("n is not a power of two"));
         }
 

@@ -8,7 +8,6 @@ use kzg::{FFTFr, Fr};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
-use crate::utils::is_power_of_two;
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(
@@ -73,7 +72,7 @@ impl FFTFr<FsFr> for FsFFTSettings {
             return Err(String::from(
                 "Supplied list is longer than the available max width",
             ));
-        } else if !is_power_of_two(data.len()) {
+        } else if !data.len().is_power_of_two() {
             return Err(String::from("A list with power-of-two length expected"));
         }
 

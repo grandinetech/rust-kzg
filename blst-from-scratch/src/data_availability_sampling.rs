@@ -8,7 +8,6 @@ use kzg::{Fr, DAS};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
-use crate::utils::is_power_of_two;
 
 // TODO: explain algo
 impl FsFFTSettings {
@@ -79,7 +78,7 @@ impl DAS<FsFr> for FsFFTSettings {
     fn das_fft_extension(&self, evens: &[FsFr]) -> Result<Vec<FsFr>, String> {
         if evens.is_empty() {
             return Err(String::from("A non-zero list ab expected"));
-        } else if !is_power_of_two(evens.len()) {
+        } else if !evens.len().is_power_of_two() {
             return Err(String::from("A list with power-of-two length expected"));
         } else if evens.len() * 2 > self.max_width {
             return Err(String::from(

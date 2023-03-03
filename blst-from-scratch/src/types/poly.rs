@@ -10,8 +10,7 @@ use crate::consts::SCALE_FACTOR;
 use crate::recovery::{scale_poly, unscale_poly};
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
-use crate::utils::is_power_of_two;
-use crate::utils::{log2_pow2, log2_u64, min_u64, next_power_of_two};
+use crate::utils::{log2_pow2, log2_u64};
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct FsPoly {
@@ -125,7 +124,7 @@ impl Poly<FsFr> for FsPoly {
 
             // b.c -> tmp0 (we're using out for c)
             // tmp0.length = min_u64(d + 1, b->length + output->length - 1);
-            let len_temp = min_u64(d + 1, self.len() + output_len - 1);
+            let len_temp = (d + 1).min(self.len() + output_len - 1);
             let mut tmp0 = self.mul(&ret, len_temp).unwrap();
 
             // 2 - b.c -> tmp0
@@ -304,7 +303,7 @@ impl FsPoly {
             coeffs: vec![FsFr::zero(); out_length],
         };
 
-        for i in 0..min_u64(self.len(), out_length) {
+        for i in 0..self.len().min(out_length) {
             ret.coeffs[i] = self.coeffs[i];
         }
 
@@ -323,7 +322,7 @@ impl FsPoly {
     }
 
     pub fn mul_fft(&self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
-        let length = next_power_of_two(self.len() + multiplier.len() - 1);
+        let length = (self.len() + multiplier.len() - 1).next_power_of_two();
 
         let scale = log2_pow2(length);
         let fft_settings = FsFFTSettings::new(scale).unwrap();
@@ -373,7 +372,7 @@ impl FsPoly {
             coeffs: vec![FsFr::zero(); output_len],
         };
 
-        let range = ..min_u64(output_len, length);
+        let range = ..output_len.min(length);
         ret.coeffs[range].clone_from_slice(&ab[range]);
 
         Ok(ret)
@@ -396,7 +395,7 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
     ) -> Result<Self, String> {
         let len_samples = samples.len();
 
-        if !is_power_of_two(len_samples) {
+        if !len_samples.is_power_of_two() {
             return Err(String::from(
                 "Samples must have a length that is a power of two",
             ));

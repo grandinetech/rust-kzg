@@ -11,7 +11,7 @@ use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
-use crate::utils::{is_power_of_two, reverse_bit_order};
+use crate::utils::reverse_bit_order;
 
 #[derive(Debug, Clone, Default)]
 pub struct FsFK20SingleSettings {
@@ -29,7 +29,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         } else if n2 < 2 {
             return Err(String::from("n2 must be greater than or equal to 2"));
@@ -60,7 +60,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         }
 
@@ -78,7 +78,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         }
 
