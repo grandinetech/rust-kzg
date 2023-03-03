@@ -1,3 +1,9 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use kzg::{Fr, G1Mul, FFTG1, G1};
 
 use crate::types::fft_settings::FsFFTSettings;

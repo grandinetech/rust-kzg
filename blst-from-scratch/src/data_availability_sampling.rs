@@ -1,5 +1,10 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
+
 use kzg::{Fr, DAS};
-use std::cmp::Ordering;
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;

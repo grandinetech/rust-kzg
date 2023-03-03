@@ -1,3 +1,7 @@
+extern crate alloc;
+
+use alloc::vec::Vec;
+
 use kzg::{Fr, G1Mul, G2Mul};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
@@ -5,10 +9,12 @@ use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 
+// TODO: Should be replaced with `x.is_power_of_two()`
 pub fn is_power_of_two(x: usize) -> bool {
     (x != 0) && ((x & (x - 1)) == 0)
 }
 
+// TODO: Should this function be replaced with `v.next_power_of_two()`?
 pub fn next_power_of_two(v: usize) -> usize {
     let mut v = v;
 
@@ -18,7 +24,10 @@ pub fn next_power_of_two(v: usize) -> usize {
     v |= v >> 4;
     v |= v >> 8;
     v |= v >> 16;
-    v |= v >> 32;
+    #[cfg(target_pointer_width = "64")]
+    {
+        v |= v >> 32;
+    }
     v += 1;
     if v == 0 {
         v += 1

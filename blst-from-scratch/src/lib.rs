@@ -1,5 +1,8 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 pub mod consts;
 pub mod data_availability_sampling;
+#[cfg(feature = "eip-4844")]
 pub mod eip_4844;
 pub mod fft_fr;
 pub mod fft_g1;

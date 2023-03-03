@@ -1,3 +1,9 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use kzg::{FFTSettings, Fr};
 
 use crate::consts::SCALE2_ROOT_OF_UNITY;

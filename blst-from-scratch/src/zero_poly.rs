@@ -1,4 +1,9 @@
-use std::cmp::{min, Ordering};
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+use core::cmp::{min, Ordering};
 
 use kzg::{FFTFr, Fr, ZeroPoly};
 

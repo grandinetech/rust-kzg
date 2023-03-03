@@ -7,6 +7,7 @@ pub trait Fr: Default + Clone {
 
     fn one() -> Self;
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
@@ -51,6 +52,7 @@ pub trait G1: Clone {
 
     fn negative_generator() -> Self;
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self;
 
     fn add_or_dbl(&mut self, b: &Self) -> Self;

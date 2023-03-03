@@ -505,7 +505,7 @@ pub const C_KZG_RET_C_KZG_OK: C_KZG_RET = 0;
 pub const C_KZG_RET_C_KZG_BADARGS: C_KZG_RET = 1;
 pub const C_KZG_RET_C_KZG_ERROR: C_KZG_RET = 2;
 pub const C_KZG_RET_C_KZG_MALLOC: C_KZG_RET = 3;
-pub type C_KZG_RET = ::std::os::raw::c_uint;
+pub type C_KZG_RET = std::os::raw::c_uint;
 
 const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
 

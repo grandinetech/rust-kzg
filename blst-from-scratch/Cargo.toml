@@ -4,20 +4,36 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# TODO: Use `std` feature once https://github.com/supranational/blst/pull/150 or similar upstreamed
 blst = { 'git' = 'https://github.com/supranational/blst.git' }
-rand = "0.8.4"
-kzg = { path = "../kzg" }
-kzg-bench = { path = "../kzg-bench" }
+kzg = { path = "../kzg", default-features = false }
+libc = { version = "0.2.137", optional = true }
+once_cell = { version = "1.4.0", features = ["critical-section"], default-features = false }
+rand = { version = "0.8.4", optional = true }
 rayon = { version = "1.5.1", optional = true }
-once_cell = "1.4.0"
-sha2 = "0.10.6"
-libc = "0.2.137"
+sha2 = { version = "0.10.6", default-features = false }
 
 [dev-dependencies]
 criterion = "0.4.0"
+kzg-bench = { path = "../kzg-bench" }
+rand = "0.8.4"
 
 [features]
-parallel = [ "rayon" ]
+default = [
+    "std",
+    "eip-4844",
+    "rand",
+]
+std = [
+    "once_cell/std",
+    "sha2/std",
+]
+eip-4844 = ["dep:libc"]
+rand = [
+    "dep:rand",
+    "kzg/rand",
+]
+parallel = ["dep:rayon"]
 
 
 [[bench]]

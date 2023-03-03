@@ -2,7 +2,7 @@ use blst::{
     blst_fp, blst_p1, blst_p1_add_or_double, blst_p1_cneg, blst_p1_double, blst_p1_is_equal,
     blst_p1_is_inf, blst_p1_mult, blst_scalar, blst_scalar_from_fr,
 };
-use kzg::{Fr, G1Mul, G1};
+use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::types::fr::FsFr;
@@ -35,9 +35,10 @@ impl G1 for FsG1 {
         G1_NEGATIVE_GENERATOR
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
         let result: FsG1 = G1_GENERATOR;
-        result.mul(&FsFr::rand())
+        result.mul(&kzg::Fr::rand())
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {

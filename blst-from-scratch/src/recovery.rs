@@ -1,3 +1,9 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use kzg::{FFTFr, Fr, ZeroPoly};
 
 use crate::types::fft_settings::FsFFTSettings;
@@ -10,7 +16,6 @@ const SCALE_FACTOR: u64 = 5;
 static INVERSE_FACTORS: OnceCell<Vec<FsFr>> = OnceCell::new();
 static UNSCALE_FACTOR_POWERS: OnceCell<Vec<FsFr>> = OnceCell::new();
 
-#[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = INVERSE_FACTORS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
@@ -27,7 +32,6 @@ pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
     }
 }
 
-#[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = UNSCALE_FACTOR_POWERS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
