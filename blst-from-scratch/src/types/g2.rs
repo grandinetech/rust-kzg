@@ -20,7 +20,7 @@ impl G2Mul<FsFr> for FsG2 {
                 &mut result,
                 &self.0,
                 scalar.b.as_ptr(),
-                8 * std::mem::size_of::<blst_scalar>(),
+                8 * core::mem::size_of::<blst_scalar>(),
             );
         }
         Self(result)

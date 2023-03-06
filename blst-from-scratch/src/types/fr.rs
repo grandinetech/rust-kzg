@@ -1,3 +1,7 @@
+extern crate alloc;
+
+use alloc::string::String;
+
 use blst::{
     blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_scalar,
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_scalar,
@@ -21,6 +25,7 @@ impl Fr for FsFr {
         Self::from_u64(1)
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
         let val: [u64; 4] = [
             rand::random(),

@@ -1,3 +1,8 @@
+extern crate alloc;
+
+use alloc::vec;
+use alloc::vec::Vec;
+
 use kzg::{FFTFr, Fr, G1Mul, Poly, FFTG1, G1};
 
 use crate::types::fft_settings::FsFFTSettings;

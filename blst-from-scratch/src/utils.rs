@@ -1,31 +1,13 @@
+extern crate alloc;
+
+use alloc::vec::Vec;
+
 use kzg::{Fr, G1Mul, G2Mul};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
-
-pub fn is_power_of_two(x: usize) -> bool {
-    (x != 0) && ((x & (x - 1)) == 0)
-}
-
-pub fn next_power_of_two(v: usize) -> usize {
-    let mut v = v;
-
-    v -= 1;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v |= v >> 32;
-    v += 1;
-    if v == 0 {
-        v += 1
-    }
-
-    v
-}
 
 pub fn log_2_byte(b: u8) -> usize {
     let mut r = u8::from(b > 0xF) << 2;
@@ -54,22 +36,6 @@ pub fn log2_u64(n: usize) -> usize {
         r += 1;
     }
     r
-}
-
-pub fn min_u64(a: usize, b: usize) -> usize {
-    if a < b {
-        a
-    } else {
-        b
-    }
-}
-
-pub fn max_u64(a: usize, b: usize) -> usize {
-    if a < b {
-        b
-    } else {
-        a
-    }
 }
 
 pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Vec<FsG2>) {
