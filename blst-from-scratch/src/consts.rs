@@ -276,4 +276,9 @@ pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
     70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
 ]; // "FSBLOBVERIFY_V1_"
 
+pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
+    82, 67, 75, 90, 71, 66, 65, 84, 67, 72, 95, 95, 95, 86, 49, 95,
+]; // "RCKZGBATCH___V1_"
+
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
+pub const BYTES_PER_PROOF: usize = 48;
