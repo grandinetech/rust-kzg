@@ -7,22 +7,16 @@ use std::ptr::null_mut;
 
 use blst::{
     blst_fr, blst_fr_from_scalar, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
-    blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress,
-    blst_scalar, blst_scalar_from_lendian, blst_p1_in_g1, BLST_ERROR
+    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
+    blst_p2_uncompress, blst_scalar, blst_scalar_from_lendian, BLST_ERROR,
 };
-use kzg::{FFTSettings, Fr, KZGSettings, Poly, FFTG1, G1, G1Mul, G2};
-
+use kzg::{FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
 use libc::{c_ulong, fgetc, fgets, strtoul, EOF, FILE};
-#[cfg(feature = "parallel")]
-use rayon::iter::IntoParallelIterator;
-#[cfg(feature = "parallel")]
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-
 use sha2::{Digest, Sha256};
 
 use crate::consts::{
     BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
-    RANDOM_CHALLENGE_KZG_BATCH_DOMAIN
+    RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
 };
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -44,7 +38,7 @@ pub fn bytes_to_g1_rust(bytes: &[u8; 48usize]) -> Result<FsG1, String> {
         }
         blst_p1_from_affine(&mut g1, &tmp);
         // The point must be on the right subgroup
-        if !blst_p1_in_g1(&mut g1) {
+        if !blst_p1_in_g1(&g1) {
             return Err("the point is not in g1 group".to_string());
         }
     }
@@ -247,7 +241,12 @@ pub fn verify_kzg_proof_batch(
     let rhs_g1 = c_minus_y_lincomb.add_or_dbl(&proof_z_lincomb);
 
     // Do the pairing check!
-    pairings_verify(&proof_lincomb, &ts.secret_g2[1], &rhs_g1, &FsG2::generator())
+    pairings_verify(
+        &proof_lincomb,
+        &ts.secret_g2[1],
+        &rhs_g1,
+        &FsG2::generator(),
+    )
 }
 
 pub fn compute_kzg_proof_rust(polynomial: &FsPoly, z: &FsFr, s: &FsKZGSettings) -> FsG1 {
@@ -277,11 +276,12 @@ pub fn compute_kzg_proof_rust(polynomial: &FsPoly, z: &FsFr, s: &FsKZGSettings) 
 
     fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB);
 
-    for i in 0..FIELD_ELEMENTS_PER_BLOB {
-        q.coeffs[i] = q.coeffs[i].mul(&inverses[i]);
+    for (i, inverse) in inverses.iter().enumerate().take(FIELD_ELEMENTS_PER_BLOB) {
+        q.coeffs[i] = q.coeffs[i].mul(inverse);
     }
 
-    if m > 0 { // ω_m == x
+    if m > 0 {
+        // ω_m == x
         m -= 1;
         q.coeffs[m] = FsFr::zero();
         for i in 0..FIELD_ELEMENTS_PER_BLOB {
@@ -394,15 +394,12 @@ pub fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
     // Copy blob
     for i in 0..blob.len() {
         let v = bytes_from_bls_field(&blob[i]);
-        bytes[
-            (32 + i * BYTES_PER_FIELD_ELEMENT)
-                ..
-            (32 + (i + 1) * BYTES_PER_FIELD_ELEMENT)]
+        bytes[(32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT)]
             .copy_from_slice(&v);
     }
 
     // Copy commitment
-    let v = bytes_from_g1_rust(&commitment);
+    let v = bytes_from_g1_rust(commitment);
     for i in 0..v.len() {
         bytes[32 + BYTES_PER_BLOB + i] = v[i];
     }
@@ -428,11 +425,11 @@ pub fn compute_r_powers(
     proofs_g1: &[FsG1],
 ) -> Vec<FsFr> {
     let n = commitments_g1.len();
-    let input_size = 32 +
-        n * (BYTES_PER_COMMITMENT +
-            2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF);
+    let input_size =
+        32 + n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF);
 
-    #[allow(unused_assignments)] let mut offset = 0;
+    #[allow(unused_assignments)]
+    let mut offset = 0;
     let mut bytes: Vec<u8> = vec![0; input_size];
 
     // Copy domain separator
@@ -444,30 +441,22 @@ pub fn compute_r_powers(
     for i in 0..n {
         // Copy commitment
         let v = bytes_from_g1_rust(&commitments_g1[i]);
-        for j in 0..v.len() {
-            bytes[offset + j] = v[j];
-        }
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_COMMITMENT;
 
         // Copy evaluation challenge
         let v = bytes_from_bls_field(&evaluation_challenges_fr[i]);
-        for j in 0..v.len() {
-            bytes[offset + j] = v[j];
-        }
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
         // Copy polynomial's evaluation value
         let v = bytes_from_bls_field(&ys_fr[i]);
-        for j in 0..v.len() {
-            bytes[offset + j] = v[j];
-        }
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
         // Copy proof
         let v = bytes_from_g1_rust(&proofs_g1[i]);
-        for j in 0..v.len() {
-            bytes[offset + j] = v[j];
-        }
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_PROOF;
     }
 
@@ -513,9 +502,10 @@ pub fn verify_blob_kzg_proof_rust(
     ts: &FsKZGSettings,
 ) -> bool {
     let polynomial = blob_to_polynomial_rust(blob);
-    let evaluation_challenge_fr = compute_challenge(blob, &commitment_g1);
-    let y_fr = evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts);
-    verify_kzg_proof_rust(&commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
+    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
+    let y_fr =
+        evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts);
+    verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
 }
 
 pub fn verify_blob_kzg_proof_batch_rust(
@@ -525,8 +515,8 @@ pub fn verify_blob_kzg_proof_batch_rust(
     ts: &FsKZGSettings,
 ) -> bool {
     // Exit early if we are given zero blobs
-    if blobs.len() == 0 {
-        return true
+    if blobs.is_empty() {
+        return true;
     }
 
     let mut evaluation_challenges_fr: Vec<FsFr> = Vec::new();
@@ -535,13 +525,20 @@ pub fn verify_blob_kzg_proof_batch_rust(
     for i in 0..blobs.len() {
         let polynomial = blob_to_polynomial_rust(&blobs[i]);
         let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
-        let y_fr = evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts);
+        let y_fr =
+            evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts);
 
         evaluation_challenges_fr.push(evaluation_challenge_fr);
         ys_fr.push(y_fr);
     }
 
-    verify_kzg_proof_batch(commitments_g1, &evaluation_challenges_fr, &ys_fr, proofs_g1, ts)
+    verify_kzg_proof_batch(
+        commitments_g1,
+        &evaluation_challenges_fr,
+        &ys_fr,
+        proofs_g1,
+        ts,
+    )
 }
 
 pub const C_KZG_RET_C_KZG_OK: C_KZG_RET = 0;
@@ -719,11 +716,10 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, C_KZG_RET> {
         .map(|x| {
             let mut bytes = [0u8; 32];
             bytes.copy_from_slice(x);
-            let result = bytes_to_bls_field_rust(&bytes);
-            if result.is_ok() {
-                Ok(result.unwrap())
+            if let Ok(result) = bytes_to_bls_field_rust(&bytes) {
+                Ok(result)
             } else {
-                Err(result.err().unwrap() as C_KZG_RET)
+                Err(C_KZG_RET_C_KZG_BADARGS)
             }
         })
         .collect::<Result<Vec<FsFr>, C_KZG_RET>>()
@@ -839,9 +835,8 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     if deserialized_blob.is_err() {
         return deserialized_blob.err().unwrap();
     }
-    let commitment_g1 = compute_blob_kzg_proof_rust(
-        &deserialized_blob.unwrap(),
-        &kzg_settings_to_rust(s));
+    let commitment_g1 =
+        compute_blob_kzg_proof_rust(&deserialized_blob.unwrap(), &kzg_settings_to_rust(s));
     (*out).bytes = bytes_from_g1_rust(&commitment_g1);
     C_KZG_RET_C_KZG_OK
 }
@@ -930,7 +925,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
         &deserialized_blob.unwrap(),
         &commitment_g1.unwrap(),
         &proof_g1.unwrap(),
-        &kzg_settings_to_rust(s));
+        &kzg_settings_to_rust(s),
+    );
     C_KZG_RET_C_KZG_OK
 }
 
@@ -975,7 +971,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         &deserialized_blobs,
         &commitments_g1,
         &proofs_g1,
-        &kzg_settings_to_rust(s));
+        &kzg_settings_to_rust(s),
+    );
     C_KZG_RET_C_KZG_OK
 }
 
@@ -1026,13 +1023,10 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready
-pub unsafe extern "C" fn bytes_to_bls_field(
-    out: *mut blst_fr,
-    b: &Bytes32
-) -> C_KZG_RET {
+pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, b: &Bytes32) -> C_KZG_RET {
     let fr = bytes_to_bls_field_rust(&b.bytes);
     if fr.is_err() {
-        return fr.err().unwrap() as C_KZG_RET
+        return fr.err().unwrap() as C_KZG_RET;
     }
     *out = fr.unwrap().0;
     C_KZG_RET_C_KZG_OK
@@ -1042,10 +1036,7 @@ pub unsafe extern "C" fn bytes_to_bls_field(
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready
-pub unsafe extern "C" fn blob_to_polynomial(
-    p: *mut CFsPoly,
-    blob: *const Blob
-) -> C_KZG_RET {
+pub unsafe extern "C" fn blob_to_polynomial(p: *mut CFsPoly, blob: *const Blob) -> C_KZG_RET {
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         let start = i * BYTES_PER_FIELD_ELEMENT;
         let bytes_array: [u8; BYTES_PER_FIELD_ELEMENT] = (*blob).bytes
@@ -1055,7 +1046,7 @@ pub unsafe extern "C" fn blob_to_polynomial(
         let bytes = Bytes32 { bytes: bytes_array };
         let fr = bytes_to_bls_field_rust(&bytes.bytes);
         if fr.is_err() {
-            return fr.err().unwrap() as C_KZG_RET
+            return fr.err().unwrap() as C_KZG_RET;
         }
         (*p).evals[i] = fr.unwrap().0;
     }

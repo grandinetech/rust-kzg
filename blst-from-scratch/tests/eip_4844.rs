@@ -3,11 +3,9 @@
 mod tests {
     use blst_from_scratch::{
         eip_4844::{
-            blob_to_kzg_commitment_rust, bytes_from_bls_field, bytes_from_g1_rust,
-            compute_aggregate_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
-            evaluate_polynomial_in_evaluation_form_rust, g1_lincomb, hash_to_bls_field,
-            load_trusted_setup_filename_rust, vector_lincomb, verify_aggregate_kzg_proof_rust,
-            verify_kzg_proof_rust,
+            blob_to_kzg_commitment_rust, bytes_from_bls_field, bytes_from_g1_rust, compute_powers,
+            evaluate_polynomial_in_evaluation_form_rust, hash_to_bls_field,
+            load_trusted_setup_filename_rust,
         },
         types::{
             fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
@@ -15,10 +13,8 @@ mod tests {
         },
     };
     use kzg_bench::tests::eip_4844::{
-        aggregate_proof_for_single_blob_test, blob_to_kzg_commitment_test, bytes_to_bls_field_test,
-        compute_aggregate_kzg_proof_test_empty, compute_commitment_for_blobs_test,
-        compute_powers_test, eip4844_test, evaluate_polynomial_in_evaluation_form_test,
-        verify_aggregate_kzg_proof_test_empty,
+        blob_to_kzg_commitment_test, bytes_to_bls_field_test, compute_powers_test,
+        evaluate_polynomial_in_evaluation_form_test,
     };
 
     #[test]
@@ -48,87 +44,11 @@ mod tests {
     }
 
     #[test]
-    pub fn compute_commitment_for_blobs_test_() {
-        compute_commitment_for_blobs_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
-            &load_trusted_setup_filename_rust,
-            &hash_to_bls_field,
-            &bytes_from_bls_field,
-            &bytes_from_g1_rust,
-            &compute_powers,
-            &vector_lincomb,
-            &g1_lincomb,
-            &evaluate_polynomial_in_evaluation_form_rust,
-            &blob_to_kzg_commitment_rust,
-            &compute_kzg_proof_rust,
-            &verify_kzg_proof_rust,
-        );
-    }
-
-    #[test]
-    pub fn eip4844_test_() {
-        eip4844_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
-            &load_trusted_setup_filename_rust,
-            &blob_to_kzg_commitment_rust,
-            &compute_aggregate_kzg_proof_rust,
-            &verify_aggregate_kzg_proof_rust,
-        );
-    }
-
-    #[test]
     pub fn blob_to_kzg_commitment_test_() {
         blob_to_kzg_commitment_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
             &bytes_from_g1_rust,
         )
-    }
-
-    #[test]
-    pub fn compute_aggregate_kzg_proof_test_empty_() {
-        compute_aggregate_kzg_proof_test_empty::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-        >(
-            &load_trusted_setup_filename_rust,
-            &compute_aggregate_kzg_proof_rust,
-            &bytes_from_g1_rust,
-        )
-    }
-
-    #[test]
-    pub fn verify_aggregate_kzg_proof_test_empty_() {
-        verify_aggregate_kzg_proof_test_empty::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-        >(
-            &load_trusted_setup_filename_rust,
-            &compute_aggregate_kzg_proof_rust,
-            &verify_aggregate_kzg_proof_rust,
-        )
-    }
-
-    #[test]
-    pub fn aggregate_proof_for_single_blob_test_() {
-        aggregate_proof_for_single_blob_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-        >(
-            &load_trusted_setup_filename_rust,
-            &blob_to_kzg_commitment_rust,
-            &compute_aggregate_kzg_proof_rust,
-            &verify_aggregate_kzg_proof_rust,
-        );
     }
 }
