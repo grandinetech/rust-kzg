@@ -405,16 +405,7 @@ pub fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
     }
 
     // Now let's create the challenge!
-
-    let hashed_data: [u8; 32] = hash(&bytes);
-    let mut hash_input = [0u8; 33];
-
-    hash_input[..32].copy_from_slice(&hashed_data);
-    hash_input[32] = 0x0;
-
-    hash_input[32] = 0x1;
-    let eval_challenge = hash(&hash_input);
-
+    let eval_challenge = hash(&bytes);
     hash_to_bls_field(&eval_challenge)
 }
 
@@ -464,16 +455,7 @@ pub fn compute_r_powers(
     assert_eq!(offset, input_size);
 
     // Now let's create the challenge!
-
-    let hashed_data: [u8; 32] = hash(&bytes);
-    let mut hash_input = [0u8; 33];
-
-    hash_input[..32].copy_from_slice(&hashed_data);
-    hash_input[32] = 0x0;
-
-    hash_input[32] = 0x1;
-    let eval_challenge = hash(&hash_input);
-
+    let eval_challenge = hash(&bytes);
     let r = hash_to_bls_field(&eval_challenge);
     compute_powers(&r, n)
 }
