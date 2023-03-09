@@ -1,10 +1,10 @@
-use crate::data_types::fr::Fr;
 use crate::data_types::fp::Fp;
 use crate::data_types::fp2::Fp2;
+use crate::data_types::fr::Fr;
+use crate::mcl_methods;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
-use crate::mcl_methods;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -30,7 +30,7 @@ extern "C" {
     fn mclBnG2_hashAndMapTo(x: *mut G2, buf: *const u8, bufSize: usize) -> c_int;
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct G2 {
     pub x: Fp2,
@@ -58,27 +58,76 @@ ec_impl![
 impl G2 {
     pub const G2_NEGATIVE_GENERATOR: G2 = G2 {
         x: Fp2 {
-            d: [Fp {
-                d: [0xf5f28fa202940a10, 0xb3f5fb2687b4961a, 0xa1a893b53e2ae580, 0x9894999d1a3caee9, 0x6f67b7631863366b, 0x058191924350bcd7],
-            }, Fp {
-                d: [0xa5a9c0759e23f606, 0xaaa0c59dbccd60c3, 0x3bb17e18e2867806, 0x1b1ab6cc8541b367, 0xc2b6ed0ef2158547, 0x11922a097360edf3] 
-            }],
+            d: [
+                Fp {
+                    d: [
+                        0xf5f28fa202940a10,
+                        0xb3f5fb2687b4961a,
+                        0xa1a893b53e2ae580,
+                        0x9894999d1a3caee9,
+                        0x6f67b7631863366b,
+                        0x058191924350bcd7,
+                    ],
+                },
+                Fp {
+                    d: [
+                        0xa5a9c0759e23f606,
+                        0xaaa0c59dbccd60c3,
+                        0x3bb17e18e2867806,
+                        0x1b1ab6cc8541b367,
+                        0xc2b6ed0ef2158547,
+                        0x11922a097360edf3,
+                    ],
+                },
+            ],
         },
-        y:  Fp2 {
-            d: [Fp {
-                d: [0x6d8bf5079fb65e61, 0xc52f05df531d63a5, 0x7f4a4d344ca692c9, 0xa887959b8577c95f, 0x4347fe40525c8734, 0x197d145bbaff0bb5],
-            }, Fp {
-                d: [0x0c3e036d209afa4e, 0x0601d8f4863f9e23, 0xe0832636bacc0a84, 0xeb2def362a476f84, 0x64044f659f0ee1e9, 0x0ed54f48d5a1caa7] 
-            }],
+        y: Fp2 {
+            d: [
+                Fp {
+                    d: [
+                        0x6d8bf5079fb65e61,
+                        0xc52f05df531d63a5,
+                        0x7f4a4d344ca692c9,
+                        0xa887959b8577c95f,
+                        0x4347fe40525c8734,
+                        0x197d145bbaff0bb5,
+                    ],
+                },
+                Fp {
+                    d: [
+                        0x0c3e036d209afa4e,
+                        0x0601d8f4863f9e23,
+                        0xe0832636bacc0a84,
+                        0xeb2def362a476f84,
+                        0x64044f659f0ee1e9,
+                        0x0ed54f48d5a1caa7,
+                    ],
+                },
+            ],
         },
         z: Fp2 {
-            d: [Fp {
-                d: [0x760900000002fffd, 0xebf4000bc40c0002, 0x5f48985753c758ba, 0x77ce585370525745, 0x5c071a97a256ec6d, 0x15f65ec3fa80e493] ,
-            }, Fp {
-                d:  [0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000] }
+            d: [
+                Fp {
+                    d: [
+                        0x760900000002fffd,
+                        0xebf4000bc40c0002,
+                        0x5f48985753c758ba,
+                        0x77ce585370525745,
+                        0x5c071a97a256ec6d,
+                        0x15f65ec3fa80e493,
+                    ],
+                },
+                Fp {
+                    d: [
+                        0x0000000000000000,
+                        0x0000000000000000,
+                        0x0000000000000000,
+                        0x0000000000000000,
+                        0x0000000000000000,
+                        0x0000000000000000,
+                    ],
+                },
             ],
         },
     };
-    
 }
-

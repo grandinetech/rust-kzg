@@ -1,16 +1,20 @@
-use kzg::{FFTFr, Fr, Poly, ZeroPoly};
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
+use kzg::{FFTFr, Fr, ZeroPoly};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::poly::FsPoly;
-use crate::utils::{is_power_of_two, next_power_of_two};
 use once_cell::sync::OnceCell;
 
 const SCALE_FACTOR: u64 = 5;
 static INVERSE_FACTORS: OnceCell<Vec<FsFr>> = OnceCell::new();
 static UNSCALE_FACTOR_POWERS: OnceCell<Vec<FsFr>> = OnceCell::new();
 
-#[allow(clippy::needless_range_loop)]
 pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = INVERSE_FACTORS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
@@ -27,7 +31,6 @@ pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
     }
 }
 
-#[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = UNSCALE_FACTOR_POWERS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
@@ -48,7 +51,7 @@ pub fn recover_poly_from_samples(
     len_samples: usize,
     fs: &FsFFTSettings,
 ) -> Result<Vec<FsFr>, String> {
-    if !is_power_of_two(len_samples) {
+    if !len_samples.is_power_of_two() {
         return Err(String::from("len_samples must be a power of two"));
     }
 
@@ -85,13 +88,14 @@ pub fn recover_poly_from_samples(
         }
     }
     // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
-    let mut poly_with_zero: FsPoly = FsPoly::default();
-    poly_with_zero.coeffs = fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap();
+    let mut poly_with_zero = FsPoly {
+        coeffs: fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap(),
+    };
 
     // x -> k * x
     let len_zero_poly = zero_poly.coeffs.len();
 
-    let _zero_poly_scale = next_power_of_two(len_zero_poly - 1);
+    let _zero_poly_scale = (len_zero_poly - 1).next_power_of_two();
     #[cfg(feature = "parallel")]
     {
         if _zero_poly_scale > 1024 {
@@ -141,8 +145,9 @@ pub fn recover_poly_from_samples(
         eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
     }
 
-    let mut eval_scaled_reconstructed_poly = FsPoly::default();
-    eval_scaled_reconstructed_poly.coeffs = eval_scaled_poly_with_zero.clone();
+    let mut eval_scaled_reconstructed_poly = FsPoly {
+        coeffs: eval_scaled_poly_with_zero.clone(),
+    };
     for i in 0..len_samples {
         eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i]
             .div(&eval_scaled_zero_poly[i])

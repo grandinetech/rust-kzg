@@ -2,10 +2,6 @@ use crate::data_types::fr::Fr;
 use kzg::Fr as CommonFr;
 
 impl CommonFr for Fr {
-    fn default() -> Self {
-        Fr::zero()
-    }
-
     fn null() -> Self {
         Fr::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX / 3])
     }
@@ -30,16 +26,16 @@ impl CommonFr for Fr {
         Fr::from_u64_arr(&[val, 0, 0, 0])
     }
 
-	fn to_u64_arr(&self) -> [u64; 4] {
+    fn to_u64_arr(&self) -> [u64; 4] {
         Fr::to_u64_arr(self)
-	}
-	
-	fn div(&self, b: &Self) -> Result<Self, String>{
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
         let mut res = Fr::zero();
         Fr::div(&mut res, self, b);
         Ok(res)
-	}
-	
+    }
+
     fn is_one(&self) -> bool {
         Fr::is_one(self)
     }

@@ -1,5 +1,5 @@
 use crate::finite::BlstFr;
-use kzg::{FFTSettings, Fr};
+use kzg::FFTSettings;
 use std::slice;
 
 #[repr(C)]
@@ -13,16 +13,18 @@ pub struct KzgFFTSettings4844 {
 
 extern "C" {}
 
-impl FFTSettings<BlstFr> for KzgFFTSettings4844 {
+impl Default for KzgFFTSettings4844 {
     fn default() -> Self {
         Self {
             max_width: 0,
-            expanded_roots_of_unity: &mut Fr::default(),
-            reverse_roots_of_unity: &mut Fr::default(),
-            roots_of_unity: &mut Fr::default(),
+            expanded_roots_of_unity: &mut BlstFr::default(),
+            reverse_roots_of_unity: &mut BlstFr::default(),
+            roots_of_unity: &mut BlstFr::default(),
         }
     }
+}
 
+impl FFTSettings<BlstFr> for KzgFFTSettings4844 {
     // underscore was added to avoid warnings when new is unused
     fn new(_scale: usize) -> Result<Self, String> {
         todo!();
@@ -50,6 +52,5 @@ impl FFTSettings<BlstFr> for KzgFFTSettings4844 {
 }
 
 impl Drop for KzgFFTSettings4844 {
-    fn drop(&mut self) {
-    }
+    fn drop(&mut self) {}
 }

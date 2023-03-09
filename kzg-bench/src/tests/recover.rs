@@ -18,8 +18,8 @@ pub fn recover_simple<
 
     let mut poly = vec![TFr::zero(); max_width];
 
-    for i in 0..(max_width / 2) {
-        poly[i] = TFr::from_u64(i.try_into().unwrap());
+    for (i, p) in poly.iter_mut().enumerate().take(max_width / 2) {
+        *p = TFr::from_u64(i.try_into().unwrap());
     }
 
     //I think it is not needed, since vec! is set as Fr::zero(), but leaving just in case
@@ -33,8 +33,9 @@ pub fn recover_simple<
     let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
 
     //Check recovered data
-    for i in 0..max_width {
-        assert!(data[i].equals(&recovered.get_coeff_at(i)));
+    assert_eq!(data.len(), max_width);
+    for (i, d) in data.iter().enumerate() {
+        assert!(d.equals(&recovered.get_coeff_at(i)));
     }
 
     let mut recovered_vec: Vec<TFr> = vec![];
@@ -45,12 +46,12 @@ pub fn recover_simple<
 
     //Also check against original coefficients
     let back = fs.fft_fr(&recovered_vec, true).unwrap();
-    for i in 0..(max_width / 2) {
-        assert!(poly[i].equals(&back[i]));
+    for (i, p) in poly.iter().enumerate().take(max_width / 2) {
+        assert!(p.equals(&back[i]));
     }
 
-    for i in (max_width / 2)..max_width {
-        assert!(poly[i].is_zero());
+    for p in poly.iter().take(max_width).skip(max_width / 2) {
+        assert!(p.is_zero());
     }
 }
 
@@ -65,8 +66,8 @@ pub fn recover_random<
 
     let mut poly = vec![TFr::zero(); max_width];
 
-    for i in 0..(max_width / 2) {
-        poly[i] = TFr::from_u64(i.try_into().unwrap());
+    for (i, p) in poly.iter_mut().enumerate().take(max_width / 2) {
+        *p = TFr::from_u64(i.try_into().unwrap());
     }
 
     let data = fs.fft_fr(&poly, false).unwrap();
@@ -80,14 +81,14 @@ pub fn recover_random<
 
             let recovered = TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
             //Assert
-            for i in 0..max_width {
-                assert!(data[i].equals(&recovered.get_coeff_at(i)));
+            assert_eq!(data.len(), max_width);
+            for (i, d) in data.iter().enumerate() {
+                assert!(d.equals(&recovered.get_coeff_at(i)));
             }
 
-            let mut recovered_vec: Vec<TFr> = vec![];
-            for i in 0..max_width {
-                recovered_vec.push(recovered.get_coeff_at(i));
-            }
+            let recovered_vec = (0..max_width)
+                .map(|i| recovered.get_coeff_at(i))
+                .collect::<Vec<_>>();
 
             //Also check against original coefficients
             let back = fs.fft_fr(&recovered_vec, true).unwrap();
@@ -95,8 +96,8 @@ pub fn recover_random<
                 assert!(poly[i].equals(&back[i]));
             }
 
-            for i in (max_width / 2)..max_width {
-                assert!(poly[i].is_zero());
+            for p in poly.iter().take(max_width).skip(max_width / 2) {
+                assert!(p.is_zero());
             }
         }
 
@@ -106,21 +107,17 @@ pub fn recover_random<
 }
 
 fn random_missing<TFr: Fr>(data: Vec<TFr>, len_data: usize, known: u64) -> Vec<Option<TFr>> {
-    let mut missin_idx: Vec<usize> = vec![];
-    let mut with_missing: Vec<Option<TFr>> = vec![];
+    let mut missing_idx: Vec<usize> = vec![];
+    let mut with_missing = data.into_iter().map(Some).collect::<Vec<_>>();
 
     for i in 0..len_data {
-        missin_idx.push(i);
+        missing_idx.push(i);
     }
 
-    missin_idx.shuffle(&mut thread_rng());
+    missing_idx.shuffle(&mut thread_rng());
 
-    for i in 0..len_data {
-        with_missing.push(Some(data[i].clone()));
-    }
-
-    for i in 0..(len_data - (known as usize)) {
-        with_missing[missin_idx[i]] = None;
+    for missing_idx in missing_idx.into_iter().take(len_data - (known as usize)) {
+        with_missing[missing_idx] = None;
     }
     with_missing
 }

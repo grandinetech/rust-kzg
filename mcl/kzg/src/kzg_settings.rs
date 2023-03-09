@@ -4,21 +4,13 @@ use crate::kzg10::Curve;
 use crate::kzg10::Polynomial;
 use crate::utilities::is_power_of_2;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct KZGSettings {
     pub fft_settings: FFTSettings,
     pub curve: Curve,
 }
 
 impl KZGSettings {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self {
-           fft_settings: FFTSettings::default(),
-            curve: Curve::default()
-        }
-    }
-
     pub fn new_from_curve(curve: &Curve, fft_settings: &FFTSettings) -> Self {
         KZGSettings {
             fft_settings: fft_settings.clone(),
@@ -26,22 +18,33 @@ impl KZGSettings {
         }
     }
 
-    pub fn new(secret_g1: &[G1], secret_g2: &[G2], length: usize, fft_settings: &FFTSettings) -> Result<Self, String> {
+    pub fn new(
+        secret_g1: &[G1],
+        secret_g2: &[G2],
+        length: usize,
+        fft_settings: &FFTSettings,
+    ) -> Result<Self, String> {
         if length < fft_settings.max_width {
-            return Err(String::from("length must be equal to or greater than fft settings max width"));
+            return Err(String::from(
+                "length must be equal to or greater than fft settings max width",
+            ));
         }
         if secret_g1.len() < fft_settings.max_width {
-            return Err(String::from("secret g1 must have a length equal to or greater than fft settings max width"));
+            return Err(String::from(
+                "secret g1 must have a length equal to or greater than fft settings max width",
+            ));
         }
         if secret_g2.len() < fft_settings.max_width {
-            return Err(String::from("secret g2 must have a length equal to or greater than fft settings max width"));
+            return Err(String::from(
+                "secret g2 must have a length equal to or greater than fft settings max width",
+            ));
         }
 
         let mut secret1: Vec<G1> = vec![];
         let mut secret2: Vec<G2> = vec![];
         for i in 0..length {
             secret1.push(secret_g1[i]);
-            secret2.push(secret_g2[i].clone());
+            secret2.push(secret_g2[i]);
         }
         let curve = Curve::new2(&secret1, &secret2, length);
 
@@ -74,7 +77,14 @@ impl KZGSettings {
         Ok(q.commit(&self.curve.g1_points).unwrap())
     }
 
-    pub fn check_proof_multi(&self, commitment: &G1,proof: &G1, x: &Fr, ys: &[Fr], n: usize) -> Result<bool, String> {
+    pub fn check_proof_multi(
+        &self,
+        commitment: &G1,
+        proof: &G1,
+        x: &Fr,
+        ys: &[Fr],
+        n: usize,
+    ) -> Result<bool, String> {
         if !is_power_of_2(n) {
             return Err(String::from("n must be a power of 2"));
         }
@@ -91,10 +101,15 @@ impl KZGSettings {
 
         let x_pow = inv_x_pow.inverse();
         let xn2 = &self.curve.g2_gen * &x_pow;
-        let xn_minus_yn = &self.curve.g2_points[n] - &xn2;
+        let xn_minus_yn = self.curve.g2_points[n] - xn2;
         let is1 = interpolation_poly.commit(&self.curve.g1_points).unwrap();
         let commit_minus_interp = commitment - &is1;
-        Ok(Curve::verify_pairing(&commit_minus_interp, &self.curve.g2_gen, proof, &xn_minus_yn))
+        Ok(Curve::verify_pairing(
+            &commit_minus_interp,
+            &self.curve.g2_gen,
+            proof,
+            &xn_minus_yn,
+        ))
     }
 
     pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {

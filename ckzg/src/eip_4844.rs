@@ -8,14 +8,14 @@ use crate::kzgsettings4844::KzgKZGSettings4844;
 // use crate::utils::reverse_bit_order;
 
 use kzg::eip_4844::{Blob, KZGCommitment, KZGProof};
-use kzg::{Fr, KZGSettings};
+use kzg::Fr;
 use libc::{fdopen, FILE};
 use std::ffi::CStr;
 use std::os::unix::io::IntoRawFd;
 
 extern "C" {
-    fn bytes_to_g1(out: *mut BlstP1, bytes: *const u8);
-    fn bytes_from_g1(out: *mut u8, g1: *const BlstP1);
+    fn bytes_to_g1_raw(out: *mut BlstP1, bytes: *const u8);
+    fn bytes_from_g1_raw(out: *mut u8, g1: *const BlstP1);
     fn load_trusted_setup_file(out: *mut KzgKZGSettings4844, inp: *mut FILE) -> KzgRet;
     fn verify_aggregate_kzg_proof(
         out: *mut bool,
@@ -88,7 +88,7 @@ pub fn blob_to_kzg_commitment_rust(blob: &[BlstFr], s: &KzgKZGSettings4844) -> B
     unsafe {
         let mut kzg_commitment: KZGCommitment = KZGCommitment { bytes: [0; 48] };
         blob_to_kzg_commitment(&mut kzg_commitment, &blob_arr, s);
-        bytes_to_g1(&mut out, kzg_commitment.bytes.as_ptr());
+        bytes_to_g1_raw(&mut out, kzg_commitment.bytes.as_ptr());
     }
 
     out
@@ -121,7 +121,7 @@ pub fn compute_aggregate_kzg_proof_rust(blobs: &[Vec<BlstFr>], ts: &KzgKZGSettin
         let mut kzg_proof: KZGProof = KZGProof { bytes: [0; 48] };
         let ret = compute_aggregate_kzg_proof(&mut kzg_proof, blob_arr.as_ptr(), blobs.len(), ts);
         assert!(ret == KzgRet::KzgOk);
-        bytes_to_g1(&mut out, kzg_proof.bytes.as_ptr());
+        bytes_to_g1_raw(&mut out, kzg_proof.bytes.as_ptr());
     }
     out
 }
@@ -150,7 +150,7 @@ pub fn verify_aggregate_kzg_proof_rust(
         .map(|c| {
             let mut out: [u8; 48usize] = [0; 48usize];
             unsafe {
-                bytes_from_g1(out.as_mut_ptr(), c);
+                bytes_from_g1_raw(out.as_mut_ptr(), c);
             }
             KZGCommitment { bytes: out }
         })
@@ -159,7 +159,7 @@ pub fn verify_aggregate_kzg_proof_rust(
     let proof = {
         let mut out: [u8; 48usize] = [0; 48usize];
         unsafe {
-            bytes_from_g1(out.as_mut_ptr(), kzg_aggregated_proof);
+            bytes_from_g1_raw(out.as_mut_ptr(), kzg_aggregated_proof);
         }
         KZGProof { bytes: out }
     };

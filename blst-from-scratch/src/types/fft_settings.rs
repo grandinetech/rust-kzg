@@ -1,8 +1,15 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use kzg::{FFTSettings, Fr};
 
 use crate::consts::SCALE2_ROOT_OF_UNITY;
 use crate::types::fr::FsFr;
 
+#[derive(Debug, Clone)]
 pub struct FsFFTSettings {
     pub max_width: usize,
     pub root_of_unity: FsFr,
@@ -10,11 +17,13 @@ pub struct FsFFTSettings {
     pub reverse_roots_of_unity: Vec<FsFr>,
 }
 
-impl FFTSettings<FsFr> for FsFFTSettings {
+impl Default for FsFFTSettings {
     fn default() -> Self {
         Self::new(0).unwrap()
     }
+}
 
+impl FFTSettings<FsFr> for FsFFTSettings {
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
     fn new(scale: usize) -> Result<FsFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
@@ -58,17 +67,6 @@ impl FFTSettings<FsFr> for FsFFTSettings {
 
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         &self.reverse_roots_of_unity
-    }
-}
-
-impl Clone for FsFFTSettings {
-    fn clone(&self) -> Self {
-        let mut output = FsFFTSettings::new(0).unwrap();
-        output.max_width = self.max_width;
-        output.root_of_unity = self.root_of_unity;
-        output.expanded_roots_of_unity = self.expanded_roots_of_unity.clone();
-        output.reverse_roots_of_unity = self.reverse_roots_of_unity.clone();
-        output
     }
 }
 

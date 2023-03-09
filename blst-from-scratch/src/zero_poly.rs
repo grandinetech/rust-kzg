@@ -1,14 +1,16 @@
-use std::cmp::{min, Ordering};
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+use core::cmp::{min, Ordering};
 
 use kzg::{FFTFr, Fr, ZeroPoly};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::poly::FsPoly;
-use crate::utils::{is_power_of_two, next_power_of_two};
 
-#[cfg(feature = "parallel")]
-use kzg::Poly;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
@@ -79,7 +81,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
     /// Reduce partials using a specified domain size.
     /// Calculates the product of all polynomials via FFT and then applies an inverse FFT to produce a new Polynomial.
     fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
-        if !is_power_of_two(domain_size) {
+        if !domain_size.is_power_of_two() {
             return Err(String::from("Expected domain size to be a power of 2"));
         }
 
@@ -137,7 +139,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             return Err(String::from(
                 "Domain size greater than fft_settings.max_width",
             ));
-        } else if !is_power_of_two(domain_size) {
+        } else if !domain_size.is_power_of_two() {
             return Err(String::from("Domain size must be a power of 2"));
         }
 
@@ -147,7 +149,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
         let mut partial_count = 1 + (missing_idxs.len() - 1) / missing_per_partial; // TODO: explain why -1 is used here
 
-        let next_pow: usize = next_power_of_two(partial_count * degree_of_partial);
+        let next_pow: usize = (partial_count * degree_of_partial).next_power_of_two();
         let domain_ceiling = min(next_pow, domain_size);
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
@@ -164,7 +166,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
             #[cfg(not(feature = "parallel"))]
             {
-                work = vec![FsFr::zero(); next_power_of_two(partial_count * degree_of_partial)];
+                work = vec![FsFr::zero(); (partial_count * degree_of_partial).next_power_of_two()];
 
                 let mut missing_offset = 0;
                 let mut work_offset = 0;
@@ -250,7 +252,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             let reduction_factor = 4; // Can be tuned & optimized (but must be a power of 2)
             while partial_count > 1 {
                 let reduced_count = 1 + (partial_count - 1) / reduction_factor;
-                let partial_size = next_power_of_two(partial_lens[0]);
+                let partial_size = partial_lens[0].next_power_of_two();
 
                 // Step over polynomial space and produce larger multiplied polynomials
                 for i in 0..reduced_count {

@@ -1,4 +1,9 @@
-use kzg::{FK20SingleSettings, KZGSettings, Poly, FFTG1, G1};
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use kzg::{FK20SingleSettings, Poly, FFTG1, G1};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -6,32 +11,17 @@ use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
-use crate::utils::{is_power_of_two, reverse_bit_order};
+use crate::utils::reverse_bit_order;
 
+#[derive(Debug, Clone, Default)]
 pub struct FsFK20SingleSettings {
     pub kzg_settings: FsKZGSettings,
     pub x_ext_fft: Vec<FsG1>,
 }
 
-impl Clone for FsFK20SingleSettings {
-    fn clone(&self) -> Self {
-        Self {
-            kzg_settings: self.kzg_settings.clone(),
-            x_ext_fft: self.x_ext_fft.clone(),
-        }
-    }
-}
-
 impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
     for FsFK20SingleSettings
 {
-    fn default() -> Self {
-        Self {
-            kzg_settings: FsKZGSettings::default(),
-            x_ext_fft: vec![],
-        }
-    }
-
     fn new(kzg_settings: &FsKZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;
 
@@ -39,7 +29,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         } else if n2 < 2 {
             return Err(String::from("n2 must be greater than or equal to 2"));
@@ -70,7 +60,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         }
 
@@ -88,7 +78,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         }
 

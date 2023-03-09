@@ -1,31 +1,36 @@
 #!/bin/bash
-unset CARGO_TARGET_DIR
 
 set -e
 
-parallel=false
-
-while getopts "parallel" opt; do
-  case $opt in
-    p)
-      parallel=true
-      ;;
-    \?)
-      exit 1
-      ;;
-  esac
-done
-
-SED_LINUX="/usr/bin/sed"
-SED_MACOS="/usr/local/bin/gsed"
+LIB=libmcl_rust.a
 
 print_msg () {
   echo "[*]" "$1"
 }
 
-LIB=libmcl_rust.a
+###################### parallel configuration ######################
 
-print_msg "Compiling lib"
+parallel=false
+
+while [[ -n $# ]]; do
+  case $1 in
+    -p|--parallel)
+      parallel=true
+      ;;
+    -*)
+      echo "Unknown parameter: $1"
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac;
+  shift
+done
+
+###################### building static libs ######################
+
+print_msg "Compiling libmcl_rust"
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
   cargo rustc --release --crate-type=staticlib --features=parallel
@@ -34,33 +39,31 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
+###################### cloning c-kzg-4844 ######################
+
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
-git checkout 4c115844e2fcf773fdf095b040e63082934df0f9
+git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
-print_msg "Coping header files"
-cd blst
-cp bindings/*.h ../inc
+
+print_msg "Applying patches and building blst"
+cd src
+export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
+make blst
+unset CFLAGS
 cd ..
 
+###################### detecting os ######################
 
 case $(uname -s) in
   "Linux")
-    sed=$SED_LINUX
     CSHARP_PLATFORM=linux-x64
     CLANG_PLATFORM=x86_64-linux
     ;;
   "Darwin")
-    if [[ -z $(command -v "$SED_MACOS") ]]; then
-      echo "FAIL: gsed was not found"
-      echo "HELP: to fix this, run \"brew install gnu-sed\""
-      exit 1
-    fi
-    sed=$SED_MACOS
     CSHARP_PLATFORM=osx-x64
     CLANG_PLATFORM=x86_64-darwin
-
     ;;
   *)
     echo "FAIL: unsupported OS"
@@ -68,55 +71,82 @@ case $(uname -s) in
     ;;
 esac
 
-# print_msg "Modyfying dotnet Makefile"
-# git apply < ../csharp.patch
+###################### c tests ######################
 
-# print_msg "Building dotnet"
-# cd bindings/csharp
-# make -B ckzg CSHARP_PLATFORM=$CSHARP_PLATFORM CLANG_PLATFORM=$CLANG_PLATFORM
-# dotnet restore
+print_msg "Patching c tests"
+git apply < ../c.patch
 
-# print_msg "Running dotnet tests"
-# dotnet test --configuration Release --no-restore
-# cd ../..
+print_msg "Running c tests"
+cd src
+make test
+cd ..
 
-# print_msg "Modyfing rust bindings build.rs"
-# git apply < ../rust.patch
-# cd bindings/rust || exit 1
+###################### dotnet tests ######################
 
-# print_msg "Running rust tests"
-# cargo test --release
-# cd ../..
+print_msg "Patching dotnet binding"
+git apply < ../csharp.patch
 
-print_msg "Modyfing python bindings makefile"
+print_msg "Building dotnet"
+cd bindings/csharp
+make -B ckzg CSHARP_PLATFORM=$CSHARP_PLATFORM CLANG_PLATFORM=$CLANG_PLATFORM
+dotnet restore
+
+print_msg "Running dotnet tests"
+dotnet test --configuration Release --no-restore
+cd ../..
+
+###################### rust tests ######################
+
+#print_msg "Patching rust binding"
+#git apply < ../rust.patch
+#cd bindings/rust || exit 1
+
+#print_msg "Running rust tests"
+#cargo test --release
+#cd ../..
+
+###################### python tests ######################
+
+print_msg "Patching python binding"
+git apply < ../python.patch
 cd bindings/python || exit 1
-
-eval "$("$sed" -i "s|../../src/c_kzg_4844.o ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
-eval "$("$sed" -i "s|-Wall -shared|-Wall -lstdc++ -shared|g" Makefile)"
 
 print_msg "Running python tests"
 make
 cd ../..
 
-print_msg "Modyfing java bindings makefile"
-cd bindings/java || exit 1
-eval "$("$sed" -i "s|../../src/c_kzg_4844.c ../../lib/libblst.a|../../../target/release/$LIB|g" Makefile)"
+###################### java tests ######################
 
-print_msg "Running java tests and benchmarks"
+print_msg "Patching java binding"
+git apply < ../java.patch
+cd bindings/java || exit 1
+
+print_msg "Running java tests"
 make CC_FLAGS=-lstdc++ build test
 cd ../..
 
-print_msg "Modyfing nodejs bindings"
+###################### nodejs tests ######################
+
+print_msg "Patching nodejs binding"
+git apply < ../nodejs.patch
 cd bindings/node.js || exit 1
-eval "$("$sed" -i "s/c_kzg_4844.o/..\/..\/..\/target\/release\/$LIB/g" binding.gyp)"
-eval "$("$sed" -i 's|"<(module_root_dir)/../../lib/libblst.a"||g' binding.gyp)"
-eval "$("$sed" -i '/cd ..\/..\/src; make lib/c\\t# cd ..\/..\/src; make lib' Makefile)"
 
 print_msg "Running nodejs tests"
 yarn install
 make
-cd ../..
+cd ../../..
 
-cd ..
+###################### go tests ######################
+
+#print_msg "Patching go binding"
+#git apply < ../go.patch
+
+#print_msg "Running go tests"
+#cd bindings/go || exit 1
+#go test .
+#cd ../../..
+
+###################### cleaning up ######################
+
 print_msg "Cleaning up"
 rm -rf c-kzg-4844

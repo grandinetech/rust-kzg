@@ -1,22 +1,17 @@
 use crate::data_types::fr::Fr;
-use crate::kzg10::Polynomial;
-use kzg::Poly;
-use kzg::FFTSettingsPoly;
-use kzg::PolyRecover;
 use crate::fk20_fft::FFTSettings;
+use crate::kzg10::Polynomial;
+use kzg::FFTSettingsPoly;
+use kzg::Poly;
+use kzg::PolyRecover;
 
 impl Poly<Fr> for Polynomial {
-    fn default() -> Self {
-        Polynomial { coeffs: vec![] }
-    }
-
     fn new(size: usize) -> Result<Self, String> {
         Ok(Polynomial::new(size))
     }
 
     fn get_coeff_at(&self, i: usize) -> Fr {
         self.coeffs[i]
-        // self.coeffs.get(i)
     }
 
     fn set_coeff_at(&mut self, i: usize, x: &Fr) {
@@ -47,7 +42,7 @@ impl Poly<Fr> for Polynomial {
         Polynomial::inverse(self, new_len)
     }
 
-    fn div(&mut self, x: &Self) -> Result<Self, String> { 
+    fn div(&mut self, x: &Self) -> Result<Self, String> {
         Polynomial::div(self, &x.coeffs)
     }
 
@@ -65,7 +60,12 @@ impl Poly<Fr> for Polynomial {
 }
 
 impl FFTSettingsPoly<Fr, Polynomial, FFTSettings> for FFTSettings {
-    fn poly_mul_fft(a: &Polynomial, x: &Polynomial, len: usize, fs: Option<&FFTSettings>) -> Result<Polynomial, String> {
+    fn poly_mul_fft(
+        a: &Polynomial,
+        x: &Polynomial,
+        len: usize,
+        fs: Option<&FFTSettings>,
+    ) -> Result<Polynomial, String> {
         Polynomial::mul_fft(a, x, fs, len)
     }
 }

@@ -1,9 +1,14 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use kzg::{Fr, G1Mul, FFTG1, G1};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
-use crate::utils::is_power_of_two;
 
 pub fn fft_g1_fast(
     ret: &mut [FsG1],
@@ -51,7 +56,7 @@ impl FFTG1<FsG1> for FsFFTSettings {
             return Err(String::from(
                 "Supplied list is longer than the available max width",
             ));
-        } else if !is_power_of_two(data.len()) {
+        } else if !data.len().is_power_of_two() {
             return Err(String::from("A list with power-of-two length expected"));
         }
 

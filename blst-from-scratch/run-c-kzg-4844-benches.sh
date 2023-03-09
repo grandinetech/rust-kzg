@@ -1,24 +1,34 @@
 #!/bin/bash
 
-parallel=false
+set -e
 
-while getopts "parallel" opt; do
-  case $opt in
-    p)
-      parallel=true
-      ;;
-    \?)
-      exit 1
-      ;;
-  esac
-done
-
-SED_LINUX="/usr/bin/sed"
-SED_MACOS="/usr/local/bin/gsed"
+LIB=libblst_from_scratch.a
 
 print_msg () {
   echo "[*]" "$1"
 }
+
+###################### parallel configuration ######################
+
+parallel=false
+
+while [[ -n $# ]]; do
+  case $1 in
+    -p|--parallel)
+      parallel=true
+      ;;
+    -*)
+      echo "Unknown parameter: $1"
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac;
+  shift
+done
+
+###################### building static libs ######################
 
 print_msg "Compiling libblst_from_scratch"
 if [[ "$parallel" = true ]]; then
@@ -29,61 +39,45 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
+###################### cloning c-kzg-4844 ######################
+
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
-
-print_msg "Cloning blst"
+git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
-print_msg "Applying patches and building blst"
-cd src
-export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
-make blst
-unset CFLAGS
-cd ..
+###################### rust benchmarks ######################
 
-case $(uname -s) in
-  "Linux")
-    sed=$SED_LINUX
-    ;;
-  "Darwin")
-    if [[ -z $(command -v "$SED_MACOS") ]]; then
-      echo "FAIL: gsed was not found"
-      echo "HELP: to fix this, run \"brew install gnu-sed\""
-      exit 1
-    fi
-    sed=$SED_MACOS
-    ;;
-  *)
-    echo "FAIL: unsupported OS"
-    exit 1
-    ;;
-esac
-
-print_msg "Modyfing rust bindings build.rs"
+print_msg "Patching rust binding"
 git apply < ../rust.patch
 cd bindings/rust || exit 1
 
-print_msg "Running rust tests"
+print_msg "Running rust benchmarks"
 cargo bench
 cd ../..
 
-print_msg "Rebuilding blst"
-cd src
-export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
-make blst
-unset CFLAGS
-cd ..
+###################### java benchmarks ######################
 
-print_msg "Modyfing java bindings makefile"
+print_msg "Patching java binding"
+git apply < ../java.patch
 cd bindings/java || exit 1
-eval "$("$sed" -i "s/..\/..\/src\/c_kzg_4844.c/..\/..\/..\/target\/release\/libblst_from_scratch.a/g" Makefile)"
 
-print_msg "Running java tests and benchmarks"
+print_msg "Running java benchmarks"
 make build benchmark
 cd ../..
 
-cd ..
+###################### go benchmarks ######################
+
+print_msg "Patching go binding"
+git apply < ../go.patch
+
+print_msg "Running go benchmarks"
+cd bindings/go || exit 1
+go test -run ^$ -bench .
+cd ../../..
+
+###################### cleaning up ######################
+
 print_msg "Cleaning up"
 rm -rf c-kzg-4844

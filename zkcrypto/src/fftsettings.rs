@@ -11,7 +11,7 @@ use std::cmp::Ordering;
 // use blst::blst_fr_from_uint64;
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ZkFFTSettings {
     pub max_width: usize,
     pub root_of_unity: blsScalar,
@@ -132,7 +132,7 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
 
         // In case more roots are provided with fft_settings, use a larger stride
         let stride = self.max_width / data.len();
-        let mut ret = vec![<blsScalar as Fr>::default(); data.len()];
+        let mut ret = vec![blsScalar::default(); data.len()];
 
         // Inverse is same as regular, but all constants are reversed and results are divided by n
         // This is a property of the DFT matrix
@@ -159,7 +159,7 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
 }
 
 impl ZkFFTSettings {
-    pub fn from_scale(max_scale: usize) -> Result<ZkFFTSettings, String> {
+    pub fn from_scale(max_scale: usize) -> Result<Self, String> {
         if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from(
                 "Scale is expected to be within root of unity matrix row size",
@@ -167,24 +167,26 @@ impl ZkFFTSettings {
         }
         let max_width: usize = 1 << max_scale;
 
-        Ok(ZkFFTSettings {
+        Ok(Self {
             max_width,
-            ..FFTSettings::default()
+            ..Self::default()
         })
     }
 }
 
-impl FFTSettings<blsScalar> for ZkFFTSettings {
-    fn default() -> ZkFFTSettings {
-        ZkFFTSettings {
+impl Default for ZkFFTSettings {
+    fn default() -> Self {
+        Self {
             max_width: 0,
             root_of_unity: blsScalar::zero(),
             expanded_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
         }
     }
+}
 
-    fn new(scale: usize) -> Result<ZkFFTSettings, String> {
+impl FFTSettings<blsScalar> for ZkFFTSettings {
+    fn new(scale: usize) -> Result<Self, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from(
                 "Scale is expected to be within root of unity matrix row size",
@@ -202,7 +204,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
-        Ok(ZkFFTSettings {
+        Ok(Self {
             max_width,
             root_of_unity,
             expanded_roots_of_unity,

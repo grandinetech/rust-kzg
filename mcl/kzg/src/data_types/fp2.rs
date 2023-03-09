@@ -1,11 +1,10 @@
-
 use crate::data_types::fp::Fp;
+use crate::mcl_methods;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
-use crate::mcl_methods;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -31,7 +30,7 @@ extern "C" {
     fn mclBnFp2_squareRoot(y: *mut Fp2, x: *const Fp2) -> i32;
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct Fp2 {
     pub d: [Fp; 2],

@@ -196,7 +196,7 @@ macro_rules! impl_binops_multiplicative {
 // The internal representation of this type is four 64-bit unsigned
 // integers in little-endian order. `Scalar` values are always in
 // Montgomery form; i.e., Scalar(a) = aR mod q, with R = 2^256.
-#[derive(Clone, Copy, Eq)]
+#[derive(Clone, Copy, Eq, Default)]
 pub struct Scalar(pub [u64; 4]);
 
 impl fmt::Debug for Scalar {
@@ -373,13 +373,6 @@ const ROOT_OF_UNITY: Scalar = Scalar([
     0x0af5_3ae3_52a3_1e64,
     0x5bf3_adda_19e9_b27b,
 ]);
-
-impl Default for Scalar {
-    #[inline]
-    fn default() -> Self {
-        Self::zero()
-    }
-}
 
 #[cfg(feature = "zeroize")]
 impl zeroize::DefaultIsZeroes for Scalar {}

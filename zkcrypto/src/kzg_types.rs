@@ -39,8 +39,7 @@ use kzg::FFTSettings;
 use crate::kzg_proofs::{
     check_proof_multi as check_multi, check_proof_single as check_single,
     commit_to_poly as poly_commit, compute_proof_multi as open_multi,
-    compute_proof_single as open_single, default_kzg, new_kzg_settings,
-    KZGSettings as LKZGSettings,
+    compute_proof_single as open_single, new_kzg_settings, KZGSettings as LKZGSettings,
 };
 
 pub const G1_GENERATOR: ZkG1Projective = ZkG1Projective {
@@ -342,13 +341,9 @@ pub fn pairings_verify(
 }
 
 impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly> for LKZGSettings {
-    fn default() -> Self {
-        default_kzg()
-    }
-
     fn new(
-        secret_g1: &Vec<ZkG1Projective>,
-        secret_g2: &Vec<ZkG2Projective>,
+        secret_g1: &[ZkG1Projective],
+        secret_g2: &[ZkG2Projective],
         length: usize,
         fs: &ZkFFTSettings,
     ) -> Result<LKZGSettings, String> {
@@ -392,7 +387,7 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
         com: &ZkG1Projective,
         proof: &ZkG1Projective,
         x: &blsScalar,
-        values: &Vec<blsScalar>,
+        values: &[blsScalar],
         n: usize,
     ) -> Result<bool, String> {
         check_multi(com, proof, x, values, n, self)
@@ -400,17 +395,5 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> blsScalar {
         self.fs.get_expanded_roots_of_unity_at(i)
-    }
-}
-
-impl Clone for LKZGSettings {
-    fn clone(&self) -> Self {
-        LKZGSettings::new(
-            &self.secret_g1.clone(),
-            &self.secret_g2.clone(),
-            self.length as usize,
-            &self.fs.clone(),
-        )
-        .unwrap()
     }
 }

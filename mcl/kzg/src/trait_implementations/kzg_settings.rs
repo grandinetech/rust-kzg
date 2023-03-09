@@ -5,11 +5,12 @@ use crate::kzg_settings::KZGSettings;
 use kzg::KZGSettings as CommonKZGSettings;
 
 impl CommonKZGSettings<Fr, G1, G2, FFTSettings, Polynomial> for KZGSettings {
-    fn default() -> Self {
-        KZGSettings::default()
-    }
-
-    fn new(secret_g1: &Vec<G1>, secret_g2: &Vec<G2>, length: usize, fs: &FFTSettings) -> Result<Self, String> {
+    fn new(
+        secret_g1: &[G1],
+        secret_g2: &[G2],
+        length: usize,
+        fs: &FFTSettings,
+    ) -> Result<Self, String> {
         KZGSettings::new(secret_g1, secret_g2, length, fs)
     }
 
@@ -29,7 +30,14 @@ impl CommonKZGSettings<Fr, G1, G2, FFTSettings, Polynomial> for KZGSettings {
         KZGSettings::compute_proof_multi(self, p, x, n)
     }
 
-    fn check_proof_multi(&self, com: &G1, proof: &G1, x: &Fr, values: &Vec<Fr>, n: usize) -> Result<bool, String> {
+    fn check_proof_multi(
+        &self,
+        com: &G1,
+        proof: &G1,
+        x: &Fr,
+        values: &[Fr],
+        n: usize,
+    ) -> Result<bool, String> {
         KZGSettings::check_proof_multi(self, com, proof, x, values, n)
     }
 

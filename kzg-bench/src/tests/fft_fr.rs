@@ -1,6 +1,7 @@
 use kzg::{FFTFr, FFTSettings, Fr};
 
 /// Check that both FFT implementations produce the same results
+#[allow(clippy::type_complexity)]
 pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     fft_fr_slow: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
     fft_fr_fast: &dyn Fn(&mut [TFr], &[TFr], usize, &[TFr], usize),
@@ -9,10 +10,9 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
 
     let fft_settings = TFFTSettings::new(size).unwrap();
 
-    let mut data = vec![TFr::default(); fft_settings.get_max_width()];
-    for i in 0..fft_settings.get_max_width() {
-        data[i] = TFr::from_u64_arr(&[i as u64, 0, 0, 0]);
-    }
+    let data = (0..fft_settings.get_max_width())
+        .map(|i| TFr::from_u64_arr(&[i as u64, 0, 0, 0]))
+        .collect::<Vec<_>>();
 
     let mut out0 = vec![TFr::default(); fft_settings.get_max_width()];
     let mut out1 = vec![TFr::default(); fft_settings.get_max_width()];
@@ -22,14 +22,14 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
         &mut out0,
         &data,
         1,
-        &fft_settings.get_expanded_roots_of_unity(),
+        fft_settings.get_expanded_roots_of_unity(),
         1,
     );
     fft_fr_fast(
         &mut out1,
         &data,
         1,
-        &fft_settings.get_expanded_roots_of_unity(),
+        fft_settings.get_expanded_roots_of_unity(),
         1,
     );
 
@@ -44,17 +44,16 @@ pub fn roundtrip_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
 
     let fft_settings = TFFTSettings::new(size).unwrap();
 
-    let mut starting_data = vec![TFr::default(); fft_settings.get_max_width()];
-    for i in 0..fft_settings.get_max_width() {
-        starting_data[i] = TFr::from_u64(i as u64);
-    }
+    let starting_data = (0..fft_settings.get_max_width())
+        .map(|i| TFr::from_u64(i as u64))
+        .collect::<Vec<_>>();
 
     // Forward and inverse FFT
     let forward_result = fft_settings.fft_fr(&starting_data, false).unwrap();
     let inverse_result = fft_settings.fft_fr(&forward_result, true).unwrap();
 
-    for i in 0..fft_settings.get_max_width() {
-        assert!(starting_data[i].equals(&inverse_result[i]));
+    for (i, data) in starting_data.iter().enumerate() {
+        assert!(data.equals(&inverse_result[i]));
     }
 }
 
@@ -83,10 +82,9 @@ pub fn inverse_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
 
     let fft_settings = TFFTSettings::new(4).unwrap();
 
-    let mut data = vec![TFr::default(); fft_settings.get_max_width()];
-    for i in 0..fft_settings.get_max_width() {
-        data[i] = TFr::from_u64(i as u64);
-    }
+    let data = (0..fft_settings.get_max_width())
+        .map(|i| TFr::from_u64(i as u64))
+        .collect::<Vec<_>>();
 
     let forward_result = fft_settings.fft_fr(&data, true).unwrap();
 
@@ -107,15 +105,14 @@ pub fn stride_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>() {
     let fft_settings1 = TFFTSettings::new(size1).unwrap();
     let fft_settings2 = TFFTSettings::new(size2).unwrap();
 
-    let mut data = vec![TFr::default(); width];
-    for i in 0..width {
-        data[i] = TFr::from_u64(i as u64);
-    }
+    let data = (0..width)
+        .map(|i| TFr::from_u64(i as u64))
+        .collect::<Vec<_>>();
 
     let result1 = fft_settings1.fft_fr(&data, false).unwrap();
     let result2 = fft_settings2.fft_fr(&data, false).unwrap();
 
-    for i in 0..width {
-        assert!(result1[i].equals(&result2[i]));
+    for (i, r1) in result1.iter().enumerate() {
+        assert!(r1.equals(&result2[i]));
     }
 }

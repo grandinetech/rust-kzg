@@ -1,9 +1,9 @@
+use crate::mcl_methods::*;
 use std::ops::{Add, AddAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
-use crate::mcl_methods::*;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]

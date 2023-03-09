@@ -1,12 +1,7 @@
 [package]
 name = "ckzg"
 version = "0.1.0"
-edition = "2018"
-
-[profile.bench]
-opt-level = 3
-debug = false
-lto = "thin"
+edition = "2021"
 
 [dependencies]
 kzg = { path = "../kzg" }

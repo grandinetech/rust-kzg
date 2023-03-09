@@ -70,16 +70,12 @@ extern "C" {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub struct BlstFr {
     pub l: [u64; 4],
 }
 
 impl Fr for BlstFr {
-    fn default() -> Self {
-        Self { l: [0; 4] }
-    }
-
     fn null() -> Self {
         Self { l: [u64::MAX; 4] }
     }
@@ -93,7 +89,7 @@ impl Fr for BlstFr {
     }
 
     fn rand() -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         let mut rng = thread_rng();
         let a: [u64; 4] = [
             rng.next_u64(),
@@ -108,7 +104,7 @@ impl Fr for BlstFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             fr_from_uint64s(&mut ret, u.as_ptr());
         }
@@ -116,7 +112,7 @@ impl Fr for BlstFr {
     }
 
     fn from_u64(u: u64) -> Self {
-        let mut fr = Fr::default();
+        let mut fr = Self::default();
         unsafe {
             fr_from_uint64(&mut fr, u);
         }
@@ -144,7 +140,7 @@ impl Fr for BlstFr {
     }
 
     fn sqr(&self) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             blst_fr_sqr(&mut ret, self);
         }
@@ -152,7 +148,7 @@ impl Fr for BlstFr {
     }
 
     fn mul(&self, b: &Self) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             blst_fr_mul(&mut ret, self, b);
         }
@@ -160,7 +156,7 @@ impl Fr for BlstFr {
     }
 
     fn add(&self, b: &Self) -> Self {
-        let mut sum = Fr::default();
+        let mut sum = Self::default();
         unsafe {
             blst_fr_add(&mut sum, self, b);
         }
@@ -168,7 +164,7 @@ impl Fr for BlstFr {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             blst_fr_sub(&mut ret, self, b);
         }
@@ -176,7 +172,7 @@ impl Fr for BlstFr {
     }
 
     fn eucl_inverse(&self) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             blst_fr_eucl_inverse(&mut ret, self);
         }
@@ -185,7 +181,7 @@ impl Fr for BlstFr {
     }
 
     fn negate(&self) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             // man rodos, kad tokios nera
             fr_negate(&mut ret, self);
@@ -194,7 +190,7 @@ impl Fr for BlstFr {
     }
 
     fn inverse(&self) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             blst_fr_inverse(&mut ret, self);
         }
@@ -203,7 +199,7 @@ impl Fr for BlstFr {
     }
 
     fn pow(&self, n: usize) -> Self {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             fr_pow(&mut ret, self, n as u64);
         }
@@ -211,7 +207,7 @@ impl Fr for BlstFr {
     }
 
     fn div(&self, b: &Self) -> Result<Self, String> {
-        let mut ret = Fr::default();
+        let mut ret = Self::default();
         unsafe {
             fr_div(&mut ret, self, b);
         }

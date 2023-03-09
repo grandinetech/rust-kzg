@@ -1,4 +1,10 @@
-use kzg::{FK20MultiSettings, KZGSettings, Poly, FFTG1, G1};
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
+use kzg::{FK20MultiSettings, Poly, FFTG1, G1};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -6,7 +12,7 @@ use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
-use crate::utils::{is_power_of_two, reverse_bit_order};
+use crate::utils::reverse_bit_order;
 
 pub struct FsFK20MultiSettings {
     pub kzg_settings: FsKZGSettings,
@@ -24,9 +30,7 @@ impl Clone for FsFK20MultiSettings {
     }
 }
 
-impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
-    for FsFK20MultiSettings
-{
+impl Default for FsFK20MultiSettings {
     fn default() -> Self {
         Self {
             kzg_settings: FsKZGSettings::default(),
@@ -34,20 +38,24 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             x_ext_fft_files: vec![],
         }
     }
+}
 
+impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
+    for FsFK20MultiSettings
+{
     #[allow(clippy::many_single_char_names)]
     fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         if n2 > ks.fs.max_width {
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         } else if n2 < 2 {
             return Err(String::from("n2 must be greater than or equal to 2"));
         } else if chunk_len > n2 / 2 {
             return Err(String::from("chunk_len must be greater or equal to n2 / 2"));
-        } else if !is_power_of_two(chunk_len) {
+        } else if !chunk_len.is_power_of_two() {
             return Err(String::from("chunk_len must be a power of two"));
         }
 
@@ -103,7 +111,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             ));
         }
 
-        if !is_power_of_two(n2) {
+        if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         }
 
@@ -121,7 +129,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
             ));
-        } else if !is_power_of_two(n2) {
+        } else if !n2.is_power_of_two() {
             return Err(String::from("n2 must be a power of two"));
         }
 

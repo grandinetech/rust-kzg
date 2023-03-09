@@ -1,18 +1,18 @@
+extern crate alloc;
+
+use alloc::string::String;
+
 use blst::{
     blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_scalar,
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_scalar,
-    blst_scalar_from_fr, blst_uint64_from_fr, blst_scalar_fr_check, blst_scalar_from_lendian,
+    blst_scalar_fr_check, blst_scalar_from_fr, blst_scalar_from_lendian, blst_uint64_from_fr,
 };
 use kzg::Fr;
 
-#[derive(Debug)]
-pub struct FsFr(pub blst::blst_fr);
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+pub struct FsFr(pub blst_fr);
 
 impl Fr for FsFr {
-    fn default() -> Self {
-        Self(blst_fr::default())
-    }
-
     fn null() -> Self {
         Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
     }
@@ -25,6 +25,7 @@ impl Fr for FsFr {
         Self::from_u64(1)
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
         let val: [u64; 4] = [
             rand::random(),
@@ -199,19 +200,16 @@ impl FsFr {
 
     pub fn from_scalar(scalar: [u8; 32usize]) -> Result<Self, u8> {
         let mut bls_scalar = blst_scalar::default();
-        
+
         let mut fr = blst_fr::default();
         unsafe {
-            blst_scalar_from_lendian(& mut bls_scalar, scalar.as_ptr());
-            if !blst_scalar_fr_check(&bls_scalar)
-            {
+            blst_scalar_from_lendian(&mut bls_scalar, scalar.as_ptr());
+            if !blst_scalar_fr_check(&bls_scalar) {
                 return Err(1);
             }
             blst_fr_from_scalar(&mut fr, &bls_scalar);
         }
-        let mut ret = Self::default();
-        ret.0 = fr;
-        Ok(ret)
+        Ok(Self(fr))
     }
 
     pub fn hash_to_bls_field(scalar: [u8; 32usize]) -> Self {
@@ -220,16 +218,6 @@ impl FsFr {
         unsafe {
             blst_fr_from_scalar(&mut fr, &bls_scalar);
         }
-        let mut ret = Self::default();
-        ret.0 = fr;
-        ret
+        Self(fr)
     }
 }
-
-impl Clone for FsFr {
-    fn clone(&self) -> Self {
-        FsFr(self.0)
-    }
-}
-
-impl Copy for FsFr {}

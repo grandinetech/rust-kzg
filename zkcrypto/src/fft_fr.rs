@@ -33,7 +33,7 @@ pub fn fft_fr(
     }
 
     let stride = fft_settings.max_width / data.len();
-    let mut ret = vec![<blsScalar as Fr>::default(); data.len()];
+    let mut ret = vec![blsScalar::default(); data.len()];
 
     let roots = if inverse {
         &fft_settings.reverse_roots_of_unity

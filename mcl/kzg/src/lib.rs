@@ -42,20 +42,20 @@ pub mod trait_implementations {
     pub mod fft_fr;
     pub mod fft_g1;
     pub mod fft_settings;
+    pub mod fk20;
     pub mod fr;
-    pub mod poly;
-    pub mod zero_poly;
     pub mod g1;
     pub mod g2;
     pub mod kzg_settings;
-    pub mod fk20;
+    pub mod poly;
+    pub mod zero_poly;
 }
+pub mod c_bindings;
 pub mod das;
 pub mod data_recovery;
 pub mod eip_4844;
 pub mod fk20_fft;
 pub mod fk20_matrix;
 pub mod kzg10;
-pub mod zero_poly;
 pub mod kzg_settings;
-pub mod c_bindings;
+pub mod zero_poly;

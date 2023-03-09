@@ -1,0 +1,38 @@
+From 18d4e3f729298dffedb1f517f2b777b18cf8cc74 Mon Sep 17 00:00:00 2001
+From: belijzajac <tautvydas749@gmail.com>
+Date: Mon, 13 Feb 2023 19:56:25 +0200
+Subject: [PATCH] Update linking
+
+---
+ bindings/csharp/Makefile | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/bindings/csharp/Makefile b/bindings/csharp/Makefile
+index b94e455..2b1e958 100644
+--- a/bindings/csharp/Makefile
++++ b/bindings/csharp/Makefile
+@@ -24,7 +24,7 @@ endif
+
+ CLANG_FLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+
+-TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
++TARGETS=ckzg.c ../../../../../target/release/libmcl_rust.a
+
+ .blst:
+ 	cd ../../blst && $(BLST_BUILDSCRIPT)
+@@ -34,12 +34,10 @@ TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
+
+ # Ckzg library
+ ckzg:
+-	@make .blst
+ 	@make .ckzg
+
+ # E2e tests as an executable
+ test:
+-	@make .blst
+ 	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) kzg_tests.c $(TARGETS)
+
+ # E2e tests are built and run
+--
+2.39.1
+

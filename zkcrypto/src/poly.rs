@@ -10,14 +10,14 @@ use crate::utils::*;
 // use std::convert::TryInto;
 
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct KzgPoly {
     pub coeffs: Vec<blsScalar>,
 }
 
 impl ZPoly {
     // fn new_poly (size: usize) -> Self {
-    // Self {coeffs: vec![<blsScalar as Fr>::default(); size]}
+    // Self {coeffs: vec![blsScalar::default(); size]}
     // }
 
     /// Checks if the given polynomial is zero.
@@ -93,17 +93,10 @@ impl ZPoly {
 }
 
 impl Poly<blsScalar> for ZPoly {
-    fn default() -> Self {
-        // Self {
-        // coeffs: vec![<blsScalar as Fr>::default(); 4] // blsScalar::default()
-
-        // }
-        Self::new(0).unwrap()
-    }
     fn new(size: usize) -> Result<Self, String> {
         Ok(Self {
-            coeffs: vec![<blsScalar as Fr>::default(); size],
-        }) // blsScalar::default()
+            coeffs: vec![blsScalar::default(); size],
+        })
     }
 
     fn get_coeff_at(&self, i: usize) -> blsScalar {
@@ -182,7 +175,7 @@ impl Poly<blsScalar> for ZPoly {
         }
 
         let mut ret = ZPoly {
-            coeffs: vec![<blsScalar as Fr>::default(); new_len],
+            coeffs: vec![blsScalar::default(); new_len],
         };
 
         if self.coeffs.len() == 1 {

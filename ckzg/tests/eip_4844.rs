@@ -13,7 +13,9 @@ mod tests {
         kzgsettings4844::KzgKZGSettings4844,
         poly::KzgPoly,
     };
-    use kzg_bench::tests::eip_4844::{aggregate_proof_for_single_blob_test, eip4844_test, verify_aggregate_kzg_proof_test_empty};
+    use kzg_bench::tests::eip_4844::{
+        aggregate_proof_for_single_blob_test, eip4844_test, verify_aggregate_kzg_proof_test_empty,
+    };
 
     #[test]
     pub fn eip4844_test_() {

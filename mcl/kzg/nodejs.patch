@@ -1,0 +1,87 @@
+From 1e3734919ef971cbb37fe974bfca50244b9fcf67 Mon Sep 17 00:00:00 2001
+From: belijzajac <tautvydas749@gmail.com>
+Date: Thu, 23 Feb 2023 15:36:06 +0200
+Subject: [PATCH] Update linking
+
+---
+ bindings/node.js/Makefile         |  2 --
+ bindings/node.js/binding.dist.gyp | 26 +-------------------------
+ bindings/node.js/binding.gyp      |  3 +--
+ 3 files changed, 2 insertions(+), 29 deletions(-)
+
+diff --git a/bindings/node.js/Makefile b/bindings/node.js/Makefile
+index c3baba3..01a6854 100644
+--- a/bindings/node.js/Makefile
++++ b/bindings/node.js/Makefile
+@@ -9,7 +9,6 @@ clean:
+ 	rm -f *.o
+
+ build: kzg.cxx kzg.ts package.json binding.gyp Makefile
+-	cd ../../src && make c_kzg_4844.o && cp c_kzg_4844.o ../bindings/node.js
+ 	yarn install
+ 	yarn node-gyp rebuild
+
+@@ -23,7 +22,6 @@ bundle: clean
+ 	yarn rollup --config rollup.config.js --bundleConfigAsCjs
+ 	mkdir -p dist/deps/c-kzg
+ 	cp -r ../../blst dist/deps
+-	cp ../../src/c_kzg_4844.c dist/deps/c-kzg
+ 	cp ../../src/c_kzg_4844.h dist/deps/c-kzg
+
+ publish: bundle
+diff --git a/bindings/node.js/binding.dist.gyp b/bindings/node.js/binding.dist.gyp
+index ae13c6b..c2e8e6c 100644
+--- a/bindings/node.js/binding.dist.gyp
++++ b/bindings/node.js/binding.dist.gyp
+@@ -19,33 +19,9 @@
+         "<!@(node -p \"require('node-addon-api').include\")"
+       ],
+       "libraries": [
+-        "<(module_root_dir)/c_kzg_4844.o",
+-        "<(module_root_dir)/libblst.a"
++        "<(module_root_dir)/../../../../../target/release/libmcl_rust.a"
+       ],
+       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
+-      "actions": [
+-        {
+-          "action_name": "build_blst",
+-          "inputs": ["<(module_root_dir)/dist/deps/blst/build.sh"],
+-          "outputs": ["<(module_root_dir)/libblst.a"],
+-          "action": ["<(module_root_dir)/dist/deps/blst/build.sh"]
+-        },
+-        {
+-          "action_name": "build_ckzg",
+-          "inputs": [
+-            "<(module_root_dir)/dist/deps/c-kzg/c_kzg_4844.c",
+-            "<(module_root_dir)/libblst.a"
+-          ],
+-          "outputs": ["<(module_root_dir)/c_kzg_4844.o"],
+-          "action": [
+-            "cc",
+-            "-I<(module_root_dir)/dist/deps/blst/bindings",
+-            "-DFIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})",
+-            "-O2",
+-            "-c",
+-            "<(module_root_dir)/dist/deps/c-kzg/c_kzg_4844.c"
+-          ]
+-        }
+       ]
+     },
+     {
+diff --git a/bindings/node.js/binding.gyp b/bindings/node.js/binding.gyp
+index 604d025..e90c229 100644
+--- a/bindings/node.js/binding.gyp
++++ b/bindings/node.js/binding.gyp
+@@ -19,8 +19,7 @@
+         "<!@(node -p \"require('node-addon-api').include\")"
+       ],
+       "libraries": [
+-        "<(module_root_dir)/c_kzg_4844.o",
+-        "<(module_root_dir)/../../lib/libblst.a"
++        "<(module_root_dir)/../../../../../target/release/libmcl_rust.a"
+       ],
+       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"]
+     },
+--
+2.39.2
+

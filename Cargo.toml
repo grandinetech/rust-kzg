@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+    "Arkworks",
+    "blst-from-scratch",
+    "ckzg",
+    "kzg",
+    "kzg-bench",
+    "mcl/kzg",
+    "mcl/kzg-bench",
+    "zkcrypto",
+]
+
+[profile.bench]
+lto = "thin"

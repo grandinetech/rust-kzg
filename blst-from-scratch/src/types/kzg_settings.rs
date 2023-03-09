@@ -1,3 +1,8 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+
 use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
@@ -7,8 +12,8 @@ use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 use crate::types::poly::FsPoly;
-use crate::utils::is_power_of_two;
 
+#[derive(Debug, Clone, Default)]
 pub struct FsKZGSettings {
     pub fs: FsFFTSettings,
     // Both secret_g1 and secret_g2 have the same number of elements
@@ -16,28 +21,10 @@ pub struct FsKZGSettings {
     pub secret_g2: Vec<FsG2>,
 }
 
-impl Clone for FsKZGSettings {
-    fn clone(&self) -> Self {
-        Self {
-            fs: self.fs.clone(),
-            secret_g1: self.secret_g1.clone(),
-            secret_g2: self.secret_g2.clone(),
-        }
-    }
-}
-
 impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
-    fn default() -> Self {
-        Self {
-            secret_g1: Vec::new(),
-            secret_g2: Vec::new(),
-            fs: FsFFTSettings::default(),
-        }
-    }
-
     fn new(
-        secret_g1: &Vec<FsG1>,
-        secret_g2: &Vec<FsG2>,
+        secret_g1: &[FsG1],
+        secret_g2: &[FsG2],
         length: usize,
         fft_settings: &FsFFTSettings,
     ) -> Result<Self, String> {
@@ -102,7 +89,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn compute_proof_multi(&self, p: &FsPoly, x0: &FsFr, n: usize) -> Result<FsG1, String> {
-        if !is_power_of_two(n) {
+        if !n.is_power_of_two() {
             return Err(String::from("n must be a power of two"));
         }
 
@@ -138,10 +125,10 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         com: &FsG1,
         proof: &FsG1,
         x: &FsFr,
-        ys: &Vec<FsFr>,
+        ys: &[FsFr],
         n: usize,
     ) -> Result<bool, String> {
-        if !is_power_of_two(n) {
+        if !n.is_power_of_two() {
             return Err(String::from("n is not a power of two"));
         }
 

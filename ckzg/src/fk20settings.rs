@@ -1,4 +1,4 @@
-use kzg::{FK20MultiSettings, FK20SingleSettings, KZGSettings, Poly, G1};
+use kzg::{FK20MultiSettings, FK20SingleSettings, Poly, G1};
 
 use crate::consts::{BlstP1, BlstP2, KzgRet};
 use crate::fftsettings::KzgFFTSettings;
@@ -66,19 +66,21 @@ pub struct KzgFK20MultiSettings {
     pub length: u64,
 }
 
-impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings>
-    for KzgFK20SingleSettings
-{
+impl Default for KzgFK20SingleSettings {
     fn default() -> Self {
         Self {
-            ks: &KZGSettings::default(),
+            ks: &KzgKZGSettings::default(),
             x_ext_fft: &mut G1::default(),
             x_ext_fft_len: 0,
         }
     }
+}
 
+impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings>
+    for KzgFK20SingleSettings
+{
     fn new(ks: &KzgKZGSettings, n2: usize) -> Result<Self, String> {
-        let mut settings = FK20SingleSettings::default();
+        let mut settings = Self::default();
         unsafe {
             match new_fk20_single_settings(&mut settings, n2 as u64, ks) {
                 KzgRet::KzgOk => Ok(settings),
@@ -124,20 +126,22 @@ impl Drop for KzgFK20SingleSettings {
     }
 }
 
-impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings>
-    for KzgFK20MultiSettings
-{
+impl Default for KzgFK20MultiSettings {
     fn default() -> Self {
         Self {
-            ks: &KZGSettings::default(),
+            ks: &KzgKZGSettings::default(),
             chunk_len: 0,
             x_ext_fft_files: std::ptr::null_mut(),
             length: 0,
         }
     }
+}
 
+impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSettings>
+    for KzgFK20MultiSettings
+{
     fn new(ks: &KzgKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
-        let mut settings = FK20MultiSettings::default();
+        let mut settings = Self::default();
         unsafe {
             match new_fk20_multi_settings(&mut settings, n2 as u64, chunk_len as u64, ks) {
                 KzgRet::KzgOk => Ok(settings),

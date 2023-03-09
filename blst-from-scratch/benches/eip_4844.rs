@@ -1,7 +1,7 @@
 use blst_from_scratch::{
     eip_4844::{
-        blob_to_kzg_commitment_rust, compute_aggregate_kzg_proof_rust, load_trusted_setup_filename_rust,
-        verify_aggregate_kzg_proof_rust,
+        blob_to_kzg_commitment_rust, compute_aggregate_kzg_proof_rust,
+        load_trusted_setup_filename_rust, verify_aggregate_kzg_proof_rust,
     },
     types::{
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,

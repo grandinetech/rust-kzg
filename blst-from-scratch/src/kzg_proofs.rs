@@ -1,4 +1,8 @@
-use std::ptr;
+extern crate alloc;
+
+use alloc::vec;
+use alloc::vec::Vec;
+use core::ptr;
 
 use blst::{
     blst_final_exp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1,

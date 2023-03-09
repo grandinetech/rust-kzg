@@ -1,8 +1,8 @@
 use std::env::set_current_dir;
 
 use criterion::Criterion;
-use kzg::{Fr, G1, G2, FFTSettings, KZGSettings, Poly};
-use rand::{rngs::StdRng, SeedableRng, Rng};
+use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 const BENCH_SCALE: usize = 15;
 
@@ -30,14 +30,20 @@ pub fn bench_compute_aggregate_kzg_proof<
                 .collect::<Vec<TFr>>()
         })
         .collect::<Vec<Vec<TFr>>>();
-    
+
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-    let id = format!("bench_compute_aggregate_kzg_proof_{} scale: '{}'", blob_count, BENCH_SCALE);
-    c.bench_function(&id, move |b| b.iter(|| compute_aggregate_kzg_proof(&blobs, &ts)));
+    let id = format!(
+        "bench_compute_aggregate_kzg_proof_{} scale: '{}'",
+        blob_count, BENCH_SCALE
+    );
+    c.bench_function(&id, move |b| {
+        b.iter(|| compute_aggregate_kzg_proof(&blobs, &ts))
+    });
 }
 
+#[allow(clippy::type_complexity)]
 pub fn bench_verify_aggregate_kzg_proof<
     TFr: 'static + Fr,
     TG1: 'static + G1,
@@ -64,18 +70,24 @@ pub fn bench_verify_aggregate_kzg_proof<
                 .collect::<Vec<TFr>>()
         })
         .collect::<Vec<Vec<TFr>>>();
-    
+
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-    let kzg_commitments = blobs.iter().map(|blob| 
-        blob_to_kzg_commitment(blob, &ts)
-        ).collect::<Vec<TG1>>();
-    
+    let kzg_commitments = blobs
+        .iter()
+        .map(|blob| blob_to_kzg_commitment(blob, &ts))
+        .collect::<Vec<TG1>>();
+
     // Compute proof for these blobs
 
     let proof = compute_aggregate_kzg_proof(&blobs, &ts);
 
-    let id = format!("bench_verify_aggregate_kzg_proof scale_{}: '{}'", blob_count, BENCH_SCALE);
-    c.bench_function(&id, move |b| b.iter(|| verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts)));
+    let id = format!(
+        "bench_verify_aggregate_kzg_proof scale_{}: '{}'",
+        blob_count, BENCH_SCALE
+    );
+    c.bench_function(&id, move |b| {
+        b.iter(|| verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts))
+    });
 }

@@ -59,7 +59,7 @@ impl Fr {
         }
         //No idea if this works
         let mut res = *self;
-        for _ in 1 .. n {
+        for _ in 1..n {
             res = res * *self;
         }
         res
@@ -74,7 +74,7 @@ impl Fr {
     pub fn from_u64_arr(u: &[u64; 4]) -> Self {
         let mut arr = [0u8; 32];
         for i in 0..4 {
-            arr[i*8..i*8+8].copy_from_slice(&u[i].to_le_bytes());
+            arr[i * 8..i * 8 + 8].copy_from_slice(&u[i].to_le_bytes());
         }
         Fr::from_scalar(&arr)
     }
@@ -93,13 +93,13 @@ impl Fr {
         assert!(fr.get_little_endian(&mut buf));
         buf
     }
-    
+
     pub fn to_u64_arr(&self) -> [u64; 4] {
-        use std::convert::TryInto;
-        let v: Vec<u64> = Fr::to_scalar(self).chunks(8).map(|ch|{
-            u64::from_le_bytes(ch.try_into().unwrap())
-        }).collect();
-    
+        let v: Vec<u64> = Fr::to_scalar(self)
+            .chunks(8)
+            .map(|ch| u64::from_le_bytes(ch.try_into().unwrap()))
+            .collect();
+
         v.try_into().unwrap()
     }
 }

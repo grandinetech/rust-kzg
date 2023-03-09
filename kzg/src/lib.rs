@@ -1,14 +1,13 @@
 pub mod eip_4844;
 
-pub trait Fr: Clone {
-    fn default() -> Self;
-
+pub trait Fr: Default + Clone {
     fn null() -> Self;
 
     fn zero() -> Self;
 
     fn one() -> Self;
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self;
 
     fn from_u64_arr(u: &[u64; 4]) -> Self;
@@ -53,6 +52,7 @@ pub trait G1: Clone {
 
     fn negative_generator() -> Self;
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self;
 
     fn add_or_dbl(&mut self, b: &Self) -> Self;
@@ -119,9 +119,7 @@ pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
     ) -> Result<(Vec<Coeff>, Polynomial), String>;
 }
 
-pub trait FFTSettings<Coeff: Fr>: Clone {
-    fn default() -> Self;
-
+pub trait FFTSettings<Coeff: Fr>: Default + Clone {
     fn new(scale: usize) -> Result<Self, String>;
 
     fn get_max_width(&self) -> usize;
@@ -144,9 +142,7 @@ pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSett
     ) -> Result<Polynomial, String>;
 }
 
-pub trait Poly<Coeff: Fr>: Clone {
-    fn default() -> Self;
-
+pub trait Poly<Coeff: Fr>: Default + Clone {
     fn new(size: usize) -> Result<Self, String>;
 
     fn get_coeff_at(&self, i: usize) -> Coeff;
@@ -156,6 +152,10 @@ pub trait Poly<Coeff: Fr>: Clone {
     fn get_coeffs(&self) -> &[Coeff];
 
     fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
     fn eval(&self, x: &Coeff) -> Coeff;
 
@@ -175,7 +175,10 @@ pub trait Poly<Coeff: Fr>: Clone {
 }
 
 pub trait PolyRecover<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
-    fn recover_poly_from_samples(samples: &[Option<Coeff>], fs: &FSettings) -> Result<Polynomial, String>;
+    fn recover_poly_from_samples(
+        samples: &[Option<Coeff>],
+        fs: &FSettings,
+    ) -> Result<Polynomial, String>;
 }
 
 pub trait KZGSettings<
@@ -184,13 +187,11 @@ pub trait KZGSettings<
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
->: Clone
+>: Default + Clone
 {
-    fn default() -> Self;
-
     fn new(
-        secret_g1: &Vec<Coeff2>,
-        secret_g2: &Vec<Coeff3>,
+        secret_g1: &[Coeff2],
+        secret_g2: &[Coeff3],
         length: usize,
         fs: &Fs,
     ) -> Result<Self, String>;
@@ -214,7 +215,7 @@ pub trait KZGSettings<
         com: &Coeff2,
         proof: &Coeff2,
         x: &Coeff1,
-        values: &Vec<Coeff1>,
+        values: &[Coeff1],
         n: usize,
     ) -> Result<bool, String>;
 
@@ -228,10 +229,8 @@ pub trait FK20SingleSettings<
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
     Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>,
->: Clone
+>: Default + Clone
 {
-    fn default() -> Self;
-
     fn new(ks: &Ks, n2: usize) -> Result<Self, String>;
 
     fn data_availability(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
@@ -246,10 +245,8 @@ pub trait FK20MultiSettings<
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
     Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial>,
->: Clone
+>: Default + Clone
 {
-    fn default() -> Self;
-
     fn new(ks: &Ks, n2: usize, chunk_len: usize) -> Result<Self, String>;
 
     fn data_availability(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;

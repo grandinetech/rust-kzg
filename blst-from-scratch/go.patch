@@ -1,0 +1,33 @@
+From 3819361504b97a719650abe23f0b572974dc8999 Mon Sep 17 00:00:00 2001
+From: belijzajac <tautvydas749@gmail.com>
+Date: Sun, 19 Feb 2023 23:15:44 +0200
+Subject: [PATCH] Update linking
+
+---
+ bindings/go/main.go | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/bindings/go/main.go b/bindings/go/main.go
+index dcc6a37..918b0fa 100644
+--- a/bindings/go/main.go
++++ b/bindings/go/main.go
+@@ -3,14 +3,12 @@ package cgokzg4844
+ // #cgo CFLAGS: -I${SRCDIR}/../../src
+ // #cgo CFLAGS: -I${SRCDIR}/blst_headers
+ // #cgo CFLAGS: -DFIELD_ELEMENTS_PER_BLOB=4096
+-// #include "c_kzg_4844.c"
++// #include "c_kzg_4844.h"
++// #cgo LDFLAGS: -L${SRCDIR}/../../../../target/release -lblst_from_scratch -lm
+ import "C"
+
+ import (
+ 	"unsafe"
+-
+-	// So its functions are available during compilation.
+-	_ "github.com/supranational/blst/bindings/go"
+ )
+
+ const (
+--
+2.39.2
+
