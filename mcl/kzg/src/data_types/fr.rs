@@ -57,7 +57,6 @@ impl Fr {
         if n == 0 {
             return Self::one();
         }
-        //No idea if this works
         let mut res = *self;
         for _ in 1..n {
             res = res * *self;
@@ -76,16 +75,15 @@ impl Fr {
         for i in 0..4 {
             arr[i * 8..i * 8 + 8].copy_from_slice(&u[i].to_le_bytes());
         }
-        Fr::from_scalar(&arr)
+        Fr::from_scalar(&arr).unwrap()
     }
 
-    pub fn from_scalar(secret: &[u8; 32]) -> Self {
+    pub fn from_scalar(scalar: &[u8; 32]) -> Result<Self, u8> {
         let mut t = Fr::default();
-        if !t.set_little_endian_mod(secret) {
-            panic!("failed to set little endian");
+        if !t.set_little_endian_mod(scalar) {
+            return Err(1);
         }
-
-        t
+        Ok(t)
     }
 
     pub fn to_scalar(fr: &Self) -> [u8; 32] {

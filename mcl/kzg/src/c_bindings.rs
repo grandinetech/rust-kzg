@@ -117,104 +117,87 @@ pub struct CPolynomial {
 }
 
 /// # Safety
-fn g1_to_cg1(t: &G1, out: *mut g1_t) {
-    unsafe {
-        (*out).x.l = t.x.d;
-        (*out).y.l = t.y.d;
-        (*out).z.l = t.z.d;
-    }
+unsafe fn g1_to_cg1(t: &G1, out: *mut g1_t) {
+    (*out).x.l = t.x.d;
+    (*out).y.l = t.y.d;
+    (*out).z.l = t.z.d;
 }
 
 /// # Safety
-fn cg1_to_g1(t: *const g1_t) -> G1 {
-    unsafe {
-        G1 {
-            x: Fp { d: (*t).x.l },
-            y: Fp { d: (*t).y.l },
-            z: Fp { d: (*t).z.l },
-        }
+unsafe fn cg1_to_g1(t: *const g1_t) -> G1 {
+    G1 {
+        x: Fp { d: (*t).x.l },
+        y: Fp { d: (*t).y.l },
+        z: Fp { d: (*t).z.l },
     }
 }
 
-fn ks_to_cks(t: &mut mKZGSettings, out: *mut KZGSettings) {
+unsafe fn ks_to_cks(t: &mut mKZGSettings, out: *mut KZGSettings) {
     assert_eq!(t.curve.g1_points.len(), t.fft_settings.max_width);
-    unsafe {
-        (*out).g1_values = t.curve.g1_points.as_mut_ptr() as _;
-        (*out).g2_values = t.curve.g2_points.as_mut_ptr() as _;
-        let fs = FFTSettings {
-            max_width: t.fft_settings.max_width as _,
-            roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
-            expanded_roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
-            reverse_roots_of_unity: t.fft_settings.exp_roots_of_unity_rev.as_mut_ptr() as _,
-        };
-        let b = Box::new(fs);
-        (*out).fs = Box::into_raw(b);
-    }
+    (*out).g1_values = t.curve.g1_points.as_mut_ptr() as _;
+    (*out).g2_values = t.curve.g2_points.as_mut_ptr() as _;
+    let fs = FFTSettings {
+        max_width: t.fft_settings.max_width as _,
+        roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
+        expanded_roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
+        reverse_roots_of_unity: t.fft_settings.exp_roots_of_unity_rev.as_mut_ptr() as _,
+    };
+    let b = Box::new(fs);
+    (*out).fs = Box::into_raw(b);
 }
 
-fn cks_to_ks(t: *const KZGSettings) -> mKZGSettings {
-    unsafe {
-        crate::fk20_fft::init_globals();
-        let fs = (*t).fs;
-        let mw = (*fs).max_width as usize;
-        let mut ks = mKZGSettings {
-            curve: crate::kzg10::Curve {
-                g1_gen: G1::gen(),
-                g2_gen: G2::gen(),
-                g1_points: Vec::from_raw_parts((*t).g1_values as _, mw, mw),
-                g2_points: Vec::from_raw_parts((*t).g2_values as _, 65, 65),
-            },
-            fft_settings: mFFTSettings {
-                max_width: mw,
-                root_of_unity: Fr::default(),
-                exp_roots_of_unity: Vec::from_raw_parts(
-                    (*fs).expanded_roots_of_unity as _,
-                    mw + 1,
-                    mw + 1,
-                ),
-                exp_roots_of_unity_rev: Vec::from_raw_parts(
-                    (*fs).reverse_roots_of_unity as _,
-                    mw + 1,
-                    mw + 1,
-                ),
-            },
-        };
-        ks.fft_settings.root_of_unity = ks.fft_settings.exp_roots_of_unity[1];
-        ks
-    }
+unsafe fn cks_to_ks(t: *const KZGSettings) -> mKZGSettings {
+    crate::fk20_fft::init_globals();
+    let fs = (*t).fs;
+    let mw = (*fs).max_width as usize;
+    let mut ks = mKZGSettings {
+        curve: crate::kzg10::Curve {
+            g1_gen: G1::gen(),
+            g2_gen: G2::gen(),
+            g1_points: Vec::from_raw_parts((*t).g1_values as _, mw, mw),
+            g2_points: Vec::from_raw_parts((*t).g2_values as _, 65, 65),
+        },
+        fft_settings: mFFTSettings {
+            max_width: mw,
+            root_of_unity: Fr::default(),
+            exp_roots_of_unity: Vec::from_raw_parts(
+                (*fs).expanded_roots_of_unity as _,
+                mw + 1,
+                mw + 1,
+            ),
+            exp_roots_of_unity_rev: Vec::from_raw_parts(
+                (*fs).reverse_roots_of_unity as _,
+                mw + 1,
+                mw + 1,
+            ),
+        },
+    };
+    ks.fft_settings.root_of_unity = ks.fft_settings.exp_roots_of_unity[1];
+    ks
 }
 
-fn blobs_to_frs(blobs: *const Blob, n: usize) -> (Vec<Vec<Fr>>, bool) {
-    unsafe {
-        let mut ok = true;
-        assert_eq!(std::mem::size_of::<Blob>(), BYTES_PER_BLOB);
-        let frs = (0..n)
-            .map(|i| {
-                let (frs, o) = blob_to_frs(blobs.add(i) as _);
-                ok &= o;
-                frs
-            })
-            .collect::<Vec<Vec<Fr>>>();
-        (frs, ok)
-    }
-}
-
-fn blob_to_frs(blob: *const Blob) -> (Vec<Fr>, bool) {
-    unsafe {
-        let mut ok = true;
-        let frs = (*blob)
-            .bytes
-            .chunks(32)
-            .map(|x| {
-                let mut bytes = [0u8; 32];
-                bytes.copy_from_slice(x);
-                let mut tmp = Fr::default();
-                ok &= tmp.deserialize(&bytes);
-                tmp
-            })
-            .collect::<Vec<Fr>>();
-        (frs, ok)
-    }
+unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<Fr>, C_KZG_RET> {
+    (*blob)
+        .bytes
+        .chunks(32)
+        .map(|x| {
+            let mut bytes = [0u8; 32];
+            bytes.copy_from_slice(x);
+            let mut tmp = Fr::default();
+            let ret = tmp.deserialize(&bytes);
+            if !ret {
+                // fix for `test_verify_kzg_proof_batch__fails_with_incorrect_proof` c-kzg-4844 test
+                //if let Ok(fr) = crate::eip_4844::bytes_to_bls_field(&bytes) {
+                //    Ok(fr)
+                //} else {
+                //    Err(C_KZG_RET_C_KZG_BADARGS)
+                //}
+                Err(C_KZG_RET_C_KZG_BADARGS)
+            } else {
+                Ok(tmp)
+            }
+        })
+        .collect::<Result<Vec<Fr>, C_KZG_RET>>()
 }
 
 fn cpoly_to_poly(c_poly: &CPolynomial) -> Polynomial {
@@ -298,22 +281,20 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut KZGSettings) {
 
 /// # Safety
 #[no_mangle]
-pub unsafe extern "C" fn compute_aggregate_kzg_proof(
+pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
-    blobs: *const Blob,
-    n: usize,
-    s: *const KZGSettings,
+    blob: *const Blob,
+    s: &KZGSettings,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
 
-    let (frs, ok) = blobs_to_frs(blobs, n);
-    if !ok {
-        return C_KZG_RET_C_KZG_BADARGS;
+    let deserialized_blob = deserialize_blob(blob);
+    if deserialized_blob.is_err() {
+        return deserialized_blob.err().unwrap();
     }
-
     let ms = cks_to_ks(s);
-    let proof = crate::eip_4844::compute_aggregate_kzg_proof(&frs, &ms);
-    (*out).bytes = crate::eip_4844::bytes_from_g1(&proof);
+    let commitment_g1 = crate::eip_4844::compute_blob_kzg_proof(&deserialized_blob.unwrap(), &ms);
+    (*out).bytes = crate::eip_4844::bytes_from_g1(&commitment_g1);
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
@@ -321,35 +302,79 @@ pub unsafe extern "C" fn compute_aggregate_kzg_proof(
 
 /// # Safety
 #[no_mangle]
-pub unsafe extern "C" fn verify_aggregate_kzg_proof(
-    out: *mut bool,
-    blobs: *const Blob,
-    commitments_bytes: *const Bytes48,
-    n: usize,
-    aggregated_proof_bytes: *const Bytes48,
-    s: *const KZGSettings,
+pub unsafe extern "C" fn verify_blob_kzg_proof(
+    ok: *mut bool,
+    blob: *const Blob,
+    commitment_bytes: *const Bytes48,
+    proof_bytes: *const Bytes48,
+    s: &KZGSettings,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
 
-    let (frs, ok) = blobs_to_frs(blobs, n);
-    if !ok {
+    let deserialized_blob = deserialize_blob(blob);
+    if deserialized_blob.is_err() {
+        return deserialized_blob.err().unwrap();
+    }
+    let commitment_g1 = crate::eip_4844::bytes_to_g1(&(*commitment_bytes).bytes);
+    let proof_g1 = crate::eip_4844::bytes_to_g1(&(*proof_bytes).bytes);
+    if commitment_g1.is_err() || proof_g1.is_err() {
         return C_KZG_RET_C_KZG_BADARGS;
     }
-    let res: Result<Vec<_>, _> = from_raw_parts(commitments_bytes, n)
-        .iter()
-        .map(|c| crate::eip_4844::bytes_to_g1(&c.bytes))
-        .collect();
-    let expected = match res {
-        Ok(v) => v,
-        Err(_) => return C_KZG_RET_C_KZG_BADARGS,
-    };
-    let proof = match crate::eip_4844::bytes_to_g1(&(*aggregated_proof_bytes).bytes) {
-        Ok(v) => v,
-        Err(_) => return C_KZG_RET_C_KZG_BADARGS,
-    };
 
     let ms = cks_to_ks(s);
-    *out = crate::eip_4844::verify_aggregate_kzg_proof(&frs, &expected, &proof, &ms);
+    *ok = crate::eip_4844::verify_blob_kzg_proof(
+        &deserialized_blob.unwrap(),
+        &commitment_g1.unwrap(),
+        &proof_g1.unwrap(),
+        &ms,
+    );
+    std::mem::forget(ms);
+
+    C_KZG_RET_C_KZG_OK
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
+    ok: *mut bool,
+    blobs: *const Blob,
+    commitments_bytes: *const Bytes48,
+    proofs_bytes: *const Bytes48,
+    n: usize,
+    s: &KZGSettings,
+) -> C_KZG_RET {
+    let mut deserialized_blobs: Vec<Vec<Fr>> = Vec::new();
+    let mut commitments_g1: Vec<G1> = Vec::new();
+    let mut proofs_g1: Vec<G1> = Vec::new();
+
+    let raw_blobs = from_raw_parts(blobs, n);
+    let raw_commitments = from_raw_parts(commitments_bytes, n);
+    let raw_proofs = from_raw_parts(proofs_bytes, n);
+
+    for i in 0..n {
+        let deserialized_blob = deserialize_blob(&raw_blobs[i]);
+        if deserialized_blob.is_err() {
+            return deserialized_blob.err().unwrap();
+        }
+
+        let commitment_g1 = crate::eip_4844::bytes_to_g1(&raw_commitments[i].bytes);
+        let proof_g1 = crate::eip_4844::bytes_to_g1(&raw_proofs[i].bytes);
+        if commitment_g1.is_err() || proof_g1.is_err() {
+            return C_KZG_RET_C_KZG_BADARGS;
+        }
+
+        deserialized_blobs.push(deserialized_blob.unwrap());
+        commitments_g1.push(commitment_g1.unwrap());
+        proofs_g1.push(proof_g1.unwrap());
+    }
+
+    let ms = cks_to_ks(s);
+    *ok = crate::eip_4844::verify_blob_kzg_proof_batch(
+        &deserialized_blobs,
+        &commitments_g1,
+        &proofs_g1,
+        &ms,
+    );
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
@@ -364,13 +389,13 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
 
-    let (frs, ok) = blob_to_frs(blob);
-    if !ok {
-        return C_KZG_RET_C_KZG_BADARGS;
+    let deserialized_blob = deserialize_blob(blob);
+    if deserialized_blob.is_err() {
+        return deserialized_blob.err().unwrap();
     }
     let ms = cks_to_ks(s);
-    let o = crate::eip_4844::blob_to_kzg_commitment(&frs, &ms);
-    (*out).bytes = crate::eip_4844::bytes_from_g1(&o);
+    let tmp = crate::eip_4844::blob_to_kzg_commitment(&deserialized_blob.unwrap(), &ms);
+    (*out).bytes = crate::eip_4844::bytes_from_g1(&tmp);
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
@@ -388,20 +413,23 @@ pub unsafe extern "C" fn verify_kzg_proof(
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
 
-    let poly = match crate::eip_4844::bytes_to_g1(&(*commitment_bytes).bytes) {
-        Ok(v) => v,
-        Err(_) => return C_KZG_RET_C_KZG_BADARGS,
-    };
+    let frz = crate::eip_4844::bytes_to_bls_field(&(*z_bytes).bytes);
+    let fry = crate::eip_4844::bytes_to_bls_field(&(*y_bytes).bytes);
+    let g1commitment = crate::eip_4844::bytes_to_g1(&(*commitment_bytes).bytes);
+    let g1proof = crate::eip_4844::bytes_to_g1(&(*proof_bytes).bytes);
 
-    let fz = crate::eip_4844::bytes_to_bls_field_rust(&(*z_bytes).bytes);
-    let fy = crate::eip_4844::bytes_to_bls_field_rust(&(*y_bytes).bytes);
-    let proof = match crate::eip_4844::bytes_to_g1(&(*proof_bytes).bytes) {
-        Ok(v) => v,
-        Err(_) => return C_KZG_RET_C_KZG_BADARGS,
-    };
+    if frz.is_err() || fry.is_err() || g1commitment.is_err() || g1proof.is_err() {
+        return C_KZG_RET_C_KZG_BADARGS;
+    }
 
     let ms = cks_to_ks(s);
-    *out = crate::eip_4844::verify_kzg_proof(&poly, &fz, &fy, &proof, &ms);
+    *out = crate::eip_4844::verify_kzg_proof(
+        &g1commitment.unwrap(),
+        &frz.unwrap(),
+        &fry.unwrap(),
+        &g1proof.unwrap(),
+        &ms,
+    );
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
@@ -417,15 +445,17 @@ pub unsafe extern "C" fn compute_kzg_proof(
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
 
-    let (frs, ok) = blob_to_frs(blob);
-    if !ok {
-        return C_KZG_RET_C_KZG_BADARGS;
+    let deserialized_blob = deserialize_blob(blob);
+    if deserialized_blob.is_err() {
+        return deserialized_blob.err().unwrap();
     }
-
-    let poly = crate::eip_4844::poly_from_blob(&frs);
-    let frz = crate::eip_4844::bytes_to_bls_field_rust(&(*z_bytes).bytes);
+    let poly = crate::eip_4844::blob_to_polynomial(&deserialized_blob.unwrap());
+    let frz = crate::eip_4844::bytes_to_bls_field(&(*z_bytes).bytes);
+    if frz.is_err() {
+        return frz.err().unwrap() as C_KZG_RET;
+    }
     let ms = cks_to_ks(s);
-    let tmp = crate::eip_4844::compute_kzg_proof(&poly, &frz, &ms);
+    let tmp = crate::eip_4844::compute_kzg_proof(&poly, &frz.unwrap(), &ms);
     (*out).bytes = crate::eip_4844::bytes_from_g1(&tmp);
     std::mem::forget(ms);
 
@@ -445,7 +475,7 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     let poly = cpoly_to_poly(p);
     let frx = Fr { d: x.l };
     let ms = cks_to_ks(s);
-    let result = crate::eip_4844::evaluate_polynomial_in_evaluation_form_rust(&poly, &frx, &ms);
+    let result = crate::eip_4844::evaluate_polynomial_in_evaluation_form(&poly, &frx, &ms);
     *out = blst_fr { l: result.d };
     std::mem::forget(ms);
 
@@ -456,8 +486,11 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
 #[no_mangle]
 pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, b: &Bytes32) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    let fr = crate::eip_4844::bytes_to_bls_field_rust(&b.bytes);
-    *out = blst_fr { l: fr.d };
+    let fr = crate::eip_4844::bytes_to_bls_field(&b.bytes);
+    if fr.is_err() {
+        return fr.err().unwrap() as C_KZG_RET;
+    }
+    *out = blst_fr { l: fr.unwrap().d };
     C_KZG_RET_C_KZG_OK
 }
 
@@ -473,8 +506,11 @@ pub unsafe extern "C" fn blob_to_polynomial(p: *mut CPolynomial, blob: *const Bl
             .try_into()
             .unwrap();
         let bytes = Bytes32 { bytes: bytes_array };
-        let fr = crate::eip_4844::bytes_to_bls_field_rust(&bytes.bytes);
-        (*p).evals[i] = blst_fr { l: fr.d };
+        let fr = crate::eip_4844::bytes_to_bls_field(&bytes.bytes);
+        if fr.is_err() {
+            return fr.err().unwrap() as C_KZG_RET;
+        }
+        (*p).evals[i] = blst_fr { l: fr.unwrap().d };
     }
 
     C_KZG_RET_C_KZG_OK

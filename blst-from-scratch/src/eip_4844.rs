@@ -168,18 +168,6 @@ pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> Result<FsFr, u8> {
     FsFr::from_scalar(*bytes)
 }
 
-pub fn vector_lincomb(vectors: &[Vec<FsFr>], scalars: &[FsFr]) -> Vec<FsFr> {
-    let mut tmp: FsFr;
-    let mut out: Vec<FsFr> = vec![FsFr::zero(); vectors[0].len()];
-    for (v, s) in vectors.iter().zip(scalars.iter()) {
-        for (i, x) in v.iter().enumerate() {
-            tmp = x.mul(s);
-            out[i] = out[i].add(&tmp);
-        }
-    }
-    out
-}
-
 pub fn bytes_from_bls_field(fr: &FsFr) -> [u8; 32usize] {
     fr.to_scalar()
 }

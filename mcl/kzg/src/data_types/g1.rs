@@ -14,6 +14,7 @@ extern "C" {
     pub fn mclBnG1_isEqual(x: *const G1, y: *const G1) -> i32;
     pub fn mclBnG1_isValid(x: *const G1) -> i32;
     pub fn mclBnG1_isZero(x: *const G1) -> i32;
+    pub fn mclBnG1_isValidOrder(x: *const G1) -> i32;
 
     pub fn mclBnG1_setStr(x: *mut G1, buf: *const u8, bufSize: usize, ioMode: i32) -> c_int;
     pub fn mclBnG1_getStr(buf: *mut u8, maxBufSize: usize, x: *const G1, ioMode: i32) -> usize;
@@ -29,6 +30,14 @@ extern "C" {
     pub fn mclBnG1_mul(z: *mut G1, x: *const G1, y: *const Fr);
     pub fn mclBnG1_normalize(y: *mut G1, x: *const G1);
     pub fn mclBnG1_hashAndMapTo(x: *mut G1, buf: *const u8, bufSize: usize) -> c_int;
+}
+
+pub fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: usize) {
+    unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
+}
+
+pub fn is_valid_order(g1: &G1) -> bool {
+    unsafe { mclBnG1_isValidOrder(g1) == 1 }
 }
 
 #[derive(Default, Debug, Clone, Copy)]
