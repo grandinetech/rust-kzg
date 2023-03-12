@@ -197,13 +197,17 @@ jobs:
 
       - name: "[mcl10-rust] Tests"
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
 
       - name: "[mcl10-rust] Tests (parallel)"
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          cargo test shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
 
       #- name: "[mcl10-rust] Tests (c-kzg-4844)"
       #  if: matrix.os == 'ubuntu-latest'
@@ -217,14 +221,14 @@ jobs:
 
       - name: "[mcl10-rust] Clippy"
         if: matrix.os == 'ubuntu-latest'
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path mcl/kzg/Cargo.toml --all-targets --all-features -- -D warnings
+        run: |
+          cargo clippy --manifest-path mcl/kzg/Cargo.toml --all-targets --all-features -- -D warnings
+          cargo clippy --manifest-path mcl/kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
 
       - name: "[mcl10-rust] Formatting"
         if: matrix.os == 'ubuntu-latest'
         run: |
+          cargo fmt --manifest-path mcl/kzg/Cargo.toml
           cargo fmt --manifest-path mcl/kzg-bench/Cargo.toml
 
       # Common ###########################################################
