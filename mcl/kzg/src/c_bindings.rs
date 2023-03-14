@@ -117,13 +117,6 @@ pub struct CPolynomial {
 }
 
 /// # Safety
-unsafe fn g1_to_cg1(t: &G1, out: *mut g1_t) {
-    (*out).x.l = t.x.d;
-    (*out).y.l = t.y.d;
-    (*out).z.l = t.z.d;
-}
-
-/// # Safety
 unsafe fn cg1_to_g1(t: *const g1_t) -> G1 {
     G1 {
         x: Fp { d: (*t).x.l },
@@ -186,16 +179,16 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<Fr>, C_KZG_RET> {
             let mut tmp = Fr::default();
             let ret = tmp.deserialize(&bytes);
             if !ret {
-                // fix for `test_verify_kzg_proof_batch__fails_with_incorrect_proof` c-kzg-4844 test
-                //if let Ok(fr) = crate::eip_4844::bytes_to_bls_field(&bytes) {
-                //    Ok(fr)
-                //} else {
-                //    Err(C_KZG_RET_C_KZG_BADARGS)
-                //}
                 Err(C_KZG_RET_C_KZG_BADARGS)
             } else {
                 Ok(tmp)
             }
+            // fix for `test_verify_kzg_proof_batch__fails_with_incorrect_proof` c-kzg-4844 test
+            //if let Ok(fr) = crate::eip_4844::bytes_to_bls_field(&bytes) {
+            //    Ok(fr)
+            //} else {
+            //    Err(C_KZG_RET_C_KZG_BADARGS)
+            //}
         })
         .collect::<Result<Vec<Fr>, C_KZG_RET>>()
 }
@@ -207,19 +200,6 @@ fn cpoly_to_poly(c_poly: &CPolynomial) -> Polynomial {
         poly_rust.set_coeff_at(pos, &Fr { d: e.l });
     }
     poly_rust
-}
-
-/// # Safety
-#[no_mangle]
-pub unsafe extern "C" fn bytes_to_g1(out: *mut g1_t, in_: *const u8) -> C_KZG_RET {
-    assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    let arr = from_raw_parts(in_, 48);
-    let t = match crate::eip_4844::bytes_to_g1(arr) {
-        Ok(v) => v,
-        Err(_) => return C_KZG_RET_C_KZG_BADARGS,
-    };
-    g1_to_cg1(&t, out);
-    C_KZG_RET_C_KZG_OK
 }
 
 /// # Safety

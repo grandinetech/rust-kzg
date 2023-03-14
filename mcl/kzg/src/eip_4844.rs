@@ -4,7 +4,7 @@ use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
 use crate::mcl_methods::*;
-use kzg::G1 as _;
+use kzg::{Poly, G1 as _};
 use sha2::{Digest as _, Sha256};
 use std::convert::TryInto;
 use std::fs::File;
@@ -14,7 +14,7 @@ use std::usize;
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
-pub fn bytes_to_g1(bytes: &[u8]) -> Result<G1, String> {
+pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> Result<G1, String> {
     set_eth_serialization(1);
     let mut g1 = <G1 as kzg::G1>::default();
     if !G1::deserialize(&mut g1, bytes) {
@@ -26,7 +26,7 @@ pub fn bytes_to_g1(bytes: &[u8]) -> Result<G1, String> {
     Ok(g1)
 }
 
-pub fn bytes_to_g2(bytes: &[u8]) -> Result<G2, String> {
+pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> Result<G2, String> {
     set_eth_serialization(1);
     let mut g2 = G2::default();
     if !G2::deserialize(&mut g2, bytes) {
@@ -72,13 +72,21 @@ pub fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
 
 pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
     let g1_projectives = g1_bytes
-        .chunks_exact(48)
-        .map(|bytes| bytes_to_g1(bytes).unwrap())
+        .chunks(48)
+        .map(|chunk| {
+            let mut bytes_array: [u8; 48] = [0; 48];
+            bytes_array.copy_from_slice(chunk);
+            bytes_to_g1(&bytes_array).unwrap()
+        })
         .collect::<Vec<G1>>();
 
     let g2_values = g2_bytes
-        .chunks_exact(96)
-        .map(|bytes| bytes_to_g2(bytes).unwrap())
+        .chunks(96)
+        .map(|chunk| {
+            let mut bytes_array: [u8; 96] = [0; 96];
+            bytes_array.copy_from_slice(chunk);
+            bytes_to_g2(&bytes_array).unwrap()
+        })
         .collect::<Vec<G2>>();
 
     let length = g1_projectives.len();
@@ -492,13 +500,13 @@ pub fn compute_r_powers(
 }
 
 pub fn blob_to_polynomial(blob: &[Fr]) -> Polynomial {
-    let mut out = Polynomial::new(FIELD_ELEMENTS_PER_BLOB);
-    out.coeffs[..FIELD_ELEMENTS_PER_BLOB].copy_from_slice(blob);
+    let mut out = Polynomial::new(blob.len());
+    out.coeffs[..blob.len()].copy_from_slice(blob);
     out
 }
 
 fn poly_to_kzg_commitment(p: &Polynomial, s: &KZGSettings) -> G1 {
-    g1_lincomb(&s.curve.g1_points, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
+    g1_lincomb(&s.curve.g1_points, &p.coeffs, p.len())
 }
 
 fn hash(x: &[u8]) -> [u8; 32] {
