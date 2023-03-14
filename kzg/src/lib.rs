@@ -59,6 +59,8 @@ pub trait G1: Clone {
 
     fn dbl(&self) -> Self;
 
+    fn add(&self, b: &Self) -> Self;
+
     fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;

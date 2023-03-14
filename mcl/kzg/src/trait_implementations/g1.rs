@@ -43,6 +43,12 @@ impl CommonG1 for G1 {
         g1
     }
 
+    fn add(&self, b: &Self) -> Self {
+        let mut g1 = G1::zero();
+        G1::add(&mut g1, self, b);
+        g1
+    }
+
     fn sub(&self, b: &Self) -> Self {
         let mut g1 = G1::zero();
         G1::sub(&mut g1, self, b);

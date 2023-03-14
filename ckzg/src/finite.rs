@@ -40,6 +40,7 @@ extern "C" {
     fn g1_equal(a: *const BlstP1, b: *const BlstP1) -> bool;
     fn g1_mul(out: *mut BlstP1, a: *const BlstP1, b: *const BlstFr);
     fn g1_dbl(out: *mut BlstP1, a: *const BlstP1);
+    fn g1_add(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_sub(out: *mut BlstP1, a: *const BlstP1, b: *const BlstP1);
     fn g1_is_inf(a: *const BlstP1) -> bool;
     pub fn blst_p1_from_affine(out: *mut BlstP1, inp: *const BlstP1Affine);
@@ -269,6 +270,14 @@ impl G1 for BlstP1 {
         let mut ret = G1::default();
         unsafe {
             g1_dbl(&mut ret, self);
+        }
+        ret
+    }
+
+    fn add(&self, b: &Self) -> Self {
+        let mut ret = G1::default();
+        unsafe {
+            g1_add(&mut ret, self, b);
         }
         ret
     }
