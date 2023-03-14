@@ -1,10 +1,12 @@
 #[cfg(test)]
-
 mod tests {
+    use blst_from_scratch::eip_4844::{
+        bytes_to_bls_field_rust, bytes_to_g1_rust, compute_blob_kzg_proof_rust,
+        verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
+    };
     use blst_from_scratch::{
         eip_4844::{
-            blob_to_kzg_commitment_rust, bytes_from_bls_field, bytes_from_g1_rust, compute_powers,
-            evaluate_polynomial_in_evaluation_form_rust, hash_to_bls_field,
+            blob_to_kzg_commitment_rust, bytes_from_bls_field, compute_powers, hash_to_bls_field,
             load_trusted_setup_filename_rust,
         },
         types::{
@@ -13,8 +15,10 @@ mod tests {
         },
     };
     use kzg_bench::tests::eip_4844::{
-        blob_to_kzg_commitment_test, bytes_to_bls_field_test, compute_powers_test,
-        evaluate_polynomial_in_evaluation_form_test,
+        blob_to_kzg_commitment_test, bytes_to_bls_field_test,
+        compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
+        compute_and_verify_blob_kzg_proof_test, compute_powers_test,
+        verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
 
     #[test]
@@ -28,8 +32,18 @@ mod tests {
     }
 
     #[test]
-    pub fn evaluate_polynomial_in_evaluation_form_test_() {
-        evaluate_polynomial_in_evaluation_form_test::<
+    pub fn blob_to_kzg_commitment_test_() {
+        blob_to_kzg_commitment_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup_filename_rust,
+            &blob_to_kzg_commitment_rust,
+            &bytes_to_bls_field_rust,
+            &bytes_to_g1_rust,
+        );
+    }
+
+    #[test]
+    pub fn compute_and_verify_blob_kzg_proof_test_() {
+        compute_and_verify_blob_kzg_proof_test::<
             FsFr,
             FsG1,
             FsG2,
@@ -37,18 +51,58 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
         >(
-            &hash_to_bls_field,
             &load_trusted_setup_filename_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_kzg_commitment_rust,
+            &bytes_to_bls_field_rust,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_rust,
         );
     }
 
     #[test]
-    pub fn blob_to_kzg_commitment_test_() {
-        blob_to_kzg_commitment_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+    pub fn compute_and_verify_blob_kzg_proof_incorrect_proof_test_() {
+        compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+        >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_from_g1_rust,
-        )
+            &bytes_to_bls_field_rust,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_rust,
+        );
+    }
+
+    #[test]
+    pub fn verify_kzg_proof_batch_test_() {
+        verify_kzg_proof_batch_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup_filename_rust,
+            &blob_to_kzg_commitment_rust,
+            &bytes_to_bls_field_rust,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_batch_rust,
+        );
+    }
+
+    #[test]
+    pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test_() {
+        verify_kzg_proof_batch_fails_with_incorrect_proof_test::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+        >(
+            &load_trusted_setup_filename_rust,
+            &blob_to_kzg_commitment_rust,
+            &bytes_to_bls_field_rust,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_batch_rust,
+        );
     }
 }

@@ -449,13 +449,13 @@ pub fn compute_r_powers(
 }
 
 fn blob_to_polynomial_rust(blob: &[FsFr]) -> FsPoly {
-    let mut p: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+    let mut p: FsPoly = FsPoly::new(blob.len()).unwrap();
     p.coeffs = blob.to_vec();
     p
 }
 
 fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
-    g1_lincomb(&s.secret_g1, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
+    g1_lincomb(&s.secret_g1, &p.coeffs, p.coeffs.len())
 }
 
 pub fn compute_blob_kzg_proof_rust(blob: &[FsFr], ts: &FsKZGSettings) -> FsG1 {
