@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use arkworks::fft::{fft_fr_fast, fft_fr_slow};
     use arkworks::kzg_proofs::FFTSettings;
     use arkworks::kzg_types::FsFr;

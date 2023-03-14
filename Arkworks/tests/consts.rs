@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use arkworks::fft::SCALE2_ROOT_OF_UNITY;
     use arkworks::kzg_proofs::expand_root_of_unity;
     use arkworks::kzg_proofs::FFTSettings;

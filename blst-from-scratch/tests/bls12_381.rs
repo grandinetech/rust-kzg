@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::bls12_381::{
         fr_div_by_zero, fr_div_works, fr_equal_works, fr_from_uint64_works, fr_is_null_works,
         fr_is_one_works, fr_is_zero_works, fr_negate_works, fr_pow_works, fr_uint64s_roundtrip,

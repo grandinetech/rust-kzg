@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod fft_g1_tests {
+mod fft_g1_tests {
     use kzg_bench::tests::fft_g1::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::data_types::g1::G1;

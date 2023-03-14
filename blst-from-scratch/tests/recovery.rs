@@ -2,7 +2,7 @@
 // pub mod local_recovery;
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::recover::{recover_random, recover_simple};
     // uncomment to use the local tests
     //use crate::local_recovery::{recover_random, recover_simple};

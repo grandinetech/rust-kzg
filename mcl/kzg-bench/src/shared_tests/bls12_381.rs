@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::bls12_381::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::data_types::g1::g1_linear_combination;

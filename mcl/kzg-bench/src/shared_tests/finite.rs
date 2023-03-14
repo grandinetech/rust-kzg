@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod finite_test {
+mod finite_test {
     use kzg_bench::tests::finite::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::mcl_methods::init;

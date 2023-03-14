@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod recover_tests {
+mod recover_tests {
     use arkworks::kzg_proofs::FFTSettings;
     use arkworks::kzg_types::FsFr as Fr;
     use arkworks::utils::PolyData;

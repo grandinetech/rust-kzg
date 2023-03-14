@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use ckzg::fftsettings::KzgFFTSettings;
     use ckzg::finite::BlstFr;
     use kzg_bench::tests::das::{das_extension_test_known, das_extension_test_random};

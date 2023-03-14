@@ -2,7 +2,7 @@
 // pub mod local_consts;
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use blst_from_scratch::consts::SCALE2_ROOT_OF_UNITY;
     use blst_from_scratch::types::fft_settings::{expand_root_of_unity, FsFFTSettings};
     use blst_from_scratch::types::fr::FsFr;

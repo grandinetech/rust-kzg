@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod consts_tests {
+mod consts_tests {
     use kzg_bench::tests::consts::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::fk20_fft::{
