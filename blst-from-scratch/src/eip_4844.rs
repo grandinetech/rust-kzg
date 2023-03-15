@@ -184,13 +184,13 @@ pub fn blob_to_kzg_commitment_rust(blob: &[FsFr], s: &FsKZGSettings) -> FsG1 {
 }
 
 pub fn verify_kzg_proof_rust(
-    polynomial_kzg: &FsG1,
+    commitment: &FsG1,
     z: &FsFr,
     y: &FsFr,
-    kzg_proof: &FsG1,
+    proof: &FsG1,
     s: &FsKZGSettings,
 ) -> bool {
-    s.check_proof_single(polynomial_kzg, kzg_proof, z, y)
+    s.check_proof_single(commitment, proof, z, y)
         .unwrap_or(false)
 }
 
@@ -237,8 +237,11 @@ pub fn verify_kzg_proof_batch(
     )
 }
 
-pub fn compute_kzg_proof_rust(polynomial: &FsPoly, z: &FsFr, s: &FsKZGSettings) -> FsG1 {
-    let y: FsFr = evaluate_polynomial_in_evaluation_form_rust(polynomial, z, s);
+pub fn compute_kzg_proof_rust(blob: &[FsFr], z: &FsFr, s: &FsKZGSettings) -> FsG1 {
+    assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
+
+    let polynomial = blob_to_polynomial_rust(blob);
+    let y = evaluate_polynomial_in_evaluation_form_rust(&polynomial, z, s);
 
     let mut tmp: FsFr;
     let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
@@ -304,9 +307,11 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(
     x: &FsFr,
     s: &FsKZGSettings,
 ) -> FsFr {
+    assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
+
     let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
-    let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); p.len()];
-    let mut inverses: Vec<FsFr> = vec![FsFr::default(); p.len()];
+    let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
+    let mut inverses: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
 
     reverse_bit_order(&mut roots_of_unity);
 
@@ -448,21 +453,23 @@ pub fn compute_r_powers(
     compute_powers(&r, n)
 }
 
-fn blob_to_polynomial_rust(blob: &[FsFr]) -> FsPoly {
-    let mut p: FsPoly = FsPoly::new(blob.len()).unwrap();
+pub fn blob_to_polynomial_rust(blob: &[FsFr]) -> FsPoly {
+    assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
+    let mut p: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
     p.coeffs = blob.to_vec();
     p
 }
 
 fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
-    g1_lincomb(&s.secret_g1, &p.coeffs, p.coeffs.len())
+    assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
+    g1_lincomb(&s.secret_g1, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
 }
 
 pub fn compute_blob_kzg_proof_rust(blob: &[FsFr], ts: &FsKZGSettings) -> FsG1 {
     let polynomial = blob_to_polynomial_rust(blob);
     let commitment_g1 = poly_to_kzg_commitment(&polynomial, ts);
     let evaluation_challenge_fr = compute_challenge(blob, &commitment_g1);
-    compute_kzg_proof_rust(&polynomial, &evaluation_challenge_fr, ts)
+    compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts)
 }
 
 pub fn verify_blob_kzg_proof_rust(
@@ -960,12 +967,15 @@ pub unsafe extern "C" fn compute_kzg_proof(
     if deserialized_blob.is_err() {
         return deserialized_blob.err().unwrap();
     }
-    let poly = blob_to_polynomial_rust(&deserialized_blob.unwrap());
     let frz = bytes_to_bls_field_rust(&(*z_bytes).bytes);
     if frz.is_err() {
         return frz.err().unwrap() as C_KZG_RET;
     }
-    let tmp = compute_kzg_proof_rust(&poly, &frz.unwrap(), &kzg_settings_to_rust(s));
+    let tmp = compute_kzg_proof_rust(
+        &deserialized_blob.unwrap(),
+        &frz.unwrap(),
+        &kzg_settings_to_rust(s),
+    );
     (*out).bytes = bytes_from_g1_rust(&tmp);
     C_KZG_RET_C_KZG_OK
 }
