@@ -429,13 +429,12 @@ pub unsafe extern "C" fn compute_kzg_proof(
     if deserialized_blob.is_err() {
         return deserialized_blob.err().unwrap();
     }
-    let poly = crate::eip_4844::blob_to_polynomial(&deserialized_blob.unwrap());
     let frz = crate::eip_4844::bytes_to_bls_field(&(*z_bytes).bytes);
     if frz.is_err() {
         return frz.err().unwrap() as C_KZG_RET;
     }
     let ms = cks_to_ks(s);
-    let tmp = crate::eip_4844::compute_kzg_proof(&poly, &frz.unwrap(), &ms);
+    let tmp = crate::eip_4844::compute_kzg_proof(&deserialized_blob.unwrap(), &frz.unwrap(), &ms);
     (*out).bytes = crate::eip_4844::bytes_from_g1(&tmp);
     std::mem::forget(ms);
 

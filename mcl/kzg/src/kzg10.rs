@@ -4,6 +4,9 @@ use crate::mcl_methods::{final_exp, mclBn_FrEvaluatePolynomial, pairing};
 use crate::utilities::{log_2, next_pow_of_2};
 use std::{cmp::min, iter, ops};
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+
 const G1_GEN_X: &str = "3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507";
 const G1_GEN_Y: &str = "1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569";
 const G2_GEN_X_D0: &str = "352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160";
@@ -658,15 +661,26 @@ impl Curve {
     pub fn is_proof_valid(&self, commitment: &G1, proof: &G1, x: &Fr, y: &Fr) -> bool {
         let secret_minus_x = self.g2_points[1] - (&self.g2_gen * x); // g2 * x to get x on g2
         let commitment_minus_y = commitment - &(self.g1_gen * y);
-
         Curve::verify_pairing(&commitment_minus_y, &self.g2_gen, proof, &secret_minus_x)
     }
 
+    #[cfg(not(feature = "parallel"))]
     pub fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
         let pairing1 = a1.pair(a2).get_inv();
         let pairing2 = b1.pair(b2);
-
         let result = (pairing1 * pairing2).get_final_exp();
+        result.is_one()
+    }
+
+    #[cfg(feature = "parallel")]
+    pub fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
+        let g1 = [(a1, a2), (b1, b2)];
+
+        let mut pairings = g1
+            .par_iter()
+            .map(|(v1, v2)| v1.pair(v2))
+            .collect::<Vec<crate::data_types::gt::GT>>();
+        let result = (pairings.pop().unwrap() * pairings.pop().unwrap().get_inv()).get_final_exp();
 
         result.is_one()
     }

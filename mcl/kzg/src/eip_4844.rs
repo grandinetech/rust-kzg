@@ -4,15 +4,12 @@ use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
 use crate::mcl_methods::*;
-use kzg::{Poly, G1 as _};
+use kzg::G1 as _;
 use sha2::{Digest as _, Sha256};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use std::usize;
-
-#[cfg(feature = "parallel")]
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
 pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> Result<G1, String> {
     set_eth_serialization(1);
@@ -156,34 +153,7 @@ pub fn blob_to_kzg_commitment(blob: &[Fr], s: &KZGSettings) -> G1 {
 }
 
 pub fn verify_kzg_proof(commitment: &G1, x: &Fr, y: &Fr, proof: &G1, ks: &KZGSettings) -> bool {
-    let (mut x_g2, mut s_minus_x) = (G2::default(), G2::default());
-    let (mut y_g1, mut commitment_minus_y) =
-        (<G1 as kzg::G1>::default(), <G1 as kzg::G1>::default());
-
-    G2::mul(&mut x_g2, &G2::gen(), x);
-    G2::sub(&mut s_minus_x, &ks.curve.g2_points[1], &x_g2);
-    G1::mul(&mut y_g1, &G1::gen(), y);
-    G1::sub(&mut commitment_minus_y, commitment, &y_g1);
-
-    verify_pairing(&commitment_minus_y, &G2::gen(), proof, &s_minus_x)
-}
-
-#[cfg(feature = "parallel")]
-fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
-    let g1 = [(a1, a2), (b1, b2)];
-
-    let mut pairings = g1
-        .par_iter()
-        .map(|(v1, v2)| v1.pair(v2))
-        .collect::<Vec<crate::data_types::gt::GT>>();
-    let result = (pairings.pop().unwrap() * pairings.pop().unwrap().get_inv()).get_final_exp();
-
-    result.is_one()
-}
-
-#[cfg(not(feature = "parallel"))]
-fn verify_pairing(a1: &G1, a2: &G2, b1: &G1, b2: &G2) -> bool {
-    Curve::verify_pairing(a1, a2, b1, b2)
+    ks.curve.is_proof_valid(commitment, proof, x, y)
 }
 
 pub fn verify_kzg_proof_batch(
@@ -221,11 +191,14 @@ pub fn verify_kzg_proof_batch(
     let rhs_g1 = c_minus_y_lincomb.add_or_dbl(&proof_z_lincomb);
 
     // Do the pairing check!
-    verify_pairing(&proof_lincomb, &ts.curve.g2_points[1], &rhs_g1, &G2::gen())
+    Curve::verify_pairing(&proof_lincomb, &ts.curve.g2_points[1], &rhs_g1, &G2::gen())
 }
 
-pub fn compute_kzg_proof(polynomial: &Polynomial, z: &Fr, s: &KZGSettings) -> G1 {
-    let y = evaluate_polynomial_in_evaluation_form(polynomial, z, s);
+pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> G1 {
+    assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
+
+    let polynomial = blob_to_polynomial(blob);
+    let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, s);
 
     let mut tmp: Fr;
     let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
@@ -291,6 +264,8 @@ pub fn compute_kzg_proof(polynomial: &Polynomial, z: &Fr, s: &KZGSettings) -> G1
 }
 
 pub fn evaluate_polynomial_in_evaluation_form(p: &Polynomial, x: &Fr, s: &KZGSettings) -> Fr {
+    assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
+
     let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
     let mut inverses_in = vec![Fr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses = vec![Fr::default(); FIELD_ELEMENTS_PER_BLOB];
@@ -373,7 +348,7 @@ pub fn compute_blob_kzg_proof(blob: &[Fr], s: &KZGSettings) -> G1 {
     let polynomial = blob_to_polynomial(blob);
     let commitment_g1 = poly_to_kzg_commitment(&polynomial, s);
     let evaluation_challenge_fr = compute_challenge(blob, &commitment_g1);
-    compute_kzg_proof(&polynomial, &evaluation_challenge_fr, s)
+    compute_kzg_proof(blob, &evaluation_challenge_fr, s)
 }
 
 pub fn verify_blob_kzg_proof(
@@ -500,13 +475,15 @@ pub fn compute_r_powers(
 }
 
 pub fn blob_to_polynomial(blob: &[Fr]) -> Polynomial {
-    let mut out = Polynomial::new(blob.len());
-    out.coeffs[..blob.len()].copy_from_slice(blob);
-    out
+    assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
+    let mut p = Polynomial::new(FIELD_ELEMENTS_PER_BLOB);
+    p.coeffs = blob.to_vec();
+    p
 }
 
 fn poly_to_kzg_commitment(p: &Polynomial, s: &KZGSettings) -> G1 {
-    g1_lincomb(&s.curve.g1_points, &p.coeffs, p.len())
+    assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
+    g1_lincomb(&s.curve.g1_points, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
 }
 
 fn hash(x: &[u8]) -> [u8; 32] {

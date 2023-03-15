@@ -33,6 +33,76 @@ mod tests {
     }
 
     #[test]
+    pub fn compute_kzg_proof_test_() {
+        compute_kzg_proof_test::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(
+            &load_trusted_setup,
+            &bytes_to_bls_field,
+            &bytes_to_g1,
+            &compute_kzg_proof,
+        );
+    }
+
+    #[test]
+    pub fn compute_and_verify_kzg_proof_round_trip_test_() {
+        compute_and_verify_kzg_proof_round_trip_test::<
+            Fr,
+            G1,
+            G2,
+            Polynomial,
+            FFTSettings,
+            KZGSettings,
+        >(
+            &load_trusted_setup,
+            &blob_to_kzg_commitment,
+            &bytes_to_bls_field,
+            &compute_kzg_proof,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
+            &verify_kzg_proof,
+        );
+    }
+
+    //#[test]
+    //pub fn compute_and_verify_kzg_proof_within_domain_test_() {
+    //    compute_and_verify_kzg_proof_within_domain_test::<
+    //        Fr,
+    //        G1,
+    //        G2,
+    //        Polynomial,
+    //        FFTSettings,
+    //        KZGSettings,
+    //    >(
+    //        &load_trusted_setup,
+    //        &blob_to_kzg_commitment,
+    //        &bytes_to_bls_field,
+    //        &compute_kzg_proof,
+    //        &blob_to_polynomial,
+    //        &evaluate_polynomial_in_evaluation_form,
+    //        &verify_kzg_proof,
+    //    );
+    //}
+
+    #[test]
+    pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test_() {
+        compute_and_verify_kzg_proof_fails_with_incorrect_proof_test::<
+            Fr,
+            G1,
+            G2,
+            Polynomial,
+            FFTSettings,
+            KZGSettings,
+        >(
+            &load_trusted_setup,
+            &blob_to_kzg_commitment,
+            &bytes_to_bls_field,
+            &compute_kzg_proof,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
+            &verify_kzg_proof,
+        );
+    }
+
+    #[test]
     pub fn compute_and_verify_blob_kzg_proof_test_() {
         assert!(init(CurveType::BLS12_381));
         compute_and_verify_blob_kzg_proof_test::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(
@@ -45,7 +115,7 @@ mod tests {
     }
 
     #[test]
-    pub fn compute_and_verify_blob_kzg_proof_incorrect_proof_test_() {
+    pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test_() {
         assert!(init(CurveType::BLS12_381));
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test::<
             Fr,
