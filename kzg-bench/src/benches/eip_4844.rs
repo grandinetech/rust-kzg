@@ -1,93 +1,125 @@
 use std::env::set_current_dir;
 
-use criterion::Criterion;
+use crate::tests::eip_4844::{generate_random_blob_raw, generate_random_field_element_raw};
+use criterion::{BenchmarkId, Criterion};
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
-use rand::{rngs::StdRng, Rng, SeedableRng};
-
-const BENCH_SCALE: usize = 15;
-
-pub fn bench_compute_aggregate_kzg_proof<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
->(
-    c: &mut Criterion,
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
-    blob_count: usize,
-) {
-    const BLOB_SIZE: usize = 4096;
-
-    let mut rng = StdRng::seed_from_u64(0);
-
-    let blobs = (0..blob_count)
-        .map(|_| {
-            (0..BLOB_SIZE)
-                .map(|_| TFr::from_u64_arr(&rng.gen()))
-                .collect::<Vec<TFr>>()
-        })
-        .collect::<Vec<Vec<TFr>>>();
-
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
-
-    let id = format!(
-        "bench_compute_aggregate_kzg_proof_{} scale: '{}'",
-        blob_count, BENCH_SCALE
-    );
-    c.bench_function(&id, move |b| {
-        b.iter(|| compute_aggregate_kzg_proof(&blobs, &ts))
-    });
-}
 
 #[allow(clippy::type_complexity)]
-pub fn bench_verify_aggregate_kzg_proof<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+#[allow(clippy::too_many_arguments)]
+pub fn bench_eip_4844<
+    TFr: Fr + Copy,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
     c: &mut Criterion,
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
-    compute_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &TKZGSettings) -> TG1,
-    verify_aggregate_kzg_proof: &dyn Fn(&[Vec<TFr>], &[TG1], &TG1, &TKZGSettings) -> bool,
-    blob_count: usize,
+    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> TG1,
+    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
+    verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
-    const BLOB_SIZE: usize = 4096;
-
-    let mut rng = StdRng::seed_from_u64(0);
-
-    let blobs = (0..blob_count)
-        .map(|_| {
-            (0..BLOB_SIZE)
-                .map(|_| TFr::from_u64_arr(&rng.gen()))
-                .collect::<Vec<TFr>>()
-        })
-        .collect::<Vec<Vec<TFr>>>();
+    let max_count: usize = 64;
+    let mut rng = rand::thread_rng();
 
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
 
-    let kzg_commitments = blobs
-        .iter()
-        .map(|blob| blob_to_kzg_commitment(blob, &ts))
-        .collect::<Vec<TG1>>();
+    let blobs: Vec<Vec<TFr>> = (0..max_count)
+        .map(|_| {
+            generate_random_blob_raw(&mut rng)
+                .chunks(32)
+                .map(|x| {
+                    let mut bytes = [0u8; 32];
+                    bytes.copy_from_slice(x);
+                    bytes_to_bls_field(&bytes).unwrap()
+                })
+                .collect()
+        })
+        .collect();
 
-    // Compute proof for these blobs
+    let commitments: Vec<TG1> = (0..max_count)
+        .map(|_| {
+            let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
+                .chunks(32)
+                .map(|x| {
+                    let mut bytes = [0u8; 32];
+                    bytes.copy_from_slice(x);
+                    bytes_to_bls_field(&bytes).unwrap()
+                })
+                .collect();
+            blob_to_kzg_commitment(&blob, &ts)
+        })
+        .collect();
 
-    let proof = compute_aggregate_kzg_proof(&blobs, &ts);
+    let proofs: Vec<TG1> = (0..max_count)
+        .map(|_| {
+            let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
+                .chunks(32)
+                .map(|x| {
+                    let mut bytes = [0u8; 32];
+                    bytes.copy_from_slice(x);
+                    bytes_to_bls_field(&bytes).unwrap()
+                })
+                .collect();
+            compute_blob_kzg_proof(&blob, &ts)
+        })
+        .collect();
 
-    let id = format!(
-        "bench_verify_aggregate_kzg_proof scale_{}: '{}'",
-        blob_count, BENCH_SCALE
-    );
-    c.bench_function(&id, move |b| {
-        b.iter(|| verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &proof, &ts))
+    let fields: Vec<TFr> = (0..max_count)
+        .map(|_| {
+            let fr_bytes = generate_random_field_element_raw(&mut rng);
+            bytes_to_bls_field(&fr_bytes).unwrap()
+        })
+        .collect();
+
+    c.bench_function("blob_to_kzg_commitment", |b| {
+        b.iter(|| blob_to_kzg_commitment(blobs.first().unwrap(), &ts))
     });
+
+    c.bench_function("compute_kzg_proof", |b| {
+        b.iter(|| compute_kzg_proof(blobs.first().unwrap(), fields.first().unwrap(), &ts))
+    });
+
+    c.bench_function("compute_blob_kzg_proof", |b| {
+        b.iter(|| compute_blob_kzg_proof(blobs.first().unwrap(), &ts))
+    });
+
+    c.bench_function("verify_blob_kzg_proof", |b| {
+        b.iter(|| {
+            verify_blob_kzg_proof(
+                blobs.first().unwrap(),
+                commitments.first().unwrap(),
+                proofs.first().unwrap(),
+                &ts,
+            )
+        })
+    });
+
+    let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
+    for count in [1, 2, 4, 8, 16, 32, 64] {
+        group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
+            b.iter(|| {
+                verify_blob_kzg_proof_batch(
+                    &blobs
+                        .clone()
+                        .into_iter()
+                        .take(count)
+                        .collect::<Vec<Vec<TFr>>>(),
+                    &commitments
+                        .clone()
+                        .into_iter()
+                        .take(count)
+                        .collect::<Vec<TG1>>(),
+                    &proofs.clone().into_iter().take(count).collect::<Vec<TG1>>(),
+                    &ts,
+                )
+            })
+        });
+    }
+    group.finish();
 }

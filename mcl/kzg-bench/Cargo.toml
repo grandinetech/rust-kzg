@@ -41,6 +41,10 @@ harness = false
 name = "shared_kzg_proof"
 harness = false
 
+[[bench]]
+name = "shared_eip_4844"
+harness = false
+
 #[[bench]]
 #name = "bench_fft"
 #harness = false
@@ -60,4 +64,3 @@ harness = false
 #[[bench]]
 #name = "bench_commits"
 #harness = false
-

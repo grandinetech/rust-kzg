@@ -26,11 +26,11 @@ fn bytes48_from_hex(hex: &str) -> [u8; 48] {
     out
 }
 
-const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
+pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
 const BYTES_PER_FIELD_ELEMENT: usize = 32;
 
-fn generate_random_blob_raw(rng: &mut ThreadRng) -> [u8; BYTES_PER_BLOB] {
+pub fn generate_random_blob_raw(rng: &mut ThreadRng) -> [u8; BYTES_PER_BLOB] {
     let mut arr = [0u8; BYTES_PER_BLOB];
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
@@ -41,7 +41,7 @@ fn generate_random_blob_raw(rng: &mut ThreadRng) -> [u8; BYTES_PER_BLOB] {
     arr
 }
 
-fn generate_random_field_element_raw(rng: &mut ThreadRng) -> [u8; BYTES_PER_FIELD_ELEMENT] {
+pub fn generate_random_field_element_raw(rng: &mut ThreadRng) -> [u8; BYTES_PER_FIELD_ELEMENT] {
     let mut arr = [0u8; BYTES_PER_FIELD_ELEMENT];
     rng.fill(&mut arr[..]);
     // Ensure that the field element is canonical, i.e. < BLS_MODULUS
