@@ -1,9 +1,23 @@
 #![allow(non_camel_case_types)]
-use std::convert::TryInto;
-use std::ffi::c_char;
+
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec;
+use alloc::vec::Vec;
+use core::ffi::c_uint;
+#[cfg(feature = "std")]
+use core::ffi::{c_char, c_ulong};
+#[cfg(feature = "std")]
+use core::ptr::null_mut;
+#[cfg(feature = "std")]
+use libc::{fgetc, fgets, strtoul, EOF, FILE};
+#[cfg(feature = "std")]
 use std::fs::File;
+#[cfg(feature = "std")]
 use std::io::Read;
-use std::ptr::null_mut;
 
 use blst::{
     blst_fr, blst_fr_from_scalar, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
@@ -11,7 +25,7 @@ use blst::{
     blst_p2_uncompress, blst_scalar, blst_scalar_from_lendian, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
-use libc::{c_ulong, fgetc, fgets, strtoul, EOF, FILE};
+
 use sha2::{Digest, Sha256};
 
 use crate::consts::{
@@ -26,6 +40,7 @@ use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
+
 use crate::utils::reverse_bit_order;
 
 pub fn bytes_to_g1_rust(bytes: &[u8; 48usize]) -> Result<FsG1, String> {
@@ -102,6 +117,7 @@ pub fn load_trusted_setup_rust(
     }
 }
 
+#[cfg(feature = "std")]
 pub fn load_trusted_setup_file_rust(file: &mut File) -> FsKZGSettings {
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -137,6 +153,7 @@ pub fn load_trusted_setup_file_rust(file: &mut File) -> FsKZGSettings {
     load_trusted_setup_rust(&g1_projectives, length, &g2_values, n2)
 }
 
+#[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filename: &str) -> FsKZGSettings {
     let mut file = File::open(filename).expect("Unable to open file");
     load_trusted_setup_file_rust(&mut file)
@@ -522,7 +539,7 @@ pub const C_KZG_RET_C_KZG_OK: C_KZG_RET = 0;
 pub const C_KZG_RET_C_KZG_BADARGS: C_KZG_RET = 1;
 pub const C_KZG_RET_C_KZG_ERROR: C_KZG_RET = 2;
 pub const C_KZG_RET_C_KZG_MALLOC: C_KZG_RET = 3;
-pub type C_KZG_RET = ::std::os::raw::c_uint;
+pub type C_KZG_RET = c_uint;
 
 pub const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
 pub const CHALLENGE_INPUT_SIZE: usize = 32 + BYTES_PER_BLOB + 48;
@@ -583,7 +600,7 @@ fn fft_settings_to_rust(c_settings: *const CFsFFTSettings) -> FsFFTSettings {
         max_width: settings.max_width as usize,
         root_of_unity: first_root,
         expanded_roots_of_unity: unsafe {
-            std::slice::from_raw_parts(
+            core::slice::from_raw_parts(
                 settings.expanded_roots_of_unity,
                 (settings.max_width + 1) as usize,
             )
@@ -592,7 +609,7 @@ fn fft_settings_to_rust(c_settings: *const CFsFFTSettings) -> FsFFTSettings {
             .collect::<Vec<FsFr>>()
         },
         reverse_roots_of_unity: unsafe {
-            std::slice::from_raw_parts(
+            core::slice::from_raw_parts(
                 settings.reverse_roots_of_unity,
                 (settings.max_width + 1) as usize,
             )
@@ -636,7 +653,7 @@ fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFsFFTSettings {
 fn kzg_settings_to_rust(c_settings: &CFsKzgSettings) -> FsKZGSettings {
     let length = unsafe { (*c_settings.fs).max_width as usize };
     let secret_g1 = unsafe {
-        std::slice::from_raw_parts(c_settings.g1_values, length)
+        core::slice::from_raw_parts(c_settings.g1_values, length)
             .iter()
             .map(|r| FsG1(*r))
             .collect::<Vec<FsG1>>()
@@ -645,7 +662,7 @@ fn kzg_settings_to_rust(c_settings: &CFsKzgSettings) -> FsKZGSettings {
         fs: fft_settings_to_rust(c_settings.fs),
         secret_g1,
         secret_g2: unsafe {
-            std::slice::from_raw_parts(c_settings.g2_values, 65)
+            core::slice::from_raw_parts(c_settings.g2_values, 65)
                 .iter()
                 .map(|r| FsG2(*r))
                 .collect::<Vec<FsG2>>()
@@ -732,8 +749,8 @@ pub unsafe extern "C" fn load_trusted_setup(
     g2_bytes: *const u8,
     n2: usize,
 ) -> C_KZG_RET {
-    let g1_bytes = std::slice::from_raw_parts(g1_bytes, n1 * 48);
-    let g2_bytes = std::slice::from_raw_parts(g2_bytes, n2 * 96);
+    let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * 48);
+    let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * 96);
     let settings = load_trusted_setup_rust(g1_bytes, n1, g2_bytes, n2);
     *out = kzg_settings_to_c(&settings);
     C_KZG_RET_C_KZG_OK
@@ -744,6 +761,7 @@ pub unsafe extern "C" fn load_trusted_setup(
 /// # Safety
 ///
 /// This function should not be called before the horsemen are ready.
+#[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(
     out: *mut CFsKzgSettings,
@@ -824,24 +842,24 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
     let max_width = (*(*s).fs).max_width as usize;
-    let rev = Box::from_raw(std::slice::from_raw_parts_mut(
+    let rev = Box::from_raw(core::slice::from_raw_parts_mut(
         (*(*s).fs).reverse_roots_of_unity,
         max_width,
     ));
     drop(rev);
-    let exp = Box::from_raw(std::slice::from_raw_parts_mut(
+    let exp = Box::from_raw(core::slice::from_raw_parts_mut(
         (*(*s).fs).expanded_roots_of_unity,
         max_width,
     ));
     drop(exp);
-    let roots = Box::from_raw(std::slice::from_raw_parts_mut(
+    let roots = Box::from_raw(core::slice::from_raw_parts_mut(
         (*(*s).fs).roots_of_unity,
         max_width,
     ));
     drop(roots);
-    let g1 = Box::from_raw(std::slice::from_raw_parts_mut((*s).g1_values, max_width));
+    let g1 = Box::from_raw(core::slice::from_raw_parts_mut((*s).g1_values, max_width));
     drop(g1);
-    let g2 = Box::from_raw(std::slice::from_raw_parts_mut((*s).g2_values, 65));
+    let g2 = Box::from_raw(core::slice::from_raw_parts_mut((*s).g2_values, 65));
     drop(g2);
 }
 
@@ -923,9 +941,9 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     let mut commitments_g1: Vec<FsG1> = Vec::new();
     let mut proofs_g1: Vec<FsG1> = Vec::new();
 
-    let raw_blobs = std::slice::from_raw_parts(blobs, n);
-    let raw_commitments = std::slice::from_raw_parts(commitments_bytes, n);
-    let raw_proofs = std::slice::from_raw_parts(proofs_bytes, n);
+    let raw_blobs = core::slice::from_raw_parts(blobs, n);
+    let raw_commitments = core::slice::from_raw_parts(commitments_bytes, n);
+    let raw_proofs = core::slice::from_raw_parts(proofs_bytes, n);
 
     for i in 0..n {
         let deserialized_blob = deserialize_blob(&raw_blobs[i]);
