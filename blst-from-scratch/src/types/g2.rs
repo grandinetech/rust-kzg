@@ -7,7 +7,7 @@ use kzg::{G2Mul, G2};
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::types::fr::FsFr;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG2(pub blst_p2);
 
 impl G2Mul<FsFr> for FsG2 {
@@ -28,10 +28,6 @@ impl G2Mul<FsFr> for FsG2 {
 }
 
 impl G2 for FsG2 {
-    fn default() -> Self {
-        Self(blst_p2::default())
-    }
-
     fn generator() -> Self {
         G2_GENERATOR
     }

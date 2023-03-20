@@ -212,7 +212,7 @@ fn _fft_g1(
     n: u64,
     fs: *const KzgFFTSettings,
 ) -> Result<Vec<BlstP1>, KzgRet> {
-    let mut output = vec![G1::default(); n as usize];
+    let mut output = vec![BlstP1::default(); n as usize];
     unsafe {
         match fft_g1(output.as_mut_ptr(), input, inverse, n, fs, RUN_PARALLEL) {
             KzgRet::KzgOk => Ok(output),
@@ -337,7 +337,7 @@ pub fn make_data(n: usize) -> Vec<BlstP1> {
     let mut out_val = vec![G1::generator(); n];
     let out_ptr: *mut BlstP1 = out_val.as_mut_ptr();
     if n == 0 {
-        return vec![G1::default(); 0];
+        return vec![BlstP1::default(); 0];
     }
     for i in 1..n as isize {
         unsafe {

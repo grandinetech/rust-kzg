@@ -9,7 +9,7 @@ use crate::types::fr::FsFr;
 use crate::utils::log_2_byte;
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1(pub blst_p1);
 
 impl FsG1 {
@@ -19,10 +19,6 @@ impl FsG1 {
 }
 
 impl G1 for FsG1 {
-    fn default() -> Self {
-        Self(blst_p1::default())
-    }
-
     fn identity() -> Self {
         G1_IDENTITY
     }

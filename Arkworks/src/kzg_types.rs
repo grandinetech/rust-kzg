@@ -24,8 +24,8 @@ use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1,
 use std::ops::MulAssign;
 use std::ops::Neg;
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct ArkG1(pub blst::blst_p1);
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct ArkG1(pub blst_p1);
 
 impl Clone for ArkG1 {
     fn clone(&self) -> Self {
@@ -34,8 +34,21 @@ impl Clone for ArkG1 {
 }
 
 impl G1 for ArkG1 {
-    fn default() -> Self {
-        Self(blst_p1::default())
+    fn add_or_dbl(&mut self, b: &Self) -> Self {
+        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
+            + blst_p1_into_pc_g1projective(&b.0).unwrap();
+        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
+        self.0 = ret.0;
+        ret
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        self.0.eq(&b.0)
+    }
+
+    fn rand() -> Self {
+        let mut rng = rand::thread_rng();
+        pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
     }
 
     fn identity() -> Self {
@@ -104,7 +117,7 @@ impl G1Mul<FsFr> for ArkG1 {
 
 impl Copy for ArkG1 {}
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ArkG2(pub blst::blst_p2);
 
 impl Clone for ArkG2 {
@@ -114,10 +127,6 @@ impl Clone for ArkG2 {
 }
 
 impl G2 for ArkG2 {
-    fn default() -> Self {
-        todo!()
-    }
-
     fn generator() -> Self {
         G2_GENERATOR
     }

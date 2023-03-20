@@ -1,4 +1,4 @@
-use kzg::{FK20MultiSettings, FK20SingleSettings, Poly, G1};
+use kzg::{FK20MultiSettings, FK20SingleSettings, Poly};
 
 use crate::consts::{BlstP1, BlstP2, KzgRet};
 use crate::fftsettings::KzgFFTSettings;
@@ -70,7 +70,7 @@ impl Default for KzgFK20SingleSettings {
     fn default() -> Self {
         Self {
             ks: &KzgKZGSettings::default(),
-            x_ext_fft: &mut G1::default(),
+            x_ext_fft: &mut BlstP1::default(),
             x_ext_fft_len: 0,
         }
     }
@@ -93,7 +93,7 @@ impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGS
     }
 
     fn data_availability(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
-        let mut ret = vec![G1::default(); 2 * p.len() as usize];
+        let mut ret = vec![BlstP1::default(); 2 * p.len() as usize];
         unsafe {
             match da_using_fk20_single(ret.as_mut_ptr(), p, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(ret),
@@ -106,7 +106,7 @@ impl FK20SingleSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGS
     }
 
     fn data_availability_optimized(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
-        let mut ret = vec![G1::default(); 2 * p.len() as usize];
+        let mut ret = vec![BlstP1::default(); 2 * p.len() as usize];
         unsafe {
             match fk20_single_da_opt(ret.as_mut_ptr(), p, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(ret),
@@ -154,7 +154,7 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
     }
 
     fn data_availability(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
-        let mut ret = vec![G1::default(); 2 * p.len() as usize];
+        let mut ret = vec![BlstP1::default(); 2 * p.len() as usize];
         unsafe {
             match da_using_fk20_multi(ret.as_mut_ptr(), p, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(ret),
@@ -167,7 +167,7 @@ impl FK20MultiSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly, KzgKZGSe
     }
 
     fn data_availability_optimized(&self, p: &KzgPoly) -> Result<Vec<BlstP1>, String> {
-        let mut ret = vec![G1::default(); 2 * p.len() as usize];
+        let mut ret = vec![BlstP1::default(); 2 * p.len() as usize];
         unsafe {
             match fk20_multi_da_opt(ret.as_mut_ptr(), p, self, RUN_PARALLEL) {
                 KzgRet::KzgOk => Ok(ret),
