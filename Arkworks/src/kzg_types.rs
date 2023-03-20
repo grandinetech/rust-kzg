@@ -34,23 +34,6 @@ impl Clone for ArkG1 {
 }
 
 impl G1 for ArkG1 {
-    fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
-            + blst_p1_into_pc_g1projective(&b.0).unwrap();
-        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
-        self.0 = ret.0;
-        ret
-    }
-
-    fn equals(&self, b: &Self) -> bool {
-        self.0.eq(&b.0)
-    }
-
-    fn rand() -> Self {
-        let mut rng = rand::thread_rng();
-        pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
-    }
-
     fn identity() -> Self {
         G1_IDENTITY
     }
