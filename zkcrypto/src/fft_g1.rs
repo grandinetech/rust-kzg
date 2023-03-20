@@ -34,7 +34,7 @@ impl FFTG1<ZkG1Projective> for ZkFFTSettings {
         }
 
         let stride = self.max_width / data.len();
-        let mut ret = vec![<ZkG1Projective as G1>::default(); data.len()];
+        let mut ret = vec![ZkG1Projective::default(); data.len()];
 
         let roots = if inverse {
             &self.reverse_roots_of_unity

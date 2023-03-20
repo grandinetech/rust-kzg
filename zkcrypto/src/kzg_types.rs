@@ -217,10 +217,6 @@ pub const G2_NEGATIVE_GENERATOR: ZkG2Projective = ZkG2Projective {
 };
 
 impl G1 for ZkG1Projective {
-    fn default() -> Self {
-        <ZkG1Projective as Default>::default() //istryniau as Default
-    }
-
     fn identity() -> Self {
         G1_IDENTITY
     }
@@ -273,10 +269,6 @@ impl G1Mul<blsScalar> for ZkG1Projective {
 }
 
 impl G2 for ZkG2Projective {
-    fn default() -> Self {
-        <ZkG2Projective as Default>::default()
-    }
-
     fn generator() -> Self {
         G2_GENERATOR
     }

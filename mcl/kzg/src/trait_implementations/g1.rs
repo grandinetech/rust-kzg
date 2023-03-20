@@ -3,10 +3,6 @@ use crate::fk20_fft::{G1_GENERATOR, G1_NEGATIVE_GENERATOR};
 use kzg::{G1Mul, G1 as CommonG1};
 
 impl CommonG1 for G1 {
-    fn default() -> Self {
-        G1::zero()
-    }
-
     fn identity() -> Self {
         G1::G1_IDENTITY
     }

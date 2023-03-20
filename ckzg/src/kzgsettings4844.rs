@@ -1,4 +1,4 @@
-use kzg::{FFTSettings, KZGSettings, G1, G2};
+use kzg::{FFTSettings, KZGSettings};
 
 use crate::consts::{BlstP1, BlstP2};
 use crate::fftsettings4844::KzgFFTSettings4844;
@@ -28,8 +28,8 @@ impl Default for KzgKZGSettings4844 {
     fn default() -> Self {
         Self {
             fs: &KzgFFTSettings4844::default(),
-            g1_values: &mut G1::default(),
-            g2_values: &mut G2::default(),
+            g1_values: &mut BlstP1::default(),
+            g2_values: &mut BlstP2::default(),
         }
     }
 }

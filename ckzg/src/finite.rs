@@ -1,5 +1,5 @@
 use crate::consts::{
-    BlstFp, BlstFp2, BlstP1, BlstP1Affine, BlstP2, BlstP2Affine, BLST_ERROR, G1_NEGATIVE_GENERATOR,
+    BlstFp, BlstP1, BlstP1Affine, BlstP2, BlstP2Affine, BLST_ERROR, G1_NEGATIVE_GENERATOR,
     G2_NEGATIVE_GENERATOR,
 };
 
@@ -220,14 +220,6 @@ impl Fr for BlstFr {
 }
 
 impl G1 for BlstP1 {
-    fn default() -> Self {
-        Self {
-            x: BlstFp { l: [0; 6] },
-            y: BlstFp { l: [0; 6] },
-            z: BlstFp { l: [0; 6] },
-        }
-    }
-
     fn identity() -> Self {
         Self {
             x: BlstFp { l: [0; 6] },
@@ -245,7 +237,7 @@ impl G1 for BlstP1 {
     }
 
     fn rand() -> Self {
-        let mut ret = G1::default();
+        let mut ret = BlstP1::default();
         let random = Fr::rand();
         unsafe {
             g1_mul(&mut ret, &G1::generator(), &random);
@@ -254,7 +246,7 @@ impl G1 for BlstP1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let mut out = G1::default();
+        let mut out = BlstP1::default();
         unsafe {
             g1_add_or_dbl(&mut out, b, self);
         }
@@ -266,7 +258,7 @@ impl G1 for BlstP1 {
     }
 
     fn dbl(&self) -> Self {
-        let mut ret = G1::default();
+        let mut ret = BlstP1::default();
         unsafe {
             g1_dbl(&mut ret, self);
         }
@@ -274,7 +266,7 @@ impl G1 for BlstP1 {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let mut ret = G1::default();
+        let mut ret = BlstP1::default();
         unsafe {
             g1_sub(&mut ret, self, b);
         }
@@ -288,7 +280,7 @@ impl G1 for BlstP1 {
 
 impl G1Mul<BlstFr> for BlstP1 {
     fn mul(&self, b: &BlstFr) -> Self {
-        let mut ret = G1::default();
+        let mut ret = BlstP1::default();
         unsafe {
             g1_mul(&mut ret, self, b);
         }
@@ -297,20 +289,6 @@ impl G1Mul<BlstFr> for BlstP1 {
 }
 
 impl G2 for BlstP2 {
-    fn default() -> Self {
-        Self {
-            x: BlstFp2 {
-                fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }],
-            },
-            y: BlstFp2 {
-                fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }],
-            },
-            z: BlstFp2 {
-                fp: [BlstFp { l: [0; 6] }, BlstFp { l: [0; 6] }],
-            },
-        }
-    }
-
     fn generator() -> Self {
         unsafe { *blst_p2_generator() }
     }
@@ -320,7 +298,7 @@ impl G2 for BlstP2 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let mut ret = G2::default();
+        let mut ret = BlstP2::default();
         unsafe {
             g2_add_or_dbl(&mut ret, self, b);
         }
@@ -328,7 +306,7 @@ impl G2 for BlstP2 {
     }
 
     fn dbl(&self) -> Self {
-        let mut ret = G2::default();
+        let mut ret = BlstP2::default();
         unsafe {
             g2_dbl(&mut ret, self);
         }
@@ -336,7 +314,7 @@ impl G2 for BlstP2 {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let mut ret = G2::default();
+        let mut ret = BlstP2::default();
         unsafe {
             g2_sub(&mut ret, self, b);
         }
@@ -350,7 +328,7 @@ impl G2 for BlstP2 {
 
 impl G2Mul<BlstFr> for BlstP2 {
     fn mul(&self, b: &BlstFr) -> Self {
-        let mut ret = G2::default();
+        let mut ret = BlstP2::default();
         unsafe {
             g2_mul(&mut ret, self, b);
         }
