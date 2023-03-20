@@ -43,9 +43,7 @@ pub trait Fr: Default + Clone {
     fn equals(&self, b: &Self) -> bool;
 }
 
-pub trait G1: Clone {
-    fn default() -> Self;
-
+pub trait G1: Clone + Default {
     fn identity() -> Self;
 
     fn generator() -> Self;
@@ -70,9 +68,7 @@ pub trait G1Mul<Fr>: Clone {
     fn mul(&self, b: &Fr) -> Self;
 }
 
-pub trait G2: Clone {
-    fn default() -> Self;
-
+pub trait G2: Clone + Default {
     fn generator() -> Self;
 
     fn negative_generator() -> Self;

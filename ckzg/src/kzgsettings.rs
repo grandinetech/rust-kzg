@@ -70,8 +70,8 @@ impl Default for KzgKZGSettings {
     fn default() -> Self {
         Self {
             fs: &KzgFFTSettings::default(),
-            secret_g1: &mut G1::default(),
-            secret_g2: &mut G2::default(),
+            secret_g1: &mut BlstP1::default(),
+            secret_g2: &mut BlstP2::default(),
             length: 0,
         }
     }
@@ -103,7 +103,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     }
 
     fn commit_to_poly(&self, p: &KzgPoly) -> Result<BlstP1, String> {
-        let mut ret = G1::default();
+        let mut ret = BlstP1::default();
         unsafe {
             match commit_to_poly(&mut ret, p, self) {
                 KzgRet::KzgOk => Ok(ret),
@@ -116,7 +116,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     }
 
     fn compute_proof_single(&self, p: &KzgPoly, x: &BlstFr) -> Result<BlstP1, String> {
-        let mut ret = G1::default();
+        let mut ret = BlstP1::default();
         unsafe {
             match compute_proof_single(&mut ret, p, x, self) {
                 KzgRet::KzgOk => Ok(ret),
@@ -148,7 +148,7 @@ impl KZGSettings<BlstFr, BlstP1, BlstP2, KzgFFTSettings, KzgPoly> for KzgKZGSett
     }
 
     fn compute_proof_multi(&self, p: &KzgPoly, x: &BlstFr, n: usize) -> Result<BlstP1, String> {
-        let mut ret = G1::default();
+        let mut ret = BlstP1::default();
         unsafe {
             match compute_proof_multi(&mut ret, p, x, n as u64, self) {
                 KzgRet::KzgOk => Ok(ret),
@@ -212,8 +212,8 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<BlstP1>
     let mut s = BlstFr::default();
     unsafe { fr_from_scalar(&mut s, &blst_scalar) };
 
-    let mut s1 = vec![G1::default(); 0];
-    let mut s2 = vec![G2::default(); 0];
+    let mut s1 = vec![BlstP1::default(); 0];
+    let mut s2 = vec![BlstP2::default(); 0];
 
     for _i in 0..len {
         let g1_mul = G1Mul::mul(&G1::generator(), &s_pow);

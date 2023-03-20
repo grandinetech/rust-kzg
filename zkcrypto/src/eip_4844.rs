@@ -38,7 +38,7 @@ pub fn vector_lincomb(vectors: &[Vec<blsScalar>], scalars: &[blsScalar]) -> Vec<
 
 pub fn g1_lincomb(points: &[ZkG1Projective], scalars: &[blsScalar]) -> ZkG1Projective {
     assert!(points.len() == scalars.len());
-    let mut out = G1::default();
+    let mut out = ZkG1Projective::default();
     g1_linear_combination(&mut out, points, scalars, points.len());
     out
 }

@@ -2,10 +2,6 @@ use crate::data_types::{fr::Fr, g2::G2};
 use kzg::{G2Mul, G2 as CommonG2};
 
 impl CommonG2 for G2 {
-    fn default() -> Self {
-        G2::zero()
-    }
-
     fn generator() -> Self {
         G2::gen()
     }
