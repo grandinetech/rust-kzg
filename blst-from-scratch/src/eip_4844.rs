@@ -241,6 +241,7 @@ pub fn compute_kzg_proof_rust(p: &FsPoly, x: &FsFr, s: &FsKZGSettings) -> FsG1 {
     while i < q.len() {
         if x.equals(&roots_of_unity[i]) {
             m = i + 1;
+            inverses_in[i]= FsFr::one();
             continue;
         }
         // (p_i - y) / (ω_i - x)
