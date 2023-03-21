@@ -13,6 +13,7 @@ use sha2::{Digest, Sha256};
 
 use crate::curve::g1::G1Affine;
 use crate::curve::g2::G2Affine;
+use crate::curve::multiscalar_mul::msm_variable_base;
 use crate::curve::scalar::{sbb, Scalar, MODULUS, R2};
 use crate::fftsettings::ZkFFTSettings;
 
@@ -139,25 +140,9 @@ pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
 pub fn g1_lincomb(
     points: &[ZkG1Projective],
     scalars: &[blsScalar],
-    length: usize,
+    _length: usize,
 ) -> ZkG1Projective {
-    let mut out = ZkG1Projective::default();
-    g1_linear_combination(&mut out, points, scalars, length);
-    out
-}
-
-pub fn g1_linear_combination(
-    out: &mut ZkG1Projective,
-    p: &[ZkG1Projective],
-    coeffs: &[blsScalar],
-    len: usize,
-) {
-    let mut tmp;
-    *out = G1::identity();
-    for i in 0..len {
-        tmp = p[i].mul(&coeffs[i]);
-        *out = out.add_or_dbl(&tmp);
-    }
+    msm_variable_base(points, scalars)
 }
 
 pub fn compute_powers(base: &blsScalar, num_powers: usize) -> Vec<blsScalar> {
