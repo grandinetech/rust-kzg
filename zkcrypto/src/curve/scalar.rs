@@ -251,7 +251,7 @@ impl ConditionallySelectable for Scalar {
 
 /// Constant representing the modulus
 /// q = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-const MODULUS: Scalar = Scalar([
+pub const MODULUS: Scalar = Scalar([
     0xffff_ffff_0000_0001,
     0x53bd_a402_fffe_5bfe,
     0x3339_d808_09a1_d805,
@@ -342,7 +342,7 @@ const R: Scalar = Scalar([
 ]);
 
 /// R^2 = 2^512 mod q
-const R2: Scalar = Scalar([
+pub const R2: Scalar = Scalar([
     0xc999_e990_f3f2_9c6d,
     0x2b6c_edcb_8792_5c23,
     0x05d3_1496_7254_398f,

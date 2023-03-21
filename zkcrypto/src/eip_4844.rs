@@ -1,39 +1,22 @@
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::Read;
+use std::ops::Sub;
 
-use crate::fk20::{reverse_bit_order};
+use crate::fk20::reverse_bit_order;
+use crate::kzg_proofs::{check_proof_single, KZGSettings};
+use crate::kzg_types::{pairings_verify, ZkG1Affine, ZkG1Projective, ZkG2Affine, ZkG2Projective};
 use crate::poly::KzgPoly;
-use crate::kzg_proofs::{ KZGSettings, check_proof_single};
-use crate::kzg_types::{ZkG1Affine, ZkG1Projective, ZkG2Affine, ZkG2Projective};
 use crate::zkfr::blsScalar;
+use kzg::{FFTSettings, Fr, Poly, FFTG1, G1};
 use sha2::{Digest, Sha256};
-use kzg::{G1, Poly, Fr, FFTSettings, FFTG1};
 
-#[cfg(feature = "parallel")]
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-#[cfg(feature = "parallel")]
-use rayon::iter::IntoParallelIterator;
 use crate::curve::g1::G1Affine;
 use crate::curve::g2::G2Affine;
-use crate::curve::scalar::{sbb, Scalar};
+use crate::curve::scalar::{sbb, Scalar, MODULUS, R2};
 use crate::fftsettings::ZkFFTSettings;
 
-const MODULUS: Scalar = Scalar([
-    0xffff_ffff_0000_0001,
-    0x53bd_a402_fffe_5bfe,
-    0x3339_d808_09a1_d805,
-    0x73ed_a753_299d_7d48,
-]);
-
-const R2: Scalar = Scalar([
-    0xc999_e990_f3f2_9c6d,
-    0x2b6c_edcb_8792_5c23,
-    0x05d3_1496_7254_398f,
-    0x0748_d9d9_9f59_ff11,
-]);
-
-pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> blsScalar {
+pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Result<blsScalar, u8> {
     let mut tmp = Scalar([0, 0, 0, 0]);
 
     tmp.0[0] = u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
@@ -45,140 +28,26 @@ pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> blsScalar {
     let (_, borrow) = sbb(tmp.0[0], MODULUS.0[0], 0);
     let (_, borrow) = sbb(tmp.0[1], MODULUS.0[1], borrow);
     let (_, borrow) = sbb(tmp.0[2], MODULUS.0[2], borrow);
-    let (_, borrow) = sbb(tmp.0[3], MODULUS.0[3], borrow);
-
-    // If the element is smaller than MODULUS then the
-    // subtraction will underflow, producing a borrow value
-    // of 0xffff...ffff. Otherwise, it'll be zero.
-    let is_some = (borrow as u8) & 1;
+    let (_, _borrow) = sbb(tmp.0[3], MODULUS.0[3], borrow);
 
     // Convert to Montgomery form by computing
     // (a.R^0 * R^2) / R = a.R
     tmp *= &R2;
-    tmp
+    Ok(tmp)
 }
 
 pub fn bytes_from_bls_field(fr: &blsScalar) -> [u8; 32usize] {
     fr.to_bytes()
 }
 
-pub fn compute_powers(base: &blsScalar, num_powers: usize) -> Vec<blsScalar> {
-    let mut powers: Vec<blsScalar> = vec![blsScalar::default(); num_powers];
-    powers[0] = blsScalar::one();
-    for i in 1..num_powers {
-        powers[i] = powers[i - 1].mul(base);
-    }
-    powers
-}
-
-pub fn vector_lincomb(vectors: &[Vec<blsScalar>], scalars: &[blsScalar]) -> Vec<blsScalar> {
-    let mut tmp: blsScalar;
-    let mut out: Vec<blsScalar> = vec![blsScalar::zero(); vectors[0].len()];
-    for (v, s) in vectors.iter().zip(scalars.iter()) {
-        for (i, x) in v.iter().enumerate() {
-            tmp = x.mul(s);
-            out[i] = out[i].add(&tmp);
-        }
-    }
-    out
-}
-
-pub fn g1_lincomb(points: &[ZkG1Projective], scalars: &[blsScalar]) -> ZkG1Projective {
-    assert!(points.len() == scalars.len());
-    let mut out = ZkG1Projective::default();
-    g1_linear_combination(&mut out, points, scalars, points.len());
-    out
-}
-
-pub fn g1_linear_combination(
-    out: &mut ZkG1Projective,
-    p: &[ZkG1Projective],
-    coeffs: &[blsScalar],
-    len: usize,
-) {
-    let mut tmp;
-    *out = G1::identity();
-    for i in 0..len {
-        tmp = p[i].mul(&coeffs[i]);
-        *out = out.add_or_dbl(&tmp);
-    }
-}
-
-pub fn blob_to_kzg_commitment(blob: &[blsScalar], s: &KZGSettings) -> ZkG1Projective {
-    g1_lincomb(&s.secret_g1, blob)
-}
-
-pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
-    let prod: &mut Vec<blsScalar> = &mut vec![blsScalar::default(); len];
-    let mut i: usize = 1;
-
-    prod[0] = a[0];
-
-    while i < len {
-        prod[i] = a[i].mul(&prod[i - 1]);
-        i += 1;
-    }
-
-    let inv: &mut blsScalar = &mut prod[len - 1].eucl_inverse();
-
-    i = len - 1;
-    while i > 0 {
-        out[i] = prod[i - 1].mul(inv);
-        *inv = a[i].mul(inv);
-        i -= 1;
-    }
-    out[0] = *inv;
-}
-
-pub fn evaluate_polynomial_in_evaluation_form(
-    p: &KzgPoly,
-    x: &blsScalar,
-    s: &KZGSettings,
-) -> blsScalar {
-    let mut tmp: blsScalar;
-
-    let mut inverses_in: Vec<blsScalar> = vec![blsScalar::default(); p.len()];
-    let mut inverses: Vec<blsScalar> = vec![blsScalar::default(); p.len()];
-    let mut i: usize = 0;
-    let mut roots_of_unity: Vec<blsScalar> = s.fs.expanded_roots_of_unity.clone();
-
-    reverse_bit_order(&mut roots_of_unity);
-
-    while i < p.len() {
-        if x.equals(&roots_of_unity[i]) {
-            return p.get_coeff_at(i);
-        }
-
-        inverses_in[i] = x.sub(&roots_of_unity[i]);
-        i += 1;
-    }
-    fr_batch_inv(&mut inverses, &inverses_in, p.len());
-
-    let mut out = blsScalar::zero();
-    i = 0;
-    while i < p.len() {
-        tmp = inverses[i].mul(&roots_of_unity[i]);
-        tmp = tmp.mul(&p.coeffs[i]);
-        out = out.add(&tmp);
-        i += 1;
-    }
-    tmp = blsScalar::from_u64(p.len().try_into().unwrap());
-    out = out.div(&tmp).unwrap();
-
-    tmp = <blsScalar as Fr>::pow(x, p.len());
-    tmp = tmp.sub(&blsScalar::one());
-    out = out.mul(&tmp);
-    out
-}
-
-pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> ZkG1Projective {
+pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> Result<ZkG1Projective, String> {
     let affine: G1Affine = G1Affine::from_compressed(bytes).unwrap();
-    ZkG1Projective::from(affine)
+    Ok(ZkG1Projective::from(affine))
 }
 
-pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> ZkG2Projective {
+pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> Result<ZkG2Projective, String> {
     let affine: G2Affine = G2Affine::from_compressed(bytes).unwrap();
-    ZkG2Projective::from(affine)
+    Ok(ZkG2Projective::from(affine))
 }
 
 pub fn bytes_from_g1(g1: &ZkG1Projective) -> [u8; 48usize] {
@@ -213,7 +82,7 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
             .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
-        g1_projectives.push(bytes_to_g1(&bytes_array));
+        g1_projectives.push(bytes_to_g1(&bytes_array).unwrap());
     }
 
     for _ in 0..n2 {
@@ -225,7 +94,7 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
             .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
-        g2_values.push(bytes_to_g2(&bytes_array));
+        g2_values.push(bytes_to_g2(&bytes_array).unwrap());
     }
 
     let mut max_scale: usize = 0;
@@ -241,234 +110,396 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
         secret_g1: g1_values,
         secret_g2: g2_values,
         fs,
-        length: 0,
+        length: length as u64,
     }
 }
 
-pub fn compute_kzg_proof(p: &KzgPoly, x: &blsScalar, s: &KZGSettings) -> ZkG1Projective {
-    assert!(p.coeffs.len() <= s.secret_g1.len());
+pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
+    let prod: &mut Vec<blsScalar> = &mut vec![blsScalar::default(); len];
+    let mut i: usize = 1;
 
-    let y = evaluate_polynomial_in_evaluation_form(p, x, s);
+    prod[0] = a[0];
 
-    let mut tmp: blsScalar;
-
-    let mut roots_of_unity = s.fs.expanded_roots_of_unity.clone();
-
-    reverse_bit_order(&mut roots_of_unity);
-
-    let mut m = 0;
-
-    let mut q = KzgPoly::new(p.coeffs.len()).unwrap();
-    let plen = p.coeffs.len();
-    let qlen = q.coeffs.len();
-
-    let mut inverses_in: Vec<blsScalar> = vec![blsScalar::one(); plen];
-    let mut inverses: Vec<blsScalar> = vec![blsScalar::one(); plen];
-
-    for i in 0..qlen {
-        if x == &roots_of_unity[i] {
-            m = i + 1;
-            continue;
-        }
-        q.coeffs[i] = p.coeffs[i] - y;
-        inverses_in[i] = &roots_of_unity[i] - x;
+    while i < len {
+        prod[i] = a[i].mul(&prod[i - 1]);
+        i += 1;
     }
 
-    fr_batch_inv(&mut inverses, &inverses_in, qlen);
+    let inv: &mut blsScalar = &mut prod[len - 1].eucl_inverse();
 
-    for (i, v) in inverses.iter().enumerate().take(qlen) {
-        q.coeffs[i] = &q.coeffs[i] * v;
+    i = len - 1;
+    while i > 0 {
+        out[i] = prod[i - 1].mul(inv);
+        *inv = a[i].mul(inv);
+        i -= 1;
     }
+    out[0] = *inv;
+}
 
-    if m != 0 {
-        m -= 1;
-        q.coeffs[m] = blsScalar::zero();
+pub fn g1_lincomb(
+    points: &[ZkG1Projective],
+    scalars: &[blsScalar],
+    length: usize,
+) -> ZkG1Projective {
+    let mut out = ZkG1Projective::default();
+    g1_linear_combination(&mut out, points, scalars, length);
+    out
+}
 
-        for i in 0..qlen {
-            if i == m {
-                continue;
-            }
-            tmp = x - &roots_of_unity[i];
-            inverses_in[i] = &tmp * x;
-        }
-
-        fr_batch_inv(&mut inverses, &inverses_in, qlen);
-
-        for i in 0..qlen {
-            tmp = p.coeffs[i] - y;
-            tmp = tmp * roots_of_unity[i];
-            tmp = tmp * inverses[i];
-            q.coeffs[i] = q.coeffs[i] + tmp;
-        }
+pub fn g1_linear_combination(
+    out: &mut ZkG1Projective,
+    p: &[ZkG1Projective],
+    coeffs: &[blsScalar],
+    len: usize,
+) {
+    let mut tmp;
+    *out = G1::identity();
+    for i in 0..len {
+        tmp = p[i].mul(&coeffs[i]);
+        *out = out.add_or_dbl(&tmp);
     }
+}
 
-    g1_lincomb(&s.secret_g1, q.coeffs.as_slice())
+pub fn compute_powers(base: &blsScalar, num_powers: usize) -> Vec<blsScalar> {
+    let mut powers: Vec<blsScalar> = vec![blsScalar::default(); num_powers];
+    powers[0] = blsScalar::one();
+    for i in 1..num_powers {
+        powers[i] = powers[i - 1].mul(base);
+    }
+    powers
+}
+
+fn bytes_of_uint64(out: &mut [u8], mut n: u64) {
+    for byte in out.iter_mut().take(8) {
+        *byte = (n & 0xff) as u8;
+        n >>= 8;
+    }
+}
+
+fn hash(x: &[u8]) -> [u8; 32] {
+    Sha256::digest(x).into()
+}
+
+pub fn hash_to_bls_field(x: &[u8; 32]) -> blsScalar {
+    bytes_to_bls_field(x).unwrap()
+}
+
+pub fn blob_to_kzg_commitment(blob: &[blsScalar], s: &KZGSettings) -> ZkG1Projective {
+    let p = blob_to_polynomial(blob);
+    poly_to_kzg_commitment(&p, s)
 }
 
 pub fn verify_kzg_proof(
-    polynomial_kzg: &ZkG1Projective,
+    commitment: &ZkG1Projective,
     z: &blsScalar,
     y: &blsScalar,
-    kzg_proof: &ZkG1Projective,
+    proof: &ZkG1Projective,
     s: &KZGSettings,
 ) -> bool {
-    check_proof_single(polynomial_kzg, kzg_proof, z, y, s)
-        .unwrap_or(false)
+    check_proof_single(commitment, proof, z, y, s).unwrap_or(false)
 }
 
-pub fn compute_aggregate_kzg_proof(blobs: &[Vec<blsScalar>], s: &KZGSettings) -> ZkG1Projective {
-    let n = blobs.len();
-    if n == 0 {
-        return ZkG1Projective::identity();
-    }
-
-    #[cfg(feature = "parallel")]
-    let (polys, commitments): (Vec<_>, Vec<_>) = blobs
-        .par_iter()
-        .map(|blob| {
-            let poly = poly_from_blob(blob);
-            let commitment = poly_to_kzg_commitment(&poly, s);
-            (poly, commitment)
-        })
-        .unzip();
-
-    #[cfg(not(feature = "parallel"))]
-    let (polys, commitments): (Vec<_>, Vec<_>) = blobs
-        .iter()
-        .map(|blob| {
-            let poly = poly_from_blob(blob);
-            let commitment = poly_to_kzg_commitment(&poly, s);
-            (poly, commitment)
-        })
-        .unzip();
-
-    let (aggregated_poly, _, evaluation_challenge) =
-        compute_aggregated_poly_and_commitment(&polys, &commitments, n);
-    compute_kzg_proof(&aggregated_poly, &evaluation_challenge, s)
-}
-
-pub fn verify_aggregate_kzg_proof(
-    blobs: &[Vec<blsScalar>],
-    expected_kzg_commitments: &[ZkG1Projective],
-    kzg_aggregated_proof: &ZkG1Projective,
+pub fn verify_kzg_proof_batch(
+    commitments_g1: &[ZkG1Projective],
+    evaluation_challenges_fr: &[blsScalar],
+    ys_fr: &[blsScalar],
+    proofs_g1: &[ZkG1Projective],
     ts: &KZGSettings,
 ) -> bool {
-    #[cfg(feature = "parallel")]
-    let polys: Vec<KzgPoly> = blobs.par_iter().map(|blob| poly_from_blob(blob)).collect();
-    #[cfg(not(feature = "parallel"))]
-    let polys: Vec<KzgPoly> = blobs.iter().map(|blob| poly_from_blob(blob)).collect();
+    let n = commitments_g1.len();
+    let mut c_minus_y: Vec<ZkG1Projective> = Vec::new();
+    let mut r_times_z: Vec<blsScalar> = Vec::new();
 
-    let (aggregated_poly, aggregated_poly_commitment, evaluation_challenge) =
-        compute_aggregated_poly_and_commitment(&polys, expected_kzg_commitments, blobs.len());
-    let y = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &evaluation_challenge, ts);
-    verify_kzg_proof(
-        &aggregated_poly_commitment,
-        &evaluation_challenge,
-        &y,
-        kzg_aggregated_proof,
-        ts,
+    // Compute the random lincomb challenges
+    let r_powers = compute_r_powers(commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1);
+
+    // Compute \sum r^i * Proof_i
+    let proof_lincomb = g1_lincomb(proofs_g1, &r_powers, n);
+
+    for i in 0..n {
+        // Get [y_i]
+        let ys_encrypted = ZkG1Projective::generator().mul(&ys_fr[i]);
+        // Get C_i - [y_i]
+        c_minus_y.push(commitments_g1[i].sub(&ys_encrypted));
+        // Get r^i * z_i
+        r_times_z.push(r_powers[i].mul(&evaluation_challenges_fr[i]));
+    }
+
+    // Get \sum r^i z_i Proof_i
+    let proof_z_lincomb = g1_lincomb(proofs_g1, &r_times_z, n);
+    // Get \sum r^i (C_i - [y_i])
+    let mut c_minus_y_lincomb = g1_lincomb(&c_minus_y, &r_powers, n);
+
+    // Get C_minus_y_lincomb + proof_z_lincomb
+    let rhs_g1 = c_minus_y_lincomb.add_or_dbl(&proof_z_lincomb);
+
+    // Do the pairing check!
+    pairings_verify(
+        &proof_lincomb,
+        &ts.secret_g2[1],
+        &rhs_g1,
+        &ZkG2Projective::generator(),
     )
 }
 
-fn poly_from_blob(blob: &[blsScalar]) -> KzgPoly {
-    let mut p: KzgPoly = KzgPoly::new(blob.len()).unwrap();
+pub fn compute_kzg_proof(blob: &[blsScalar], z: &blsScalar, s: &KZGSettings) -> ZkG1Projective {
+    assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
+
+    let polynomial = blob_to_polynomial(blob);
+    let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, s);
+
+    let mut tmp: blsScalar;
+    let mut roots_of_unity: Vec<blsScalar> = s.fs.expanded_roots_of_unity.clone();
+    reverse_bit_order(&mut roots_of_unity);
+
+    let mut m: usize = 0;
+    let mut q: KzgPoly = KzgPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+
+    let mut inverses_in: Vec<blsScalar> = vec![blsScalar::default(); FIELD_ELEMENTS_PER_BLOB];
+    let mut inverses: Vec<blsScalar> = vec![blsScalar::default(); FIELD_ELEMENTS_PER_BLOB];
+
+    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        if z.equals(&roots_of_unity[i]) {
+            // We are asked to compute a KZG proof inside the domain
+            m = i + 1;
+            inverses_in[i] = blsScalar::one();
+            continue;
+        }
+        // (p_i - y) / (ω_i - z)
+        q.coeffs[i] = polynomial.coeffs[i].sub(&y);
+        inverses_in[i] = roots_of_unity[i].sub(z);
+    }
+
+    fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB);
+
+    for (i, inverse) in inverses.iter().enumerate().take(FIELD_ELEMENTS_PER_BLOB) {
+        q.coeffs[i] = q.coeffs[i].mul(inverse);
+    }
+
+    if m > 0 {
+        // ω_m == x
+        m -= 1;
+        q.coeffs[m] = blsScalar::zero();
+        for i in 0..FIELD_ELEMENTS_PER_BLOB {
+            if i == m {
+                continue;
+            }
+            // Build denominator: z * (z - ω_i)
+            tmp = z.sub(&roots_of_unity[i]);
+            inverses_in[i] = tmp.mul(z);
+        }
+
+        fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB);
+
+        for i in 0..FIELD_ELEMENTS_PER_BLOB {
+            if i == m {
+                continue;
+            }
+            // Build numerator: ω_i * (p_i - y)
+            tmp = polynomial.coeffs[i].sub(&y);
+            tmp = tmp.mul(&roots_of_unity[i]);
+            // Do the division: (p_i - y) * ω_i / (z * (z - ω_i))
+            tmp = tmp.mul(&inverses[i]);
+            q.coeffs[m] = q.coeffs[m].add(&tmp);
+        }
+    }
+
+    g1_lincomb(&s.secret_g1, &q.coeffs, FIELD_ELEMENTS_PER_BLOB)
+}
+
+pub fn evaluate_polynomial_in_evaluation_form(
+    p: &KzgPoly,
+    x: &blsScalar,
+    s: &KZGSettings,
+) -> blsScalar {
+    assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
+
+    let mut roots_of_unity: Vec<blsScalar> = s.fs.expanded_roots_of_unity.clone();
+    let mut inverses_in: Vec<blsScalar> = vec![blsScalar::default(); FIELD_ELEMENTS_PER_BLOB];
+    let mut inverses: Vec<blsScalar> = vec![blsScalar::default(); FIELD_ELEMENTS_PER_BLOB];
+
+    reverse_bit_order(&mut roots_of_unity);
+
+    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        if x.equals(&roots_of_unity[i]) {
+            return p.get_coeff_at(i);
+        }
+        inverses_in[i] = x.sub(&roots_of_unity[i]);
+    }
+
+    fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB);
+
+    let mut tmp: blsScalar;
+    let mut out = blsScalar::zero();
+
+    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        tmp = inverses[i].mul(&roots_of_unity[i]);
+        tmp = tmp.mul(&p.coeffs[i]);
+        out = out.add(&tmp);
+    }
+
+    let arr: [u64; 4] = [FIELD_ELEMENTS_PER_BLOB as u64, 0, 0, 0];
+    tmp = blsScalar::from_u64_arr(&arr);
+    out = out.div(&tmp).unwrap();
+    tmp = x.pow(&arr);
+    tmp = tmp.sub(&blsScalar::one());
+    out = out.mul(&tmp);
+    out
+}
+
+fn compute_challenge(blob: &[blsScalar], commitment: &ZkG1Projective) -> blsScalar {
+    let mut bytes: Vec<u8> = vec![0; CHALLENGE_INPUT_SIZE];
+
+    // Copy domain separator
+    bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
+    bytes_of_uint64(&mut bytes[16..24], FIELD_ELEMENTS_PER_BLOB as u64);
+    // Set all other bytes of this 16-byte (little-endian) field to zero
+    bytes_of_uint64(&mut bytes[24..32], 0);
+
+    // Copy blob
+    for i in 0..blob.len() {
+        let v = bytes_from_bls_field(&blob[i]);
+        bytes[(32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT)]
+            .copy_from_slice(&v);
+    }
+
+    // Copy commitment
+    let v = bytes_from_g1(commitment);
+    for i in 0..v.len() {
+        bytes[32 + BYTES_PER_BLOB + i] = v[i];
+    }
+
+    // Now let's create the challenge!
+    let eval_challenge = hash(&bytes);
+    hash_to_bls_field(&eval_challenge)
+}
+
+fn compute_r_powers(
+    commitments_g1: &[ZkG1Projective],
+    evaluation_challenges_fr: &[blsScalar],
+    ys_fr: &[blsScalar],
+    proofs_g1: &[ZkG1Projective],
+) -> Vec<blsScalar> {
+    let n = commitments_g1.len();
+    let input_size =
+        32 + n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF);
+
+    #[allow(unused_assignments)]
+    let mut offset = 0;
+    let mut bytes: Vec<u8> = vec![0; input_size];
+
+    // Copy domain separator
+    bytes[..16].copy_from_slice(&RANDOM_CHALLENGE_KZG_BATCH_DOMAIN);
+    bytes_of_uint64(&mut bytes[16..24], FIELD_ELEMENTS_PER_BLOB as u64);
+    bytes_of_uint64(&mut bytes[24..32], n as u64);
+    offset = 32;
+
+    for i in 0..n {
+        // Copy commitment
+        let v = bytes_from_g1(&commitments_g1[i]);
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
+        offset += BYTES_PER_COMMITMENT;
+
+        // Copy evaluation challenge
+        let v = bytes_from_bls_field(&evaluation_challenges_fr[i]);
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
+        offset += BYTES_PER_FIELD_ELEMENT;
+
+        // Copy polynomial's evaluation value
+        let v = bytes_from_bls_field(&ys_fr[i]);
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
+        offset += BYTES_PER_FIELD_ELEMENT;
+
+        // Copy proof
+        let v = bytes_from_g1(&proofs_g1[i]);
+        bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
+        offset += BYTES_PER_PROOF;
+    }
+
+    // Make sure we wrote the entire buffer
+    assert_eq!(offset, input_size);
+
+    // Now let's create the challenge!
+    let eval_challenge = hash(&bytes);
+    let r = hash_to_bls_field(&eval_challenge);
+    compute_powers(&r, n)
+}
+
+pub fn blob_to_polynomial(blob: &[blsScalar]) -> KzgPoly {
+    assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
+    let mut p: KzgPoly = KzgPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
     p.coeffs = blob.to_vec();
     p
 }
 
-fn compute_aggregated_poly_and_commitment(
-    polys: &[KzgPoly],
-    kzg_commitments: &[ZkG1Projective],
-    n: usize,
-) -> (KzgPoly, ZkG1Projective, blsScalar) {
-    let mut hash = [0u8; 32];
-    hash_to_bytes(&mut hash, polys, kzg_commitments);
-    let r = bytes_to_bls_field(&hash);
-
-    let (r_powers, chal_out) = if n == 1 {
-        (vec![r], r)
-    } else {
-        let r_powers = compute_powers(&r, n);
-        let chal_out = r_powers[1] * r_powers[n - 1];
-        (r_powers, chal_out)
-    };
-
-    let poly_out = poly_lincomb(polys, &r_powers);
-
-    let comm_out = g1_lincomb(kzg_commitments, &r_powers);
-
-    (poly_out, comm_out, chal_out)
-}
-
-#[cfg(not(feature = "parallel"))]
-pub fn poly_lincomb(vectors: &[KzgPoly], scalars: &[blsScalar]) -> KzgPoly {
-    let mut res: KzgPoly = KzgPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
-    let mut tmp: blsScalar;
-    for j in 0..FIELD_ELEMENTS_PER_BLOB {
-        res.set_coeff_at(j, &blsScalar::zero());
-    }
-    let n = vectors.len();
-    for i in 0..n {
-        for j in 0..FIELD_ELEMENTS_PER_BLOB {
-            tmp = scalars[i] * vectors[i].get_coeff_at(j);
-            res.set_coeff_at(j, &(res.get_coeff_at(j) + tmp));
-        }
-    }
-    res
-}
-
-#[cfg(feature = "parallel")]
-pub fn poly_lincomb(vectors: &[KzgPoly], scalars: &[blsScalar]) -> KzgPoly {
-    let n = vectors.len();
-    KzgPoly {
-        coeffs: (0..FIELD_ELEMENTS_PER_BLOB).into_par_iter().map(|j|{
-            let mut out = Fr::zero();
-            for i in 0..n {
-                out += &(scalars[i] * vectors[i].get_coeff_at(j));
-            }
-            out
-        }).collect()
-    }
-}
-
 fn poly_to_kzg_commitment(p: &KzgPoly, s: &KZGSettings) -> ZkG1Projective {
-    g1_lincomb(&s.secret_g1, &p.coeffs)
+    assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
+    g1_lincomb(&s.secret_g1, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
 }
 
-fn hash_to_bytes(out: &mut [u8; 32], polys: &[KzgPoly], comms: &[ZkG1Projective]) {
-    let n = polys.len();
-    let ni = FIAT_SHAMIR_PROTOCOL_DOMAIN.len() + 8 + 8;
-    let np = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
-
-    let mut bytes = vec![0u8; np + n * 48];
-
-    bytes[0..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
-    bytes[16..24].copy_from_slice(&n.to_le_bytes());
-    bytes[24..32].copy_from_slice(&FIELD_ELEMENTS_PER_BLOB.to_le_bytes());
-
-    for (i, poly) in polys.iter().enumerate().take(n) {
-        for j in 0..FIELD_ELEMENTS_PER_BLOB {
-            let pos = ni + i * BYTES_PER_FIELD_ELEMENT;
-            bytes[pos..pos + BYTES_PER_FIELD_ELEMENT]
-                .copy_from_slice(&bytes_from_bls_field(&poly.coeffs[j]));
-        }
-    }
-
-    for (i, comm) in comms.iter().enumerate().take(n) {
-        let pos = ni + i * BYTES_PER_FIELD_ELEMENT;
-        let data = &bytes_from_g1(comm);
-        bytes[pos..pos + data.len()].copy_from_slice(data);
-    }
-
-    hash(out, &bytes);
+pub fn compute_blob_kzg_proof(blob: &[blsScalar], ts: &KZGSettings) -> ZkG1Projective {
+    let polynomial = blob_to_polynomial(blob);
+    let commitment_g1 = poly_to_kzg_commitment(&polynomial, ts);
+    let evaluation_challenge_fr = compute_challenge(blob, &commitment_g1);
+    compute_kzg_proof(blob, &evaluation_challenge_fr, ts)
 }
 
-fn hash(md: &mut [u8; 32], input: &[u8]) {
-    let mut hasher = Sha256::new();
-    hasher.update(input);
-    hasher.finalize_into(md.try_into().unwrap());
+pub fn verify_blob_kzg_proof(
+    blob: &[blsScalar],
+    commitment_g1: &ZkG1Projective,
+    proof_g1: &ZkG1Projective,
+    ts: &KZGSettings,
+) -> bool {
+    let polynomial = blob_to_polynomial(blob);
+    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
+    let y_fr = evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
+    verify_kzg_proof(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
+}
+
+pub fn verify_blob_kzg_proof_batch(
+    blobs: &[Vec<blsScalar>],
+    commitments_g1: &[ZkG1Projective],
+    proofs_g1: &[ZkG1Projective],
+    ts: &KZGSettings,
+) -> bool {
+    // Exit early if we are given zero blobs
+    if blobs.is_empty() {
+        return true;
+    }
+
+    let mut evaluation_challenges_fr: Vec<blsScalar> = Vec::new();
+    let mut ys_fr: Vec<blsScalar> = Vec::new();
+
+    for i in 0..blobs.len() {
+        let polynomial = blob_to_polynomial(&blobs[i]);
+        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+        let y_fr =
+            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
+
+        evaluation_challenges_fr.push(evaluation_challenge_fr);
+        ys_fr.push(y_fr);
+    }
+
+    verify_kzg_proof_batch(
+        commitments_g1,
+        &evaluation_challenges_fr,
+        &ys_fr,
+        proofs_g1,
+        ts,
+    )
 }
 
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95]; // "FSBLOBVERIFY_V1_"
+pub const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
+pub const CHALLENGE_INPUT_SIZE: usize = 32 + BYTES_PER_BLOB + 48;
+pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
+pub const BYTES_PER_PROOF: usize = 48;
+
+pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
+    70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
+]; // "FSBLOBVERIFY_V1_"
+
+pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
+    82, 67, 75, 90, 71, 66, 65, 84, 67, 72, 95, 95, 95, 86, 49, 95,
+]; // "RCKZGBATCH___V1_"

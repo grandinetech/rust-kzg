@@ -1589,5 +1589,6 @@ dependencies = [
  "rand",
  "rand_core",
  "rayon",
+ "sha2 0.10.6",
  "subtle",
 ]
