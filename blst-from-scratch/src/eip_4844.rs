@@ -21,8 +21,8 @@ use std::io::Read;
 
 use blst::{
     blst_fr, blst_fr_from_scalar, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
-    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
-    blst_p2_uncompress, blst_scalar, blst_scalar_from_lendian, BLST_ERROR,
+    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_compress,
+    blst_p2_from_affine, blst_p2_uncompress, blst_scalar, blst_scalar_from_lendian, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
 
@@ -43,7 +43,7 @@ use crate::types::poly::FsPoly;
 
 use crate::utils::reverse_bit_order;
 
-pub fn bytes_to_g1_rust(bytes: &[u8; 48usize]) -> Result<FsG1, String> {
+pub fn bytes_to_g1_rust(bytes: &[u8; 48]) -> Result<FsG1, String> {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
     unsafe {
@@ -60,10 +60,30 @@ pub fn bytes_to_g1_rust(bytes: &[u8; 48usize]) -> Result<FsG1, String> {
     Ok(FsG1(g1))
 }
 
-pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; 48usize] {
-    let mut out: [u8; 48usize] = [0; 48];
+pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; 48] {
+    let mut out = [0u8; 48];
     unsafe {
         blst_p1_compress(out.as_mut_ptr(), &g1.0);
+    }
+    out
+}
+
+pub fn bytes_to_g2_rust(bytes: &[u8; 96]) -> Result<FsG2, String> {
+    let mut tmp = blst_p2_affine::default();
+    let mut g2 = blst_p2::default();
+    unsafe {
+        if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+            return Err("blst_p2_uncompress failed".to_string());
+        }
+        blst_p2_from_affine(&mut g2, &tmp);
+    }
+    Ok(FsG2(g2))
+}
+
+pub fn bytes_from_g2_rust(g2: &FsG2) -> [u8; 96] {
+    let mut out = [0; 96];
+    unsafe {
+        blst_p2_compress(out.as_mut_ptr(), &g2.0);
     }
     out
 }
@@ -77,26 +97,24 @@ pub fn load_trusted_setup_rust(
     let g1_projectives: Vec<FsG1> = g1_bytes
         .chunks(48)
         .map(|chunk| {
-            let mut bytes_array: [u8; 48] = [0; 48];
-            bytes_array.copy_from_slice(chunk);
-            bytes_to_g1_rust(&bytes_array).unwrap()
+            bytes_to_g1_rust(
+                chunk
+                    .try_into()
+                    .expect("Chunked into correct number of bytes above; qed"),
+            )
+            .unwrap()
         })
         .collect();
 
     let g2_values: Vec<FsG2> = g2_bytes
         .chunks(96)
         .map(|chunk| {
-            let mut bytes_array: [u8; 96] = [0; 96];
-            bytes_array.copy_from_slice(chunk);
-            let mut tmp = blst_p2_affine::default();
-            let mut g2 = blst_p2::default();
-            unsafe {
-                if blst_p2_uncompress(&mut tmp, bytes_array.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                    panic!("blst_p2_uncompress failed");
-                }
-                blst_p2_from_affine(&mut g2, &tmp);
-            }
-            FsG2(g2)
+            bytes_to_g2_rust(
+                chunk
+                    .try_into()
+                    .expect("Chunked into correct number of bytes above; qed"),
+            )
+            .unwrap()
         })
         .collect();
 
