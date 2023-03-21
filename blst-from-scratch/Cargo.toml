@@ -24,6 +24,7 @@ default = [
     "rand",
 ]
 std = [
+    "kzg/std",
     "libc/std",
     "once_cell/std",
     "sha2/std",
