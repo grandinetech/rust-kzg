@@ -1,3 +1,10 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+
 pub mod eip_4844;
 
 pub trait Fr: Default + Clone {
