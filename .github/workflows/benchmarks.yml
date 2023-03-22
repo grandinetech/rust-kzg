@@ -73,54 +73,6 @@ jobs:
         run: |
           cd blst-from-scratch && bash run-c-kzg-4844-benches.sh --parallel
 
-      # 4th team #########################################################
-
-      - name: "[ckzg] Build native libs for Linux"
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get install libomp-dev
-          echo "LIBOMP_PATH=$(find /usr/lib/llvm* -name libiomp5.so | head -n 1)" >> $GITHUB_ENV
-          echo "OMP_NUM_THREADS=$(nproc)" >> $GITHUB_ENV
-          cd ckzg && bash build.sh
-
-      - name: "[ckzg] Build native libs for MacOS"
-        if: matrix.os == 'macos-11'
-        run: |
-          brew install libomp gnu-sed
-          ln -s /usr/local/opt/libomp/lib/libomp.dylib /usr/local/lib
-          ln -s /usr/local/opt/libomp/include/omp.h /usr/local/include
-          echo "LIBOMP_PATH=/usr/local/lib/libomp.dylib" >> $GITHUB_ENV
-          echo "OMP_NUM_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
-          cd ckzg && bash build.sh
-
-      - name: "[ckzg] Set environment variables"
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-        run: |
-          if [[ -z "$LIBOMP_PATH" ]]; then
-            echo "FAIL: LLVM OpenMP runtime was not found"
-            exit 1
-          fi
-          echo "RUSTFLAGS=-C link-arg="$LIBOMP_PATH"" >> $GITHUB_ENV
-
-      - name: "[ckzg] Benchmark"
-        uses: actions-rs/cargo@v1
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-        with:
-          command: bench
-          args: --manifest-path ckzg/Cargo.toml
-
-      - name: "[ckzg] Benchmark (parallel)"
-        uses: actions-rs/cargo@v1
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-        with:
-          command: bench
-          args: --manifest-path ckzg/Cargo.toml --features parallel
-
-      - name: "[ckzg] Unset environment variables"
-        run: |
-          echo "RUSTFLAGS=" >> $GITHUB_ENV
-          echo "LIBOMP_PATH=" >> $GITHUB_ENV
-
       # 5th team ###########################################################
 
       - name: "[mcl10-rust] Build native libs for Linux"

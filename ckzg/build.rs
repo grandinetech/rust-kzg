@@ -6,8 +6,8 @@ fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
 
     fs::copy(
-        format!("{cargo_manifest_dir}/0001-Bring-back-the-bytes-conversion-functions.patch"),
-        format!("{out_dir}/0001-Bring-back-the-bytes-conversion-functions.patch"),
+        format!("{cargo_manifest_dir}/c.patch"),
+        format!("{out_dir}/c.patch"),
     )
     .unwrap();
 
