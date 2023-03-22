@@ -271,6 +271,20 @@ pub fn compute_commitment_for_blobs_test<
         "Verification failed"
     );
 
+    //Prove when challenge is in domain
+    let x_in_domain = ts.get_expanded_roots_of_unity_at(1);
+
+    let proof_in_domain = compute_kzg_proof(&mut aggregated_poly, &x_in_domain, &ts);
+
+    // Verify proof
+
+    let y_in_domain = evaluate_polynomial_in_evaluation_form(&aggregated_poly, &x_in_domain, &ts);
+
+    assert!(
+        verify_kzg_proof(&simple_commitment, &x_in_domain, &y_in_domain, &proof_in_domain, &ts),
+        "Simple verification in domain failed"
+    );
+
     let mut x2_bytes: [u8; 32] = rng.gen();
     while x2_bytes == hashed_polynomial_and_commitment {
         x2_bytes = rng.gen();
