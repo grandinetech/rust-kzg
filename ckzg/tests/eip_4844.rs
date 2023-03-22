@@ -1,7 +1,5 @@
 #[cfg(test)]
-
 mod tests {
-
     use ckzg::{
         consts::{BlstP1, BlstP2},
         eip_4844::{

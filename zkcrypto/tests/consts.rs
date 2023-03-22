@@ -1,10 +1,9 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::consts::*;
     use zkcrypto::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
     use zkcrypto::fftsettings::ZkFFTSettings;
     use zkcrypto::zkfr::blsScalar;
-    // use zkcrypto::poly::Fr; // used for slices tests
 
     #[test]
     fn roots_of_unity_out_of_bounds_fails_() {

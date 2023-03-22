@@ -253,6 +253,10 @@ impl G1 for ZkG1Projective {
         self.double()
     }
 
+    fn add(&self, b: &Self) -> Self {
+        self + b
+    }
+
     fn sub(&self, b: &Self) -> Self {
         self + (-b)
     }

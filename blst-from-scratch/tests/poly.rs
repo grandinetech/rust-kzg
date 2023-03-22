@@ -2,7 +2,7 @@
 // pub mod local_poly;
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use blst_from_scratch::types::fft_settings::FsFFTSettings;
     use blst_from_scratch::types::fr::FsFr;
     use blst_from_scratch::types::poly::FsPoly;

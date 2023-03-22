@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
     use arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
     use arkworks::utils::PolyData;

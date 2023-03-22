@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use blst_from_scratch::consts::G1_GENERATOR;
     use blst_from_scratch::fft_g1::{fft_g1_fast, fft_g1_slow};
     use blst_from_scratch::types::fft_settings::FsFFTSettings;

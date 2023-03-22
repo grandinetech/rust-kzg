@@ -123,8 +123,7 @@ impl KZGSettings {
         for i in 0..n {
             g1_points[i] = &g1_gen * &secret_to_power;
             g2_points[i] = &g2_gen * &secret_to_power;
-
-            secret_to_power *= &secretfr;
+            secret_to_power *= &secretfr.unwrap();
         }
 
         (g1_points, g2_points)

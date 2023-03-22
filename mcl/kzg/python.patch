@@ -1,14 +1,32 @@
-From cae11ccc3ba8fa1c6878dbdc3b1c9d62b2862542 Mon Sep 17 00:00:00 2001
+From d538de5787d03c5a7069ed775b05b36ca644ba24 Mon Sep 17 00:00:00 2001
 From: belijzajac <tautvydas749@gmail.com>
-Date: Thu, 23 Feb 2023 12:41:51 +0200
+Date: Wed, 8 Mar 2023 13:42:45 +0200
 Subject: [PATCH] Update linking
 
 ---
+ bindings/python/Makefile | 5 +----
  bindings/python/setup.py | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
+diff --git a/bindings/python/Makefile b/bindings/python/Makefile
+index 8772100..635d1dd 100644
+--- a/bindings/python/Makefile
++++ b/bindings/python/Makefile
+@@ -1,11 +1,8 @@
+ .PHONY: all
+ all: install test ecc_test
+ 
+-../../src/c-kzg-4844.o:
+-	cd ../../src/ && make blst && make
+-
+ .PHONY: install
+-install: setup.py ckzg.c ../../src/c-kzg-4844.o
++install: setup.py ckzg.c
+ 	python3 setup.py install
+ 
+ .PHONY: test
 diff --git a/bindings/python/setup.py b/bindings/python/setup.py
-index bf969cb..a9230a6 100644
+index bf969cb..9179129 100644
 --- a/bindings/python/setup.py
 +++ b/bindings/python/setup.py
 @@ -8,11 +8,11 @@ def main():
@@ -23,9 +41,9 @@ index bf969cb..a9230a6 100644
 -                libraries=["blst"])])
 +                library_dirs=["../../lib", "../../../../../target/release"],
 +                libraries=["mcl_rust", "stdc++"])])
-
+ 
  if __name__ == "__main__":
      main()
---
+-- 
 2.39.2
 

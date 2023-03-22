@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::poly::*;
     use zkcrypto::fftsettings::ZkFFTSettings;
     use zkcrypto::poly::ZPoly;

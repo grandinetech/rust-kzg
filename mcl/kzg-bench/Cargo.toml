@@ -64,4 +64,3 @@ harness = false
 #[[bench]]
 #name = "bench_commits"
 #harness = false
-

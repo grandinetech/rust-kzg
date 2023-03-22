@@ -1,6 +1,6 @@
 use blst::{
-    blst_fp, blst_p1, blst_p1_add_or_double, blst_p1_cneg, blst_p1_double, blst_p1_is_equal,
-    blst_p1_is_inf, blst_p1_mult, blst_scalar, blst_scalar_from_fr,
+    blst_fp, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_cneg, blst_p1_double,
+    blst_p1_is_equal, blst_p1_is_inf, blst_p1_mult, blst_scalar, blst_scalar_from_fr,
 };
 use kzg::{G1Mul, G1};
 
@@ -55,6 +55,14 @@ impl G1 for FsG1 {
             blst_p1_double(&mut result, &self.0);
         }
         Self(result)
+    }
+
+    fn add(&self, b: &Self) -> Self {
+        let mut ret = Self::default();
+        unsafe {
+            blst_p1_add(&mut ret.0, &self.0, &b.0);
+        }
+        ret
     }
 
     fn sub(&self, b: &Self) -> Self {

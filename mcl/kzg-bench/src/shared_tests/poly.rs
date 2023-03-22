@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod poly_tests {
+mod poly_tests {
     use kzg_bench::tests::poly::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::fk20_fft::FFTSettings;

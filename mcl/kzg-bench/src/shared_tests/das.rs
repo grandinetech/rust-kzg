@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod das_tests {
+mod das_tests {
     use kzg_bench::tests::das::*;
     use mcl_rust::data_types::fr::Fr;
     use mcl_rust::fk20_fft::FFTSettings;

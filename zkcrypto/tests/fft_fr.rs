@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::fft_fr::*;
     use zkcrypto::fft_fr::{fft_fr_fast, fft_fr_slow};
     use zkcrypto::fftsettings::ZkFFTSettings;

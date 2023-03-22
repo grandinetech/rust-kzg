@@ -1,8 +1,8 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::bls12_381::*;
     use mcl_rust::data_types::fr::Fr;
-    use mcl_rust::data_types::g1::mclBnG1_mulVec;
+    use mcl_rust::data_types::g1::g1_linear_combination;
     use mcl_rust::data_types::g1::G1;
     use mcl_rust::data_types::g2::G2;
     use mcl_rust::kzg10::Curve;
@@ -134,9 +134,5 @@ pub mod tests {
     pub fn pairings_work_() {
         assert!(init(CurveType::BLS12_381));
         pairings_work::<Fr, G1, G2>(&Curve::verify_pairing);
-    }
-
-    fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: usize) {
-        unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
     }
 }

@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::kzg_proofs::*;
     use zkcrypto::fftsettings::ZkFFTSettings;
     use zkcrypto::kzg_proofs::{generate_trusted_setup, KZGSettings};

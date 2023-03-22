@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod kzg_proofs_tests {
+mod kzg_proofs_tests {
     use kzg_bench::tests::kzg_proofs::*;
     use mcl_rust::data_types::{fr::Fr, g1::G1, g2::G2};
     use mcl_rust::fk20_fft::FFTSettings;

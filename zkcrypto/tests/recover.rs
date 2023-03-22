@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod recover_tests {
+mod recover_tests {
     use kzg_bench::tests::recover::*;
     use zkcrypto::fftsettings::ZkFFTSettings;
     use zkcrypto::poly::ZPoly;

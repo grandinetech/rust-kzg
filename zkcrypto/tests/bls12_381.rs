@@ -1,5 +1,5 @@
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use kzg_bench::tests::bls12_381::*;
     use zkcrypto::kzg_types::{pairings_verify, ZkG1Projective, ZkG2Projective};
     use zkcrypto::utils::log_2_byte;
