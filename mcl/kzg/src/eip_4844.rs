@@ -13,7 +13,7 @@ use std::usize;
 
 pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> Result<G1, String> {
     set_eth_serialization(1);
-    let mut g1 = <G1 as kzg::G1>::default();
+    let mut g1 = G1::default();
     if !G1::deserialize(&mut g1, bytes) {
         return Err("failed to deserialize".to_string());
     }
@@ -142,7 +142,7 @@ pub fn bytes_from_bls_field(fr: &Fr) -> [u8; 32usize] {
 }
 
 pub fn g1_lincomb(points: &[G1], scalars: &[Fr], length: usize) -> G1 {
-    let mut out = <G1 as kzg::G1>::default();
+    let mut out = G1::default();
     g1_linear_combination(&mut out, points, scalars, length);
     out
 }
