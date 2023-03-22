@@ -1,0 +1,88 @@
+name: blst-from-scratch tests
+
+on: [push]
+
+env:
+  C_KZG_4844_GIT_HASH: '53b38face021d3c60d6d8d14ce3e92989cfea45a'
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-11]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install py_ecc
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.19
+
+      - name: "[blst-from-scratch][wasm32] Clippy"
+        # Apple's Clang doesn't support WASM, and we are lazy to install it
+        if: runner.os != 'macOS'
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path blst-from-scratch/Cargo.toml --target wasm32-unknown-unknown --no-default-features
+
+      - name: "[blst-from-scratch][wasm32] Build"
+        # Apple's Clang doesn't support WASM, and we are lazy to install it
+        if: runner.os != 'macOS'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path blst-from-scratch/Cargo.toml --target wasm32-unknown-unknown --no-default-features
+
+      - name: "[blst-from-scratch] Tests"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast
+
+      - name: "[blst-from-scratch] Tests (parallel)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
+
+      - name: "[blst-from-scratch] Tests (c-kzg-4844)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd blst-from-scratch && bash run-c-kzg-4844-tests.sh
+
+      - name: "[blst-from-scratch] Tests (c-kzg-4844 parallel)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd blst-from-scratch && bash run-c-kzg-4844-tests.sh --parallel
+
+      - name: "[blst-from-scratch] Clippy"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: "[blst-from-scratch] Formatting"
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path blst-from-scratch/Cargo.toml -- --check
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path kzg-bench/Cargo.toml -- --check
