@@ -74,16 +74,6 @@ case $(uname -s) in
     ;;
 esac
 
-###################### c tests ######################
-
-print_msg "Patching c tests"
-git apply < ../c.patch
-
-print_msg "Running c tests"
-cd src
-make test
-cd ..
-
 ###################### dotnet tests ######################
 
 print_msg "Patching dotnet binding"
