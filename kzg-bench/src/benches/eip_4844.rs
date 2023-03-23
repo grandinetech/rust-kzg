@@ -18,8 +18,8 @@ pub fn bench_eip_4844<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> TG1,
-    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
+    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> TG1,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
@@ -42,32 +42,15 @@ pub fn bench_eip_4844<
         })
         .collect();
 
-    let commitments: Vec<TG1> = (0..max_count)
-        .map(|_| {
-            let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
-                .chunks(32)
-                .map(|x| {
-                    let mut bytes = [0u8; 32];
-                    bytes.copy_from_slice(x);
-                    bytes_to_bls_field(&bytes).unwrap()
-                })
-                .collect();
-            blob_to_kzg_commitment(&blob, &ts)
-        })
+    let commitments: Vec<TG1> = blobs
+        .iter()
+        .map(|blob| blob_to_kzg_commitment(blob, &ts))
         .collect();
 
-    let proofs: Vec<TG1> = (0..max_count)
-        .map(|_| {
-            let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
-                .chunks(32)
-                .map(|x| {
-                    let mut bytes = [0u8; 32];
-                    bytes.copy_from_slice(x);
-                    bytes_to_bls_field(&bytes).unwrap()
-                })
-                .collect();
-            compute_blob_kzg_proof(&blob, &ts)
-        })
+    let proofs: Vec<TG1> = blobs
+        .iter()
+        .zip(commitments.iter())
+        .map(|(blob, commitment)| compute_blob_kzg_proof(blob, commitment, &ts))
         .collect();
 
     let fields: Vec<TFr> = (0..max_count)
@@ -86,7 +69,7 @@ pub fn bench_eip_4844<
     });
 
     c.bench_function("compute_blob_kzg_proof", |b| {
-        b.iter(|| compute_blob_kzg_proof(blobs.first().unwrap(), &ts))
+        b.iter(|| compute_blob_kzg_proof(blobs.first().unwrap(), commitments.first().unwrap(), &ts))
     });
 
     c.bench_function("verify_blob_kzg_proof", |b| {

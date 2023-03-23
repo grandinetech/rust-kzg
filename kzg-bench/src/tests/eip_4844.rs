@@ -141,7 +141,9 @@ pub fn compute_kzg_proof_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
     bytes_to_g1: &dyn Fn(&[u8; 48usize]) -> Result<TG1, String>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
+    blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
@@ -159,7 +161,7 @@ pub fn compute_kzg_proof_test<
     blob[0] = field_element;
 
     // Compute the KZG proof for the given blob & z
-    let proof = compute_kzg_proof(&blob, &input_value, &ts);
+    let (proof, output_value) = compute_kzg_proof(&blob, &input_value, &ts);
 
     // Compare the computed proof to the expected proof
     let expected_proof_bytes = bytes48_from_hex(
@@ -168,8 +170,15 @@ pub fn compute_kzg_proof_test<
     );
     let expected_proof = bytes_to_g1(&expected_proof_bytes).unwrap();
     assert!(proof.equals(&expected_proof));
+
+    // Get the expected y by evaluating the polynomial at input_value
+    let poly = blob_to_polynomial(&blob);
+    let expected_output_value = evaluate_polynomial_in_evaluation_form(&poly, &input_value, &ts);
+
+    assert!(output_value.equals(&expected_output_value));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn compute_and_verify_kzg_proof_round_trip_test<
     TFr: Fr,
     TG1: G1,
@@ -181,7 +190,7 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
     blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
@@ -206,7 +215,7 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     let commitment = blob_to_kzg_commitment(&blob, &ts);
 
     // Compute the proof
-    let proof = compute_kzg_proof(&blob, &z_fr, &ts);
+    let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts);
 
     // Now let's attempt to verify the proof
     // First convert the blob to field elements
@@ -215,11 +224,15 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     // Now evaluate the poly at `z` to learn `y`
     let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
 
+    // Compare the recently evaluated y to the computed y
+    assert!(y_fr.equals(&computed_y));
+
     // Finally verify the proof
     let result = verify_kzg_proof(&commitment, &z_fr, &y_fr, &proof, &ts);
     assert!(result);
 }
 
+#[allow(clippy::type_complexity)]
 pub fn compute_and_verify_kzg_proof_within_domain_test<
     TFr: Fr,
     TG1: G1,
@@ -231,7 +244,7 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
     blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
@@ -258,10 +271,13 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
 
         // Compute the proof
         let z_fr = ts.get_expanded_roots_of_unity_at(i);
-        let proof = compute_kzg_proof(&blob, &z_fr, &ts);
+        let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts);
 
         // Now evaluate the poly at `z` to learn `y`
         let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
+
+        // Compare the recently evaluated y to the computed y
+        assert!(y_fr.equals(&computed_y));
 
         // Finally verify the proof
         let result = verify_kzg_proof(&commitment, &z_fr, &y_fr, &proof, &ts);
@@ -269,6 +285,7 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     TFr: Fr,
     TG1: G1,
@@ -280,7 +297,7 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> TG1,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
     blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
@@ -305,7 +322,7 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     let commitment = blob_to_kzg_commitment(&blob, &ts);
 
     // Compute the proof
-    let mut proof = compute_kzg_proof(&blob, &z_fr, &ts);
+    let (mut proof, _) = compute_kzg_proof(&blob, &z_fr, &ts);
 
     // Now let's attempt to verify the proof
     // First convert the blob to field elements
@@ -334,14 +351,14 @@ pub fn compute_and_verify_blob_kzg_proof_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> TG1,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let mut rng = rand::thread_rng();
 
     // Some preparation
-    let mut rng = rand::thread_rng();
     let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
         .chunks(32)
         .map(|x| {
@@ -353,7 +370,7 @@ pub fn compute_and_verify_blob_kzg_proof_test<
 
     // Compute the proof
     let commitment = blob_to_kzg_commitment(&blob, &ts);
-    let proof = compute_blob_kzg_proof(&blob, &ts);
+    let proof = compute_blob_kzg_proof(&blob, &commitment, &ts);
 
     // Finally verify the proof
     let result = verify_blob_kzg_proof(&blob, &commitment, &proof, &ts);
@@ -372,14 +389,14 @@ pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> TG1,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let mut rng = rand::thread_rng();
 
     // Some preparation
-    let mut rng = rand::thread_rng();
     let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
         .chunks(32)
         .map(|x| {
@@ -391,7 +408,7 @@ pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
 
     // Compute the proof
     let commitment = blob_to_kzg_commitment(&blob, &ts);
-    let mut proof = compute_blob_kzg_proof(&blob, &ts);
+    let mut proof = compute_blob_kzg_proof(&blob, &commitment, &ts);
 
     // Change the proof so it should not verify
     proof = proof.add(&TG1::generator());
@@ -413,7 +430,7 @@ pub fn verify_kzg_proof_batch_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> TG1,
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
     const N_SAMPLES: usize = 16;
@@ -424,10 +441,10 @@ pub fn verify_kzg_proof_batch_test<
 
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let mut rng = rand::thread_rng();
 
     // Some preparation
     for _ in 0..N_SAMPLES {
-        let mut rng = rand::thread_rng();
         let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
             .chunks(32)
             .map(|x| {
@@ -438,7 +455,7 @@ pub fn verify_kzg_proof_batch_test<
             .collect();
 
         let commitment = blob_to_kzg_commitment(&blob, &ts);
-        let proof = compute_blob_kzg_proof(&blob, &ts);
+        let proof = compute_blob_kzg_proof(&blob, &commitment, &ts);
 
         blobs.push(blob);
         commitments.push(commitment);
@@ -470,7 +487,7 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
-    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> TG1,
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
     const N_SAMPLES: usize = 2;
@@ -481,10 +498,10 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
 
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let mut rng = rand::thread_rng();
 
     // Some preparation
     for _ in 0..N_SAMPLES {
-        let mut rng = rand::thread_rng();
         let blob: Vec<TFr> = generate_random_blob_raw(&mut rng)
             .chunks(32)
             .map(|x| {
@@ -495,7 +512,7 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
             .collect();
 
         let commitment = blob_to_kzg_commitment(&blob, &ts);
-        let proof = compute_blob_kzg_proof(&blob, &ts);
+        let proof = compute_blob_kzg_proof(&blob, &commitment, &ts);
 
         blobs.push(blob);
         commitments.push(commitment);
