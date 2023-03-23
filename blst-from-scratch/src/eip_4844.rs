@@ -178,25 +178,21 @@ pub fn load_trusted_setup_filename_rust(filename: &str) -> FsKZGSettings {
 }
 
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
-    let prod: &mut Vec<FsFr> = &mut vec![FsFr::default(); len];
-    let mut i: usize = 1;
+    assert!(len > 0);
 
-    prod[0] = a[0];
+    let mut accumulator = FsFr::one();
 
-    while i < len {
-        prod[i] = a[i].mul(&prod[i - 1]);
-        i += 1;
+    for i in 0..len {
+        out[i] = accumulator;
+        accumulator = accumulator.mul(&a[i]);
     }
 
-    let inv: &mut FsFr = &mut prod[len - 1].eucl_inverse();
+    accumulator = accumulator.eucl_inverse();
 
-    i = len - 1;
-    while i > 0 {
-        out[i] = prod[i - 1].mul(inv);
-        *inv = a[i].mul(inv);
-        i -= 1;
+    for i in (0..len).rev() {
+        out[i] = out[i].mul(&accumulator);
+        accumulator = accumulator.mul(&a[i]);
     }
-    out[0] = *inv;
 }
 
 pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> Result<FsFr, u8> {
@@ -231,7 +227,7 @@ pub fn verify_kzg_proof_rust(
 
 pub fn verify_kzg_proof_batch(
     commitments_g1: &[FsG1],
-    evaluation_challenges_fr: &[FsFr],
+    zs_fr: &[FsFr],
     ys_fr: &[FsFr],
     proofs_g1: &[FsG1],
     ts: &FsKZGSettings,
@@ -241,7 +237,7 @@ pub fn verify_kzg_proof_batch(
     let mut r_times_z: Vec<FsFr> = Vec::new();
 
     // Compute the random lincomb challenges
-    let r_powers = compute_r_powers(commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1);
+    let r_powers = compute_r_powers(commitments_g1, zs_fr, ys_fr, proofs_g1);
 
     // Compute \sum r^i * Proof_i
     let proof_lincomb = g1_lincomb(proofs_g1, &r_powers, n);
@@ -252,7 +248,7 @@ pub fn verify_kzg_proof_batch(
         // Get C_i - [y_i]
         c_minus_y.push(commitments_g1[i].sub(&ys_encrypted));
         // Get r^i * z_i
-        r_times_z.push(r_powers[i].mul(&evaluation_challenges_fr[i]));
+        r_times_z.push(r_powers[i].mul(&zs_fr[i]));
     }
 
     // Get \sum r^i z_i Proof_i
@@ -272,7 +268,7 @@ pub fn verify_kzg_proof_batch(
     )
 }
 
-pub fn compute_kzg_proof_rust(blob: &[FsFr], z: &FsFr, s: &FsKZGSettings) -> FsG1 {
+pub fn compute_kzg_proof_rust(blob: &[FsFr], z: &FsFr, s: &FsKZGSettings) -> (FsG1, FsFr) {
     assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
 
     let polynomial = blob_to_polynomial_rust(blob);
@@ -306,8 +302,8 @@ pub fn compute_kzg_proof_rust(blob: &[FsFr], z: &FsFr, s: &FsKZGSettings) -> FsG
         q.coeffs[i] = q.coeffs[i].mul(inverse);
     }
 
-    if m > 0 {
-        // ω_m == x
+    if m != 0 {
+        // ω_{m-1} == z
         m -= 1;
         q.coeffs[m] = FsFr::zero();
         for i in 0..FIELD_ELEMENTS_PER_BLOB {
@@ -334,7 +330,8 @@ pub fn compute_kzg_proof_rust(blob: &[FsFr], z: &FsFr, s: &FsKZGSettings) -> FsG
         }
     }
 
-    g1_lincomb(&s.secret_g1, &q.coeffs, FIELD_ELEMENTS_PER_BLOB)
+    let proof = g1_lincomb(&s.secret_g1, &q.coeffs, FIELD_ELEMENTS_PER_BLOB);
+    (proof, y)
 }
 
 pub fn evaluate_polynomial_in_evaluation_form_rust(
@@ -439,7 +436,7 @@ pub fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
 
 pub fn compute_r_powers(
     commitments_g1: &[FsG1],
-    evaluation_challenges_fr: &[FsFr],
+    zs_fr: &[FsFr],
     ys_fr: &[FsFr],
     proofs_g1: &[FsG1],
 ) -> Vec<FsFr> {
@@ -464,7 +461,7 @@ pub fn compute_r_powers(
         offset += BYTES_PER_COMMITMENT;
 
         // Copy evaluation challenge
-        let v = bytes_from_bls_field(&evaluation_challenges_fr[i]);
+        let v = bytes_from_bls_field(&zs_fr[i]);
         bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
@@ -500,11 +497,10 @@ fn poly_to_kzg_commitment(p: &FsPoly, s: &FsKZGSettings) -> FsG1 {
     g1_lincomb(&s.secret_g1, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
 }
 
-pub fn compute_blob_kzg_proof_rust(blob: &[FsFr], ts: &FsKZGSettings) -> FsG1 {
-    let polynomial = blob_to_polynomial_rust(blob);
-    let commitment_g1 = poly_to_kzg_commitment(&polynomial, ts);
-    let evaluation_challenge_fr = compute_challenge(blob, &commitment_g1);
-    compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts)
+pub fn compute_blob_kzg_proof_rust(blob: &[FsFr], commitment: &FsG1, ts: &FsKZGSettings) -> FsG1 {
+    let evaluation_challenge_fr = compute_challenge(blob, commitment);
+    let (proof, _) = compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts);
+    proof
 }
 
 pub fn verify_blob_kzg_proof_rust(
@@ -842,15 +838,23 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
     blob: *const Blob,
+    commitment_bytes: *mut Bytes48,
     s: &CFsKzgSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = deserialize_blob(blob);
     if deserialized_blob.is_err() {
         return deserialized_blob.err().unwrap();
     }
-    let commitment_g1 =
-        compute_blob_kzg_proof_rust(&deserialized_blob.unwrap(), &kzg_settings_to_rust(s));
-    (*out).bytes = bytes_from_g1_rust(&commitment_g1);
+    let commitment_g1 = bytes_to_g1_rust(&(*commitment_bytes).bytes);
+    if commitment_g1.is_err() {
+        return C_KZG_RET_C_KZG_BADARGS;
+    }
+    let proof = compute_blob_kzg_proof_rust(
+        &deserialized_blob.unwrap(),
+        &commitment_g1.unwrap(),
+        &kzg_settings_to_rust(s),
+    );
+    (*out).bytes = bytes_from_g1_rust(&proof);
     C_KZG_RET_C_KZG_OK
 }
 
@@ -886,7 +890,7 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
 ///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn verify_kzg_proof(
-    out: *mut bool,
+    ok: *mut bool,
     commitment_bytes: *const Bytes48,
     z_bytes: *const Bytes32,
     y_bytes: *const Bytes32,
@@ -902,7 +906,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
         return C_KZG_RET_C_KZG_BADARGS;
     }
 
-    *out = verify_kzg_proof_rust(
+    *ok = verify_kzg_proof_rust(
         &g1commitment.unwrap(),
         &frz.unwrap(),
         &fry.unwrap(),
@@ -994,7 +998,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
 ///
 /// This function should not be called before the horsemen are ready
 pub unsafe extern "C" fn compute_kzg_proof(
-    out: *mut KZGProof,
+    proof_out: *mut KZGProof,
+    y_out: *mut Bytes32,
     blob: *const Blob,
     z_bytes: *const Bytes32,
     s: &CFsKzgSettings,
@@ -1007,12 +1012,13 @@ pub unsafe extern "C" fn compute_kzg_proof(
     if frz.is_err() {
         return frz.err().unwrap() as C_KZG_RET;
     }
-    let tmp = compute_kzg_proof_rust(
+    let (proof_out_tmp, fry_tmp) = compute_kzg_proof_rust(
         &deserialized_blob.unwrap(),
         &frz.unwrap(),
         &kzg_settings_to_rust(s),
     );
-    (*out).bytes = bytes_from_g1_rust(&tmp);
+    (*proof_out).bytes = bytes_from_g1_rust(&proof_out_tmp);
+    (*y_out).bytes = bytes_from_bls_field(&fry_tmp);
     C_KZG_RET_C_KZG_OK
 }
 

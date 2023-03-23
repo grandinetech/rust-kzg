@@ -54,6 +54,8 @@ mod tests {
             &bytes_to_bls_field_rust,
             &bytes_to_g1_rust,
             &compute_kzg_proof_rust,
+            &blob_to_polynomial_rust,
+            &evaluate_polynomial_in_evaluation_form_rust,
         );
     }
 
