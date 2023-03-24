@@ -39,6 +39,8 @@ mod tests {
             &bytes_to_bls_field,
             &bytes_to_g1,
             &compute_kzg_proof,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
         );
     }
 

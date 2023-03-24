@@ -116,25 +116,21 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
 }
 
 pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
-    let prod: &mut Vec<blsScalar> = &mut vec![blsScalar::default(); len];
-    let mut i: usize = 1;
+    assert!(len > 0);
 
-    prod[0] = a[0];
+    let mut accumulator = blsScalar::one();
 
-    while i < len {
-        prod[i] = a[i].mul(&prod[i - 1]);
-        i += 1;
+    for i in 0..len {
+        out[i] = accumulator;
+        accumulator = accumulator.mul(&a[i]);
     }
 
-    let inv: &mut blsScalar = &mut prod[len - 1].eucl_inverse();
+    accumulator = accumulator.eucl_inverse();
 
-    i = len - 1;
-    while i > 0 {
-        out[i] = prod[i - 1].mul(inv);
-        *inv = a[i].mul(inv);
-        i -= 1;
+    for i in (0..len).rev() {
+        out[i] = out[i].mul(&accumulator);
+        accumulator = accumulator.mul(&a[i]);
     }
-    out[0] = *inv;
 }
 
 pub fn g1_lincomb(
@@ -186,7 +182,7 @@ pub fn verify_kzg_proof(
 
 pub fn verify_kzg_proof_batch(
     commitments_g1: &[ZkG1Projective],
-    evaluation_challenges_fr: &[blsScalar],
+    zs_fr: &[blsScalar],
     ys_fr: &[blsScalar],
     proofs_g1: &[ZkG1Projective],
     ts: &KZGSettings,
@@ -196,7 +192,7 @@ pub fn verify_kzg_proof_batch(
     let mut r_times_z: Vec<blsScalar> = Vec::new();
 
     // Compute the random lincomb challenges
-    let r_powers = compute_r_powers(commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1);
+    let r_powers = compute_r_powers(commitments_g1, zs_fr, ys_fr, proofs_g1);
 
     // Compute \sum r^i * Proof_i
     let proof_lincomb = g1_lincomb(proofs_g1, &r_powers, n);
@@ -207,7 +203,7 @@ pub fn verify_kzg_proof_batch(
         // Get C_i - [y_i]
         c_minus_y.push(commitments_g1[i].sub(&ys_encrypted));
         // Get r^i * z_i
-        r_times_z.push(r_powers[i].mul(&evaluation_challenges_fr[i]));
+        r_times_z.push(r_powers[i].mul(&zs_fr[i]));
     }
 
     // Get \sum r^i z_i Proof_i
@@ -227,7 +223,11 @@ pub fn verify_kzg_proof_batch(
     )
 }
 
-pub fn compute_kzg_proof(blob: &[blsScalar], z: &blsScalar, s: &KZGSettings) -> ZkG1Projective {
+pub fn compute_kzg_proof(
+    blob: &[blsScalar],
+    z: &blsScalar,
+    s: &KZGSettings,
+) -> (ZkG1Projective, blsScalar) {
     assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
 
     let polynomial = blob_to_polynomial(blob);
@@ -261,8 +261,8 @@ pub fn compute_kzg_proof(blob: &[blsScalar], z: &blsScalar, s: &KZGSettings) -> 
         q.coeffs[i] = q.coeffs[i].mul(inverse);
     }
 
-    if m > 0 {
-        // ω_m == x
+    if m != 0 {
+        // ω_{m-1} == z
         m -= 1;
         q.coeffs[m] = blsScalar::zero();
         for i in 0..FIELD_ELEMENTS_PER_BLOB {
@@ -289,7 +289,8 @@ pub fn compute_kzg_proof(blob: &[blsScalar], z: &blsScalar, s: &KZGSettings) -> 
         }
     }
 
-    g1_lincomb(&s.secret_g1, &q.coeffs, FIELD_ELEMENTS_PER_BLOB)
+    let proof = g1_lincomb(&s.secret_g1, &q.coeffs, FIELD_ELEMENTS_PER_BLOB);
+    (proof, y)
 }
 
 pub fn evaluate_polynomial_in_evaluation_form(
@@ -361,7 +362,7 @@ fn compute_challenge(blob: &[blsScalar], commitment: &ZkG1Projective) -> blsScal
 
 fn compute_r_powers(
     commitments_g1: &[ZkG1Projective],
-    evaluation_challenges_fr: &[blsScalar],
+    zs_fr: &[blsScalar],
     ys_fr: &[blsScalar],
     proofs_g1: &[ZkG1Projective],
 ) -> Vec<blsScalar> {
@@ -386,7 +387,7 @@ fn compute_r_powers(
         offset += BYTES_PER_COMMITMENT;
 
         // Copy evaluation challenge
-        let v = bytes_from_bls_field(&evaluation_challenges_fr[i]);
+        let v = bytes_from_bls_field(&zs_fr[i]);
         bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
@@ -422,11 +423,14 @@ fn poly_to_kzg_commitment(p: &KzgPoly, s: &KZGSettings) -> ZkG1Projective {
     g1_lincomb(&s.secret_g1, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
 }
 
-pub fn compute_blob_kzg_proof(blob: &[blsScalar], ts: &KZGSettings) -> ZkG1Projective {
-    let polynomial = blob_to_polynomial(blob);
-    let commitment_g1 = poly_to_kzg_commitment(&polynomial, ts);
-    let evaluation_challenge_fr = compute_challenge(blob, &commitment_g1);
-    compute_kzg_proof(blob, &evaluation_challenge_fr, ts)
+pub fn compute_blob_kzg_proof(
+    blob: &[blsScalar],
+    commitment: &ZkG1Projective,
+    ts: &KZGSettings,
+) -> ZkG1Projective {
+    let evaluation_challenge_fr = compute_challenge(blob, commitment);
+    let (proof, _) = compute_kzg_proof(blob, &evaluation_challenge_fr, ts);
+    proof
 }
 
 pub fn verify_blob_kzg_proof(

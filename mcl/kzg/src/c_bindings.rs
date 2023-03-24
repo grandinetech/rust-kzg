@@ -264,6 +264,7 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut KZGSettings) {
 pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
     blob: *const Blob,
+    commitment_bytes: *const Bytes48,
     s: &KZGSettings,
 ) -> C_KZG_RET {
     assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
@@ -272,9 +273,17 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     if deserialized_blob.is_err() {
         return deserialized_blob.err().unwrap();
     }
+    let commitment_g1 = crate::eip_4844::bytes_to_g1(&(*commitment_bytes).bytes);
+    if commitment_g1.is_err() {
+        return C_KZG_RET_C_KZG_BADARGS;
+    }
     let ms = cks_to_ks(s);
-    let commitment_g1 = crate::eip_4844::compute_blob_kzg_proof(&deserialized_blob.unwrap(), &ms);
-    (*out).bytes = crate::eip_4844::bytes_from_g1(&commitment_g1);
+    let proof = crate::eip_4844::compute_blob_kzg_proof(
+        &deserialized_blob.unwrap(),
+        &commitment_g1.unwrap(),
+        &ms,
+    );
+    (*out).bytes = crate::eip_4844::bytes_from_g1(&proof);
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK
@@ -384,7 +393,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
 /// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn verify_kzg_proof(
-    out: *mut bool,
+    ok: *mut bool,
     commitment_bytes: *const Bytes48,
     z_bytes: *const Bytes32,
     y_bytes: *const Bytes32,
@@ -403,7 +412,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
     }
 
     let ms = cks_to_ks(s);
-    *out = crate::eip_4844::verify_kzg_proof(
+    *ok = crate::eip_4844::verify_kzg_proof(
         &g1commitment.unwrap(),
         &frz.unwrap(),
         &fry.unwrap(),
@@ -418,7 +427,8 @@ pub unsafe extern "C" fn verify_kzg_proof(
 /// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn compute_kzg_proof(
-    out: *mut KZGProof,
+    proof_out: *mut KZGProof,
+    y_out: *mut Bytes32,
     blob: *const Blob,
     z_bytes: *const Bytes32,
     s: *const KZGSettings,
@@ -434,8 +444,10 @@ pub unsafe extern "C" fn compute_kzg_proof(
         return frz.err().unwrap() as C_KZG_RET;
     }
     let ms = cks_to_ks(s);
-    let tmp = crate::eip_4844::compute_kzg_proof(&deserialized_blob.unwrap(), &frz.unwrap(), &ms);
-    (*out).bytes = crate::eip_4844::bytes_from_g1(&tmp);
+    let (proof_out_tmp, fry_tmp) =
+        crate::eip_4844::compute_kzg_proof(&deserialized_blob.unwrap(), &frz.unwrap(), &ms);
+    (*proof_out).bytes = crate::eip_4844::bytes_from_g1(&proof_out_tmp);
+    (*y_out).bytes = crate::eip_4844::bytes_from_bls_field(&fry_tmp);
     std::mem::forget(ms);
 
     C_KZG_RET_C_KZG_OK

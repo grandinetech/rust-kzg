@@ -152,13 +152,13 @@ pub fn blob_to_kzg_commitment(blob: &[Fr], s: &KZGSettings) -> G1 {
     poly_to_kzg_commitment(&p, s)
 }
 
-pub fn verify_kzg_proof(commitment: &G1, x: &Fr, y: &Fr, proof: &G1, ks: &KZGSettings) -> bool {
-    ks.curve.is_proof_valid(commitment, proof, x, y)
+pub fn verify_kzg_proof(commitment: &G1, z: &Fr, y: &Fr, proof: &G1, ks: &KZGSettings) -> bool {
+    ks.curve.is_proof_valid(commitment, proof, z, y)
 }
 
 pub fn verify_kzg_proof_batch(
     commitments_g1: &[G1],
-    evaluation_challenges_fr: &[Fr],
+    zs_fr: &[Fr],
     ys_fr: &[Fr],
     proofs_g1: &[G1],
     ts: &KZGSettings,
@@ -168,7 +168,7 @@ pub fn verify_kzg_proof_batch(
     let mut r_times_z: Vec<Fr> = Vec::new();
 
     // Compute the random lincomb challenges
-    let r_powers = compute_r_powers(commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1);
+    let r_powers = compute_r_powers(commitments_g1, zs_fr, ys_fr, proofs_g1);
 
     // Compute \sum r^i * Proof_i
     let proof_lincomb = g1_lincomb(proofs_g1, &r_powers, n);
@@ -179,7 +179,7 @@ pub fn verify_kzg_proof_batch(
         // Get C_i - [y_i]
         c_minus_y.push(commitments_g1[i] - ys_encrypted);
         // Get r^i * z_i
-        r_times_z.push(r_powers[i] * evaluation_challenges_fr[i]);
+        r_times_z.push(r_powers[i] * zs_fr[i]);
     }
 
     // Get \sum r^i z_i Proof_i
@@ -194,7 +194,7 @@ pub fn verify_kzg_proof_batch(
     Curve::verify_pairing(&proof_lincomb, &ts.curve.g2_points[1], &rhs_g1, &G2::gen())
 }
 
-pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> G1 {
+pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> (G1, Fr) {
     assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
 
     let polynomial = blob_to_polynomial(blob);
@@ -228,8 +228,8 @@ pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> G1 {
         q.coeffs[i] = &q.coeffs[i] * inverse;
     }
 
-    if m > 0 {
-        // ω_m == x
+    if m != 0 {
+        // ω_{m-1} == z
         m -= 1;
         q.coeffs[m] = Fr::zero();
         for i in 0..FIELD_ELEMENTS_PER_BLOB {
@@ -256,11 +256,12 @@ pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> G1 {
         }
     }
 
-    g1_lincomb(
+    let proof = g1_lincomb(
         &s.curve.g1_points,
         q.coeffs.as_slice(),
         FIELD_ELEMENTS_PER_BLOB,
-    )
+    );
+    (proof, y)
 }
 
 pub fn evaluate_polynomial_in_evaluation_form(p: &Polynomial, x: &Fr, s: &KZGSettings) -> Fr {
@@ -327,28 +328,27 @@ pub fn hash_to_bls_field(x: &[u8; 32]) -> Fr {
 }
 
 fn fr_batch_inv(out: &mut [Fr], a: &[Fr], len: usize) {
-    let mut prod = vec![Fr::default(); len];
-    prod[0] = a[0];
+    assert!(len > 0);
 
-    for i in 1..len {
-        let t = prod[i - 1];
-        prod[i] = a[i] * t;
+    let mut accumulator = Fr::one();
+
+    for i in 0..len {
+        out[i] = accumulator;
+        accumulator = accumulator * a[i];
     }
 
-    let mut inv = prod[len - 1].inverse();
+    accumulator = accumulator.inverse();
 
-    for i in (1..len).rev() {
-        out[i] = inv * prod[i - 1];
-        inv = a[i] * inv;
+    for i in (0..len).rev() {
+        out[i] = out[i] * accumulator;
+        accumulator = accumulator * a[i];
     }
-    out[0] = inv;
 }
 
-pub fn compute_blob_kzg_proof(blob: &[Fr], s: &KZGSettings) -> G1 {
-    let polynomial = blob_to_polynomial(blob);
-    let commitment_g1 = poly_to_kzg_commitment(&polynomial, s);
-    let evaluation_challenge_fr = compute_challenge(blob, &commitment_g1);
-    compute_kzg_proof(blob, &evaluation_challenge_fr, s)
+pub fn compute_blob_kzg_proof(blob: &[Fr], commitment: &G1, s: &KZGSettings) -> G1 {
+    let evaluation_challenge_fr = compute_challenge(blob, commitment);
+    let (proof, _) = compute_kzg_proof(blob, &evaluation_challenge_fr, s);
+    proof
 }
 
 pub fn verify_blob_kzg_proof(
@@ -425,7 +425,7 @@ pub fn compute_challenge(blob: &[Fr], commitment: &G1) -> Fr {
 
 pub fn compute_r_powers(
     commitments_g1: &[G1],
-    evaluation_challenges_fr: &[Fr],
+    zs_fr: &[Fr],
     ys_fr: &[Fr],
     proofs_g1: &[G1],
 ) -> Vec<Fr> {
@@ -450,7 +450,7 @@ pub fn compute_r_powers(
         offset += BYTES_PER_COMMITMENT;
 
         // Copy evaluation challenge
-        let v = bytes_from_bls_field(&evaluation_challenges_fr[i]);
+        let v = bytes_from_bls_field(&zs_fr[i]);
         bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
