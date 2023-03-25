@@ -1,12 +1,9 @@
 #![allow(non_camel_case_types)]
 use crate::data_types::{fp::*, fr::*, g1::*, g2::*};
-use crate::eip_4844::{BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB};
+use crate::eip_4844::FIELD_ELEMENTS_PER_BLOB;
 use crate::fk20_fft::FFTSettings as mFFTSettings;
-use crate::kzg10::Polynomial;
 use crate::kzg_settings::KZGSettings as mKZGSettings;
-use kzg::Poly;
 use std::boxed::Box;
-use std::convert::TryInto;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
 pub type limb_t = u64;
@@ -191,15 +188,6 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<Fr>, C_KZG_RET> {
             //}
         })
         .collect::<Result<Vec<Fr>, C_KZG_RET>>()
-}
-
-fn cpoly_to_poly(c_poly: &CPolynomial) -> Polynomial {
-    let c_poly_coeffs = c_poly.evals;
-    let mut poly_rust = Polynomial::new(c_poly_coeffs.len());
-    for (pos, e) in c_poly_coeffs.iter().enumerate() {
-        poly_rust.set_coeff_at(pos, &Fr { d: e.l });
-    }
-    poly_rust
 }
 
 /// # Safety
@@ -449,60 +437,6 @@ pub unsafe extern "C" fn compute_kzg_proof(
     (*proof_out).bytes = crate::eip_4844::bytes_from_g1(&proof_out_tmp);
     (*y_out).bytes = crate::eip_4844::bytes_from_bls_field(&fry_tmp);
     std::mem::forget(ms);
-
-    C_KZG_RET_C_KZG_OK
-}
-
-/// # Safety
-#[no_mangle]
-pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
-    out: *mut blst_fr,
-    p: &CPolynomial,
-    x: &blst_fr,
-    s: &KZGSettings,
-) -> C_KZG_RET {
-    assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-
-    let poly = cpoly_to_poly(p);
-    let frx = Fr { d: x.l };
-    let ms = cks_to_ks(s);
-    let result = crate::eip_4844::evaluate_polynomial_in_evaluation_form(&poly, &frx, &ms);
-    *out = blst_fr { l: result.d };
-    std::mem::forget(ms);
-
-    C_KZG_RET_C_KZG_OK
-}
-
-/// # Safety
-#[no_mangle]
-pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, b: &Bytes32) -> C_KZG_RET {
-    assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-    let fr = crate::eip_4844::bytes_to_bls_field(&b.bytes);
-    if fr.is_err() {
-        return fr.err().unwrap() as C_KZG_RET;
-    }
-    *out = blst_fr { l: fr.unwrap().d };
-    C_KZG_RET_C_KZG_OK
-}
-
-/// # Safety
-#[no_mangle]
-pub unsafe extern "C" fn blob_to_polynomial(p: *mut CPolynomial, blob: *const Blob) -> C_KZG_RET {
-    assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
-
-    for i in 0..FIELD_ELEMENTS_PER_BLOB {
-        let start = i * BYTES_PER_FIELD_ELEMENT;
-        let bytes_array: [u8; BYTES_PER_FIELD_ELEMENT] = (*blob).bytes
-            [start..(start + BYTES_PER_FIELD_ELEMENT)]
-            .try_into()
-            .unwrap();
-        let bytes = Bytes32 { bytes: bytes_array };
-        let fr = crate::eip_4844::bytes_to_bls_field(&bytes.bytes);
-        if fr.is_err() {
-            return fr.err().unwrap() as C_KZG_RET;
-        }
-        (*p).evals[i] = blst_fr { l: fr.unwrap().d };
-    }
 
     C_KZG_RET_C_KZG_OK
 }

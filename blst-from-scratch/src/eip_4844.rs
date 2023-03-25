@@ -39,8 +39,8 @@ use crate::types::poly::FsPoly;
 
 use crate::utils::reverse_bit_order;
 
-// Currently, we only support MAINNET trusted setups with 4096 (FIELD_ELEMENTS_PER_BLOB) G1 points.
-// The problem occurs when a binding using the C API attempts to load a MINIMAL trusted setup with fewer G1 points.
+// Currently, we only support fixed G1 and G2 point quantities in trusted setups.
+// Issue arises when a binding using the C API loads different G1 and G2 point quantities each time.
 static mut TRUSTED_SETUP_NUM_G1_POINTS: usize = 0;
 
 pub fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
@@ -705,15 +705,6 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CFsKzgSettings {
     }
 }
 
-fn poly_to_rust(c_poly: &CFsPoly) -> FsPoly {
-    let c_poly_coeffs = c_poly.evals;
-    let mut poly_rust = FsPoly::new(c_poly_coeffs.len()).unwrap();
-    for (pos, e) in c_poly_coeffs.iter().enumerate() {
-        poly_rust.set_coeff_at(pos, &FsFr(*e));
-    }
-    poly_rust
-}
-
 unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, C_KZG_RET> {
     (*blob)
         .bytes
@@ -776,14 +767,14 @@ pub unsafe extern "C" fn load_trusted_setup_file(
     let s = String::from_utf8(buf[..len].to_vec()).unwrap();
     let (g1_bytes, g2_bytes) = load_trusted_setup_string(&s);
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
-    let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
-    *out = kzg_settings_to_c(&settings);
     if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
         // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
         // as well as 5 others that pass only if this one passes (likely because Java doesn't
         // deallocate its KZGSettings pointer when no exception is thrown).
         return C_KZG_RET_C_KZG_BADARGS;
     }
+    let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
+    *out = kzg_settings_to_c(&settings);
     C_KZG_RET_C_KZG_OK
 }
 
@@ -969,52 +960,5 @@ pub unsafe extern "C" fn compute_kzg_proof(
     );
     (*proof_out).bytes = bytes_from_g1_rust(&proof_out_tmp);
     (*y_out).bytes = bytes_from_bls_field(&fry_tmp);
-    C_KZG_RET_C_KZG_OK
-}
-
-/// # Safety
-#[no_mangle]
-pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
-    out: *mut blst_fr,
-    p: &CFsPoly,
-    x: &blst_fr,
-    s: &CFsKzgSettings,
-) -> C_KZG_RET {
-    *out = evaluate_polynomial_in_evaluation_form_rust(
-        &poly_to_rust(p),
-        &FsFr(*x),
-        &kzg_settings_to_rust(s),
-    )
-    .0;
-    C_KZG_RET_C_KZG_OK
-}
-
-/// # Safety
-#[no_mangle]
-pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, b: &Bytes32) -> C_KZG_RET {
-    let fr = bytes_to_bls_field_rust(&b.bytes);
-    if fr.is_err() {
-        return fr.err().unwrap() as C_KZG_RET;
-    }
-    *out = fr.unwrap().0;
-    C_KZG_RET_C_KZG_OK
-}
-
-/// # Safety
-#[no_mangle]
-pub unsafe extern "C" fn blob_to_polynomial(p: *mut CFsPoly, blob: *const Blob) -> C_KZG_RET {
-    for i in 0..FIELD_ELEMENTS_PER_BLOB {
-        let start = i * BYTES_PER_FIELD_ELEMENT;
-        let bytes_array: [u8; BYTES_PER_FIELD_ELEMENT] = (*blob).bytes
-            [start..(start + BYTES_PER_FIELD_ELEMENT)]
-            .try_into()
-            .unwrap();
-        let bytes = Bytes32 { bytes: bytes_array };
-        let fr = bytes_to_bls_field_rust(&bytes.bytes);
-        if fr.is_err() {
-            return fr.err().unwrap() as C_KZG_RET;
-        }
-        (*p).evals[i] = fr.unwrap().0;
-    }
     C_KZG_RET_C_KZG_OK
 }
