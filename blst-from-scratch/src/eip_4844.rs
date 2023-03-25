@@ -9,11 +9,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::ffi::c_uint;
 #[cfg(feature = "std")]
-use core::ffi::{c_char, c_ulong};
-#[cfg(feature = "std")]
-use core::ptr::null_mut;
-#[cfg(feature = "std")]
-use libc::{fgetc, fgets, strtoul, EOF, FILE};
+use libc::FILE;
 #[cfg(feature = "std")]
 use std::fs::File;
 #[cfg(feature = "std")]
@@ -43,7 +39,11 @@ use crate::types::poly::FsPoly;
 
 use crate::utils::reverse_bit_order;
 
-pub fn bytes_to_g1_rust(bytes: &[u8; 48]) -> Result<FsG1, String> {
+// Currently, we only support MAINNET trusted setups with 4096 (FIELD_ELEMENTS_PER_BLOB) G1 points.
+// The problem occurs when a binding using the C API attempts to load a MINIMAL trusted setup with fewer G1 points.
+static mut TRUSTED_SETUP_NUM_G1_POINTS: usize = 0;
+
+pub fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
     unsafe {
@@ -60,15 +60,15 @@ pub fn bytes_to_g1_rust(bytes: &[u8; 48]) -> Result<FsG1, String> {
     Ok(FsG1(g1))
 }
 
-pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; 48] {
-    let mut out = [0u8; 48];
+pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; BYTES_PER_G1] {
+    let mut out = [0u8; BYTES_PER_G1];
     unsafe {
         blst_p1_compress(out.as_mut_ptr(), &g1.0);
     }
     out
 }
 
-pub fn bytes_to_g2_rust(bytes: &[u8; 96]) -> Result<FsG2, String> {
+pub fn bytes_to_g2_rust(bytes: &[u8; BYTES_PER_G2]) -> Result<FsG2, String> {
     let mut tmp = blst_p2_affine::default();
     let mut g2 = blst_p2::default();
     unsafe {
@@ -80,22 +80,17 @@ pub fn bytes_to_g2_rust(bytes: &[u8; 96]) -> Result<FsG2, String> {
     Ok(FsG2(g2))
 }
 
-pub fn bytes_from_g2_rust(g2: &FsG2) -> [u8; 96] {
-    let mut out = [0; 96];
+pub fn bytes_from_g2_rust(g2: &FsG2) -> [u8; BYTES_PER_G2] {
+    let mut out = [0; BYTES_PER_G2];
     unsafe {
         blst_p2_compress(out.as_mut_ptr(), &g2.0);
     }
     out
 }
 
-pub fn load_trusted_setup_rust(
-    g1_bytes: &[u8],
-    n1: usize,
-    g2_bytes: &[u8],
-    _n2: usize,
-) -> FsKZGSettings {
+pub fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     let g1_projectives: Vec<FsG1> = g1_bytes
-        .chunks(48)
+        .chunks(BYTES_PER_G1)
         .map(|chunk| {
             bytes_to_g1_rust(
                 chunk
@@ -107,7 +102,7 @@ pub fn load_trusted_setup_rust(
         .collect();
 
     let g2_values: Vec<FsG2> = g2_bytes
-        .chunks(96)
+        .chunks(BYTES_PER_G2)
         .map(|chunk| {
             bytes_to_g2_rust(
                 chunk
@@ -119,7 +114,7 @@ pub fn load_trusted_setup_rust(
         .collect();
 
     let mut max_scale: usize = 0;
-    while (1 << max_scale) < n1 {
+    while (1 << max_scale) < g1_bytes.len() {
         max_scale += 1;
     }
 
@@ -136,45 +131,45 @@ pub fn load_trusted_setup_rust(
 }
 
 #[cfg(feature = "std")]
-pub fn load_trusted_setup_file_rust(file: &mut File) -> FsKZGSettings {
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Unable to read file");
-
+fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
     let mut lines = contents.lines();
     let length = lines.next().unwrap().parse::<usize>().unwrap();
     let n2 = lines.next().unwrap().parse::<usize>().unwrap();
 
-    let mut g2_values: Vec<u8> = Vec::new();
-    let mut g1_projectives: Vec<u8> = Vec::new();
+    let g1_bytes = (0..length)
+        .flat_map(|_| {
+            let line = lines.next().unwrap();
+            assert_eq!(line.len(), 96);
+            (0..line.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+                .collect::<Vec<u8>>()
+        })
+        .collect::<Vec<u8>>();
 
-    for _ in 0..length {
-        let line = lines.next().unwrap();
-        assert_eq!(line.len(), 96);
-        let bytes_array = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>();
-        g1_projectives.extend_from_slice(&bytes_array);
-    }
+    let g2_bytes = (0..n2)
+        .flat_map(|_| {
+            let line = lines.next().unwrap();
+            assert_eq!(line.len(), 192);
+            (0..line.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
+                .collect::<Vec<u8>>()
+        })
+        .collect::<Vec<u8>>();
 
-    for _ in 0..n2 {
-        let line = lines.next().unwrap();
-        assert_eq!(line.len(), 192);
-        let bytes = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>();
-        g2_values.extend_from_slice(&bytes);
-    }
-
-    load_trusted_setup_rust(&g1_projectives, length, &g2_values, n2)
+    (g1_bytes, g2_bytes)
 }
 
 #[cfg(feature = "std")]
-pub fn load_trusted_setup_filename_rust(filename: &str) -> FsKZGSettings {
-    let mut file = File::open(filename).expect("Unable to open file");
-    load_trusted_setup_file_rust(&mut file)
+pub fn load_trusted_setup_filename_rust(filepath: &str) -> FsKZGSettings {
+    let mut file = File::open(filepath).expect("Unable to open file");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .expect("Unable to read file");
+
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+    load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
 
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
@@ -558,6 +553,9 @@ pub type C_KZG_RET = c_uint;
 pub const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
 pub const CHALLENGE_INPUT_SIZE: usize = 32 + BYTES_PER_BLOB + 48;
 pub const BYTES_PER_COMMITMENT: usize = 48;
+pub const TRUSTED_SETUP_NUM_G2_POINTS: usize = 65;
+pub const BYTES_PER_G1: usize = 48;
+pub const BYTES_PER_G2: usize = 96;
 
 #[repr(C)]
 pub struct Bytes32 {
@@ -665,9 +663,8 @@ fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFsFFTSettings {
 }
 
 fn kzg_settings_to_rust(c_settings: &CFsKzgSettings) -> FsKZGSettings {
-    let length = unsafe { (*c_settings.fs).max_width as usize };
     let secret_g1 = unsafe {
-        core::slice::from_raw_parts(c_settings.g1_values, length)
+        core::slice::from_raw_parts(c_settings.g1_values, TRUSTED_SETUP_NUM_G1_POINTS)
             .iter()
             .map(|r| FsG1(*r))
             .collect::<Vec<FsG1>>()
@@ -676,7 +673,7 @@ fn kzg_settings_to_rust(c_settings: &CFsKzgSettings) -> FsKZGSettings {
         fs: fft_settings_to_rust(c_settings.fs),
         secret_g1,
         secret_g2: unsafe {
-            core::slice::from_raw_parts(c_settings.g2_values, 65)
+            core::slice::from_raw_parts(c_settings.g2_values, TRUSTED_SETUP_NUM_G2_POINTS)
                 .iter()
                 .map(|r| FsG2(*r))
                 .collect::<Vec<FsG2>>()
@@ -734,8 +731,6 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, C_KZG_RET> {
 }
 
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready.
 #[no_mangle]
 pub unsafe extern "C" fn blob_to_kzg_commitment(
     out: *mut KZGCommitment,
@@ -752,10 +747,8 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
     }
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready.
+#[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup(
     out: *mut CFsKzgSettings,
     g1_bytes: *const u8,
@@ -763,78 +756,39 @@ pub unsafe extern "C" fn load_trusted_setup(
     g2_bytes: *const u8,
     n2: usize,
 ) -> C_KZG_RET {
-    let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * 48);
-    let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * 96);
-    let settings = load_trusted_setup_rust(g1_bytes, n1, g2_bytes, n2);
+    let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * BYTES_PER_G1);
+    let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
+    TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
+    let settings = load_trusted_setup_rust(g1_bytes, g2_bytes);
     *out = kzg_settings_to_c(&settings);
     C_KZG_RET_C_KZG_OK
 }
 
-// getting *FILE seems impossible
-// https://stackoverflow.com/questions/4862327/is-there-a-way-to-get-the-filename-from-a-file
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready.
 #[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(
     out: *mut CFsKzgSettings,
-    inp: *mut FILE,
+    in_: *mut FILE,
 ) -> C_KZG_RET {
-    let mut buf: [c_char; 100] = [0; 100];
-    let result = fgets(buf.as_mut_ptr(), 100, inp);
-    if result.is_null()
-        || strtoul(buf.as_ptr(), null_mut(), 10) != FIELD_ELEMENTS_PER_BLOB as c_ulong
-    {
-        return C_KZG_RET_C_KZG_BADARGS;
-    }
-    let result: *mut c_char = fgets(buf.as_mut_ptr(), 100, inp);
-    if result.is_null() || strtoul(buf.as_ptr(), null_mut(), 10) != 65 {
-        return C_KZG_RET_C_KZG_BADARGS;
-    }
-
-    let mut g2_bytes: [u8; 65 * 96] = [0; 65 * 96];
-    let mut g1_bytes: [u8; FIELD_ELEMENTS_PER_BLOB * 48] = [0; FIELD_ELEMENTS_PER_BLOB * 48];
-
-    let mut i: usize = 0;
-    while i < FIELD_ELEMENTS_PER_BLOB * 48 {
-        let c1 = fgetc(inp) as c_char;
-        if c1 == '\n' as c_char {
-            continue;
-        }
-        let c2 = fgetc(inp) as c_char;
-
-        if c1 == EOF as c_char || c2 == EOF as c_char {
-            return 1;
-        }
-        g1_bytes[i] = strtoul([c1, c2].as_ptr(), null_mut(), 16) as u8;
-        i += 1;
-    }
-
-    i = 0;
-    while i < 65 * 96 {
-        let c1 = fgetc(inp) as c_char;
-        if c1 == '\n' as c_char {
-            continue;
-        }
-        let c2 = fgetc(inp) as c_char;
-
-        if c1 == EOF as c_char || c2 == EOF as c_char {
-            return 1;
-        }
-        g2_bytes[i] = strtoul([c1, c2].as_ptr(), null_mut(), 16) as u8;
-        i += 1;
-    }
-
-    let settings = load_trusted_setup_rust(&g1_bytes, FIELD_ELEMENTS_PER_BLOB, &g2_bytes, 65);
+    let mut buf = vec![0u8; 1024 * 1024];
+    let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
+    let s = String::from_utf8(buf[..len].to_vec()).unwrap();
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&s);
+    TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
+    let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
     *out = kzg_settings_to_c(&settings);
+    if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
+        // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
+        // as well as 5 others that pass only if this one passes (likely because Java doesn't
+        // deallocate its KZGSettings pointer when no exception is thrown).
+        return C_KZG_RET_C_KZG_BADARGS;
+    }
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
     blob: *const Blob,
@@ -858,10 +812,8 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
     let max_width = (*(*s).fs).max_width as usize;
     let rev = Box::from_raw(core::slice::from_raw_parts_mut(
@@ -879,16 +831,20 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
         max_width,
     ));
     drop(roots);
-    let g1 = Box::from_raw(core::slice::from_raw_parts_mut((*s).g1_values, max_width));
+    let g1 = Box::from_raw(core::slice::from_raw_parts_mut(
+        (*s).g1_values,
+        TRUSTED_SETUP_NUM_G1_POINTS,
+    ));
     drop(g1);
-    let g2 = Box::from_raw(core::slice::from_raw_parts_mut((*s).g2_values, 65));
+    let g2 = Box::from_raw(core::slice::from_raw_parts_mut(
+        (*s).g2_values,
+        TRUSTED_SETUP_NUM_G2_POINTS,
+    ));
     drop(g2);
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn verify_kzg_proof(
     ok: *mut bool,
     commitment_bytes: *const Bytes48,
@@ -916,10 +872,8 @@ pub unsafe extern "C" fn verify_kzg_proof(
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn verify_blob_kzg_proof(
     ok: *mut bool,
     blob: *const Blob,
@@ -947,10 +901,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     ok: *mut bool,
     blobs: *const Blob,
@@ -993,10 +945,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn compute_kzg_proof(
     proof_out: *mut KZGProof,
     y_out: *mut Bytes32,
@@ -1022,10 +972,8 @@ pub unsafe extern "C" fn compute_kzg_proof(
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     out: *mut blst_fr,
     p: &CFsPoly,
@@ -1041,10 +989,8 @@ pub unsafe extern "C" fn evaluate_polynomial_in_evaluation_form(
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, b: &Bytes32) -> C_KZG_RET {
     let fr = bytes_to_bls_field_rust(&b.bytes);
     if fr.is_err() {
@@ -1054,10 +1000,8 @@ pub unsafe extern "C" fn bytes_to_bls_field(out: *mut blst_fr, b: &Bytes32) -> C
     C_KZG_RET_C_KZG_OK
 }
 
-#[no_mangle]
 /// # Safety
-///
-/// This function should not be called before the horsemen are ready
+#[no_mangle]
 pub unsafe extern "C" fn blob_to_polynomial(p: *mut CFsPoly, blob: *const Blob) -> C_KZG_RET {
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         let start = i * BYTES_PER_FIELD_ELEMENT;

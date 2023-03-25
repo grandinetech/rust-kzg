@@ -117,13 +117,13 @@ cd ../..
 
 ###################### java tests ######################
 
-#print_msg "Patching java binding"
-#git apply < ../java.patch
-#cd bindings/java || exit 1
+print_msg "Patching java binding"
+git apply < ../java.patch
+cd bindings/java || exit 1
 
-#print_msg "Running java tests"
-#make build test
-#cd ../..
+print_msg "Running java tests"
+make build test
+cd ../..
 
 ###################### nodejs tests ######################
 
