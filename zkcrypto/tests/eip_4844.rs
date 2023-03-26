@@ -12,9 +12,9 @@ mod tests {
     };
     use zkcrypto::eip_4844::{
         blob_to_kzg_commitment, blob_to_polynomial, bytes_from_bls_field, bytes_to_bls_field,
-        bytes_to_g1, compute_blob_kzg_proof, compute_kzg_proof, compute_powers,
-        evaluate_polynomial_in_evaluation_form, hash_to_bls_field, load_trusted_setup,
-        verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
+        compute_blob_kzg_proof, compute_kzg_proof, compute_powers,
+        evaluate_polynomial_in_evaluation_form, hash_to_bls_field, hex_to_bls_field, hex_to_g1,
+        load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
     };
     use zkcrypto::fftsettings::ZkFFTSettings;
     use zkcrypto::kzg_proofs::KZGSettings;
@@ -45,8 +45,8 @@ mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
-            &bytes_to_g1,
+            &hex_to_bls_field,
+            &hex_to_g1,
         );
     }
 
@@ -61,8 +61,8 @@ mod tests {
             KZGSettings,
         >(
             &load_trusted_setup,
-            &bytes_to_bls_field,
-            &bytes_to_g1,
+            &hex_to_bls_field,
+            &hex_to_g1,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,

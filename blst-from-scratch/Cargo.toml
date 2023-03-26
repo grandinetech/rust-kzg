@@ -11,7 +11,6 @@ libc = { version = "0.2.137", default-features = false }
 once_cell = { version = "1.4.0", features = ["critical-section"], default-features = false }
 rand = { version = "0.8.4", optional = true }
 rayon = { version = "1.5.1", optional = true }
-sha2 = { version = "0.10.6", default-features = false }
 
 [dev-dependencies]
 criterion = "0.4.0"
@@ -27,7 +26,6 @@ std = [
     "kzg/std",
     "libc/std",
     "once_cell/std",
-    "sha2/std",
 ]
 rand = [
     "dep:rand",

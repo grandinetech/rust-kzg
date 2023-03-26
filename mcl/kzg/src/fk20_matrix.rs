@@ -107,7 +107,7 @@ impl FK20SingleMatrix {
         }
 
         let mut proofs = self.fk20_single_dao_optimized(polynomial).unwrap();
-        order_by_rev_bit_order(&mut proofs);
+        reverse_bit_order(&mut proofs);
 
         Ok(proofs)
     }
@@ -255,7 +255,7 @@ impl FK20Matrix {
 
         let extended_poly = polynomial.get_extended(n2);
         let mut proofs = self.fk20_multi_dao_optimized(&extended_poly).unwrap();
-        order_by_rev_bit_order(&mut proofs);
+        reverse_bit_order(&mut proofs);
 
         Ok(proofs)
     }

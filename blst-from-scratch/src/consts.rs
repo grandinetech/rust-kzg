@@ -269,16 +269,3 @@ pub const TRUSTED_SETUP_GENERATOR: [u8; 32usize] = [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
-
-pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
-
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
-    70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
-]; // "FSBLOBVERIFY_V1_"
-
-pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
-    82, 67, 75, 90, 71, 66, 65, 84, 67, 72, 95, 95, 95, 86, 49, 95,
-]; // "RCKZGBATCH___V1_"
-
-pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
-pub const BYTES_PER_PROOF: usize = 48;

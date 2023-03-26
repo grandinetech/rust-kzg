@@ -1,5 +1,3 @@
-#![allow(non_camel_case_types)]
-
 extern crate alloc;
 
 use alloc::boxed::Box;
@@ -7,7 +5,6 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
-use core::ffi::c_uint;
 #[cfg(feature = "std")]
 use libc::FILE;
 #[cfg(feature = "std")]
@@ -17,17 +14,23 @@ use std::io::Read;
 
 use blst::{
     blst_fr, blst_fr_from_scalar, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
-    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_compress,
-    blst_p2_from_affine, blst_p2_uncompress, blst_scalar, blst_scalar_from_lendian, BLST_ERROR,
+    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
+    blst_p2_uncompress, blst_scalar, blst_scalar_from_lendian, BLST_ERROR,
 };
 use kzg::{FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
 
-use sha2::{Digest, Sha256};
+#[cfg(feature = "std")]
+use kzg::eip_4844::load_trusted_setup_string;
 
-use crate::consts::{
-    BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
-    RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
+use kzg::eip_4844::{
+    bytes32_from_hex, bytes48_from_hex, bytes_of_uint64, hash, Blob, Bytes32, Bytes48,
+    CFFTSettings, CKZGSettings, KZGCommitment, KZGProof, BYTES_PER_BLOB, BYTES_PER_COMMITMENT,
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE,
+    C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIAT_SHAMIR_PROTOCOL_DOMAIN,
+    FIELD_ELEMENTS_PER_BLOB, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN, TRUSTED_SETUP_NUM_G1_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS,
 };
+
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
@@ -39,11 +42,7 @@ use crate::types::poly::FsPoly;
 
 use crate::utils::reverse_bit_order;
 
-// Currently, we only support fixed G1 and G2 point quantities in trusted setups.
-// Issue arises when a binding using the C API loads different G1 and G2 point quantities each time.
-static mut TRUSTED_SETUP_NUM_G1_POINTS: usize = 0;
-
-pub fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
+fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
     unsafe {
@@ -60,7 +59,7 @@ pub fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
     Ok(FsG1(g1))
 }
 
-pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; BYTES_PER_G1] {
+fn bytes_from_g1_rust(g1: &FsG1) -> [u8; BYTES_PER_G1] {
     let mut out = [0u8; BYTES_PER_G1];
     unsafe {
         blst_p1_compress(out.as_mut_ptr(), &g1.0);
@@ -68,7 +67,7 @@ pub fn bytes_from_g1_rust(g1: &FsG1) -> [u8; BYTES_PER_G1] {
     out
 }
 
-pub fn bytes_to_g2_rust(bytes: &[u8; BYTES_PER_G2]) -> Result<FsG2, String> {
+fn bytes_to_g2_rust(bytes: &[u8; BYTES_PER_G2]) -> Result<FsG2, String> {
     let mut tmp = blst_p2_affine::default();
     let mut g2 = blst_p2::default();
     unsafe {
@@ -80,22 +79,42 @@ pub fn bytes_to_g2_rust(bytes: &[u8; BYTES_PER_G2]) -> Result<FsG2, String> {
     Ok(FsG2(g2))
 }
 
-pub fn bytes_from_g2_rust(g2: &FsG2) -> [u8; BYTES_PER_G2] {
-    let mut out = [0; BYTES_PER_G2];
-    unsafe {
-        blst_p2_compress(out.as_mut_ptr(), &g2.0);
-    }
-    out
+pub fn bytes_to_bls_field_rust(bytes: &[u8; BYTES_PER_FIELD_ELEMENT]) -> Result<FsFr, u8> {
+    FsFr::from_scalar(*bytes)
 }
 
-pub fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
+pub fn bytes_from_bls_field(fr: &FsFr) -> [u8; BYTES_PER_FIELD_ELEMENT] {
+    fr.to_scalar()
+}
+
+pub fn hex_to_bls_field(hex: &str) -> FsFr {
+    let fr_bytes = bytes32_from_hex(hex);
+    bytes_to_bls_field_rust(&fr_bytes).unwrap()
+}
+
+pub fn hex_to_g1(hex: &str) -> FsG1 {
+    let g1_bytes = bytes48_from_hex(hex);
+    bytes_to_g1_rust(&g1_bytes).unwrap()
+}
+
+pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> FsFr {
+    let mut tmp = blst_scalar::default();
+    let mut out = blst_fr::default();
+    unsafe {
+        blst_scalar_from_lendian(&mut tmp, x.as_ptr());
+        blst_fr_from_scalar(&mut out, &tmp);
+    }
+    FsFr(out)
+}
+
+fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     let g1_projectives: Vec<FsG1> = g1_bytes
         .chunks(BYTES_PER_G1)
         .map(|chunk| {
             bytes_to_g1_rust(
                 chunk
                     .try_into()
-                    .expect("Chunked into correct number of bytes above; qed"),
+                    .expect("Chunked into incorrect number of bytes"),
             )
             .unwrap()
         })
@@ -107,7 +126,7 @@ pub fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSetting
             bytes_to_g2_rust(
                 chunk
                     .try_into()
-                    .expect("Chunked into correct number of bytes above; qed"),
+                    .expect("Chunked into incorrect number of bytes"),
             )
             .unwrap()
         })
@@ -120,7 +139,6 @@ pub fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSetting
 
     let fs = FsFFTSettings::new(max_scale).unwrap();
     let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
-
     reverse_bit_order(&mut g1_values);
 
     FsKZGSettings {
@@ -128,37 +146,6 @@ pub fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSetting
         secret_g2: g2_values,
         fs,
     }
-}
-
-#[cfg(feature = "std")]
-fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
-    let mut lines = contents.lines();
-    let length = lines.next().unwrap().parse::<usize>().unwrap();
-    let n2 = lines.next().unwrap().parse::<usize>().unwrap();
-
-    let g1_bytes = (0..length)
-        .flat_map(|_| {
-            let line = lines.next().unwrap();
-            assert_eq!(line.len(), 96);
-            (0..line.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-                .collect::<Vec<u8>>()
-        })
-        .collect::<Vec<u8>>();
-
-    let g2_bytes = (0..n2)
-        .flat_map(|_| {
-            let line = lines.next().unwrap();
-            assert_eq!(line.len(), 192);
-            (0..line.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-                .collect::<Vec<u8>>()
-        })
-        .collect::<Vec<u8>>();
-
-    (g1_bytes, g2_bytes)
 }
 
 #[cfg(feature = "std")]
@@ -190,15 +177,7 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) {
     }
 }
 
-pub fn bytes_to_bls_field_rust(bytes: &[u8; 32usize]) -> Result<FsFr, u8> {
-    FsFr::from_scalar(*bytes)
-}
-
-pub fn bytes_from_bls_field(fr: &FsFr) -> [u8; 32usize] {
-    fr.to_scalar()
-}
-
-pub fn g1_lincomb(points: &[FsG1], scalars: &[FsFr], length: usize) -> FsG1 {
+fn g1_lincomb(points: &[FsG1], scalars: &[FsFr], length: usize) -> FsG1 {
     let mut out = FsG1::default();
     g1_linear_combination(&mut out, points, scalars, length);
     out
@@ -381,28 +360,7 @@ pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
     powers
 }
 
-fn bytes_of_uint64(out: &mut [u8], mut n: u64) {
-    for byte in out.iter_mut().take(8) {
-        *byte = (n & 0xff) as u8;
-        n >>= 8;
-    }
-}
-
-fn hash(x: &[u8]) -> [u8; 32] {
-    Sha256::digest(x).into()
-}
-
-pub fn hash_to_bls_field(x: &[u8; 32]) -> FsFr {
-    let mut tmp = blst_scalar::default();
-    let mut out = blst_fr::default();
-    unsafe {
-        blst_scalar_from_lendian(&mut tmp, x.as_ptr());
-        blst_fr_from_scalar(&mut out, &tmp);
-    }
-    FsFr(out)
-}
-
-pub fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
+fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
     let mut bytes: Vec<u8> = vec![0; CHALLENGE_INPUT_SIZE];
 
     // Copy domain separator
@@ -429,7 +387,7 @@ pub fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
     hash_to_bls_field(&eval_challenge)
 }
 
-pub fn compute_r_powers(
+fn compute_r_powers(
     commitments_g1: &[FsG1],
     zs_fr: &[FsFr],
     ys_fr: &[FsFr],
@@ -544,65 +502,7 @@ pub fn verify_blob_kzg_proof_batch_rust(
     )
 }
 
-pub const C_KZG_RET_C_KZG_OK: C_KZG_RET = 0;
-pub const C_KZG_RET_C_KZG_BADARGS: C_KZG_RET = 1;
-pub const C_KZG_RET_C_KZG_ERROR: C_KZG_RET = 2;
-pub const C_KZG_RET_C_KZG_MALLOC: C_KZG_RET = 3;
-pub type C_KZG_RET = c_uint;
-
-pub const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
-pub const CHALLENGE_INPUT_SIZE: usize = 32 + BYTES_PER_BLOB + 48;
-pub const BYTES_PER_COMMITMENT: usize = 48;
-pub const TRUSTED_SETUP_NUM_G2_POINTS: usize = 65;
-pub const BYTES_PER_G1: usize = 48;
-pub const BYTES_PER_G2: usize = 96;
-
-#[repr(C)]
-pub struct Bytes32 {
-    pub bytes: [u8; 32],
-}
-
-#[repr(C)]
-pub struct Bytes48 {
-    pub bytes: [u8; 48],
-}
-
-#[repr(C)]
-pub struct Blob {
-    pub bytes: [u8; BYTES_PER_BLOB],
-}
-
-#[repr(C)]
-pub struct KZGCommitment {
-    pub bytes: [u8; 48],
-}
-
-#[repr(C)]
-pub struct KZGProof {
-    pub bytes: [u8; 48],
-}
-
-#[repr(C)]
-pub struct CFsFFTSettings {
-    pub max_width: u64,
-    pub expanded_roots_of_unity: *mut blst_fr,
-    pub reverse_roots_of_unity: *mut blst_fr,
-    pub roots_of_unity: *mut blst_fr,
-}
-
-#[repr(C)]
-pub struct CFsKzgSettings {
-    pub fs: *const CFsFFTSettings,
-    pub g1_values: *mut blst_p1, // G1
-    pub g2_values: *mut blst_p2, // G2
-}
-
-#[repr(C)]
-pub struct CFsPoly {
-    pub evals: [blst_fr; FIELD_ELEMENTS_PER_BLOB],
-}
-
-fn fft_settings_to_rust(c_settings: *const CFsFFTSettings) -> FsFFTSettings {
+fn fft_settings_to_rust(c_settings: *const CFFTSettings) -> FsFFTSettings {
     let settings = unsafe { &*c_settings };
     let mut first_root = unsafe { FsFr(*(settings.expanded_roots_of_unity.add(1))) };
     let first_root_arr = [first_root; 1];
@@ -634,7 +534,7 @@ fn fft_settings_to_rust(c_settings: *const CFsFFTSettings) -> FsFFTSettings {
     res
 }
 
-fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFsFFTSettings {
+fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFFTSettings {
     let mut roots_of_unity: Vec<FsFr> = rust_settings.expanded_roots_of_unity.clone();
     reverse_bit_order(&mut roots_of_unity);
     let expanded_roots_of_unity = Box::new(
@@ -653,7 +553,7 @@ fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFsFFTSettings {
     );
     let roots_of_unity = Box::new(roots_of_unity.iter().map(|r| r.0).collect::<Vec<blst_fr>>());
 
-    let b = Box::new(CFsFFTSettings {
+    let b = Box::new(CFFTSettings {
         max_width: rust_settings.max_width as u64,
         expanded_roots_of_unity: unsafe { (*Box::into_raw(expanded_roots_of_unity)).as_mut_ptr() },
         reverse_roots_of_unity: unsafe { (*Box::into_raw(reverse_roots_of_unity)).as_mut_ptr() },
@@ -662,7 +562,7 @@ fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFsFFTSettings {
     Box::into_raw(b)
 }
 
-fn kzg_settings_to_rust(c_settings: &CFsKzgSettings) -> FsKZGSettings {
+fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> FsKZGSettings {
     let secret_g1 = unsafe {
         core::slice::from_raw_parts(c_settings.g1_values, TRUSTED_SETUP_NUM_G1_POINTS)
             .iter()
@@ -682,7 +582,7 @@ fn kzg_settings_to_rust(c_settings: &CFsKzgSettings) -> FsKZGSettings {
     res
 }
 
-fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CFsKzgSettings {
+fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
     let g1_val = rust_settings
         .secret_g1
         .iter()
@@ -698,7 +598,7 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CFsKzgSettings {
     let stat_ref = Box::leak(x);
     let v = Box::into_raw(g1_val);
 
-    CFsKzgSettings {
+    CKZGSettings {
         fs: fft_settings_to_c(&rust_settings.fs),
         g1_values: unsafe { (*v).as_mut_ptr() },
         g2_values: stat_ref.as_mut_ptr(),
@@ -708,14 +608,14 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CFsKzgSettings {
 unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, C_KZG_RET> {
     (*blob)
         .bytes
-        .chunks(32)
-        .map(|x| {
-            let mut bytes = [0u8; 32];
-            bytes.copy_from_slice(x);
+        .chunks(BYTES_PER_FIELD_ELEMENT)
+        .map(|chunk| {
+            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
+            bytes.copy_from_slice(chunk);
             if let Ok(result) = bytes_to_bls_field_rust(&bytes) {
                 Ok(result)
             } else {
-                Err(C_KZG_RET_C_KZG_BADARGS)
+                Err(C_KZG_RET_BADARGS)
             }
         })
         .collect::<Result<Vec<FsFr>, C_KZG_RET>>()
@@ -726,13 +626,13 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, C_KZG_RET> {
 pub unsafe extern "C" fn blob_to_kzg_commitment(
     out: *mut KZGCommitment,
     blob: *const Blob,
-    s: &CFsKzgSettings,
+    s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = deserialize_blob(blob);
     if let Ok(blob_) = deserialized_blob {
         let tmp = blob_to_kzg_commitment_rust(&blob_, &kzg_settings_to_rust(s));
         (*out).bytes = bytes_from_g1_rust(&tmp);
-        C_KZG_RET_C_KZG_OK
+        C_KZG_RET_OK
     } else {
         deserialized_blob.err().unwrap()
     }
@@ -741,7 +641,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
 /// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup(
-    out: *mut CFsKzgSettings,
+    out: *mut CKZGSettings,
     g1_bytes: *const u8,
     n1: usize,
     g2_bytes: *const u8,
@@ -752,14 +652,14 @@ pub unsafe extern "C" fn load_trusted_setup(
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
     let settings = load_trusted_setup_rust(g1_bytes, g2_bytes);
     *out = kzg_settings_to_c(&settings);
-    C_KZG_RET_C_KZG_OK
+    C_KZG_RET_OK
 }
 
 /// # Safety
 #[cfg(feature = "std")]
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_file(
-    out: *mut CFsKzgSettings,
+    out: *mut CKZGSettings,
     in_: *mut FILE,
 ) -> C_KZG_RET {
     let mut buf = vec![0u8; 1024 * 1024];
@@ -771,11 +671,11 @@ pub unsafe extern "C" fn load_trusted_setup_file(
         // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
         // as well as 5 others that pass only if this one passes (likely because Java doesn't
         // deallocate its KZGSettings pointer when no exception is thrown).
-        return C_KZG_RET_C_KZG_BADARGS;
+        return C_KZG_RET_BADARGS;
     }
     let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
     *out = kzg_settings_to_c(&settings);
-    C_KZG_RET_C_KZG_OK
+    C_KZG_RET_OK
 }
 
 /// # Safety
@@ -784,7 +684,7 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
     blob: *const Blob,
     commitment_bytes: *mut Bytes48,
-    s: &CFsKzgSettings,
+    s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = deserialize_blob(blob);
     if deserialized_blob.is_err() {
@@ -792,7 +692,7 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     }
     let commitment_g1 = bytes_to_g1_rust(&(*commitment_bytes).bytes);
     if commitment_g1.is_err() {
-        return C_KZG_RET_C_KZG_BADARGS;
+        return C_KZG_RET_BADARGS;
     }
     let proof = compute_blob_kzg_proof_rust(
         &deserialized_blob.unwrap(),
@@ -800,12 +700,12 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
         &kzg_settings_to_rust(s),
     );
     (*out).bytes = bytes_from_g1_rust(&proof);
-    C_KZG_RET_C_KZG_OK
+    C_KZG_RET_OK
 }
 
 /// # Safety
 #[no_mangle]
-pub unsafe extern "C" fn free_trusted_setup(s: *mut CFsKzgSettings) {
+pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     let max_width = (*(*s).fs).max_width as usize;
     let rev = Box::from_raw(core::slice::from_raw_parts_mut(
         (*(*s).fs).reverse_roots_of_unity,
@@ -842,7 +742,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
     z_bytes: *const Bytes32,
     y_bytes: *const Bytes32,
     proof_bytes: *const Bytes48,
-    s: &CFsKzgSettings,
+    s: &CKZGSettings,
 ) -> C_KZG_RET {
     let frz = bytes_to_bls_field_rust(&(*z_bytes).bytes);
     let fry = bytes_to_bls_field_rust(&(*y_bytes).bytes);
@@ -850,7 +750,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
     let g1proof = bytes_to_g1_rust(&(*proof_bytes).bytes);
 
     if frz.is_err() || fry.is_err() || g1commitment.is_err() || g1proof.is_err() {
-        return C_KZG_RET_C_KZG_BADARGS;
+        return C_KZG_RET_BADARGS;
     }
 
     *ok = verify_kzg_proof_rust(
@@ -860,7 +760,7 @@ pub unsafe extern "C" fn verify_kzg_proof(
         &g1proof.unwrap(),
         &kzg_settings_to_rust(s),
     );
-    C_KZG_RET_C_KZG_OK
+    C_KZG_RET_OK
 }
 
 /// # Safety
@@ -870,7 +770,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     blob: *const Blob,
     commitment_bytes: *const Bytes48,
     proof_bytes: *const Bytes48,
-    s: &CFsKzgSettings,
+    s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = deserialize_blob(blob);
     if deserialized_blob.is_err() {
@@ -880,7 +780,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     let commitment_g1 = bytes_to_g1_rust(&(*commitment_bytes).bytes);
     let proof_g1 = bytes_to_g1_rust(&(*proof_bytes).bytes);
     if commitment_g1.is_err() || proof_g1.is_err() {
-        return C_KZG_RET_C_KZG_BADARGS;
+        return C_KZG_RET_BADARGS;
     }
 
     *ok = verify_blob_kzg_proof_rust(
@@ -889,7 +789,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
         &proof_g1.unwrap(),
         &kzg_settings_to_rust(s),
     );
-    C_KZG_RET_C_KZG_OK
+    C_KZG_RET_OK
 }
 
 /// # Safety
@@ -900,7 +800,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     commitments_bytes: *const Bytes48,
     proofs_bytes: *const Bytes48,
     n: usize,
-    s: &CFsKzgSettings,
+    s: &CKZGSettings,
 ) -> C_KZG_RET {
     let mut deserialized_blobs: Vec<Vec<FsFr>> = Vec::new();
     let mut commitments_g1: Vec<FsG1> = Vec::new();
@@ -919,7 +819,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         let commitment_g1 = bytes_to_g1_rust(&raw_commitments[i].bytes);
         let proof_g1 = bytes_to_g1_rust(&raw_proofs[i].bytes);
         if commitment_g1.is_err() || proof_g1.is_err() {
-            return C_KZG_RET_C_KZG_BADARGS;
+            return C_KZG_RET_BADARGS;
         }
 
         deserialized_blobs.push(deserialized_blob.unwrap());
@@ -933,7 +833,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         &proofs_g1,
         &kzg_settings_to_rust(s),
     );
-    C_KZG_RET_C_KZG_OK
+    C_KZG_RET_OK
 }
 
 /// # Safety
@@ -943,7 +843,7 @@ pub unsafe extern "C" fn compute_kzg_proof(
     y_out: *mut Bytes32,
     blob: *const Blob,
     z_bytes: *const Bytes32,
-    s: &CFsKzgSettings,
+    s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = deserialize_blob(blob);
     if deserialized_blob.is_err() {
@@ -960,5 +860,5 @@ pub unsafe extern "C" fn compute_kzg_proof(
     );
     (*proof_out).bytes = bytes_from_g1_rust(&proof_out_tmp);
     (*y_out).bytes = bytes_from_bls_field(&fry_tmp);
-    C_KZG_RET_C_KZG_OK
+    C_KZG_RET_OK
 }

@@ -5,11 +5,16 @@ use std::ops::Sub;
 
 use crate::fk20::reverse_bit_order;
 use crate::kzg_proofs::{check_proof_single, KZGSettings};
-use crate::kzg_types::{pairings_verify, ZkG1Affine, ZkG1Projective, ZkG2Affine, ZkG2Projective};
+use crate::kzg_types::{pairings_verify, ZkG1Affine, ZkG1Projective, ZkG2Projective};
 use crate::poly::KzgPoly;
 use crate::zkfr::blsScalar;
+use kzg::eip_4844::{
+    bytes32_from_hex, bytes48_from_hex, bytes_of_uint64, hash, load_trusted_setup_string,
+    BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2,
+    BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
+    RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
+};
 use kzg::{FFTSettings, Fr, Poly, FFTG1, G1};
-use sha2::{Digest, Sha256};
 
 use crate::curve::g1::G1Affine;
 use crate::curve::g2::G2Affine;
@@ -17,7 +22,7 @@ use crate::curve::multiscalar_mul::msm_variable_base;
 use crate::curve::scalar::{sbb, Scalar, MODULUS, R2};
 use crate::fftsettings::ZkFFTSettings;
 
-pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Result<blsScalar, u8> {
+pub fn bytes_to_bls_field(bytes: &[u8; BYTES_PER_FIELD_ELEMENT]) -> Result<blsScalar, u8> {
     let mut tmp = Scalar([0, 0, 0, 0]);
 
     tmp.0[0] = u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
@@ -37,69 +42,66 @@ pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Result<blsScalar, u8> {
     Ok(tmp)
 }
 
-pub fn bytes_from_bls_field(fr: &blsScalar) -> [u8; 32usize] {
+pub fn bytes_from_bls_field(fr: &blsScalar) -> [u8; BYTES_PER_FIELD_ELEMENT] {
     fr.to_bytes()
 }
 
-pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> Result<ZkG1Projective, String> {
+fn bytes_to_g1(bytes: &[u8; BYTES_PER_G1]) -> Result<ZkG1Projective, String> {
     let affine: G1Affine = G1Affine::from_compressed(bytes).unwrap();
     Ok(ZkG1Projective::from(affine))
 }
 
-pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> Result<ZkG2Projective, String> {
+fn bytes_to_g2(bytes: &[u8; BYTES_PER_G2]) -> Result<ZkG2Projective, String> {
     let affine: G2Affine = G2Affine::from_compressed(bytes).unwrap();
     Ok(ZkG2Projective::from(affine))
 }
 
-pub fn bytes_from_g1(g1: &ZkG1Projective) -> [u8; 48usize] {
+fn bytes_from_g1(g1: &ZkG1Projective) -> [u8; BYTES_PER_G1] {
     let g1_affine = ZkG1Affine::from(g1);
     g1_affine.to_compressed()
 }
 
-pub fn bytes_from_g2(g2: &ZkG2Projective) -> [u8; 96usize] {
-    let g2_affine = ZkG2Affine::from(g2);
-    g2_affine.to_compressed()
+pub fn hex_to_bls_field(hex: &str) -> blsScalar {
+    let fr_bytes = bytes32_from_hex(hex);
+    bytes_to_bls_field(&fr_bytes).unwrap()
 }
 
-pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
-    let mut file = File::open(filepath).expect("Unable to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Unable to read file");
+pub fn hex_to_g1(hex: &str) -> ZkG1Projective {
+    let g1_bytes = bytes48_from_hex(hex);
+    bytes_to_g1(&g1_bytes).unwrap()
+}
 
-    let mut lines = contents.lines();
-    let length = lines.next().unwrap().parse::<usize>().unwrap();
-    let n2 = lines.next().unwrap().parse::<usize>().unwrap();
+pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> blsScalar {
+    bytes_to_bls_field(x).unwrap()
+}
 
-    let mut g1_projectives: Vec<ZkG1Projective> = Vec::new();
-    let mut g2_values: Vec<ZkG2Projective> = Vec::new();
+fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
+    let g1_projectives: Vec<ZkG1Projective> = g1_bytes
+        .chunks(BYTES_PER_G1)
+        .map(|chunk| {
+            bytes_to_g1(
+                chunk
+                    .try_into()
+                    .expect("Chunked into incorrect number of bytes"),
+            )
+            .unwrap()
+        })
+        .collect();
 
-    for _ in 0..length {
-        let line = lines.next().unwrap();
-        assert_eq!(line.len(), 96);
-        let bytes_array: [u8; 48] = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>()
-            .try_into()
-            .unwrap();
-        g1_projectives.push(bytes_to_g1(&bytes_array).unwrap());
-    }
-
-    for _ in 0..n2 {
-        let line = lines.next().unwrap();
-        assert_eq!(line.len(), 192);
-        let bytes_array: [u8; 96] = (0..line.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>()
-            .try_into()
-            .unwrap();
-        g2_values.push(bytes_to_g2(&bytes_array).unwrap());
-    }
+    let g2_values: Vec<ZkG2Projective> = g2_bytes
+        .chunks(BYTES_PER_G2)
+        .map(|chunk| {
+            bytes_to_g2(
+                chunk
+                    .try_into()
+                    .expect("Chunked into incorrect number of bytes"),
+            )
+            .unwrap()
+        })
+        .collect();
 
     let mut max_scale: usize = 0;
-    while (1 << max_scale) < length {
+    while (1 << max_scale) < g1_bytes.len() {
         max_scale += 1;
     }
 
@@ -111,11 +113,21 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
         secret_g1: g1_values,
         secret_g2: g2_values,
         fs,
-        length: length as u64,
+        length: g1_bytes.len() as u64,
     }
 }
 
-pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
+pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
+    let mut file = File::open(filepath).expect("Unable to open file");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .expect("Unable to read file");
+
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+    load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
+}
+
+fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
     assert!(len > 0);
 
     let mut accumulator = blsScalar::one();
@@ -133,11 +145,7 @@ pub fn fr_batch_inv(out: &mut [blsScalar], a: &[blsScalar], len: usize) {
     }
 }
 
-pub fn g1_lincomb(
-    points: &[ZkG1Projective],
-    scalars: &[blsScalar],
-    _length: usize,
-) -> ZkG1Projective {
+fn g1_lincomb(points: &[ZkG1Projective], scalars: &[blsScalar], _length: usize) -> ZkG1Projective {
     msm_variable_base(points, scalars)
 }
 
@@ -148,21 +156,6 @@ pub fn compute_powers(base: &blsScalar, num_powers: usize) -> Vec<blsScalar> {
         powers[i] = powers[i - 1].mul(base);
     }
     powers
-}
-
-fn bytes_of_uint64(out: &mut [u8], mut n: u64) {
-    for byte in out.iter_mut().take(8) {
-        *byte = (n & 0xff) as u8;
-        n >>= 8;
-    }
-}
-
-fn hash(x: &[u8]) -> [u8; 32] {
-    Sha256::digest(x).into()
-}
-
-pub fn hash_to_bls_field(x: &[u8; 32]) -> blsScalar {
-    bytes_to_bls_field(x).unwrap()
 }
 
 pub fn blob_to_kzg_commitment(blob: &[blsScalar], s: &KZGSettings) -> ZkG1Projective {
@@ -477,18 +470,3 @@ pub fn verify_blob_kzg_proof_batch(
         ts,
     )
 }
-
-pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
-pub const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
-pub const CHALLENGE_INPUT_SIZE: usize = 32 + BYTES_PER_BLOB + 48;
-pub const BYTES_PER_COMMITMENT: usize = 48;
-pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
-pub const BYTES_PER_PROOF: usize = 48;
-
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
-    70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
-]; // "FSBLOBVERIFY_V1_"
-
-pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
-    82, 67, 75, 90, 71, 66, 65, 84, 67, 72, 95, 95, 95, 86, 49, 95,
-]; // "RCKZGBATCH___V1_"

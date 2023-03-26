@@ -4,14 +4,20 @@ use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
 use crate::mcl_methods::*;
+use crate::utilities::reverse_bit_order;
+use kzg::eip_4844::{
+    bytes32_from_hex, bytes48_from_hex, bytes_of_uint64, hash, load_trusted_setup_string,
+    BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2,
+    BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
+    RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
+};
 use kzg::G1 as _;
-use sha2::{Digest as _, Sha256};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use std::usize;
 
-pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> Result<G1, String> {
+pub fn bytes_to_g1(bytes: &[u8; BYTES_PER_G1]) -> Result<G1, String> {
     set_eth_serialization(1);
     let mut g1 = G1::default();
     if !G1::deserialize(&mut g1, bytes) {
@@ -23,7 +29,7 @@ pub fn bytes_to_g1(bytes: &[u8; 48usize]) -> Result<G1, String> {
     Ok(g1)
 }
 
-pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> Result<G2, String> {
+fn bytes_to_g2(bytes: &[u8; BYTES_PER_G2]) -> Result<G2, String> {
     set_eth_serialization(1);
     let mut g2 = G2::default();
     if !G2::deserialize(&mut g2, bytes) {
@@ -32,64 +38,60 @@ pub fn bytes_to_g2(bytes: &[u8; 96usize]) -> Result<G2, String> {
     Ok(g2)
 }
 
-pub fn bytes_from_g1(g1: &G1) -> [u8; 48usize] {
+pub fn bytes_from_g1(g1: &G1) -> [u8; BYTES_PER_G1] {
     set_eth_serialization(1);
     G1::serialize(g1).try_into().unwrap()
 }
 
-pub fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
-    let mut lines = contents.lines();
-    let length = lines.next().unwrap().parse::<usize>().unwrap();
-    let n2 = lines.next().unwrap().parse::<usize>().unwrap();
+pub fn bytes_to_bls_field(bytes: &[u8; BYTES_PER_FIELD_ELEMENT]) -> Result<Fr, u8> {
+    Fr::from_scalar(bytes)
+}
 
-    let g1_bytes = (0..length)
-        .flat_map(|_| {
-            let line = lines.next().unwrap();
-            assert!(line.len() == 96);
-            (0..line.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-                .collect::<Vec<u8>>()
-        })
-        .collect::<Vec<u8>>();
+pub fn bytes_from_bls_field(fr: &Fr) -> [u8; BYTES_PER_FIELD_ELEMENT] {
+    Fr::to_scalar(fr)
+}
 
-    let g2_bytes = (0..n2)
-        .flat_map(|_| {
-            let line = lines.next().unwrap();
-            assert!(line.len() == 192);
-            (0..line.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-                .collect::<Vec<u8>>()
-        })
-        .collect::<Vec<u8>>();
+pub fn hex_to_bls_field(hex: &str) -> Fr {
+    let fr_bytes = bytes32_from_hex(hex);
+    bytes_to_bls_field(&fr_bytes).unwrap()
+}
 
-    (g1_bytes, g2_bytes)
+pub fn hex_to_g1(hex: &str) -> G1 {
+    let g1_bytes = bytes48_from_hex(hex);
+    bytes_to_g1(&g1_bytes).unwrap()
+}
+
+pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> Fr {
+    Fr::from_scalar(x).unwrap()
 }
 
 pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
-    let g1_projectives = g1_bytes
-        .chunks(48)
+    let g1_projectives: Vec<G1> = g1_bytes
+        .chunks(BYTES_PER_G1)
         .map(|chunk| {
-            let mut bytes_array: [u8; 48] = [0; 48];
-            bytes_array.copy_from_slice(chunk);
-            bytes_to_g1(&bytes_array).unwrap()
+            bytes_to_g1(
+                chunk
+                    .try_into()
+                    .expect("Chunked into incorrect number of bytes"),
+            )
+            .unwrap()
         })
-        .collect::<Vec<G1>>();
+        .collect();
 
-    let g2_values = g2_bytes
-        .chunks(96)
+    let g2_values: Vec<G2> = g2_bytes
+        .chunks(BYTES_PER_G2)
         .map(|chunk| {
-            let mut bytes_array: [u8; 96] = [0; 96];
-            bytes_array.copy_from_slice(chunk);
-            bytes_to_g2(&bytes_array).unwrap()
+            bytes_to_g2(
+                chunk
+                    .try_into()
+                    .expect("Chunked into incorrect number of bytes"),
+            )
+            .unwrap()
         })
-        .collect::<Vec<G2>>();
-
-    let length = g1_projectives.len();
+        .collect();
 
     let mut max_scale: usize = 0;
-    while (1 << max_scale) < length {
+    while (1 << max_scale) < g1_bytes.len() {
         max_scale += 1;
     }
 
@@ -114,34 +116,11 @@ pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
     file.read_to_string(&mut contents)
         .expect("Unable to read file");
 
-    let (b1, b2) = load_trusted_setup_string(&contents);
-    load_trusted_setup_from_bytes(b1.as_slice(), b2.as_slice())
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+    load_trusted_setup_from_bytes(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
 
-pub fn reverse_bit_order<T>(values: &mut [T])
-where
-    T: Clone,
-{
-    let unused_bit_len = values.len().leading_zeros() + 1;
-    for i in 0..values.len() - 1 {
-        let r = i.reverse_bits() >> unused_bit_len;
-        if r > i {
-            let tmp = values[r].clone();
-            values[r] = values[i].clone();
-            values[i] = tmp;
-        }
-    }
-}
-
-pub fn bytes_to_bls_field(bytes: &[u8; 32usize]) -> Result<Fr, u8> {
-    Fr::from_scalar(bytes)
-}
-
-pub fn bytes_from_bls_field(fr: &Fr) -> [u8; 32usize] {
-    Fr::to_scalar(fr)
-}
-
-pub fn g1_lincomb(points: &[G1], scalars: &[Fr], length: usize) -> G1 {
+fn g1_lincomb(points: &[G1], scalars: &[Fr], length: usize) -> G1 {
     let mut out = G1::default();
     g1_linear_combination(&mut out, points, scalars, length);
     out
@@ -316,17 +295,6 @@ pub fn compute_powers(base: &Fr, num_powers: usize) -> Vec<Fr> {
     powers
 }
 
-fn bytes_of_uint64(out: &mut [u8], mut n: u64) {
-    for byte in out.iter_mut().take(8) {
-        *byte = (n & 0xff) as u8;
-        n >>= 8;
-    }
-}
-
-pub fn hash_to_bls_field(x: &[u8; 32]) -> Fr {
-    Fr::from_scalar(x).unwrap()
-}
-
 fn fr_batch_inv(out: &mut [Fr], a: &[Fr], len: usize) {
     assert!(len > 0);
 
@@ -396,7 +364,7 @@ pub fn verify_blob_kzg_proof_batch(
     )
 }
 
-pub fn compute_challenge(blob: &[Fr], commitment: &G1) -> Fr {
+fn compute_challenge(blob: &[Fr], commitment: &G1) -> Fr {
     let mut bytes: Vec<u8> = vec![0; CHALLENGE_INPUT_SIZE];
 
     // Copy domain separator
@@ -423,7 +391,7 @@ pub fn compute_challenge(blob: &[Fr], commitment: &G1) -> Fr {
     hash_to_bls_field(&eval_challenge)
 }
 
-pub fn compute_r_powers(
+fn compute_r_powers(
     commitments_g1: &[G1],
     zs_fr: &[Fr],
     ys_fr: &[Fr],
@@ -485,20 +453,3 @@ fn poly_to_kzg_commitment(p: &Polynomial, s: &KZGSettings) -> G1 {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
     g1_lincomb(&s.curve.g1_points, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
 }
-
-fn hash(x: &[u8]) -> [u8; 32] {
-    Sha256::digest(x).into()
-}
-
-pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
-    70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
-]; // "FSBLOBVERIFY_V1_"
-pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
-    82, 67, 75, 90, 71, 66, 65, 84, 67, 72, 95, 95, 95, 86, 49, 95,
-]; // "RCKZGBATCH___V1_"
-pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
-pub const BYTES_PER_BLOB: usize = 32 * FIELD_ELEMENTS_PER_BLOB;
-pub const CHALLENGE_INPUT_SIZE: usize = 32 + BYTES_PER_BLOB + 48;
-pub const BYTES_PER_COMMITMENT: usize = 48;
-pub const BYTES_PER_PROOF: usize = 48;

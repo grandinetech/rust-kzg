@@ -1,7 +1,8 @@
 use std::env::set_current_dir;
 
-use crate::tests::eip_4844::{generate_random_blob_raw, generate_random_field_element_raw};
+use crate::tests::eip_4844::{generate_random_blob_bytes, generate_random_field_element_bytes};
 use criterion::{BenchmarkId, Criterion};
+use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 
 #[allow(clippy::type_complexity)]
@@ -23,20 +24,23 @@ pub fn bench_eip_4844<
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
-    let max_count: usize = 64;
-    let mut rng = rand::thread_rng();
-
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let mut rng = rand::thread_rng();
 
-    let blobs: Vec<Vec<TFr>> = (0..max_count)
+    const MAX_COUNT: usize = 64;
+
+    let blobs: Vec<Vec<TFr>> = (0..MAX_COUNT)
         .map(|_| {
-            generate_random_blob_raw(&mut rng)
-                .chunks(32)
-                .map(|x| {
-                    let mut bytes = [0u8; 32];
-                    bytes.copy_from_slice(x);
-                    bytes_to_bls_field(&bytes).unwrap()
+            generate_random_blob_bytes(&mut rng)
+                .chunks(BYTES_PER_FIELD_ELEMENT)
+                .map(|chunk| {
+                    bytes_to_bls_field(
+                        chunk
+                            .try_into()
+                            .expect("Chunked into incorrect number of bytes"),
+                    )
+                    .unwrap()
                 })
                 .collect()
         })
@@ -53,9 +57,9 @@ pub fn bench_eip_4844<
         .map(|(blob, commitment)| compute_blob_kzg_proof(blob, commitment, &ts))
         .collect();
 
-    let fields: Vec<TFr> = (0..max_count)
+    let fields: Vec<TFr> = (0..MAX_COUNT)
         .map(|_| {
-            let fr_bytes = generate_random_field_element_raw(&mut rng);
+            let fr_bytes = generate_random_field_element_bytes(&mut rng);
             bytes_to_bls_field(&fr_bytes).unwrap()
         })
         .collect();
