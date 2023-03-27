@@ -38,6 +38,12 @@ jobs:
         with:
           nim-version: 'stable'
 
+      - name: Install nim dependencies
+        run: |
+          nimble install -y stew
+          nimble install -y unittest2
+          nimble install -y yaml
+
       - name: "[blst-from-scratch] Tests (c-kzg-4844)"
         if: matrix.os == 'ubuntu-latest'
         run: |
