@@ -1,0 +1,39 @@
+From 7a4afb776a249cd7247cab30fa243cdc752fdf4a Mon Sep 17 00:00:00 2001
+From: belijzajac <tautvydas749@gmail.com>
+Date: Mon, 27 Mar 2023 16:01:21 +0300
+Subject: [PATCH] Update linking
+
+---
+ bindings/nim/kzg_abi.nim | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/bindings/nim/kzg_abi.nim b/bindings/nim/kzg_abi.nim
+index f5363f6..7fccff1 100644
+--- a/bindings/nim/kzg_abi.nim
++++ b/bindings/nim/kzg_abi.nim
+@@ -14,20 +14,18 @@ const
+   # kzgPath: c-kzg-4844 project path, removing 3 last elem
+   kzgPath  = currentSourcePath.rsplit(DirSep, 3)[0] & "/"
+   blstPath = kzgPath & "blst/"
+-  srcPath  = kzgPath & "src/"
+   bindingsPath = blstPath & "bindings"
+ 
++{.passL: "../../../../target/release/libblst_from_scratch.a".}
++
+ when not defined(kzgExternalBlst):
+   # Use default blst shipped with c-kzg-4844
+   {.compile: blstPath & "build/assembly.S".}
+   {.compile: blstPath & "src/server.c"}
+ 
+-{.compile: srcPath & "c_kzg_4844.c"}
+-
+ {.passc: "-I" & bindingsPath &
+   " -DFIELD_ELEMENTS_PER_BLOB=" &
+   fmt"{FIELD_ELEMENTS_PER_BLOB}".}
+-{.passc: "-I" & srcPath .}
+ 
+ const
+   BYTES_PER_FIELD_ELEMENT* = 32
+-- 
+2.40.0
+

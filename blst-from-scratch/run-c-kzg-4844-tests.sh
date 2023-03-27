@@ -74,6 +74,8 @@ case $(uname -s) in
     ;;
 esac
 
+: <<'END_COMMENT'
+
 ###################### dotnet tests ######################
 
 print_msg "Patching dotnet binding"
@@ -144,6 +146,18 @@ git apply < ../go.patch
 print_msg "Running go tests"
 cd bindings/go || exit 1
 CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
+cd ../../.. # TODO: remove going one directory further back
+
+END_COMMENT
+
+###################### nim tests ######################
+
+print_msg "Patching nim binding"
+git apply < ../nim.patch
+cd bindings/nim || exit 1
+
+print_msg "Running nim tests"
+nim test
 cd ../../..
 
 ###################### cleaning up ######################
