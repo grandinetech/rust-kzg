@@ -647,6 +647,12 @@ pub unsafe extern "C" fn load_trusted_setup(
     g2_bytes: *const u8,
     n2: usize,
 ) -> C_KZG_RET {
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    println!("@@@@                        @@@@");
+    println!("@@@@        rust-kzg        @@@@");
+    println!("@@@@                        @@@@");
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
     let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * BYTES_PER_G1);
     let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
@@ -662,6 +668,12 @@ pub unsafe extern "C" fn load_trusted_setup_file(
     out: *mut CKZGSettings,
     in_: *mut FILE,
 ) -> C_KZG_RET {
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    println!("@@@@                        @@@@");
+    println!("@@@@        rust-kzg        @@@@");
+    println!("@@@@                        @@@@");
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
     let mut buf = vec![0u8; 1024 * 1024];
     let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
     let s = String::from_utf8(buf[..len].to_vec()).unwrap();
