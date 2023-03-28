@@ -480,6 +480,11 @@ pub fn verify_blob_kzg_proof_batch_rust(
         return true;
     }
 
+    // For a single blob, just do a regular single verification
+    if blobs.len() == 1 {
+        return verify_blob_kzg_proof_rust(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
+    }
+
     let mut evaluation_challenges_fr: Vec<FsFr> = Vec::new();
     let mut ys_fr: Vec<FsFr> = Vec::new();
 

@@ -3,7 +3,7 @@ name: blst-from-scratch benchmarks
 on: [push]
 
 env:
-  C_KZG_4844_GIT_HASH: '861371629ea1357fbc78208bbd0fdebffac837f1'
+  C_KZG_4844_GIT_HASH: '3c6b9346b3f0cfd4080d24e6203ba2f8b3733391'
 
 jobs:
   benchmarks:
@@ -40,7 +40,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd blst-from-scratch && bash run-c-kzg-4844-benches.sh
-        
+
       - name: "[blst-from-scratch] Benchmark (c-kzg-4844 parallel)"
         if: matrix.os == 'ubuntu-latest'
         run: |

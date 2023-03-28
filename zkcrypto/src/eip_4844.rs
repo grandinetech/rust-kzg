@@ -449,6 +449,11 @@ pub fn verify_blob_kzg_proof_batch(
         return true;
     }
 
+    // For a single blob, just do a regular single verification
+    if blobs.len() == 1 {
+        return verify_blob_kzg_proof(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
+    }
+
     let mut evaluation_challenges_fr: Vec<blsScalar> = Vec::new();
     let mut ys_fr: Vec<blsScalar> = Vec::new();
 

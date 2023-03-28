@@ -3,7 +3,7 @@ name: mcl benchmarks
 on: [push]
 
 env:
-  C_KZG_4844_GIT_HASH: '861371629ea1357fbc78208bbd0fdebffac837f1'
+  C_KZG_4844_GIT_HASH: '3c6b9346b3f0cfd4080d24e6203ba2f8b3733391'
 
 jobs:
   benchmarks:
