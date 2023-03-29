@@ -132,7 +132,6 @@ git apply < ../nodejs.patch
 cd bindings/node.js || exit 1
 
 print_msg "Running nodejs tests"
-yarn install
 make
 cd ../..
 
