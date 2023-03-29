@@ -1,7 +1,7 @@
 use std::env::set_current_dir;
 
 use crate::tests::eip_4844::{generate_random_blob_bytes, generate_random_field_element_bytes};
-use criterion::{BenchmarkId, Criterion};
+use criterion::{BatchSize, BenchmarkId, Criterion, Throughput};
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 
@@ -20,6 +20,7 @@ pub fn bench_eip_4844<
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
     bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
+    verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> TG1,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
@@ -72,6 +73,18 @@ pub fn bench_eip_4844<
         b.iter(|| compute_kzg_proof(blobs.first().unwrap(), fields.first().unwrap(), &ts))
     });
 
+    c.bench_function("verify_kzg_proof", |b| {
+        b.iter(|| {
+            verify_kzg_proof(
+                commitments.first().unwrap(),
+                fields.first().unwrap(),
+                fields.first().unwrap(),
+                proofs.first().unwrap(),
+                &ts,
+            )
+        })
+    });
+
     c.bench_function("compute_blob_kzg_proof", |b| {
         b.iter(|| compute_blob_kzg_proof(blobs.first().unwrap(), commitments.first().unwrap(), &ts))
     });
@@ -89,23 +102,35 @@ pub fn bench_eip_4844<
 
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
     for count in [1, 2, 4, 8, 16, 32, 64] {
+        group.throughput(Throughput::Elements(count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
-            b.iter(|| {
-                verify_blob_kzg_proof_batch(
-                    &blobs
+            b.iter_batched_ref(
+                || {
+                    let blobs_subset = blobs
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<Vec<TFr>>>(),
-                    &commitments
+                        .collect::<Vec<Vec<TFr>>>();
+                    let commitments_subset = commitments
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<TG1>>(),
-                    &proofs.clone().into_iter().take(count).collect::<Vec<TG1>>(),
-                    &ts,
-                )
-            })
+                        .collect::<Vec<TG1>>();
+                    let proofs_subset =
+                        proofs.clone().into_iter().take(count).collect::<Vec<TG1>>();
+
+                    (blobs_subset, commitments_subset, proofs_subset)
+                },
+                |(blobs_subset, commitments_subset, proofs_subset)| {
+                    verify_blob_kzg_proof_batch(
+                        blobs_subset,
+                        commitments_subset,
+                        proofs_subset,
+                        &ts,
+                    )
+                },
+                BatchSize::LargeInput,
+            );
         });
     }
     group.finish();

@@ -15,13 +15,14 @@ pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_COMMITMENT: usize = 48;
 
-// Currently, we only support fixed G1 and G2 point quantities in trusted setups.
-// Issue arises when a binding using the C API loads different G1 and G2 point quantities each time.
+// Currently, we only support fixed amount of G1 and G2 points contained in trusted setups.
+// Issue arises when a binding using the C API loads different G1 point quantities each time.
 pub static mut TRUSTED_SETUP_NUM_G1_POINTS: usize = 0;
 
 pub const TRUSTED_SETUP_NUM_G2_POINTS: usize = 65;
 
-pub const CHALLENGE_INPUT_SIZE: usize = 32 + BYTES_PER_BLOB + 48;
+pub const CHALLENGE_INPUT_SIZE: usize =
+    FIAT_SHAMIR_PROTOCOL_DOMAIN.len() + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT;
 
 pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
     70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95,
