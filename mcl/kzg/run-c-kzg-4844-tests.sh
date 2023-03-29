@@ -71,16 +71,6 @@ case $(uname -s) in
     ;;
 esac
 
-###################### c tests ######################
-
-print_msg "Patching c tests"
-git apply < ../c.patch
-
-print_msg "Running c tests"
-cd src
-make test
-cd ..
-
 ###################### dotnet tests ######################
 
 print_msg "Patching dotnet binding"
@@ -132,7 +122,6 @@ git apply < ../nodejs.patch
 cd bindings/node.js || exit 1
 
 print_msg "Running nodejs tests"
-yarn install
 make
 cd ../../..
 
@@ -143,7 +132,7 @@ cd ../../..
 
 #print_msg "Running go tests"
 #cd bindings/go || exit 1
-#go test .
+#CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
 #cd ../../..
 
 ###################### cleaning up ######################

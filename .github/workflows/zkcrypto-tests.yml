@@ -2,9 +2,6 @@ name: zkcrypto tests
 
 on: [push]
 
-env:
-  C_KZG_4844_GIT_HASH: '53b38face021d3c60d6d8d14ce3e92989cfea45a'
-
 jobs:
   tests:
     runs-on: ${{ matrix.os }}

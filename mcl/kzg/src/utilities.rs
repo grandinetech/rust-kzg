@@ -1,6 +1,6 @@
 use primitive_types::U512;
 
-pub fn order_by_rev_bit_order<T>(vals: &mut [T])
+pub fn reverse_bit_order<T>(vals: &mut [T])
 where
     T: Clone,
 {

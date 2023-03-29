@@ -1,20 +1,15 @@
 #[cfg(test)]
 mod tests {
     use blst_from_scratch::eip_4844::{
-        blob_to_polynomial_rust, bytes_to_bls_field_rust, bytes_to_g1_rust,
-        compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
-        evaluate_polynomial_in_evaluation_form_rust, verify_blob_kzg_proof_batch_rust,
-        verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
+        blob_to_kzg_commitment_rust, blob_to_polynomial_rust, bytes_from_bls_field,
+        bytes_to_bls_field_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
+        compute_powers, evaluate_polynomial_in_evaluation_form_rust, hash_to_bls_field,
+        hex_to_bls_field, hex_to_g1, load_trusted_setup_filename_rust,
+        verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
     };
-    use blst_from_scratch::{
-        eip_4844::{
-            blob_to_kzg_commitment_rust, bytes_from_bls_field, compute_powers, hash_to_bls_field,
-            load_trusted_setup_filename_rust,
-        },
-        types::{
-            fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
-            poly::FsPoly,
-        },
+    use blst_from_scratch::types::{
+        fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
+        poly::FsPoly,
     };
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
@@ -42,8 +37,8 @@ mod tests {
         blob_to_kzg_commitment_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
-            &bytes_to_g1_rust,
+            &hex_to_bls_field,
+            &hex_to_g1,
         );
     }
 
@@ -51,9 +46,11 @@ mod tests {
     pub fn compute_kzg_proof_test_() {
         compute_kzg_proof_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
-            &bytes_to_bls_field_rust,
-            &bytes_to_g1_rust,
+            &hex_to_bls_field,
+            &hex_to_g1,
             &compute_kzg_proof_rust,
+            &blob_to_polynomial_rust,
+            &evaluate_polynomial_in_evaluation_form_rust,
         );
     }
 

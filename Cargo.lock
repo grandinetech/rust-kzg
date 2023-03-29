@@ -322,7 +322,6 @@ dependencies = [
  "once_cell",
  "rand",
  "rayon",
- "sha2 0.10.6",
 ]
 
 [[package]]
@@ -746,6 +745,10 @@ dependencies = [
 [[package]]
 name = "kzg"
 version = "0.1.0"
+dependencies = [
+ "blst",
+ "sha2 0.10.6",
+]
 
 [[package]]
 name = "kzg-bench"
@@ -802,7 +805,6 @@ dependencies = [
  "once_cell",
  "primitive-types",
  "rayon",
- "sha2 0.10.6",
 ]
 
 [[package]]
@@ -1589,6 +1591,5 @@ dependencies = [
  "rand",
  "rand_core",
  "rayon",
- "sha2 0.10.6",
  "subtle",
 ]

@@ -81,7 +81,7 @@ git apply < ../go.patch
 
 print_msg "Running go benchmarks"
 cd bindings/go || exit 1
-go test -run ^$ -bench .
+CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test -run ^$ -bench .
 cd ../../..
 
 ###################### cleaning up ######################

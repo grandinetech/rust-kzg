@@ -3,10 +3,16 @@ name = "kzg"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+blst = { 'git' = 'https://github.com/supranational/blst.git' }
+sha2 = "0.10.6"
+
 [features]
 default = [
     "rand",
     "std",
 ]
 rand = []
-std = []
+std = [
+    "sha2/std"
+]
