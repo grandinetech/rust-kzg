@@ -1,6 +1,6 @@
 name: zkcrypto tests
 
-on: [push]
+on: [push, workflow_dispatch]
 
 jobs:
   tests:
