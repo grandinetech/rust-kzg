@@ -47,6 +47,7 @@ mod tests {
 
     // This aims at showing that the use of the blst::Pairing engine in pairings_verify
     // has the desired semantics.
+    #[cfg(feature = "rand")]
     fn og_pairings_verify() {
         let a1 = FsG1::rand();
         let a2 = FsG2::rand();
@@ -89,6 +90,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "rand")]
     #[test]
     pub fn test_pairings_verify() {
         for _i in 0..100 {
