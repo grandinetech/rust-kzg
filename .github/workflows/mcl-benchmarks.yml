@@ -1,6 +1,6 @@
 name: mcl benchmarks
 
-on: [push, workflow_dispatch]
+on: [push, pull_request, workflow_dispatch]
 
 env:
   C_KZG_4844_GIT_HASH: '9059ba5ae2909d5e8109b873d983ff162c8adbb4'
