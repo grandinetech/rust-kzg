@@ -5,10 +5,9 @@ use alloc::vec::Vec;
 use core::ptr;
 
 use blst::{
-    blst_final_exp, blst_fp12, blst_fp12_is_one, blst_fp12_mul, blst_miller_loop, blst_p1,
-    blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p1s_mult_pippenger,
-    blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine, blst_p2_affine, blst_p2_to_affine,
-    blst_scalar, limb_t,
+    blst_fp12_is_one, blst_p1, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine,
+    blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine,
+    blst_p2_affine, blst_p2_to_affine, blst_scalar, limb_t, Pairing,
 };
 use kzg::{G1Mul, G1};
 
@@ -62,10 +61,6 @@ pub fn g1_linear_combination(out: &mut FsG1, p: &[FsG1], coeffs: &[FsFr], len: u
 }
 
 pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
-    let mut loop0 = blst_fp12::default();
-    let mut loop1 = blst_fp12::default();
-    let mut gt_point = blst_fp12::default();
-
     let mut aa1 = blst_p1_affine::default();
     let mut bb1 = blst_p1_affine::default();
 
@@ -83,11 +78,11 @@ pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
         blst_p2_to_affine(&mut aa2, &a2.0);
         blst_p2_to_affine(&mut bb2, &b2.0);
 
-        blst_miller_loop(&mut loop0, &aa2, &aa1);
-        blst_miller_loop(&mut loop1, &bb2, &bb1);
-
-        blst_fp12_mul(&mut gt_point, &loop0, &loop1);
-        blst_final_exp(&mut gt_point, &gt_point);
+        let dst = [0u8; 3];
+        let mut pairing_blst = Pairing::new(false, &dst);
+        pairing_blst.raw_aggregate(&aa2, &aa1);
+        pairing_blst.raw_aggregate(&bb2, &bb1);
+        let gt_point = pairing_blst.as_fp12().final_exp();
 
         blst_fp12_is_one(&gt_point)
     }
