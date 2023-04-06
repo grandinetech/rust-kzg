@@ -6,14 +6,19 @@ use blst::{
     blst_fp12_is_one, blst_p1, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
     blst_p2_to_affine, p1_affines, Pairing,
 };
+use kzg::{G1Mul, G1};
 
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 
 pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], len: usize) {
-    if len == 0 {
+    if len < 8 {
         *out = FsG1::default();
+        for i in 0..len {
+            let tmp = points[i].mul(&scalars[i]);
+            *out = out.add_or_dbl(&tmp);
+        }
         return;
     }
 
