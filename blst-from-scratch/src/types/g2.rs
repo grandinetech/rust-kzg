@@ -2,7 +2,9 @@ use blst::{
     blst_fp2, blst_p2, blst_p2_add_or_double, blst_p2_cneg, blst_p2_double, blst_p2_is_equal,
     blst_p2_mult, blst_scalar, blst_scalar_from_fr,
 };
-use kzg::{Fr, G2Mul, G2};
+#[cfg(feature = "std")]
+use kzg::Fr;
+use kzg::{G2Mul, G2};
 
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::types::fr::FsFr;
