@@ -97,11 +97,16 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
             }
         }
 
+        if missing.len() > samples.len() / 2 {
+            return Err(String::from(
+                "Impossible to recover, too many shards are missing",
+            ));
+        }
+
         // Calculate `Z_r,I`
         // TRY(zero_polynomial_via_multiplication(zero_eval, &zero_poly, len_samples, missing, len_missing, fs));
-        let (zero_eval, mut zero_poly) = fs
-            .zero_poly_via_multiplication(samples.len(), missing.as_slice())
-            .unwrap();
+        let (zero_eval, mut zero_poly) =
+            fs.zero_poly_via_multiplication(samples.len(), missing.as_slice())?;
 
         // Check all is well
         for (i, item) in zero_eval.iter().enumerate().take(samples.len()) {

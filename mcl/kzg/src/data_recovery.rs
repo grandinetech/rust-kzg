@@ -91,9 +91,14 @@ impl Polynomial {
             .map(|(ix, _)| ix)
             .collect();
 
-        let (zero_eval, zero_poly_coeffs) = fft_settings
-            .zero_poly_via_multiplication(samples.len(), &missing_data_indices)
-            .unwrap();
+        if missing_data_indices.len() > samples.len() / 2 {
+            return Err(String::from(
+                "Impossible to recover, too many shards are missing",
+            ));
+        }
+
+        let (zero_eval, zero_poly_coeffs) =
+            fft_settings.zero_poly_via_multiplication(samples.len(), &missing_data_indices)?;
 
         // TODO: possible optimization, remove clone()
         let poly_evals_with_zero: Vec<Fr> = samples

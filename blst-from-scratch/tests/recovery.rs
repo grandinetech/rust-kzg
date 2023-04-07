@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::recover::{recover_random, recover_simple};
+    use kzg_bench::tests::recover::*;
     // uncomment to use the local tests
     //use crate::local_recovery::{recover_random, recover_simple};
 
@@ -14,11 +14,16 @@ mod tests {
     // Shared tests
     #[test]
     fn recover_simple_() {
-        recover_simple::<FsFr, FsFFTSettings, FsPoly, FsPoly>()
+        recover_simple::<FsFr, FsFFTSettings, FsPoly, FsPoly>();
     }
 
     #[test]
     fn recover_random_() {
-        recover_random::<FsFr, FsFFTSettings, FsPoly, FsPoly>()
+        recover_random::<FsFr, FsFFTSettings, FsPoly, FsPoly>();
+    }
+
+    #[test]
+    fn more_than_half_missing_() {
+        more_than_half_missing::<FsFr, FsFFTSettings, FsPoly, FsPoly>();
     }
 }

@@ -409,10 +409,14 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
             }
         }
 
+        if missing.len() > len_samples / 2 {
+            return Err(String::from(
+                "Impossible to recover, too many shards are missing",
+            ));
+        }
+
         // Calculate `Z_r,I`
-        let (zero_eval, mut zero_poly) = fs
-            .zero_poly_via_multiplication(len_samples, &missing)
-            .unwrap();
+        let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing)?;
 
         for i in 0..len_samples {
             assert_eq!(samples[i].is_none(), zero_eval[i].is_zero());

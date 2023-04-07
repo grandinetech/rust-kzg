@@ -106,6 +106,28 @@ pub fn recover_random<
     }
 }
 
+pub fn more_than_half_missing<
+    TFr: Fr,
+    TFTTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TPoly: Poly<TFr>,
+    TPolyRecover: PolyRecover<TFr, TPoly, TFTTSettings>,
+>() {
+    let fs = TFTTSettings::new(2).unwrap();
+    let max_width: usize = fs.get_max_width();
+
+    let mut poly = vec![TFr::zero(); max_width];
+
+    for (i, p) in poly.iter_mut().enumerate().take(max_width / 2) {
+        *p = TFr::from_u64(i.try_into().unwrap());
+    }
+
+    let data = fs.fft_fr(&poly, false).unwrap();
+    let samples: [Option<TFr>; 4] = [Some(data[0].clone()), None, None, None];
+
+    assert!(TPolyRecover::recover_poly_from_samples(&samples, &fs).is_err());
+    assert!(TPolyRecover::recover_poly_from_samples(&[None], &fs).is_err());
+}
+
 fn random_missing<TFr: Fr>(data: Vec<TFr>, len_data: usize, known: u64) -> Vec<Option<TFr>> {
     let mut missing_idx: Vec<usize> = vec![];
     let mut with_missing = data.into_iter().map(Some).collect::<Vec<_>>();

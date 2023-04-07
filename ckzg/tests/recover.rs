@@ -14,4 +14,9 @@ mod tests {
     fn test_recover_random() {
         recover_random::<BlstFr, KzgFFTSettings, KzgPoly, KzgPoly>();
     }
+
+    #[test]
+    fn more_than_half_missing_() {
+        more_than_half_missing::<BlstFr, KzgFFTSettings, KzgPoly, KzgPoly>();
+    }
 }
