@@ -101,6 +101,12 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly {
             }
         }
 
+        if missing.len() > samples.len() / 2 {
+            return Err(String::from(
+                "Impossible to recover, too many shards are missing",
+            ));
+        }
+
         let (zero_eval, mut zero_poly) = fs
             .zero_poly_via_multiplication(samples.len(), missing.as_slice())
             .unwrap();

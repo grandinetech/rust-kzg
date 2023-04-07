@@ -14,4 +14,9 @@ mod recover_tests {
     fn recover_random_() {
         recover_random::<blsScalar, ZkFFTSettings, ZPoly, ZPoly>();
     }
+
+    #[test]
+    fn more_than_half_missing_() {
+        more_than_half_missing::<blsScalar, ZkFFTSettings, ZPoly, ZPoly>();
+    }
 }

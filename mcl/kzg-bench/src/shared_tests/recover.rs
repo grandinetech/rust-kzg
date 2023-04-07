@@ -18,4 +18,10 @@ mod recover_tests {
         assert!(init(CurveType::BLS12_381));
         recover_random::<Fr, FFTSettings, Polynomial, Polynomial>();
     }
+
+    #[test]
+    fn more_than_half_missing_() {
+        assert!(init(CurveType::BLS12_381));
+        more_than_half_missing::<Fr, FFTSettings, Polynomial, Polynomial>();
+    }
 }

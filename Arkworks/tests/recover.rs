@@ -15,4 +15,9 @@ mod recover_tests {
     fn recover_random_() {
         recover_random::<Fr, FFTSettings, PolyData, PolyData>();
     }
+
+    #[test]
+    fn more_than_half_missing_() {
+        more_than_half_missing::<Fr, FFTSettings, PolyData, PolyData>();
+    }
 }
