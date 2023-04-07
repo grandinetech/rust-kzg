@@ -69,9 +69,7 @@ pub fn recover_poly_from_samples(
     }
 
     // Calculate `Z_r,I`
-    let (zero_eval, mut zero_poly) = fs
-        .zero_poly_via_multiplication(len_samples, &missing)
-        .unwrap();
+    let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing)?;
 
     for i in 0..len_samples {
         if samples[i].is_null() != zero_eval[i].is_zero() {

@@ -416,9 +416,7 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         }
 
         // Calculate `Z_r,I`
-        let (zero_eval, mut zero_poly) = fs
-            .zero_poly_via_multiplication(len_samples, &missing)
-            .unwrap();
+        let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing)?;
 
         for i in 0..len_samples {
             assert_eq!(samples[i].is_none(), zero_eval[i].is_zero());

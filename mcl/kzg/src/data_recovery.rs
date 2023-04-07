@@ -97,9 +97,8 @@ impl Polynomial {
             ));
         }
 
-        let (zero_eval, zero_poly_coeffs) = fft_settings
-            .zero_poly_via_multiplication(samples.len(), &missing_data_indices)
-            .unwrap();
+        let (zero_eval, zero_poly_coeffs) =
+            fft_settings.zero_poly_via_multiplication(samples.len(), &missing_data_indices)?;
 
         // TODO: possible optimization, remove clone()
         let poly_evals_with_zero: Vec<Fr> = samples

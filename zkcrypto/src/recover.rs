@@ -107,9 +107,8 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly {
             ));
         }
 
-        let (zero_eval, mut zero_poly) = fs
-            .zero_poly_via_multiplication(samples.len(), missing.as_slice())
-            .unwrap();
+        let (zero_eval, mut zero_poly) =
+            fs.zero_poly_via_multiplication(samples.len(), missing.as_slice())?;
 
         for (i, item) in zero_eval.iter().enumerate().take(samples.len()) {
             assert!(samples[i].is_none() == item.is_zero());

@@ -22,6 +22,7 @@ pub fn bench_zero_poly<
         b.iter(|| {
             // Half missing leaves enough FFT computation space
             fs.zero_poly_via_multiplication(size, &missing[0..(size / 2)])
+                .unwrap();
         })
     });
 }
