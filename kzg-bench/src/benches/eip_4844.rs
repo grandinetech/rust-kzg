@@ -26,7 +26,11 @@ pub fn bench_eip_4844<
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = if cfg!(feature = "minimal-spec") {
+        load_trusted_setup("src/trusted_setups/trusted_setup_4.txt")
+    } else {
+        load_trusted_setup("src/trusted_setups/trusted_setup.txt")
+    };
     let mut rng = rand::thread_rng();
 
     const MAX_COUNT: usize = 64;

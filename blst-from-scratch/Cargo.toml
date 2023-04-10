@@ -32,7 +32,7 @@ rand = [
     "kzg/rand",
 ]
 parallel = ["dep:rayon"]
-
+minimal-spec = ["kzg/minimal-spec", "kzg-bench/minimal-spec"]
 
 [[bench]]
 name = "das"

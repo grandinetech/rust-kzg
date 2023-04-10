@@ -16,3 +16,4 @@ rand = []
 std = [
     "sha2/std"
 ]
+minimal-spec = []

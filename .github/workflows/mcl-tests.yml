@@ -39,14 +39,21 @@ jobs:
         run: |
           cd mcl/kzg && bash build.sh
 
-      - name: "[mcl10-rust] Tests"
+      - name: "[mcl10-rust] Tests (minimal preset)"
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --package mcl_kzg_bench --lib shared_tests::eip_4844::tests --no-fail-fast --features minimal-spec -- --test-threads 1
+
+      - name: "[mcl10-rust] Tests (mainnet preset)"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
 
-      - name: "[mcl10-rust] Tests (parallel)"
+      - name: "[mcl10-rust] Tests (mainnet preset, parallel)"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:

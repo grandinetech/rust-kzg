@@ -10,3 +10,6 @@ criterion = "0.4.0"
 # TODO: Unreleased 0.8.0, switch to upstream once released, see https://github.com/ralexstokes/ssz-rs/issues/51
 ssz-rs = { version = "0.8.0", git = "https://github.com/ralexstokes/ssz-rs.git", rev = "688a82389f60ed68c10404417c1f7f442ba748a1" }
 sha2 = "0.10.6"
+
+[features]
+minimal-spec = ["kzg/minimal-spec"]

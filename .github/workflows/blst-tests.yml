@@ -50,13 +50,19 @@ jobs:
           command: build
           args: --manifest-path blst-from-scratch/Cargo.toml --target wasm32-unknown-unknown --no-default-features
 
-      - name: "[blst-from-scratch] Tests"
+      - name: "[blst-from-scratch] Tests (minimal preset)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --test eip_4844 tests --features minimal-spec
+
+      - name: "[blst-from-scratch] Tests (mainnet preset)"
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast
 
-      - name: "[blst-from-scratch] Tests (parallel)"
+      - name: "[blst-from-scratch] Tests (mainnet preset, parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test

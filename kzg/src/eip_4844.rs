@@ -6,7 +6,11 @@ use sha2::{Digest, Sha256};
 
 ////////////////////////////// Constant values for EIP-4844 //////////////////////////////
 
-pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
+pub const FIELD_ELEMENTS_PER_BLOB: usize = if cfg!(feature = "minimal-spec") {
+    4
+} else {
+    4096
+};
 
 pub const BYTES_PER_G1: usize = 48;
 pub const BYTES_PER_G2: usize = 96;
