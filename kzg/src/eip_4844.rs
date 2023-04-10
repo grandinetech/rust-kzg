@@ -19,6 +19,12 @@ pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_COMMITMENT: usize = 48;
 
+pub const TRUSTED_SETUP_PATH: &str = if cfg!(feature = "minimal-spec") {
+    "src/trusted_setups/trusted_setup_4.txt"
+} else {
+    "src/trusted_setups/trusted_setup.txt"
+};
+
 // Currently, we only support fixed amount of G1 and G2 points contained in trusted setups.
 // Issue arises when a binding using the C API loads different G1 point quantities each time.
 pub static mut TRUSTED_SETUP_NUM_G1_POINTS: usize = 0;

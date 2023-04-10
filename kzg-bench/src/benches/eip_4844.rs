@@ -2,7 +2,7 @@ use std::env::set_current_dir;
 
 use crate::tests::eip_4844::{generate_random_blob_bytes, generate_random_field_element_bytes};
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput};
-use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
+use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, TRUSTED_SETUP_PATH};
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 
 #[allow(clippy::type_complexity)]
@@ -26,11 +26,7 @@ pub fn bench_eip_4844<
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = if cfg!(feature = "minimal-spec") {
-        load_trusted_setup("src/trusted_setups/trusted_setup_4.txt")
-    } else {
-        load_trusted_setup("src/trusted_setups/trusted_setup.txt")
-    };
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     const MAX_COUNT: usize = 64;
