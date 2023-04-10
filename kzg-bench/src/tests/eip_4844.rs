@@ -1,4 +1,6 @@
-use kzg::eip_4844::{BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB};
+use kzg::eip_4844::{
+    BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_PATH,
+};
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 use rand::rngs::ThreadRng;
 use rand::Rng;
@@ -86,7 +88,7 @@ pub fn blob_to_kzg_commitment_test<
     hex_to_g1: &dyn Fn(&str) -> TG1,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
 
     let field_element =
         hex_to_bls_field("ad5570f5a3810b7af9d4b24bc1c2ea670245db2eaa49aae654b8f7393a9a6214");
@@ -100,10 +102,17 @@ pub fn blob_to_kzg_commitment_test<
 
     // We expect the commitment to match
     // If it doesn't match, something important has changed
-    let expected_commitment = hex_to_g1(
-        "9815ded2101b6d233fdf31d826ba0557778506df8526f42a\
-        87ccd82db36a238b50f8965c25d4484782097436d29e458e",
-    );
+    let expected_commitment = if cfg!(feature = "minimal-spec") {
+        hex_to_g1(
+            "95d2d20379b60c353a9c2c75333a5d7d26d5ef5137c5200b\
+            51bc9d0fd82d0270e98ac9d41a44c366684089e385e815e6",
+        )
+    } else {
+        hex_to_g1(
+            "9815ded2101b6d233fdf31d826ba0557778506df8526f42a\
+            87ccd82db36a238b50f8965c25d4484782097436d29e458e",
+        )
+    };
 
     assert!(commitment.equals(&expected_commitment));
 }
@@ -125,7 +134,7 @@ pub fn compute_kzg_proof_test<
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
 
     let field_element =
         hex_to_bls_field("138a16c66bdd9b0b17978ebd00bedf62307aa545d6b899b35703aedb696e3869");
@@ -140,10 +149,18 @@ pub fn compute_kzg_proof_test<
     let (proof, output_value) = compute_kzg_proof(&blob, &input_value, &ts);
 
     // Compare the computed proof to the expected proof
-    let expected_proof = hex_to_g1(
-        "899b7e1e7ff2e9b28c631d2f9d6b9ae828749c9dbf84f3f4\
-        3b910bda9558f360f2fa0dac1143460b55908406038eb538",
-    );
+    let expected_proof = if cfg!(feature = "minimal-spec") {
+        hex_to_g1(
+            "a846d83184f6d5b67bbbe905a875f6cfaf1c905e527ea49c\
+            0616992fb8cce56d202c702b83d6fbe1fa75cacb050ffc27",
+        )
+    } else {
+        hex_to_g1(
+            "899b7e1e7ff2e9b28c631d2f9d6b9ae828749c9dbf84f3f4\
+            3b910bda9558f360f2fa0dac1143460b55908406038eb538",
+        )
+    };
+
     assert!(proof.equals(&expected_proof));
 
     // Get the expected y by evaluating the polynomial at input_value
@@ -171,7 +188,7 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     let z_fr = {
@@ -230,7 +247,7 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     for i in 0..25 {
@@ -286,7 +303,7 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     let z_fr = {
@@ -343,7 +360,7 @@ pub fn compute_and_verify_blob_kzg_proof_test<
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     // Some preparation
@@ -384,7 +401,7 @@ pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     // Some preparation
@@ -428,7 +445,7 @@ pub fn verify_kzg_proof_batch_test<
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     const N_SAMPLES: usize = 16;
@@ -488,7 +505,7 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
     verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup("src/trusted_setups/trusted_setup.txt");
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
     let mut rng = rand::thread_rng();
 
     const N_SAMPLES: usize = 2;

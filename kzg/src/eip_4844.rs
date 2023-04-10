@@ -6,7 +6,11 @@ use sha2::{Digest, Sha256};
 
 ////////////////////////////// Constant values for EIP-4844 //////////////////////////////
 
-pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
+pub const FIELD_ELEMENTS_PER_BLOB: usize = if cfg!(feature = "minimal-spec") {
+    4
+} else {
+    4096
+};
 
 pub const BYTES_PER_G1: usize = 48;
 pub const BYTES_PER_G2: usize = 96;
@@ -14,6 +18,12 @@ pub const BYTES_PER_BLOB: usize = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_B
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_COMMITMENT: usize = 48;
+
+pub const TRUSTED_SETUP_PATH: &str = if cfg!(feature = "minimal-spec") {
+    "src/trusted_setups/trusted_setup_4.txt"
+} else {
+    "src/trusted_setups/trusted_setup.txt"
+};
 
 // Currently, we only support fixed amount of G1 and G2 points contained in trusted setups.
 // Issue arises when a binding using the C API loads different G1 point quantities each time.
