@@ -3,7 +3,7 @@ name: blst-from-scratch tests
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  C_KZG_4844_GIT_HASH: '9059ba5ae2909d5e8109b873d983ff162c8adbb4'
+  C_KZG_4844_GIT_HASH: 'fd24cf8e1e2f09a96b4e62a595b4e49f046ce6cf'
 
 jobs:
   tests:
