@@ -75,14 +75,14 @@ esac
 
 print_msg "Patching dotnet binding"
 git apply < ../csharp.patch
+cd bindings/csharp || exit 1
 
 print_msg "Building dotnet"
-cd bindings/csharp
 make -B ckzg CSHARP_PLATFORM=$CSHARP_PLATFORM CLANG_PLATFORM=$CLANG_PLATFORM
 dotnet restore
 
 print_msg "Running dotnet tests"
-dotnet test --configuration Release --no-restore
+dotnet test -c release --no-restore
 cd ../..
 
 ###################### rust tests ######################
