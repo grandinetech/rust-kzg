@@ -24,6 +24,9 @@ use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1,
 use std::ops::MulAssign;
 use std::ops::Neg;
 
+pub const SCALE_FACTOR: u64 = 5;
+pub const NUM_ROOTS: usize = 32;
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct ArkG1(pub blst_p1);
 
@@ -54,9 +57,7 @@ impl G1 for ArkG1 {
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
             + blst_p1_into_pc_g1projective(&b.0).unwrap();
-        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
-        self.0 = ret.0;
-        ret
+        pc_g1projective_into_blst_p1(temp).unwrap()
     }
 
     fn is_inf(&self) -> bool {
@@ -121,9 +122,7 @@ impl G2 for ArkG2 {
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let temp =
             blst_p2_into_pc_g2projective(self).unwrap() + blst_p2_into_pc_g2projective(b).unwrap();
-        let ret = pc_g2projective_into_blst_p2(temp).unwrap();
-        self.0 = ret.0;
-        ret
+        pc_g2projective_into_blst_p2(temp).unwrap()
     }
 
     fn dbl(&self) -> Self {
@@ -156,10 +155,6 @@ impl G2Mul<FsFr> for ArkG2 {
 pub struct FsFr(pub blst_fr);
 
 impl Fr for FsFr {
-    fn zero() -> Self {
-        Self::from_u64(0)
-    }
-
     fn null() -> Self {
         FsFr(blst_fr {
             l: [
@@ -169,6 +164,10 @@ impl Fr for FsFr {
                 7138715389977065193,
             ],
         })
+    }
+
+    fn zero() -> Self {
+        Self::from_u64(0)
     }
 
     fn one() -> Self {
@@ -198,19 +197,12 @@ impl Fr for FsFr {
         b.0
     }
 
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let a = blst_fr_into_pc_fr(self);
-        let b = blst_fr_into_pc_fr(b);
-        let div = a / b;
-        if div.0 .0.is_empty() {
-            Ok(FsFr::zero())
-        } else {
-            Ok(pc_fr_into_blst_fr(div))
-        }
-    }
-
     fn is_one(&self) -> bool {
         blst_fr_into_pc_fr(self).is_one()
+    }
+
+    fn is_zero(&self) -> bool {
+        blst_fr_into_pc_fr(self).is_zero()
     }
 
     fn is_null(&self) -> bool {
@@ -224,17 +216,9 @@ impl Fr for FsFr {
         }))
     }
 
-    fn is_zero(&self) -> bool {
-        blst_fr_into_pc_fr(self).is_zero()
-    }
-
     fn sqr(&self) -> Self {
         let temp = blst_fr_into_pc_fr(self);
         pc_fr_into_blst_fr(temp.square())
-    }
-
-    fn pow(&self, n: usize) -> Self {
-        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
     }
 
     fn mul(&self, b: &Self) -> Self {
@@ -267,13 +251,25 @@ impl Fr for FsFr {
         pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).inverse().unwrap())
     }
 
+    fn pow(&self, n: usize) -> Self {
+        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let a = blst_fr_into_pc_fr(self);
+        let b = blst_fr_into_pc_fr(b);
+        let div = a / b;
+        if div.0 .0.is_empty() {
+            Ok(FsFr::zero())
+        } else {
+            Ok(pc_fr_into_blst_fr(div))
+        }
+    }
+
     fn equals(&self, b: &Self) -> bool {
         blst_fr_into_pc_fr(self) == blst_fr_into_pc_fr(b)
     }
 }
-
-pub const SCALE_FACTOR: u64 = 5;
-pub const NUM_ROOTS: usize = 32;
 
 impl Poly<FsFr> for LPoly {
     fn new(size: usize) -> Result<Self, String> {
@@ -326,12 +322,12 @@ impl Poly<FsFr> for LPoly {
         poly_long_div(self, x)
     }
 
-    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        poly_mul_direct(self, x, len)
-    }
-
     fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
         poly_fast_div(self, x)
+    }
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        poly_mul_direct(self, x, len)
     }
 }
 

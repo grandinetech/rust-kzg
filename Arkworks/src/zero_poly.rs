@@ -89,7 +89,6 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         Ok(out)
     }
 
-    // Partially modified from team 'From-scratch'
     fn zero_poly_via_multiplication(
         &self,
         length: usize,
@@ -200,14 +199,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             Ordering::Equal => {}
         }
 
-        // if zero_poly.coeffs.len() < length {
-        //     zero_poly.coeffs = pad_poly(&zero_poly, length)?;
-        // } else if zero_poly.coeffs.len() > length {
-        //     zero_poly.coeffs = zero_poly.coeffs[..length].to_vec();
-        // }
-
         zero_eval = self.fft_fr(&zero_poly.coeffs, false)?;
-
         Ok((zero_eval, zero_poly))
     }
 }

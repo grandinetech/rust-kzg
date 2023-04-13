@@ -6,19 +6,15 @@ edition = "2021"
 [dependencies]
 kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
-
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 ark-ff = { version = "^0.3.0", default-features = false }
 ark-ec = { version = "^0.3.0", default-features = false }
 ark-poly = {version = "^0.3.0", default-features = false }
-
 ark-poly-commit = "0.3.0"
 ark-bls12-381 = { version = "^0.3.0", default-features = false, features = [ "curve" ] }
-
 merkle_light = "0.4.0"
 rand = "0.8"
 ark-std = { version = "^0.3.0", default-features = false }
-
 rayon = { version = "1", optional = true }
 
 [dev-dependencies]

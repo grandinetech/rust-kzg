@@ -1,9 +1,8 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::FsFr as BlstFr;
+use crate::kzg_types::{FsFr as BlstFr, SCALE_FACTOR};
 use crate::utils::PolyData;
 use kzg::{FFTFr, Fr, Poly, PolyRecover, ZeroPoly};
 
-const SCALE_FACTOR: u64 = 5;
 #[cfg(feature = "parallel")]
 static mut INVERSE_FACTORS: Vec<BlstFr> = Vec::new();
 #[cfg(feature = "parallel")]
@@ -89,10 +88,8 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
 
         let mut missing = Vec::new();
 
-        // let mut len_missing = 0;
         for (i, sample) in samples.iter().enumerate() {
             if sample.is_none() {
-                // len_missing+= 1;
                 missing.push(i);
             }
         }
@@ -104,7 +101,6 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
         }
 
         // Calculate `Z_r,I`
-        // TRY(zero_polynomial_via_multiplication(zero_eval, &zero_poly, len_samples, missing, len_missing, fs));
         let (zero_eval, mut zero_poly) =
             fs.zero_poly_via_multiplication(samples.len(), missing.as_slice())?;
 
@@ -126,8 +122,8 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
                 poly_evaluations_with_zero[i] = samples[i].unwrap().mul(&zero_eval[i]);
             }
         }
+
         // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
-        // TRY(fft_fr(poly_with_zero, poly_evaluations_with_zero, true, len_samples, fs));
         let mut poly_with_zero = PolyData {
             coeffs: fs
                 .fft_fr(poly_evaluations_with_zero.as_slice(), true)
@@ -190,10 +186,6 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
             eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
         }
 
-        // let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero.coeffs, false).unwrap();
-        // // TRY(fft_fr(eval_scaled_zero_poly, scaled_zero_poly, false, len_samples, fs));
-        // let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
-
         let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero.clone();
         for i in 0..samples.len() {
             eval_scaled_reconstructed_poly[i] = eval_scaled_poly_with_zero[i]
@@ -202,7 +194,6 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
         }
 
         // The result of the division is D(k * x):
-        // TRY(fft_fr(scaled_reconstructed_poly, eval_scaled_reconstructed_poly, true, len_samples, fs));
         let mut scaled_reconstructed_poly = PolyData {
             coeffs: fs.fft_fr(&eval_scaled_reconstructed_poly, true).unwrap(),
         };
@@ -214,15 +205,12 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
         let reconstructed_poly = scaled_reconstructed_poly; // Renaming
 
         // The evaluation polynomial for D(x) is the reconstructed data:
-        // TRY(fft_fr(reconstructed_data, reconstructed_poly, false, len_samples, fs));
         let out = PolyData {
             coeffs: fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap(),
         };
-        // reconstructed_data.coeffs = fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap();
 
         // Check all is well
         for (i, sample) in samples.iter().enumerate() {
-            // assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
             if !sample.is_none() && !out.get_coeff_at(i).equals(&sample.unwrap()) {
                 return Err(String::from(
                     "sample is zero and out coeff at i is not equals to sample",

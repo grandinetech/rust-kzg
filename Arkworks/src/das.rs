@@ -4,7 +4,7 @@ use kzg::{Fr, DAS};
 use std::cmp::Ordering;
 
 impl FFTSettings {
-    pub fn das_fft_extension_stride(&self, ab: &mut [BlstFr], stride: usize) {
+    fn das_fft_extension_stride(&self, ab: &mut [BlstFr], stride: usize) {
         match ab.len().cmp(&2_usize) {
             Ordering::Less => {}
             Ordering::Greater => {

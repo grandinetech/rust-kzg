@@ -2,7 +2,7 @@ use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkG1, FsFr as BlstFr};
 use blst::{blst_fp, blst_p1};
 use kzg::G1Mul;
-use kzg::{FFTSettings as Fs, Fr, FFTG1, G1};
+use kzg::{Fr, FFTG1, G1};
 
 pub const G1_NEGATIVE_GENERATOR: blst_p1 = blst_p1 {
     x: blst_fp {
@@ -71,17 +71,8 @@ pub const G1_GENERATOR: blst_p1 = blst_p1 {
     },
 };
 
-pub fn g1_linear_combination(out: &mut ArkG1, p: &[ArkG1], coeffs: &[BlstFr], len: usize) {
-    let mut tmp;
-    *out = G1_IDENTITY;
-    for i in 0..len {
-        tmp = p[i].mul(&coeffs[i]);
-        *out = out.add_or_dbl(&tmp);
-    }
-}
-
 /** The G1 identity/infinity */
-pub(crate) const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
+pub const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
     x: blst_fp {
         l: [0, 0, 0, 0, 0, 0],
     },
@@ -92,6 +83,14 @@ pub(crate) const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
         l: [0, 0, 0, 0, 0, 0],
     },
 });
+
+pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], len: usize) {
+    *out = ArkG1::default();
+    for i in 0..len {
+        let tmp = points[i].mul(&scalars[i]);
+        *out = out.add_or_dbl(&tmp);
+    }
+}
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
     let mut vec = Vec::new();
@@ -114,36 +113,25 @@ impl FFTG1<ArkG1> for FFTSettings {
             return Err(String::from("data length is not power of 2"));
         }
 
-        let n = data.len();
-
         let stride: usize = self.max_width / data.len();
-        let mut out = vec![ArkG1::default(); data.len()];
-        if inverse {
-            let mut inv_len: BlstFr = Fr::from_u64(data.len() as u64);
-            inv_len = inv_len.inverse();
+        let mut ret = vec![ArkG1::default(); data.len()];
 
-            fft_g1_fast(
-                &mut out,
-                data,
-                1,
-                self.get_reversed_roots_of_unity(),
-                stride,
-                1,
-            );
-            for i in out.iter_mut().take(n) {
-                *i = i.mul(&inv_len);
-            }
+        let roots = if inverse {
+            &self.reverse_roots_of_unity
         } else {
-            fft_g1_fast(
-                &mut out,
-                data,
-                1,
-                self.get_expanded_roots_of_unity(),
-                stride,
-                1,
-            );
+            &self.expanded_roots_of_unity
+        };
+
+        fft_g1_fast(&mut ret, data, 1, roots, stride, 1);
+
+        if inverse {
+            let inv_fr_len = BlstFr::from_u64(data.len() as u64).inverse();
+            ret[..data.len()]
+                .iter_mut()
+                .for_each(|f| *f = f.mul(&inv_fr_len));
         }
-        Ok(out)
+
+        Ok(ret)
     }
 }
 
@@ -155,16 +143,12 @@ pub fn fft_g1_slow(
     roots_stride: usize,
     _width: usize,
 ) {
-    let mut v;
-    let mut jv;
-    let mut r;
-
     for i in 0..data.len() {
         ret[i] = data[0].mul(&roots[0]);
         for j in 1..data.len() {
-            jv = data[j * stride];
-            r = roots[((i * j) % data.len()) * roots_stride];
-            v = jv.mul(&r);
+            let jv = data[j * stride];
+            let r = roots[((i * j) % data.len()) * roots_stride];
+            let v = jv.mul(&r);
             ret[i] = ret[i].add_or_dbl(&v);
         }
     }
@@ -212,7 +196,7 @@ pub fn fft_g1_fast(
         for i in 0..half {
             let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
             ret[i + half] = ret[i].sub(&y_times_root);
-            ret[i].add_or_dbl(&y_times_root);
+            ret[i] = ret[i].add_or_dbl(&y_times_root);
         }
     } else {
         ret[0] = data[0];
