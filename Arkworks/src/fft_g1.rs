@@ -1,5 +1,12 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkG1, FsFr as BlstFr};
+use crate::utils::{
+    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, pc_g1projective_into_blst_p1,
+};
+use ark_bls12_381::Fr as ArkFr;
+use ark_ec::msm::VariableBaseMSM;
+use ark_ec::ProjectiveCurve;
+use ark_ff::PrimeField;
 use blst::{blst_fp, blst_p1};
 use kzg::G1Mul;
 use kzg::{Fr, FFTG1, G1};
@@ -72,24 +79,31 @@ pub const G1_GENERATOR: blst_p1 = blst_p1 {
 };
 
 /** The G1 identity/infinity */
+#[rustfmt::skip]
 pub const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
-    x: blst_fp {
-        l: [0, 0, 0, 0, 0, 0],
-    },
-    y: blst_fp {
-        l: [0, 0, 0, 0, 0, 0],
-    },
-    z: blst_fp {
-        l: [0, 0, 0, 0, 0, 0],
-    },
+    x: blst_fp { l: [0, 0, 0, 0, 0, 0], },
+    y: blst_fp { l: [0, 0, 0, 0, 0, 0], },
+    z: blst_fp { l: [0, 0, 0, 0, 0, 0], },
 });
 
-pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], len: usize) {
-    *out = ArkG1::default();
-    for i in 0..len {
-        let tmp = points[i].mul(&scalars[i]);
-        *out = out.add_or_dbl(&tmp);
+pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], _len: usize) {
+    let mut ark_points = Vec::new();
+    let mut ark_scalars = Vec::new();
+
+    for point in points.iter() {
+        ark_points.push(
+            blst_p1_into_pc_g1projective(&point.0)
+                .unwrap()
+                .into_affine(),
+        );
     }
+
+    for scalar in scalars.iter() {
+        ark_scalars.push(ArkFr::into_repr(&blst_fr_into_pc_fr(&scalar)));
+    }
+
+    let res = VariableBaseMSM::multi_scalar_mul(ark_points.as_slice(), ark_scalars.as_slice());
+    *out = pc_g1projective_into_blst_p1(res).unwrap();
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
