@@ -108,7 +108,9 @@ pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> FsFr {
 }
 
 fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
-    assert_eq!(g1_bytes.len() / BYTES_PER_G1, FIELD_ELEMENTS_PER_BLOB);
+    let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
+
+    assert_eq!(num_g1_points, FIELD_ELEMENTS_PER_BLOB);
     assert_eq!(g2_bytes.len() / BYTES_PER_G2, TRUSTED_SETUP_NUM_G2_POINTS);
 
     let g1_projectives: Vec<FsG1> = g1_bytes
@@ -136,7 +138,7 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
         .collect();
 
     let mut max_scale: usize = 0;
-    while (1 << max_scale) < g1_bytes.len() {
+    while (1 << max_scale) < num_g1_points {
         max_scale += 1;
     }
 

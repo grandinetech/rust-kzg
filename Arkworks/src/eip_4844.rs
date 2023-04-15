@@ -48,18 +48,19 @@ pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> FsFr {
 }
 
 fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
-    assert_eq!(g1_bytes.len() / BYTES_PER_G1, FIELD_ELEMENTS_PER_BLOB);
+    let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
+
+    assert_eq!(num_g1_points, FIELD_ELEMENTS_PER_BLOB);
     assert_eq!(g2_bytes.len() / BYTES_PER_G2, TRUSTED_SETUP_NUM_G2_POINTS);
 
-    let length = g1_bytes.len();
     let mut max_scale: usize = 0;
-
-    while (1 << max_scale) < g1_bytes.len() {
+    while (1 << max_scale) < num_g1_points {
         max_scale += 1;
     }
 
     let fs = FFTSettings::new(max_scale).unwrap();
 
+    let length = num_g1_points + 1;
     let rng = &mut test_rng();
     let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length, false, rng).unwrap();
 
