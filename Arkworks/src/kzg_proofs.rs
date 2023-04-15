@@ -37,7 +37,7 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::ops::{MulAssign, Neg};
 
-type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
+pub type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
 type KZG_Bls12_381 = KZG10<Bls12_381, UniPoly_381>;
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
@@ -70,15 +70,15 @@ fn trim(
 }
 
 #[allow(clippy::upper_case_acronyms)]
-struct KZG<E: PairingEngine, P: UVPolynomial<E::Fr>> {
+pub struct KZG<E: PairingEngine, P: UVPolynomial<E::Fr>> {
     _engine: PhantomData<E>,
     _poly: PhantomData<P>,
 }
 
-struct setup_type {
-    params: UniversalParams<Bls12_381>,
-    g1_secret: Vec<GroupProjective<g1::Parameters>>,
-    g2_secret: Vec<GroupProjective<g2::Parameters>>,
+pub struct setup_type {
+    pub params: UniversalParams<Bls12_381>,
+    pub g1_secret: Vec<GroupProjective<g1::Parameters>>,
+    pub g2_secret: Vec<GroupProjective<g2::Parameters>>,
 }
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
@@ -92,7 +92,7 @@ where
     #![allow(non_camel_case_types)]
     /// Constructs public parameters when given as input the maximum degree `degree`
     /// for the polynomial commitment scheme.
-    fn setup<R: RngCore>(
+    pub fn setup<R: RngCore>(
         max_degree: usize,
         produce_g2_powers: bool,
         rng: &mut R,
@@ -403,7 +403,7 @@ fn generate_trusted_setup_test(
     (s1, s2)
 }
 
-fn generate_rng_seed(secret_g1: &[ArkG1]) -> StdRng {
+pub fn generate_rng_seed(secret_g1: &[ArkG1]) -> StdRng {
     let mut output = Vec::<u8>::new();
     for val in &secret_g1[secret_g1.len() - 1].0.x.l {
         output.extend_from_slice(&val.to_be_bytes());
@@ -418,23 +418,16 @@ pub fn new_kzg_settings(
     ffs: &FFTSettings,
 ) -> KZGSettings {
     let length = length + 1;
-
     let mut rng = generate_rng_seed(secret_g1);
-
     let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
 
     let mut temp = Vec::new();
+    let mut temp2 = Vec::new();
+    let mut temp3 = Vec::new();
+
     for i in 0..length {
         temp.push(pc_g1projective_into_blst_p1(setup.g1_secret[i as usize]).unwrap());
-    }
-
-    let mut temp2 = Vec::new();
-    for i in 0..length {
         temp2.push(pc_g2projective_into_blst_p2(setup.g2_secret[i as usize]).unwrap());
-    }
-
-    let mut temp3 = Vec::new();
-    for i in 0..length {
         temp3.push(setup.g1_secret[i as usize].into_affine());
     }
 

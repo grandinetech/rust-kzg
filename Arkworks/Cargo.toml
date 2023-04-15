@@ -22,9 +22,10 @@ criterion = "0.4.0"
 
 [features]
 default = ["std"]
-std = [ "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std"]
-print-trace = [ "ark-std/print-trace" ]
-parallel = [ "std", "ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel", "ark-std/parallel", "rayon" ]
+std = ["ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std"]
+print-trace = ["ark-std/print-trace"]
+parallel = ["std", "ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel", "ark-std/parallel", "rayon"]
+minimal-spec = ["kzg/minimal-spec", "kzg-bench/minimal-spec"]
 
 [[bench]]
 name = "fft"
@@ -52,4 +53,8 @@ harness = false
 
 [[bench]]
 name = "zero_poly"
+harness = false
+
+[[bench]]
+name = "eip_4844"
 harness = false

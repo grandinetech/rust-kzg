@@ -13,10 +13,10 @@ use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
     pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
 };
-use ark_bls12_381::Fr as ArkFr;
+use ark_bls12_381::{g1, Fr as ArkFr};
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ec::{AffineCurve, ProjectiveCurve};
-use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
+use ark_ff::{biginteger::BigInteger256, BigInteger, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
@@ -88,6 +88,19 @@ impl G1 for ArkG1 {
 
     fn equals(&self, b: &Self) -> bool {
         self.0.eq(&b.0)
+    }
+}
+
+impl ArkG1 {
+    pub fn from_bytes(bytes: [u8; 48usize]) -> Self {
+        let affine = g1::G1Affine::from_random_bytes(bytes.as_slice()).unwrap();
+        let projective = affine.into_projective();
+        pc_g1projective_into_blst_p1(projective).unwrap()
+    }
+
+    pub fn to_bytes(&self) -> [u8; 48usize] {
+        let projective = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        <[u8; 48]>::try_from(projective.x.0.to_bytes_le()).unwrap()
     }
 }
 
@@ -268,6 +281,22 @@ impl Fr for FsFr {
 
     fn equals(&self, b: &Self) -> bool {
         blst_fr_into_pc_fr(self) == blst_fr_into_pc_fr(b)
+    }
+}
+
+impl FsFr {
+    pub fn from_bytes(bytes: [u8; 32usize]) -> Result<Self, u8> {
+        let ark_fr = ArkFr::from_random_bytes(bytes.as_slice());
+        if let Some(x) = ark_fr {
+            Ok(pc_fr_into_blst_fr(x))
+        } else {
+            Ok(FsFr(blst_fr { l: [0, 0, 0, 0] }))
+        }
+    }
+
+    pub fn to_bytes(&self) -> [u8; 32usize] {
+        let big_int_256 = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
+        <[u8; 32]>::try_from(big_int_256.to_bytes_le()).unwrap()
     }
 }
 

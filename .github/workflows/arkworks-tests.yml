@@ -12,13 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: "[arkworks] Tests"
+      - name: "[arkworks] Tests (minimal preset)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path Arkworks/Cargo.toml --no-fail-fast --test eip_4844 tests --features minimal-spec
+
+      - name: "[arkworks] Tests (mainnet preset)"
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --manifest-path Arkworks/Cargo.toml --no-fail-fast
 
-      - name: "[arkworks] Tests (parallel)"
+      - name: "[arkworks] Tests (mainnet preset, parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test
