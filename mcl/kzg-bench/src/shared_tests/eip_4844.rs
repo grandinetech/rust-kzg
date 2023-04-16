@@ -64,6 +64,7 @@ mod tests {
         );
     }
 
+    //#[cfg(not(feature = "minimal-spec"))]
     //#[test]
     //pub fn compute_and_verify_kzg_proof_within_domain_test_() {
     //    compute_and_verify_kzg_proof_within_domain_test::<
