@@ -35,10 +35,10 @@ impl FFTSettings {
         }
 
         let mut poly = Polynomial::from_fr(vec![Fr::one(); indices.len() + 1]);
-        poly.coeffs[0] = self.exp_roots_of_unity[indices[0] * stride].get_neg();
+        poly.coeffs[0] = self.expanded_roots_of_unity[indices[0] * stride].get_neg();
 
         for (i, item) in indices.iter().enumerate().skip(1) {
-            poly.coeffs[i] = self.exp_roots_of_unity[item * stride].get_neg();
+            poly.coeffs[i] = self.expanded_roots_of_unity[item * stride].get_neg();
             let neg_di = poly.coeffs[i];
             poly.coeffs[i] = poly.coeffs[i] + poly.coeffs[i - 1];
             for j in (1..i).rev() {

@@ -6,19 +6,15 @@ edition = "2021"
 [dependencies]
 kzg = { path = "../kzg" }
 kzg-bench = { path = "../kzg-bench" }
-
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 ark-ff = { version = "^0.3.0", default-features = false }
 ark-ec = { version = "^0.3.0", default-features = false }
 ark-poly = {version = "^0.3.0", default-features = false }
-
 ark-poly-commit = "0.3.0"
 ark-bls12-381 = { version = "^0.3.0", default-features = false, features = [ "curve" ] }
-
 merkle_light = "0.4.0"
 rand = "0.8"
 ark-std = { version = "^0.3.0", default-features = false }
-
 rayon = { version = "1", optional = true }
 
 [dev-dependencies]
@@ -26,9 +22,10 @@ criterion = "0.4.0"
 
 [features]
 default = ["std"]
-std = [ "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std"]
-print-trace = [ "ark-std/print-trace" ]
-parallel = [ "std", "ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel", "ark-std/parallel", "rayon" ]
+std = ["ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std"]
+print-trace = ["ark-std/print-trace"]
+parallel = ["std", "ark-ff/parallel", "ark-ec/parallel", "ark-poly/parallel", "ark-std/parallel", "rayon"]
+minimal-spec = ["kzg/minimal-spec", "kzg-bench/minimal-spec"]
 
 [[bench]]
 name = "fft"
@@ -56,4 +53,8 @@ harness = false
 
 [[bench]]
 name = "zero_poly"
+harness = false
+
+[[bench]]
+name = "eip_4844"
 harness = false

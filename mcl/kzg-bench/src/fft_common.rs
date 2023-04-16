@@ -32,7 +32,7 @@ fn fftsettings_new_creates_valid_settings() {
 
     // has lots more members, but checking the first few should point out whether the math is correct
     let starting_equal = fft_settings
-        .exp_roots_of_unity
+        .expanded_roots_of_unity
         .iter()
         .zip(expected)
         .all(|(a, b)| a.get_str(10) == b.get_str(10));

@@ -13,18 +13,26 @@ impl CommonFFTSettings<Fr> for FFTSettings {
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> Fr {
-        self.exp_roots_of_unity[i]
+        self.expanded_roots_of_unity[i]
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[Fr] {
-        &self.exp_roots_of_unity
+        &self.expanded_roots_of_unity
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> Fr {
-        self.exp_roots_of_unity_rev[i]
+        self.reverse_roots_of_unity[i]
     }
 
     fn get_reversed_roots_of_unity(&self) -> &[Fr] {
-        &self.exp_roots_of_unity_rev
+        &self.reverse_roots_of_unity
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> Fr {
+        self.roots_of_unity[i]
+    }
+
+    fn get_roots_of_unity(&self) -> &[Fr] {
+        &self.roots_of_unity
     }
 }

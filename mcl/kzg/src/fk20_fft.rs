@@ -1,5 +1,5 @@
 use crate::data_types::{fp::*, fr::*, g1::*};
-use crate::utilities::{is_power_of_2, next_pow_of_2};
+use crate::utilities::{is_power_of_2, next_pow_of_2, reverse_bit_order};
 use std::iter;
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
@@ -235,8 +235,9 @@ pub fn expand_root_of_unity(root: &Fr) -> Vec<Fr> {
 pub struct FFTSettings {
     pub max_width: usize,
     pub root_of_unity: Fr,
-    pub exp_roots_of_unity: Vec<Fr>,
-    pub exp_roots_of_unity_rev: Vec<Fr>,
+    pub expanded_roots_of_unity: Vec<Fr>,
+    pub reverse_roots_of_unity: Vec<Fr>,
+    pub roots_of_unity: Vec<Fr>,
 }
 
 impl Default for FFTSettings {
@@ -251,20 +252,25 @@ impl FFTSettings {
     ///
     /// use of mutable static is unsafe and requires unsafe function or block
     pub fn new(max_scale: u8) -> FFTSettings {
-        let root: Fr;
+        let root_of_unity: Fr;
         unsafe {
             init_globals();
-            root = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
+            root_of_unity = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
         }
-        let root_z = expand_root_of_unity(&root);
-        let mut root_z_rev = root_z.clone();
-        root_z_rev.reverse();
+        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity);
+        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
+
+        // Permute the roots of unity
+        let mut roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_bit_order(&mut roots_of_unity);
 
         FFTSettings {
             max_width: 1 << max_scale,
-            root_of_unity: root,
-            exp_roots_of_unity: root_z,
-            exp_roots_of_unity_rev: root_z_rev,
+            root_of_unity,
+            expanded_roots_of_unity,
+            reverse_roots_of_unity,
+            roots_of_unity,
         }
     }
 
@@ -275,7 +281,7 @@ impl FFTSettings {
         max_scale: u8,
         root_strings: [&str; 32],
     ) -> Result<FFTSettings, String> {
-        let root: Fr;
+        let root_of_unity: Fr;
         unsafe {
             init_globals_custom(root_strings);
             if max_scale as usize >= SCALE_2_ROOT_OF_UNITY.len() {
@@ -283,18 +289,23 @@ impl FFTSettings {
                     "Scale is expected to be within root of unity matrix row size",
                 ));
             }
-            root = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
+            root_of_unity = SCALE_2_ROOT_OF_UNITY[max_scale as usize]
         }
 
-        let root_z = expand_root_of_unity(&root);
-        let mut root_z_rev = root_z.clone();
-        root_z_rev.reverse();
+        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity);
+        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
+
+        // Permute the roots of unity
+        let mut roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_bit_order(&mut roots_of_unity);
 
         Ok(FFTSettings {
             max_width: 1 << max_scale,
-            root_of_unity: root,
-            exp_roots_of_unity: root_z,
-            exp_roots_of_unity_rev: root_z_rev,
+            root_of_unity,
+            expanded_roots_of_unity,
+            reverse_roots_of_unity,
+            roots_of_unity,
         })
     }
 
@@ -423,7 +434,7 @@ impl FFTSettings {
     pub fn inplace_fft(&self, values: &[Fr], inv: bool) -> Vec<Fr> {
         if inv {
             let root_z: Vec<Fr> = self
-                .exp_roots_of_unity_rev
+                .reverse_roots_of_unity
                 .iter()
                 .copied()
                 .take(self.max_width)
@@ -440,7 +451,7 @@ impl FFTSettings {
             out
         } else {
             let root_z: Vec<Fr> = self
-                .exp_roots_of_unity
+                .expanded_roots_of_unity
                 .iter()
                 .copied()
                 .take(self.max_width)
@@ -516,7 +527,7 @@ impl FFTSettings {
         // let vals_copy = values.clone();
 
         let root_z: Vec<Fr> = self
-            .exp_roots_of_unity
+            .expanded_roots_of_unity
             .iter()
             .take(self.max_width)
             .copied()
@@ -544,7 +555,7 @@ impl FFTSettings {
         // let vals_copy = values.clone();
 
         let root_z: Vec<Fr> = self
-            .exp_roots_of_unity_rev
+            .reverse_roots_of_unity
             .iter()
             .take(self.max_width)
             .copied()

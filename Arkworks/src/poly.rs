@@ -14,11 +14,11 @@ use merkle_light::merkle::log2_pow2;
 use std::cmp::min;
 use std::ops::Neg;
 
-pub(crate) fn neg(n: BlstFr) -> BlstFr {
+fn neg(n: BlstFr) -> BlstFr {
     pc_fr_into_blst_fr(blst_fr_into_pc_fr(&n).neg())
 }
 
-pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
+pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
     if b.coeffs.is_empty() {
         return Err(String::from("b.coeffs is empty"));
     }
@@ -80,11 +80,7 @@ pub(crate) fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, 
     Ok(output)
 }
 
-pub(crate) fn poly_mul_direct(
-    p1: &PolyData,
-    p2: &PolyData,
-    len: usize,
-) -> Result<PolyData, String> {
+pub fn poly_mul_direct(p1: &PolyData, p2: &PolyData, len: usize) -> Result<PolyData, String> {
     let p1 = blst_poly_into_pc_poly(p1).unwrap();
     let p2 = blst_poly_into_pc_poly(p2).unwrap();
     if p1.is_zero() || p2.is_zero() {
@@ -106,7 +102,7 @@ pub(crate) fn poly_mul_direct(
     }
 }
 
-pub(crate) fn poly_long_div(p1: &PolyData, p2: &PolyData) -> Result<PolyData, String> {
+pub fn poly_long_div(p1: &PolyData, p2: &PolyData) -> Result<PolyData, String> {
     pc_poly_into_blst_poly(
         &blst_poly_into_pc_poly(p1).unwrap() / &blst_poly_into_pc_poly(p2).unwrap(),
     )
@@ -137,7 +133,6 @@ pub fn poly_mul_fft(
     let length = (a_len + b_len - 1).next_power_of_two();
 
     // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
-
     let fs_p = if let Some(x) = fs {
         x.clone()
     } else {
@@ -199,7 +194,6 @@ pub fn poly_mul_fft(
     ab.coeffs = fs_p.fft_fr(&ab_fft.coeffs, true).unwrap();
 
     let data_len = min(len, length);
-
     let mut out = PolyData::new(len).unwrap();
 
     for i in 0..data_len {

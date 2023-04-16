@@ -4,7 +4,7 @@ use rand::SeedableRng;
 use std::borrow::Borrow;
 
 use ark_ec::msm::{FixedBaseMSM, VariableBaseMSM};
-use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
+use ark_poly::Radix2EvaluationDomain;
 use ark_poly_commit::kzg10::{
     Commitment, Powers, Proof, Randomness, UniversalParams, VerifierKey, KZG10,
 };
@@ -13,7 +13,6 @@ use ark_std::{
     marker::PhantomData, ops::Div, rand::RngCore, test_rng, vec, One, UniformRand, Zero,
 };
 
-use super::fft::SCALE2_ROOT_OF_UNITY;
 use super::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
     blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
@@ -34,14 +33,15 @@ use blst::{blst_fp, blst_fp2};
 use kzg::{FFTFr, Fr as FrTrait, Poly};
 use rand::rngs::StdRng;
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 use std::ops::{MulAssign, Neg};
 
-type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
+pub type UniPoly_381 = DensePoly<<Bls12_381 as PairingEngine>::Fr>;
 type KZG_Bls12_381 = KZG10<Bls12_381, UniPoly_381>;
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
 Due to being private and, therefore, unreachable*/
-pub fn trim(
+fn trim(
     pp: &UniversalParams<Bls12_381>,
     mut supported_degree: usize,
 ) -> Result<(Powers<Bls12_381>, VerifierKey<Bls12_381>), Error> {
@@ -68,15 +68,16 @@ pub fn trim(
     Ok((powers, vk))
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct KZG<E: PairingEngine, P: UVPolynomial<E::Fr>> {
     _engine: PhantomData<E>,
     _poly: PhantomData<P>,
 }
 
 pub struct setup_type {
-    params: UniversalParams<Bls12_381>,
-    g1_secret: Vec<GroupProjective<g1::Parameters>>,
-    g2_secret: Vec<GroupProjective<g2::Parameters>>,
+    pub params: UniversalParams<Bls12_381>,
+    pub g1_secret: Vec<GroupProjective<g1::Parameters>>,
+    pub g2_secret: Vec<GroupProjective<g2::Parameters>>,
 }
 
 /*This segment has been copied from https://github.com/arkworks-rs/poly-commit/blob/master/src/kzg10/mod.rs,
@@ -192,7 +193,7 @@ where
         Ok(res)
     }
 
-    pub fn open(
+    fn open(
         powers: &Powers<Bls12_381>,
         p: &DensePoly<Fr>,
         point: Fr,
@@ -214,7 +215,7 @@ where
         proof
     }
 
-    pub(crate) fn open_with_witness_polynomial(
+    fn open_with_witness_polynomial(
         powers: &Powers<Bls12_381>,
         point: Fr,
         randomness: &Randomness<Fr, DensePoly<Fr>>,
@@ -245,7 +246,7 @@ where
         })
     }
 
-    pub(crate) fn check_degree_is_too_large(degree: usize, num_powers: usize) -> Result<(), Error> {
+    fn check_degree_is_too_large(degree: usize, num_powers: usize) -> Result<(), Error> {
         let num_coefficients = degree + 1;
         if num_coefficients > num_powers {
             Err(Error::TooManyCoefficients {
@@ -257,6 +258,7 @@ where
         }
     }
 }
+
 fn skip_leading_zeros_and_convert_to_bigints<F: PrimeField, P: UVPolynomial<F>>(
     p: &P,
 ) -> (usize, Vec<F::BigInt>) {
@@ -279,6 +281,7 @@ pub struct FFTSettings {
     pub root_of_unity: BlstFr,
     pub expanded_roots_of_unity: Vec<BlstFr>,
     pub reverse_roots_of_unity: Vec<BlstFr>,
+    pub roots_of_unity: Vec<BlstFr>,
     pub domain: Radix2EvaluationDomain<Fr>,
 }
 
@@ -294,33 +297,6 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
     }
 
     Ok(generated_powers)
-}
-
-impl FFTSettings {
-    pub fn from_scale(max_scale: usize) -> Result<FFTSettings, String> {
-        if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from(
-                "Scale is expected to be within root of unity matrix row size",
-            ));
-        }
-        let max_width: usize = 1 << max_scale;
-        let domain = Radix2EvaluationDomain::<Fr>::new(max_width as usize).unwrap();
-
-        let roots =
-            expand_root_of_unity(&pc_fr_into_blst_fr(domain.group_gen), domain.size as usize)
-                .unwrap();
-
-        let mut reverse = roots.clone();
-        reverse.reverse();
-
-        Ok(FFTSettings {
-            max_width,
-            root_of_unity: pc_fr_into_blst_fr(domain.group_gen),
-            expanded_roots_of_unity: roots,
-            reverse_roots_of_unity: reverse,
-            domain,
-        })
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -348,7 +324,6 @@ impl Default for KZGSettings {
     }
 }
 
-use std::convert::TryInto;
 fn read_be_u64(input: &mut &[u8]) -> u64 {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u64>());
     *input = rest;
@@ -378,7 +353,7 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>,
     (s1, s2)
 }
 
-pub fn generate_trusted_setup_test(
+fn generate_trusted_setup_test(
     len: usize,
     s: Fr,
 ) -> (
@@ -401,38 +376,31 @@ pub fn generate_trusted_setup_test(
     (s1, s2)
 }
 
-fn generate_rng_seed(secret_g1: &[ArkG1]) -> rand::prelude::StdRng {
+pub fn generate_rng_seed(secret_g1: &[ArkG1]) -> StdRng {
     let mut output = Vec::<u8>::new();
     for val in &secret_g1[secret_g1.len() - 1].0.x.l {
         output.extend_from_slice(&val.to_be_bytes());
     }
-    rand::rngs::StdRng::from_seed(output[..32].try_into().unwrap())
+    StdRng::from_seed(output[..32].try_into().unwrap())
 }
 
-pub(crate) fn new_kzg_settings(
+pub fn new_kzg_settings(
     secret_g1: &[ArkG1],
     _secret_g2: &[ArkG2],
     length: u64,
     ffs: &FFTSettings,
 ) -> KZGSettings {
     let length = length + 1;
-
     let mut rng = generate_rng_seed(secret_g1);
-
     let mut setup = KZG::<Bls12_381, UniPoly_381>::setup(length as usize, false, &mut rng).unwrap();
 
     let mut temp = Vec::new();
+    let mut temp2 = Vec::new();
+    let mut temp3 = Vec::new();
+
     for i in 0..length {
         temp.push(pc_g1projective_into_blst_p1(setup.g1_secret[i as usize]).unwrap());
-    }
-
-    let mut temp2 = Vec::new();
-    for i in 0..length {
         temp2.push(pc_g2projective_into_blst_p2(setup.g2_secret[i as usize]).unwrap());
-    }
-
-    let mut temp3 = Vec::new();
-    for i in 0..length {
         temp3.push(setup.g1_secret[i as usize].into_affine());
     }
 
@@ -448,7 +416,7 @@ pub(crate) fn new_kzg_settings(
     }
 }
 
-pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, String> {
+pub fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, String> {
     if p.coeffs.len() > ks.length as usize {
         Err(String::from("Poly given is too long"))
     } else if blst_poly_into_pc_poly(p).unwrap().is_zero() {
@@ -462,7 +430,7 @@ pub(crate) fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, St
     }
 }
 
-pub(crate) fn compute_proof_single(p: &PolyData, x: &BlstFr, ks: &KZGSettings) -> ArkG1 {
+pub fn compute_proof_single(p: &PolyData, x: &BlstFr, ks: &KZGSettings) -> ArkG1 {
     let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
     let proof = KZG::<Bls12_381, UniPoly_381>::open(
         &powers,
@@ -474,12 +442,12 @@ pub(crate) fn compute_proof_single(p: &PolyData, x: &BlstFr, ks: &KZGSettings) -
     pc_g1projective_into_blst_p1(proof.w.into_projective()).unwrap()
 }
 
-pub(crate) fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
+pub fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
     let poly = blst_poly_into_pc_poly(p).unwrap();
     pc_fr_into_blst_fr(poly.evaluate(&blst_fr_into_pc_fr(x)))
 }
 
-pub(crate) fn check_proof_single(
+pub fn check_proof_single(
     com: &ArkG1,
     proof: &ArkG1,
     x: &BlstFr,
@@ -507,7 +475,7 @@ pub(crate) fn check_proof_single(
     .unwrap()
 }
 
-pub(crate) fn compute_proof_multi(p: &PolyData, x: &BlstFr, n: usize, ks: &KZGSettings) -> ArkG1 {
+pub fn compute_proof_multi(p: &PolyData, x: &BlstFr, n: usize, ks: &KZGSettings) -> ArkG1 {
     let mut divisor = PolyData::new(n + 1).unwrap();
     let x_pow_n = x.pow(n);
 
@@ -519,13 +487,12 @@ pub(crate) fn compute_proof_multi(p: &PolyData, x: &BlstFr, n: usize, ks: &KZGSe
     divisor.set_coeff_at(n, &BlstFr::one());
 
     let mut p = p.clone();
-
     let q = p.div(&divisor).unwrap();
 
     commit_to_poly(&q, ks).unwrap()
 }
 
-pub(crate) fn check_proof_multi(
+pub fn check_proof_multi(
     com: &ArkG1,
     proof: &ArkG1,
     x: &BlstFr,

@@ -13,16 +13,20 @@ use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
     pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
 };
-use ark_bls12_381::Fr as ArkFr;
+use ark_bls12_381::{g1, Fr as ArkFr};
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ec::{AffineCurve, ProjectiveCurve};
-use ark_ff::{biginteger::BigInteger256, Field, PrimeField};
+use ark_ff::{biginteger::BigInteger256, BigInteger, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
+use kzg_bench::tests::fk20_proofs::reverse_bit_order;
 use std::ops::MulAssign;
 use std::ops::Neg;
+
+pub const SCALE_FACTOR: u64 = 5;
+pub const NUM_ROOTS: usize = 32;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct ArkG1(pub blst_p1);
@@ -54,9 +58,7 @@ impl G1 for ArkG1 {
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
             + blst_p1_into_pc_g1projective(&b.0).unwrap();
-        let ret = pc_g1projective_into_blst_p1(temp).unwrap();
-        self.0 = ret.0;
-        ret
+        pc_g1projective_into_blst_p1(temp).unwrap()
     }
 
     fn is_inf(&self) -> bool {
@@ -87,6 +89,19 @@ impl G1 for ArkG1 {
 
     fn equals(&self, b: &Self) -> bool {
         self.0.eq(&b.0)
+    }
+}
+
+impl ArkG1 {
+    pub fn from_bytes(bytes: [u8; 48usize]) -> Self {
+        let affine = g1::G1Affine::from_random_bytes(bytes.as_slice()).unwrap();
+        let projective = affine.into_projective();
+        pc_g1projective_into_blst_p1(projective).unwrap()
+    }
+
+    pub fn to_bytes(&self) -> [u8; 48usize] {
+        let projective = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        <[u8; 48]>::try_from(projective.x.0.to_bytes_le()).unwrap()
     }
 }
 
@@ -121,9 +136,7 @@ impl G2 for ArkG2 {
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let temp =
             blst_p2_into_pc_g2projective(self).unwrap() + blst_p2_into_pc_g2projective(b).unwrap();
-        let ret = pc_g2projective_into_blst_p2(temp).unwrap();
-        self.0 = ret.0;
-        ret
+        pc_g2projective_into_blst_p2(temp).unwrap()
     }
 
     fn dbl(&self) -> Self {
@@ -156,10 +169,6 @@ impl G2Mul<FsFr> for ArkG2 {
 pub struct FsFr(pub blst_fr);
 
 impl Fr for FsFr {
-    fn zero() -> Self {
-        Self::from_u64(0)
-    }
-
     fn null() -> Self {
         FsFr(blst_fr {
             l: [
@@ -169,6 +178,10 @@ impl Fr for FsFr {
                 7138715389977065193,
             ],
         })
+    }
+
+    fn zero() -> Self {
+        Self::from_u64(0)
     }
 
     fn one() -> Self {
@@ -198,19 +211,12 @@ impl Fr for FsFr {
         b.0
     }
 
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let a = blst_fr_into_pc_fr(self);
-        let b = blst_fr_into_pc_fr(b);
-        let div = a / b;
-        if div.0 .0.is_empty() {
-            Ok(FsFr::zero())
-        } else {
-            Ok(pc_fr_into_blst_fr(div))
-        }
-    }
-
     fn is_one(&self) -> bool {
         blst_fr_into_pc_fr(self).is_one()
+    }
+
+    fn is_zero(&self) -> bool {
+        blst_fr_into_pc_fr(self).is_zero()
     }
 
     fn is_null(&self) -> bool {
@@ -224,17 +230,9 @@ impl Fr for FsFr {
         }))
     }
 
-    fn is_zero(&self) -> bool {
-        blst_fr_into_pc_fr(self).is_zero()
-    }
-
     fn sqr(&self) -> Self {
         let temp = blst_fr_into_pc_fr(self);
         pc_fr_into_blst_fr(temp.square())
-    }
-
-    fn pow(&self, n: usize) -> Self {
-        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
     }
 
     fn mul(&self, b: &Self) -> Self {
@@ -267,13 +265,41 @@ impl Fr for FsFr {
         pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).inverse().unwrap())
     }
 
+    fn pow(&self, n: usize) -> Self {
+        pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).pow([n as u64]))
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let a = blst_fr_into_pc_fr(self);
+        let b = blst_fr_into_pc_fr(b);
+        let div = a / b;
+        if div.0 .0.is_empty() {
+            Ok(FsFr::zero())
+        } else {
+            Ok(pc_fr_into_blst_fr(div))
+        }
+    }
+
     fn equals(&self, b: &Self) -> bool {
         blst_fr_into_pc_fr(self) == blst_fr_into_pc_fr(b)
     }
 }
 
-pub const SCALE_FACTOR: u64 = 5;
-pub const NUM_ROOTS: usize = 32;
+impl FsFr {
+    pub fn from_bytes(bytes: [u8; 32usize]) -> Result<Self, u8> {
+        let ark_fr = ArkFr::from_random_bytes(bytes.as_slice());
+        if let Some(x) = ark_fr {
+            Ok(pc_fr_into_blst_fr(x))
+        } else {
+            Ok(FsFr(blst_fr { l: [0, 0, 0, 0] }))
+        }
+    }
+
+    pub fn to_bytes(&self) -> [u8; 32usize] {
+        let big_int_256 = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
+        <[u8; 32]>::try_from(big_int_256.to_bytes_le()).unwrap()
+    }
+}
 
 impl Poly<FsFr> for LPoly {
     fn new(size: usize) -> Result<Self, String> {
@@ -326,12 +352,12 @@ impl Poly<FsFr> for LPoly {
         poly_long_div(self, x)
     }
 
-    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        poly_mul_direct(self, x, len)
-    }
-
     fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
         poly_fast_div(self, x)
+    }
+
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        poly_mul_direct(self, x, len)
     }
 }
 
@@ -353,6 +379,7 @@ impl Default for LFFTSettings {
             root_of_unity: FsFr::zero(),
             expanded_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
+            roots_of_unity: Vec::new(),
             domain: Radix2EvaluationDomain::<ArkFr>::new(0_usize).unwrap(),
         }
     }
@@ -368,18 +395,23 @@ impl FFTSettings<FsFr> for LFFTSettings {
         let max_width: usize = 1 << scale;
         let domain = Radix2EvaluationDomain::<ArkFr>::new(max_width as usize).unwrap();
 
-        let roots =
+        let expanded_roots_of_unity =
             expand_root_of_unity(&pc_fr_into_blst_fr(domain.group_gen), domain.size as usize)
                 .unwrap();
 
-        let mut reverse = roots.clone();
-        reverse.reverse();
+        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
+
+        // Permute the roots of unity
+        let mut roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_bit_order(&mut roots_of_unity);
 
         Ok(LFFTSettings {
             max_width,
             root_of_unity: pc_fr_into_blst_fr(domain.group_gen),
-            expanded_roots_of_unity: roots,
-            reverse_roots_of_unity: reverse,
+            expanded_roots_of_unity,
+            reverse_roots_of_unity,
+            roots_of_unity,
             domain,
         })
     }
@@ -402,6 +434,14 @@ impl FFTSettings<FsFr> for LFFTSettings {
 
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         self.reverse_roots_of_unity.as_slice()
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.roots_of_unity[i]
+    }
+
+    fn get_roots_of_unity(&self) -> &[FsFr] {
+        self.roots_of_unity.as_slice()
     }
 }
 
@@ -450,5 +490,9 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.fs.get_expanded_roots_of_unity_at(i)
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.fs.get_roots_of_unity_at(i)
     }
 }

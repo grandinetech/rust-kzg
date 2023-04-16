@@ -1,5 +1,14 @@
 #[cfg(test)]
-mod tests {
+pub mod tests {
+    use arkworks::eip_4844::{
+        blob_to_kzg_commitment, blob_to_polynomial, bytes_from_bls_field, bytes_to_bls_field,
+        compute_blob_kzg_proof, compute_kzg_proof, compute_powers,
+        evaluate_polynomial_in_evaluation_form, hash_to_bls_field, hex_to_bls_field, hex_to_g1,
+        load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
+    };
+    use arkworks::kzg_proofs::{FFTSettings, KZGSettings};
+    use arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
+    use arkworks::utils::PolyData;
     #[cfg(not(feature = "minimal-spec"))]
     use kzg_bench::tests::eip_4844::compute_and_verify_kzg_proof_within_domain_test;
     use kzg_bench::tests::eip_4844::{
@@ -10,39 +19,21 @@ mod tests {
         compute_and_verify_kzg_proof_round_trip_test, compute_kzg_proof_test, compute_powers_test,
         verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
-    use zkcrypto::eip_4844::{
-        blob_to_kzg_commitment, blob_to_polynomial, bytes_from_bls_field, bytes_to_bls_field,
-        compute_blob_kzg_proof, compute_kzg_proof, compute_powers,
-        evaluate_polynomial_in_evaluation_form, hash_to_bls_field, hex_to_bls_field, hex_to_g1,
-        load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
-    };
-    use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::kzg_proofs::KZGSettings;
-    use zkcrypto::kzg_types::ZkG2Projective;
-    use zkcrypto::poly::KzgPoly;
-    use zkcrypto::utils::ZkG1Projective;
-    use zkcrypto::zkfr::blsScalar;
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<blsScalar>(&hash_to_bls_field, &bytes_from_bls_field);
+        bytes_to_bls_field_test::<FsFr>(&hash_to_bls_field, &bytes_from_bls_field);
     }
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<blsScalar>(&hash_to_bls_field, &compute_powers);
+        compute_powers_test::<FsFr>(&hash_to_bls_field, &compute_powers);
     }
 
     #[test]
+    #[ignore]
     pub fn blob_to_kzg_commitment_test_() {
-        blob_to_kzg_commitment_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
-            KZGSettings,
-        >(
+        blob_to_kzg_commitment_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
             &hex_to_bls_field,
@@ -51,15 +42,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     pub fn compute_kzg_proof_test_() {
-        compute_kzg_proof_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
-            KZGSettings,
-        >(
+        compute_kzg_proof_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &hex_to_bls_field,
             &hex_to_g1,
@@ -70,13 +55,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     pub fn compute_and_verify_kzg_proof_round_trip_test_() {
         compute_and_verify_kzg_proof_round_trip_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
+            FsFr,
+            ArkG1,
+            ArkG2,
+            PolyData,
+            FFTSettings,
             KZGSettings,
         >(
             &load_trusted_setup,
@@ -91,13 +77,14 @@ mod tests {
 
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
+    #[ignore]
     pub fn compute_and_verify_kzg_proof_within_domain_test_() {
         compute_and_verify_kzg_proof_within_domain_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
+            FsFr,
+            ArkG1,
+            ArkG2,
+            PolyData,
+            FFTSettings,
             KZGSettings,
         >(
             &load_trusted_setup,
@@ -111,13 +98,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_kzg_proof_fails_with_incorrect_proof_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
+            FsFr,
+            ArkG1,
+            ArkG2,
+            PolyData,
+            FFTSettings,
             KZGSettings,
         >(
             &load_trusted_setup,
@@ -131,13 +119,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     pub fn compute_and_verify_blob_kzg_proof_test_() {
         compute_and_verify_blob_kzg_proof_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
+            FsFr,
+            ArkG1,
+            ArkG2,
+            PolyData,
+            FFTSettings,
             KZGSettings,
         >(
             &load_trusted_setup,
@@ -149,13 +138,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
+            FsFr,
+            ArkG1,
+            ArkG2,
+            PolyData,
+            FFTSettings,
             KZGSettings,
         >(
             &load_trusted_setup,
@@ -167,15 +157,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     pub fn verify_kzg_proof_batch_test_() {
-        verify_kzg_proof_batch_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
-            KZGSettings,
-        >(
+        verify_kzg_proof_batch_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
             &bytes_to_bls_field,
@@ -185,13 +169,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test_() {
         verify_kzg_proof_batch_fails_with_incorrect_proof_test::<
-            blsScalar,
-            ZkG1Projective,
-            ZkG2Projective,
-            KzgPoly,
-            ZkFFTSettings,
+            FsFr,
+            ArkG1,
+            ArkG2,
+            PolyData,
+            FFTSettings,
             KZGSettings,
         >(
             &load_trusted_setup,

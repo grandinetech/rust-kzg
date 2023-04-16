@@ -23,9 +23,9 @@ unsafe fn ks_to_cks(t: &mut mKZGSettings, out: *mut CKZGSettings) {
     (*out).g2_values = t.curve.g2_points.as_mut_ptr() as _;
     let fs = CFFTSettings {
         max_width: t.fft_settings.max_width as _,
-        roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
-        expanded_roots_of_unity: t.fft_settings.exp_roots_of_unity.as_mut_ptr() as _,
-        reverse_roots_of_unity: t.fft_settings.exp_roots_of_unity_rev.as_mut_ptr() as _,
+        roots_of_unity: t.fft_settings.expanded_roots_of_unity.as_mut_ptr() as _,
+        expanded_roots_of_unity: t.fft_settings.expanded_roots_of_unity.as_mut_ptr() as _,
+        reverse_roots_of_unity: t.fft_settings.reverse_roots_of_unity.as_mut_ptr() as _,
     };
     let b = Box::new(fs);
     (*out).fs = Box::into_raw(b);
@@ -45,19 +45,20 @@ unsafe fn cks_to_ks(t: *const CKZGSettings) -> mKZGSettings {
         fft_settings: mFFTSettings {
             max_width: mw,
             root_of_unity: Fr::default(),
-            exp_roots_of_unity: Vec::from_raw_parts(
+            expanded_roots_of_unity: Vec::from_raw_parts(
                 (*fs).expanded_roots_of_unity as _,
                 mw + 1,
                 mw + 1,
             ),
-            exp_roots_of_unity_rev: Vec::from_raw_parts(
+            reverse_roots_of_unity: Vec::from_raw_parts(
                 (*fs).reverse_roots_of_unity as _,
                 mw + 1,
                 mw + 1,
             ),
+            roots_of_unity: Vec::from_raw_parts((*fs).roots_of_unity as _, mw + 1, mw + 1),
         },
     };
-    ks.fft_settings.root_of_unity = ks.fft_settings.exp_roots_of_unity[1];
+    ks.fft_settings.root_of_unity = ks.fft_settings.expanded_roots_of_unity[1];
     ks
 }
 

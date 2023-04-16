@@ -8,6 +8,7 @@ use kzg::{FFTSettings, Fr};
 
 use crate::consts::SCALE2_ROOT_OF_UNITY;
 use crate::types::fr::FsFr;
+use crate::utils::reverse_bit_order;
 
 #[derive(Debug, Clone)]
 pub struct FsFFTSettings {
@@ -15,6 +16,7 @@ pub struct FsFFTSettings {
     pub root_of_unity: FsFr,
     pub expanded_roots_of_unity: Vec<FsFr>,
     pub reverse_roots_of_unity: Vec<FsFr>,
+    pub roots_of_unity: Vec<FsFr>,
 }
 
 impl Default for FsFFTSettings {
@@ -41,11 +43,16 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
+        // Permute the roots of unity
+        let mut roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_bit_order(&mut roots_of_unity);
+
         Ok(FsFFTSettings {
             max_width,
             root_of_unity,
             expanded_roots_of_unity,
             reverse_roots_of_unity,
+            roots_of_unity,
         })
     }
 
@@ -67,6 +74,14 @@ impl FFTSettings<FsFr> for FsFFTSettings {
 
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         &self.reverse_roots_of_unity
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.roots_of_unity[i]
+    }
+
+    fn get_roots_of_unity(&self) -> &[FsFr] {
+        &self.roots_of_unity
     }
 }
 

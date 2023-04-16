@@ -34,7 +34,7 @@ impl FFTSettings {
         if values.len() == 2 {
             let (x, y) = FFTSettings::_calc_add_and_sub(&values[0], &values[1]);
 
-            let temp = y * self.exp_roots_of_unity[stride];
+            let temp = y * self.expanded_roots_of_unity[stride];
             values[0] = x + temp;
             values[1] = x - temp;
             return;
@@ -45,7 +45,7 @@ impl FFTSettings {
 
         for i in 0..half {
             let (add, sub) = FFTSettings::_calc_add_and_sub(&values[i], &values[half + i]);
-            values[half + i] = sub * self.exp_roots_of_unity_rev[(i << 1) * stride];
+            values[half + i] = sub * self.reverse_roots_of_unity[(i << 1) * stride];
             values[i] = add;
         }
 
@@ -71,7 +71,7 @@ impl FFTSettings {
         }
 
         for i in 0..half {
-            let root = &self.exp_roots_of_unity[((i << 1) + 1) * stride];
+            let root = &self.expanded_roots_of_unity[((i << 1) + 1) * stride];
             let y_times_root = &values[half + i] * root;
 
             let (add, sub) = FFTSettings::_calc_add_and_sub(&values[i], &y_times_root);

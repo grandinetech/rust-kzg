@@ -66,7 +66,9 @@ pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> Fr {
 }
 
 pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
-    assert_eq!(g1_bytes.len() / BYTES_PER_G1, FIELD_ELEMENTS_PER_BLOB);
+    let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
+
+    assert_eq!(num_g1_points, FIELD_ELEMENTS_PER_BLOB);
     assert_eq!(g2_bytes.len() / BYTES_PER_G2, TRUSTED_SETUP_NUM_G2_POINTS);
 
     let g1_projectives: Vec<G1> = g1_bytes
@@ -94,7 +96,7 @@ pub fn load_trusted_setup_from_bytes(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSet
         .collect();
 
     let mut max_scale: usize = 0;
-    while (1 << max_scale) < g1_bytes.len() {
+    while (1 << max_scale) < num_g1_points {
         max_scale += 1;
     }
 
@@ -183,8 +185,7 @@ pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> (G1, Fr) {
     let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, s);
 
     let mut tmp: Fr;
-    let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
-    reverse_bit_order(&mut roots_of_unity);
+    let roots_of_unity: &Vec<Fr> = &s.fft_settings.roots_of_unity;
 
     let mut m = 0;
     let mut q = Polynomial::new(FIELD_ELEMENTS_PER_BLOB);
@@ -249,11 +250,9 @@ pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> (G1, Fr) {
 pub fn evaluate_polynomial_in_evaluation_form(p: &Polynomial, x: &Fr, s: &KZGSettings) -> Fr {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
 
-    let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
+    let roots_of_unity: &Vec<Fr> = &s.fft_settings.roots_of_unity;
     let mut inverses_in = vec![Fr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses = vec![Fr::default(); FIELD_ELEMENTS_PER_BLOB];
-
-    reverse_bit_order(&mut roots_of_unity);
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         if *x == roots_of_unity[i] {

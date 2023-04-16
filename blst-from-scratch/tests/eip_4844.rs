@@ -11,15 +11,15 @@ mod tests {
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
         poly::FsPoly,
     };
+    #[cfg(not(feature = "minimal-spec"))]
+    use kzg_bench::tests::eip_4844::compute_and_verify_kzg_proof_within_domain_test;
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
         compute_and_verify_blob_kzg_proof_test,
         compute_and_verify_kzg_proof_fails_with_incorrect_proof_test,
-        compute_and_verify_kzg_proof_round_trip_test,
-        compute_and_verify_kzg_proof_within_domain_test, compute_kzg_proof_test,
-        compute_powers_test, verify_kzg_proof_batch_fails_with_incorrect_proof_test,
-        verify_kzg_proof_batch_test,
+        compute_and_verify_kzg_proof_round_trip_test, compute_kzg_proof_test, compute_powers_test,
+        verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
 
     #[test]
@@ -74,6 +74,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn compute_and_verify_kzg_proof_within_domain_test_() {
         compute_and_verify_kzg_proof_within_domain_test::<

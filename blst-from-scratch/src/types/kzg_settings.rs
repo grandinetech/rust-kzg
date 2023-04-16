@@ -16,7 +16,6 @@ use crate::types::poly::FsPoly;
 #[derive(Debug, Clone, Default)]
 pub struct FsKZGSettings {
     pub fs: FsFFTSettings,
-    // Both secret_g1 and secret_g2 have the same number of elements
     pub secret_g1: Vec<FsG1>,
     pub secret_g2: Vec<FsG2>,
 }
@@ -165,5 +164,9 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.fs.get_expanded_roots_of_unity_at(i)
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.fs.get_roots_of_unity_at(i)
     }
 }

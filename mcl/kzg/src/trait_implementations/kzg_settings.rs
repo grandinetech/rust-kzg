@@ -42,6 +42,10 @@ impl CommonKZGSettings<Fr, G1, G2, FFTSettings, Polynomial> for KZGSettings {
     }
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> Fr {
-        self.fft_settings.exp_roots_of_unity[i]
+        self.fft_settings.expanded_roots_of_unity[i]
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> Fr {
+        self.fft_settings.roots_of_unity[i]
     }
 }

@@ -1,6 +1,3 @@
-// gonna have to change ZkFFTSettings to something different, because of lib.rs trait 'ZkFFTSettings'
-
-// use blst::blst_fr as BlstFr;
 use crate::consts::*;
 use crate::fft_fr::*;
 use crate::poly::*;
@@ -8,15 +5,16 @@ use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
 use std::cmp::Ordering;
 
-// use blst::blst_fr_from_uint64;
+use crate::fk20::reverse_bit_order;
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ZkFFTSettings {
     pub max_width: usize,
     pub root_of_unity: blsScalar,
     pub expanded_roots_of_unity: Vec<blsScalar>,
     pub reverse_roots_of_unity: Vec<blsScalar>,
+    pub roots_of_unity: Vec<blsScalar>,
 }
 
 impl ZkFFTSettings {
@@ -71,41 +69,6 @@ impl ZkFFTSettings {
                 }
             }
         }
-        // if vals.len() < 2 {
-
-        // }
-        // else if vals.len() == 2 {
-        // let x = vals[0].add(&vals[1]);
-        // let y = vals[0].sub(&vals[1]);
-        // let tmp = y.mul(&self.expanded_roots_of_unity[stride]);
-
-        // vals[0] = x.add(&tmp);
-        // vals[1] = x.sub(&tmp);
-
-        // }
-        // else {
-        // let half = vals.len();
-        // let half_halved = half / 2;
-
-        // for i in 0..half_halved{
-        // let tmp1 = vals[i].add(&vals[half_halved+i]);
-        // let tmp2 = vals[i].sub(&vals[half_halved+i]);
-        // vals[half_halved + i] = tmp2.mul(&self.reverse_roots_of_unity[i * 2 * stride]);
-        // vals[i] = tmp1;
-        // }
-
-        // self.das_fft_extension_stride(&mut vals[..half_halved], stride * 2);
-
-        // self.das_fft_extension_stride(&mut vals[half_halved..], stride * 2);
-
-        // for i in 0..half_halved{
-        // let x = vals[i];
-        // let y = vals[half_halved + i];
-        // let y_times_root = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
-        // vals[i] = x.add(&y_times_root);
-        // vals[half_halved + i] = x.sub(&y_times_root);
-        // }
-        // }
     }
 }
 
@@ -146,42 +109,12 @@ impl FFTFr<blsScalar> for ZkFFTSettings {
         if inverse {
             let mut inv_len: blsScalar = blsScalar::from_u64(data.len() as u64);
             inv_len = inv_len.inverse();
-            for i in ret.iter_mut().take(data.len())
-            /*0..data.len()*/
-            {
+            for i in ret.iter_mut().take(data.len()) {
                 *i = i.mul(&inv_len);
-                //ret[i] = ret[i].mul(&inv_len);
             }
         }
 
         Ok(ret)
-    }
-}
-
-impl ZkFFTSettings {
-    pub fn from_scale(max_scale: usize) -> Result<Self, String> {
-        if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from(
-                "Scale is expected to be within root of unity matrix row size",
-            ));
-        }
-        let max_width: usize = 1 << max_scale;
-
-        Ok(Self {
-            max_width,
-            ..Self::default()
-        })
-    }
-}
-
-impl Default for ZkFFTSettings {
-    fn default() -> Self {
-        Self {
-            max_width: 0,
-            root_of_unity: blsScalar::zero(),
-            expanded_roots_of_unity: Vec::new(),
-            reverse_roots_of_unity: Vec::new(),
-        }
     }
 }
 
@@ -195,8 +128,6 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
 
         // max_width = 2 ^ max_scale
         let max_width: usize = 1 << scale;
-        //let mut ret = blsScalar::default();
-        //blsScalar::from_raw(SCALE2_ROOT_OF_UNITY[scale]);
         let root_of_unity = blsScalar::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
         // create max_width of roots & store them reversed as well
@@ -204,11 +135,16 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
+        // Permute the roots of unity
+        let mut roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_bit_order(&mut roots_of_unity);
+
         Ok(Self {
             max_width,
             root_of_unity,
             expanded_roots_of_unity,
             reverse_roots_of_unity,
+            roots_of_unity,
         })
     }
 
@@ -230,6 +166,14 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
 
     fn get_reversed_roots_of_unity(&self) -> &[blsScalar] {
         &self.reverse_roots_of_unity
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> blsScalar {
+        self.roots_of_unity[i]
+    }
+
+    fn get_roots_of_unity(&self) -> &[blsScalar] {
+        &self.roots_of_unity
     }
 }
 

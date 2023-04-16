@@ -229,6 +229,7 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     assert!(result);
 }
 
+#[cfg(not(feature = "minimal-spec"))]
 #[allow(clippy::type_complexity)]
 pub fn compute_and_verify_kzg_proof_within_domain_test<
     TFr: Fr,
@@ -270,7 +271,7 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
         let poly = blob_to_polynomial(&blob);
 
         // Compute the proof
-        let z_fr = ts.get_expanded_roots_of_unity_at(i);
+        let z_fr = ts.get_roots_of_unity_at(i);
         let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts);
 
         // Now evaluate the poly at `z` to learn `y`

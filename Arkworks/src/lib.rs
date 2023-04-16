@@ -10,28 +10,27 @@ pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
-//pub mod finite;
 pub mod das;
+pub mod eip_4844;
 pub mod fft;
 pub mod fft_g1;
 pub mod fk20_proofs;
 pub mod kzg_proofs;
+pub mod kzg_types;
 pub mod poly;
 pub mod recover;
 pub mod utils;
 pub mod zero_poly;
 
-pub mod kzg_types;
-
-pub(crate) trait Eq<T> {
+trait Eq<T> {
     fn equals(&self, other: &T) -> bool;
 }
 
-pub(crate) trait Inverse<T> {
+trait Inverse<T> {
     fn inverse(&self) -> T;
 }
 
-pub(crate) trait Zero<T> {
+trait Zero<T> {
     fn is_zero(&self) -> bool;
 }
 
@@ -52,11 +51,3 @@ impl Zero<Fr> for Fr {
         self.l[0] == 0 && self.l[1] == 0 && self.l[2] == 0 && self.l[3] == 0
     }
 }
-
-// impl Inverse<Fr> for Fr {
-//     fn inverse(&self) -> Fr {
-//         let mut ret: Fr = kzg_types::FsFr::zero();
-//         unsafe { blst::blst_fr_eucl_inverse(&mut ret, self) }
-//         ret
-//     }
-// }
