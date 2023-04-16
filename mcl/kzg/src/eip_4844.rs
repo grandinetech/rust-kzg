@@ -185,8 +185,7 @@ pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> (G1, Fr) {
     let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, s);
 
     let mut tmp: Fr;
-    let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
-    reverse_bit_order(&mut roots_of_unity);
+    let roots_of_unity: &Vec<Fr> = &s.fft_settings.roots_of_unity;
 
     let mut m = 0;
     let mut q = Polynomial::new(FIELD_ELEMENTS_PER_BLOB);
@@ -251,11 +250,9 @@ pub fn compute_kzg_proof(blob: &[Fr], z: &Fr, s: &KZGSettings) -> (G1, Fr) {
 pub fn evaluate_polynomial_in_evaluation_form(p: &Polynomial, x: &Fr, s: &KZGSettings) -> Fr {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
 
-    let mut roots_of_unity = s.fft_settings.exp_roots_of_unity.clone();
+    let roots_of_unity: &Vec<Fr> = &s.fft_settings.roots_of_unity;
     let mut inverses_in = vec![Fr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses = vec![Fr::default(); FIELD_ELEMENTS_PER_BLOB];
-
-    reverse_bit_order(&mut roots_of_unity);
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         if *x == roots_of_unity[i] {

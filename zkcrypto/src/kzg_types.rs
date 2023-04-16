@@ -392,4 +392,8 @@ impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> blsScalar {
         self.fs.get_expanded_roots_of_unity_at(i)
     }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> blsScalar {
+        self.fs.get_roots_of_unity_at(i)
+    }
 }

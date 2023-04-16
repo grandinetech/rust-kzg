@@ -13,7 +13,6 @@ use kzg::eip_4844::{
 };
 use kzg::{FFTSettings as FFTSettingsT, Fr, G1Mul, KZGSettings as LKZGSettings, G2};
 use kzg::{Poly, G1};
-use kzg_bench::tests::fk20_proofs::reverse_bit_order;
 use std::fs::File;
 use std::io::Read;
 
@@ -201,11 +200,9 @@ pub fn compute_kzg_proof(blob: &[FsFr], z: &FsFr, ks: &KZGSettings) -> (ArkG1, F
 pub fn evaluate_polynomial_in_evaluation_form(p: &PolyData, x: &FsFr, ks: &KZGSettings) -> FsFr {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
 
-    let mut roots_of_unity: Vec<FsFr> = ks.fs.expanded_roots_of_unity.clone();
+    let roots_of_unity: &Vec<FsFr> = &ks.fs.roots_of_unity;
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
-
-    reverse_bit_order(&mut roots_of_unity);
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         if x.equals(&roots_of_unity[i]) {

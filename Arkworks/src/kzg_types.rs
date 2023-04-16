@@ -21,6 +21,7 @@ use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
+use kzg_bench::tests::fk20_proofs::reverse_bit_order;
 use std::ops::MulAssign;
 use std::ops::Neg;
 
@@ -378,6 +379,7 @@ impl Default for LFFTSettings {
             root_of_unity: FsFr::zero(),
             expanded_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
+            roots_of_unity: Vec::new(),
             domain: Radix2EvaluationDomain::<ArkFr>::new(0_usize).unwrap(),
         }
     }
@@ -393,18 +395,23 @@ impl FFTSettings<FsFr> for LFFTSettings {
         let max_width: usize = 1 << scale;
         let domain = Radix2EvaluationDomain::<ArkFr>::new(max_width as usize).unwrap();
 
-        let roots =
+        let expanded_roots_of_unity =
             expand_root_of_unity(&pc_fr_into_blst_fr(domain.group_gen), domain.size as usize)
                 .unwrap();
 
-        let mut reverse = roots.clone();
-        reverse.reverse();
+        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
+
+        // Permute the roots of unity
+        let mut roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_bit_order(&mut roots_of_unity);
 
         Ok(LFFTSettings {
             max_width,
             root_of_unity: pc_fr_into_blst_fr(domain.group_gen),
-            expanded_roots_of_unity: roots,
-            reverse_roots_of_unity: reverse,
+            expanded_roots_of_unity,
+            reverse_roots_of_unity,
+            roots_of_unity,
             domain,
         })
     }
@@ -427,6 +434,14 @@ impl FFTSettings<FsFr> for LFFTSettings {
 
     fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
         self.reverse_roots_of_unity.as_slice()
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.roots_of_unity[i]
+    }
+
+    fn get_roots_of_unity(&self) -> &[FsFr] {
+        self.roots_of_unity.as_slice()
     }
 }
 
@@ -475,5 +490,9 @@ impl KZGSettings<FsFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.fs.get_expanded_roots_of_unity_at(i)
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.fs.get_roots_of_unity_at(i)
     }
 }

@@ -4,7 +4,7 @@ use rand::SeedableRng;
 use std::borrow::Borrow;
 
 use ark_ec::msm::{FixedBaseMSM, VariableBaseMSM};
-use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
+use ark_poly::Radix2EvaluationDomain;
 use ark_poly_commit::kzg10::{
     Commitment, Powers, Proof, Randomness, UniversalParams, VerifierKey, KZG10,
 };
@@ -13,7 +13,6 @@ use ark_std::{
     marker::PhantomData, ops::Div, rand::RngCore, test_rng, vec, One, UniformRand, Zero,
 };
 
-use super::fft::SCALE2_ROOT_OF_UNITY;
 use super::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
     blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
@@ -282,6 +281,7 @@ pub struct FFTSettings {
     pub root_of_unity: BlstFr,
     pub expanded_roots_of_unity: Vec<BlstFr>,
     pub reverse_roots_of_unity: Vec<BlstFr>,
+    pub roots_of_unity: Vec<BlstFr>,
     pub domain: Radix2EvaluationDomain<Fr>,
 }
 
@@ -297,33 +297,6 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
     }
 
     Ok(generated_powers)
-}
-
-impl FFTSettings {
-    pub fn from_scale(max_scale: usize) -> Result<FFTSettings, String> {
-        if max_scale >= SCALE2_ROOT_OF_UNITY.len() {
-            return Err(String::from(
-                "Scale is expected to be within root of unity matrix row size",
-            ));
-        }
-        let max_width: usize = 1 << max_scale;
-        let domain = Radix2EvaluationDomain::<Fr>::new(max_width as usize).unwrap();
-
-        let roots =
-            expand_root_of_unity(&pc_fr_into_blst_fr(domain.group_gen), domain.size as usize)
-                .unwrap();
-
-        let mut reverse = roots.clone();
-        reverse.reverse();
-
-        Ok(FFTSettings {
-            max_width,
-            root_of_unity: pc_fr_into_blst_fr(domain.group_gen),
-            expanded_roots_of_unity: roots,
-            reverse_roots_of_unity: reverse,
-            domain,
-        })
-    }
 }
 
 #[derive(Debug, Clone)]

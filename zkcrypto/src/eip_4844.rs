@@ -232,8 +232,7 @@ pub fn compute_kzg_proof(
     let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, s);
 
     let mut tmp: blsScalar;
-    let mut roots_of_unity: Vec<blsScalar> = s.fs.expanded_roots_of_unity.clone();
-    reverse_bit_order(&mut roots_of_unity);
+    let roots_of_unity: &Vec<blsScalar> = &s.fs.roots_of_unity;
 
     let mut m: usize = 0;
     let mut q: KzgPoly = KzgPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
@@ -298,11 +297,9 @@ pub fn evaluate_polynomial_in_evaluation_form(
 ) -> blsScalar {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
 
-    let mut roots_of_unity: Vec<blsScalar> = s.fs.expanded_roots_of_unity.clone();
+    let roots_of_unity: &Vec<blsScalar> = &s.fs.roots_of_unity;
     let mut inverses_in: Vec<blsScalar> = vec![blsScalar::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<blsScalar> = vec![blsScalar::default(); FIELD_ELEMENTS_PER_BLOB];
-
-    reverse_bit_order(&mut roots_of_unity);
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         if x.equals(&roots_of_unity[i]) {

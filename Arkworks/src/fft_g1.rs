@@ -99,7 +99,7 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstF
     }
 
     for scalar in scalars.iter() {
-        ark_scalars.push(ArkFr::into_repr(&blst_fr_into_pc_fr(&scalar)));
+        ark_scalars.push(ArkFr::into_repr(&blst_fr_into_pc_fr(scalar)));
     }
 
     let res = VariableBaseMSM::multi_scalar_mul(ark_points.as_slice(), ark_scalars.as_slice());

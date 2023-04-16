@@ -39,7 +39,6 @@ use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
-
 use crate::utils::reverse_bit_order;
 
 fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
@@ -254,8 +253,7 @@ pub fn compute_kzg_proof_rust(blob: &[FsFr], z: &FsFr, s: &FsKZGSettings) -> (Fs
     let y = evaluate_polynomial_in_evaluation_form_rust(&polynomial, z, s);
 
     let mut tmp: FsFr;
-    let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
-    reverse_bit_order(&mut roots_of_unity);
+    let roots_of_unity: &Vec<FsFr> = &s.fs.roots_of_unity;
 
     let mut m: usize = 0;
     let mut q: FsPoly = FsPoly::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
@@ -320,11 +318,9 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(
 ) -> FsFr {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
 
-    let mut roots_of_unity: Vec<FsFr> = s.fs.expanded_roots_of_unity.clone();
+    let roots_of_unity: &Vec<FsFr> = &s.fs.roots_of_unity;
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
-
-    reverse_bit_order(&mut roots_of_unity);
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         if x.equals(&roots_of_unity[i]) {
@@ -539,14 +535,18 @@ fn fft_settings_to_rust(c_settings: *const CFFTSettings) -> FsFFTSettings {
             .map(|r| FsFr(*r))
             .collect::<Vec<FsFr>>()
         },
+        roots_of_unity: unsafe {
+            core::slice::from_raw_parts(settings.roots_of_unity, (settings.max_width + 1) as usize)
+                .iter()
+                .map(|r| FsFr(*r))
+                .collect::<Vec<FsFr>>()
+        },
     };
 
     res
 }
 
 fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFFTSettings {
-    let mut roots_of_unity: Vec<FsFr> = rust_settings.expanded_roots_of_unity.clone();
-    reverse_bit_order(&mut roots_of_unity);
     let expanded_roots_of_unity = Box::new(
         rust_settings
             .expanded_roots_of_unity
@@ -561,7 +561,13 @@ fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFFTSettings {
             .map(|r| r.0)
             .collect::<Vec<blst_fr>>(),
     );
-    let roots_of_unity = Box::new(roots_of_unity.iter().map(|r| r.0).collect::<Vec<blst_fr>>());
+    let roots_of_unity = Box::new(
+        rust_settings
+            .roots_of_unity
+            .iter()
+            .map(|r| r.0)
+            .collect::<Vec<blst_fr>>(),
+    );
 
     let b = Box::new(CFFTSettings {
         max_width: rust_settings.max_width as u64,
