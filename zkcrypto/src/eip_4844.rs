@@ -22,6 +22,9 @@ use crate::curve::multiscalar_mul::msm_variable_base;
 use crate::curve::scalar::{sbb, Scalar, MODULUS, R2};
 use crate::fftsettings::ZkFFTSettings;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 pub fn bytes_to_bls_field(bytes: &[u8; BYTES_PER_FIELD_ELEMENT]) -> Result<blsScalar, u8> {
     let mut tmp = Scalar([0, 0, 0, 0]);
 
@@ -456,24 +459,37 @@ pub fn verify_blob_kzg_proof_batch(
         return verify_blob_kzg_proof(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
     }
 
-    let mut evaluation_challenges_fr: Vec<blsScalar> = Vec::new();
-    let mut ys_fr: Vec<blsScalar> = Vec::new();
+    #[cfg(feature = "parallel")]
+    {
+        let results: Vec<bool> = (blobs, commitments_g1, proofs_g1)
+            .into_par_iter()
+            .map(|(blob, commitment, proof)| verify_blob_kzg_proof(blob, commitment, proof, ts))
+            .collect();
 
-    for i in 0..blobs.len() {
-        let polynomial = blob_to_polynomial(&blobs[i]);
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
-        let y_fr =
-            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
-
-        evaluation_challenges_fr.push(evaluation_challenge_fr);
-        ys_fr.push(y_fr);
+        results.into_iter().all(|x| x)
     }
 
-    verify_kzg_proof_batch(
-        commitments_g1,
-        &evaluation_challenges_fr,
-        &ys_fr,
-        proofs_g1,
-        ts,
-    )
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut evaluation_challenges_fr: Vec<blsScalar> = Vec::new();
+        let mut ys_fr: Vec<blsScalar> = Vec::new();
+
+        for i in 0..blobs.len() {
+            let polynomial = blob_to_polynomial(&blobs[i]);
+            let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+            let y_fr =
+                evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
+
+            evaluation_challenges_fr.push(evaluation_challenge_fr);
+            ys_fr.push(y_fr);
+        }
+
+        verify_kzg_proof_batch(
+            commitments_g1,
+            &evaluation_challenges_fr,
+            &ys_fr,
+            proofs_g1,
+            ts,
+        )
+    }
 }

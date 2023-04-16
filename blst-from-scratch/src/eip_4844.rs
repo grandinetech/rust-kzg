@@ -41,6 +41,9 @@ use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 use crate::utils::reverse_bit_order;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
@@ -486,26 +489,44 @@ pub fn verify_blob_kzg_proof_batch_rust(
         return verify_blob_kzg_proof_rust(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
     }
 
-    let mut evaluation_challenges_fr: Vec<FsFr> = Vec::new();
-    let mut ys_fr: Vec<FsFr> = Vec::new();
+    #[cfg(feature = "parallel")]
+    {
+        let results: Vec<bool> = (blobs, commitments_g1, proofs_g1)
+            .into_par_iter()
+            .map(|(blob, commitment, proof)| {
+                verify_blob_kzg_proof_rust(blob, commitment, proof, ts)
+            })
+            .collect();
 
-    for i in 0..blobs.len() {
-        let polynomial = blob_to_polynomial_rust(&blobs[i]);
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
-        let y_fr =
-            evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts);
-
-        evaluation_challenges_fr.push(evaluation_challenge_fr);
-        ys_fr.push(y_fr);
+        results.into_iter().all(|x| x)
     }
 
-    verify_kzg_proof_batch(
-        commitments_g1,
-        &evaluation_challenges_fr,
-        &ys_fr,
-        proofs_g1,
-        ts,
-    )
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut evaluation_challenges_fr: Vec<FsFr> = Vec::new();
+        let mut ys_fr: Vec<FsFr> = Vec::new();
+
+        for i in 0..blobs.len() {
+            let polynomial = blob_to_polynomial_rust(&blobs[i]);
+            let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+            let y_fr = evaluate_polynomial_in_evaluation_form_rust(
+                &polynomial,
+                &evaluation_challenge_fr,
+                ts,
+            );
+
+            evaluation_challenges_fr.push(evaluation_challenge_fr);
+            ys_fr.push(y_fr);
+        }
+
+        verify_kzg_proof_batch(
+            commitments_g1,
+            &evaluation_challenges_fr,
+            &ys_fr,
+            proofs_g1,
+            ts,
+        )
+    }
 }
 
 fn fft_settings_to_rust(c_settings: *const CFFTSettings) -> FsFFTSettings {

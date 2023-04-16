@@ -17,6 +17,9 @@ use std::fs::File;
 use std::io::Read;
 use std::usize;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 pub fn bytes_to_g1(bytes: &[u8; BYTES_PER_G1]) -> Result<G1, String> {
     set_eth_serialization(1);
     let mut g1 = G1::default();
@@ -349,26 +352,39 @@ pub fn verify_blob_kzg_proof_batch(
         return verify_blob_kzg_proof(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
     }
 
-    let mut evaluation_challenges_fr: Vec<Fr> = Vec::new();
-    let mut ys_fr: Vec<Fr> = Vec::new();
+    #[cfg(feature = "parallel")]
+    {
+        let results: Vec<bool> = (blobs, commitments_g1, proofs_g1)
+            .into_par_iter()
+            .map(|(blob, commitment, proof)| verify_blob_kzg_proof(blob, commitment, proof, ts))
+            .collect();
 
-    for i in 0..blobs.len() {
-        let polynomial = blob_to_polynomial(&blobs[i]);
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
-        let y_fr =
-            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
-
-        evaluation_challenges_fr.push(evaluation_challenge_fr);
-        ys_fr.push(y_fr);
+        results.into_iter().all(|x| x)
     }
 
-    verify_kzg_proof_batch(
-        commitments_g1,
-        &evaluation_challenges_fr,
-        &ys_fr,
-        proofs_g1,
-        ts,
-    )
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut evaluation_challenges_fr: Vec<Fr> = Vec::new();
+        let mut ys_fr: Vec<Fr> = Vec::new();
+
+        for i in 0..blobs.len() {
+            let polynomial = blob_to_polynomial(&blobs[i]);
+            let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+            let y_fr =
+                evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
+
+            evaluation_challenges_fr.push(evaluation_challenge_fr);
+            ys_fr.push(y_fr);
+        }
+
+        verify_kzg_proof_batch(
+            commitments_g1,
+            &evaluation_challenges_fr,
+            &ys_fr,
+            proofs_g1,
+            ts,
+        )
+    }
 }
 
 fn compute_challenge(blob: &[Fr], commitment: &G1) -> Fr {
