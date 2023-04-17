@@ -336,6 +336,27 @@ pub fn verify_blob_kzg_proof(
     verify_kzg_proof(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
 }
 
+fn compute_challenges_and_evaluate_polynomial(
+    blobs: &[Vec<Fr>],
+    commitments_g1: &[G1],
+    ts: &KZGSettings,
+) -> (Vec<Fr>, Vec<Fr>) {
+    let mut evaluation_challenges_fr = Vec::new();
+    let mut ys_fr = Vec::new();
+
+    for i in 0..blobs.len() {
+        let polynomial = blob_to_polynomial(&blobs[i]);
+        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+        let y_fr =
+            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
+
+        evaluation_challenges_fr.push(evaluation_challenge_fr);
+        ys_fr.push(y_fr);
+    }
+
+    (evaluation_challenges_fr, ys_fr)
+}
+
 pub fn verify_blob_kzg_proof_batch(
     blobs: &[Vec<Fr>],
     commitments_g1: &[G1],
@@ -363,43 +384,32 @@ pub fn verify_blob_kzg_proof_batch(
             num_blobs
         };
 
-        let results: Vec<bool> = blobs
+        blobs
             .par_chunks(blobs_per_group)
             .enumerate()
-            .map(|(i, blob_group)| {
+            .all(|(i, blob_group)| {
                 let num_blobs_in_group = blob_group.len();
                 let commitment_group =
                     &commitments_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
                 let proof_group =
                     &proofs_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
-                blob_group
-                    .par_iter()
-                    .zip(commitment_group)
-                    .zip(proof_group)
-                    .all(|((blob, commitment), proof)| {
-                        verify_blob_kzg_proof(blob, commitment, proof, ts)
-                    })
-            })
-            .collect();
+                let (evaluation_challenges_fr, ys_fr) =
+                    compute_challenges_and_evaluate_polynomial(blob_group, commitment_group, ts);
 
-        // Merge the results from each group
-        results.iter().all(|&r| r)
+                verify_kzg_proof_batch(
+                    commitment_group,
+                    &evaluation_challenges_fr,
+                    &ys_fr,
+                    proof_group,
+                    ts,
+                )
+            })
     }
 
     #[cfg(not(feature = "parallel"))]
     {
-        let mut evaluation_challenges_fr: Vec<Fr> = Vec::new();
-        let mut ys_fr: Vec<Fr> = Vec::new();
-
-        for i in 0..blobs.len() {
-            let polynomial = blob_to_polynomial(&blobs[i]);
-            let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
-            let y_fr =
-                evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
-
-            evaluation_challenges_fr.push(evaluation_challenge_fr);
-            ys_fr.push(y_fr);
-        }
+        let (evaluation_challenges_fr, ys_fr) =
+            compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts);
 
         verify_kzg_proof_batch(
             commitments_g1,
