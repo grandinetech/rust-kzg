@@ -461,12 +461,36 @@ pub fn verify_blob_kzg_proof_batch(
 
     #[cfg(feature = "parallel")]
     {
-        let results: Vec<bool> = (blobs, commitments_g1, proofs_g1)
-            .into_par_iter()
-            .map(|(blob, commitment, proof)| verify_blob_kzg_proof(blob, commitment, proof, ts))
+        let num_blobs = blobs.len();
+        let num_cores = num_cpus::get_physical();
+
+        let blobs_per_group = if num_blobs > num_cores {
+            num_blobs / num_cores
+        } else {
+            num_blobs
+        };
+
+        let results: Vec<bool> = blobs
+            .par_chunks(blobs_per_group)
+            .enumerate()
+            .map(|(i, blob_group)| {
+                let num_blobs_in_group = blob_group.len();
+                let commitment_group =
+                    &commitments_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                let proof_group =
+                    &proofs_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                blob_group
+                    .par_iter()
+                    .zip(commitment_group)
+                    .zip(proof_group)
+                    .all(|((blob, commitment), proof)| {
+                        verify_blob_kzg_proof(blob, commitment, proof, ts)
+                    })
+            })
             .collect();
 
-        results.into_iter().all(|x| x)
+        // Merge the results from each group
+        results.iter().all(|&r| r)
     }
 
     #[cfg(not(feature = "parallel"))]
