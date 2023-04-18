@@ -485,32 +485,41 @@ pub fn verify_blob_kzg_proof_batch(
         let num_blobs = blobs.len();
         let num_cores = num_cpus::get_physical();
 
-        let blobs_per_group = if num_blobs > num_cores {
-            num_blobs / num_cores
+        return if num_blobs > num_cores {
+            // Process blobs in parallel subgroups
+            let blobs_per_group = num_blobs / num_cores;
+
+            blobs
+                .par_chunks(blobs_per_group)
+                .enumerate()
+                .all(|(i, blob_group)| {
+                    let num_blobs_in_group = blob_group.len();
+                    let commitment_group = &commitments_g1
+                        [blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                    let proof_group =
+                        &proofs_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                    let (evaluation_challenges_fr, ys_fr) =
+                        compute_challenges_and_evaluate_polynomial(
+                            blob_group,
+                            commitment_group,
+                            ts,
+                        );
+
+                    verify_kzg_proof_batch(
+                        commitment_group,
+                        &evaluation_challenges_fr,
+                        &ys_fr,
+                        proof_group,
+                        ts,
+                    )
+                })
         } else {
-            num_blobs
+            // Each group contains either one or zero blobs, so iterate
+            // over the single blob verification function in parallel
+            (blobs, commitments_g1, proofs_g1)
+                .into_par_iter()
+                .all(|(blob, commitment, proof)| verify_blob_kzg_proof(blob, commitment, proof, ts))
         };
-
-        blobs
-            .par_chunks(blobs_per_group)
-            .enumerate()
-            .all(|(i, blob_group)| {
-                let num_blobs_in_group = blob_group.len();
-                let commitment_group =
-                    &commitments_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
-                let proof_group =
-                    &proofs_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
-                let (evaluation_challenges_fr, ys_fr) =
-                    compute_challenges_and_evaluate_polynomial(blob_group, commitment_group, ts);
-
-                verify_kzg_proof_batch(
-                    commitment_group,
-                    &evaluation_challenges_fr,
-                    &ys_fr,
-                    proof_group,
-                    ts,
-                )
-            })
     }
 
     #[cfg(not(feature = "parallel"))]
