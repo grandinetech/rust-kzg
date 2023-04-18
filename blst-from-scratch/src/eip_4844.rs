@@ -41,6 +41,9 @@ use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 use crate::utils::reverse_bit_order;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
     let mut tmp = blst_p1_affine::default();
     let mut g1 = blst_p1::default();
@@ -470,6 +473,27 @@ pub fn verify_blob_kzg_proof_rust(
     verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
 }
 
+fn compute_challenges_and_evaluate_polynomial(
+    blobs: &[Vec<FsFr>],
+    commitments_g1: &[FsG1],
+    ts: &FsKZGSettings,
+) -> (Vec<FsFr>, Vec<FsFr>) {
+    let mut evaluation_challenges_fr = Vec::new();
+    let mut ys_fr = Vec::new();
+
+    for i in 0..blobs.len() {
+        let polynomial = blob_to_polynomial_rust(&blobs[i]);
+        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+        let y_fr =
+            evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts);
+
+        evaluation_challenges_fr.push(evaluation_challenge_fr);
+        ys_fr.push(y_fr);
+    }
+
+    (evaluation_challenges_fr, ys_fr)
+}
+
 pub fn verify_blob_kzg_proof_batch_rust(
     blobs: &[Vec<FsFr>],
     commitments_g1: &[FsG1],
@@ -486,26 +510,63 @@ pub fn verify_blob_kzg_proof_batch_rust(
         return verify_blob_kzg_proof_rust(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
     }
 
-    let mut evaluation_challenges_fr: Vec<FsFr> = Vec::new();
-    let mut ys_fr: Vec<FsFr> = Vec::new();
+    #[cfg(feature = "parallel")]
+    {
+        let num_blobs = blobs.len();
+        let num_cores = num_cpus::get_physical();
 
-    for i in 0..blobs.len() {
-        let polynomial = blob_to_polynomial_rust(&blobs[i]);
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
-        let y_fr =
-            evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts);
+        return if num_blobs > num_cores {
+            // Process blobs in parallel subgroups
+            let blobs_per_group = num_blobs / num_cores;
 
-        evaluation_challenges_fr.push(evaluation_challenge_fr);
-        ys_fr.push(y_fr);
+            blobs
+                .par_chunks(blobs_per_group)
+                .enumerate()
+                .all(|(i, blob_group)| {
+                    let num_blobs_in_group = blob_group.len();
+                    let commitment_group = &commitments_g1
+                        [blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                    let proof_group =
+                        &proofs_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                    let (evaluation_challenges_fr, ys_fr) =
+                        compute_challenges_and_evaluate_polynomial(
+                            blob_group,
+                            commitment_group,
+                            ts,
+                        );
+
+                    verify_kzg_proof_batch(
+                        commitment_group,
+                        &evaluation_challenges_fr,
+                        &ys_fr,
+                        proof_group,
+                        ts,
+                    )
+                })
+        } else {
+            // Each group contains either one or zero blobs, so iterate
+            // over the single blob verification function in parallel
+            (blobs, commitments_g1, proofs_g1)
+                .into_par_iter()
+                .all(|(blob, commitment, proof)| {
+                    verify_blob_kzg_proof_rust(blob, commitment, proof, ts)
+                })
+        };
     }
 
-    verify_kzg_proof_batch(
-        commitments_g1,
-        &evaluation_challenges_fr,
-        &ys_fr,
-        proofs_g1,
-        ts,
-    )
+    #[cfg(not(feature = "parallel"))]
+    {
+        let (evaluation_challenges_fr, ys_fr) =
+            compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts);
+
+        verify_kzg_proof_batch(
+            commitments_g1,
+            &evaluation_challenges_fr,
+            &ys_fr,
+            proofs_g1,
+            ts,
+        )
+    }
 }
 
 fn fft_settings_to_rust(c_settings: *const CFFTSettings) -> FsFFTSettings {

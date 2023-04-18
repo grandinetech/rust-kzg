@@ -17,6 +17,9 @@ use std::fs::File;
 use std::io::Read;
 use std::usize;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 pub fn bytes_to_g1(bytes: &[u8; BYTES_PER_G1]) -> Result<G1, String> {
     set_eth_serialization(1);
     let mut g1 = G1::default();
@@ -333,6 +336,27 @@ pub fn verify_blob_kzg_proof(
     verify_kzg_proof(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
 }
 
+fn compute_challenges_and_evaluate_polynomial(
+    blobs: &[Vec<Fr>],
+    commitments_g1: &[G1],
+    ts: &KZGSettings,
+) -> (Vec<Fr>, Vec<Fr>) {
+    let mut evaluation_challenges_fr = Vec::new();
+    let mut ys_fr = Vec::new();
+
+    for i in 0..blobs.len() {
+        let polynomial = blob_to_polynomial(&blobs[i]);
+        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+        let y_fr =
+            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
+
+        evaluation_challenges_fr.push(evaluation_challenge_fr);
+        ys_fr.push(y_fr);
+    }
+
+    (evaluation_challenges_fr, ys_fr)
+}
+
 pub fn verify_blob_kzg_proof_batch(
     blobs: &[Vec<Fr>],
     commitments_g1: &[G1],
@@ -349,26 +373,61 @@ pub fn verify_blob_kzg_proof_batch(
         return verify_blob_kzg_proof(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
     }
 
-    let mut evaluation_challenges_fr: Vec<Fr> = Vec::new();
-    let mut ys_fr: Vec<Fr> = Vec::new();
+    #[cfg(feature = "parallel")]
+    {
+        let num_blobs = blobs.len();
+        let num_cores = num_cpus::get_physical();
 
-    for i in 0..blobs.len() {
-        let polynomial = blob_to_polynomial(&blobs[i]);
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
-        let y_fr =
-            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts);
+        return if num_blobs > num_cores {
+            // Process blobs in parallel subgroups
+            let blobs_per_group = num_blobs / num_cores;
 
-        evaluation_challenges_fr.push(evaluation_challenge_fr);
-        ys_fr.push(y_fr);
+            blobs
+                .par_chunks(blobs_per_group)
+                .enumerate()
+                .all(|(i, blob_group)| {
+                    let num_blobs_in_group = blob_group.len();
+                    let commitment_group = &commitments_g1
+                        [blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                    let proof_group =
+                        &proofs_g1[blobs_per_group * i..blobs_per_group * i + num_blobs_in_group];
+                    let (evaluation_challenges_fr, ys_fr) =
+                        compute_challenges_and_evaluate_polynomial(
+                            blob_group,
+                            commitment_group,
+                            ts,
+                        );
+
+                    verify_kzg_proof_batch(
+                        commitment_group,
+                        &evaluation_challenges_fr,
+                        &ys_fr,
+                        proof_group,
+                        ts,
+                    )
+                })
+        } else {
+            // Each group contains either one or zero blobs, so iterate
+            // over the single blob verification function in parallel
+            (blobs, commitments_g1, proofs_g1)
+                .into_par_iter()
+                .all(|(blob, commitment, proof)| verify_blob_kzg_proof(blob, commitment, proof, ts))
+        };
     }
 
-    verify_kzg_proof_batch(
-        commitments_g1,
-        &evaluation_challenges_fr,
-        &ys_fr,
-        proofs_g1,
-        ts,
-    )
+    #[cfg(not(feature = "parallel"))]
+    {
+        let (evaluation_challenges_fr, ys_fr) =
+            compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts);
+
+        verify_kzg_proof_batch(
+            commitments_g1,
+            &evaluation_challenges_fr,
+            &ys_fr,
+            proofs_g1,
+            ts,
+        )
+    }
 }
 
 fn compute_challenge(blob: &[Fr], commitment: &G1) -> Fr {

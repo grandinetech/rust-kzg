@@ -11,6 +11,7 @@ libc = { version = "0.2.137", default-features = false }
 once_cell = { version = "1.4.0", features = ["critical-section"], default-features = false }
 rand = { version = "0.8.4", optional = true }
 rayon = { version = "1.5.1", optional = true }
+num_cpus = "1.15.0"
 
 [dev-dependencies]
 criterion = "0.4.0"
