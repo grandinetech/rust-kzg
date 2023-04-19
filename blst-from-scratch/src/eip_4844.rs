@@ -214,8 +214,8 @@ pub fn verify_kzg_proof_batch(
     ts: &FsKZGSettings,
 ) -> bool {
     let n = commitments_g1.len();
-    let mut c_minus_y: Vec<FsG1> = Vec::new();
-    let mut r_times_z: Vec<FsFr> = Vec::new();
+    let mut c_minus_y: Vec<FsG1> = Vec::with_capacity(n);
+    let mut r_times_z: Vec<FsFr> = Vec::with_capacity(n);
 
     // Compute the random lincomb challenges
     let r_powers = compute_r_powers(commitments_g1, zs_fr, ys_fr, proofs_g1);
@@ -478,8 +478,8 @@ fn compute_challenges_and_evaluate_polynomial(
     commitments_g1: &[FsG1],
     ts: &FsKZGSettings,
 ) -> (Vec<FsFr>, Vec<FsFr>) {
-    let mut evaluation_challenges_fr = Vec::new();
-    let mut ys_fr = Vec::new();
+    let mut evaluation_challenges_fr = Vec::with_capacity(blobs.len());
+    let mut ys_fr = Vec::with_capacity(blobs.len());
 
     for i in 0..blobs.len() {
         let polynomial = blob_to_polynomial_rust(&blobs[i]);
@@ -879,9 +879,9 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     n: usize,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
-    let mut deserialized_blobs: Vec<Vec<FsFr>> = Vec::new();
-    let mut commitments_g1: Vec<FsG1> = Vec::new();
-    let mut proofs_g1: Vec<FsG1> = Vec::new();
+    let mut deserialized_blobs: Vec<Vec<FsFr>> = Vec::with_capacity(n);
+    let mut commitments_g1: Vec<FsG1> = Vec::with_capacity(n);
+    let mut proofs_g1: Vec<FsG1> = Vec::with_capacity(n);
 
     let raw_blobs = core::slice::from_raw_parts(blobs, n);
     let raw_commitments = core::slice::from_raw_parts(commitments_bytes, n);

@@ -93,7 +93,9 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         }
 
         // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
-        let mut divisor: FsPoly = FsPoly { coeffs: Vec::new() };
+        let mut divisor = FsPoly {
+            coeffs: Vec::with_capacity(n),
+        };
 
         // -(x0^n)
         let x_pow_n = x0.pow(n);

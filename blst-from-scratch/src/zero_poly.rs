@@ -21,21 +21,17 @@ struct ParRes {
     c: usize,
 }
 
-/// Create a copy of the given poly and pad it with zeros
-pub fn pad_poly(poly: &FsPoly, new_length: usize) -> Result<Vec<FsFr>, String> {
-    if new_length < poly.coeffs.len() {
+/// Pad given poly it with zeros to new length
+pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, String> {
+    if new_length < poly.len() {
         return Err(String::from(
             "new_length must be longer or equal to poly length",
         ));
     }
 
-    let mut ret = poly.coeffs.to_vec();
+    poly.resize(new_length, FsFr::zero());
 
-    for _i in poly.coeffs.len()..new_length {
-        ret.push(FsFr::zero())
-    }
-
-    Ok(ret)
+    Ok(poly)
 }
 
 #[allow(clippy::needless_range_loop)]
@@ -87,10 +83,10 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
         // Calculate the resulting polynomial degree
         // E.g. (a * x^n + ...) (b * x^m + ...) has a degree of x^(n+m)
-        let mut out_degree: usize = 0;
-        for i in 0..partials.len() {
-            out_degree += partials[i].coeffs.len() - 1;
-        }
+        let out_degree = partials
+            .iter()
+            .map(|partial| partial.coeffs.len() - 1)
+            .sum::<usize>();
 
         if out_degree + 1 > domain_size {
             return Err(String::from(
@@ -99,11 +95,11 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         }
 
         // Pad all partial polynomials to same length, compute their FFT and multiply them together
-        let mut padded_partial = pad_poly(&partials[0], domain_size)?;
+        let mut padded_partial = pad_poly(partials[0].coeffs.clone(), domain_size)?;
         let mut eval_result = self.fft_fr(&padded_partial, false)?;
 
         for i in 1..(partials.len()) {
-            padded_partial = pad_poly(&partials[i], domain_size)?;
+            padded_partial = pad_poly(partials[i].coeffs.clone(), domain_size)?;
             let evaluated_partial = self.fft_fr(&padded_partial, false)?;
             for j in 0..domain_size {
                 eval_result[j] = eval_result[j].mul(&evaluated_partial[j]);
@@ -111,9 +107,12 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         }
 
         // Apply an inverse FFT to produce a new poly. Limit its size to out_degree + 1
-        let coeffs = self.fft_fr(&eval_result, true)?;
         let ret = FsPoly {
-            coeffs: coeffs[..(out_degree + 1)].to_vec(),
+            coeffs: self
+                .fft_fr(&eval_result, true)?
+                .into_iter()
+                .take(out_degree + 1)
+                .collect(),
         };
 
         Ok(ret)
@@ -159,14 +158,14 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
             #[allow(unused_assignments)]
-            let mut work = Vec::new();
+            let mut work = Vec::with_capacity(next_pow);
 
-            let mut partial_lens = Vec::new();
-            let mut partial_offsets = Vec::new();
+            let mut partial_lens = Vec::with_capacity(partial_count);
+            let mut partial_offsets = Vec::with_capacity(partial_count);
 
             #[cfg(not(feature = "parallel"))]
             {
-                work = vec![FsFr::zero(); (partial_count * degree_of_partial).next_power_of_two()];
+                work.resize(work.capacity(), FsFr::zero());
 
                 let mut missing_offset = 0;
                 let mut work_offset = 0;
@@ -180,7 +179,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                         &missing_idxs[missing_offset..end],
                         domain_stride,
                     )?;
-                    partial.coeffs = pad_poly(&partial, degree_of_partial)?;
+                    partial.coeffs = pad_poly(partial.coeffs, degree_of_partial)?;
                     work.splice(
                         work_offset..(work_offset + degree_of_partial),
                         partial.coeffs.to_vec(),
@@ -195,43 +194,30 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
             #[cfg(feature = "parallel")]
             {
-                let mut out_res = vec![];
                 let max = missing_idxs.len();
 
                 // Insert all generated partial polynomials at degree_of_partial intervals in work vector
-                (0..partial_count)
+                let out_res = (0..partial_count)
                     .into_par_iter()
                     .map(move |i| {
                         let missing_offset = missing_per_partial * i;
                         let work_offset = degree_of_partial * i;
                         let end = min(missing_offset + missing_per_partial, max);
 
-                        let res = self.do_zero_poly_mul_partial(
+                        let mut partial = self.do_zero_poly_mul_partial(
                             &missing_idxs[missing_offset..end],
                             domain_stride,
-                        );
+                        )?;
 
-                        let mut partial = FsPoly::default();
-                        if let Ok(result) = res {
-                            partial = result;
-                        } else {
-                            // Panic
-                        }
+                        partial.coeffs = pad_poly(partial.coeffs, degree_of_partial)?;
 
-                        let res = pad_poly(&partial, degree_of_partial);
-                        if let Ok(result) = res {
-                            partial.coeffs = result;
-                        } else {
-                            // Panic
-                        }
-
-                        ParRes {
+                        Ok(ParRes {
                             a: partial.coeffs,
                             b: degree_of_partial,
                             c: work_offset,
-                        }
+                        })
                     })
-                    .collect_into_vec(&mut out_res);
+                    .collect::<Result<Vec<_>, String>>()?;
 
                 out_res.into_iter().for_each(|mut item| {
                     work.append(&mut item.a);
@@ -239,9 +225,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                     partial_offsets.push(item.c);
                 });
 
-                for _i in work.len()..next_pow {
-                    work.push(FsFr::zero());
-                }
+                work.resize(next_pow, FsFr::zero());
             }
 
             // Adjust last length to match its actual length
@@ -263,9 +247,9 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
                     // Calculate partial views from lens and offsets
                     // Also update offsets to match current iteration
-                    let mut partial_vec = Vec::new();
+                    let mut partial_vec = Vec::with_capacity(partials_num);
                     partial_offsets[i] = start * partial_size;
-                    for j in 0..(partials_num) {
+                    for j in 0..partials_num {
                         partial_offsets[i + j] = (start + j) * partial_size;
                         partial_vec.push(FsPoly {
                             coeffs: work[partial_offsets[i + j]
@@ -278,7 +262,8 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                         let mut reduced_poly = self.reduce_partials(reduced_len, &partial_vec)?;
                         // Update partial length to match its length after reduction
                         partial_lens[i] = reduced_poly.coeffs.len();
-                        reduced_poly.coeffs = pad_poly(&reduced_poly, partial_size * partials_num)?;
+                        reduced_poly.coeffs =
+                            pad_poly(reduced_poly.coeffs, partial_size * partials_num)?;
                         work.splice(
                             (partial_offsets[i])..(partial_offsets[i] + reduced_poly.coeffs.len()),
                             reduced_poly.coeffs,
@@ -299,7 +284,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         // Pad resulting poly to expected
         match zero_poly.coeffs.len().cmp(&domain_size) {
             Ordering::Less => {
-                zero_poly.coeffs = pad_poly(&zero_poly, domain_size)?;
+                zero_poly.coeffs = pad_poly(zero_poly.coeffs, domain_size)?;
             }
             Ordering::Equal => {}
             Ordering::Greater => {

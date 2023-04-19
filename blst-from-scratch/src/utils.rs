@@ -42,8 +42,8 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Ve
     let s = FsFr::hash_to_bls_field(secret);
     let mut s_pow = Fr::one();
 
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
+    let mut s1 = Vec::with_capacity(n);
+    let mut s2 = Vec::with_capacity(n);
 
     for _ in 0..n {
         s1.push(G1_GENERATOR.mul(&s_pow));
