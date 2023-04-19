@@ -2,7 +2,7 @@ use blst::{
     blst_fp2, blst_p2, blst_p2_add_or_double, blst_p2_cneg, blst_p2_double, blst_p2_is_equal,
     blst_p2_mult, blst_scalar, blst_scalar_from_fr,
 };
-#[cfg(feature = "std")]
+#[cfg(feature = "rand")]
 use kzg::Fr;
 use kzg::{G2Mul, G2};
 

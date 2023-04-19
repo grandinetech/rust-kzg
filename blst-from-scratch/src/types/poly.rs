@@ -360,13 +360,14 @@ impl FsPoly {
         }
 
         // Multiply two value ranges
-        let mut ab_fft = vec![FsFr::default(); length];
-        for i in 0..length {
-            ab_fft[i] = a_fft[i].mul(&b_fft[i]);
-        }
+        let mut ab_fft = a_fft;
+        ab_fft.iter_mut().zip(b_fft).for_each(|(a, b)| {
+            *a = a.mul(&b);
+        });
 
         // Convert value range multiplication to a resulting polynomial
         let ab = fft_settings.fft_fr(&ab_fft, true).unwrap();
+        drop(ab_fft);
 
         let mut ret = FsPoly {
             coeffs: vec![FsFr::zero(); output_len],
@@ -401,7 +402,7 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
             ));
         }
 
-        let mut missing: Vec<usize> = Vec::new();
+        let mut missing = Vec::with_capacity(len_samples / 2);
 
         for (i, sample) in samples.iter().enumerate() {
             if sample.is_none() {
@@ -418,56 +419,56 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         // Calculate `Z_r,I`
         let (zero_eval, mut zero_poly) = fs.zero_poly_via_multiplication(len_samples, &missing)?;
 
-        for i in 0..len_samples {
-            assert_eq!(samples[i].is_none(), zero_eval[i].is_zero());
-        }
-
-        let mut poly_evaluations_with_zero = FsPoly::default();
-
         // Construct E * Z_r,I: the loop makes the evaluation polynomial
-        for i in 0..len_samples {
-            if samples[i].is_none() {
-                poly_evaluations_with_zero.coeffs.push(FsFr::zero());
-            } else {
-                poly_evaluations_with_zero
-                    .coeffs
-                    .push(samples[i].unwrap().mul(&zero_eval[i]));
-            }
-        }
+        let poly_evaluations_with_zero = samples
+            .iter()
+            .zip(zero_eval)
+            .map(|(maybe_sample, zero_eval)| {
+                debug_assert_eq!(maybe_sample.is_none(), zero_eval.is_zero());
+
+                match maybe_sample {
+                    Some(sample) => sample.mul(&zero_eval),
+                    None => FsFr::zero(),
+                }
+            })
+            .collect::<Vec<_>>();
+
         // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
-        let mut poly_with_zero = FsPoly {
-            coeffs: fs.fft_fr(&poly_evaluations_with_zero.coeffs, true).unwrap(),
-        };
+        let mut poly_with_zero = fs.fft_fr(&poly_evaluations_with_zero, true).unwrap();
+        drop(poly_evaluations_with_zero);
 
         // x -> k * x
         let len_zero_poly = zero_poly.coeffs.len();
-        scale_poly(&mut poly_with_zero.coeffs, len_samples);
+        scale_poly(&mut poly_with_zero, len_samples);
         scale_poly(&mut zero_poly.coeffs, len_zero_poly);
 
         // Q1 = (D * Z_r,I)(k * x)
-        let scaled_poly_with_zero = poly_with_zero.coeffs;
+        let scaled_poly_with_zero = poly_with_zero;
 
         // Q2 = Z_r,I(k * x)
         let scaled_zero_poly = zero_poly.coeffs;
 
         // Polynomial division by convolution: Q3 = Q1 / Q2
-        let eval_scaled_poly_with_zero: Vec<FsFr> =
-            fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
-        let eval_scaled_zero_poly: Vec<FsFr> = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+        let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
+        let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+        drop(scaled_zero_poly);
 
-        let mut eval_scaled_reconstructed_poly = FsPoly {
-            coeffs: eval_scaled_poly_with_zero.clone(),
-        };
-        for i in 0..len_samples {
-            eval_scaled_reconstructed_poly.coeffs[i] = eval_scaled_poly_with_zero[i]
-                .div(&eval_scaled_zero_poly[i])
-                .unwrap();
-        }
+        let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero;
+        eval_scaled_reconstructed_poly
+            .iter_mut()
+            .zip(eval_scaled_zero_poly)
+            .for_each(
+                |(eval_scaled_reconstructed_poly, eval_scaled_poly_with_zero)| {
+                    *eval_scaled_reconstructed_poly = eval_scaled_reconstructed_poly
+                        .div(&eval_scaled_poly_with_zero)
+                        .unwrap();
+                },
+            );
 
         // The result of the division is D(k * x):
-        let mut scaled_reconstructed_poly: Vec<FsFr> = fs
-            .fft_fr(&eval_scaled_reconstructed_poly.coeffs, true)
-            .unwrap();
+        let mut scaled_reconstructed_poly =
+            fs.fft_fr(&eval_scaled_reconstructed_poly, true).unwrap();
+        drop(eval_scaled_reconstructed_poly);
 
         // k * x -> x
         unscale_poly(&mut scaled_reconstructed_poly, len_samples);
@@ -476,15 +477,19 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         let reconstructed_poly = scaled_reconstructed_poly;
 
         // The evaluation polynomial for D(x) is the reconstructed data:
-        let mut reconstr_poly = FsPoly::default();
         let reconstructed_data = fs.fft_fr(&reconstructed_poly, false).unwrap();
+        drop(reconstructed_poly);
 
         // Check all is well
-        for i in 0..len_samples {
-            assert!(samples[i].is_none() || reconstructed_data[i].equals(&samples[i].unwrap()));
-        }
+        samples
+            .iter()
+            .zip(&reconstructed_data)
+            .for_each(|(sample, reconstructed_data)| {
+                debug_assert!(sample.is_none() || reconstructed_data.equals(&sample.unwrap()));
+            });
 
-        reconstr_poly.coeffs = reconstructed_data;
-        Ok(reconstr_poly)
+        Ok(FsPoly {
+            coeffs: reconstructed_data,
+        })
     }
 }

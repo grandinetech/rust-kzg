@@ -35,13 +35,14 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
             return Err(String::from("n2 must be greater than or equal to 2"));
         }
 
-        let mut x = Vec::new();
+        let mut x = Vec::with_capacity(n);
         for i in 0..n - 1 {
             x.push(kzg_settings.secret_g1[n - 2 - i]);
         }
         x.push(FsG1::identity());
 
         let x_ext_fft = kzg_settings.fs.toeplitz_part_1(&x);
+        drop(x);
         let kzg_settings = kzg_settings.clone();
 
         let ret = Self {

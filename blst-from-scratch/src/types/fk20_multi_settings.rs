@@ -62,34 +62,35 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
         let n = n2 / 2;
         let k = n / chunk_len;
 
-        let mut ext_fft_files = Vec::new();
-
-        for offset in 0..chunk_len {
-            let mut x = Vec::new();
-
-            let mut start = 0;
-            if n >= chunk_len + 1 + offset {
-                start = n - chunk_len - 1 - offset;
-            }
-
-            let mut i = 0;
-            let mut j = start;
-
-            while i + 1 < k {
-                x.push(ks.secret_g1[j as usize]);
-
-                i += 1;
-
-                if j >= chunk_len {
-                    j -= chunk_len;
-                } else {
-                    j = 0;
+        let mut ext_fft_files = Vec::with_capacity(chunk_len);
+        {
+            let mut x = Vec::with_capacity(k);
+            for offset in 0..chunk_len {
+                let mut start = 0;
+                if n >= chunk_len + 1 + offset {
+                    start = n - chunk_len - 1 - offset;
                 }
-            }
-            x.push(FsG1::identity());
 
-            let ext_fft_file = ks.fs.toeplitz_part_1(&x);
-            ext_fft_files.push(ext_fft_file);
+                let mut i = 0;
+                let mut j = start;
+
+                while i + 1 < k {
+                    x.push(ks.secret_g1[j as usize]);
+
+                    i += 1;
+
+                    if j >= chunk_len {
+                        j -= chunk_len;
+                    } else {
+                        j = 0;
+                    }
+                }
+                x.push(FsG1::identity());
+
+                let ext_fft_file = ks.fs.toeplitz_part_1(&x);
+                x.clear();
+                ext_fft_files.push(ext_fft_file);
+            }
         }
 
         let ret = Self {

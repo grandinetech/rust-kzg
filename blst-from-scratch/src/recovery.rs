@@ -19,31 +19,41 @@ pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = INVERSE_FACTORS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
         let inv_factor = FsFr::inverse(&scale_factor);
-        let mut temp: Vec<FsFr> = vec![FsFr::one()];
+        let mut temp = Vec::with_capacity(65536);
+        temp.push(FsFr::one());
         for i in 1..65536 {
             temp.push(temp[i - 1].mul(&inv_factor));
         }
         temp
     });
 
-    for i in 1..len_p {
-        p[i] = p[i].mul(&factors[i]);
-    }
+    p.iter_mut()
+        .zip(factors)
+        .take(len_p)
+        .skip(1)
+        .for_each(|(p, factor)| {
+            *p = p.mul(factor);
+        });
 }
 
 pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
     let factors = UNSCALE_FACTOR_POWERS.get_or_init(|| {
         let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-        let mut temp: Vec<FsFr> = vec![FsFr::one()];
+        let mut temp = Vec::with_capacity(65536);
+        temp.push(FsFr::one());
         for i in 1..65536 {
             temp.push(temp[i - 1].mul(&scale_factor));
         }
         temp
     });
 
-    for i in 1..len_p {
-        p[i] = p[i].mul(&factors[i]);
-    }
+    p.iter_mut()
+        .zip(factors)
+        .take(len_p)
+        .skip(1)
+        .for_each(|(p, factor)| {
+            *p = p.mul(factor);
+        });
 }
 
 pub fn recover_poly_from_samples(

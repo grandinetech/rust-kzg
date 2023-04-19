@@ -17,15 +17,10 @@ impl FsFFTSettings {
     pub fn toeplitz_part_1(&self, x: &[FsG1]) -> Vec<FsG1> {
         let n = x.len();
         let n2 = n * 2;
-        let mut x_ext = Vec::new();
+        let mut x_ext = Vec::with_capacity(n2);
 
-        for &x_n in x[..n].iter() {
-            x_ext.push(x_n);
-        }
-
-        for _ in n..n2 {
-            x_ext.push(FsG1::identity());
-        }
+        x_ext.extend(x.iter().take(n));
+        x_ext.resize(n2, FsG1::identity());
 
         self.fft_g1(&x_ext, false).unwrap()
     }
@@ -36,20 +31,22 @@ impl FsFFTSettings {
 
         #[cfg(feature = "parallel")]
         {
-            let ret: Vec<_> = (0..poly.len())
+            coeffs_fft
                 .into_par_iter()
-                .map(|i| x_ext_fft[i].mul(&coeffs_fft[i]))
-                .collect();
-            ret
+                .zip(x_ext_fft)
+                .take(poly.len())
+                .map(|(coeff_fft, x_ext_fft)| x_ext_fft.mul(&coeff_fft))
+                .collect()
         }
 
         #[cfg(not(feature = "parallel"))]
         {
-            let mut ret = Vec::new();
-            for i in 0..poly.len() {
-                ret.push(x_ext_fft[i].mul(&coeffs_fft[i]));
-            }
-            ret
+            coeffs_fft
+                .into_iter()
+                .zip(x_ext_fft)
+                .take(poly.len())
+                .map(|(coeff_fft, x_ext_fft)| x_ext_fft.mul(&coeff_fft))
+                .collect()
         }
     }
 
