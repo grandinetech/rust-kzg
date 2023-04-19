@@ -1,4 +1,4 @@
-use criterion::Criterion;
+use criterion::{black_box, Criterion};
 use kzg::{FFTFr, FFTSettings, Fr, Poly, PolyRecover};
 use rand::Rng;
 use std::convert::TryInto;
@@ -41,7 +41,7 @@ pub fn bench_recover<
     let id = format!("bench_recover scale: '{}'", BENCH_SCALE);
     c.bench_function(&id, move |b| {
         b.iter(|| {
-            TPolyRecover::recover_poly_from_samples(&samples, &fs).unwrap();
+            TPolyRecover::recover_poly_from_samples(black_box(&samples), black_box(&fs)).unwrap();
         })
     });
 }
