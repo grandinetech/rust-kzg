@@ -1,7 +1,13 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::string::ToString;
 use blst::{
-    blst_fp2, blst_p2, blst_p2_add_or_double, blst_p2_cneg, blst_p2_double, blst_p2_is_equal,
-    blst_p2_mult, blst_scalar, blst_scalar_from_fr,
+    blst_fp2, blst_p2, blst_p2_add_or_double, blst_p2_affine, blst_p2_cneg, blst_p2_compress,
+    blst_p2_double, blst_p2_from_affine, blst_p2_is_equal, blst_p2_mult, blst_p2_uncompress,
+    blst_scalar, blst_scalar_from_fr, BLST_ERROR,
 };
+use kzg::eip_4844::BYTES_PER_G2;
 #[cfg(feature = "rand")]
 use kzg::Fr;
 use kzg::{G2Mul, G2};
@@ -70,12 +76,30 @@ impl G2 for FsG2 {
 }
 
 impl FsG2 {
-    pub(crate) fn _from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
-        FsG2(blst_p2 { x, y, z })
+    /// Convert into bytes
+    pub fn to_bytes(&self) -> [u8; BYTES_PER_G2] {
+        let mut out = [0; 96];
+        unsafe {
+            blst_p2_compress(out.as_mut_ptr(), &self.0);
+        }
+        out
     }
 
-    pub fn default() -> Self {
-        Self(blst_p2::default())
+    /// Create from bytes
+    pub fn from_bytes(bytes: &[u8; BYTES_PER_G2]) -> Result<Self, String> {
+        let mut tmp = blst_p2_affine::default();
+        let mut g2 = blst_p2::default();
+        unsafe {
+            if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                return Err("blst_p2_uncompress failed".to_string());
+            }
+            blst_p2_from_affine(&mut g2, &tmp);
+        }
+        Ok(FsG2(g2))
+    }
+
+    pub(crate) fn _from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
+        FsG2(blst_p2 { x, y, z })
     }
 
     #[cfg(feature = "rand")]

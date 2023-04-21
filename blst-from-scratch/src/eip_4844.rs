@@ -1,8 +1,8 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
+#[cfg(feature = "std")]
 use alloc::string::String;
-use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 #[cfg(feature = "std")]
@@ -12,11 +12,7 @@ use std::fs::File;
 #[cfg(feature = "std")]
 use std::io::Read;
 
-use blst::{
-    blst_fr, blst_fr_from_scalar, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
-    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
-    blst_p2_uncompress, blst_scalar, blst_scalar_from_lendian, BLST_ERROR,
-};
+use blst::{blst_fr, blst_fr_from_scalar, blst_p1, blst_p2, blst_scalar, blst_scalar_from_lendian};
 use kzg::{FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
 
 #[cfg(feature = "std")]
@@ -44,43 +40,6 @@ use crate::utils::reverse_bit_order;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-fn bytes_to_g1_rust(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
-    let mut tmp = blst_p1_affine::default();
-    let mut g1 = blst_p1::default();
-    unsafe {
-        // The uncompress routine also checks that the point is on the curve
-        if blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-            return Err("blst_p1_uncompress failed".to_string());
-        }
-        blst_p1_from_affine(&mut g1, &tmp);
-        // The point must be on the right subgroup
-        if !blst_p1_in_g1(&g1) {
-            return Err("the point is not in g1 group".to_string());
-        }
-    }
-    Ok(FsG1(g1))
-}
-
-fn bytes_from_g1_rust(g1: &FsG1) -> [u8; BYTES_PER_G1] {
-    let mut out = [0u8; BYTES_PER_G1];
-    unsafe {
-        blst_p1_compress(out.as_mut_ptr(), &g1.0);
-    }
-    out
-}
-
-fn bytes_to_g2_rust(bytes: &[u8; BYTES_PER_G2]) -> Result<FsG2, String> {
-    let mut tmp = blst_p2_affine::default();
-    let mut g2 = blst_p2::default();
-    unsafe {
-        if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-            return Err("blst_p2_uncompress failed".to_string());
-        }
-        blst_p2_from_affine(&mut g2, &tmp);
-    }
-    Ok(FsG2(g2))
-}
-
 pub fn bytes_to_bls_field_rust(bytes: &[u8; BYTES_PER_FIELD_ELEMENT]) -> Result<FsFr, u8> {
     FsFr::from_scalar(*bytes)
 }
@@ -96,7 +55,7 @@ pub fn hex_to_bls_field(hex: &str) -> FsFr {
 
 pub fn hex_to_g1(hex: &str) -> FsG1 {
     let g1_bytes = bytes48_from_hex(hex);
-    bytes_to_g1_rust(&g1_bytes).unwrap()
+    FsG1::from_bytes(&g1_bytes).unwrap()
 }
 
 pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> FsFr {
@@ -118,7 +77,7 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     let g1_projectives: Vec<FsG1> = g1_bytes
         .chunks(BYTES_PER_G1)
         .map(|chunk| {
-            bytes_to_g1_rust(
+            FsG1::from_bytes(
                 chunk
                     .try_into()
                     .expect("Chunked into incorrect number of bytes"),
@@ -130,7 +89,7 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     let g2_values: Vec<FsG2> = g2_bytes
         .chunks(BYTES_PER_G2)
         .map(|chunk| {
-            bytes_to_g2_rust(
+            FsG2::from_bytes(
                 chunk
                     .try_into()
                     .expect("Chunked into incorrect number of bytes"),
@@ -381,7 +340,7 @@ fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
     }
 
     // Copy commitment
-    let v = bytes_from_g1_rust(commitment);
+    let v = commitment.to_bytes();
     for i in 0..v.len() {
         bytes[32 + BYTES_PER_BLOB + i] = v[i];
     }
@@ -413,7 +372,7 @@ fn compute_r_powers(
 
     for i in 0..n {
         // Copy commitment
-        let v = bytes_from_g1_rust(&commitments_g1[i]);
+        let v = commitments_g1[i].to_bytes();
         bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_COMMITMENT;
 
@@ -428,7 +387,7 @@ fn compute_r_powers(
         offset += BYTES_PER_FIELD_ELEMENT;
 
         // Copy proof
-        let v = bytes_from_g1_rust(&proofs_g1[i]);
+        let v = proofs_g1[i].to_bytes();
         bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_PROOF;
     }
@@ -708,7 +667,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
     let deserialized_blob = deserialize_blob(blob);
     if let Ok(blob_) = deserialized_blob {
         let tmp = blob_to_kzg_commitment_rust(&blob_, &kzg_settings_to_rust(s));
-        (*out).bytes = bytes_from_g1_rust(&tmp);
+        (*out).bytes = tmp.to_bytes();
         C_KZG_RET_OK
     } else {
         deserialized_blob.err().unwrap()
@@ -767,7 +726,7 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     if deserialized_blob.is_err() {
         return deserialized_blob.err().unwrap();
     }
-    let commitment_g1 = bytes_to_g1_rust(&(*commitment_bytes).bytes);
+    let commitment_g1 = FsG1::from_bytes(&(*commitment_bytes).bytes);
     if commitment_g1.is_err() {
         return C_KZG_RET_BADARGS;
     }
@@ -776,7 +735,7 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
         &commitment_g1.unwrap(),
         &kzg_settings_to_rust(s),
     );
-    (*out).bytes = bytes_from_g1_rust(&proof);
+    (*out).bytes = proof.to_bytes();
     C_KZG_RET_OK
 }
 
@@ -823,8 +782,8 @@ pub unsafe extern "C" fn verify_kzg_proof(
 ) -> C_KZG_RET {
     let frz = bytes_to_bls_field_rust(&(*z_bytes).bytes);
     let fry = bytes_to_bls_field_rust(&(*y_bytes).bytes);
-    let g1commitment = bytes_to_g1_rust(&(*commitment_bytes).bytes);
-    let g1proof = bytes_to_g1_rust(&(*proof_bytes).bytes);
+    let g1commitment = FsG1::from_bytes(&(*commitment_bytes).bytes);
+    let g1proof = FsG1::from_bytes(&(*proof_bytes).bytes);
 
     if frz.is_err() || fry.is_err() || g1commitment.is_err() || g1proof.is_err() {
         return C_KZG_RET_BADARGS;
@@ -854,8 +813,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
         return deserialized_blob.err().unwrap();
     }
 
-    let commitment_g1 = bytes_to_g1_rust(&(*commitment_bytes).bytes);
-    let proof_g1 = bytes_to_g1_rust(&(*proof_bytes).bytes);
+    let commitment_g1 = FsG1::from_bytes(&(*commitment_bytes).bytes);
+    let proof_g1 = FsG1::from_bytes(&(*proof_bytes).bytes);
     if commitment_g1.is_err() || proof_g1.is_err() {
         return C_KZG_RET_BADARGS;
     }
@@ -893,8 +852,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
             return deserialized_blob.err().unwrap();
         }
 
-        let commitment_g1 = bytes_to_g1_rust(&raw_commitments[i].bytes);
-        let proof_g1 = bytes_to_g1_rust(&raw_proofs[i].bytes);
+        let commitment_g1 = FsG1::from_bytes(&raw_commitments[i].bytes);
+        let proof_g1 = FsG1::from_bytes(&raw_proofs[i].bytes);
         if commitment_g1.is_err() || proof_g1.is_err() {
             return C_KZG_RET_BADARGS;
         }
@@ -935,7 +894,7 @@ pub unsafe extern "C" fn compute_kzg_proof(
         &frz.unwrap(),
         &kzg_settings_to_rust(s),
     );
-    (*proof_out).bytes = bytes_from_g1_rust(&proof_out_tmp);
+    (*proof_out).bytes = proof_out_tmp.to_bytes();
     (*y_out).bytes = bytes_from_bls_field(&fry_tmp);
     C_KZG_RET_OK
 }

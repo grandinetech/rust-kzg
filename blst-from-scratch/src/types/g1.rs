@@ -1,7 +1,13 @@
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::string::ToString;
 use blst::{
-    blst_fp, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_cneg, blst_p1_double,
-    blst_p1_is_equal, blst_p1_is_inf, blst_p1_mult, blst_scalar, blst_scalar_from_fr,
+    blst_fp, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_affine, blst_p1_cneg,
+    blst_p1_compress, blst_p1_double, blst_p1_from_affine, blst_p1_in_g1, blst_p1_is_equal,
+    blst_p1_is_inf, blst_p1_mult, blst_p1_uncompress, blst_scalar, blst_scalar_from_fr, BLST_ERROR,
 };
+use kzg::eip_4844::BYTES_PER_G1;
 use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
@@ -15,6 +21,33 @@ pub struct FsG1(pub blst_p1);
 impl FsG1 {
     pub(crate) const fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
         FsG1(blst_p1 { x, y, z })
+    }
+
+    /// Convert into bytes
+    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1] {
+        let mut out = [0u8; BYTES_PER_G1];
+        unsafe {
+            blst_p1_compress(out.as_mut_ptr(), &self.0);
+        }
+        out
+    }
+
+    /// Create from bytes
+    pub fn from_bytes(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
+        let mut tmp = blst_p1_affine::default();
+        let mut g1 = blst_p1::default();
+        unsafe {
+            // The uncompress routine also checks that the point is on the curve
+            if blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                return Err("blst_p1_uncompress failed".to_string());
+            }
+            blst_p1_from_affine(&mut g1, &tmp);
+            // The point must be on the right subgroup
+            if !blst_p1_in_g1(&g1) {
+                return Err("the point is not in g1 group".to_string());
+            }
+        }
+        Ok(FsG1(g1))
     }
 }
 
