@@ -48,6 +48,10 @@ harness = false
 name = "shared_eip_4844"
 harness = false
 
+[[bench]]
+name = "shared_lincomb"
+harness = false
+
 #[[bench]]
 #name = "bench_fft"
 #harness = false
