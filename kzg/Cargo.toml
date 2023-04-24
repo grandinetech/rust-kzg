@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 blst = { 'git' = 'https://github.com/supranational/blst.git' }
-sha2 = "0.10.6"
+sha2 = { version = "0.10.6", default-features = false }
 
 [features]
 default = [
