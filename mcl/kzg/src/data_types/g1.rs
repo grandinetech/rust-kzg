@@ -2,9 +2,14 @@ use crate::data_types::fp::Fp;
 use crate::data_types::fr::Fr;
 use crate::mcl_methods;
 use crate::utilities::arr64_6_to_g1_sum;
+#[cfg(feature = "parallel")]
+use kzg::G1 as _;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::os::raw::c_int;
+
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
 
 #[link(name = "mcl", kind = "static")]
 #[link(name = "mclbn384_256", kind = "static")]
@@ -32,8 +37,19 @@ extern "C" {
     pub fn mclBnG1_hashAndMapTo(x: *mut G1, buf: *const u8, bufSize: usize) -> c_int;
 }
 
-pub fn g1_linear_combination(result: &mut G1, g1_points: &[G1], coeffs: &[Fr], n: usize) {
-    unsafe { mclBnG1_mulVec(result, g1_points.as_ptr(), coeffs.as_ptr(), n) }
+pub fn g1_linear_combination(out: &mut G1, points: &[G1], scalars: &[Fr], len: usize) {
+    #[cfg(feature = "parallel")]
+    {
+        *out = (0..len)
+            .into_par_iter()
+            .map(|i| points[i] * &scalars[i])
+            .reduce(|| G1::default(), |mut acc, tmp| acc.add_or_dbl(&tmp));
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        unsafe { mclBnG1_mulVec(out, points.as_ptr(), scalars.as_ptr(), len) }
+    }
 }
 
 pub fn is_valid_order(g1: &G1) -> bool {
