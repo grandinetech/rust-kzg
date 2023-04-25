@@ -69,3 +69,7 @@ harness = false
 [[bench]]
 name = "eip_4844"
 harness = false
+
+[[bench]]
+name = "lincomb"
+harness = false
