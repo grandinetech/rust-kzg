@@ -11,6 +11,11 @@ use blst::{blst_fp, blst_p1};
 use kzg::G1Mul;
 use kzg::{Fr, FFTG1, G1};
 
+#[cfg(feature = "parallel")]
+use rayon::iter::IntoParallelIterator;
+#[cfg(feature = "parallel")]
+use rayon::iter::ParallelIterator;
+
 pub const G1_NEGATIVE_GENERATOR: blst_p1 = blst_p1 {
     x: blst_fp {
         l: [

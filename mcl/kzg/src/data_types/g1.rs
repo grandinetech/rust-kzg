@@ -43,7 +43,7 @@ pub fn g1_linear_combination(out: &mut G1, points: &[G1], scalars: &[Fr], len: u
         *out = (0..len)
             .into_par_iter()
             .map(|i| points[i] * &scalars[i])
-            .reduce(|| G1::default(), |mut acc, tmp| acc.add_or_dbl(&tmp));
+            .reduce(G1::default, |mut acc, tmp| acc.add_or_dbl(&tmp));
     }
 
     #[cfg(not(feature = "parallel"))]
