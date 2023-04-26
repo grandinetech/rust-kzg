@@ -26,5 +26,5 @@ fn bench_eip_4844_(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, bench_eip_4844_,);
+criterion_group!(benches, bench_eip_4844_);
 criterion_main!(benches);

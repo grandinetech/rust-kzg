@@ -3,7 +3,7 @@ use kzg::{Fr, Poly};
 
 const BENCH_SCALE: usize = 15;
 
-pub fn bench_new_poly_div<TFr: 'static + Fr, TPoly: 'static + Poly<TFr>>(c: &mut Criterion) {
+pub fn bench_new_poly_div<TFr: Fr, TPoly: Poly<TFr>>(c: &mut Criterion) {
     let dividend_length = 1 << BENCH_SCALE;
     let divisor_length = dividend_length / 2;
 
@@ -27,7 +27,7 @@ pub fn bench_new_poly_div<TFr: 'static + Fr, TPoly: 'static + Poly<TFr>>(c: &mut
     }
 
     let id = format!("bench_new_poly_div scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, move |b| {
+    c.bench_function(&id, |b| {
         b.iter(|| {
             dividend.div(&divisor).unwrap();
         })

@@ -17,5 +17,3 @@ criterion_group! {
 }
 
 criterion_main!(benches);
-
-// pub fn bench_das_extension<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TFr>>(c: &mut Criterion) {

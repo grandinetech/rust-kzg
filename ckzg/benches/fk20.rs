@@ -8,8 +8,8 @@ use ckzg::fk20settings::{KzgFK20MultiSettings, KzgFK20SingleSettings};
 use ckzg::kzgsettings::{generate_trusted_setup, KzgKZGSettings};
 use ckzg::poly::KzgPoly;
 
-fn fk_single_da_(c: &mut Criterion) {
-    fk_single_da::<
+fn bench_fk_single_da_(c: &mut Criterion) {
+    bench_fk_single_da::<
         BlstFr,
         BlstP1,
         BlstP2,
@@ -20,8 +20,8 @@ fn fk_single_da_(c: &mut Criterion) {
     >(c, &generate_trusted_setup);
 }
 
-fn fk_multi_da_(c: &mut Criterion) {
-    fk_multi_da::<
+fn bench_fk_multi_da_(c: &mut Criterion) {
+    bench_fk_multi_da::<
         BlstFr,
         BlstP1,
         BlstP2,
@@ -35,7 +35,7 @@ fn fk_multi_da_(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = fk_single_da_, fk_multi_da_
+    targets = bench_fk_single_da_, bench_fk_multi_da_
 }
 
 criterion_main!(benches);

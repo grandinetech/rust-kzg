@@ -8,13 +8,13 @@ pub const SECRET: [u8; 32usize] = [
 
 const BENCH_SCALE: usize = 15;
 
-pub fn commit_to_poly<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+pub fn bench_commit_to_poly<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
@@ -27,16 +27,16 @@ pub fn commit_to_poly<
         poly.set_coeff_at(i, &TFr::rand());
     }
     let id = format!("bench_commit_to_poly scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, move |b| b.iter(|| ks.commit_to_poly(&poly).unwrap()));
+    c.bench_function(&id, |b| b.iter(|| ks.commit_to_poly(&poly).unwrap()));
 }
 
-pub fn compute_proof_single<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+pub fn bench_compute_proof_single<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
@@ -49,7 +49,7 @@ pub fn compute_proof_single<
         poly.set_coeff_at(i, &TFr::rand());
     }
     let id = format!("bench_compute_proof_single scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, move |b| {
+    c.bench_function(&id, |b| {
         b.iter(|| ks.compute_proof_single(&poly, &TFr::rand()).unwrap())
     });
 }

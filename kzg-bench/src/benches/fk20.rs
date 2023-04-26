@@ -25,14 +25,14 @@ fn log2_pow2(n: u32) -> usize {
     r as usize
 }
 
-pub fn fk_single_da<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
-    TFK20SingleSettings: 'static + FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
+pub fn bench_fk_single_da<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TFK20SingleSettings: FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
 >(
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
@@ -60,17 +60,17 @@ pub fn fk_single_da<
 
     // Generate the proofs
     let id = format!("bench_fk_single_da scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, move |b| b.iter(|| fk.data_availability(&p).unwrap()));
+    c.bench_function(&id, |b| b.iter(|| fk.data_availability(&p).unwrap()));
 }
 
-pub fn fk_multi_da<
-    TFr: 'static + Fr,
-    TG1: 'static + G1,
-    TG2: 'static + G2,
-    TPoly: 'static + Poly<TFr>,
-    TFFTSettings: 'static + FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: 'static + KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
-    TFK20MultiSettings: 'static + FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
+pub fn bench_fk_multi_da<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings>,
 >(
     c: &mut Criterion,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
@@ -122,5 +122,5 @@ pub fn fk_multi_da<
     ks.commit_to_poly(&p).unwrap();
 
     let id = format!("bench_fk_multi_da scale: '{}'", BENCH_SCALE);
-    c.bench_function(&id, move |b| b.iter(|| fk.data_availability(&p).unwrap()));
+    c.bench_function(&id, |b| b.iter(|| fk.data_availability(&p).unwrap()));
 }
