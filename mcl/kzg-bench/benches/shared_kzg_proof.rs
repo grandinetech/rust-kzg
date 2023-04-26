@@ -26,7 +26,7 @@ fn bench_compute_proof_single_(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = commit_to_poly_, bench_compute_proof_single_
+    targets = bench_commit_to_poly_, bench_compute_proof_single_
 }
 
 criterion_main!(benches);
