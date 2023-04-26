@@ -30,6 +30,7 @@ fn bench_compute_aggregate_kzg_proof_1(c: &mut Criterion) {
         1,
     )
 }
+
 fn bench_compute_aggregate_kzg_proof_2(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<
         BlstFr,
@@ -45,6 +46,7 @@ fn bench_compute_aggregate_kzg_proof_2(c: &mut Criterion) {
         2,
     )
 }
+
 fn bench_compute_aggregate_kzg_proof_4(c: &mut Criterion) {
     bench_compute_aggregate_kzg_proof::<
         BlstFr,
@@ -110,6 +112,7 @@ fn bench_verify_aggregate_kzg_proof_1(c: &mut Criterion) {
         1,
     )
 }
+
 fn bench_verify_aggregate_kzg_proof_2(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<
         BlstFr,
@@ -127,6 +130,7 @@ fn bench_verify_aggregate_kzg_proof_2(c: &mut Criterion) {
         2,
     )
 }
+
 fn bench_verify_aggregate_kzg_proof_4(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<
         BlstFr,
@@ -144,6 +148,7 @@ fn bench_verify_aggregate_kzg_proof_4(c: &mut Criterion) {
         4,
     )
 }
+
 fn bench_verify_aggregate_kzg_proof_8(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<
         BlstFr,
@@ -161,6 +166,7 @@ fn bench_verify_aggregate_kzg_proof_8(c: &mut Criterion) {
         8,
     )
 }
+
 fn bench_verify_aggregate_kzg_proof_16(c: &mut Criterion) {
     bench_verify_aggregate_kzg_proof::<
         BlstFr,

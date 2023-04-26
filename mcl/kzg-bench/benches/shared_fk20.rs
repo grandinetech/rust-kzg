@@ -8,17 +8,17 @@ use mcl_rust::kzg_settings::KZGSettings;
 use mcl_rust::mcl_methods::init;
 use mcl_rust::CurveType;
 
-fn fk_single_da_(c: &mut Criterion) {
+fn bench_fk_single_da_(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
-    fk_single_da::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20SingleMatrix>(
+    bench_fk_single_da::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20SingleMatrix>(
         c,
         &KZGSettings::generate_trusted_setup,
     )
 }
 
-fn fk_multi_da_(c: &mut Criterion) {
+fn bench_fk_multi_da_(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));
-    fk_multi_da::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20Matrix>(
+    bench_fk_multi_da::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings, FK20Matrix>(
         c,
         &KZGSettings::generate_trusted_setup,
     )
@@ -27,7 +27,7 @@ fn fk_multi_da_(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = fk_single_da_, fk_multi_da_
+    targets = bench_fk_single_da_, bench_fk_multi_da_
 }
 
 criterion_main!(benches);
