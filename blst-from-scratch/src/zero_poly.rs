@@ -14,13 +14,6 @@ use crate::types::poly::FsPoly;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-#[allow(dead_code)]
-struct ParRes {
-    a: Vec<FsFr>,
-    b: usize,
-    c: usize,
-}
-
 /// Pad given poly it with zeros to new length
 pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, String> {
     if new_length < poly.len() {
@@ -40,7 +33,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
     /// The returned polynomial has a length of idxs.len() + 1.
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
         if idxs.is_empty() {
-            return Err(String::from("idx array must be non-zero"));
+            return Err(String::from("idx array must not be empty"));
         }
 
         // Makes use of long multiplication in terms of (x - w_0)(x - w_1)..
@@ -157,11 +150,9 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         } else {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
-            #[allow(unused_assignments)]
             let mut work = Vec::with_capacity(next_pow);
 
-            let mut partial_lens = Vec::with_capacity(partial_count);
-            let mut partial_offsets = Vec::with_capacity(partial_count);
+            let mut partial_lens = vec![degree_of_partial; partial_count];
 
             #[cfg(not(feature = "parallel"))]
             {
@@ -184,8 +175,6 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                         work_offset..(work_offset + degree_of_partial),
                         partial.coeffs.to_vec(),
                     );
-                    partial_lens.push(degree_of_partial);
-                    partial_offsets.push(work_offset);
 
                     missing_offset += missing_per_partial;
                     work_offset += degree_of_partial;
@@ -199,30 +188,21 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                 // Insert all generated partial polynomials at degree_of_partial intervals in work vector
                 let out_res = (0..partial_count)
                     .into_par_iter()
-                    .map(move |i| {
+                    .map(|i| {
                         let missing_offset = missing_per_partial * i;
-                        let work_offset = degree_of_partial * i;
                         let end = min(missing_offset + missing_per_partial, max);
 
-                        let mut partial = self.do_zero_poly_mul_partial(
+                        let partial = self.do_zero_poly_mul_partial(
                             &missing_idxs[missing_offset..end],
                             domain_stride,
                         )?;
 
-                        partial.coeffs = pad_poly(partial.coeffs, degree_of_partial)?;
-
-                        Ok(ParRes {
-                            a: partial.coeffs,
-                            b: degree_of_partial,
-                            c: work_offset,
-                        })
+                        pad_poly(partial.coeffs, degree_of_partial)
                     })
                     .collect::<Result<Vec<_>, String>>()?;
 
                 out_res.into_iter().for_each(|mut item| {
-                    work.append(&mut item.a);
-                    partial_lens.push(item.b);
-                    partial_offsets.push(item.c);
+                    work.append(&mut item);
                 });
 
                 work.resize(next_pow, FsFr::zero());
@@ -248,12 +228,11 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                     // Calculate partial views from lens and offsets
                     // Also update offsets to match current iteration
                     let mut partial_vec = Vec::with_capacity(partials_num);
-                    partial_offsets[i] = start * partial_size;
+                    let partial_offset = start * partial_size;
                     for j in 0..partials_num {
-                        partial_offsets[i + j] = (start + j) * partial_size;
+                        let partial_offset = (start + j) * partial_size;
                         partial_vec.push(FsPoly {
-                            coeffs: work[partial_offsets[i + j]
-                                ..(partial_offsets[i + j] + partial_lens[i + j])]
+                            coeffs: work[partial_offset..(partial_offset + partial_lens[i + j])]
                                 .to_vec(),
                         });
                     }
@@ -265,7 +244,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                         reduced_poly.coeffs =
                             pad_poly(reduced_poly.coeffs, partial_size * partials_num)?;
                         work.splice(
-                            (partial_offsets[i])..(partial_offsets[i] + reduced_poly.coeffs.len()),
+                            partial_offset..(partial_offset + reduced_poly.coeffs.len()),
                             reduced_poly.coeffs,
                         );
                     } else {
