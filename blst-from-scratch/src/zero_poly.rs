@@ -28,7 +28,7 @@ pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, Str
 }
 
 #[allow(clippy::needless_range_loop)]
-impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
+impl FsFFTSettings {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
         if idxs.is_empty() {
             return Err(String::from("idx array must not be empty"));
@@ -100,6 +100,16 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         };
 
         Ok(ret)
+    }
+}
+
+impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
+        self.do_zero_poly_mul_partial(idxs, stride)
+    }
+
+    fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
+        self.reduce_partials(domain_size, partials)
     }
 
     fn zero_poly_via_multiplication(
