@@ -27,7 +27,6 @@ pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, Str
     Ok(poly)
 }
 
-#[allow(clippy::needless_range_loop)]
 impl FsFFTSettings {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
         if idxs.is_empty() {
@@ -60,9 +59,13 @@ impl FsFFTSettings {
         Ok(FsPoly { coeffs })
     }
 
-    fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
+    fn reduce_partials(&self, domain_size: usize, partials: Vec<FsPoly>) -> Result<FsPoly, String> {
         if !domain_size.is_power_of_two() {
             return Err(String::from("Expected domain size to be a power of 2"));
+        }
+
+        if partials.is_empty() {
+            return Err(String::from("partials must not be empty"));
         }
 
         // Calculate the resulting polynomial degree
@@ -78,12 +81,20 @@ impl FsFFTSettings {
             ));
         }
 
+        let mut partials = partials.into_iter();
+
         // Pad all partial polynomials to same length, compute their FFT and multiply them together
-        let mut padded_partial = pad_poly(partials[0].coeffs.clone(), domain_size)?;
+        let mut padded_partial = pad_poly(
+            partials
+                .next()
+                .expect("Not empty, checked above; qed")
+                .coeffs,
+            domain_size,
+        )?;
         let mut eval_result = self.fft_fr(&padded_partial, false)?;
 
-        for i in 1..(partials.len()) {
-            padded_partial = pad_poly(partials[i].coeffs.clone(), domain_size)?;
+        for partial in partials {
+            padded_partial = pad_poly(partial.coeffs, domain_size)?;
             let evaluated_partial = self.fft_fr(&padded_partial, false)?;
             for j in 0..domain_size {
                 eval_result[j] = eval_result[j].mul(&evaluated_partial[j]);
@@ -109,7 +120,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
     }
 
     fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
-        self.reduce_partials(domain_size, partials)
+        self.reduce_partials(domain_size, partials.to_vec())
     }
 
     fn zero_poly_via_multiplication(
@@ -206,7 +217,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                     }
 
                     if partials_num > 1 {
-                        let mut reduced_poly = self.reduce_partials(reduced_len, &partial_vec)?;
+                        let mut reduced_poly = self.reduce_partials(reduced_len, partial_vec)?;
                         // Update partial length to match its length after reduction
                         partial_lens[i] = reduced_poly.coeffs.len();
                         reduced_poly.coeffs =
