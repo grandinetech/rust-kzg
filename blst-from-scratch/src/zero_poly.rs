@@ -72,7 +72,10 @@ impl FsFFTSettings {
         // E.g. (a * x^n + ...) (b * x^m + ...) has a degree of x^(n+m)
         let out_degree = partials
             .iter()
-            .map(|partial| partial.coeffs.len() - 1)
+            .map(|partial| {
+                // TODO: Not guaranteed by function signature that this doesn't underflow
+                partial.coeffs.len() - 1
+            })
             .sum::<usize>();
 
         if out_degree + 1 > domain_size {
@@ -206,13 +209,15 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
                     // Calculate partial views from lens and offsets
                     // Also update offsets to match current iteration
-                    let mut partial_vec = Vec::with_capacity(partials_num);
                     let partial_offset = start * partial_size;
-                    for j in 0..partials_num {
-                        let partial_offset = (start + j) * partial_size;
+                    let mut partial_vec = Vec::with_capacity(partials_num);
+                    for (partial_offset, partial_len) in (partial_offset..)
+                        .step_by(partial_size)
+                        .zip(partial_lens.iter().skip(i).copied())
+                        .take(partials_num)
+                    {
                         partial_vec.push(FsPoly {
-                            coeffs: work[partial_offset..(partial_offset + partial_lens[i + j])]
-                                .to_vec(),
+                            coeffs: work[partial_offset..][..partial_len].to_vec(),
                         });
                     }
 
