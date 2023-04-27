@@ -150,63 +150,30 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         } else {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
-            let mut work = Vec::with_capacity(next_pow);
+            let mut work = vec![FsFr::zero(); next_pow];
 
             let mut partial_lens = vec![degree_of_partial; partial_count];
 
             #[cfg(not(feature = "parallel"))]
-            {
-                work.resize(work.capacity(), FsFr::zero());
-
-                let mut missing_offset = 0;
-                let mut work_offset = 0;
-                let max = missing_idxs.len();
-
-                // Insert all generated partial polynomials at degree_of_partial intervals in work vector
-                for _i in 0..partial_count {
-                    let end = min(missing_offset + missing_per_partial, max);
-
-                    let mut partial = self.do_zero_poly_mul_partial(
-                        &missing_idxs[missing_offset..end],
-                        domain_stride,
-                    )?;
-                    partial.coeffs = pad_poly(partial.coeffs, degree_of_partial)?;
-                    work.splice(
-                        work_offset..(work_offset + degree_of_partial),
-                        partial.coeffs.to_vec(),
-                    );
-
-                    missing_offset += missing_per_partial;
-                    work_offset += degree_of_partial;
-                }
-            }
-
+            let iter = missing_idxs
+                .chunks(missing_per_partial)
+                .zip(work.chunks_exact_mut(degree_of_partial));
             #[cfg(feature = "parallel")]
-            {
-                let max = missing_idxs.len();
+            let iter = missing_idxs
+                .par_chunks(missing_per_partial)
+                .zip(work.par_chunks_exact_mut(degree_of_partial));
+            // Insert all generated partial polynomials at degree_of_partial intervals in work vector
+            iter.for_each(|(missing_idxs, work)| {
+                let partial = self
+                    .do_zero_poly_mul_partial(missing_idxs, domain_stride)
+                    .expect("`missing_idxs` is guaranteed to not be empty; qed");
 
-                // Insert all generated partial polynomials at degree_of_partial intervals in work vector
-                let out_res = (0..partial_count)
-                    .into_par_iter()
-                    .map(|i| {
-                        let missing_offset = missing_per_partial * i;
-                        let end = min(missing_offset + missing_per_partial, max);
-
-                        let partial = self.do_zero_poly_mul_partial(
-                            &missing_idxs[missing_offset..end],
-                            domain_stride,
-                        )?;
-
-                        pad_poly(partial.coeffs, degree_of_partial)
-                    })
-                    .collect::<Result<Vec<_>, String>>()?;
-
-                out_res.into_iter().for_each(|mut item| {
-                    work.append(&mut item);
-                });
-
-                work.resize(next_pow, FsFr::zero());
-            }
+                let partial = pad_poly(partial.coeffs, degree_of_partial).expect(
+                    "`partial.coeffs.len()` (same as `missing_idxs.len() + 1`) is \
+                    guaranteed to be at most `degree_of_partial`; qed",
+                );
+                work[..partial.len()].copy_from_slice(&partial);
+            });
 
             // Adjust last length to match its actual length
             partial_lens[partial_count - 1] =
