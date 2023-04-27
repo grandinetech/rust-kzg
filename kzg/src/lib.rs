@@ -108,15 +108,30 @@ pub trait DAS<Coeff: Fr> {
 }
 
 pub trait ZeroPoly<Coeff: Fr, Polynomial: Poly<Coeff>> {
+    /// Calculates the minimal polynomial that evaluates to zero for powers of roots of unity at the
+    /// given indices.
+    /// The returned polynomial has a length of `idxs.len() + 1`.
+    ///
+    /// Uses straightforward long multiplication to calculate the product of `(x - r^i)` where `r`
+    /// is a root of unity and the `i`s are the indices at which it must evaluate to zero.
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize)
         -> Result<Polynomial, String>;
 
+    /// Reduce partials using a specified domain size.
+    /// Calculates the product of all polynomials via FFT and then applies an inverse FFT to produce
+    /// a new Polynomial.
     fn reduce_partials(
         &self,
         domain_size: usize,
         partials: &[Polynomial],
     ) -> Result<Polynomial, String>;
 
+    /// Calculate the minimal polynomial that evaluates to zero for powers of roots of unity that
+    /// correspond to missing indices.
+    /// This is done simply by multiplying together `(x - r^i)` for all the `i` that are missing
+    /// indices, using a combination of direct multiplication ([`Self::do_zero_poly_mul_partial()`])
+    /// and iterated multiplication via convolution (#reduce_partials).
+    /// Also calculates the FFT (the "evaluation polynomial").
     fn zero_poly_via_multiplication(
         &self,
         domain_size: usize,

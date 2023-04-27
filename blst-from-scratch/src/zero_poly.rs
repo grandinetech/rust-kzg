@@ -29,8 +29,6 @@ pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, Str
 
 #[allow(clippy::needless_range_loop)]
 impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
-    /// Calculates a polynomial that evaluates to zero for roots of unity at given indices.
-    /// The returned polynomial has a length of idxs.len() + 1.
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
         if idxs.is_empty() {
             return Err(String::from("idx array must not be empty"));
@@ -62,8 +60,6 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         Ok(FsPoly { coeffs })
     }
 
-    /// Reduce partials using a specified domain size.
-    /// Calculates the product of all polynomials via FFT and then applies an inverse FFT to produce a new Polynomial.
     fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
         if !domain_size.is_power_of_two() {
             return Err(String::from("Expected domain size to be a power of 2"));
