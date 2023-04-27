@@ -37,34 +37,29 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         }
 
         // Makes use of long multiplication in terms of (x - w_0)(x - w_1)..
-        // Initialize poly with 1s
-        let mut poly = FsPoly {
-            coeffs: vec![FsFr::one(); idxs.len() + 1],
-        };
+        let mut coeffs = Vec::with_capacity(idxs.len() + 1);
 
         // For the first member, store -w_0 as constant term
-        poly.coeffs[0] = self.expanded_roots_of_unity[idxs[0] * stride].negate();
+        coeffs.push(self.expanded_roots_of_unity[idxs[0] * stride].negate());
 
-        for i in 1..idxs.len() {
+        for (i, idx) in idxs.iter().copied().enumerate().skip(1) {
             // For member (x - w_i) take coefficient as -(w_i + w_{i-1} + ...)
-            poly.coeffs[i] = self.expanded_roots_of_unity[idxs[i] * stride].negate();
-            let neg_di = poly.coeffs[i];
-            poly.coeffs[i] = poly.coeffs[i].add(&poly.coeffs[i - 1]);
+            let neg_di = self.expanded_roots_of_unity[idx * stride].negate();
+            coeffs.push(neg_di.add(&coeffs[i - 1]));
 
             // Multiply all previous members by (x - w_i)
             // It equals multiplying by - w_i and adding x^(i - 1) coefficient (implied multiplication by x)
-            let mut j = i - 1;
-            while j > 0 {
-                poly.coeffs[j] = poly.coeffs[j].mul(&neg_di);
-                poly.coeffs[j] = poly.coeffs[j].add(&poly.coeffs[j - 1]);
-                j -= 1;
+            for j in (1..i).rev() {
+                coeffs[j] = coeffs[j].mul(&neg_di).add(&coeffs[j - 1]);
             }
 
             // Multiply x^0 member by - w_i
-            poly.coeffs[0] = poly.coeffs[0].mul(&neg_di);
+            coeffs[0] = coeffs[0].mul(&neg_di);
         }
 
-        Ok(poly)
+        coeffs.resize(coeffs.capacity(), FsFr::one());
+
+        Ok(FsPoly { coeffs })
     }
 
     /// Reduce partials using a specified domain size.
