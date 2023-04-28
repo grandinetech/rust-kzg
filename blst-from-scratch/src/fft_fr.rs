@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -65,20 +66,32 @@ pub fn fft_fr_fast(
     }
 }
 
-impl FFTFr<FsFr> for FsFFTSettings {
-    /// Fast Fourier Transform for finite field elements
-    fn fft_fr(&self, data: &[FsFr], inverse: bool) -> Result<Vec<FsFr>, String> {
+impl FsFFTSettings {
+    /// Fast Fourier Transform for finite field elements, `output` must be zeroes
+    pub(crate) fn fft_fr_output(
+        &self,
+        data: &[FsFr],
+        inverse: bool,
+        output: &mut [FsFr],
+    ) -> Result<(), String> {
         if data.len() > self.max_width {
             return Err(String::from(
                 "Supplied list is longer than the available max width",
             ));
-        } else if !data.len().is_power_of_two() {
+        }
+        if data.len() != output.len() {
+            return Err(format!(
+                "Output length {} doesn't match data length {}",
+                data.len(),
+                output.len()
+            ));
+        }
+        if !data.len().is_power_of_two() {
             return Err(String::from("A list with power-of-two length expected"));
         }
 
         // In case more roots are provided with fft_settings, use a larger stride
         let stride = self.max_width / data.len();
-        let mut ret = vec![FsFr::default(); data.len()];
 
         // Inverse is same as regular, but all constants are reversed and results are divided by n
         // This is a property of the DFT matrix
@@ -88,12 +101,23 @@ impl FFTFr<FsFr> for FsFFTSettings {
             &self.expanded_roots_of_unity
         };
 
-        fft_fr_fast(&mut ret, data, 1, roots, stride);
+        fft_fr_fast(output, data, 1, roots, stride);
 
         if inverse {
             let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
-            ret.iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
+            output.iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
         }
+
+        Ok(())
+    }
+}
+
+impl FFTFr<FsFr> for FsFFTSettings {
+    /// Fast Fourier Transform for finite field elements
+    fn fft_fr(&self, data: &[FsFr], inverse: bool) -> Result<Vec<FsFr>, String> {
+        let mut ret = vec![FsFr::default(); data.len()];
+
+        self.fft_fr_output(data, inverse, &mut ret)?;
 
         Ok(ret)
     }
