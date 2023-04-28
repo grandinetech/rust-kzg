@@ -14,7 +14,7 @@
 # This script is designed to be run once and forgotten about.
 #
 # 1.2. setup system
-# apt -y install htop gcc g++ clang make git mosh golang default-jdk unzip
+# apt -y install htop gcc g++ clang make git mosh golang
 # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 #
 # 1.3. setup mosh-server
@@ -42,20 +42,6 @@ print_msg () {
 lscpu | grep "Model\ name" | head -n 1 >> "$paste_file"
 lscpu | grep "CPU(s)"      | head -n 1 >> "$paste_file"
 
-# 1.4. setup gradle and environment variables
-cd /tmp || exit
-curl -O https://downloads.gradle-dn.com/distributions/gradle-7.6-bin.zip
-unzip gradle-7.6-bin.zip
-mkdir /opt/gradle
-cp -pr gradle-7.6/* /opt/gradle
-cd ~ || exit
-touch /etc/profile.d/java_home.sh
-echo "export JAVA_HOME=\"/usr/lib/jvm/default-java\"" >> /etc/profile.d/java_home.sh
-echo "export PATH=$JAVA_HOME/bin:$PATH" >> /etc/profile.d/java_home.sh
-echo "export PATH=/opt/gradle/bin:${PATH}" | tee /etc/profile.d/gradle.sh
-source /etc/profile.d/java_home.sh
-source /etc/profile.d/gradle.sh
-
 # 2. prepare benchmarks
 
 # 2.1. prepare rust-kzg
@@ -66,7 +52,7 @@ cd rust-kzg || exit
 cd blst-from-scratch || exit
 cargo rustc --release --crate-type=staticlib --features=parallel
 git clone https://github.com/ethereum/c-kzg-4844.git
-cd c-kzg-4844 || exit 1
+cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout fd24cf8e1e2f09a96b4e62a595b4e49f046ce6cf # TODO: keep this updated
 git submodule update --init
 cd src || exit
@@ -75,7 +61,6 @@ make blst
 unset CFLAGS
 cd ..
 git apply < ../rust.patch
-git apply < ../java.patch
 git apply < ../go.patch
 cd ../..
 
@@ -85,7 +70,7 @@ cd ../../..
 
 # 2.4. prepare c-kzg-4844
 git clone https://github.com/ethereum/c-kzg-4844.git
-cd c-kzg-4844/src || exit 1
+cd c-kzg-4844/src || exit
 make all
 cd ../..
 
@@ -104,10 +89,10 @@ do
   taskset --cpu-list "${taskset_cpu_list[$i]}" go test -bench=. >> ../"$paste_file"
   cd ..
 
-  # 3.2. c-kzg-4844 (java binding)
-  cd c-kzg-4844/bindings/java || exit
-  print_msg "c-kzg-4844 (java binding)" ../../../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" make build benchmark >> ../../../"$paste_file"
+  # 3.2. rust binding (c-kzg-4844)
+  cd c-kzg-4844/bindings/rust || exit
+  print_msg "rust binding (c-kzg-4844)" ../../../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench >> ../../../"$paste_file"
   cd ../../..
 
   # rust crates
@@ -145,21 +130,15 @@ do
   print_msg "mcl (parallel)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel >> ../"$paste_file"
 
-  # 3.11. blst-from-scratch (rust binding)
-  print_msg "blst-from-scratch (rust binding)" ../"$paste_file"
-  cd blst-from-scratch/c-kzg-4844/bindings/rust/ || exit 1
+  # 3.11. rust binding (blst-from-scratch)
+  print_msg "rust binding (blst-from-scratch)" ../"$paste_file"
+  cd blst-from-scratch/c-kzg-4844/bindings/rust/ || exit
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench >> ../../../../../"$paste_file"
   cd ../../../..
 
-  # 3.12. blst-from-scratch (java binding)
-  print_msg "blst-from-scratch (java binding)" ../"$paste_file"
-  cd blst-from-scratch/c-kzg-4844/bindings/java/ || exit 1
-  taskset --cpu-list "${taskset_cpu_list[$i]}" make build benchmark >> ../../../../../"$paste_file"
-  cd ../../../..
-
-  # 3.13. blst-from-scratch (go binding)
-  print_msg "blst-from-scratch (go binding)" ../"$paste_file"
-  cd blst-from-scratch/c-kzg-4844/bindings/go/ || exit 1
+  # 3.12. go binding (blst-from-scratch)
+  print_msg "go binding (blst-from-scratch)" ../"$paste_file"
+  cd blst-from-scratch/c-kzg-4844/bindings/go/ || exit
   export CGO_CFLAGS="-O2 -D__BLST_PORTABLE__"
   taskset --cpu-list "${taskset_cpu_list[$i]}" go test -run ^$ -bench . >> ../../../../../"$paste_file"
   unset CGO_CFLAGS
