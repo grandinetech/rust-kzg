@@ -64,7 +64,22 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn compute_proof_single(&self, p: &FsPoly, x: &FsFr) -> Result<FsG1, String> {
-        self.compute_proof_multi(p, x, 1)
+        // `-(x0^n)`, where `n` is `1`
+        let divisor_0 = x.negate();
+
+        // Calculate `q = p / (x^n - x0^n)` for our reduced case (see `compute_proof_multi` for
+        // generic implementation)
+        let mut out_coeffs = Vec::from(&p.coeffs[1..]);
+        for i in (1..out_coeffs.len()).rev() {
+            let tmp = out_coeffs[i].mul(&divisor_0);
+            out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
+        }
+
+        let q = FsPoly { coeffs: out_coeffs };
+
+        let ret = self.commit_to_poly(&q).unwrap();
+
+        Ok(ret)
     }
 
     fn check_proof_single(
@@ -94,7 +109,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
 
         // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
         let mut divisor = FsPoly {
-            coeffs: Vec::with_capacity(n),
+            coeffs: Vec::with_capacity(n + 1),
         };
 
         // -(x0^n)
