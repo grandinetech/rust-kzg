@@ -14,6 +14,11 @@ use crate::types::poly::FsPoly;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
+// Can be tuned & optimized (must be a power of 2)
+const DEGREE_OF_PARTIAL: usize = 64;
+// Can be tuned & optimized (but must be a power of 2)
+const REDUCTION_FACTOR: usize = 4;
+
 /// Pad given poly it with zeros to new length
 pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, String> {
     if new_length < poly.len() {
@@ -150,13 +155,12 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             return Err(String::from("Domain size must be a power of 2"));
         }
 
-        let degree_of_partial = 64; // Can be tuned & optimized (must be a power of 2)
-        let missing_per_partial = degree_of_partial - 1; // Number of missing idxs needed per partial
+        let missing_per_partial = DEGREE_OF_PARTIAL - 1; // Number of missing idxs needed per partial
         let domain_stride = self.max_width / domain_size;
 
         let mut partial_count = 1 + (missing_idxs.len() - 1) / missing_per_partial; // TODO: explain why -1 is used here
 
-        let next_pow: usize = (partial_count * degree_of_partial).next_power_of_two();
+        let next_pow: usize = (partial_count * DEGREE_OF_PARTIAL).next_power_of_two();
         let domain_ceiling = min(next_pow, domain_size);
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
@@ -167,23 +171,23 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             // Save all constructed polynomials in a shared 'work' vector
             let mut work = vec![FsFr::zero(); next_pow];
 
-            let mut partial_lens = vec![degree_of_partial; partial_count];
+            let mut partial_lens = vec![DEGREE_OF_PARTIAL; partial_count];
 
             #[cfg(not(feature = "parallel"))]
             let iter = missing_idxs
                 .chunks(missing_per_partial)
-                .zip(work.chunks_exact_mut(degree_of_partial));
+                .zip(work.chunks_exact_mut(DEGREE_OF_PARTIAL));
             #[cfg(feature = "parallel")]
             let iter = missing_idxs
                 .par_chunks(missing_per_partial)
-                .zip(work.par_chunks_exact_mut(degree_of_partial));
+                .zip(work.par_chunks_exact_mut(DEGREE_OF_PARTIAL));
             // Insert all generated partial polynomials at degree_of_partial intervals in work vector
             iter.for_each(|(missing_idxs, work)| {
                 let partial = self
                     .do_zero_poly_mul_partial(missing_idxs, domain_stride)
                     .expect("`missing_idxs` is guaranteed to not be empty; qed");
 
-                let partial = pad_poly(partial.coeffs, degree_of_partial).expect(
+                let partial = pad_poly(partial.coeffs, DEGREE_OF_PARTIAL).expect(
                     "`partial.coeffs.len()` (same as `missing_idxs.len() + 1`) is \
                     guaranteed to be at most `degree_of_partial`; qed",
                 );
@@ -195,17 +199,16 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                 1 + missing_idxs.len() - (partial_count - 1) * missing_per_partial;
 
             // Reduce all vectors into one by reducing them w/ varying size multiplications
-            let reduction_factor = 4; // Can be tuned & optimized (but must be a power of 2)
             while partial_count > 1 {
-                let reduced_count = 1 + (partial_count - 1) / reduction_factor;
+                let reduced_count = 1 + (partial_count - 1) / REDUCTION_FACTOR;
                 let partial_size = partial_lens[0].next_power_of_two();
 
                 // Step over polynomial space and produce larger multiplied polynomials
                 for i in 0..reduced_count {
-                    let start = i * reduction_factor;
-                    let out_end = min((start + reduction_factor) * partial_size, domain_ceiling);
+                    let start = i * REDUCTION_FACTOR;
+                    let out_end = min((start + REDUCTION_FACTOR) * partial_size, domain_ceiling);
                     let reduced_len = min(out_end - start * partial_size, domain_size);
-                    let partials_num = min(reduction_factor, partial_count - start);
+                    let partials_num = min(REDUCTION_FACTOR, partial_count - start);
 
                     // Calculate partial views from lens and offsets
                     // Also update offsets to match current iteration
