@@ -13,6 +13,7 @@ use crate::types::poly::FsPoly;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
+use smallvec::{smallvec, SmallVec};
 
 // Can be tuned & optimized (must be a power of 2)
 const DEGREE_OF_PARTIAL: usize = 64;
@@ -32,14 +33,37 @@ pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, Str
     Ok(poly)
 }
 
+/// Pad given poly coefficients it with zeros to new length
+pub fn pad_poly_coeffs<const N: usize, T>(
+    mut coeffs: SmallVec<[T; N]>,
+    new_length: usize,
+) -> Result<SmallVec<[T; N]>, String>
+where
+    T: Default + Clone,
+{
+    if new_length < coeffs.len() {
+        return Err(String::from(
+            "new_length must be longer or equal to coeffs length",
+        ));
+    }
+
+    coeffs.resize(new_length, T::default());
+
+    Ok(coeffs)
+}
+
 impl FsFFTSettings {
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
+    fn do_zero_poly_mul_partial(
+        &self,
+        idxs: &[usize],
+        stride: usize,
+    ) -> Result<SmallVec<[FsFr; DEGREE_OF_PARTIAL]>, String> {
         if idxs.is_empty() {
             return Err(String::from("idx array must not be empty"));
         }
 
         // Makes use of long multiplication in terms of (x - w_0)(x - w_1)..
-        let mut coeffs = Vec::with_capacity(idxs.len() + 1);
+        let mut coeffs = SmallVec::<[FsFr; DEGREE_OF_PARTIAL]>::new();
 
         // For the first member, store -w_0 as constant term
         coeffs.push(self.expanded_roots_of_unity[idxs[0] * stride].negate());
@@ -59,27 +83,31 @@ impl FsFFTSettings {
             coeffs[0] = coeffs[0].mul(&neg_di);
         }
 
-        coeffs.resize(coeffs.capacity(), FsFr::one());
+        coeffs.resize(idxs.len() + 1, FsFr::one());
 
-        Ok(FsPoly { coeffs })
+        Ok(coeffs)
     }
 
-    fn reduce_partials(&self, domain_size: usize, partials: Vec<FsPoly>) -> Result<FsPoly, String> {
+    fn reduce_partials(
+        &self,
+        domain_size: usize,
+        partial_coeffs: SmallVec<[SmallVec<[FsFr; DEGREE_OF_PARTIAL]>; REDUCTION_FACTOR]>,
+    ) -> Result<SmallVec<[FsFr; DEGREE_OF_PARTIAL]>, String> {
         if !domain_size.is_power_of_two() {
             return Err(String::from("Expected domain size to be a power of 2"));
         }
 
-        if partials.is_empty() {
+        if partial_coeffs.is_empty() {
             return Err(String::from("partials must not be empty"));
         }
 
         // Calculate the resulting polynomial degree
         // E.g. (a * x^n + ...) (b * x^m + ...) has a degree of x^(n+m)
-        let out_degree = partials
+        let out_degree = partial_coeffs
             .iter()
             .map(|partial| {
                 // TODO: Not guaranteed by function signature that this doesn't underflow
-                partial.coeffs.len() - 1
+                partial.len() - 1
             })
             .sum::<usize>();
 
@@ -89,21 +117,24 @@ impl FsFFTSettings {
             ));
         }
 
-        let mut partials = partials.into_iter();
+        let mut partial_coeffs = partial_coeffs.into_iter();
 
         // Pad all partial polynomials to same length, compute their FFT and multiply them together
-        let mut padded_partial = pad_poly(
-            partials
+        let mut padded_partial = pad_poly_coeffs(
+            partial_coeffs
                 .next()
-                .expect("Not empty, checked above; qed")
-                .coeffs,
+                .expect("Not empty, checked above; qed"),
             domain_size,
         )?;
-        let mut eval_result = self.fft_fr(&padded_partial, false)?;
+        let mut eval_result: SmallVec<[FsFr; DEGREE_OF_PARTIAL]> =
+            smallvec![FsFr::zero(); domain_size];
+        self.fft_fr_output(&padded_partial, false, &mut eval_result)?;
 
-        for partial in partials {
-            padded_partial = pad_poly(partial.coeffs, domain_size)?;
-            let evaluated_partial = self.fft_fr(&padded_partial, false)?;
+        for partial in partial_coeffs {
+            padded_partial = pad_poly_coeffs(partial, domain_size)?;
+            let mut evaluated_partial: SmallVec<[FsFr; DEGREE_OF_PARTIAL]> =
+                smallvec![FsFr::zero(); domain_size];
+            self.fft_fr_output(&padded_partial, false, &mut evaluated_partial)?;
 
             eval_result
                 .iter_mut()
@@ -113,22 +144,34 @@ impl FsFFTSettings {
                 });
         }
 
+        let mut coeffs = smallvec![FsFr::zero(); domain_size];
         // Apply an inverse FFT to produce a new poly. Limit its size to out_degree + 1
-        let mut coeffs = self.fft_fr(&eval_result, true)?;
+        self.fft_fr_output(&eval_result, true, &mut coeffs)?;
         coeffs.truncate(out_degree + 1);
-        let ret = FsPoly { coeffs };
 
-        Ok(ret)
+        Ok(coeffs)
     }
 }
 
 impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
     fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
         self.do_zero_poly_mul_partial(idxs, stride)
+            .map(|coeffs| FsPoly {
+                coeffs: coeffs.into_vec(),
+            })
     }
 
     fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
-        self.reduce_partials(domain_size, partials.to_vec())
+        self.reduce_partials(
+            domain_size,
+            partials
+                .iter()
+                .map(|partial| SmallVec::from_slice(&partial.coeffs))
+                .collect(),
+        )
+        .map(|coeffs| FsPoly {
+            coeffs: coeffs.into_vec(),
+        })
     }
 
     fn zero_poly_via_multiplication(
@@ -165,7 +208,11 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
             // When all idxs fit into a single multiplication
-            zero_poly = self.do_zero_poly_mul_partial(missing_idxs, domain_stride)?;
+            zero_poly = FsPoly {
+                coeffs: self
+                    .do_zero_poly_mul_partial(missing_idxs, domain_stride)?
+                    .into_vec(),
+            };
         } else {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
@@ -183,15 +230,15 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                 .zip(work.par_chunks_exact_mut(DEGREE_OF_PARTIAL));
             // Insert all generated partial polynomials at degree_of_partial intervals in work vector
             iter.for_each(|(missing_idxs, work)| {
-                let partial = self
+                let partial_coeffs = self
                     .do_zero_poly_mul_partial(missing_idxs, domain_stride)
                     .expect("`missing_idxs` is guaranteed to not be empty; qed");
 
-                let partial = pad_poly(partial.coeffs, DEGREE_OF_PARTIAL).expect(
+                let partial_coeffs = pad_poly_coeffs(partial_coeffs, DEGREE_OF_PARTIAL).expect(
                     "`partial.coeffs.len()` (same as `missing_idxs.len() + 1`) is \
                     guaranteed to be at most `degree_of_partial`; qed",
                 );
-                work[..partial.len()].copy_from_slice(&partial);
+                work[..DEGREE_OF_PARTIAL].copy_from_slice(&partial_coeffs);
             });
 
             // Adjust last length to match its actual length
@@ -213,7 +260,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                     // Calculate partial views from lens and offsets
                     // Also update offsets to match current iteration
                     let partial_offset = start * partial_size;
-                    let mut partial_vec = Vec::with_capacity(partials_num);
+                    let mut partial_coeffs = SmallVec::new();
                     for (partial_offset, partial_len) in (partial_offset..)
                         .step_by(partial_size)
                         .zip(partial_lens.iter().skip(i).copied())
@@ -221,19 +268,20 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                     {
                         // We know the capacity required in `reduce_partials()` call below to avoid
                         // re-allocation
-                        let mut coeffs = Vec::with_capacity(reduced_len);
+                        let mut coeffs = SmallVec::with_capacity(reduced_len);
                         coeffs.extend_from_slice(&work[partial_offset..][..partial_len]);
-                        partial_vec.push(FsPoly { coeffs });
+                        partial_coeffs.push(coeffs);
                     }
 
                     if partials_num > 1 {
-                        let mut reduced_poly = self.reduce_partials(reduced_len, partial_vec)?;
+                        let mut reduced_coeffs =
+                            self.reduce_partials(reduced_len, partial_coeffs)?;
                         // Update partial length to match its length after reduction
-                        partial_lens[i] = reduced_poly.coeffs.len();
-                        reduced_poly.coeffs =
-                            pad_poly(reduced_poly.coeffs, partial_size * partials_num)?;
-                        work[partial_offset..][..reduced_poly.coeffs.len()]
-                            .copy_from_slice(&reduced_poly.coeffs);
+                        partial_lens[i] = reduced_coeffs.len();
+                        reduced_coeffs =
+                            pad_poly_coeffs(reduced_coeffs, partial_size * partials_num)?;
+                        work[partial_offset..][..reduced_coeffs.len()]
+                            .copy_from_slice(&reduced_coeffs);
                     } else {
                         // Instead of keeping track of remaining polynomials, reuse i'th partial for start'th one
                         partial_lens[i] = partial_lens[start];
