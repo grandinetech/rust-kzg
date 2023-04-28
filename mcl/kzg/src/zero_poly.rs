@@ -122,7 +122,7 @@ impl FFTSettings {
             return Err(String::from("Length must be a power of 2"));
         }
 
-        let degree_of_partial = 64; // Tunable parameter. Must be a power of two.
+        let degree_of_partial = 256; // Tunable parameter. Must be a power of two.
         let missing_per_partial = degree_of_partial - 1;
         let domain_stride = self.max_width / length;
         let mut partial_count = 1 + (missing_indices.len() - 1) / missing_per_partial;

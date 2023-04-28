@@ -16,7 +16,7 @@ use rayon::prelude::*;
 use smallvec::{smallvec, SmallVec};
 
 // Can be tuned & optimized (must be a power of 2)
-const DEGREE_OF_PARTIAL: usize = 64;
+const DEGREE_OF_PARTIAL: usize = 256;
 // Can be tuned & optimized (but must be a power of 2)
 const REDUCTION_FACTOR: usize = 4;
 

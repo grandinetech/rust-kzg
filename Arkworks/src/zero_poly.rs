@@ -113,7 +113,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             return Err(String::from("Domain size must be a power of 2"));
         }
 
-        let degree_of_partial = 64;
+        let degree_of_partial = 256;
         let missing_per_partial = degree_of_partial - 1;
         let domain_stride = self.max_width as usize / length;
         let mut partial_count =
