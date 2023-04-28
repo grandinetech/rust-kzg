@@ -99,19 +99,19 @@ impl FsFFTSettings {
         for partial in partials {
             padded_partial = pad_poly(partial.coeffs, domain_size)?;
             let evaluated_partial = self.fft_fr(&padded_partial, false)?;
-            for j in 0..domain_size {
-                eval_result[j] = eval_result[j].mul(&evaluated_partial[j]);
-            }
+
+            eval_result
+                .iter_mut()
+                .zip(evaluated_partial.iter())
+                .for_each(|(eval_result, evaluated_partial)| {
+                    *eval_result = eval_result.mul(evaluated_partial);
+                });
         }
 
         // Apply an inverse FFT to produce a new poly. Limit its size to out_degree + 1
-        let ret = FsPoly {
-            coeffs: self
-                .fft_fr(&eval_result, true)?
-                .into_iter()
-                .take(out_degree + 1)
-                .collect(),
-        };
+        let mut coeffs = self.fft_fr(&eval_result, true)?;
+        coeffs.truncate(out_degree + 1);
+        let ret = FsPoly { coeffs };
 
         Ok(ret)
     }
@@ -216,9 +216,11 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                         .zip(partial_lens.iter().skip(i).copied())
                         .take(partials_num)
                     {
-                        partial_vec.push(FsPoly {
-                            coeffs: work[partial_offset..][..partial_len].to_vec(),
-                        });
+                        // We know the capacity required in `reduce_partials()` call below to avoid
+                        // re-allocation
+                        let mut coeffs = Vec::with_capacity(reduced_len);
+                        coeffs.extend_from_slice(&work[partial_offset..][..partial_len]);
+                        partial_vec.push(FsPoly { coeffs });
                     }
 
                     if partials_num > 1 {
@@ -227,10 +229,8 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                         partial_lens[i] = reduced_poly.coeffs.len();
                         reduced_poly.coeffs =
                             pad_poly(reduced_poly.coeffs, partial_size * partials_num)?;
-                        work.splice(
-                            partial_offset..(partial_offset + reduced_poly.coeffs.len()),
-                            reduced_poly.coeffs,
-                        );
+                        work[partial_offset..][..reduced_poly.coeffs.len()]
+                            .copy_from_slice(&reduced_poly.coeffs);
                     } else {
                         // Instead of keeping track of remaining polynomials, reuse i'th partial for start'th one
                         partial_lens[i] = partial_lens[start];
@@ -251,7 +251,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             }
             Ordering::Equal => {}
             Ordering::Greater => {
-                zero_poly.coeffs = zero_poly.coeffs[..domain_size].to_vec();
+                zero_poly.coeffs.truncate(domain_size);
             }
         }
 
