@@ -245,14 +245,13 @@ impl Polynomial {
         let quotient_poly = self.long_division(&divisor).unwrap();
 
         let mut result = G1::default();
-        unsafe {
-            mclBnG1_mulVec(
-                &mut result,
-                g1_points.as_ptr(),
-                quotient_poly.coeffs.as_ptr(),
-                min(g1_points.len(), quotient_poly.order()),
-            )
-        };
+        g1_linear_combination(
+            &mut result,
+            g1_points,
+            quotient_poly.coeffs.as_slice(),
+            min(g1_points.len(), quotient_poly.order()),
+        );
+
         Ok(result)
     }
 
@@ -375,14 +374,12 @@ impl Polynomial {
         }
 
         let mut result = G1::default();
-        unsafe {
-            mclBnG1_mulVec(
-                &mut result,
-                g1_points.as_ptr(),
-                self.coeffs.as_ptr(),
-                min(g1_points.len(), self.order()),
-            )
-        };
+        g1_linear_combination(
+            &mut result,
+            g1_points,
+            self.coeffs.as_slice(),
+            min(g1_points.len(), self.order()),
+        );
         Ok(result)
     }
 
