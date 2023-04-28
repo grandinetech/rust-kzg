@@ -22,7 +22,7 @@ rm -rf c-kzg
 print_msg "Cloning 4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit 1
-git -c advice.detachedHead=false checkout $C_KZG_4844_GIT_HASH
+git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git apply < ../c.patch
 
 print_msg "Cloning blst"
@@ -43,7 +43,7 @@ cp -r c-kzg-4844/blst/* c-kzg/lib/
 cp -r c-kzg-4844/blst/bindings/*.h c-kzg/inc/
 
 print_msg "Preparing c-kzg's makefile"
-cd c-kzg/src/ || exit 1
+cd c-kzg/src/ || exit
 
 case $(uname -s) in
   "Linux")
@@ -71,7 +71,7 @@ print_msg "Building c-kzg"
 make lib
 
 print_msg "Building 4844"
-cd ../../c-kzg-4844/src || exit 1
+cd ../../c-kzg-4844/src || exit
 
 make c_kzg_4844.o
 ar rc ../../c-kzg/src/libckzg.a c_kzg_4844.o

@@ -2,8 +2,6 @@
 
 set -e
 
-LIB=libblst_from_scratch.a
-
 print_msg () {
   echo "[*]" "$1"
 }
@@ -43,7 +41,7 @@ fi
 
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
-cd c-kzg-4844 || exit 1
+cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
@@ -51,7 +49,7 @@ git submodule update --init
 
 print_msg "Patching rust binding"
 git apply < ../rust.patch
-cd bindings/rust || exit 1
+cd bindings/rust || exit
 
 print_msg "Running rust benchmarks"
 cargo bench
@@ -61,7 +59,7 @@ cd ../..
 
 print_msg "Patching java binding"
 git apply < ../java.patch
-cd bindings/java || exit 1
+cd bindings/java || exit
 
 print_msg "Running java benchmarks"
 make build benchmark
@@ -71,9 +69,9 @@ cd ../..
 
 print_msg "Patching go binding"
 git apply < ../go.patch
+cd bindings/go || exit
 
 print_msg "Running go benchmarks"
-cd bindings/go || exit 1
 CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test -run ^$ -bench .
 cd ../../..
 

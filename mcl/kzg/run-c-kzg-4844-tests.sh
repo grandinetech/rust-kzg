@@ -2,8 +2,6 @@
 
 set -e
 
-LIB=libmcl_rust.a
-
 print_msg () {
   echo "[*]" "$1"
 }
@@ -43,7 +41,7 @@ fi
 
 print_msg "Cloning c-kzg-4844"
 git clone https://github.com/ethereum/c-kzg-4844.git
-cd c-kzg-4844 || exit 1
+cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
@@ -75,7 +73,7 @@ esac
 
 print_msg "Patching dotnet binding"
 git apply < ../csharp.patch
-cd bindings/csharp || exit 1
+cd bindings/csharp || exit
 
 print_msg "Building dotnet"
 make -B ckzg CSHARP_PLATFORM=$CSHARP_PLATFORM CLANG_PLATFORM=$CLANG_PLATFORM
@@ -89,7 +87,7 @@ cd ../..
 
 #print_msg "Patching rust binding"
 #git apply < ../rust.patch
-#cd bindings/rust || exit 1
+#cd bindings/rust || exit
 
 #print_msg "Running rust tests"
 #cargo test --release
@@ -99,7 +97,7 @@ cd ../..
 
 print_msg "Patching python binding"
 git apply < ../python.patch
-cd bindings/python || exit 1
+cd bindings/python || exit
 
 print_msg "Running python tests"
 make
@@ -109,7 +107,7 @@ cd ../..
 
 print_msg "Patching java binding"
 git apply < ../java.patch
-cd bindings/java || exit 1
+cd bindings/java || exit
 
 print_msg "Running java tests"
 make CC_FLAGS=-lstdc++ build test
@@ -119,7 +117,7 @@ cd ../..
 
 print_msg "Patching nodejs binding"
 git apply < ../nodejs.patch
-cd bindings/node.js || exit 1
+cd bindings/node.js || exit
 
 print_msg "Running nodejs tests"
 make
@@ -129,9 +127,9 @@ cd ../../..
 
 #print_msg "Patching go binding"
 #git apply < ../go.patch
+#cd bindings/go || exit
 
 #print_msg "Running go tests"
-#cd bindings/go || exit 1
 #CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
 #cd ../../..
 
