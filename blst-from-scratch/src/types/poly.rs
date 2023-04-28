@@ -12,6 +12,9 @@ use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::utils::{log2_pow2, log2_u64};
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct FsPoly {
     pub coeffs: Vec<FsFr>,
@@ -449,13 +452,36 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         let scaled_zero_poly = zero_poly.coeffs;
 
         // Polynomial division by convolution: Q3 = Q1 / Q2
-        let eval_scaled_poly_with_zero = fs.fft_fr(&scaled_poly_with_zero, false).unwrap();
-        let eval_scaled_zero_poly = fs.fft_fr(&scaled_zero_poly, false).unwrap();
+        #[cfg(feature = "parallel")]
+        let (eval_scaled_poly_with_zero, eval_scaled_zero_poly) = {
+            if len_zero_poly - 1 > 1024 {
+                rayon::join(
+                    || fs.fft_fr(&scaled_poly_with_zero, false).unwrap(),
+                    || fs.fft_fr(&scaled_zero_poly, false).unwrap(),
+                )
+            } else {
+                (
+                    fs.fft_fr(&scaled_poly_with_zero, false).unwrap(),
+                    fs.fft_fr(&scaled_zero_poly, false).unwrap(),
+                )
+            }
+        };
+        #[cfg(not(feature = "parallel"))]
+        let (eval_scaled_poly_with_zero, eval_scaled_zero_poly) = {
+            (
+                fs.fft_fr(&scaled_poly_with_zero, false).unwrap(),
+                fs.fft_fr(&scaled_zero_poly, false).unwrap(),
+            )
+        };
         drop(scaled_zero_poly);
 
         let mut eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero;
-        eval_scaled_reconstructed_poly
-            .iter_mut()
+        #[cfg(not(feature = "parallel"))]
+        let eval_scaled_reconstructed_poly_iter = eval_scaled_reconstructed_poly.iter_mut();
+        #[cfg(feature = "parallel")]
+        let eval_scaled_reconstructed_poly_iter = eval_scaled_reconstructed_poly.par_iter_mut();
+
+        eval_scaled_reconstructed_poly_iter
             .zip(eval_scaled_zero_poly)
             .for_each(
                 |(eval_scaled_reconstructed_poly, eval_scaled_poly_with_zero)| {
