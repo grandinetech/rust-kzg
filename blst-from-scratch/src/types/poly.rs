@@ -169,35 +169,52 @@ impl Poly<FsFr> for FsPoly {
         }
 
         let out_length = self.poly_quotient_length(divisor);
-        let mut out: FsPoly = FsPoly {
-            coeffs: vec![FsFr::default(); out_length],
-        };
         if out_length == 0 {
-            return Ok(out);
+            return Ok(FsPoly { coeffs: vec![] });
         }
 
-        let mut a_pos = self.len() - 1;
-        let b_pos = divisor.len() - 1;
-        let mut diff = a_pos - b_pos;
+        // Special case for divisor.len() == 2
+        if divisor.len() == 2 {
+            let divisor_0 = divisor.coeffs[0];
+            let divisor_1 = divisor.coeffs[1];
 
-        let mut a = self.coeffs.clone();
+            let mut out_coeffs = Vec::from(&self.coeffs[1..]);
+            for i in (1..out_length).rev() {
+                out_coeffs[i] = out_coeffs[i].div(&divisor_1).unwrap();
 
-        while diff > 0 {
-            out.coeffs[diff] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
-
-            for i in 0..(b_pos + 1) {
-                let tmp = out.coeffs[diff].mul(&divisor.coeffs[i]);
-                let tmp = a[diff + i].sub(&tmp);
-                a[diff + i] = tmp;
+                let tmp = out_coeffs[i].mul(&divisor_0);
+                out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
             }
 
-            diff -= 1;
-            a_pos -= 1;
+            out_coeffs[0] = out_coeffs[0].div(&divisor_1).unwrap();
+
+            Ok(FsPoly { coeffs: out_coeffs })
+        } else {
+            let mut out: FsPoly = FsPoly {
+                coeffs: vec![FsFr::default(); out_length],
+            };
+
+            let mut a_pos = self.len() - 1;
+            let b_pos = divisor.len() - 1;
+            let mut diff = a_pos - b_pos;
+
+            let mut a = self.coeffs.clone();
+
+            while diff > 0 {
+                out.coeffs[diff] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
+
+                for i in 0..(b_pos + 1) {
+                    let tmp = out.coeffs[diff].mul(&divisor.coeffs[i]);
+                    a[diff + i] = a[diff + i].sub(&tmp);
+                }
+
+                diff -= 1;
+                a_pos -= 1;
+            }
+
+            out.coeffs[0] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
+            Ok(out)
         }
-
-        out.coeffs[0] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
-
-        Ok(out)
     }
 
     fn fast_div(&mut self, divisor: &Self) -> Result<Self, String> {
