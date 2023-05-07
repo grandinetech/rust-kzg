@@ -53,7 +53,7 @@ cd blst || exit
 cargo rustc --release --crate-type=staticlib --features=parallel
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit
-git -c advice.detachedHead=false checkout fd24cf8e1e2f09a96b4e62a595b4e49f046ce6cf # TODO: keep this updated
+git -c advice.detachedHead=false checkout 5703f6f3536b7692616bc289ac3f3867ab8db9d8 # TODO: keep this updated
 git submodule update --init
 cd src || exit
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
