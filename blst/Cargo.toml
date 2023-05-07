@@ -1,0 +1,76 @@
+[package]
+name = "blst_rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# TODO: Use `std` feature once https://github.com/supranational/blst/pull/150 or similar upstreamed
+blst = { 'git' = 'https://github.com/supranational/blst.git' }
+kzg = { path = "../kzg", default-features = false }
+libc = { version = "0.2.137", default-features = false }
+num_cpus = { version = "1.15.0", optional = true }
+once_cell = { version = "1.4.0", features = ["critical-section"], default-features = false }
+rand = { version = "0.8.4", optional = true }
+rayon = { version = "1.5.1", optional = true }
+smallvec = { version = "1.10.0", features = ["const_generics"] }
+
+[dev-dependencies]
+criterion = "0.4.0"
+kzg-bench = { path = "../kzg-bench" }
+rand = "0.8.4"
+
+[features]
+default = [
+    "std",
+    "rand",
+]
+std = [
+    "kzg/std",
+    "libc/std",
+    "once_cell/std",
+]
+rand = [
+    "dep:rand",
+    "kzg/rand",
+]
+parallel = [
+    "dep:rayon",
+    "dep:num_cpus",
+]
+minimal-spec = ["kzg/minimal-spec", "kzg-bench/minimal-spec"]
+
+[[bench]]
+name = "das"
+harness = false
+
+[[bench]]
+name = "fft"
+harness = false
+
+[[bench]]
+name = "poly"
+harness = false
+
+[[bench]]
+name = "kzg"
+harness = false
+
+[[bench]]
+name = "fk_20"
+harness = false
+
+[[bench]]
+name = "recover"
+harness = false
+
+[[bench]]
+name = "zero_poly"
+harness = false
+
+[[bench]]
+name = "eip_4844"
+harness = false
+
+[[bench]]
+name = "lincomb"
+harness = false

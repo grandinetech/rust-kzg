@@ -1,9 +1,9 @@
-name: blst-from-scratch tests
+name: blst tests
 
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  C_KZG_4844_GIT_HASH: 'fd24cf8e1e2f09a96b4e62a595b4e49f046ce6cf'
+  C_KZG_4844_GIT_HASH: '5703f6f3536b7692616bc289ac3f3867ab8db9d8'
 
 jobs:
   tests:
@@ -34,61 +34,61 @@ jobs:
         with:
           go-version: ^1.19
 
-      - name: "[blst-from-scratch][wasm32] Clippy"
+      - name: "[blst][wasm32] Clippy"
         # Apple's Clang doesn't support WASM, and we are lazy to install it
         if: runner.os != 'macOS'
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path blst-from-scratch/Cargo.toml --target wasm32-unknown-unknown --no-default-features
+          args: --manifest-path blst/Cargo.toml --target wasm32-unknown-unknown --no-default-features
 
-      - name: "[blst-from-scratch][wasm32] Build"
+      - name: "[blst][wasm32] Build"
         # Apple's Clang doesn't support WASM, and we are lazy to install it
         if: runner.os != 'macOS'
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --manifest-path blst-from-scratch/Cargo.toml --target wasm32-unknown-unknown --no-default-features
+          args: --manifest-path blst/Cargo.toml --target wasm32-unknown-unknown --no-default-features
 
-      - name: "[blst-from-scratch] Tests (minimal preset)"
+      - name: "[blst] Tests (minimal preset)"
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --test eip_4844 tests --features minimal-spec
+          args: --manifest-path blst/Cargo.toml --no-fail-fast --test eip_4844 tests --features minimal-spec
 
-      - name: "[blst-from-scratch] Tests (mainnet preset)"
+      - name: "[blst] Tests (mainnet preset)"
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast
+          args: --manifest-path blst/Cargo.toml --no-fail-fast
 
-      - name: "[blst-from-scratch] Tests (mainnet preset, parallel)"
+      - name: "[blst] Tests (mainnet preset, parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path blst-from-scratch/Cargo.toml --no-fail-fast --features parallel
+          args: --manifest-path blst/Cargo.toml --no-fail-fast --features parallel
 
-      - name: "[blst-from-scratch] Tests (c-kzg-4844)"
+      - name: "[blst] Tests (c-kzg-4844)"
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd blst-from-scratch && bash run-c-kzg-4844-tests.sh
+          cd blst && bash run-c-kzg-4844-tests.sh
 
-      - name: "[blst-from-scratch] Tests (c-kzg-4844 parallel)"
+      - name: "[blst] Tests (c-kzg-4844 parallel)"
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd blst-from-scratch && bash run-c-kzg-4844-tests.sh --parallel
+          cd blst && bash run-c-kzg-4844-tests.sh --parallel
 
-      - name: "[blst-from-scratch] Clippy"
+      - name: "[blst] Clippy"
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path blst-from-scratch/Cargo.toml --all-targets --all-features -- -D warnings
+          args: --manifest-path blst/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[blst-from-scratch] Formatting"
+      - name: "[blst] Formatting"
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path blst-from-scratch/Cargo.toml -- --check
+          args: --manifest-path blst/Cargo.toml -- --check
 
       - uses: actions-rs/cargo@v1
         with:
