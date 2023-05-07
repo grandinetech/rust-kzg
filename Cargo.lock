@@ -303,7 +303,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "blst_from_scratch"
+name = "blst_rust"
 version = "0.1.0"
 dependencies = [
  "blst",

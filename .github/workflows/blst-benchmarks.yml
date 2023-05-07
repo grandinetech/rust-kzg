@@ -1,4 +1,4 @@
-name: blst-from-scratch benchmarks
+name: blst benchmarks
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -24,24 +24,24 @@ jobs:
         with:
           go-version: ^1.19
 
-      - name: "[blst-from-scratch] Benchmark"
+      - name: "[blst] Benchmark"
         uses: actions-rs/cargo@v1
         with:
           command: bench
-          args: --manifest-path blst-from-scratch/Cargo.toml
+          args: --manifest-path blst/Cargo.toml
 
-      - name: "[blst-from-scratch] Benchmark (parallel)"
+      - name: "[blst] Benchmark (parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: bench
-          args: --manifest-path blst-from-scratch/Cargo.toml --features parallel
+          args: --manifest-path blst/Cargo.toml --features parallel
 
-      - name: "[blst-from-scratch] Benchmark (c-kzg-4844)"
+      - name: "[blst] Benchmark (c-kzg-4844)"
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd blst-from-scratch && bash run-c-kzg-4844-benches.sh
+          cd blst && bash run-c-kzg-4844-benches.sh
 
-      - name: "[blst-from-scratch] Benchmark (c-kzg-4844 parallel)"
+      - name: "[blst] Benchmark (c-kzg-4844 parallel)"
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd blst-from-scratch && bash run-c-kzg-4844-benches.sh --parallel
+          cd blst && bash run-c-kzg-4844-benches.sh --parallel

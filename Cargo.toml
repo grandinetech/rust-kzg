@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "arkworks",
-    "blst-from-scratch",
+    "blst",
     "ckzg",
     "kzg",
     "kzg-bench",

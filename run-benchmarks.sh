@@ -48,8 +48,8 @@ lscpu | grep "CPU(s)"      | head -n 1 >> "$paste_file"
 git clone https://github.com/sifraitech/rust-kzg
 cd rust-kzg || exit
 
-# 2.2. prepare blst-from-scratch
-cd blst-from-scratch || exit
+# 2.2. prepare rust-kzg with blst backend and c-kzg-4844
+cd blst || exit
 cargo rustc --release --crate-type=staticlib --features=parallel
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit
@@ -64,7 +64,7 @@ git apply < ../rust.patch
 git apply < ../go.patch
 cd ../..
 
-# 2.3. prepare mcl
+# 2.3. prepare rust-kzg with mcl backend
 cd mcl/kzg && bash build.sh
 cd ../../..
 
@@ -98,47 +98,47 @@ do
   # rust crates
   cd rust-kzg || exit
 
-  # 3.3. arkworks (original)
-  print_msg "arkworks (original)" ../"$paste_file"
+  # 3.3. rust-kzg with arkworks backend (sequential)
+  print_msg "rust-kzg with arkworks backend (sequential)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml >> ../"$paste_file"
 
-  # 3.4. arkworks (parallel)
-  print_msg "arkworks (parallel)" ../"$paste_file"
+  # 3.4. rust-kzg with arkworks backend (parallel)
+  print_msg "rust-kzg with arkworks backend (parallel)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 3.5. zkcrypto (original)
-  print_msg "zkcrypto (original)" ../"$paste_file"
+  # 3.5. rust-kzg with zkcrypto backend (sequential)
+  print_msg "rust-kzg with zkcrypto backend (sequential)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path zkcrypto/Cargo.toml >> ../"$paste_file"
 
-  # 3.6. zkcrypto (parallel)
-  print_msg "zkcrypto (parallel)" ../"$paste_file"
+  # 3.6. rust-kzg with zkcrypto backend (parallel)
+  print_msg "rust-kzg with zkcrypto backend (parallel)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path zkcrypto/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 3.7. blst-from-scratch (original)
-  print_msg "blst-from-scratch (original)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path blst-from-scratch/Cargo.toml >> ../"$paste_file"
+  # 3.7. rust-kzg with blst backend (sequential)
+  print_msg "rust-kzg with blst backend (sequential)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path blst/Cargo.toml >> ../"$paste_file"
 
-  # 3.8. blst-from-scratch (parallel)
-  print_msg "blst-from-scratch (parallel)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path blst-from-scratch/Cargo.toml --features parallel >> ../"$paste_file"
+  # 3.8. rust-kzg with blst backend (parallel)
+  print_msg "rust-kzg with blst backend (parallel)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path blst/Cargo.toml --features parallel >> ../"$paste_file"
 
-  # 3.9. mcl (original)
-  print_msg "mcl (original)" ../"$paste_file"
+  # 3.9. rust-kzg with mcl backend (sequential)
+  print_msg "rust-kzg with mcl backend (sequential)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml >> ../"$paste_file"
 
-  # 3.10. mcl (parallel)
-  print_msg "mcl (parallel)" ../"$paste_file"
+  # 3.10. rust-kzg with mcl backend (parallel)
+  print_msg "rust-kzg with mcl backend (parallel)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel >> ../"$paste_file"
 
-  # 3.11. rust binding (blst-from-scratch)
-  print_msg "rust binding (blst-from-scratch)" ../"$paste_file"
-  cd blst-from-scratch/c-kzg-4844/bindings/rust/ || exit
+  # 3.11. rust binding (rust-kzg with blst backend)
+  print_msg "rust binding (rust-kzg with blst backend)" ../"$paste_file"
+  cd blst/c-kzg-4844/bindings/rust/ || exit
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench >> ../../../../../"$paste_file"
   cd ../../../..
 
-  # 3.12. go binding (blst-from-scratch)
-  print_msg "go binding (blst-from-scratch)" ../"$paste_file"
-  cd blst-from-scratch/c-kzg-4844/bindings/go/ || exit
+  # 3.12. go binding (rust-kzg with blst backend)
+  print_msg "go binding (rust-kzg with blst backend)" ../"$paste_file"
+  cd blst/c-kzg-4844/bindings/go/ || exit
   export CGO_CFLAGS="-O2 -D__BLST_PORTABLE__"
   taskset --cpu-list "${taskset_cpu_list[$i]}" go test -run ^$ -bench . >> ../../../../../"$paste_file"
   unset CGO_CFLAGS
