@@ -16,10 +16,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: bench
-          args: --manifest-path Arkworks/Cargo.toml
+          args: --manifest-path arkworks/Cargo.toml
 
       - name: "[arkworks] Benchmark (parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: bench
-          args: --manifest-path Arkworks/Cargo.toml --features parallel
+          args: --manifest-path arkworks/Cargo.toml --features parallel

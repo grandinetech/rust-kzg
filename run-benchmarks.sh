@@ -100,11 +100,11 @@ do
 
   # 3.3. arkworks (original)
   print_msg "arkworks (original)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path Arkworks/Cargo.toml >> ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml >> ../"$paste_file"
 
   # 3.4. arkworks (parallel)
   print_msg "arkworks (parallel)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path Arkworks/Cargo.toml --features parallel >> ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --features parallel >> ../"$paste_file"
 
   # 3.5. zkcrypto (original)
   print_msg "zkcrypto (original)" ../"$paste_file"
