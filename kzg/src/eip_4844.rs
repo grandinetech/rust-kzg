@@ -155,3 +155,16 @@ pub fn bytes48_from_hex(hex: &str) -> [u8; BYTES_PER_G1] {
     }
     out
 }
+
+#[macro_export]
+macro_rules! cfg_into_iter {
+    ($e: expr) => {{
+        #[cfg(feature = "parallel")]
+        let result = $e.into_par_iter();
+
+        #[cfg(not(feature = "parallel"))]
+        let result = $e.into_iter();
+
+        result
+    }};
+}

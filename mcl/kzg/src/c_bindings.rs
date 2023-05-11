@@ -1,6 +1,7 @@
 use crate::data_types::{fp::*, fr::*, g1::*, g2::*};
 use crate::fk20_fft::FFTSettings as mFFTSettings;
 use crate::kzg_settings::KZGSettings as mKZGSettings;
+use kzg::cfg_into_iter;
 use kzg::eip_4844::{
     blst_p1, load_trusted_setup_string, Blob, Bytes32, Bytes48, CFFTSettings, CKZGSettings,
     KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET,
@@ -8,6 +9,9 @@ use kzg::eip_4844::{
 };
 use std::boxed::Box;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
+
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
 
 unsafe fn cg1_to_g1(t: *const blst_p1) -> G1 {
     G1 {
@@ -217,41 +221,44 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     n: usize,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
-    let mut deserialized_blobs: Vec<Vec<Fr>> = Vec::new();
-    let mut commitments_g1: Vec<G1> = Vec::new();
-    let mut proofs_g1: Vec<G1> = Vec::new();
+    assert!(crate::mcl_methods::init(crate::CurveType::BLS12_381));
 
     let raw_blobs = from_raw_parts(blobs, n);
     let raw_commitments = from_raw_parts(commitments_bytes, n);
     let raw_proofs = from_raw_parts(proofs_bytes, n);
 
-    for i in 0..n {
-        let deserialized_blob = deserialize_blob(&raw_blobs[i]);
-        if deserialized_blob.is_err() {
-            return deserialized_blob.err().unwrap();
-        }
+    let deserialized_blobs: Result<Vec<Vec<Fr>>, C_KZG_RET> = cfg_into_iter!(raw_blobs)
+        .map(|raw_blob| deserialize_blob(raw_blob).map_err(|_| C_KZG_RET_BADARGS))
+        .collect();
 
-        let commitment_g1 = crate::eip_4844::bytes_to_g1(&raw_commitments[i].bytes);
-        let proof_g1 = crate::eip_4844::bytes_to_g1(&raw_proofs[i].bytes);
-        if commitment_g1.is_err() || proof_g1.is_err() {
-            return C_KZG_RET_BADARGS;
-        }
+    let commitments_g1: Result<Vec<G1>, C_KZG_RET> = cfg_into_iter!(raw_commitments)
+        .map(|raw_commitment| {
+            crate::eip_4844::bytes_to_g1(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS)
+        })
+        .collect();
 
-        deserialized_blobs.push(deserialized_blob.unwrap());
-        commitments_g1.push(commitment_g1.unwrap());
-        proofs_g1.push(proof_g1.unwrap());
+    let proofs_g1: Result<Vec<G1>, C_KZG_RET> = cfg_into_iter!(raw_proofs)
+        .map(|raw_proof| {
+            crate::eip_4844::bytes_to_g1(&raw_proof.bytes).map_err(|_| C_KZG_RET_BADARGS)
+        })
+        .collect();
+
+    if let (Ok(blobs), Ok(commitments), Ok(proofs)) =
+        (deserialized_blobs, commitments_g1, proofs_g1)
+    {
+        let ms = cks_to_ks(s);
+        *ok = crate::eip_4844::verify_blob_kzg_proof_batch(
+            blobs.as_slice(),
+            &commitments,
+            &proofs,
+            &ms,
+        );
+        std::mem::forget(ms);
+        C_KZG_RET_OK
+    } else {
+        *ok = false;
+        C_KZG_RET_BADARGS
     }
-
-    let ms = cks_to_ks(s);
-    *ok = crate::eip_4844::verify_blob_kzg_proof_batch(
-        &deserialized_blobs,
-        &commitments_g1,
-        &proofs_g1,
-        &ms,
-    );
-    std::mem::forget(ms);
-
-    C_KZG_RET_OK
 }
 
 /// # Safety
