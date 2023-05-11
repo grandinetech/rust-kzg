@@ -78,7 +78,7 @@ pub fn unscale_poly(p: &mut PolyData) {
     }
 }
 impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
-    fn recover_poly_from_samples(
+    fn recover_poly_coeffs_from_samples(
         samples: &[Option<BlstFr>],
         fs: &FFTSettings,
     ) -> Result<Self, String> {
@@ -202,7 +202,14 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
         unscale_poly(&mut scaled_reconstructed_poly);
 
         // Finally we have D(x) which evaluates to our original data at the powers of roots of unity
-        let reconstructed_poly = scaled_reconstructed_poly; // Renaming
+        Ok(scaled_reconstructed_poly)
+    }
+
+    fn recover_poly_from_samples(
+        samples: &[Option<BlstFr>],
+        fs: &FFTSettings,
+    ) -> Result<Self, String> {
+        let reconstructed_poly = Self::recover_poly_coeffs_from_samples(samples, fs)?;
 
         // The evaluation polynomial for D(x) is the reconstructed data:
         let out = PolyData {

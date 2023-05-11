@@ -59,7 +59,7 @@ pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
 }
 
 impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
-    fn recover_poly_from_samples(
+    fn recover_poly_coeffs_from_samples(
         samples: &[Option<FsFr>],
         fs: &FsFFTSettings,
     ) -> Result<Self, String> {
@@ -166,11 +166,19 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
         unscale_poly(&mut scaled_reconstructed_poly, len_samples);
 
         // Finally we have D(x) which evaluates to our original data at the powers of roots of unity
-        let reconstructed_poly = scaled_reconstructed_poly;
+        Ok(Self {
+            coeffs: scaled_reconstructed_poly,
+        })
+    }
+
+    fn recover_poly_from_samples(
+        samples: &[Option<FsFr>],
+        fs: &FsFFTSettings,
+    ) -> Result<Self, String> {
+        let reconstructed_poly = Self::recover_poly_coeffs_from_samples(samples, fs)?;
 
         // The evaluation polynomial for D(x) is the reconstructed data:
-        let reconstructed_data = fs.fft_fr(&reconstructed_poly, false).unwrap();
-        drop(reconstructed_poly);
+        let reconstructed_data = fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap();
 
         // Check all is well
         samples
@@ -180,7 +188,7 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
                 debug_assert!(sample.is_none() || reconstructed_data.equals(&sample.unwrap()));
             });
 
-        Ok(FsPoly {
+        Ok(Self {
             coeffs: reconstructed_data,
         })
     }
