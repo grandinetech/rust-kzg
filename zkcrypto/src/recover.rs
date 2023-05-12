@@ -87,7 +87,7 @@ pub fn unscale_poly(p: &mut ZPoly) {
 }
 
 impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly {
-    fn recover_poly_from_samples(
+    fn recover_poly_coeffs_from_samples(
         samples: &[Option<Scalar>],
         fs: &ZkFFTSettings,
     ) -> Result<Self, String> {
@@ -176,15 +176,7 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly {
             };
             unscale_poly(&mut scaled_reconstructed_poly);
 
-            let reconstructed_poly = scaled_reconstructed_poly; // Renaming
-            let out = ZPoly {
-                coeffs: fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap(),
-            };
-
-            for (i, sample) in samples.iter().enumerate() {
-                assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
-            }
-            Ok(out)
+            Ok(scaled_reconstructed_poly)
         }
 
         #[cfg(not(feature = "parallel"))]
@@ -211,15 +203,22 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly {
             };
             unscale_poly(&mut scaled_reconstructed_poly);
 
-            let reconstructed_poly = scaled_reconstructed_poly; // Renaming
-            let out = ZPoly {
-                coeffs: fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap(),
-            };
-
-            for (i, sample) in samples.iter().enumerate() {
-                assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
-            }
-            Ok(out)
+            Ok(scaled_reconstructed_poly)
         }
+    }
+
+    fn recover_poly_from_samples(
+        samples: &[Option<Scalar>],
+        fs: &ZkFFTSettings,
+    ) -> Result<Self, String> {
+        let reconstructed_poly = Self::recover_poly_coeffs_from_samples(samples, fs)?;
+        let out = ZPoly {
+            coeffs: fs.fft_fr(&reconstructed_poly.coeffs, false).unwrap(),
+        };
+
+        for (i, sample) in samples.iter().enumerate() {
+            assert!(sample.is_none() || out.get_coeff_at(i).equals(&sample.unwrap()));
+        }
+        Ok(out)
     }
 }

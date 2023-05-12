@@ -71,6 +71,12 @@ impl FFTSettingsPoly<Fr, Polynomial, FFTSettings> for FFTSettings {
 }
 
 impl PolyRecover<Fr, Polynomial, FFTSettings> for Polynomial {
+    fn recover_poly_coeffs_from_samples(
+        samples: &[Option<Fr>],
+        fs: &FFTSettings,
+    ) -> Result<Self, String> {
+        Polynomial::recover_coeffs_from_samples(fs, samples)
+    }
     fn recover_poly_from_samples(samples: &[Option<Fr>], fs: &FFTSettings) -> Result<Self, String> {
         Polynomial::recover_from_samples(fs, samples)
     }

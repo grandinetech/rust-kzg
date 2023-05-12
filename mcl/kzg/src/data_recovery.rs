@@ -76,7 +76,7 @@ impl Polynomial {
         }
     }
 
-    pub fn recover_from_samples(
+    pub fn recover_coeffs_from_samples(
         fft_settings: &FFTSettings,
         samples: &[Option<Fr>],
     ) -> Result<Self, String> {
@@ -185,8 +185,18 @@ impl Polynomial {
         let mut shifted_reconstructed_poly = Polynomial::from_fr(shifted_reconstructed_poly_coeffs);
         shifted_reconstructed_poly.unshift_in_place();
 
+        Ok(shifted_reconstructed_poly)
+    }
+
+    pub fn recover_from_samples(
+        fft_settings: &FFTSettings,
+        samples: &[Option<Fr>],
+    ) -> Result<Self, String> {
         let reconstructed_data = fft_settings
-            .fft(&shifted_reconstructed_poly.coeffs, false)
+            .fft(
+                &Self::recover_coeffs_from_samples(fft_settings, samples)?.coeffs,
+                false,
+            )
             .unwrap();
 
         Ok(Polynomial::from_fr(reconstructed_data))
