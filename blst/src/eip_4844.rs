@@ -13,7 +13,7 @@ use std::fs::File;
 use std::io::Read;
 
 use blst::{blst_fr, blst_fr_from_scalar, blst_p1, blst_p2, blst_scalar, blst_scalar_from_lendian};
-use kzg::{FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
+use kzg::{cfg_into_iter, FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
 
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
@@ -838,38 +838,38 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     n: usize,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
-    let mut deserialized_blobs: Vec<Vec<FsFr>> = Vec::with_capacity(n);
-    let mut commitments_g1: Vec<FsG1> = Vec::with_capacity(n);
-    let mut proofs_g1: Vec<FsG1> = Vec::with_capacity(n);
-
     let raw_blobs = core::slice::from_raw_parts(blobs, n);
     let raw_commitments = core::slice::from_raw_parts(commitments_bytes, n);
     let raw_proofs = core::slice::from_raw_parts(proofs_bytes, n);
 
-    for i in 0..n {
-        let deserialized_blob = deserialize_blob(&raw_blobs[i]);
-        if deserialized_blob.is_err() {
-            return deserialized_blob.err().unwrap();
-        }
+    let deserialized_blobs: Result<Vec<Vec<FsFr>>, C_KZG_RET> = cfg_into_iter!(raw_blobs)
+        .map(|raw_blob| deserialize_blob(raw_blob).map_err(|_| C_KZG_RET_BADARGS))
+        .collect();
 
-        let commitment_g1 = FsG1::from_bytes(&raw_commitments[i].bytes);
-        let proof_g1 = FsG1::from_bytes(&raw_proofs[i].bytes);
-        if commitment_g1.is_err() || proof_g1.is_err() {
-            return C_KZG_RET_BADARGS;
-        }
+    let commitments_g1: Result<Vec<FsG1>, C_KZG_RET> = cfg_into_iter!(raw_commitments)
+        .map(|raw_commitment| {
+            FsG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS)
+        })
+        .collect();
 
-        deserialized_blobs.push(deserialized_blob.unwrap());
-        commitments_g1.push(commitment_g1.unwrap());
-        proofs_g1.push(proof_g1.unwrap());
+    let proofs_g1: Result<Vec<FsG1>, C_KZG_RET> = cfg_into_iter!(raw_proofs)
+        .map(|raw_proof| FsG1::from_bytes(&raw_proof.bytes).map_err(|_| C_KZG_RET_BADARGS))
+        .collect();
+
+    if let (Ok(blobs), Ok(commitments), Ok(proofs)) =
+        (deserialized_blobs, commitments_g1, proofs_g1)
+    {
+        *ok = verify_blob_kzg_proof_batch_rust(
+            blobs.as_slice(),
+            &commitments,
+            &proofs,
+            &kzg_settings_to_rust(s),
+        );
+        C_KZG_RET_OK
+    } else {
+        *ok = false;
+        C_KZG_RET_BADARGS
     }
-
-    *ok = verify_blob_kzg_proof_batch_rust(
-        &deserialized_blobs,
-        &commitments_g1,
-        &proofs_g1,
-        &kzg_settings_to_rust(s),
-    );
-    C_KZG_RET_OK
 }
 
 /// # Safety
