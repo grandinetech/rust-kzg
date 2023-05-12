@@ -382,17 +382,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ckzg"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "kzg",
- "kzg-bench",
- "libc",
- "rand",
-]
-
-[[package]]
 name = "clap"
 version = "3.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
