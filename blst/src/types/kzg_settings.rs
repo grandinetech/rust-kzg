@@ -64,6 +64,10 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn compute_proof_single(&self, p: &FsPoly, x: &FsFr) -> Result<FsG1, String> {
+        if p.coeffs.is_empty() {
+            return Err(String::from("Polynomial must not be empty"));
+        }
+
         // `-(x0^n)`, where `n` is `1`
         let divisor_0 = x.negate();
 
@@ -77,7 +81,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
 
         let q = FsPoly { coeffs: out_coeffs };
 
-        let ret = self.commit_to_poly(&q).unwrap();
+        let ret = self.commit_to_poly(&q)?;
 
         Ok(ret)
     }
@@ -103,6 +107,10 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     }
 
     fn compute_proof_multi(&self, p: &FsPoly, x0: &FsFr, n: usize) -> Result<FsG1, String> {
+        if p.coeffs.is_empty() {
+            return Err(String::from("Polynomial must not be empty"));
+        }
+
         if !n.is_power_of_two() {
             return Err(String::from("n must be a power of two"));
         }
@@ -129,9 +137,9 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
 
         // Calculate q = p / (x^n - x0^n)
         // let q = p.div(&divisor).unwrap();
-        let q = new_polina.div(&divisor).unwrap();
+        let q = new_polina.div(&divisor)?;
 
-        let ret = self.commit_to_poly(&q).unwrap();
+        let ret = self.commit_to_poly(&q)?;
 
         Ok(ret)
     }
