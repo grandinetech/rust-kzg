@@ -7,6 +7,7 @@ use blst::{
     blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_scalar,
     blst_scalar_fr_check, blst_scalar_from_fr, blst_scalar_from_lendian, blst_uint64_from_fr,
 };
+use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
@@ -41,6 +42,35 @@ impl Fr for FsFr {
         ret
     }
 
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let mut bls_scalar = blst_scalar::default();
+                let mut fr = blst_fr::default();
+                unsafe {
+                    blst_scalar_from_lendian(&mut bls_scalar, bytes.as_ptr());
+                    if !blst_scalar_fr_check(&bls_scalar) {
+                        return Err("blst_scalar_fr_check failed".to_string());
+                    }
+                    blst_fr_from_scalar(&mut fr, &bls_scalar);
+                }
+                Ok(Self(fr))
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
     fn from_u64_arr(u: &[u64; 4]) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -52,6 +82,15 @@ impl Fr for FsFr {
 
     fn from_u64(val: u64) -> Self {
         Self::from_u64_arr(&[val, 0, 0, 0])
+    }
+
+    fn to_bytes(&self) -> [u8; 32] {
+        let mut scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &self.0);
+        }
+
+        scalar.b
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
@@ -83,6 +122,10 @@ impl Fr for FsFr {
 
     fn is_null(&self) -> bool {
         self.equals(&Self::null())
+    }
+
+    fn is_valid(&self) -> bool {
+        true
     }
 
     fn sqr(&self) -> Self {
@@ -189,29 +232,6 @@ impl Fr for FsFr {
 }
 
 impl FsFr {
-    pub fn to_scalar(&self) -> [u8; 32usize] {
-        let mut scalar = blst_scalar::default();
-        unsafe {
-            blst_scalar_from_fr(&mut scalar, &self.0);
-        }
-
-        scalar.b
-    }
-
-    pub fn from_scalar(scalar: [u8; 32usize]) -> Result<Self, u8> {
-        let mut bls_scalar = blst_scalar::default();
-
-        let mut fr = blst_fr::default();
-        unsafe {
-            blst_scalar_from_lendian(&mut bls_scalar, scalar.as_ptr());
-            if !blst_scalar_fr_check(&bls_scalar) {
-                return Err(1);
-            }
-            blst_fr_from_scalar(&mut fr, &bls_scalar);
-        }
-        Ok(Self(fr))
-    }
-
     pub fn hash_to_bls_field(scalar: [u8; 32usize]) -> Self {
         let bls_scalar = blst_scalar { b: scalar };
         let mut fr = blst_fr::default();

@@ -22,33 +22,6 @@ impl FsG1 {
     pub(crate) const fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
         FsG1(blst_p1 { x, y, z })
     }
-
-    /// Convert into bytes
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1] {
-        let mut out = [0u8; BYTES_PER_G1];
-        unsafe {
-            blst_p1_compress(out.as_mut_ptr(), &self.0);
-        }
-        out
-    }
-
-    /// Create from bytes
-    pub fn from_bytes(bytes: &[u8; BYTES_PER_G1]) -> Result<FsG1, String> {
-        let mut tmp = blst_p1_affine::default();
-        let mut g1 = blst_p1::default();
-        unsafe {
-            // The uncompress routine also checks that the point is on the curve
-            if blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                return Err("blst_p1_uncompress failed".to_string());
-            }
-            blst_p1_from_affine(&mut g1, &tmp);
-            // The point must be on the right subgroup
-            if !blst_p1_in_g1(&g1) {
-                return Err("the point is not in g1 group".to_string());
-            }
-        }
-        Ok(FsG1(g1))
-    }
 }
 
 impl G1 for FsG1 {
@@ -70,6 +43,43 @@ impl G1 for FsG1 {
         result.mul(&kzg::Fr::rand())
     }
 
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G1,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G1]| {
+                let mut tmp = blst_p1_affine::default();
+                let mut g1 = blst_p1::default();
+                unsafe {
+                    // The uncompress routine also checks that the point is on the curve
+                    if blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                        return Err("blst_p1_uncompress failed".to_string());
+                    }
+                    blst_p1_from_affine(&mut g1, &tmp);
+                }
+                Ok(FsG1(g1))
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
+    fn to_bytes(&self) -> [u8; 48] {
+        let mut out = [0u8; BYTES_PER_G1];
+        unsafe {
+            blst_p1_compress(out.as_mut_ptr(), &self.0);
+        }
+        out
+    }
+
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
@@ -80,6 +90,13 @@ impl G1 for FsG1 {
 
     fn is_inf(&self) -> bool {
         unsafe { blst_p1_is_inf(&self.0) }
+    }
+
+    fn is_valid(&self) -> bool {
+        unsafe {
+            // The point must be on the right subgroup
+            blst_p1_in_g1(&self.0)
+        }
     }
 
     fn dbl(&self) -> Self {
