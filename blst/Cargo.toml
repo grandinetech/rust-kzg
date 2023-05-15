@@ -13,6 +13,7 @@ once_cell = { version = "1.4.0", features = ["critical-section"], default-featur
 rand = { version = "0.8.4", optional = true }
 rayon = { version = "1.5.1", optional = true }
 smallvec = { version = "1.10.0", features = ["const_generics"] }
+hex = "0.4.2"
 
 [dev-dependencies]
 criterion = "0.4.0"
