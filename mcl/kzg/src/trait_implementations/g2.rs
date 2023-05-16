@@ -1,4 +1,6 @@
 use crate::data_types::{fr::Fr, g2::G2};
+use crate::mcl_methods::set_eth_serialization;
+use kzg::eip_4844::BYTES_PER_G2;
 use kzg::{G2Mul, G2 as CommonG2};
 
 impl CommonG2 for G2 {
@@ -42,5 +44,16 @@ impl G2Mul<Fr> for G2 {
         let mut g1 = G2::zero();
         G2::mul(&mut g1, self, b);
         g1
+    }
+}
+
+impl G2 {
+    pub fn from_bytes(bytes: &[u8; BYTES_PER_G2]) -> Result<Self, String> {
+        set_eth_serialization(1);
+        let mut g2 = G2::default();
+        if !G2::deserialize(&mut g2, bytes) {
+            return Err("failed to deserialize".to_string());
+        }
+        Ok(g2)
     }
 }

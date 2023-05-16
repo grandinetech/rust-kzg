@@ -1,4 +1,5 @@
 use crate::data_types::fr::Fr;
+use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr as CommonFr;
 
 impl CommonFr for Fr {
@@ -91,5 +92,31 @@ impl CommonFr for Fr {
 
     fn equals(&self, b: &Self) -> bool {
         Fr::eq(self, b)
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| Self::from_bytes(bytes))
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
+    fn to_bytes(&self) -> [u8; 32] {
+        Self::to_bytes(self)
+    }
+
+    fn is_valid(&self) -> bool {
+        true
     }
 }

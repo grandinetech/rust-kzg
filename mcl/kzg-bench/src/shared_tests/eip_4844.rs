@@ -12,13 +12,13 @@ mod tests {
     #[test]
     pub fn bytes_to_bls_field_test_() {
         assert!(init(CurveType::BLS12_381));
-        bytes_to_bls_field_test(&hash_to_bls_field, &bytes_from_bls_field);
+        bytes_to_bls_field_test::<Fr>();
     }
 
     #[test]
     pub fn compute_powers_test_() {
         assert!(init(CurveType::BLS12_381));
-        compute_powers_test::<Fr>(&hash_to_bls_field, &compute_powers);
+        compute_powers_test::<Fr>(&compute_powers);
     }
 
     #[test]
@@ -27,8 +27,6 @@ mod tests {
         blob_to_kzg_commitment_test::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &hex_to_bls_field,
-            &hex_to_g1,
         );
     }
 
@@ -36,8 +34,6 @@ mod tests {
     pub fn compute_kzg_proof_test_() {
         compute_kzg_proof_test::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(
             &load_trusted_setup,
-            &hex_to_bls_field,
-            &hex_to_g1,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
@@ -56,7 +52,7 @@ mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
@@ -77,7 +73,7 @@ mod tests {
     //    >(
     //        &load_trusted_setup,
     //        &blob_to_kzg_commitment,
-    //        &bytes_to_bls_field,
+    //        &bytes_to_blob,
     //        &compute_kzg_proof,
     //        &blob_to_polynomial,
     //        &evaluate_polynomial_in_evaluation_form,
@@ -97,7 +93,7 @@ mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
@@ -111,7 +107,7 @@ mod tests {
         compute_and_verify_blob_kzg_proof_test::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof,
         );
@@ -130,7 +126,7 @@ mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof,
         );
@@ -142,7 +138,7 @@ mod tests {
         verify_kzg_proof_batch_test::<Fr, G1, G2, Polynomial, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof_batch,
         );
@@ -161,7 +157,7 @@ mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof_batch,
         );

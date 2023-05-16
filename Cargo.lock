@@ -786,6 +786,7 @@ version = "0.0.1"
 dependencies = [
  "blst",
  "cc",
+ "hex",
  "kzg",
  "libc",
  "num_cpus",
