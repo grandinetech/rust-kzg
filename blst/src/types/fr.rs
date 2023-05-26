@@ -58,7 +58,7 @@ impl Fr for FsFr {
                 unsafe {
                     blst_scalar_from_lendian(&mut bls_scalar, bytes.as_ptr());
                     if !blst_scalar_fr_check(&bls_scalar) {
-                        return Err("blst_scalar_fr_check failed".to_string());
+                        return Err("Invalid scalar".to_string());
                     }
                     blst_fr_from_scalar(&mut fr, &bls_scalar);
                 }
@@ -122,10 +122,6 @@ impl Fr for FsFr {
 
     fn is_null(&self) -> bool {
         self.equals(&Self::null())
-    }
-
-    fn is_valid(&self) -> bool {
-        true
     }
 
     fn sqr(&self) -> Self {

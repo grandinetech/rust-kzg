@@ -19,6 +19,24 @@ impl CommonFr for Fr {
         Fr::random()
     }
 
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| Self::from_bytes(bytes))
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
     fn from_u64_arr(u: &[u64; 4]) -> Self {
         Fr::from_u64_arr(u)
     }
@@ -27,18 +45,20 @@ impl CommonFr for Fr {
         Fr::from_u64_arr(&[val, 0, 0, 0])
     }
 
+    fn to_bytes(&self) -> [u8; 32] {
+        Self::to_bytes(self)
+    }
+
     fn to_u64_arr(&self) -> [u64; 4] {
         Fr::to_u64_arr(self)
     }
 
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let mut res = Fr::zero();
-        Fr::div(&mut res, self, b);
-        Ok(res)
-    }
-
     fn is_one(&self) -> bool {
         Fr::is_one(self)
+    }
+
+    fn is_zero(&self) -> bool {
+        Fr::is_zero(self)
     }
 
     fn is_null(&self) -> bool {
@@ -46,18 +66,10 @@ impl CommonFr for Fr {
         self.equals(&temp)
     }
 
-    fn is_zero(&self) -> bool {
-        Fr::is_zero(self)
-    }
-
     fn sqr(&self) -> Self {
         let mut res = Fr::zero();
         Fr::sqr(&mut res, self);
         res
-    }
-
-    fn pow(&self, n: usize) -> Self {
-        Fr::pow(self, n)
     }
 
     fn mul(&self, b: &Self) -> Self {
@@ -90,33 +102,17 @@ impl CommonFr for Fr {
         self.inverse()
     }
 
+    fn pow(&self, n: usize) -> Self {
+        Fr::pow(self, n)
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let mut res = Fr::zero();
+        Fr::div(&mut res, self, b);
+        Ok(res)
+    }
+
     fn equals(&self, b: &Self) -> bool {
         Fr::eq(self, b)
-    }
-
-    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
-        bytes
-            .try_into()
-            .map_err(|_| {
-                format!(
-                    "Invalid byte length. Expected {}, got {}",
-                    BYTES_PER_FIELD_ELEMENT,
-                    bytes.len()
-                )
-            })
-            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| Self::from_bytes(bytes))
-    }
-
-    fn from_hex(hex: &str) -> Result<Self, String> {
-        let bytes = hex::decode(&hex[2..]).unwrap();
-        Self::from_bytes(&bytes)
-    }
-
-    fn to_bytes(&self) -> [u8; 32] {
-        Self::to_bytes(self)
-    }
-
-    fn is_valid(&self) -> bool {
-        true
     }
 }

@@ -78,10 +78,10 @@ impl Fr {
         Fr::from_bytes(&arr).unwrap()
     }
 
-    pub fn from_bytes(scalar: &[u8]) -> Result<Self, String> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
         let mut t = Fr::default();
-        if !t.set_little_endian_mod(scalar) {
-            return Err("set_little_endian_mod failed".to_string());
+        if !t.set_little_endian_mod(bytes) {
+            return Err("Invalid scalar".to_string());
         }
         Ok(t)
     }

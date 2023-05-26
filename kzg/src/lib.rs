@@ -35,8 +35,6 @@ pub trait Fr: Default + Clone {
 
     fn is_null(&self) -> bool;
 
-    fn is_valid(&self) -> bool;
-
     fn sqr(&self) -> Self;
 
     fn mul(&self, b: &Self) -> Self;

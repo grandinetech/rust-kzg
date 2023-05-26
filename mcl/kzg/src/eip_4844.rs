@@ -10,7 +10,7 @@ use kzg::eip_4844::{
     FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
     TRUSTED_SETUP_NUM_G2_POINTS,
 };
-use kzg::G1 as _;
+use kzg::{cfg_into_iter, G1 as _};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
@@ -378,14 +378,17 @@ pub fn verify_blob_kzg_proof_batch(
         return Err("Invalid amount of arguments".to_string());
     }
 
-    // TODO: validate in parallel ???
-    for i in 0..blobs.len() {
-        if !commitments_g1[i].is_valid() {
-            return Err("Invalid commitment".to_string());
-        }
-        if !proofs_g1[i].is_valid() {
-            return Err("Invalid proof".to_string());
-        }
+    let invalid_commitment =
+        cfg_into_iter!(commitments_g1).any(|&commitment| !commitment.is_valid());
+
+    let invalid_proof = cfg_into_iter!(proofs_g1).any(|&proof| !proof.is_valid());
+
+    if invalid_commitment {
+        return Err("Invalid commitment".to_string());
+    }
+
+    if invalid_proof {
+        return Err("Invalid proof".to_string());
     }
 
     #[cfg(feature = "parallel")]
