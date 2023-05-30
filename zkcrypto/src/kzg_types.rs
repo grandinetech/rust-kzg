@@ -4,6 +4,7 @@ use kzg::{Fr, G1Mul, G2Mul, KZGSettings, G1, G2};
 
 // use std::ptr;
 
+use kzg::eip_4844::{BYTES_PER_G1, BYTES_PER_G2};
 use std::ops::{Add, Neg};
 // use std::convert::TryInto;
 
@@ -32,6 +33,7 @@ pub use crate::curve::pairings::{multi_miller_loop, G2Prepared, MillerLoopResult
 
 use crate::zkfr::blsScalar;
 
+use crate::curve::g2::G2Affine;
 use crate::fftsettings::ZkFFTSettings;
 use crate::poly::ZPoly;
 use kzg::FFTSettings;
@@ -234,19 +236,47 @@ impl G1 for ZkG1Projective {
         result.mul(&blsScalar::rand())
     }
 
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G1,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G1]| {
+                let affine: ZkG1Affine = ZkG1Affine::from_compressed(bytes).unwrap();
+                Ok(ZkG1Projective::from(affine))
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        G1::from_bytes(&bytes)
+    }
+
+    fn to_bytes(&self) -> [u8; 48] {
+        let g1_affine = ZkG1Affine::from(self);
+        g1_affine.to_compressed()
+    }
+
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         if self.eq(&b) {
             self.dbl()
         } else {
             ZkG1Projective::add(self, b)
-            // let ret = ZkG1Projective::add(self, b);
-
-            // ret
         }
     }
 
     fn is_inf(&self) -> bool {
         bool::from(self.is_identity())
+    }
+
+    fn is_valid(&self) -> bool {
+        bool::from(self.is_on_curve())
     }
 
     fn dbl(&self) -> Self {
@@ -305,6 +335,13 @@ impl G2 for ZkG2Projective {
 impl G2Mul<blsScalar> for ZkG2Projective {
     fn mul(&self, b: &blsScalar) -> Self {
         self * b
+    }
+}
+
+impl ZkG2Projective {
+    pub fn from_bytes(bytes: &[u8; BYTES_PER_G2]) -> Result<Self, String> {
+        let affine: G2Affine = G2Affine::from_compressed(bytes).unwrap();
+        Ok(ZkG2Projective::from(affine))
     }
 }
 

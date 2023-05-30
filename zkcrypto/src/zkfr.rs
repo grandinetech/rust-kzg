@@ -2,26 +2,19 @@
 
 pub use super::{BlsScalar, ZPoly};
 use kzg::Fr;
-// use ff::Field;
-// use ff::{Field, PrimeField};
 
+use crate::curve::scalar::{sbb, Scalar, MODULUS, R2};
+use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use std::convert::TryInto;
 
-// use ff::{FieldBits, PrimeFieldBits};
-
-// use crate::utils::*;
 pub use crate::curve::scalar::Scalar as blsScalar;
 
 impl Fr for blsScalar {
-    fn zero() -> Self {
-        blsScalar::zero()
-    }
     fn null() -> Self {
         blsScalar::null()
     }
-
-    fn is_null(&self) -> bool {
-        self.eq(&blsScalar::null())
+    fn zero() -> Self {
+        blsScalar::zero()
     }
 
     fn one() -> Self {
@@ -29,91 +22,111 @@ impl Fr for blsScalar {
     }
 
     fn rand() -> Self {
-        // is this good?
         let val: [u64; 4] = rand::random();
         blsScalar::from_raw(val)
+    }
 
-        // let ret = blsScalar::random(blsScalar::default());
-        // ret
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let mut tmp = Scalar([0, 0, 0, 0]);
 
-        // let mut ret = Self::default();
-        // unsafe {
-        // blsScalar::from_raw(val);
-        // //blst_fr_from_uint64(&mut ret.0, val.as_ptr());
-        // }
+                tmp.0[0] = u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
+                tmp.0[1] = u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[8..16]).unwrap());
+                tmp.0[2] = u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[16..24]).unwrap());
+                tmp.0[3] = u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[24..32]).unwrap());
+
+                // Try to subtract the modulus
+                let (_, borrow) = sbb(tmp.0[0], MODULUS.0[0], 0);
+                let (_, borrow) = sbb(tmp.0[1], MODULUS.0[1], borrow);
+                let (_, borrow) = sbb(tmp.0[2], MODULUS.0[2], borrow);
+                let (_, _borrow) = sbb(tmp.0[3], MODULUS.0[3], borrow);
+
+                // Convert to Montgomery form by computing
+                // (a.R^0 * R^2) / R = a.R
+                tmp *= &R2;
+                Ok(tmp)
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Fr::from_bytes(&bytes)
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
         blsScalar::from_raw(*u)
     }
 
+    fn from_u64(val: u64) -> Self {
+        blsScalar::from(val)
+    }
+
+    fn to_bytes(&self) -> [u8; 32] {
+        self.to_bytes()
+    }
+
     fn to_u64_arr(&self) -> [u64; 4] {
         let bytes = self.to_bytes();
-
-        /*let limbs =*/
         [
             u64::from_le_bytes(bytes[0..8].try_into().unwrap()),
             u64::from_le_bytes(bytes[8..16].try_into().unwrap()),
             u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
             u64::from_le_bytes(bytes[24..32].try_into().unwrap()),
         ]
-
-        //limbs
-    }
-
-    fn from_u64(val: u64) -> Self {
-        blsScalar::from(val)
     }
 
     fn is_one(&self) -> bool {
-        // assert!(self.eq(&blsScalar::one()));
         self.eq(&blsScalar::one())
-        // self == blsScalar::one()
-        // let mut val: [u64; 4] = [0; 4];
-        // blsScalar::from_raw(val);
-        // return val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 
     fn is_zero(&self) -> bool {
         self.eq(&blsScalar::zero())
-        // self == blsScalar::zero()
-        // let mut val: [u64; 4] = [0; 4];
-        // <blsScalar as From<u64>>::from(val.as_mut_ptr());
-        // return val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0;
     }
 
+    fn is_null(&self) -> bool {
+        self.eq(&blsScalar::null())
+    }
     fn sqr(&self) -> Self {
         blsScalar::square(self)
     }
 
     fn mul(&self, b: &Self) -> Self {
-        // let mut ret = blsScalar::default(); // Self::default() is this needed?
-        blsScalar::mul(self, b) // &b.0 or &ret.0?
+        blsScalar::mul(self, b)
     }
 
     fn add(&self, b: &Self) -> Self {
-        // let mut ret = blsScalar::default(); // Self::default() is this needed?
         blsScalar::add(self, b)
     }
+
     fn sub(&self, b: &Self) -> Self {
-        // let mut ret = blsScalar::default(); // Self::default() is this needed?
-        blsScalar::sub(self, b) // for this
+        blsScalar::sub(self, b)
     }
 
     fn eucl_inverse(&self) -> Self {
-        //let mut ret = Default::default(); //Self::default()
-        // blsScalar::invert(&self).unwrap()
+        self.invert().unwrap()
+    }
 
-        // let ret = self.invert().unwrap();
-        // ret
+    fn negate(&self) -> Self {
+        self.neg()
+    }
+
+    fn inverse(&self) -> Self {
         self.invert().unwrap()
     }
 
     fn pow(&self, n: usize) -> Self {
-        // unfinished. bls12_381 scalar has pow method.
-        // also for i in 1..n out.sqr();
         let mut tmp = *self;
-        let mut out = Self::one(); // let mut out?
+        let mut out = Self::one();
         let mut n2 = n;
 
         loop {
@@ -130,20 +143,6 @@ impl Fr for blsScalar {
         out
     }
 
-    fn negate(&self) -> Self {
-        //blsScalar::neg(&self)
-        self.neg()
-    }
-
-    fn inverse(&self) -> Self {
-        //let mut ret = blsScalar::default(); // Self::default()
-        // Self::invert(&self).unwrap()
-
-        // let ret = self.invert().unwrap();
-        // ret
-        self.invert().unwrap()
-    }
-
     fn div(&self, b: &Self) -> Result<Self, String> {
         if <blsScalar as Fr>::is_zero(b) {
             return Ok(blsScalar::zero());
@@ -156,8 +155,6 @@ impl Fr for blsScalar {
     fn equals(&self, other: &Self) -> bool {
         self.eq(other)
     }
-
-    // fn destroy(&mut self) {}
 }
 
 pub fn fr_div(a: &blsScalar, b: &blsScalar) -> Result<blsScalar, String> {

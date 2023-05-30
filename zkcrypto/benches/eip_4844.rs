@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::eip_4844::bench_eip_4844;
 use zkcrypto::eip_4844::{
-    blob_to_kzg_commitment, bytes_to_bls_field, compute_blob_kzg_proof, compute_kzg_proof,
+    blob_to_kzg_commitment, bytes_to_blob, compute_blob_kzg_proof, compute_kzg_proof,
     load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
 };
 use zkcrypto::fftsettings::ZkFFTSettings;
@@ -16,7 +16,7 @@ fn bench_eip_4844_(c: &mut Criterion) {
         c,
         &load_trusted_setup,
         &blob_to_kzg_commitment,
-        &bytes_to_bls_field,
+        &bytes_to_blob,
         &compute_kzg_proof,
         &verify_kzg_proof,
         &compute_blob_kzg_proof,

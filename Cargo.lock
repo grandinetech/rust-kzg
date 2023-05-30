@@ -1554,6 +1554,7 @@ dependencies = [
  "blst",
  "criterion",
  "ff",
+ "hex",
  "kzg",
  "kzg-bench",
  "num-bigint",
