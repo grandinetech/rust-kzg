@@ -1,5 +1,5 @@
 use arkworks::eip_4844::{
-    blob_to_kzg_commitment, bytes_to_bls_field, compute_blob_kzg_proof, compute_kzg_proof,
+    blob_to_kzg_commitment, bytes_to_blob, compute_blob_kzg_proof, compute_kzg_proof,
     load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
 };
 use arkworks::kzg_proofs::{FFTSettings, KZGSettings};
@@ -13,7 +13,7 @@ fn bench_eip_4844_(c: &mut Criterion) {
         c,
         &load_trusted_setup,
         &blob_to_kzg_commitment,
-        &bytes_to_bls_field,
+        &bytes_to_blob,
         &compute_kzg_proof,
         &verify_kzg_proof,
         &compute_blob_kzg_proof,

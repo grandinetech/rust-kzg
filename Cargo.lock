@@ -211,6 +211,7 @@ dependencies = [
  "ark-std",
  "blst",
  "criterion",
+ "hex",
  "kzg",
  "kzg-bench",
  "merkle_light",

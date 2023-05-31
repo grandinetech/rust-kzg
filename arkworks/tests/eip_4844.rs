@@ -1,9 +1,8 @@
 #[cfg(test)]
 pub mod tests {
     use arkworks::eip_4844::{
-        blob_to_kzg_commitment, blob_to_polynomial, bytes_from_bls_field, bytes_to_bls_field,
-        compute_blob_kzg_proof, compute_kzg_proof, compute_powers,
-        evaluate_polynomial_in_evaluation_form, hash_to_bls_field, hex_to_bls_field, hex_to_g1,
+        blob_to_kzg_commitment, blob_to_polynomial, bytes_to_blob, compute_blob_kzg_proof,
+        compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form,
         load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
     };
     use arkworks::kzg_proofs::{FFTSettings, KZGSettings};
@@ -22,12 +21,12 @@ pub mod tests {
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<FsFr>(&hash_to_bls_field, &bytes_from_bls_field);
+        bytes_to_bls_field_test::<FsFr>();
     }
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<FsFr>(&hash_to_bls_field, &compute_powers);
+        compute_powers_test::<FsFr>(&compute_powers);
     }
 
     #[test]
@@ -36,8 +35,6 @@ pub mod tests {
         blob_to_kzg_commitment_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &hex_to_bls_field,
-            &hex_to_g1,
         );
     }
 
@@ -46,8 +43,6 @@ pub mod tests {
     pub fn compute_kzg_proof_test_() {
         compute_kzg_proof_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
-            &hex_to_bls_field,
-            &hex_to_g1,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
@@ -67,7 +62,7 @@ pub mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
@@ -89,7 +84,7 @@ pub mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
@@ -110,7 +105,7 @@ pub mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_kzg_proof,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
@@ -131,7 +126,7 @@ pub mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof,
         );
@@ -150,7 +145,7 @@ pub mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof,
         );
@@ -162,7 +157,7 @@ pub mod tests {
         verify_kzg_proof_batch_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof_batch,
         );
@@ -181,7 +176,7 @@ pub mod tests {
         >(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
-            &bytes_to_bls_field,
+            &bytes_to_blob,
             &compute_blob_kzg_proof,
             &verify_blob_kzg_proof_batch,
         );
