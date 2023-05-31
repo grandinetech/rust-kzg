@@ -479,6 +479,20 @@ fn compute_challenges_and_evaluate_polynomial(
     (evaluation_challenges_fr, ys_fr)
 }
 
+fn validate_batched_input(commitments: &[FsG1], proofs: &[FsG1]) -> Result<(), String> {
+    let invalid_commitment = cfg_into_iter!(commitments).any(|&commitment| !commitment.is_valid());
+    let invalid_proof = cfg_into_iter!(proofs).any(|&proof| !proof.is_valid());
+
+    if invalid_commitment {
+        return Err("Invalid commitment".to_string());
+    }
+    if invalid_proof {
+        return Err("Invalid proof".to_string());
+    }
+
+    Ok(())
+}
+
 pub fn verify_blob_kzg_proof_batch_rust(
     blobs: &[Vec<FsFr>],
     commitments_g1: &[FsG1],
@@ -499,25 +513,14 @@ pub fn verify_blob_kzg_proof_batch_rust(
         return Err("Invalid amount of arguments".to_string());
     }
 
-    let invalid_commitment =
-        cfg_into_iter!(commitments_g1).any(|&commitment| !commitment.is_valid());
-
-    let invalid_proof = cfg_into_iter!(proofs_g1).any(|&proof| !proof.is_valid());
-
-    if invalid_commitment {
-        return Err("Invalid commitment".to_string());
-    }
-
-    if invalid_proof {
-        return Err("Invalid proof".to_string());
-    }
-
     #[cfg(feature = "parallel")]
     {
         let num_blobs = blobs.len();
         let num_cores = num_cpus::get_physical();
 
         return if num_blobs > num_cores {
+            validate_batched_input(commitments_g1, proofs_g1)?;
+
             // Process blobs in parallel subgroups
             let blobs_per_group = num_blobs / num_cores;
 
@@ -558,6 +561,7 @@ pub fn verify_blob_kzg_proof_batch_rust(
 
     #[cfg(not(feature = "parallel"))]
     {
+        validate_batched_input(commitments_g1, proofs_g1)?;
         let (evaluation_challenges_fr, ys_fr) =
             compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts);
 

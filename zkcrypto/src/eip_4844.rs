@@ -452,6 +452,23 @@ fn compute_challenges_and_evaluate_polynomial(
     (evaluation_challenges_fr, ys_fr)
 }
 
+fn validate_batched_input(
+    commitments: &[ZkG1Projective],
+    proofs: &[ZkG1Projective],
+) -> Result<(), String> {
+    let invalid_commitment = cfg_into_iter!(commitments).any(|&commitment| !commitment.is_valid());
+    let invalid_proof = cfg_into_iter!(proofs).any(|&proof| !proof.is_valid());
+
+    if invalid_commitment {
+        return Err("Invalid commitment".to_string());
+    }
+    if invalid_proof {
+        return Err("Invalid proof".to_string());
+    }
+
+    Ok(())
+}
+
 pub fn verify_blob_kzg_proof_batch(
     blobs: &[Vec<blsScalar>],
     commitments_g1: &[ZkG1Projective],
@@ -468,17 +485,8 @@ pub fn verify_blob_kzg_proof_batch(
         return verify_blob_kzg_proof(&blobs[0], &commitments_g1[0], &proofs_g1[0], ts);
     }
 
-    let invalid_commitment =
-        cfg_into_iter!(commitments_g1).any(|&commitment| !commitment.is_valid());
-
-    let invalid_proof = cfg_into_iter!(proofs_g1).any(|&proof| !proof.is_valid());
-
-    if invalid_commitment {
-        return Err("Invalid commitment".to_string());
-    }
-
-    if invalid_proof {
-        return Err("Invalid proof".to_string());
+    if blobs.len() != commitments_g1.len() || blobs.len() != proofs_g1.len() {
+        return Err("Invalid amount of arguments".to_string());
     }
 
     #[cfg(feature = "parallel")]
@@ -487,6 +495,8 @@ pub fn verify_blob_kzg_proof_batch(
         let num_cores = num_cpus::get_physical();
 
         return if num_blobs > num_cores {
+            validate_batched_input(commitments_g1, proofs_g1)?;
+
             // Process blobs in parallel subgroups
             let blobs_per_group = num_blobs / num_cores;
 
@@ -527,6 +537,7 @@ pub fn verify_blob_kzg_proof_batch(
 
     #[cfg(not(feature = "parallel"))]
     {
+        validate_batched_input(commitments_g1, proofs_g1)?;
         let (evaluation_challenges_fr, ys_fr) =
             compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts);
 
