@@ -61,7 +61,7 @@ impl G1 for FsG1 {
                 unsafe {
                     // The uncompress routine also checks that the point is on the curve
                     if blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                        return Err("blst_p1_uncompress failed".to_string());
+                        return Err("Failed to uncompress".to_string());
                     }
                     blst_p1_from_affine(&mut g1, &tmp);
                 }

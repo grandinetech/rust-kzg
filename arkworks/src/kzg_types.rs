@@ -153,6 +153,29 @@ impl G2 for ArkG2 {
         G2_NEGATIVE_GENERATOR
     }
 
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G2,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G2]| {
+                let affine = g2::G2Affine::from_random_bytes(bytes.as_slice()).unwrap();
+                let projective = affine.into_projective();
+                Ok(pc_g2projective_into_blst_p2(projective).unwrap())
+            })
+    }
+
+    fn to_bytes(&self) -> [u8; 96] {
+        let projective = blst_p2_into_pc_g2projective(self).unwrap();
+        <[u8; 96]>::try_from(projective.x.c0.0.to_bytes_le()).unwrap()
+    }
+
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let temp =
             blst_p2_into_pc_g2projective(self).unwrap() + blst_p2_into_pc_g2projective(b).unwrap();
@@ -182,19 +205,6 @@ impl G2Mul<FsFr> for ArkG2 {
         let b = blst_fr_into_pc_fr(b);
         a.mul_assign(b);
         pc_g2projective_into_blst_p2(a).unwrap()
-    }
-}
-
-impl ArkG2 {
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_G2] {
-        let projective = blst_p2_into_pc_g2projective(self).unwrap();
-        <[u8; 96]>::try_from(projective.x.c0.0.to_bytes_le()).unwrap()
-    }
-
-    pub fn from_bytes(bytes: &[u8; BYTES_PER_G2]) -> Result<Self, String> {
-        let affine = g2::G2Affine::from_random_bytes(bytes.as_slice()).unwrap();
-        let projective = affine.into_projective();
-        Ok(pc_g2projective_into_blst_p2(projective).unwrap())
     }
 }
 

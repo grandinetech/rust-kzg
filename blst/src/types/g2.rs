@@ -44,6 +44,38 @@ impl G2 for FsG2 {
         G2_NEGATIVE_GENERATOR
     }
 
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G2,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G2]| {
+                let mut tmp = blst_p2_affine::default();
+                let mut g2 = blst_p2::default();
+                unsafe {
+                    // The uncompress routine also checks that the point is on the curve
+                    if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                        return Err("Failed to uncompress".to_string());
+                    }
+                    blst_p2_from_affine(&mut g2, &tmp);
+                }
+                Ok(FsG2(g2))
+            })
+    }
+
+    fn to_bytes(&self) -> [u8; 96] {
+        let mut out = [0u8; BYTES_PER_G2];
+        unsafe {
+            blst_p2_compress(out.as_mut_ptr(), &self.0);
+        }
+        out
+    }
+
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let mut result = blst_p2::default();
         unsafe {
@@ -76,28 +108,6 @@ impl G2 for FsG2 {
 }
 
 impl FsG2 {
-    /// Convert into bytes
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_G2] {
-        let mut out = [0; 96];
-        unsafe {
-            blst_p2_compress(out.as_mut_ptr(), &self.0);
-        }
-        out
-    }
-
-    /// Create from bytes
-    pub fn from_bytes(bytes: &[u8; BYTES_PER_G2]) -> Result<Self, String> {
-        let mut tmp = blst_p2_affine::default();
-        let mut g2 = blst_p2::default();
-        unsafe {
-            if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                return Err("blst_p2_uncompress failed".to_string());
-            }
-            blst_p2_from_affine(&mut g2, &tmp);
-        }
-        Ok(FsG2(g2))
-    }
-
     pub(crate) fn _from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
         FsG2(blst_p2 { x, y, z })
     }

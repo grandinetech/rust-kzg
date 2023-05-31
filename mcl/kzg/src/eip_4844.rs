@@ -10,7 +10,7 @@ use kzg::eip_4844::{
     FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
     TRUSTED_SETUP_NUM_G2_POINTS,
 };
-use kzg::{cfg_into_iter, G1 as _};
+use kzg::{cfg_into_iter, G1 as _, G2 as _};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;

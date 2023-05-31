@@ -36,7 +36,7 @@ impl CommonG1 for G1 {
                 set_eth_serialization(1);
                 let mut g1 = G1::default();
                 if !G1::deserialize(&mut g1, bytes) {
-                    return Err("failed to deserialize".to_string());
+                    return Err("Failed to deserialize".to_string());
                 }
                 Ok(g1)
             })

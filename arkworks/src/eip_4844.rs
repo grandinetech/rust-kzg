@@ -247,7 +247,7 @@ fn compute_challenge(blob: &[FsFr], commitment: &ArkG1) -> FsFr {
 
     // Copy blob
     for i in 0..blob.len() {
-        let v = FsFr::to_bytes(&blob[i]);
+        let v = blob[i].to_bytes();
         bytes[(32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT)]
             .copy_from_slice(&v);
     }
@@ -290,12 +290,12 @@ fn compute_r_powers(
         offset += BYTES_PER_COMMITMENT;
 
         // Copy evaluation challenge
-        let v = FsFr::to_bytes(&zs_fr[i]);
+        let v = zs_fr[i].to_bytes();
         bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
         // Copy polynomial's evaluation value
-        let v = FsFr::to_bytes(&ys_fr[i]);
+        let v = ys_fr[i].to_bytes();
         bytes[offset..(v.len() + offset)].copy_from_slice(&v[..]);
         offset += BYTES_PER_FIELD_ELEMENT;
 

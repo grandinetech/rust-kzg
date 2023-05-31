@@ -96,6 +96,10 @@ pub trait G2: Clone + Default {
 
     fn negative_generator() -> Self;
 
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String>;
+
+    fn to_bytes(&self) -> [u8; 96];
+
     fn add_or_dbl(&mut self, b: &Self) -> Self;
 
     fn dbl(&self) -> Self;

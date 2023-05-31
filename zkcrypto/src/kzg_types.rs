@@ -311,6 +311,28 @@ impl G2 for ZkG2Projective {
         G2_NEGATIVE_GENERATOR
     }
 
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G2,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G2]| {
+                let affine: G2Affine = G2Affine::from_compressed(bytes).unwrap();
+                Ok(ZkG2Projective::from(affine))
+            })
+    }
+
+    fn to_bytes(&self) -> [u8; 96] {
+        let g2_affine = ZkG2Affine::from(self);
+        g2_affine.to_compressed()
+    }
+
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         if self.eq(&b) {
             self.dbl()
@@ -335,13 +357,6 @@ impl G2 for ZkG2Projective {
 impl G2Mul<blsScalar> for ZkG2Projective {
     fn mul(&self, b: &blsScalar) -> Self {
         self * b
-    }
-}
-
-impl ZkG2Projective {
-    pub fn from_bytes(bytes: &[u8; BYTES_PER_G2]) -> Result<Self, String> {
-        let affine: G2Affine = G2Affine::from_compressed(bytes).unwrap();
-        Ok(ZkG2Projective::from(affine))
     }
 }
 

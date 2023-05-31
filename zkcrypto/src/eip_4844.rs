@@ -14,7 +14,7 @@ use kzg::eip_4844::{
     FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
     TRUSTED_SETUP_NUM_G2_POINTS,
 };
-use kzg::{cfg_into_iter, FFTSettings, Fr, Poly, FFTG1, G1};
+use kzg::{cfg_into_iter, FFTSettings, Fr, Poly, FFTG1, G1, G2};
 
 use crate::curve::multiscalar_mul::msm_variable_base;
 use crate::fftsettings::ZkFFTSettings;
@@ -69,7 +69,7 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
     let g2_values: Vec<ZkG2Projective> = g2_bytes
         .chunks(BYTES_PER_G2)
         .map(|chunk| {
-            ZkG2Projective::from_bytes(
+            G2::from_bytes(
                 chunk
                     .try_into()
                     .expect("Chunked into incorrect number of bytes"),
