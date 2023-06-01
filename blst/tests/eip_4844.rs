@@ -1,18 +1,15 @@
 #[cfg(test)]
 mod tests {
     use blst_rust::eip_4844::{
-        blob_to_kzg_commitment_rust, blob_to_polynomial_rust, bytes_from_bls_field,
-        bytes_to_bls_field_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
-        compute_powers, evaluate_polynomial_in_evaluation_form_rust, hash_to_bls_field,
-        hex_to_bls_field, hex_to_g1, load_trusted_setup_filename_rust,
+        blob_to_kzg_commitment_rust, blob_to_polynomial_rust, bytes_to_blob,
+        compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
+        evaluate_polynomial_in_evaluation_form_rust, load_trusted_setup_filename_rust,
         verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
     };
     use blst_rust::types::{
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
         poly::FsPoly,
     };
-    #[cfg(not(feature = "minimal-spec"))]
-    use kzg_bench::tests::eip_4844::compute_and_verify_kzg_proof_within_domain_test;
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
@@ -21,15 +18,22 @@ mod tests {
         compute_and_verify_kzg_proof_round_trip_test, compute_kzg_proof_test, compute_powers_test,
         verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
+    #[cfg(not(feature = "minimal-spec"))]
+    use kzg_bench::tests::eip_4844::{
+        compute_and_verify_kzg_proof_within_domain_test, test_vectors_blob_to_kzg_commitment,
+        test_vectors_compute_blob_kzg_proof, test_vectors_compute_kzg_proof,
+        test_vectors_verify_blob_kzg_proof, test_vectors_verify_blob_kzg_proof_batch,
+        test_vectors_verify_kzg_proof,
+    };
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<FsFr>(&hash_to_bls_field, &bytes_from_bls_field);
+        bytes_to_bls_field_test::<FsFr>();
     }
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<FsFr>(&hash_to_bls_field, &compute_powers);
+        compute_powers_test::<FsFr>(&compute_powers);
     }
 
     #[test]
@@ -37,8 +41,6 @@ mod tests {
         blob_to_kzg_commitment_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &hex_to_bls_field,
-            &hex_to_g1,
         );
     }
 
@@ -46,8 +48,6 @@ mod tests {
     pub fn compute_kzg_proof_test_() {
         compute_kzg_proof_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
-            &hex_to_bls_field,
-            &hex_to_g1,
             &compute_kzg_proof_rust,
             &blob_to_polynomial_rust,
             &evaluate_polynomial_in_evaluation_form_rust,
@@ -66,7 +66,7 @@ mod tests {
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
+            &bytes_to_blob,
             &compute_kzg_proof_rust,
             &blob_to_polynomial_rust,
             &evaluate_polynomial_in_evaluation_form_rust,
@@ -87,7 +87,7 @@ mod tests {
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
+            &bytes_to_blob,
             &compute_kzg_proof_rust,
             &blob_to_polynomial_rust,
             &evaluate_polynomial_in_evaluation_form_rust,
@@ -107,7 +107,7 @@ mod tests {
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
+            &bytes_to_blob,
             &compute_kzg_proof_rust,
             &blob_to_polynomial_rust,
             &evaluate_polynomial_in_evaluation_form_rust,
@@ -127,7 +127,7 @@ mod tests {
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
+            &bytes_to_blob,
             &compute_blob_kzg_proof_rust,
             &verify_blob_kzg_proof_rust,
         );
@@ -145,7 +145,7 @@ mod tests {
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
+            &bytes_to_blob,
             &compute_blob_kzg_proof_rust,
             &verify_blob_kzg_proof_rust,
         );
@@ -156,7 +156,7 @@ mod tests {
         verify_kzg_proof_batch_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
+            &bytes_to_blob,
             &compute_blob_kzg_proof_rust,
             &verify_blob_kzg_proof_batch_rust,
         );
@@ -174,8 +174,74 @@ mod tests {
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
-            &bytes_to_bls_field_rust,
+            &bytes_to_blob,
             &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_batch_rust,
+        );
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    pub fn test_vectors_blob_to_kzg_commitment_() {
+        test_vectors_blob_to_kzg_commitment::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup_filename_rust,
+            &blob_to_kzg_commitment_rust,
+            &bytes_to_blob,
+        );
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    pub fn test_vectors_compute_kzg_proof_() {
+        test_vectors_compute_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup_filename_rust,
+            &compute_kzg_proof_rust,
+            &bytes_to_blob,
+        );
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    pub fn test_vectors_compute_blob_kzg_proof_() {
+        test_vectors_compute_blob_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup_filename_rust,
+            &bytes_to_blob,
+            &compute_blob_kzg_proof_rust,
+        );
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    pub fn test_vectors_verify_kzg_proof_() {
+        test_vectors_verify_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup_filename_rust,
+            &verify_kzg_proof_rust,
+        );
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    pub fn test_vectors_verify_blob_kzg_proof_() {
+        test_vectors_verify_blob_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+            &load_trusted_setup_filename_rust,
+            &bytes_to_blob,
+            &verify_blob_kzg_proof_rust,
+        );
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    pub fn test_vectors_verify_blob_kzg_proof_batch_() {
+        test_vectors_verify_blob_kzg_proof_batch::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+        >(
+            &load_trusted_setup_filename_rust,
+            &bytes_to_blob,
             &verify_blob_kzg_proof_batch_rust,
         );
     }

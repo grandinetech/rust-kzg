@@ -8,7 +8,7 @@ use ark_ec::msm::VariableBaseMSM;
 use ark_ec::ProjectiveCurve;
 use ark_ff::{BigInteger256, PrimeField};
 use blst::{blst_fp, blst_p1};
-use kzg::G1Mul;
+use kzg::{cfg_into_iter, G1Mul};
 use kzg::{Fr, FFTG1, G1};
 
 #[cfg(feature = "parallel")]
@@ -93,7 +93,7 @@ pub const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
 
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], _len: usize) {
     let ark_points: Vec<G1Affine> = {
-        ark_std::cfg_into_iter!(points)
+        cfg_into_iter!(points)
             .map(|point| {
                 blst_p1_into_pc_g1projective(&point.0)
                     .unwrap()
@@ -103,7 +103,7 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstF
     };
 
     let ark_scalars: Vec<BigInteger256> = {
-        ark_std::cfg_into_iter!(scalars)
+        cfg_into_iter!(scalars)
             .map(|scalar| ArkFr::into_repr(&blst_fr_into_pc_fr(scalar)))
             .collect()
     };

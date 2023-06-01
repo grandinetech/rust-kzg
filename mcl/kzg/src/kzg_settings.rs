@@ -118,12 +118,12 @@ impl KZGSettings {
 
         let mut g1_points = vec![G1::default(); n];
         let mut g2_points = vec![G2::default(); n];
-        let secretfr = Fr::from_scalar(&secret);
+        let secretfr = Fr::from_bytes(&secret);
         let mut secret_to_power = Fr::one();
         for i in 0..n {
             g1_points[i] = &g1_gen * &secret_to_power;
             g2_points[i] = &g2_gen * &secret_to_power;
-            secret_to_power *= &secretfr.unwrap();
+            secret_to_power *= secretfr.as_ref().unwrap();
         }
 
         (g1_points, g2_points)

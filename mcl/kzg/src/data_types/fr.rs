@@ -75,25 +75,25 @@ impl Fr {
         for i in 0..4 {
             arr[i * 8..i * 8 + 8].copy_from_slice(&u[i].to_le_bytes());
         }
-        Fr::from_scalar(&arr).unwrap()
+        Fr::from_bytes(&arr).unwrap()
     }
 
-    pub fn from_scalar(scalar: &[u8; 32]) -> Result<Self, u8> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
         let mut t = Fr::default();
-        if !t.set_little_endian_mod(scalar) {
-            return Err(1);
+        if !t.set_little_endian_mod(bytes) {
+            return Err("Invalid scalar".to_string());
         }
         Ok(t)
     }
 
-    pub fn to_scalar(fr: &Self) -> [u8; 32] {
+    pub fn to_bytes(fr: &Self) -> [u8; 32] {
         let mut buf = [0u8; 32];
         assert!(fr.get_little_endian(&mut buf));
         buf
     }
 
     pub fn to_u64_arr(&self) -> [u64; 4] {
-        let v: Vec<u64> = Fr::to_scalar(self)
+        let v: Vec<u64> = Fr::to_bytes(self)
             .chunks(8)
             .map(|ch| u64::from_le_bytes(ch.try_into().unwrap()))
             .collect();

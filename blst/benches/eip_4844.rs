@@ -1,5 +1,5 @@
 use blst_rust::eip_4844::{
-    bytes_to_bls_field_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
+    bytes_to_blob, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
 };
 use blst_rust::{
@@ -17,7 +17,7 @@ fn bench_eip_4844_(c: &mut Criterion) {
         c,
         &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,
-        &bytes_to_bls_field_rust,
+        &bytes_to_blob,
         &compute_kzg_proof_rust,
         &verify_kzg_proof_rust,
         &compute_blob_kzg_proof_rust,

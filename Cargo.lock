@@ -211,6 +211,7 @@ dependencies = [
  "ark-std",
  "blst",
  "criterion",
+ "hex",
  "kzg",
  "kzg-bench",
  "merkle_light",
@@ -308,6 +309,7 @@ version = "0.1.0"
 dependencies = [
  "blst",
  "criterion",
+ "hex",
  "kzg",
  "kzg-bench",
  "libc",
@@ -738,8 +740,12 @@ name = "kzg-bench"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "glob",
+ "hex",
  "kzg",
  "rand",
+ "serde",
+ "serde_yaml",
 ]
 
 [[package]]
@@ -781,6 +787,7 @@ version = "0.0.1"
 dependencies = [
  "blst",
  "cc",
+ "hex",
  "kzg",
  "libc",
  "num_cpus",
@@ -1161,6 +1168,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml"
+version = "0.9.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9d684e3ec7de3bf5466b32bd75303ac16f0736426e5a4e0d6e489559ce1249c"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "sha2"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1359,6 +1379,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
+name = "unsafe-libyaml"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1865806a559042e51ab5414598446a5871b561d21b6764f2eabb0dd481d880a6"
+
+[[package]]
 name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1529,6 +1555,7 @@ dependencies = [
  "blst",
  "criterion",
  "ff",
+ "hex",
  "kzg",
  "kzg-bench",
  "num-bigint",

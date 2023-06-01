@@ -2,13 +2,13 @@ use std::env::set_current_dir;
 
 use crate::tests::eip_4844::{generate_random_blob_bytes, generate_random_field_element_bytes};
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput};
-use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, TRUSTED_SETUP_PATH};
+use kzg::eip_4844::TRUSTED_SETUP_PATH;
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
 pub fn bench_eip_4844<
-    TFr: Fr + Copy,
+    TFr: Fr,
     TG1: G1,
     TG2: G2,
     TPoly: Poly<TFr>,
@@ -18,12 +18,17 @@ pub fn bench_eip_4844<
     c: &mut Criterion,
     load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
-    bytes_to_bls_field: &dyn Fn(&[u8; 32usize]) -> Result<TFr, u8>,
+    bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
-    verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> bool,
-    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> TG1,
-    verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> bool,
-    verify_blob_kzg_proof_batch: &dyn Fn(&[Vec<TFr>], &[TG1], &[TG1], &TKZGSettings) -> bool,
+    verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
+    compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
+    verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
+    verify_blob_kzg_proof_batch: &dyn Fn(
+        &[Vec<TFr>],
+        &[TG1],
+        &[TG1],
+        &TKZGSettings,
+    ) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
     let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
@@ -33,17 +38,8 @@ pub fn bench_eip_4844<
 
     let blobs: Vec<Vec<TFr>> = (0..MAX_COUNT)
         .map(|_| {
-            generate_random_blob_bytes(&mut rng)
-                .chunks(BYTES_PER_FIELD_ELEMENT)
-                .map(|chunk| {
-                    bytes_to_bls_field(
-                        chunk
-                            .try_into()
-                            .expect("Chunked into incorrect number of bytes"),
-                    )
-                    .unwrap()
-                })
-                .collect()
+            let blob_bytes = generate_random_blob_bytes(&mut rng);
+            bytes_to_blob(&blob_bytes).unwrap()
         })
         .collect();
 
@@ -55,13 +51,13 @@ pub fn bench_eip_4844<
     let proofs: Vec<TG1> = blobs
         .iter()
         .zip(commitments.iter())
-        .map(|(blob, commitment)| compute_blob_kzg_proof(blob, commitment, &ts))
+        .map(|(blob, commitment)| compute_blob_kzg_proof(blob, commitment, &ts).unwrap())
         .collect();
 
     let fields: Vec<TFr> = (0..MAX_COUNT)
         .map(|_| {
             let fr_bytes = generate_random_field_element_bytes(&mut rng);
-            bytes_to_bls_field(&fr_bytes).unwrap()
+            TFr::from_bytes(&fr_bytes).unwrap()
         })
         .collect();
 
@@ -82,6 +78,7 @@ pub fn bench_eip_4844<
                 proofs.first().unwrap(),
                 &ts,
             )
+            .unwrap()
         })
     });
 
@@ -97,6 +94,7 @@ pub fn bench_eip_4844<
                 proofs.first().unwrap(),
                 &ts,
             )
+            .unwrap()
         })
     });
 
@@ -128,6 +126,7 @@ pub fn bench_eip_4844<
                         proofs_subset,
                         &ts,
                     )
+                    .unwrap()
                 },
                 BatchSize::LargeInput,
             );

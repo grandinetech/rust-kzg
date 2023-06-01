@@ -1,4 +1,6 @@
 use crate::data_types::{fr::Fr, g2::G2};
+use crate::mcl_methods::set_eth_serialization;
+use kzg::eip_4844::BYTES_PER_G2;
 use kzg::{G2Mul, G2 as CommonG2};
 
 impl CommonG2 for G2 {
@@ -8,6 +10,31 @@ impl CommonG2 for G2 {
 
     fn negative_generator() -> Self {
         G2::G2_NEGATIVE_GENERATOR
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G2,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G2]| {
+                set_eth_serialization(1);
+                let mut g2 = G2::default();
+                if !G2::deserialize(&mut g2, bytes) {
+                    return Err("Failed to deserialize".to_string());
+                }
+                Ok(g2)
+            })
+    }
+
+    fn to_bytes(&self) -> [u8; 96] {
+        set_eth_serialization(1);
+        G2::serialize(self).try_into().unwrap()
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {

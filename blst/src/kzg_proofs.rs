@@ -19,7 +19,7 @@ use blst::{
     blst_p2_to_affine, Pairing,
 };
 
-use kzg::{G1Mul, G1};
+use kzg::{Fr, G1Mul, G1};
 
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
@@ -41,7 +41,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
         let points = p1_affines::from(points);
 
         let mut scalar_bytes: Vec<u8> = Vec::with_capacity(len * 32);
-        for bytes in scalars.iter().map(|b| b.to_scalar()) {
+        for bytes in scalars.iter().map(|b| b.to_bytes()) {
             scalar_bytes.extend_from_slice(&bytes);
         }
 
@@ -66,7 +66,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
 
         for i in 0..len {
             p_scalars[i] = blst_scalar {
-                b: scalars[i].to_scalar(),
+                b: scalars[i].to_bytes(),
             };
         }
 

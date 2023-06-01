@@ -15,7 +15,7 @@ fn bench_eip_4844_(c: &mut Criterion) {
         c,
         &load_trusted_setup,
         &blob_to_kzg_commitment,
-        &bytes_to_bls_field,
+        &bytes_to_blob,
         &compute_kzg_proof,
         &verify_kzg_proof,
         &compute_blob_kzg_proof,

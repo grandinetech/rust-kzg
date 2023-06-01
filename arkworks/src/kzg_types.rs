@@ -13,13 +13,14 @@ use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
     pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
 };
-use ark_bls12_381::{g1, Fr as ArkFr};
+use ark_bls12_381::{g1, g2, Fr as ArkFr};
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
+use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 use kzg_bench::tests::fk20_proofs::reverse_bit_order;
 use std::ops::MulAssign;
@@ -55,6 +56,34 @@ impl G1 for ArkG1 {
         pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
     }
 
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G1,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G1]| {
+                let affine = g1::G1Affine::from_random_bytes(bytes.as_slice()).unwrap();
+                let projective = affine.into_projective();
+                Ok(pc_g1projective_into_blst_p1(projective).unwrap())
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
+    fn to_bytes(&self) -> [u8; 48] {
+        let projective = blst_p1_into_pc_g1projective(&self.0).unwrap();
+        <[u8; 48]>::try_from(projective.x.0.to_bytes_le()).unwrap()
+    }
+
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         let temp = blst_p1_into_pc_g1projective(&self.0).unwrap()
             + blst_p1_into_pc_g1projective(&b.0).unwrap();
@@ -64,6 +93,10 @@ impl G1 for ArkG1 {
     fn is_inf(&self) -> bool {
         let temp = blst_p1_into_pc_g1projective(&self.0).unwrap();
         temp.z.is_zero()
+    }
+
+    fn is_valid(&self) -> bool {
+        true
     }
 
     fn dbl(&self) -> Self {
@@ -89,19 +122,6 @@ impl G1 for ArkG1 {
 
     fn equals(&self, b: &Self) -> bool {
         self.0.eq(&b.0)
-    }
-}
-
-impl ArkG1 {
-    pub fn from_bytes(bytes: [u8; 48usize]) -> Self {
-        let affine = g1::G1Affine::from_random_bytes(bytes.as_slice()).unwrap();
-        let projective = affine.into_projective();
-        pc_g1projective_into_blst_p1(projective).unwrap()
-    }
-
-    pub fn to_bytes(&self) -> [u8; 48usize] {
-        let projective = blst_p1_into_pc_g1projective(&self.0).unwrap();
-        <[u8; 48]>::try_from(projective.x.0.to_bytes_le()).unwrap()
     }
 }
 
@@ -131,6 +151,29 @@ impl G2 for ArkG2 {
 
     fn negative_generator() -> Self {
         G2_NEGATIVE_GENERATOR
+    }
+
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G2,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G2]| {
+                let affine = g2::G2Affine::from_random_bytes(bytes.as_slice()).unwrap();
+                let projective = affine.into_projective();
+                Ok(pc_g2projective_into_blst_p2(projective).unwrap())
+            })
+    }
+
+    fn to_bytes(&self) -> [u8; 96] {
+        let projective = blst_p2_into_pc_g2projective(self).unwrap();
+        <[u8; 96]>::try_from(projective.x.c0.0.to_bytes_le()).unwrap()
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
@@ -193,6 +236,32 @@ impl Fr for FsFr {
         pc_fr_into_blst_fr(ArkFr::rand(&mut rng))
     }
 
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let ark_fr = ArkFr::from_random_bytes(bytes.as_slice());
+                if let Some(x) = ark_fr {
+                    Ok(pc_fr_into_blst_fr(x))
+                } else {
+                    Ok(FsFr(blst_fr { l: [0, 0, 0, 0] }))
+                }
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
     fn from_u64_arr(u: &[u64; 4]) -> Self {
         let b = ArkFr::from_repr(BigInteger256::new(*u));
         match b {
@@ -204,6 +273,11 @@ impl Fr for FsFr {
     fn from_u64(val: u64) -> Self {
         let fr = ArkFr::from(val);
         pc_fr_into_blst_fr(fr)
+    }
+
+    fn to_bytes(&self) -> [u8; 32] {
+        let big_int_256 = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
+        <[u8; 32]>::try_from(big_int_256.to_bytes_le()).unwrap()
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
@@ -282,22 +356,6 @@ impl Fr for FsFr {
 
     fn equals(&self, b: &Self) -> bool {
         blst_fr_into_pc_fr(self) == blst_fr_into_pc_fr(b)
-    }
-}
-
-impl FsFr {
-    pub fn from_bytes(bytes: [u8; 32usize]) -> Result<Self, u8> {
-        let ark_fr = ArkFr::from_random_bytes(bytes.as_slice());
-        if let Some(x) = ark_fr {
-            Ok(pc_fr_into_blst_fr(x))
-        } else {
-            Ok(FsFr(blst_fr { l: [0, 0, 0, 0] }))
-        }
-    }
-
-    pub fn to_bytes(&self) -> [u8; 32usize] {
-        let big_int_256 = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
-        <[u8; 32]>::try_from(big_int_256.to_bytes_le()).unwrap()
     }
 }
 

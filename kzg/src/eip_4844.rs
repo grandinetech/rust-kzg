@@ -139,23 +139,6 @@ pub fn hash(x: &[u8]) -> [u8; 32] {
     Sha256::digest(x).into()
 }
 
-pub fn bytes32_from_hex(hex: &str) -> [u8; BYTES_PER_FIELD_ELEMENT] {
-    let mut out = [0u8; BYTES_PER_FIELD_ELEMENT];
-    for (i, byte) in out.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&hex[(i * 2)..(i * 2 + 2)], 16).expect("Invalid hex string");
-    }
-    out
-}
-
-pub fn bytes48_from_hex(hex: &str) -> [u8; BYTES_PER_G1] {
-    let mut out = [0u8; BYTES_PER_G1];
-    for (i, byte) in out.iter_mut().enumerate() {
-        let byte_str = &hex[(i * 2)..(i * 2 + 2)];
-        *byte = u8::from_str_radix(byte_str, 16).expect("Invalid hex string");
-    }
-    out
-}
-
 #[macro_export]
 macro_rules! cfg_into_iter {
     ($e: expr) => {{

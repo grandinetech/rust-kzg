@@ -17,9 +17,15 @@ pub trait Fr: Default + Clone {
     #[cfg(feature = "rand")]
     fn rand() -> Self;
 
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String>;
+
+    fn from_hex(hex: &str) -> Result<Self, String>;
+
     fn from_u64_arr(u: &[u64; 4]) -> Self;
 
     fn from_u64(u: u64) -> Self;
+
+    fn to_bytes(&self) -> [u8; 32];
 
     fn to_u64_arr(&self) -> [u64; 4];
 
@@ -60,9 +66,17 @@ pub trait G1: Clone + Default {
     #[cfg(feature = "rand")]
     fn rand() -> Self;
 
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String>;
+
+    fn from_hex(hex: &str) -> Result<Self, String>;
+
+    fn to_bytes(&self) -> [u8; 48];
+
     fn add_or_dbl(&mut self, b: &Self) -> Self;
 
     fn is_inf(&self) -> bool;
+
+    fn is_valid(&self) -> bool;
 
     fn dbl(&self) -> Self;
 
@@ -81,6 +95,10 @@ pub trait G2: Clone + Default {
     fn generator() -> Self;
 
     fn negative_generator() -> Self;
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String>;
+
+    fn to_bytes(&self) -> [u8; 96];
 
     fn add_or_dbl(&mut self, b: &Self) -> Self;
 
