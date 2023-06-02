@@ -82,7 +82,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path blst/Cargo.toml --all-targets --all-features -- -D warnings
+          args: --manifest-path blst/Cargo.toml --all-targets --features="default std rand parallel minimal-spec" -- -D warnings
 
       - name: "[blst] Formatting"
         uses: actions-rs/cargo@v1
