@@ -1,0 +1,52 @@
+name: automatic release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: "[blst] non-parallel"
+        run: |
+          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=blst-portable
+          mv target/release/libblst_rust.a target/release/rust-kzg-blst-non-parallel.a
+
+      - name: "[blst] non-parallel, force-adx"
+        run: |
+          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=blst-force-adx
+          mv target/release/libblst_rust.a target/release/rust-kzg-blst-non-parallel-force-adx.a
+
+      - name: "[blst] parallel"
+        run: |
+          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=parallel,blst-portable
+          mv target/release/libblst_rust.a target/release/rust-kzg-blst-parallel.a
+
+      - name: "[blst] parallel, force-adx"
+        run: |
+          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=parallel,blst-force-adx
+          mv target/release/libblst_rust.a target/release/rust-kzg-blst-parallel-force-adx.a
+
+      - name: "[blst] git patches"
+        run: |
+          zip rust-kzg-blst-git-patches.zip blst/*.patch
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: "Automatic Release"
+          files: |
+            LICENSE
+            target/release/rust-kzg-blst-non-parallel.a
+            target/release/rust-kzg-blst-non-parallel-force-adx.a
+            target/release/rust-kzg-blst-parallel.a
+            target/release/rust-kzg-blst-parallel-force-adx.a
+            rust-kzg-blst-git-patches.zip
