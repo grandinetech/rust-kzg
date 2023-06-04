@@ -2,4 +2,4 @@
 channel = 'stable-2022-11-03'
 profile = 'minimal'
 components = ['clippy', 'rustfmt']
-targets = ["wasm32-unknown-unknown"]
+targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-gnu", "wasm32-unknown-unknown"]

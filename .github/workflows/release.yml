@@ -13,29 +13,58 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: "[blst] non-parallel"
+      - name: Install packages
         run: |
-          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=blst-portable
-          mv target/release/libblst_rust.a target/release/rust-kzg-blst-non-parallel.a
+          sudo apt install -y mingw-w64
 
-      - name: "[blst] non-parallel, force-adx"
+      - name: "[blst] Prepare artifact folders"
         run: |
-          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=blst-force-adx
-          mv target/release/libblst_rust.a target/release/rust-kzg-blst-non-parallel-force-adx.a
+          # Linux
+          mkdir -p staging/linux/non-parallel
+          mkdir -p staging/linux/non-parallel-force-adx
+          mkdir -p staging/linux/parallel
+          mkdir -p staging/linux/parallel-force-adx
+          # Windows
+          mkdir -p staging/windows/non-parallel
+          mkdir -p staging/windows/non-parallel-force-adx
+          mkdir -p staging/windows/parallel
+          mkdir -p staging/windows/parallel-force-adx
 
-      - name: "[blst] parallel"
+      - name: "[blst] Build Linux"
         run: |
-          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=parallel,blst-portable
-          mv target/release/libblst_rust.a target/release/rust-kzg-blst-parallel.a
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=blst-portable
+          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/non-parallel/rust-kzg-blst.a
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=blst-force-adx
+          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/non-parallel-force-adx/rust-kzg-blst.a
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=parallel,blst-portable
+          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/parallel/rust-kzg-blst.a
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=parallel,blst-force-adx
+          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/parallel-force-adx/rust-kzg-blst.a
 
-      - name: "[blst] parallel, force-adx"
+      - name: "[blst] Compress Linux artifacts"
         run: |
-          cargo rustc --manifest-path blst/Cargo.toml --release --crate-type=staticlib --features=parallel,blst-force-adx
-          mv target/release/libblst_rust.a target/release/rust-kzg-blst-parallel-force-adx.a
+          cp LICENSE staging/linux/
+          cp blst/*.patch staging/linux/
+          cd staging/linux/
+          zip rust-kzg-blst-linux.zip -r *
 
-      - name: "[blst] git patches"
+      - name: "[blst] Build Windows"
         run: |
-          zip rust-kzg-blst-git-patches.zip blst/*.patch
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=blst-portable
+          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/non-parallel/rust-kzg-blst.a
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=blst-force-adx
+          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/non-parallel-force-adx/rust-kzg-blst.a
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=parallel,blst-portable
+          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/parallel/rust-kzg-blst.a
+          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=parallel,blst-force-adx
+          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/parallel-force-adx/rust-kzg-blst.a
+
+      - name: "[blst] Compress Windows artifacts"
+        run: |
+          cp LICENSE staging/windows/
+          cp blst/*.patch staging/windows/
+          cd staging/windows/
+          zip rust-kzg-blst-windows.zip -r *
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -44,9 +73,5 @@ jobs:
           prerelease: false
           title: "Automatic Release"
           files: |
-            LICENSE
-            target/release/rust-kzg-blst-non-parallel.a
-            target/release/rust-kzg-blst-non-parallel-force-adx.a
-            target/release/rust-kzg-blst-parallel.a
-            target/release/rust-kzg-blst-parallel-force-adx.a
-            rust-kzg-blst-git-patches.zip
+            staging/linux/rust-kzg-blst-linux.zip
+            staging/windows/rust-kzg-blst-windows.zip
