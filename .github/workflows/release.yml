@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  C_KZG_4844_GIT_HASH: '5703f6f3536b7692616bc289ac3f3867ab8db9d8'
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -46,7 +49,7 @@ jobs:
           cp LICENSE staging/linux/
           cp blst/*.patch staging/linux/
           cd staging/linux/
-          zip rust-kzg-blst-linux.zip -r *
+          zip -rz rust-kzg-blst-linux.zip * <<< "Compatible with c-kzg-4844 git hash: $C_KZG_4844_GIT_HASH."
 
       - name: "[blst] Build Windows"
         run: |
@@ -64,7 +67,7 @@ jobs:
           cp LICENSE staging/windows/
           cp blst/*.patch staging/windows/
           cd staging/windows/
-          zip rust-kzg-blst-windows.zip -r *
+          zip -rz rust-kzg-blst-windows.zip * <<< "Compatible with c-kzg-4844 git hash: $C_KZG_4844_GIT_HASH."
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
