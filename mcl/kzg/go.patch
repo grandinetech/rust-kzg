@@ -24,7 +24,7 @@ index aa7f141..1357122 100644
 +// #endif
 +// #include <stdlib.h>
 +// #include "c_kzg_4844.h"
-+// #cgo LDFLAGS: -L${SRCDIR}/../../../../../target/release -L${SRCDIR}/../../lib -lmcl_rust -lstdc++ -lblst -lm
++// #cgo LDFLAGS: -L${SRCDIR}/../../../../../target/release -L${SRCDIR}/../../lib -l:rust_kzg_mcl.a -lstdc++ -lblst -lm
  import "C"
  
  import (

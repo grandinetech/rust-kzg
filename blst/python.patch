@@ -40,7 +40,7 @@ index bf969cb..9179129 100644
 -                library_dirs=["../../lib"],
 -                libraries=["blst"])])
 +                library_dirs=["../../lib", "../../../../target/release"],
-+                libraries=["blst_rust"])])
++                libraries=[":rust_kzg_blst.a"])])
  
  if __name__ == "__main__":
      main()
