@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::poly::*;
-    use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::poly::ZPoly;
-    use zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+    use rust_kzg_zkcrypto::poly::ZPoly;
+    use rust_kzg_zkcrypto::zkfr::blsScalar;
 
     #[test]
     fn create_poly_of_length_ten_() {

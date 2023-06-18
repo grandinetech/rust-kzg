@@ -4,9 +4,9 @@ mod tests {
         check_test_data, reduce_partials_random, test_reduce_partials, zero_poly_252,
         zero_poly_all_but_one, zero_poly_known, zero_poly_random,
     };
-    use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::poly::ZPoly;
-    use zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+    use rust_kzg_zkcrypto::poly::ZPoly;
+    use rust_kzg_zkcrypto::zkfr::blsScalar;
 
     #[test]
     fn test_reduce_partials_() {

@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::recover::bench_recover;
 
-use zkcrypto::fftsettings::ZkFFTSettings;
-use zkcrypto::poly::ZPoly;
-use zkcrypto::zkfr::blsScalar;
+use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+use rust_kzg_zkcrypto::poly::ZPoly;
+use rust_kzg_zkcrypto::zkfr::blsScalar;
 
 pub fn bench_recover_(c: &mut Criterion) {
     bench_recover::<blsScalar, ZkFFTSettings, ZPoly, ZPoly>(c)

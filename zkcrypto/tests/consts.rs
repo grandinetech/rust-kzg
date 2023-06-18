@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::consts::*;
-    use zkcrypto::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
-    use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::consts::{expand_root_of_unity, SCALE2_ROOT_OF_UNITY};
+    use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+    use rust_kzg_zkcrypto::zkfr::blsScalar;
 
     #[test]
     fn roots_of_unity_out_of_bounds_fails_() {

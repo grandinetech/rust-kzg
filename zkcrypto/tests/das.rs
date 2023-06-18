@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::das::{das_extension_test_known, das_extension_test_random};
-    use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+    use rust_kzg_zkcrypto::zkfr::blsScalar;
 
     #[test]
     fn das_extension_test_known_() {

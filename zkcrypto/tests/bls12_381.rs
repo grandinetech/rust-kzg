@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::bls12_381::*;
-    use zkcrypto::kzg_types::{pairings_verify, ZkG1Projective, ZkG2Projective};
-    use zkcrypto::utils::log_2_byte;
-    use zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::kzg_types::{pairings_verify, ZkG1Projective, ZkG2Projective};
+    use rust_kzg_zkcrypto::utils::log_2_byte;
+    use rust_kzg_zkcrypto::zkfr::blsScalar;
 
     #[test]
     pub fn log_2_byte_works_() {

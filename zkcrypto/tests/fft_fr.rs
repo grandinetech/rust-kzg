@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fft_fr::*;
-    use zkcrypto::fft_fr::{fft_fr_fast, fft_fr_slow};
-    use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::fft_fr::{fft_fr_fast, fft_fr_slow};
+    use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+    use rust_kzg_zkcrypto::zkfr::blsScalar;
 
     #[test]
     fn compare_sft_fft_() {

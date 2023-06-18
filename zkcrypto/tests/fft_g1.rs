@@ -2,11 +2,11 @@
 mod tests {
     use kzg::G1;
     use kzg_bench::tests::fft_g1::{compare_ft_fft, roundtrip_fft, stride_fft};
-    use zkcrypto::fft_g1::{fft_g1_fast, fft_g1_slow};
-    use zkcrypto::fftsettings::ZkFFTSettings;
-    use zkcrypto::kzg_types::ZkG1Projective;
-    use zkcrypto::kzg_types::G1_GENERATOR;
-    use zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::fft_g1::{fft_g1_fast, fft_g1_slow};
+    use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+    use rust_kzg_zkcrypto::kzg_types::ZkG1Projective;
+    use rust_kzg_zkcrypto::kzg_types::G1_GENERATOR;
+    use rust_kzg_zkcrypto::zkfr::blsScalar;
 
     fn make_data(n: usize) -> Vec<ZkG1Projective> {
         if n == 0 {
