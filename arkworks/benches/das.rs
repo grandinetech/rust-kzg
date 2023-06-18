@@ -1,7 +1,7 @@
-use arkworks::kzg_proofs::FFTSettings;
-use arkworks::kzg_types::FsFr;
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::das::bench_das_extension;
+use rust_kzg_arkworks::kzg_proofs::FFTSettings;
+use rust_kzg_arkworks::kzg_types::FsFr;
 
 fn bench_das_extension_(c: &mut Criterion) {
     bench_das_extension::<FsFr, FFTSettings>(c);

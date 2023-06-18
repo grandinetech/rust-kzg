@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use arkworks::kzg_proofs::FFTSettings;
-    use arkworks::kzg_types::FsFr;
-    use arkworks::utils::PolyData;
     use kzg_bench::tests::poly::{
         create_poly_of_length_ten, poly_div_by_zero, poly_div_fast_test, poly_div_long_test,
         poly_div_random, poly_eval_0_check, poly_eval_check, poly_eval_nil_check,
         poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test,
         poly_mul_random, poly_test_div,
     };
+    use rust_kzg_arkworks::kzg_proofs::FFTSettings;
+    use rust_kzg_arkworks::kzg_types::FsFr;
+    use rust_kzg_arkworks::utils::PolyData;
 
     #[test]
     fn create_poly_of_length_ten_() {

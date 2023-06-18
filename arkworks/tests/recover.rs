@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod recover_tests {
-    use arkworks::kzg_proofs::FFTSettings;
-    use arkworks::kzg_types::FsFr as Fr;
-    use arkworks::utils::PolyData;
     use kzg_bench::tests::recover::*;
+    use rust_kzg_arkworks::kzg_proofs::FFTSettings;
+    use rust_kzg_arkworks::kzg_types::FsFr as Fr;
+    use rust_kzg_arkworks::utils::PolyData;
 
     #[test]
     fn recover_simple_() {

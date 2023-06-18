@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-    use arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
-    use arkworks::utils::PolyData;
     use kzg_bench::tests::kzg_proofs::{
         commit_to_nil_poly, commit_to_too_long_poly, proof_multi, proof_single,
     };
+    use rust_kzg_arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
+    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
+    use rust_kzg_arkworks::utils::PolyData;
 
     #[test]
     fn proof_single_() {
