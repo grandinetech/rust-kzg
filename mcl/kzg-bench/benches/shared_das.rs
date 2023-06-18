@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::das::bench_das_extension;
-use mcl_rust::data_types::fr::Fr;
-use mcl_rust::fk20_fft::FFTSettings;
-use mcl_rust::mcl_methods::init;
-use mcl_rust::CurveType;
+use rust_kzg_mcl::data_types::fr::Fr;
+use rust_kzg_mcl::fk20_fft::FFTSettings;
+use rust_kzg_mcl::mcl_methods::init;
+use rust_kzg_mcl::CurveType;
 
 fn bench_das_extension_(c: &mut Criterion) {
     assert!(init(CurveType::BLS12_381));

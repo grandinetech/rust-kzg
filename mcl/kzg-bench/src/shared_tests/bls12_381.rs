@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::bls12_381::*;
-    use mcl_rust::data_types::fr::Fr;
-    use mcl_rust::data_types::g1::g1_linear_combination;
-    use mcl_rust::data_types::g1::G1;
-    use mcl_rust::data_types::g2::G2;
-    use mcl_rust::kzg10::Curve;
-    use mcl_rust::mcl_methods::init;
-    use mcl_rust::utilities::log_2_byte;
-    use mcl_rust::CurveType;
+    use rust_kzg_mcl::data_types::fr::Fr;
+    use rust_kzg_mcl::data_types::g1::g1_linear_combination;
+    use rust_kzg_mcl::data_types::g1::G1;
+    use rust_kzg_mcl::data_types::g2::G2;
+    use rust_kzg_mcl::kzg10::Curve;
+    use rust_kzg_mcl::mcl_methods::init;
+    use rust_kzg_mcl::utilities::log_2_byte;
+    use rust_kzg_mcl::CurveType;
 
     #[test]
     pub fn log_2_byte_works_() {

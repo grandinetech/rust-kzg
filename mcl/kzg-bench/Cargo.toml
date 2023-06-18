@@ -1,10 +1,10 @@
 [package]
-name = "mcl_kzg_bench"
+name = "rust-kzg-mcl-bench"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-mcl_rust = { path = '../kzg' }
+rust-kzg-mcl = { path = '../kzg' }
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 kzg = { path = "../../kzg" }
 kzg-bench = { path = "../../kzg-bench" }

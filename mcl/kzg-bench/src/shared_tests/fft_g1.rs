@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod fft_g1_tests {
     use kzg_bench::tests::fft_g1::*;
-    use mcl_rust::data_types::fr::Fr;
-    use mcl_rust::data_types::g1::G1;
-    use mcl_rust::fk20_fft::{make_data, FFTSettings};
-    use mcl_rust::mcl_methods::init;
-    use mcl_rust::CurveType;
+    use rust_kzg_mcl::data_types::fr::Fr;
+    use rust_kzg_mcl::data_types::g1::G1;
+    use rust_kzg_mcl::fk20_fft::{make_data, FFTSettings};
+    use rust_kzg_mcl::mcl_methods::init;
+    use rust_kzg_mcl::CurveType;
 
     #[test]
     fn roundtrip_fft_g1_() {
