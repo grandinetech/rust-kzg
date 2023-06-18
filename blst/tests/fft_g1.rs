@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use blst_rust::consts::G1_GENERATOR;
-    use blst_rust::fft_g1::{fft_g1_fast, fft_g1_slow};
-    use blst_rust::types::fft_settings::FsFFTSettings;
-    use blst_rust::types::fr::FsFr;
-    use blst_rust::types::g1::FsG1;
     use kzg::G1;
     use kzg_bench::tests::fft_g1::{compare_ft_fft, roundtrip_fft, stride_fft};
+    use rust_kzg_blst::consts::G1_GENERATOR;
+    use rust_kzg_blst::fft_g1::{fft_g1_fast, fft_g1_slow};
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::g1::FsG1;
 
     fn make_data(n: usize) -> Vec<FsG1> {
         if n == 0 {

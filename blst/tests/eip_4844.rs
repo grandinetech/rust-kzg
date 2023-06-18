@@ -1,15 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use blst_rust::eip_4844::{
-        blob_to_kzg_commitment_rust, blob_to_polynomial_rust, bytes_to_blob,
-        compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
-        evaluate_polynomial_in_evaluation_form_rust, load_trusted_setup_filename_rust,
-        verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
-    };
-    use blst_rust::types::{
-        fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
-        poly::FsPoly,
-    };
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
@@ -24,6 +14,16 @@ mod tests {
         test_vectors_compute_blob_kzg_proof, test_vectors_compute_kzg_proof,
         test_vectors_verify_blob_kzg_proof, test_vectors_verify_blob_kzg_proof_batch,
         test_vectors_verify_kzg_proof,
+    };
+    use rust_kzg_blst::eip_4844::{
+        blob_to_kzg_commitment_rust, blob_to_polynomial_rust, bytes_to_blob,
+        compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
+        evaluate_polynomial_in_evaluation_form_rust, load_trusted_setup_filename_rust,
+        verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
+    };
+    use rust_kzg_blst::types::{
+        fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
+        poly::FsPoly,
     };
 
     #[test]

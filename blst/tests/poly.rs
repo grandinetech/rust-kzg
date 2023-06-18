@@ -3,15 +3,15 @@
 
 #[cfg(test)]
 mod tests {
-    use blst_rust::types::fft_settings::FsFFTSettings;
-    use blst_rust::types::fr::FsFr;
-    use blst_rust::types::poly::FsPoly;
     use kzg_bench::tests::poly::{
         create_poly_of_length_ten, poly_div_by_zero, poly_div_fast_test, poly_div_long_test,
         poly_div_random, poly_eval_0_check, poly_eval_check, poly_eval_nil_check,
         poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test,
         poly_mul_random, poly_test_div,
     };
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::poly::FsPoly;
 
     // Local tests
     // #[test]

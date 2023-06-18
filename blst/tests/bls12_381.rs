@@ -8,11 +8,11 @@ mod tests {
         p2_add_or_dbl_works, p2_mul_works, p2_sub_works, pairings_work,
     };
 
-    use blst_rust::kzg_proofs::{g1_linear_combination, pairings_verify};
-    use blst_rust::types::fr::FsFr;
-    use blst_rust::types::g1::FsG1;
-    use blst_rust::types::g2::FsG2;
-    use blst_rust::utils::log_2_byte;
+    use rust_kzg_blst::kzg_proofs::{g1_linear_combination, pairings_verify};
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::g1::FsG1;
+    use rust_kzg_blst::types::g2::FsG2;
+    use rust_kzg_blst::utils::log_2_byte;
 
     #[test]
     fn log_2_byte_works_() {

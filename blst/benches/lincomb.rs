@@ -1,8 +1,8 @@
-use blst_rust::kzg_proofs::g1_linear_combination;
-use blst_rust::types::fr::FsFr;
-use blst_rust::types::g1::FsG1;
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::lincomb::bench_g1_lincomb;
+use rust_kzg_blst::kzg_proofs::g1_linear_combination;
+use rust_kzg_blst::types::fr::FsFr;
+use rust_kzg_blst::types::g1::FsG1;
 
 fn bench_g1_lincomb_(c: &mut Criterion) {
     bench_g1_lincomb::<FsFr, FsG1>(c, &g1_linear_combination);

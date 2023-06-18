@@ -1,7 +1,7 @@
-use blst_rust::types::fft_settings::FsFFTSettings;
-use blst_rust::types::fr::FsFr;
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::das::bench_das_extension;
+use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+use rust_kzg_blst::types::fr::FsFr;
 
 fn bench_das_extension_(c: &mut Criterion) {
     bench_das_extension::<FsFr, FsFFTSettings>(c)
