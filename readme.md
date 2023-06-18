@@ -27,7 +27,7 @@ Currently, the ECC backend is set by pointing Cargo to the corresponding crate:
 
 ```
 [dependencies]
-kzg = { git = "https://github.com/sifraitech/rust-kzg.git", package = "blst_rust" }
+kzg = { git = "https://github.com/sifraitech/rust-kzg.git", package = "rust-kzg-blst" }
 kzg_traits = { git = "https://github.com/sifraitech/rust-kzg.git", package = "kzg" }
 ```
 
