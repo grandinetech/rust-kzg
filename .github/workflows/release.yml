@@ -36,13 +36,13 @@ jobs:
       - name: "[blst] Build Linux"
         run: |
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=blst-portable
-          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/non-parallel/rust-kzg-blst.a
+          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/non-parallel/rust_kzg_blst.a
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=blst-force-adx
-          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/non-parallel-force-adx/rust-kzg-blst.a
+          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/non-parallel-force-adx/rust_kzg_blst.a
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=parallel,blst-portable
-          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/parallel/rust-kzg-blst.a
+          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/parallel/rust_kzg_blst.a
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=parallel,blst-force-adx
-          mv target/x86_64-unknown-linux-gnu/release/libblst_rust.a staging/linux/parallel-force-adx/rust-kzg-blst.a
+          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/parallel-force-adx/rust_kzg_blst.a
 
       - name: "[blst] Compress Linux artifacts"
         run: |
@@ -54,13 +54,13 @@ jobs:
       - name: "[blst] Build Windows"
         run: |
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=blst-portable
-          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/non-parallel/rust-kzg-blst.a
+          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/non-parallel/rust_kzg_blst.a
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=blst-force-adx
-          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/non-parallel-force-adx/rust-kzg-blst.a
+          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/non-parallel-force-adx/rust_kzg_blst.a
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=parallel,blst-portable
-          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/parallel/rust-kzg-blst.a
+          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/parallel/rust_kzg_blst.a
           cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=parallel,blst-force-adx
-          mv target/x86_64-pc-windows-gnu/release/libblst_rust.a staging/windows/parallel-force-adx/rust-kzg-blst.a
+          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/parallel-force-adx/rust_kzg_blst.a
 
       - name: "[blst] Compress Windows artifacts"
         run: |
