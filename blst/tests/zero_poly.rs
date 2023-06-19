@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use blst_rust::types::fft_settings::FsFFTSettings;
-    use blst_rust::types::fr::FsFr;
-    use blst_rust::types::poly::FsPoly;
     use kzg_bench::tests::zero_poly::{
         check_test_data, reduce_partials_random, test_reduce_partials, zero_poly_252,
         zero_poly_all_but_one, zero_poly_known, zero_poly_random,
     };
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::poly::FsPoly;
 
     #[test]
     fn test_reduce_partials_() {

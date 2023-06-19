@@ -1,12 +1,12 @@
 // use std::{mem, vec};
-use mcl_rust::mcl_methods::*;
+use rust_kzg_mcl::mcl_methods::*;
 use std::mem;
-// use mcl_rust::utilities::*;
-// use mcl_rust::kzg10::*;
-use mcl_rust::data_types::{fp::*, fp2::*, fr::*, g1::*, g2::*, gt::*};
-use mcl_rust::CurveType;
-// use mcl_rust::fk20_fft::*;
-// use mcl_rust::fk20_matrix::*;
+// use rust_kzg_mcl::utilities::*;
+// use rust_kzg_mcl::kzg10::*;
+use rust_kzg_mcl::data_types::{fp::*, fp2::*, fr::*, g1::*, g2::*, gt::*};
+use rust_kzg_mcl::CurveType;
+// use rust_kzg_mcl::fk20_fft::*;
+// use rust_kzg_mcl::fk20_matrix::*;
 
 #[test]
 #[allow(clippy::many_single_char_names)]

@@ -1,15 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use blst_rust::types::fft_settings::FsFFTSettings;
-    use blst_rust::types::fk20_multi_settings::FsFK20MultiSettings;
-    use blst_rust::types::fk20_single_settings::FsFK20SingleSettings;
-    use blst_rust::types::fr::FsFr;
-    use blst_rust::types::g1::FsG1;
-    use blst_rust::types::g2::FsG2;
-    use blst_rust::types::kzg_settings::FsKZGSettings;
-    use blst_rust::types::poly::FsPoly;
-    use blst_rust::utils::generate_trusted_setup;
     use kzg_bench::tests::fk20_proofs::*;
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fk20_multi_settings::FsFK20MultiSettings;
+    use rust_kzg_blst::types::fk20_single_settings::FsFK20SingleSettings;
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::g1::FsG1;
+    use rust_kzg_blst::types::g2::FsG2;
+    use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
+    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_blst::utils::generate_trusted_setup;
 
     #[test]
     fn test_fk_single() {

@@ -1,5 +1,5 @@
 [package]
-name = "blst_rust"
+name = "rust-kzg-blst"
 version = "0.1.0"
 edition = "2021"
 

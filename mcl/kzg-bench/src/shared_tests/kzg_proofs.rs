@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod kzg_proofs_tests {
     use kzg_bench::tests::kzg_proofs::*;
-    use mcl_rust::data_types::{fr::Fr, g1::G1, g2::G2};
-    use mcl_rust::fk20_fft::FFTSettings;
-    use mcl_rust::kzg10::Polynomial;
-    use mcl_rust::kzg_settings::KZGSettings;
-    use mcl_rust::mcl_methods::init;
-    use mcl_rust::CurveType;
+    use rust_kzg_mcl::data_types::{fr::Fr, g1::G1, g2::G2};
+    use rust_kzg_mcl::fk20_fft::FFTSettings;
+    use rust_kzg_mcl::kzg10::Polynomial;
+    use rust_kzg_mcl::kzg_settings::KZGSettings;
+    use rust_kzg_mcl::mcl_methods::init;
+    use rust_kzg_mcl::CurveType;
 
     #[test]
     fn proof_single_() {

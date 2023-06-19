@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::lincomb::bench_g1_lincomb;
-use zkcrypto::curve::multiscalar_mul::msm_variable_base;
-use zkcrypto::kzg_types::ZkG1Projective;
-use zkcrypto::zkfr::blsScalar;
+use rust_kzg_zkcrypto::curve::multiscalar_mul::msm_variable_base;
+use rust_kzg_zkcrypto::kzg_types::ZkG1Projective;
+use rust_kzg_zkcrypto::zkfr::blsScalar;
 
 fn g1_linear_combination(
     out: &mut ZkG1Projective,

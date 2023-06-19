@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use arkworks::fft_g1::{g1_linear_combination, log_2_byte};
-    use arkworks::kzg_proofs::pairings_verify;
-    use arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
     use kzg_bench::tests::bls12_381::*;
+    use rust_kzg_arkworks::fft_g1::{g1_linear_combination, log_2_byte};
+    use rust_kzg_arkworks::kzg_proofs::pairings_verify;
+    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
 
     #[test]
     pub fn log_2_byte_works_() {

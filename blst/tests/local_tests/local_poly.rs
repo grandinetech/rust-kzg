@@ -2,8 +2,8 @@ use kzg::{Fr, Poly};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 
-use blst_rust::types::fr::FsFr;
-use blst_rust::types::poly::FsPoly;
+use rust_kzg_blst::types::fr::FsFr;
+use rust_kzg_blst::types::poly::FsPoly;
 
 pub fn create_poly_of_length_ten() {
     let poly = FsPoly::new(10).unwrap();

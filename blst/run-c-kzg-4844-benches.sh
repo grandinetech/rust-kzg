@@ -28,7 +28,7 @@ done
 
 ###################### building static libs ######################
 
-print_msg "Compiling libblst_rust"
+print_msg "Compiling rust-kzg-blst"
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
   cargo rustc --release --crate-type=staticlib --features=parallel
@@ -36,6 +36,8 @@ else
   print_msg "Using non-parallel version"
   cargo rustc --release --crate-type=staticlib
 fi
+
+mv ../target/release/librust_kzg_blst.a ../target/release/rust_kzg_blst.a
 
 ###################### cloning c-kzg-4844 ######################
 

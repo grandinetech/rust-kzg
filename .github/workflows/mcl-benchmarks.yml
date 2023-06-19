@@ -24,27 +24,27 @@ jobs:
         with:
           go-version: ^1.19
 
-      - name: "[mcl10-rust] Build native libs for Linux"
+      - name: "[mcl] Build native libs for Linux"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd mcl/kzg && bash build.sh
 
-      - name: "[mcl10-rust] Benchmark"
+      - name: "[mcl] Benchmark"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo bench --manifest-path mcl/kzg-bench/Cargo.toml
 
-      - name: "[mcl10-rust] Benchmark (parallel)"
+      - name: "[mcl] Benchmark (parallel)"
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel
+          cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features rust-kzg-mcl/parallel
 
-      #- name: "[mcl10-rust] Benchmark (c-kzg-4844)"
+      #- name: "[mcl] Benchmark (c-kzg-4844)"
       #  if: matrix.os == 'ubuntu-latest'
       #  run: |
       #    cd mcl/kzg && bash run-c-kzg-4844-benches.sh
 
-      #- name: "[mcl10-rust] Benchmark (c-kzg-4844 parallel)"
+      #- name: "[mcl] Benchmark (c-kzg-4844 parallel)"
       #  if: matrix.os == 'ubuntu-latest'
       #  run: |
       #    cd mcl/kzg && bash run-c-kzg-4844-benches.sh --parallel

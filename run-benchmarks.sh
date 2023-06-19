@@ -51,6 +51,7 @@ cd rust-kzg || exit
 # 2.2. prepare rust-kzg with blst backend and c-kzg-4844
 cd blst || exit
 cargo rustc --release --crate-type=staticlib --features=parallel
+mv ../target/release/librust_kzg_blst.a ../target/release/rust_kzg_blst.a
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout 5703f6f3536b7692616bc289ac3f3867ab8db9d8 # TODO: keep this updated
@@ -128,7 +129,7 @@ do
 
   # 3.10. rust-kzg with mcl backend (parallel)
   print_msg "rust-kzg with mcl backend (parallel)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features mcl_rust/parallel >> ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features rust-kzg-mcl/parallel >> ../"$paste_file"
 
   # 3.11. rust binding (rust-kzg with blst backend)
   print_msg "rust binding (rust-kzg with blst backend)" ../"$paste_file"

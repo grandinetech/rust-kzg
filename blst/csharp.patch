@@ -16,7 +16,7 @@ index d5fa3dc..0a77983 100644
  FIELD_ELEMENTS_PER_BLOB ?= 4096
  INCLUDE_DIRS = ../../src ../../blst/bindings
 -TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
-+TARGETS = ckzg.c ../../../../target/release/libblst_rust.a
++TARGETS = ckzg.c ../../../../target/release/rust_kzg_blst.a
  
  CFLAGS += -O2 -Wall -Wextra -shared
  CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)

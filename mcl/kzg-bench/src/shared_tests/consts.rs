@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod consts_tests {
     use kzg_bench::tests::consts::*;
-    use mcl_rust::data_types::fr::Fr;
-    use mcl_rust::fk20_fft::{
+    use rust_kzg_mcl::data_types::fr::Fr;
+    use rust_kzg_mcl::fk20_fft::{
         expand_root_of_unity, init_globals, FFTSettings, SCALE_2_ROOT_OF_UNITY,
     };
-    use mcl_rust::mcl_methods::init;
-    use mcl_rust::CurveType;
+    use rust_kzg_mcl::mcl_methods::init;
+    use rust_kzg_mcl::CurveType;
 
     pub fn expand_root_of_unityarr(root: &Fr, _width: usize) -> Result<Vec<Fr>, String> {
         Ok(expand_root_of_unity(root))

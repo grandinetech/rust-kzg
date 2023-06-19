@@ -15,7 +15,7 @@ index 4eb21ce..184e501 100644
  INCLUDE_DIRS = ../../src ../../blst/bindings
 
 -TARGETS=c_kzg_4844_jni.c ../../src/c_kzg_4844.c ../../lib/libblst.a
-+TARGETS=c_kzg_4844_jni.c ../../../../target/release/libblst_rust.a
++TARGETS=c_kzg_4844_jni.c ../../../../target/release/rust_kzg_blst.a
 
  CC_FLAGS=
  OPTIMIZATION_LEVEL=-O2

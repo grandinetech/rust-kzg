@@ -1,13 +1,5 @@
 #[cfg(test)]
 pub mod tests {
-    use arkworks::eip_4844::{
-        blob_to_kzg_commitment, blob_to_polynomial, bytes_to_blob, compute_blob_kzg_proof,
-        compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form,
-        load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
-    };
-    use arkworks::kzg_proofs::{FFTSettings, KZGSettings};
-    use arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
-    use arkworks::utils::PolyData;
     #[cfg(not(feature = "minimal-spec"))]
     use kzg_bench::tests::eip_4844::compute_and_verify_kzg_proof_within_domain_test;
     use kzg_bench::tests::eip_4844::{
@@ -18,6 +10,14 @@ pub mod tests {
         compute_and_verify_kzg_proof_round_trip_test, compute_kzg_proof_test, compute_powers_test,
         verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
+    use rust_kzg_arkworks::eip_4844::{
+        blob_to_kzg_commitment, blob_to_polynomial, bytes_to_blob, compute_blob_kzg_proof,
+        compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form,
+        load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
+    };
+    use rust_kzg_arkworks::kzg_proofs::{FFTSettings, KZGSettings};
+    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
+    use rust_kzg_arkworks::utils::PolyData;
 
     #[test]
     pub fn bytes_to_bls_field_test_() {

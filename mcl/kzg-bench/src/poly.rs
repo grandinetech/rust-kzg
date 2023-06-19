@@ -1,7 +1,7 @@
-use mcl_rust::data_types::fr::Fr;
-use mcl_rust::kzg10::*;
-use mcl_rust::mcl_methods::init;
-use mcl_rust::CurveType;
+use rust_kzg_mcl::data_types::fr::Fr;
+use rust_kzg_mcl::kzg10::*;
+use rust_kzg_mcl::mcl_methods::init;
+use rust_kzg_mcl::CurveType;
 use std::vec;
 
 #[test]

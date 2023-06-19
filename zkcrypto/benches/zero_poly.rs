@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::zero_poly::bench_zero_poly;
-use zkcrypto::fftsettings::ZkFFTSettings;
-use zkcrypto::poly::ZPoly;
-use zkcrypto::zkfr::blsScalar;
+use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
+use rust_kzg_zkcrypto::poly::ZPoly;
+use rust_kzg_zkcrypto::zkfr::blsScalar;
 
 fn bench_zero_poly_(c: &mut Criterion) {
     bench_zero_poly::<blsScalar, ZkFFTSettings, ZPoly>(c);

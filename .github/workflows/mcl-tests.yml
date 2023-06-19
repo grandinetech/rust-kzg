@@ -34,50 +34,50 @@ jobs:
         with:
           go-version: ^1.19
 
-      - name: "[mcl10-rust] Build native libs for Linux"
+      - name: "[mcl] Build native libs for Linux"
         if: matrix.os == 'ubuntu-latest'
         run: |
           cd mcl/kzg && bash build.sh
 
-      - name: "[mcl10-rust] Tests (minimal preset)"
+      - name: "[mcl] Tests (minimal preset)"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --package mcl_kzg_bench --lib shared_tests::eip_4844::tests --no-fail-fast --features minimal-spec -- --test-threads 1
+          args: --package rust-kzg-mcl-bench --lib shared_tests::eip_4844::tests --no-fail-fast --features minimal-spec -- --test-threads 1
 
-      - name: "[mcl10-rust] Tests (mainnet preset)"
+      - name: "[mcl] Tests (mainnet preset)"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast -- --test-threads 1
 
-      - name: "[mcl10-rust] Tests (mainnet preset, parallel)"
+      - name: "[mcl] Tests (mainnet preset, parallel)"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features mcl_rust/parallel -- --test-threads 1
+          args: shared_tests --manifest-path mcl/kzg-bench/Cargo.toml --no-fail-fast --features rust-kzg-mcl/parallel -- --test-threads 1
 
-      #- name: "[mcl10-rust] Tests (c-kzg-4844)"
+      #- name: "[mcl] Tests (c-kzg-4844)"
       #  if: matrix.os == 'ubuntu-latest'
       #  run: |
       #    cd mcl/kzg && bash run-c-kzg-4844-tests.sh
 
-      #- name: "[mcl10-rust] Tests (c-kzg-4844 parallel)"
+      #- name: "[mcl] Tests (c-kzg-4844 parallel)"
       #  if: matrix.os == 'ubuntu-latest'
       #  run: |
       #    cd mcl/kzg && bash run-c-kzg-4844-tests.sh --parallel
 
-      - name: "[mcl10-rust] Clippy"
+      - name: "[mcl] Clippy"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --manifest-path mcl/kzg/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: "[mcl10-rust] Formatting"
+      - name: "[mcl] Formatting"
         if: matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:

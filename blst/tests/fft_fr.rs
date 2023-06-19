@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use blst_rust::fft_fr::{fft_fr_fast, fft_fr_slow};
-    use blst_rust::types::fft_settings::FsFFTSettings;
-    use blst_rust::types::fr::FsFr;
     use kzg_bench::tests::fft_fr::{compare_sft_fft, inverse_fft, roundtrip_fft, stride_fft};
+    use rust_kzg_blst::fft_fr::{fft_fr_fast, fft_fr_slow};
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fr::FsFr;
 
     #[test]
     fn compare_sft_fft_() {

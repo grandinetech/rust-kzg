@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod zero_poly_tests {
     use kzg_bench::tests::zero_poly::*;
-    use mcl_rust::data_types::fr::Fr;
-    use mcl_rust::fk20_fft::FFTSettings;
-    use mcl_rust::kzg10::Polynomial;
-    use mcl_rust::mcl_methods::init;
-    use mcl_rust::CurveType;
+    use rust_kzg_mcl::data_types::fr::Fr;
+    use rust_kzg_mcl::fk20_fft::FFTSettings;
+    use rust_kzg_mcl::kzg10::Polynomial;
+    use rust_kzg_mcl::mcl_methods::init;
+    use rust_kzg_mcl::CurveType;
 
     #[test]
     fn test_reduce_partials_() {

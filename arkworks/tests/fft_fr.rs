@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use arkworks::fft::{fft_fr_fast, fft_fr_slow};
-    use arkworks::kzg_proofs::FFTSettings;
-    use arkworks::kzg_types::FsFr;
     use kzg_bench::tests::fft_fr::{compare_sft_fft, inverse_fft, roundtrip_fft, stride_fft};
+    use rust_kzg_arkworks::fft::{fft_fr_fast, fft_fr_slow};
+    use rust_kzg_arkworks::kzg_proofs::FFTSettings;
+    use rust_kzg_arkworks::kzg_types::FsFr;
 
     #[test]
     fn compare_sft_fft_() {

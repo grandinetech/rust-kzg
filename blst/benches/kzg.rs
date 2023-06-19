@@ -1,12 +1,12 @@
-use blst_rust::types::fft_settings::FsFFTSettings;
-use blst_rust::types::fr::FsFr;
-use blst_rust::types::g1::FsG1;
-use blst_rust::types::g2::FsG2;
-use blst_rust::types::kzg_settings::FsKZGSettings;
-use blst_rust::types::poly::FsPoly;
-use blst_rust::utils::generate_trusted_setup;
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::kzg::{bench_commit_to_poly, bench_compute_proof_single};
+use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+use rust_kzg_blst::types::fr::FsFr;
+use rust_kzg_blst::types::g1::FsG1;
+use rust_kzg_blst::types::g2::FsG2;
+use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
+use rust_kzg_blst::types::poly::FsPoly;
+use rust_kzg_blst::utils::generate_trusted_setup;
 
 fn bench_commit_to_poly_(c: &mut Criterion) {
     bench_commit_to_poly::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(

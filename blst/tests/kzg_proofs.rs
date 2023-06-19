@@ -9,13 +9,13 @@ mod tests {
         commit_to_nil_poly, commit_to_too_long_poly_returns_err, proof_multi, proof_single,
     };
 
-    use blst_rust::types::fft_settings::FsFFTSettings;
-    use blst_rust::types::fr::FsFr;
-    use blst_rust::types::g1::FsG1;
-    use blst_rust::types::g2::FsG2;
-    use blst_rust::types::kzg_settings::FsKZGSettings;
-    use blst_rust::types::poly::FsPoly;
-    use blst_rust::utils::generate_trusted_setup;
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::g1::FsG1;
+    use rust_kzg_blst::types::g2::FsG2;
+    use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
+    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_blst::utils::generate_trusted_setup;
 
     #[test]
     pub fn test_proof_single() {
