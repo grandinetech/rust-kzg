@@ -4,12 +4,13 @@ use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, pc_g1projective_into_blst_p1,
 };
 use ark_bls12_381::{Fr as ArkFr, G1Affine};
-use ark_ec::msm::VariableBaseMSM;
-use ark_ec::ProjectiveCurve;
+use ark_ec::VariableBaseMSM;
+use ark_ec::Group;
 use ark_ff::{BigInteger256, PrimeField};
 use blst::{blst_fp, blst_p1};
 use kzg::{cfg_into_iter, G1Mul};
 use kzg::{Fr, FFTG1, G1};
+use ark_ec::CurveGroup;
 
 #[cfg(feature = "parallel")]
 use rayon::iter::IntoParallelIterator;
@@ -91,6 +92,10 @@ pub const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
     z: blst_fp { l: [0, 0, 0, 0, 0, 0], },
 });
 
+
+use ark_bls12_381::{g1, g2, Fq};
+use ark_ec::scalar_mul::fixed_base::FixedBase;
+use ark_ec::models::short_weierstrass::Projective;
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], _len: usize) {
     let ark_points: Vec<G1Affine> = {
         cfg_into_iter!(points)
@@ -104,11 +109,11 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstF
 
     let ark_scalars: Vec<BigInteger256> = {
         cfg_into_iter!(scalars)
-            .map(|scalar| ArkFr::into_repr(&blst_fr_into_pc_fr(scalar)))
+            .map(|scalar| blst_fr_into_pc_fr(scalar).into())
             .collect()
     };
 
-    let res = VariableBaseMSM::multi_scalar_mul(ark_points.as_slice(), ark_scalars.as_slice());
+    let res = VariableBaseMSM::msm_bigint(ark_points.as_slice(), ark_scalars.as_slice());
     *out = pc_g1projective_into_blst_p1(res).unwrap();
 }
 

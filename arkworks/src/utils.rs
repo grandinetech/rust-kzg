@@ -1,10 +1,10 @@
 use super::{Fp, P1};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
 use ark_bls12_381::{g1, g2, Fq, Fr};
-use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
+use ark_ec::models::short_weierstrass::Projective;
 use ark_ff::{biginteger::BigInteger256, biginteger::BigInteger384, Fp2, Fp384};
 use ark_poly::univariate::DensePolynomial as DensePoly;
-use ark_poly::UVPolynomial;
+use ark_poly::DenseUVPolynomial;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error;
@@ -51,7 +51,7 @@ pub fn blst_fp_into_pc_fq(fp: &Fp) -> Fq {
     Fq::new(big_int)
 }
 
-pub fn pc_g1projective_into_blst_p1(gp: GroupProjective<g1::Parameters>) -> Result<ArkG1, Error> {
+pub fn pc_g1projective_into_blst_p1(gp: Projective<g1::Config>) -> Result<ArkG1, Error> {
     let p1 = ArkG1(blst::blst_p1 {
         x: pc_fq_into_blst_fp(gp.x),
         y: pc_fq_into_blst_fp(gp.y),
@@ -60,8 +60,8 @@ pub fn pc_g1projective_into_blst_p1(gp: GroupProjective<g1::Parameters>) -> Resu
     Ok(p1)
 }
 
-pub fn blst_p1_into_pc_g1projective(p1: &P1) -> Result<GroupProjective<g1::Parameters>, Error> {
-    let pc_projective = GroupProjective::new(
+pub fn blst_p1_into_pc_g1projective(p1: &P1) -> Result<Projective<g1::Config>, Error> {
+    let pc_projective = Projective::new(
         blst_fp_into_pc_fq(&p1.x),
         blst_fp_into_pc_fq(&p1.y),
         blst_fp_into_pc_fq(&p1.z),
@@ -69,7 +69,7 @@ pub fn blst_p1_into_pc_g1projective(p1: &P1) -> Result<GroupProjective<g1::Param
     Ok(pc_projective)
 }
 
-pub fn pc_g2projective_into_blst_p2(p2: GroupProjective<g2::Parameters>) -> Result<ArkG2, Error> {
+pub fn pc_g2projective_into_blst_p2(p2: Projective<g2::Config>) -> Result<ArkG2, Error> {
     let blst_projective = ArkG2(blst::blst_p2 {
         x: blst::blst_fp2 {
             fp: [
@@ -93,8 +93,8 @@ pub fn pc_g2projective_into_blst_p2(p2: GroupProjective<g2::Parameters>) -> Resu
     Ok(blst_projective)
 }
 
-pub fn blst_p2_into_pc_g2projective(p2: &ArkG2) -> Result<GroupProjective<g2::Parameters>, Error> {
-    let pc_projective = GroupProjective::new(
+pub fn blst_p2_into_pc_g2projective(p2: &ArkG2) -> Result<Projective<g2::Config>, Error> {
+    let pc_projective = Projective::new(
         Fp2::new(
             Fp384::new(BigInteger384::new(p2.0.x.fp[0].l)),
             Fp384::new(BigInteger384::new(p2.0.x.fp[1].l)),
@@ -112,7 +112,7 @@ pub fn blst_p2_into_pc_g2projective(p2: &ArkG2) -> Result<GroupProjective<g2::Pa
 }
 
 // pub(crate) fn pc_affine_into_blst_affine(
-//     affine: GroupAffine<g1::Parameters>,
+//     affine: GroupAffine<g1::Config>,
 // ) -> Result<P1Affine, Error> {
 //     let bl_aff = P1Affine {
 //         x: Fp { l: affine.x.0 .0 },
@@ -124,7 +124,7 @@ pub fn blst_p2_into_pc_g2projective(p2: &ArkG2) -> Result<GroupProjective<g2::Pa
 
 // pub(crate) fn blst_affine_into_pc_affine(
 //     affine: &P1Affine,
-// ) -> Result<GroupAffine<g1::Parameters>, Error> {
+// ) -> Result<GroupAffine<g1::Config>, Error> {
 //     let pc_affine = GroupAffine::new(
 //         blst_fp_into_pc_fq(&affine.x),
 //         blst_fp_into_pc_fq(&affine.y),

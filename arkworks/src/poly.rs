@@ -7,7 +7,7 @@ use crate::kzg_types::FsFr as BlstFr;
 use crate::zero_poly::pad_poly;
 use ark_bls12_381::Fr;
 use ark_poly::univariate::DensePolynomial;
-use ark_poly::UVPolynomial;
+use ark_poly::DenseUVPolynomial;
 use ark_std::{log2, Zero};
 use kzg::{FFTFr, FFTSettings as FFTSettingsT, Fr as FrTrait, Poly};
 use merkle_light::merkle::log2_pow2;

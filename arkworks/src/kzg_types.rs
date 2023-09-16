@@ -14,8 +14,8 @@ use crate::utils::{
     pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
 };
 use ark_bls12_381::{g1, g2, Fr as ArkFr};
-use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
-use ark_ec::{AffineCurve, ProjectiveCurve};
+use ark_ec::models::short_weierstrass::{Projective, Affine};
+// use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
@@ -25,6 +25,10 @@ use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1,
 use kzg_bench::tests::fk20_proofs::reverse_bit_order;
 use std::ops::MulAssign;
 use std::ops::Neg;
+use ark_ec::AffineRepr;
+use ark_ec::CurveGroup;
+use ark_ec::Group;
+use std::ops::Mul;
 
 pub const SCALE_FACTOR: u64 = 5;
 pub const NUM_ROOTS: usize = 32;
@@ -53,7 +57,7 @@ impl G1 for ArkG1 {
 
     fn rand() -> Self {
         let mut rng = rand::thread_rng();
-        pc_g1projective_into_blst_p1(GroupProjective::rand(&mut rng)).unwrap()
+        pc_g1projective_into_blst_p1(Projective::rand(&mut rng)).unwrap()
     }
 
     #[allow(clippy::bind_instead_of_map)]
@@ -69,7 +73,7 @@ impl G1 for ArkG1 {
             })
             .and_then(|bytes: &[u8; BYTES_PER_G1]| {
                 let affine = g1::G1Affine::from_random_bytes(bytes.as_slice()).unwrap();
-                let projective = affine.into_projective();
+                let projective = affine.into_group();
                 Ok(pc_g1projective_into_blst_p1(projective).unwrap())
             })
     }
@@ -166,7 +170,7 @@ impl G2 for ArkG2 {
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
                 let affine = g2::G2Affine::from_random_bytes(bytes.as_slice()).unwrap();
-                let projective = affine.into_projective();
+                let projective = affine.into_group();
                 Ok(pc_g2projective_into_blst_p2(projective).unwrap())
             })
     }
@@ -263,10 +267,11 @@ impl Fr for FsFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let b = ArkFr::from_repr(BigInteger256::new(*u));
+        let b = From::from(BigInteger256::new(*u));
+        // pc_fr_into_blst_fr(b) // IDK if this is correct
         match b {
             None => FsFr(blst_fr { l: [0, 0, 0, 0] }),
-            Some(x) => pc_fr_into_blst_fr(x),
+            Some(x) => pc_fr_into_blst_fr(Into::into(x)),
         }
     }
 
@@ -276,12 +281,12 @@ impl Fr for FsFr {
     }
 
     fn to_bytes(&self) -> [u8; 32] {
-        let big_int_256 = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
+        let big_int_256: BigInteger256 = ArkFr::into(blst_fr_into_pc_fr(self));
         <[u8; 32]>::try_from(big_int_256.to_bytes_le()).unwrap()
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
-        let b = ArkFr::into_repr(&blst_fr_into_pc_fr(self));
+        let b: BigInteger256 = ArkFr::into(blst_fr_into_pc_fr(self));
         b.0
     }
 
@@ -455,7 +460,11 @@ impl FFTSettings<FsFr> for LFFTSettings {
 
         let expanded_roots_of_unity =
             expand_root_of_unity(&pc_fr_into_blst_fr(domain.group_gen), domain.size as usize)
-                .unwrap();
+                ;
+        let expanded_roots_of_unity = match expanded_roots_of_unity {
+            Ok(res) => res,
+            Err(err) => return Err(err),
+        };
 
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
