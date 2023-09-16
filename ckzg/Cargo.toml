@@ -10,7 +10,7 @@ rand = "0.8.5"
 libc = "0.2.137"
 
 [dev-dependencies]
-criterion = "0.4.0"
+criterion = "0.5.1"
 
 [features]
 parallel = []
