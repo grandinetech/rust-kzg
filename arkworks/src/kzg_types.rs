@@ -15,7 +15,7 @@ use crate::utils::{
 };
 use ark_bls12_381::{g1, g2, Fr as ArkFr};
 use ark_ec::models::short_weierstrass::{Projective, Affine};
-// use ark_ec::{AffineCurve, ProjectiveCurve};
+use ark_ec::AffineRepr;
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field, PrimeField};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
@@ -25,7 +25,6 @@ use kzg::{FFTSettings, FFTSettingsPoly, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1,
 use kzg_bench::tests::fk20_proofs::reverse_bit_order;
 use std::ops::MulAssign;
 use std::ops::Neg;
-use ark_ec::AffineRepr;
 use ark_ec::CurveGroup;
 use ark_ec::Group;
 use std::ops::Mul;
@@ -460,11 +459,8 @@ impl FFTSettings<FsFr> for LFFTSettings {
 
         let expanded_roots_of_unity =
             expand_root_of_unity(&pc_fr_into_blst_fr(domain.group_gen), domain.size as usize)
+                .unwrap()
                 ;
-        let expanded_roots_of_unity = match expanded_roots_of_unity {
-            Ok(res) => res,
-            Err(err) => return Err(err),
-        };
 
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
