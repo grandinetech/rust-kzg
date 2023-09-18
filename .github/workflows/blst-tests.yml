@@ -37,7 +37,7 @@ jobs:
       - name: "[blst][wasm32] Clippy"
         # Apple's Clang doesn't support WASM, and we are lazy to install it
         if: runner.os != 'macOS'
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: clippy
           args: --manifest-path blst/Cargo.toml --target wasm32-unknown-unknown --no-default-features
@@ -45,25 +45,25 @@ jobs:
       - name: "[blst][wasm32] Build"
         # Apple's Clang doesn't support WASM, and we are lazy to install it
         if: runner.os != 'macOS'
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: build
           args: --manifest-path blst/Cargo.toml --target wasm32-unknown-unknown --no-default-features
 
       - name: "[blst] Tests (minimal preset)"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: test
           args: --manifest-path blst/Cargo.toml --no-fail-fast --test eip_4844 tests --features minimal-spec
 
       - name: "[blst] Tests (mainnet preset)"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: test
           args: --manifest-path blst/Cargo.toml --no-fail-fast
 
       - name: "[blst] Tests (mainnet preset, parallel)"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: test
           args: --manifest-path blst/Cargo.toml --no-fail-fast --features parallel
@@ -79,18 +79,18 @@ jobs:
           cd blst && bash run-c-kzg-4844-tests.sh --parallel
 
       - name: "[blst] Clippy"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: clippy
           args: --manifest-path blst/Cargo.toml --all-targets --features=default,std,rand,parallel,minimal-spec -- -D warnings
 
       - name: "[blst] Formatting"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: fmt
           args: --manifest-path blst/Cargo.toml -- --check
 
-      - uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1.0.1
         with:
           command: fmt
           args: --manifest-path kzg-bench/Cargo.toml -- --check

@@ -25,13 +25,13 @@ jobs:
           go-version: ^1.19
 
       - name: "[blst] Benchmark"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: bench
           args: --manifest-path blst/Cargo.toml
 
       - name: "[blst] Benchmark (parallel)"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: bench
           args: --manifest-path blst/Cargo.toml --features parallel

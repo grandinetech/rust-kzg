@@ -13,13 +13,13 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: "[zkcrypto] Benchmark"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: bench
           args: --manifest-path zkcrypto/Cargo.toml
 
       - name: "[zkcrypto] Benchmark (parallel)"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.1
         with:
           command: bench
           args: --manifest-path zkcrypto/Cargo.toml --features parallel
