@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  C_KZG_4844_GIT_HASH: '5703f6f3536b7692616bc289ac3f3867ab8db9d8'
+  C_KZG_4844_GIT_HASH: "fbef59a3f9e8fa998bdb5069d212daf83d586aa5"
 
 jobs:
   release:
