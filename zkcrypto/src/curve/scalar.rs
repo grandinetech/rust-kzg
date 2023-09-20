@@ -946,7 +946,7 @@ impl Field for Scalar {
         self.sqrt()
     }
 
-    const ZERO: Self = Self::zero();
+    const ZERO: Self = Scalar([0, 0, 0, 0]);
     const ONE: Self = Self::one();
 
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
