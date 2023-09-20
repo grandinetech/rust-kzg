@@ -997,10 +997,10 @@ impl PrimeField for Scalar {
     const MULTIPLICATIVE_GENERATOR: Self = GENERATOR;
     const ROOT_OF_UNITY: Self = ROOT_OF_UNITY;
 
-    const MODULUS: Scalar = MODULUS;
     const TWO_INV: Scalar = MODULUS; //idk
     const ROOT_OF_UNITY_INV: Scalar = ROOT_OF_UNITY_INV;
-    const DELTA: Scalar = MODULUS; //idk
+    const DELTA: Scalar = MODULUS;
+    const MODULUS: &'static str = ""; //idk
 }
 
 #[cfg(all(feature = "bits", not(target_pointer_width = "64")))]
