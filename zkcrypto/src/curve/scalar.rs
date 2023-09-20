@@ -909,15 +909,6 @@ impl Field for Scalar {
     const ZERO: Self = Self::zero();
     const ONE: Self = Self::one();
 
-    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
-        if let Some(sqrt_denom) = div.sqrt() {
-            let sqrt_num = num * &sqrt_denom;
-            let is_valid = (sqrt_num.square() == (*num * div));
-            (Choice::from(u8::from(is_valid)), sqrt_num)
-        } else {
-            (Choice::from(u8::from(false)), Self::zero())
-        }
-    }
 }
 
 impl PrimeField for Scalar {
