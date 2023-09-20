@@ -899,18 +899,6 @@ impl Product for Scalar {
         result
     }
 }
-impl<'a> Product<&'a Scalar> for &'a Scalar {
-    fn product<I: Iterator<Item=&'a Scalar>>(iter: I) -> Self {
-        let mut result = Scalar([1, 1, 1, 1]);
-
-        for element in iter {
-            for i in 0..4 {
-                result.0[i] *= element.0[i];
-            }
-        }
-        &result
-    }
-}
 
 impl<'a> Product<&'a Self> for Scalar {
     fn product<I: Iterator<Item=&'a Scalar>>(iter: I) -> Self {
