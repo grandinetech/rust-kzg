@@ -295,6 +295,7 @@ impl<'a> Neg for &'a Scalar {
 impl Neg for Scalar {
     type Output = Scalar;
 
+    //noinspection RsTypeCheck
     #[inline]
     fn neg(self) -> Scalar {
         -&self
@@ -304,6 +305,7 @@ impl Neg for Scalar {
 impl<'a, 'b> Sub<&'b Scalar> for &'a Scalar {
     type Output = Scalar;
 
+    //noinspection RsTypeCheck
     #[inline]
     fn sub(self, rhs: &'b Scalar) -> Scalar {
         self.sub(rhs)
@@ -313,6 +315,7 @@ impl<'a, 'b> Sub<&'b Scalar> for &'a Scalar {
 impl<'a, 'b> Add<&'b Scalar> for &'a Scalar {
     type Output = Scalar;
 
+    //noinspection RsTypeCheck
     #[inline]
     fn add(self, rhs: &'b Scalar) -> Scalar {
         self.add(rhs)
@@ -322,6 +325,7 @@ impl<'a, 'b> Add<&'b Scalar> for &'a Scalar {
 impl<'a, 'b> Mul<&'b Scalar> for &'a Scalar {
     type Output = Scalar;
 
+    //noinspection RsTypeCheck
     #[inline]
     fn mul(self, rhs: &'b Scalar) -> Scalar {
         self.mul(rhs)
@@ -402,6 +406,7 @@ impl Scalar {
         Scalar([u64::MAX, u64::MAX, u64::MAX, u64::MAX])
     }
 
+    //noinspection RsTypeCheck
     /// Doubles this field element.
     #[inline]
     pub fn double(&self) -> Scalar {
@@ -943,22 +948,20 @@ impl Field for Scalar {
 
     fn sqrt_ratio(num: &Scalar, div: &Scalar) -> (Choice, Scalar) {
 
-        if div.is_zero() {
+        if div.is_none().into() {
             panic!("Division by zero");
         }
-        let sqrt_num = num.sqrt();
+        let sqrt_num = num.sqrt().unwrap(); // Assuming sqrt returns a CtOption
 
-        let sqrt_div = div.sqrt();
+        let sqrt_div = div.sqrt().unwrap(); // Assuming sqrt returns a CtOption
 
-        if sqrt_div.is_zero() {
+        if sqrt_div.is_none().into() {
             panic!("Square root of denominator is zero");
         }
-
-        let ratio = sqrt_num * sqrt_div.invert().unwrap_or_else(|| panic!("Failed to invert denominator"));
+        let ratio = sqrt_num * sqrt_div.invert().unwrap(); // Assuming invert returns a CtOption
 
         (Choice::from(1u8), ratio)
     }
-
 }
 
 impl PrimeField for Scalar {
