@@ -11,6 +11,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "bits")]
 use core::convert::TryInto;
+use std::iter::Product;
 
 #[cfg(feature = "bits")]
 use ff::{FieldBits, PrimeFieldBits};
@@ -872,6 +873,18 @@ impl<'a> From<&'a Scalar> for [u8; 32] {
         value.to_bytes()
     }
 }
+impl Product for Scalar {
+    fn product<I: Iterator<Item=Self>>(iter: I) -> Self {
+        let mut result = Scalar([1, 1, 1, 1]);
+        for element in iter {
+            for i in 0..4 {
+                result.0[i] *= element.0[i];
+            }
+        }
+
+        result
+    }
+}
 
 impl Field for Scalar {
     fn random(mut rng: impl RngCore) -> Self {
@@ -909,6 +922,9 @@ impl Field for Scalar {
     const ZERO: Self = Self::zero();
     const ONE: Self = Self::one();
 
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        todo!()
+    }
 }
 
 impl PrimeField for Scalar {
