@@ -948,16 +948,11 @@ impl Field for Scalar {
 
     fn sqrt_ratio(num: &Scalar, div: &Scalar) -> (Choice, Scalar) {
 
-        if div.is_zero().into() {
-            panic!("Division by zero");
-        }
+
         let sqrt_num = num.sqrt().unwrap(); // Assuming sqrt returns a CtOption
 
         let sqrt_div = div.sqrt().unwrap(); // Assuming sqrt returns a CtOption
 
-        if sqrt_div.is_zero().into() {
-            panic!("Square root of denominator is zero");
-        }
         let ratio = sqrt_num * sqrt_div.invert().unwrap(); // Assuming invert returns a CtOption
 
         (Choice::from(1u8), ratio)
