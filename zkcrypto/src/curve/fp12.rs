@@ -425,8 +425,12 @@ impl Neg for Fp12 {
     type Output = Fp12;
 
     #[inline]
-    fn neg(self) -> Self::Output {
-        -&self
+    fn neg(self) -> Fp12 {
+        //-&self
+        Fp12 {
+            c0: -self.c0,
+            c1: -self.c1,
+        }
     }
 }
 

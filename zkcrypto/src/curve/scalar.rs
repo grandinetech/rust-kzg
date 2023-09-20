@@ -880,13 +880,13 @@ impl Field for Scalar {
         Self::from_bytes_wide(&buf)
     }
 
-    fn zero() -> Self {
-        Self::zero()
-    }
+    //fn zero() -> Self {
+    //    Self::zero()
+    //}
 
-    fn one() -> Self {
-        Self::one()
-    }
+    //fn one() -> Self {
+    //    Self::one()
+    //}
 
     #[must_use]
     fn square(&self) -> Self {
@@ -904,6 +904,19 @@ impl Field for Scalar {
 
     fn sqrt(&self) -> CtOption<Self> {
         self.sqrt()
+    }
+
+    const ZERO: Self = Self::zero();
+    const ONE: Self = Self::one();
+
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        if let Some(sqrt_denom) = div.sqrt() {
+            let sqrt_num = num * &sqrt_denom;
+            let is_valid = (sqrt_num.square() == (*num * div));
+            (Choice::from(u8::from(is_valid)), sqrt_num)
+        } else {
+            (Choice::from(u8::from(false)), Self::zero())
+        }
     }
 }
 
@@ -925,15 +938,18 @@ impl PrimeField for Scalar {
     const NUM_BITS: u32 = MODULUS_BITS;
     const CAPACITY: u32 = Self::NUM_BITS - 1;
 
-    fn multiplicative_generator() -> Self {
-        GENERATOR
-    }
+    //fn multiplicative_generator() -> Self {
+    //    GENERATOR
+    //}
 
     const S: u32 = S;
 
-    fn root_of_unity() -> Self {
-        ROOT_OF_UNITY
-    }
+    //fn root_of_unity() -> Self {
+    //    ROOT_OF_UNITY
+    //}
+
+    const MULTIPLICATIVE_GENERATOR: Self = GENERATOR;
+    const ROOT_OF_UNITY: Self = ROOT_OF_UNITY;
 }
 
 #[cfg(all(feature = "bits", not(target_pointer_width = "64")))]
