@@ -258,11 +258,7 @@ impl Neg for Fp2 {
 
     #[inline]
     fn neg(self) -> Fp2 {
-        //-&self
-        Fp2 {
-            c0: -self.c0,
-            c1: -self.c1,
-        }
+        -&self
     }
 }
 
