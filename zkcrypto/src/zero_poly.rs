@@ -106,7 +106,7 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
 
         if missing_indices.len() >= length {
             return Err(String::from("Missing indexes are greater than domain size"));
-        } else if length > self.max_width as usize {
+        } else if length > self.max_width {
             return Err(String::from(
                 "Domain size is greater than fft_settings.max_width",
             ));
@@ -116,7 +116,7 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
 
         let degree_of_partial = 256;
         let missing_per_partial = degree_of_partial - 1;
-        let domain_stride = self.max_width as usize / length;
+        let domain_stride = self.max_width / length;
         let mut partial_count =
             (missing_per_partial + missing_indices.len() - 1) / missing_per_partial;
         let domain_ceiling = min(

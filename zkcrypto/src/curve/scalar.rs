@@ -941,9 +941,9 @@ impl Field for Scalar {
     const ZERO: Self = Scalar([0, 0, 0, 0]);
     const ONE: Self = Self::one();
 
-    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
-        todo!()  //idk
-    }
+    //fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+    //    todo!()  //idk
+    //}
 }
 
 impl PrimeField for Scalar {

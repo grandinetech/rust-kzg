@@ -141,7 +141,7 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
             let mut j = start;
 
             while i + 1 < k {
-                x.push(ks.secret_g1[j as usize]);
+                x.push(ks.secret_g1[j]);
 
                 i += 1;
 
