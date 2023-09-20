@@ -11,7 +11,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "bits")]
 use core::convert::TryInto;
-use std::iter::{Product, Sum};
+use std::iter::Product;
 
 #[cfg(feature = "bits")]
 use ff::{FieldBits, PrimeFieldBits};
@@ -383,6 +383,12 @@ const ROOT_OF_UNITY: Scalar = Scalar([
     0x5bf3_adda_19e9_b27b,
 ]);
 
+const ROOT_OF_UNITY_INV: Scalar = Scalar([
+    0x40f9_0a96_4ff1_a535,
+    0xadc9_b5fb_3d70_4f7d,
+    0xa90e_d548_f72a_9da6,
+    0xf3fc_a202_0a0d_dcf0,
+]);
 #[cfg(feature = "zeroize")]
 impl zeroize::DefaultIsZeroes for Scalar {}
 
@@ -956,7 +962,7 @@ impl Field for Scalar {
     const ONE: Self = Self::one();
 
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
-        todo!()
+        todo!()  //idk
     }
 }
 
@@ -990,6 +996,11 @@ impl PrimeField for Scalar {
 
     const MULTIPLICATIVE_GENERATOR: Self = GENERATOR;
     const ROOT_OF_UNITY: Self = ROOT_OF_UNITY;
+
+    const MODULUS: Scalar = MODULUS;
+    const TWO_INV: Scalar = MODULUS; //idk
+    const ROOT_OF_UNITY_INV: Scalar = ROOT_OF_UNITY_INV;
+    const DELTA: Scalar = MODULUS; //idk
 }
 
 #[cfg(all(feature = "bits", not(target_pointer_width = "64")))]
