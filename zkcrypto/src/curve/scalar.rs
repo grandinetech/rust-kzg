@@ -295,9 +295,17 @@ impl<'a> Neg for &'a Scalar {
 impl Neg for Scalar {
     type Output = Scalar;
 
+    //#[inline]
+    //fn neg(self) -> Scalar {
+    //    -&self
+    //}
     #[inline]
     fn neg(self) -> Scalar {
-        -&self
+        let mut result = self;
+        for i in 0..4 {
+            result.0[i] = !result.0[i];
+        }
+        result
     }
 }
 
