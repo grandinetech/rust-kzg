@@ -11,7 +11,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "bits")]
 use core::convert::TryInto;
-use std::iter::Product;
+use std::iter::{Product, Sum};
 
 #[cfg(feature = "bits")]
 use ff::{FieldBits, PrimeFieldBits};
@@ -902,10 +902,23 @@ impl<'a> Product<&'a Scalar> for &'a Scalar {
                 result.0[i] *= element.0[i];
             }
         }
-
         &result
     }
 }
+
+impl<'a> Product<&'a Self> for Scalar {
+    fn product<I: Iterator<Item=&'a Scalar>>(iter: I) -> Self {
+        let mut result = Scalar([1, 1, 1, 1]);
+
+        for element in iter {
+            for i in 0..4 {
+                result.0[i] *= element.0[i];
+            }
+        }
+        result
+    }
+}
+
 impl Field for Scalar {
     fn random(mut rng: impl RngCore) -> Self {
         let mut buf = [0; 64];
