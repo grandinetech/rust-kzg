@@ -941,9 +941,24 @@ impl Field for Scalar {
     const ZERO: Self = Scalar([0, 0, 0, 0]);
     const ONE: Self = Self::one();
 
-    //fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
-    //    todo!()  //idk
-    //}
+    fn sqrt_ratio(num: &Scalar, div: &Scalar) -> (Choice, Scalar) {
+
+        if div.is_zero() {
+            panic!("Division by zero");
+        }
+        let sqrt_num = num.sqrt();
+
+        let sqrt_div = div.sqrt();
+
+        if sqrt_div.is_zero() {
+            panic!("Square root of denominator is zero");
+        }
+
+        let ratio = sqrt_num * sqrt_div.invert().unwrap_or_else(|| panic!("Failed to invert denominator"));
+
+        (Choice::from(1u8), ratio)
+    }
+
 }
 
 impl PrimeField for Scalar {
