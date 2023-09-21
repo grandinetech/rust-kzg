@@ -887,7 +887,7 @@ impl<'a> From<&'a Scalar> for [u8; 32] {
 }
 
 impl Product for Scalar {
-    fn product<I: Iterator<Item=Self>>(iter: I) -> Self {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         let mut result = Scalar([1, 1, 1, 1]);
         for element in iter {
             for i in 0..4 {
@@ -900,7 +900,7 @@ impl Product for Scalar {
 }
 
 impl<'a> Product<&'a Self> for Scalar {
-    fn product<I: Iterator<Item=&'a Scalar>>(iter: I) -> Self {
+    fn product<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
         let mut result = Scalar([1, 1, 1, 1]);
 
         for element in iter {
@@ -1012,7 +1012,7 @@ impl PrimeFieldBits for Scalar {
         let bytes = self.to_bytes();
 
         #[cfg(not(target_pointer_width = "64"))]
-            let limbs = [
+        let limbs = [
             u32::from_le_bytes(bytes[0..4].try_into().unwrap()),
             u32::from_le_bytes(bytes[4..8].try_into().unwrap()),
             u32::from_le_bytes(bytes[8..12].try_into().unwrap()),
@@ -1024,7 +1024,7 @@ impl PrimeFieldBits for Scalar {
         ];
 
         #[cfg(target_pointer_width = "64")]
-            let limbs = [
+        let limbs = [
             u64::from_le_bytes(bytes[0..8].try_into().unwrap()),
             u64::from_le_bytes(bytes[8..16].try_into().unwrap()),
             u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
@@ -1046,12 +1046,12 @@ impl PrimeFieldBits for Scalar {
 }
 
 impl<T> core::iter::Sum<T> for Scalar
-    where
-        T: core::borrow::Borrow<Scalar>,
+where
+    T: core::borrow::Borrow<Scalar>,
 {
     fn sum<I>(iter: I) -> Self
-        where
-            I: Iterator<Item=T>,
+    where
+        I: Iterator<Item = T>,
     {
         iter.fold(Self::zero(), |acc, item| acc + item.borrow())
     }
@@ -1142,7 +1142,7 @@ fn test_from_bytes() {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0
         ])
-            .unwrap(),
+        .unwrap(),
         Scalar::zero()
     );
 
@@ -1151,7 +1151,7 @@ fn test_from_bytes() {
             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0
         ])
-            .unwrap(),
+        .unwrap(),
         Scalar::one()
     );
 
@@ -1160,7 +1160,7 @@ fn test_from_bytes() {
             254, 255, 255, 255, 1, 0, 0, 0, 2, 72, 3, 0, 250, 183, 132, 88, 245, 79, 188, 236, 239,
             79, 140, 153, 111, 5, 197, 172, 89, 177, 36, 24
         ])
-            .unwrap(),
+        .unwrap(),
         R2
     );
 
@@ -1170,7 +1170,7 @@ fn test_from_bytes() {
             0, 0, 0, 0, 255, 255, 255, 255, 254, 91, 254, 255, 2, 164, 189, 83, 5, 216, 161, 9, 8,
             216, 57, 51, 72, 125, 157, 41, 83, 167, 237, 115
         ])
-            .is_some()
+        .is_some()
     ));
 
     // modulus is invalid
@@ -1179,7 +1179,7 @@ fn test_from_bytes() {
             1, 0, 0, 0, 255, 255, 255, 255, 254, 91, 254, 255, 2, 164, 189, 83, 5, 216, 161, 9, 8,
             216, 57, 51, 72, 125, 157, 41, 83, 167, 237, 115
         ])
-            .is_none()
+        .is_none()
     ));
 
     // Anything larger than the modulus is invalid
@@ -1188,21 +1188,21 @@ fn test_from_bytes() {
             2, 0, 0, 0, 255, 255, 255, 255, 254, 91, 254, 255, 2, 164, 189, 83, 5, 216, 161, 9, 8,
             216, 57, 51, 72, 125, 157, 41, 83, 167, 237, 115
         ])
-            .is_none()
+        .is_none()
     ));
     assert!(bool::from(
         Scalar::from_bytes(&[
             1, 0, 0, 0, 255, 255, 255, 255, 254, 91, 254, 255, 2, 164, 189, 83, 5, 216, 161, 9, 8,
             216, 58, 51, 72, 125, 157, 41, 83, 167, 237, 115
         ])
-            .is_none()
+        .is_none()
     ));
     assert!(bool::from(
         Scalar::from_bytes(&[
             1, 0, 0, 0, 255, 255, 255, 255, 254, 91, 254, 255, 2, 164, 189, 83, 5, 216, 161, 9, 8,
             216, 57, 51, 72, 125, 157, 41, 83, 167, 237, 116
         ])
-            .is_none()
+        .is_none()
     ));
 }
 
