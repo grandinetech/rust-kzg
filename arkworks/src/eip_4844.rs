@@ -3,7 +3,6 @@ use crate::kzg_proofs::{pairings_verify, FFTSettings, KZGSettings, UniPoly_381, 
 use crate::kzg_types::{ArkG1, ArkG2, FsFr};
 use crate::utils::{pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData};
 use ark_bls12_381::Bls12_381;
-use ark_ec::Group;
 use ark_std::test_rng;
 use kzg::eip_4844::{
     bytes_of_uint64, hash, load_trusted_setup_string, BYTES_PER_BLOB, BYTES_PER_COMMITMENT,

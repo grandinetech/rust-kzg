@@ -3,10 +3,10 @@ use crate::kzg_types::{ArkG1, FsFr as BlstFr};
 use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, pc_g1projective_into_blst_p1,
 };
-use ark_bls12_381::{Fr as ArkFr, G1Affine};
+use ark_bls12_381::{G1Affine};
 use ark_ec::VariableBaseMSM;
-use ark_ec::Group;
-use ark_ff::{BigInteger256, PrimeField};
+
+use ark_ff::{BigInteger256};
 use blst::{blst_fp, blst_p1};
 use kzg::{cfg_into_iter, G1Mul};
 use kzg::{Fr, FFTG1, G1};
@@ -93,9 +93,9 @@ pub const G1_IDENTITY: ArkG1 = ArkG1(blst_p1 {
 });
 
 
-use ark_bls12_381::{g1, g2, Fq};
-use ark_ec::scalar_mul::fixed_base::FixedBase;
-use ark_ec::models::short_weierstrass::Projective;
+
+
+
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], _len: usize) {
     let ark_points: Vec<G1Affine> = {
         cfg_into_iter!(points)
