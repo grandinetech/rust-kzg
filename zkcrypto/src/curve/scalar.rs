@@ -885,7 +885,7 @@ impl<'a> From<&'a Scalar> for [u8; 32] {
     }
 }
 impl Product for Scalar {
-    fn product<I: Iterator<Item=Self>>(iter: I) -> Self {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         let mut result = Scalar([1, 1, 1, 1]);
         for element in iter {
             for i in 0..4 {
@@ -898,7 +898,7 @@ impl Product for Scalar {
 }
 
 impl<'a> Product<&'a Self> for Scalar {
-    fn product<I: Iterator<Item=&'a Scalar>>(iter: I) -> Self {
+    fn product<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
         let mut result = Scalar([1, 1, 1, 1]);
 
         for element in iter {
@@ -949,11 +949,11 @@ impl Field for Scalar {
     fn sqrt_ratio(num: &Scalar, div: &Scalar) -> (Choice, Scalar) {
 
 
-        let sqrt_num = num.sqrt().unwrap(); // Assuming sqrt returns a CtOption
+        let sqrt_num = num.sqrt().unwrap();
 
-        let sqrt_div = div.sqrt().unwrap(); // Assuming sqrt returns a CtOption
+        let sqrt_div = div.sqrt().unwrap();
 
-        let ratio = sqrt_num * sqrt_div.invert().unwrap(); // Assuming invert returns a CtOption
+        let ratio = sqrt_num * sqrt_div.invert().unwrap();
 
         (Choice::from(1u8), ratio)
     }
