@@ -1,6 +1,8 @@
 //! This module provides an implementation of the $\mathbb{G}_1$ group of BLS12-381.
 use crate::zkfr::blsScalar;
 use std::convert::TryInto;
+
+use blst::blst_p1;
 // ================ util.rs ========================
 
 // The recoding width that determines the length and size of precomputation table.
