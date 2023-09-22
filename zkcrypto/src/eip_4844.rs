@@ -1,8 +1,13 @@
 use std::convert::TryInto;
-use std::fs::File;
-use std::io::Read;
+
 use std::ops::Sub;
 use blst::{blst_fr, blst_p1, blst_p2};
+//#[cfg(feature = "std")]
+use libc::FILE;
+//#[cfg(feature = "std")]
+use std::fs::File;
+//#[cfg(feature = "std")]
+use std::io::Read;
 
 use crate::fk20::reverse_bit_order;
 use crate::kzg_proofs::{check_proof_single, KZGSettings};
@@ -599,6 +604,7 @@ fn fft_settings_to_rust(c_settings: *const CFFTSettings) -> ZkFFTSettings {
     res
 }
 
+
 unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<blsScalar>, C_KZG_RET> {
     (*blob)
         .bytes
@@ -641,7 +647,7 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> KZGSettings {
     }
 }
 
-fn fft_settings_to_c(rust_settings: &KZGSettings) -> *const CFFTSettings {
+fn fft_settings_to_c(rust_settings: &ZkFFTSettings) -> *const CFFTSettings {
     let expanded_roots_of_unity = Box::new(
         rust_settings
             .expanded_roots_of_unity
@@ -713,6 +719,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment_NEW(
     }
 }
 
+
 /// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn load_trusted_setup_NEW(
@@ -729,3 +736,58 @@ pub unsafe extern "C" fn load_trusted_setup_NEW(
     *out = kzg_settings_to_c(&settings);
     C_KZG_RET_OK
 }
+
+/// # Safety
+//#[cfg(feature = "std")]
+#[no_mangle]
+pub unsafe extern "C" fn load_trusted_setup_file(
+    out: *mut CKZGSettings,
+    in_: *mut FILE,
+) -> C_KZG_RET {
+    let mut buf = vec![0u8; 1024 * 1024];
+    let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
+    let s = String::from_utf8(buf[..len].to_vec()).unwrap();
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&s);
+    TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
+    if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
+        // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
+        // as well as 5 others that pass only if this one passes (likely because Java doesn't
+        // deallocate its KZGSettings pointer when no exception is thrown).
+        return C_KZG_RET_BADARGS;
+    }
+    let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
+    *out = kzg_settings_to_c(&settings);
+    C_KZG_RET_OK
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_blob_kzg_proof_NEW(
+    out: *mut KZGProof,
+    blob: *const Blob,
+    commitment_bytes: *mut Bytes32,  // pakeistas imputas is 48 i 32 99%
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let deserialized_blob = deserialize_blob(blob);
+    if deserialized_blob.is_err() {
+        return deserialized_blob.err().unwrap();
+    }
+    let commitment_g1 = blsScalar::from_bytes(&(*commitment_bytes).bytes);
+    if commitment_g1.is_err() {
+        return C_KZG_RET_BADARGS;
+    }
+    let proof = compute_blob_kzg_proof(
+        &deserialized_blob.unwrap(),
+        &commitment_g1.unwrap(),  // reikia is calero i g1
+        &kzg_settings_to_rust(s),
+    );
+
+    if let Ok(proof) = proof {
+        (*out).bytes = proof.to_bytes();
+        C_KZG_RET_OK
+    } else {
+        C_KZG_RET_BADARGS
+    }
+}
+
+
