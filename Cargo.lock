@@ -1118,6 +1118,7 @@ version = "0.1.0"
 dependencies = [
  "bls12_381",
  "blst",
+ "byteorder",
  "criterion",
  "ff",
  "hex",
