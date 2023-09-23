@@ -8,6 +8,7 @@ use libc::FILE;
 use std::fs::File;
 //#[cfg(feature = "std")]
 use std::io::Read;
+use pairing::group::GroupEncoding;
 
 use crate::fk20::reverse_bit_order;
 use crate::kzg_proofs::{check_proof_single, KZGSettings};
@@ -31,7 +32,7 @@ use crate::fftsettings::ZkFFTSettings;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
-use crate::curve::g1::G1Projective;
+use crate::curve::g1::{G1Affine, G1Compressed, G1Projective};
 use crate::curve::g2::G2Projective;
 
 pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> blsScalar {
@@ -702,9 +703,8 @@ fn kzg_settings_to_c(rust_settings: &KZGSettings) -> CKZGSettings {
     }
 }
 
-/// # Safety
 #[no_mangle]
-pub unsafe extern "C" fn blob_to_kzg_commitment_NEW(
+pub unsafe extern "C" fn blob_to_kzg_commitment_1(
     out: *mut KZGCommitment,
     blob: *const Blob,
     s: &CKZGSettings,
@@ -712,13 +712,12 @@ pub unsafe extern "C" fn blob_to_kzg_commitment_NEW(
     let deserialized_blob = deserialize_blob(blob);
     if let Ok(blob_) = deserialized_blob {
         let tmp = blob_to_kzg_commitment(&blob_, &kzg_settings_to_rust(s));
-        (*out).bytes = tmp.to_bytes();
+        (*out).bytes = *tmp.to_bytes();
         C_KZG_RET_OK
     } else {
         deserialized_blob.err().unwrap()
     }
 }
-
 
 /// # Safety
 #[no_mangle]
@@ -765,29 +764,206 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 pub unsafe extern "C" fn compute_blob_kzg_proof_NEW(
     out: *mut KZGProof,
     blob: *const Blob,
-    commitment_bytes: *mut Bytes32,  // pakeistas imputas is 48 i 32 99%
+    commitment_bytes: *mut Bytes48,  // pakeistas imputas is 48 i 32 99%
     s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = deserialize_blob(blob);
     if deserialized_blob.is_err() {
         return deserialized_blob.err().unwrap();
     }
-    let commitment_g1 = blsScalar::from_bytes(&(*commitment_bytes).bytes);
-    if commitment_g1.is_err() {
+    let g1_affine_option = G1Affine::from_compressed_unchecked(&(*commitment_bytes).bytes);
+    let g1_projective_option = g1_affine_option.map(|g1_affine| G1Projective::from(&g1_affine));
+
+    if g1_projective_option.is_err() {
         return C_KZG_RET_BADARGS;
     }
     let proof = compute_blob_kzg_proof(
         &deserialized_blob.unwrap(),
-        &commitment_g1.unwrap(),  // reikia is calero i g1
+        &g1_projective_option.unwrap(),
         &kzg_settings_to_rust(s),
     );
 
     if let Ok(proof) = proof {
-        (*out).bytes = proof.to_bytes();
+        (*out).bytes = (*proof.to_bytes());  //get_array()
         C_KZG_RET_OK
     } else {
         C_KZG_RET_BADARGS
     }
+}
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
+    let max_width = (*(*s).fs).max_width as usize;
+    let rev = Box::from_raw(core::slice::from_raw_parts_mut(
+        (*(*s).fs).reverse_roots_of_unity,
+        max_width,
+    ));
+    drop(rev);
+    let exp = Box::from_raw(core::slice::from_raw_parts_mut(
+        (*(*s).fs).expanded_roots_of_unity,
+        max_width,
+    ));
+    drop(exp);
+    let roots = Box::from_raw(core::slice::from_raw_parts_mut(
+        (*(*s).fs).roots_of_unity,
+        max_width,
+    ));
+    drop(roots);
+    let g1 = Box::from_raw(core::slice::from_raw_parts_mut(
+        (*s).g1_values,
+        TRUSTED_SETUP_NUM_G1_POINTS,
+    ));
+    drop(g1);
+    let g2 = Box::from_raw(core::slice::from_raw_parts_mut(
+        (*s).g2_values,
+        TRUSTED_SETUP_NUM_G2_POINTS,
+    ));
+    drop(g2);
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn verify_kzg_proof_NEW(
+    ok: *mut bool,
+    commitment_bytes: *const Bytes48,
+    z_bytes: *const Bytes32,
+    y_bytes: *const Bytes32,
+    proof_bytes: *const Bytes48,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let frz = blsScalar::from_bytes(&(*z_bytes).bytes);
+    let fry = blsScalar::from_bytes(&(*y_bytes).bytes);
+    let g1commitment = G1Projective::from_bytes(&(*commitment_bytes).bytes);
+    let g1proof = G1Projective::from_bytes(&(*proof_bytes).bytes);
+
+    if frz.is_err() || fry.is_err() || g1commitment.is_err() || g1proof.is_err() {
+        return C_KZG_RET_BADARGS;
+    }
+
+    let result = verify_kzg_proof(
+        &g1commitment.unwrap(),
+        &frz.unwrap(),
+        &fry.unwrap(),
+        &g1proof.unwrap(),
+        &kzg_settings_to_rust(s),
+    );
+
+    if let Ok(result) = result {
+        *ok = result;
+        C_KZG_RET_OK
+    } else {
+        C_KZG_RET_BADARGS
+    }
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn verify_blob_kzg_proof_NEW(
+    ok: *mut bool,
+    blob: *const Blob,
+    commitment_bytes: *const Bytes48,
+    proof_bytes: *const Bytes48,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let deserialized_blob = deserialize_blob(blob);
+    if deserialized_blob.is_err() {
+        return deserialized_blob.err().unwrap();
+    }
+
+    let commitment_g1 = G1Projective::from_bytes(&(*commitment_bytes).bytes);
+    let proof_g1 = G1Projective::from_bytes(&(*proof_bytes).bytes);
+    if commitment_g1.is_err() || proof_g1.is_err() {
+        return C_KZG_RET_BADARGS;
+    }
+
+    let result = verify_blob_kzg_proof(
+        &deserialized_blob.unwrap(),
+        &commitment_g1.unwrap(),
+        &proof_g1.unwrap(),
+        &kzg_settings_to_rust(s),
+    );
+
+    if let Ok(result) = result {
+        *ok = result;
+        C_KZG_RET_OK
+    } else {
+        C_KZG_RET_BADARGS
+    }
+}
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn verify_blob_kzg_proof_batch_NEW(
+    ok: *mut bool,
+    blobs: *const Blob,
+    commitments_bytes: *const Bytes48,
+    proofs_bytes: *const Bytes48,
+    n: usize,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let raw_blobs = core::slice::from_raw_parts(blobs, n);
+    let raw_commitments = core::slice::from_raw_parts(commitments_bytes, n);
+    let raw_proofs = core::slice::from_raw_parts(proofs_bytes, n);
+
+    let deserialized_blobs: Result<Vec<Vec<blsScalar>>, C_KZG_RET> = cfg_into_iter!(raw_blobs)
+        .map(|raw_blob| deserialize_blob(raw_blob).map_err(|_| C_KZG_RET_BADARGS))
+        .collect();
+
+    let commitments_g1: Result<Vec<G1Projective>, C_KZG_RET> = cfg_into_iter!(raw_commitments)
+        .map(|raw_commitment| {
+            G1Projective::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS)
+        })
+        .collect();
+
+    let proofs_g1: Result<Vec<G1Projective>, C_KZG_RET> = cfg_into_iter!(raw_proofs)
+        .map(|raw_proof| G1Projective::from_bytes(&raw_proof.bytes).map_err(|_| C_KZG_RET_BADARGS))
+        .collect();
+
+    if let (Ok(blobs), Ok(commitments), Ok(proofs)) =
+        (deserialized_blobs, commitments_g1, proofs_g1)
+    {
+        let result = verify_blob_kzg_proof_batch(
+            blobs.as_slice(),
+            &commitments,
+            &proofs,
+            &kzg_settings_to_rust(s),
+        );
+
+        if let Ok(result) = result {
+            *ok = result;
+            C_KZG_RET_OK
+        } else {
+            C_KZG_RET_BADARGS
+        }
+    } else {
+        *ok = false;
+        C_KZG_RET_BADARGS
+    }
+}
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_kzg_proof_new(
+    proof_out: *mut KZGProof,
+    y_out: *mut Bytes32,
+    blob: *const Blob,
+    z_bytes: *const Bytes32,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let deserialized_blob = deserialize_blob(blob);
+    if deserialized_blob.is_err() {
+        return deserialized_blob.err().unwrap();
+    }
+    let frz = blsScalar::from_bytes(&(*z_bytes).bytes);
+    if frz.is_err() {
+        return C_KZG_RET_BADARGS;
+    }
+    let (proof_out_tmp, fry_tmp) = compute_kzg_proof(
+        &deserialized_blob.unwrap(),
+        &frz.unwrap(),
+        &kzg_settings_to_rust(s),
+    );
+    (*proof_out).bytes = *proof_out_tmp.to_bytes();
+    (*y_out).bytes = fry_tmp.to_bytes();
+    C_KZG_RET_OK
 }
 
 

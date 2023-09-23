@@ -1165,7 +1165,11 @@ impl G1Projective {
 
 #[derive(Clone, Copy)]
 pub struct G1Compressed([u8; 48]);
-
+impl G1Compressed {
+    pub fn get_array(&self) -> [u8; 48] {
+        self.0
+    }
+}
 impl fmt::Debug for G1Compressed {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0[..].fmt(f)
