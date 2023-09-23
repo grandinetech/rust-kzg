@@ -14,7 +14,7 @@ use std::fs::File;
 use std::io::Read;
 
 use blst::{blst_fr, blst_fr_from_scalar, blst_p1, blst_p2, blst_scalar, blst_scalar_from_lendian};
-use kzg::{cfg_into_iter, FFTSettings, Fr, G1Mul, KZGSettings, Poly, FFTG1, G1, G2};
+use kzg::{cfg_into_iter, FFTSettings, Fr, G1Mul, KZGSettings, Poly, G1, G2};
 
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
@@ -78,7 +78,7 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     assert_eq!(num_g1_points, FIELD_ELEMENTS_PER_BLOB);
     assert_eq!(g2_bytes.len() / BYTES_PER_G2, TRUSTED_SETUP_NUM_G2_POINTS);
 
-    let g1_projectives: Vec<FsG1> = g1_bytes
+    let mut g1_values: Vec<FsG1> = g1_bytes
         .chunks(BYTES_PER_G1)
         .map(|chunk| {
             FsG1::from_bytes(
@@ -108,7 +108,6 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     }
 
     let fs = FsFFTSettings::new(max_scale).unwrap();
-    let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
     reverse_bit_order(&mut g1_values);
 
     FsKZGSettings {
