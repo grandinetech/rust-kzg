@@ -129,7 +129,7 @@ pub fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
 }
 
 pub fn bytes_of_uint64(out: &mut [u8], mut n: u64) {
-    for byte in out.iter_mut().take(8) {
+    for byte in out.iter_mut().rev().take(8) {
         *byte = (n & 0xff) as u8;
         n >>= 8;
     }

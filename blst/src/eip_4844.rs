@@ -13,7 +13,7 @@ use std::fs::File;
 #[cfg(feature = "std")]
 use std::io::Read;
 
-use blst::{blst_fr, blst_fr_from_scalar, blst_p1, blst_p2, blst_scalar, blst_scalar_from_lendian};
+use blst::{blst_fr, blst_fr_from_scalar, blst_p1, blst_p2, blst_scalar, blst_scalar_from_bendian};
 use kzg::{cfg_into_iter, FFTSettings, Fr, G1Mul, KZGSettings, Poly, G1, G2};
 
 #[cfg(feature = "std")]
@@ -44,7 +44,7 @@ pub fn hash_to_bls_field(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> FsFr {
     let mut tmp = blst_scalar::default();
     let mut out = blst_fr::default();
     unsafe {
-        blst_scalar_from_lendian(&mut tmp, x.as_ptr());
+        blst_scalar_from_bendian(&mut tmp, x.as_ptr());
         blst_fr_from_scalar(&mut out, &tmp);
     }
     FsFr(out)
@@ -338,9 +338,9 @@ fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
 
     // Copy domain separator
     bytes[..16].copy_from_slice(&FIAT_SHAMIR_PROTOCOL_DOMAIN);
-    bytes_of_uint64(&mut bytes[16..24], FIELD_ELEMENTS_PER_BLOB as u64);
-    // Set all other bytes of this 16-byte (little-endian) field to zero
-    bytes_of_uint64(&mut bytes[24..32], 0);
+    // Set all other bytes of this 16-byte (big-endian) field to zero
+    bytes_of_uint64(&mut bytes[16..24], 0);
+    bytes_of_uint64(&mut bytes[24..32], FIELD_ELEMENTS_PER_BLOB as u64);
 
     // Copy blob
     for i in 0..blob.len() {

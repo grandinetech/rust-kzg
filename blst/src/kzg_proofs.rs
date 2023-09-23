@@ -16,10 +16,10 @@ use blst::{
 
 use blst::{
     blst_fp12_is_one, blst_p1, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
-    blst_p2_to_affine, Pairing,
+    blst_p2_to_affine, Pairing, blst_scalar_from_fr,
 };
 
-use kzg::{Fr, G1Mul, G1};
+use kzg::{G1Mul, G1};
 
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
@@ -65,8 +65,8 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
         }
 
         for i in 0..len {
-            p_scalars[i] = blst_scalar {
-                b: scalars[i].to_bytes(),
+            unsafe {
+                blst_scalar_from_fr(&mut p_scalars[i], &scalars[i].0)
             };
         }
 
@@ -78,7 +78,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 points_arg.as_ptr(),
                 len,
                 scalars_arg.as_ptr() as *const *const u8,
-                256,
+                255,
                 scratch.as_mut_ptr() as *mut limb_t,
             );
         }

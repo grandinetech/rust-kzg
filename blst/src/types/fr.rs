@@ -5,9 +5,10 @@ use alloc::string::String;
 use alloc::string::ToString;
 
 use blst::{
-    blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_scalar,
-    blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_scalar,
-    blst_scalar_fr_check, blst_scalar_from_fr, blst_scalar_from_lendian, blst_uint64_from_fr,
+    blst_bendian_from_scalar, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
+    blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr,
+    blst_fr_sub, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr,
+    blst_uint64_from_fr,
 };
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
@@ -58,7 +59,7 @@ impl Fr for FsFr {
                 let mut bls_scalar = blst_scalar::default();
                 let mut fr = blst_fr::default();
                 unsafe {
-                    blst_scalar_from_lendian(&mut bls_scalar, bytes.as_ptr());
+                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
                     if !blst_scalar_fr_check(&bls_scalar) {
                         return Err("Invalid scalar".to_string());
                     }
@@ -88,11 +89,13 @@ impl Fr for FsFr {
 
     fn to_bytes(&self) -> [u8; 32] {
         let mut scalar = blst_scalar::default();
+        let mut bytes = [0u8; 32];
         unsafe {
             blst_scalar_from_fr(&mut scalar, &self.0);
+            blst_bendian_from_scalar(bytes.as_mut_ptr(), &scalar);
         }
 
-        scalar.b
+        bytes
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
@@ -108,7 +111,7 @@ impl Fr for FsFr {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
             blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
+}
 
         val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0
     }
@@ -117,7 +120,7 @@ impl Fr for FsFr {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
             blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
+}
 
         val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0
     }
