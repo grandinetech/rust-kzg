@@ -8,6 +8,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 #[cfg(feature = "std")]
 use libc::FILE;
+use core::ptr::null_mut;
 #[cfg(feature = "std")]
 use std::fs::File;
 #[cfg(feature = "std")]
@@ -20,7 +21,7 @@ use kzg::{cfg_into_iter, FFTSettings, Fr, G1Mul, KZGSettings, Poly, G1, G2};
 use kzg::eip_4844::load_trusted_setup_string;
 
 use kzg::eip_4844::{
-    bytes_of_uint64, hash, Blob, Bytes32, Bytes48, CFFTSettings, CKZGSettings, KZGCommitment,
+    bytes_of_uint64, hash, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment,
     KZGProof, BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1,
     BYTES_PER_G2, BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE, C_KZG_RET, C_KZG_RET_BADARGS,
     C_KZG_RET_OK, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
@@ -586,74 +587,33 @@ pub fn verify_blob_kzg_proof_batch_rust(
     }
 }
 
-fn fft_settings_to_rust(c_settings: *const CFFTSettings) -> FsFFTSettings {
+fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> FsFFTSettings {
     let settings = unsafe { &*c_settings };
-    let mut first_root = unsafe { FsFr(*(settings.expanded_roots_of_unity.add(1))) };
+
+    let roots_of_unity = unsafe {
+        core::slice::from_raw_parts(settings.roots_of_unity, (settings.max_width + 1) as usize)
+            .iter()
+            .map(|r| FsFr(*r))
+            .collect::<Vec<FsFr>>()
+    };
+    let mut expanded_roots_of_unity = roots_of_unity.clone();
+    reverse_bit_order(&mut expanded_roots_of_unity);
+    let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
+    reverse_roots_of_unity.reverse();
+
+    let mut first_root = expanded_roots_of_unity[1];
     let first_root_arr = [first_root; 1];
     first_root = first_root_arr[0];
 
     let res = FsFFTSettings {
         max_width: settings.max_width as usize,
         root_of_unity: first_root,
-        expanded_roots_of_unity: unsafe {
-            core::slice::from_raw_parts(
-                settings.expanded_roots_of_unity,
-                (settings.max_width + 1) as usize,
-            )
-            .iter()
-            .map(|r| FsFr(*r))
-            .collect::<Vec<FsFr>>()
-        },
-        reverse_roots_of_unity: unsafe {
-            core::slice::from_raw_parts(
-                settings.reverse_roots_of_unity,
-                (settings.max_width + 1) as usize,
-            )
-            .iter()
-            .map(|r| FsFr(*r))
-            .collect::<Vec<FsFr>>()
-        },
-        roots_of_unity: unsafe {
-            core::slice::from_raw_parts(settings.roots_of_unity, (settings.max_width + 1) as usize)
-                .iter()
-                .map(|r| FsFr(*r))
-                .collect::<Vec<FsFr>>()
-        },
+        expanded_roots_of_unity,
+        reverse_roots_of_unity,
+        roots_of_unity,
     };
 
     res
-}
-
-fn fft_settings_to_c(rust_settings: &FsFFTSettings) -> *const CFFTSettings {
-    let expanded_roots_of_unity = Box::new(
-        rust_settings
-            .expanded_roots_of_unity
-            .iter()
-            .map(|r| r.0)
-            .collect::<Vec<blst_fr>>(),
-    );
-    let reverse_roots_of_unity = Box::new(
-        rust_settings
-            .reverse_roots_of_unity
-            .iter()
-            .map(|r| r.0)
-            .collect::<Vec<blst_fr>>(),
-    );
-    let roots_of_unity = Box::new(
-        rust_settings
-            .roots_of_unity
-            .iter()
-            .map(|r| r.0)
-            .collect::<Vec<blst_fr>>(),
-    );
-
-    let b = Box::new(CFFTSettings {
-        max_width: rust_settings.max_width as u64,
-        expanded_roots_of_unity: unsafe { (*Box::into_raw(expanded_roots_of_unity)).as_mut_ptr() },
-        reverse_roots_of_unity: unsafe { (*Box::into_raw(reverse_roots_of_unity)).as_mut_ptr() },
-        roots_of_unity: unsafe { (*Box::into_raw(roots_of_unity)).as_mut_ptr() },
-    });
-    Box::into_raw(b)
 }
 
 fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> FsKZGSettings {
@@ -664,7 +624,7 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> FsKZGSettings {
             .collect::<Vec<FsG1>>()
     };
     let res = FsKZGSettings {
-        fs: fft_settings_to_rust(c_settings.fs),
+        fs: fft_settings_to_rust(c_settings),
         secret_g1,
         secret_g2: unsafe {
             core::slice::from_raw_parts(c_settings.g2_values, TRUSTED_SETUP_NUM_G2_POINTS)
@@ -692,8 +652,18 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
     let stat_ref = Box::leak(x);
     let v = Box::into_raw(g1_val);
 
+    let roots_of_unity = Box::new(
+        rust_settings
+            .fs
+            .roots_of_unity
+            .iter()
+            .map(|r| r.0)
+            .collect::<Vec<blst_fr>>(),
+    );
+
     CKZGSettings {
-        fs: fft_settings_to_c(&rust_settings.fs),
+        max_width: rust_settings.fs.max_width as u64,
+        roots_of_unity: unsafe { (*Box::into_raw(roots_of_unity)).as_mut_ptr() },
         g1_values: unsafe { (*v).as_mut_ptr() },
         g2_values: stat_ref.as_mut_ptr(),
     }
@@ -815,32 +785,31 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
 /// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
-    let max_width = (*(*s).fs).max_width as usize;
-    let rev = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*(*s).fs).reverse_roots_of_unity,
-        max_width,
-    ));
-    drop(rev);
-    let exp = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*(*s).fs).expanded_roots_of_unity,
-        max_width,
-    ));
-    drop(exp);
+    if s.is_null() {
+        return;
+    }
+
+    let max_width = (*s).max_width as usize;
     let roots = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*(*s).fs).roots_of_unity,
+        (*s).roots_of_unity,
         max_width,
     ));
     drop(roots);
+    (*s).roots_of_unity = null_mut();
+
     let g1 = Box::from_raw(core::slice::from_raw_parts_mut(
         (*s).g1_values,
         TRUSTED_SETUP_NUM_G1_POINTS,
     ));
     drop(g1);
+    (*s).g1_values = null_mut();
+
     let g2 = Box::from_raw(core::slice::from_raw_parts_mut(
         (*s).g2_values,
         TRUSTED_SETUP_NUM_G2_POINTS,
     ));
     drop(g2);
+    (*s).g2_values = null_mut();
 }
 
 /// # Safety

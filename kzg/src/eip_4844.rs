@@ -82,16 +82,9 @@ pub struct KZGProof {
 }
 
 #[repr(C)]
-pub struct CFFTSettings {
-    pub max_width: u64,
-    pub expanded_roots_of_unity: *mut blst_fr,
-    pub reverse_roots_of_unity: *mut blst_fr,
-    pub roots_of_unity: *mut blst_fr,
-}
-
-#[repr(C)]
 pub struct CKZGSettings {
-    pub fs: *const CFFTSettings,
+    pub max_width: u64,
+    pub roots_of_unity: *mut blst_fr,
     pub g1_values: *mut blst_p1,
     pub g2_values: *mut blst_p2,
 }
