@@ -111,7 +111,7 @@ impl Fr for FsFr {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
             blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-}
+        }
 
         val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0
     }
@@ -120,7 +120,7 @@ impl Fr for FsFr {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
             blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-}
+        }
 
         val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0
     }

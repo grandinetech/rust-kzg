@@ -550,11 +550,12 @@ pub fn verify_blob_kzg_proof_batch_rust(
         } else {
             // Each group contains either one or zero blobs, so iterate
             // over the single blob verification function in parallel
-            Ok((blobs, commitments_g1, proofs_g1).into_par_iter().all(
-                |(blob, commitment, proof)| {
-                    verify_blob_kzg_proof_rust(blob, commitment, proof, ts).unwrap()
-                },
-            ))
+            (blobs, commitments_g1, proofs_g1)
+                .into_par_iter()
+                .map(|(blob, commitment, proof)| {
+                    verify_blob_kzg_proof_rust(blob, commitment, proof, ts)
+                })
+                .try_reduce(|| true, |a, b| Ok(a && b))
         };
     }
 

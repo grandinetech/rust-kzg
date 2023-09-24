@@ -10,13 +10,12 @@ use core::ptr;
 use blst::p1_affines;
 #[cfg(not(feature = "parallel"))]
 use blst::{
-    blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine,
-    blst_scalar, limb_t,
+    blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine, limb_t,
 };
 
 use blst::{
     blst_fp12_is_one, blst_p1, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
-    blst_p2_to_affine, Pairing, blst_scalar_from_fr,
+    blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing,
 };
 
 use kzg::{G1Mul, G1};
@@ -41,7 +40,13 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
         let points = p1_affines::from(points);
 
         let mut scalar_bytes: Vec<u8> = Vec::with_capacity(len * 32);
-        for bytes in scalars.iter().map(|b| b.to_bytes()) {
+        for bytes in scalars.iter().map(|b| {
+            let mut scalar = blst_scalar::default();
+
+            unsafe { blst_scalar_from_fr(&mut scalar, &b.0) }
+
+            scalar.b
+        }) {
             scalar_bytes.extend_from_slice(&bytes);
         }
 
@@ -65,9 +70,7 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
         }
 
         for i in 0..len {
-            unsafe {
-                blst_scalar_from_fr(&mut p_scalars[i], &scalars[i].0)
-            };
+            unsafe { blst_scalar_from_fr(&mut p_scalars[i], &scalars[i].0) };
         }
 
         let scalars_arg: [*const blst_scalar; 2] = [p_scalars.as_ptr(), ptr::null()];
