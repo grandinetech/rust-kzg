@@ -17,7 +17,7 @@ pub fn proof_single<
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
     // Our polynomial: degree 15, 16 coefficients
-    let coeffs = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len = coeffs.len();
     let secrets_len = poly_len + 1;
 
@@ -136,7 +136,7 @@ pub fn proof_multi<
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
     // Our polynomial: degree 15, 16 coefficients
-    let coeffs = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len = coeffs.len();
 
     // Compute proof at 2^coset_scale points
