@@ -71,6 +71,17 @@ pub fn bytes_to_blob(bytes: &[u8]) -> Result<Vec<FsFr>, String> {
         .collect()
 }
 
+
+fn is_trusted_setup_in_lagrange_form(settings: &FsKZGSettings) -> bool {
+    if settings.secret_g1.len() < 2 || settings.secret_g2.len() < 2 {
+        return false;
+    }
+
+    let is_monotomial_form = pairings_verify(&settings.secret_g1[1], &settings.secret_g2[0], &settings.secret_g1[0],&settings.secret_g2[1]);
+
+    !is_monotomial_form
+}
+
 #[allow(clippy::useless_conversion)]
 fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
@@ -734,8 +745,13 @@ pub unsafe extern "C" fn load_trusted_setup(
     let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
     let settings = load_trusted_setup_rust(g1_bytes, g2_bytes);
-    *out = kzg_settings_to_c(&settings);
-    C_KZG_RET_OK
+
+    if is_trusted_setup_in_lagrange_form(&settings) {
+        *out = kzg_settings_to_c(&settings);
+        C_KZG_RET_OK
+    } else {
+        C_KZG_RET_BADARGS
+    }
 }
 
 /// # Safety
@@ -757,8 +773,13 @@ pub unsafe extern "C" fn load_trusted_setup_file(
         return C_KZG_RET_BADARGS;
     }
     let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
-    *out = kzg_settings_to_c(&settings);
-    C_KZG_RET_OK
+
+    if is_trusted_setup_in_lagrange_form(&settings) {
+        *out = kzg_settings_to_c(&settings);
+        C_KZG_RET_OK
+    } else {
+        C_KZG_RET_BADARGS
+    }
 }
 
 /// # Safety
