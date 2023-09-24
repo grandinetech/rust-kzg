@@ -1,3 +1,14 @@
+From 356c7ae798d125ee638ee0283fab9abca47a2e84 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Sun, 24 Sep 2023 21:54:36 +0300
+Subject: [PATCH] Update linking
+
+---
+ bindings/node.js/Makefile    |  1 -
+ bindings/node.js/binding.gyp | 33 +++------------------------------
+ bindings/node.js/src/kzg.cxx |  4 ++++
+ 3 files changed, 7 insertions(+), 31 deletions(-)
+
 diff --git a/bindings/node.js/Makefile b/bindings/node.js/Makefile
 index 17850ec..efc9961 100644
 --- a/bindings/node.js/Makefile
@@ -73,4 +84,6 @@ index 871aa90..f89b1e3 100644
  #include "blst.h"
  #include "c_kzg_4844.h"
  #include <iostream>
- 
+-- 
+2.34.1
+
