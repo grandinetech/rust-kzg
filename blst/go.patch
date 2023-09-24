@@ -1,14 +1,14 @@
-From 48cd8f3f6112a1106994fe2349ad1ced5287597e Mon Sep 17 00:00:00 2001
-From: belijzajac <tautvydas749@gmail.com>
-Date: Tue, 11 Apr 2023 18:09:51 +0300
-Subject: [PATCH] Update linking
+From ed81f88f25548e15543df92905e72ab17726b21e Mon Sep 17 00:00:00 2001
+From: ProgrammingBen <benas.nikitinas@mif.stud.vu.lt>
+Date: Sun, 24 Sep 2023 18:31:10 +0300
+Subject: [PATCH] update linking
 
 ---
  bindings/go/main.go | 13 +++++++++----
  1 file changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/bindings/go/main.go b/bindings/go/main.go
-index aa7f141..7f0f01e 100644
+index 518d58c..10e6ab3 100644
 --- a/bindings/go/main.go
 +++ b/bindings/go/main.go
 @@ -5,7 +5,15 @@ package ckzg4844
@@ -28,9 +28,9 @@ index aa7f141..7f0f01e 100644
  import "C"
  
  import (
-@@ -13,9 +21,6 @@ import (
- 	"errors"
+@@ -14,9 +22,6 @@ import (
  	"fmt"
+ 	"strings"
  	"unsafe"
 -
 -	// So its functions are available during compilation.
@@ -39,5 +39,5 @@ index aa7f141..7f0f01e 100644
  
  const (
 -- 
-2.40.0
+2.34.1
 
