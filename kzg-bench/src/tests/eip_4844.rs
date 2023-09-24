@@ -17,7 +17,7 @@ use std::path::PathBuf;
 
 fn u64_to_bytes(x: u64) -> [u8; 32] {
     let mut bytes = [0u8; 32];
-    bytes[0..8].copy_from_slice(&x.to_le_bytes());
+    bytes[24..32].copy_from_slice(&x.to_be_bytes());
     bytes
 }
 
@@ -27,7 +27,7 @@ pub fn generate_random_blob_bytes(rng: &mut ThreadRng) -> [u8; BYTES_PER_BLOB] {
     // Ensure that the blob is canonical by ensuring that
     // each field element contained in the blob is < BLS_MODULUS
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
-        arr[i * BYTES_PER_FIELD_ELEMENT + BYTES_PER_FIELD_ELEMENT - 1] = 0;
+        arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
     arr
 }
@@ -36,7 +36,7 @@ pub fn generate_random_field_element_bytes(rng: &mut ThreadRng) -> [u8; BYTES_PE
     let mut arr = [0u8; BYTES_PER_FIELD_ELEMENT];
     rng.fill(&mut arr[..]);
     // Ensure that the field element is canonical, i.e. < BLS_MODULUS
-    arr[BYTES_PER_FIELD_ELEMENT - 1] = 0;
+    arr[0] = 0;
     arr
 }
 
@@ -92,7 +92,7 @@ pub fn blob_to_kzg_commitment_test<
     let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
 
     let field_element =
-        TFr::from_hex("0xad5570f5a3810b7af9d4b24bc1c2ea670245db2eaa49aae654b8f7393a9a6214")
+        TFr::from_hex("0x14629a3a39f7b854e6aa49aa2edb450267eac2c14bb2d4f97a0b81a3f57055ad")
             .unwrap();
 
     // Initialize the blob with a single field element
@@ -139,10 +139,10 @@ pub fn compute_kzg_proof_test<
     let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
 
     let field_element =
-        TFr::from_hex("0x138a16c66bdd9b0b17978ebd00bedf62307aa545d6b899b35703aedb696e3869")
+        TFr::from_hex("0x69386e69dbae0357b399b8d645a57a3062dfbe00bd8e97170b9bdd6bc6168a13")
             .unwrap();
     let input_value =
-        TFr::from_hex("0x0d32bafe47065f59692005d9d4b8b4ef67bd0de4c517a91ae0f9b441b84fea03")
+        TFr::from_hex("0x03ea4fb841b4f9e01aa917c5e40dbd67efb4b8d4d9052069595f0647feba320d")
             .unwrap();
 
     // Initialize the blob with a single field element
