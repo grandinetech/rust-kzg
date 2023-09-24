@@ -6,9 +6,9 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
+use core::ptr::null_mut;
 #[cfg(feature = "std")]
 use libc::FILE;
-use core::ptr::null_mut;
 #[cfg(feature = "std")]
 use std::fs::File;
 #[cfg(feature = "std")]
@@ -21,11 +21,11 @@ use kzg::{cfg_into_iter, FFTSettings, Fr, G1Mul, KZGSettings, Poly, G1, G2};
 use kzg::eip_4844::load_trusted_setup_string;
 
 use kzg::eip_4844::{
-    bytes_of_uint64, hash, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment,
-    KZGProof, BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1,
-    BYTES_PER_G2, BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE, C_KZG_RET, C_KZG_RET_BADARGS,
-    C_KZG_RET_OK, FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
-    RANDOM_CHALLENGE_KZG_BATCH_DOMAIN, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
+    bytes_of_uint64, hash, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
+    BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2,
+    BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
+    FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
+    TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
 };
 
 use crate::types::fft_settings::FsFFTSettings;
@@ -72,19 +72,19 @@ pub fn bytes_to_blob(bytes: &[u8]) -> Result<Vec<FsFr>, String> {
         .collect()
 }
 
-
-fn is_trusted_setup_in_lagrange_form(settings: &FsKZGSettings) -> bool {
-    if settings.secret_g1.len() < 2 || settings.secret_g2.len() < 2 {
+fn is_trusted_setup_in_lagrange_form(g1_values: &Vec<FsG1>, g2_values: &Vec<FsG2>) -> bool {
+    if g1_values.len() < 2 || g2_values.len() < 2 {
         return false;
     }
 
-    let is_monotomial_form = pairings_verify(&settings.secret_g1[1], &settings.secret_g2[0], &settings.secret_g1[0],&settings.secret_g2[1]);
+    let is_monotomial_form =
+        pairings_verify(&g1_values[1], &g2_values[0], &g1_values[0], &g2_values[1]);
 
     !is_monotomial_form
 }
 
 #[allow(clippy::useless_conversion)]
-fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
+fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> Result<FsKZGSettings, String> {
     let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
 
     assert_eq!(num_g1_points, FIELD_ELEMENTS_PER_BLOB);
@@ -120,17 +120,22 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> FsKZGSettings {
     }
 
     let fs = FsFFTSettings::new(max_scale).unwrap();
+
+    if !is_trusted_setup_in_lagrange_form(&g1_values, &g2_values) {
+        return Err(String::from("Trusted setup is not in Lagrange form"));
+    }
+
     reverse_bit_order(&mut g1_values);
 
-    FsKZGSettings {
+    Ok(FsKZGSettings {
         secret_g1: g1_values,
         secret_g2: g2_values,
         fs,
-    }
+    })
 }
 
 #[cfg(feature = "std")]
-pub fn load_trusted_setup_filename_rust(filepath: &str) -> FsKZGSettings {
+pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings, String> {
     let mut file = File::open(filepath).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -716,7 +721,7 @@ pub unsafe extern "C" fn load_trusted_setup(
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
     let settings = load_trusted_setup_rust(g1_bytes, g2_bytes);
 
-    if is_trusted_setup_in_lagrange_form(&settings) {
+    if let Ok(settings) = settings {
         *out = kzg_settings_to_c(&settings);
         C_KZG_RET_OK
     } else {
@@ -744,7 +749,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
     }
     let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
 
-    if is_trusted_setup_in_lagrange_form(&settings) {
+    if let Ok(settings) = settings {
         *out = kzg_settings_to_c(&settings);
         C_KZG_RET_OK
     } else {
