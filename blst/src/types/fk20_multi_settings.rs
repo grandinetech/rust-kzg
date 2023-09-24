@@ -75,7 +75,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
                 let mut j = start;
 
                 while i + 1 < k {
-                    x.push(ks.secret_g1[j as usize]);
+                    x.push(ks.secret_g1[j]);
 
                     i += 1;
 

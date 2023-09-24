@@ -610,15 +610,13 @@ fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> FsFFTSettings {
     let first_root_arr = [first_root; 1];
     first_root = first_root_arr[0];
 
-    let res = FsFFTSettings {
+    FsFFTSettings {
         max_width: settings.max_width as usize,
         root_of_unity: first_root,
         expanded_roots_of_unity,
         reverse_roots_of_unity,
         roots_of_unity,
-    };
-
-    res
+    }
 }
 
 fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> FsKZGSettings {
