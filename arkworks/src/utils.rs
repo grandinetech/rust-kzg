@@ -1,6 +1,7 @@
 use super::{Fp, P1};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
 use ark_bls12_381::{g1, g2, Fq, Fr};
+use ark_ec::CurveGroup;
 use ark_ec::models::short_weierstrass::Projective;
 use ark_ff::{biginteger::BigInteger256, biginteger::BigInteger384, Fp2, Fp384};
 use ark_poly::univariate::DensePolynomial as DensePoly;
@@ -26,7 +27,7 @@ pub fn blst_poly_into_pc_poly(pd: &PolyData) -> Result<DensePoly<Fr>, String> {
     let mut poly = Vec::new();
     let x = pd.coeffs.clone();
     for x in x {
-        poly.push(Fr::new(BigInteger256::new(x.0.l)))
+        poly.push(Fr::new_unchecked(BigInteger256::new(x.0.l)))
     }
     let p = DensePoly::from_coefficients_slice(&poly);
     Ok(p)
@@ -43,12 +44,12 @@ pub fn pc_fq_into_blst_fp(fq: Fq) -> Fp {
 
 pub fn blst_fr_into_pc_fr(fr: &BlstFr) -> Fr {
     let big_int = BigInteger256::new(fr.0.l);
-    Fr::new(big_int)
+    Fr::new_unchecked(big_int)
 }
 
 pub fn blst_fp_into_pc_fq(fp: &Fp) -> Fq {
     let big_int = BigInteger384::new(fp.l);
-    Fq::new(big_int)
+    Fq::new_unchecked(big_int)
 }
 
 pub fn pc_g1projective_into_blst_p1(gp: Projective<g1::Config>) -> Result<ArkG1, Error> {
@@ -61,7 +62,7 @@ pub fn pc_g1projective_into_blst_p1(gp: Projective<g1::Config>) -> Result<ArkG1,
 }
 
 pub fn blst_p1_into_pc_g1projective(p1: &P1) -> Result<Projective<g1::Config>, Error> {
-    let pc_projective = Projective::new(
+    let pc_projective = Projective::new_unchecked(
         blst_fp_into_pc_fq(&p1.x),
         blst_fp_into_pc_fq(&p1.y),
         blst_fp_into_pc_fq(&p1.z),
@@ -94,18 +95,18 @@ pub fn pc_g2projective_into_blst_p2(p2: Projective<g2::Config>) -> Result<ArkG2,
 }
 
 pub fn blst_p2_into_pc_g2projective(p2: &ArkG2) -> Result<Projective<g2::Config>, Error> {
-    let pc_projective = Projective::new(
+    let pc_projective = Projective::new_unchecked(
         Fp2::new(
-            Fp384::new(BigInteger384::new(p2.0.x.fp[0].l)),
-            Fp384::new(BigInteger384::new(p2.0.x.fp[1].l)),
+            Fp384::new_unchecked(BigInteger384::new(p2.0.x.fp[0].l)),
+            Fp384::new_unchecked(BigInteger384::new(p2.0.x.fp[1].l)),
         ),
         Fp2::new(
-            Fp384::new(BigInteger384::new(p2.0.y.fp[0].l)),
-            Fp384::new(BigInteger384::new(p2.0.y.fp[1].l)),
+            Fp384::new_unchecked(BigInteger384::new(p2.0.y.fp[0].l)),
+            Fp384::new_unchecked(BigInteger384::new(p2.0.y.fp[1].l)),
         ),
         Fp2::new(
-            Fp384::new(BigInteger384::new(p2.0.z.fp[0].l)),
-            Fp384::new(BigInteger384::new(p2.0.z.fp[1].l)),
+            Fp384::new_unchecked(BigInteger384::new(p2.0.z.fp[0].l)),
+            Fp384::new_unchecked(BigInteger384::new(p2.0.z.fp[1].l)),
         ),
     );
     Ok(pc_projective)

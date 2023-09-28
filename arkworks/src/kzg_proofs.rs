@@ -15,7 +15,13 @@ use ark_std::{
     marker::PhantomData, ops::Div, rand::RngCore, test_rng, vec, One, UniformRand, Zero,
 };
 
-use kzg::{cfg_into_iter, G1Mul};
+use kzg::cfg_into_iter;
+// FIXME: parallel needs these uses
+// #[cfg(feature = "parallel")]
+// {
+// use rayon::iter::IntoParallelIterator;
+// use rayon::iter::ParallelIterator;
+// }
 
 use super::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
@@ -25,7 +31,7 @@ use super::utils::{
 use super::P2;
 use crate::fft_g1::{G1_GENERATOR, G1_IDENTITY};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
-use ark_bls12_381::{g1, g2, Bls12_381, Fr as ArkFr, Fr};
+use ark_bls12_381::{g1, g2, Bls12_381, Fr};
 use ark_ec::CurveGroup;
 use ark_ec::{
     models::short_weierstrass::Affine,
@@ -348,17 +354,16 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>,
     for i in 0..4 {
         temp[i] = read_be_u64(&mut &secret[i * 8..(i + 1) * 8]);
     }
-    /* Might be wrong */
-    let s = Fr::from(BigInteger256::new([temp[0], temp[1], temp[2], temp[3]]));
+    let s = Fr::new_unchecked(BigInteger256::new([temp[0], temp[1], temp[2], temp[3]]));
     let mut s1 = Vec::new();
     let mut s2 = Vec::new();
     for _i in 0..len {
         let mut temp =
-            g1::G1Affine::new(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y).into_group();
+            g1::G1Affine::new_unchecked(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y).into_group();
         temp.mul_assign(s_pow);
         s1.push(pc_g1projective_into_blst_p1(temp).unwrap());
         let mut temp =
-            g2::G2Affine::new(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y).into_group();
+            g2::G2Affine::new_unchecked(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y).into_group();
         temp.mul_assign(s_pow);
         s2.push(pc_g2projective_into_blst_p2(temp).unwrap());
         s_pow *= s;

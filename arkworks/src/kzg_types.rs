@@ -14,9 +14,9 @@ use crate::utils::{
     pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
 };
 use ark_bls12_381::{g1, g2, Fr as ArkFr};
-use ark_ec::models::short_weierstrass::{Projective, Affine};
+use ark_ec::models::short_weierstrass::{Projective};
 use ark_ec::AffineRepr;
-use ark_ff::{biginteger::BigInteger256, BigInteger, Field, PrimeField};
+use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
 use ark_poly::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
@@ -266,12 +266,8 @@ impl Fr for FsFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let b = From::from(BigInteger256::new(*u));
-        // pc_fr_into_blst_fr(b) // IDK if this is correct
-        match b {
-            None => FsFr(blst_fr { l: [0, 0, 0, 0] }),
-            Some(x) => pc_fr_into_blst_fr(Into::into(x)),
-        }
+        let b = ArkFr::new(BigInteger256::new(*u));
+        pc_fr_into_blst_fr(b)
     }
 
     fn from_u64(val: u64) -> Self {
