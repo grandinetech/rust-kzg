@@ -56,10 +56,10 @@ where
             let digit = digits[digit_index] as i16;
             if digit > 0 {
                 let b = (digit - 1) as usize;
-                buckets[b] = buckets[b] + pt;
+                buckets[b] += pt;
             } else if digit < 0 {
                 let b = (-digit - 1) as usize;
-                buckets[b] = buckets[b] - pt;
+                buckets[b] -= pt;
             }
         }
 
@@ -110,10 +110,10 @@ fn to_radix_2w_size_hint(w: usize) -> usize {
     debug_assert!(w <= 8);
 
     let digits_count = match w {
-        6 => (256 + w - 1) / w as usize,
-        7 => (256 + w - 1) / w as usize,
+        6 => (256 + w - 1) / w,
+        7 => (256 + w - 1) / w,
         // See comment in to_radix_2w on handling the terminal carry.
-        8 => (256 + w - 1) / w + 1 as usize,
+        8 => (256 + w - 1) / w + 1,
         _ => panic!("invalid radix parameter"),
     };
 
@@ -137,7 +137,7 @@ fn to_radix_2w(scalar: &Scalar, w: usize) -> [i8; 43] {
 
     let mut carry = 0u64;
     let mut digits = [0i8; 43];
-    let digits_count = (256 + w - 1) / w as usize;
+    let digits_count = (256 + w - 1) / w;
     for i in 0..digits_count {
         // Construct a buffer of bits of the scalar, starting at `bit_offset`.
         let bit_offset = i * w;
@@ -145,22 +145,20 @@ fn to_radix_2w(scalar: &Scalar, w: usize) -> [i8; 43] {
         let bit_idx = bit_offset % 64;
 
         // Read the bits from the scalar
-        let bit_buf: u64;
-        if bit_idx < 64 - w || u64_idx == 3 {
+        let bit_buf: u64 = if bit_idx < 64 - w || u64_idx == 3 {
             // This window's bits are contained in a single u64,
             // or it's the last u64 anyway.
-            bit_buf = scalar64x4[u64_idx] >> bit_idx;
+            scalar64x4[u64_idx] >> bit_idx
         } else {
             // Combine the current u64's bits with the bits from the next u64
-            bit_buf =
-                (scalar64x4[u64_idx] >> bit_idx) | (scalar64x4[1 + u64_idx] << (64 - bit_idx));
-        }
+                (scalar64x4[u64_idx] >> bit_idx) | (scalar64x4[1 + u64_idx] << (64 - bit_idx))
+        };
 
         // Read the actual coefficient value from the window
         let coef = carry + (bit_buf & window_mask); // coef = [0, 2^r)
 
         // Recenter coefficients from [0,2^w) to [-2^w/2, 2^w/2)
-        carry = (coef + (radix / 2) as u64) >> w;
+        carry = (coef + (radix / 2)) >> w;
         digits[i] = ((coef as i64) - (carry << w) as i64) as i8;
     }
 
