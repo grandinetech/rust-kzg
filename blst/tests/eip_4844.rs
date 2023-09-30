@@ -257,8 +257,6 @@ mod tests {
     #[test]
     pub fn blob_to_kzg_commitment_invalid_blob() {
         set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-        println!("{}", env!("CARGO_MANIFEST_DIR"));
-        println!("{}", format!("../kzg-bench/{}", TRUSTED_SETUP_PATH));
         let settings =
             load_trusted_setup_filename_rust(&format!("../kzg-bench/{}", TRUSTED_SETUP_PATH))
                 .unwrap();
