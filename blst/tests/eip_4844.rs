@@ -9,15 +9,15 @@ mod tests {
         compute_and_verify_blob_kzg_proof_test,
         compute_and_verify_kzg_proof_fails_with_incorrect_proof_test,
         compute_and_verify_kzg_proof_round_trip_test, compute_kzg_proof_test, compute_powers_test,
-        generate_random_blob_bytes, verify_kzg_proof_batch_fails_with_incorrect_proof_test,
-        verify_kzg_proof_batch_test,
+        generate_random_blob_bytes, get_trusted_setup_path,
+        verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
     #[cfg(not(feature = "minimal-spec"))]
     use kzg_bench::tests::eip_4844::{
-        compute_and_verify_kzg_proof_within_domain_test, get_trusted_setup_path,
-        test_vectors_blob_to_kzg_commitment, test_vectors_compute_blob_kzg_proof,
-        test_vectors_compute_kzg_proof, test_vectors_verify_blob_kzg_proof,
-        test_vectors_verify_blob_kzg_proof_batch, test_vectors_verify_kzg_proof,
+        compute_and_verify_kzg_proof_within_domain_test, test_vectors_blob_to_kzg_commitment,
+        test_vectors_compute_blob_kzg_proof, test_vectors_compute_kzg_proof,
+        test_vectors_verify_blob_kzg_proof, test_vectors_verify_blob_kzg_proof_batch,
+        test_vectors_verify_kzg_proof,
     };
     use rust_kzg_blst::eip_4844::{
         blob_to_kzg_commitment, blob_to_kzg_commitment_rust, blob_to_polynomial_rust,
