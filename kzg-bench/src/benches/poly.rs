@@ -7,8 +7,8 @@ pub fn bench_new_poly_div<TFr: Fr, TPoly: Poly<TFr>>(c: &mut Criterion) {
     let dividend_length = 1 << BENCH_SCALE;
     let divisor_length = dividend_length / 2;
 
-    let mut dividend = TPoly::new(dividend_length).unwrap();
-    let mut divisor = TPoly::new(divisor_length).unwrap();
+    let mut dividend = TPoly::new(dividend_length);
+    let mut divisor = TPoly::new(divisor_length);
 
     // Randomize the polynomials' coefficients
     for i in 0..dividend.len() {

@@ -44,7 +44,7 @@ pub fn bench_fk_single_da<
     let secrets_len = n_len + 1;
 
     assert!(n_len >= 2 * poly_len);
-    let mut p = TPoly::new(poly_len).unwrap();
+    let mut p = TPoly::new(poly_len);
     for (i, &coeff) in coeffs.iter().enumerate() {
         p.set_coeff_at(i, &TFr::from_u64(coeff));
     }
@@ -95,7 +95,7 @@ pub fn bench_fk_multi_da<
     let fk = TFK20MultiSettings::new(&ks, secrets_len, chunk_len).unwrap();
 
     // Create a test polynomial of size n that's independent of chunk_len
-    let mut p = TPoly::new(n).unwrap();
+    let mut p = TPoly::new(n);
     for i in 0..chunk_count {
         for j in 0..chunk_len {
             let p_index = i * chunk_len + j;

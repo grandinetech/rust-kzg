@@ -22,7 +22,7 @@ pub fn bench_commit_to_poly<
     let fs = TFFTSettings::new(BENCH_SCALE).unwrap();
     let (s1, s2) = generate_trusted_setup(fs.get_max_width(), SECRET);
     let ks = TKZGSettings::new(&s1, &s2, fs.get_max_width(), &fs).unwrap();
-    let mut poly = TPoly::new(fs.get_max_width()).unwrap();
+    let mut poly = TPoly::new(fs.get_max_width());
     for i in 0..fs.get_max_width() {
         poly.set_coeff_at(i, &TFr::rand());
     }
@@ -44,7 +44,7 @@ pub fn bench_compute_proof_single<
     let fs = TFFTSettings::new(BENCH_SCALE).unwrap();
     let (s1, s2) = generate_trusted_setup(fs.get_max_width(), SECRET);
     let ks = TKZGSettings::new(&s1, &s2, fs.get_max_width(), &fs).unwrap();
-    let mut poly = TPoly::new(fs.get_max_width()).unwrap();
+    let mut poly = TPoly::new(fs.get_max_width());
     for i in 0..fs.get_max_width() {
         poly.set_coeff_at(i, &TFr::rand());
     }

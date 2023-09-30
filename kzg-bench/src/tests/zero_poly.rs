@@ -146,8 +146,8 @@ pub fn reduce_partials_random<
 
 /// Check that polynomial evaluation works against precomputed values
 pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPoly: Poly<TFr>>() {
-    let mut expected_eval = TPoly::new(16).unwrap();
-    let mut expected_poly = TPoly::new(16).unwrap();
+    let mut expected_eval = TPoly::new(16);
+    let mut expected_poly = TPoly::new(16);
 
     let fft_settings = TFFTSettings::new(4).unwrap();
 
@@ -187,8 +187,8 @@ pub fn zero_poly_known<
     let fft_settings = TFFTSettings::new(4).unwrap();
 
     let mut missing_idxs = Vec::new();
-    let mut expected_eval = TPoly::new(16).unwrap();
-    let mut expected_poly = TPoly::new(16).unwrap();
+    let mut expected_eval = TPoly::new(16);
+    let mut expected_poly = TPoly::new(16);
 
     for (i, &exists) in EXISTS.iter().enumerate() {
         expected_eval.set_coeff_at(i, &TFr::from_u64_arr(&EXPECTED_EVAL_U64[i]));

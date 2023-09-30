@@ -49,8 +49,7 @@ pub fn recover_simple<
     let max_width: usize = fs.get_max_width();
 
     let poly_query = TPoly::new(max_width);
-    assert!(poly_query.is_ok());
-    let mut poly = poly_query.unwrap();
+    let mut poly = poly_query;
 
     for i in 0..(max_width / 2) {
         poly.set_coeff_at(i, &TFr::from_u64(i.try_into().unwrap()));
@@ -106,8 +105,7 @@ pub fn recover_random<
     let max_width: usize = fs.get_max_width();
     // let mut poly = TPoly::default();
     let poly_query = TPoly::new(max_width);
-    assert!(poly_query.is_ok());
-    let mut poly = poly_query.unwrap();
+    let mut poly = poly_query;
 
     for i in 0..(max_width / 2) {
         poly.set_coeff_at(i, &TFr::from_u64(i.try_into().unwrap()));

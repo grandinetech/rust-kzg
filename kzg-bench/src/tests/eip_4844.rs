@@ -77,6 +77,7 @@ pub fn compute_powers_test<TFr: Fr>(compute_powers: &dyn Fn(&TFr, usize) -> Vec<
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn blob_to_kzg_commitment_test<
     TFr: Fr + Copy,
     TG1: G1,
@@ -85,11 +86,11 @@ pub fn blob_to_kzg_commitment_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
 
     let field_element =
         TFr::from_hex("0x14629a3a39f7b854e6aa49aa2edb450267eac2c14bb2d4f97a0b81a3f57055ad")
@@ -100,7 +101,7 @@ pub fn blob_to_kzg_commitment_test<
     blob[0] = field_element;
 
     // Get a commitment to this particular blob
-    let commitment = blob_to_kzg_commitment(&blob, &ts);
+    let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
 
     // We expect the commitment to match
     // If it doesn't match, something important has changed
@@ -130,13 +131,13 @@ pub fn compute_kzg_proof_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
-    blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
+    blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
 
     let field_element =
         TFr::from_hex("0x69386e69dbae0357b399b8d645a57a3062dfbe00bd8e97170b9bdd6bc6168a13")
@@ -150,7 +151,7 @@ pub fn compute_kzg_proof_test<
     blob[0] = field_element;
 
     // Compute the KZG proof for the given blob & z
-    let (proof, output_value) = compute_kzg_proof(&blob, &input_value, &ts);
+    let (proof, output_value) = compute_kzg_proof(&blob, &input_value, &ts).unwrap();
 
     // Compare the computed proof to the expected proof
     let expected_proof = if cfg!(feature = "minimal-spec") {
@@ -170,7 +171,7 @@ pub fn compute_kzg_proof_test<
     assert!(proof.equals(&expected_proof));
 
     // Get the expected y by evaluating the polynomial at input_value
-    let poly = blob_to_polynomial(&blob);
+    let poly = blob_to_polynomial(&blob).unwrap();
     let expected_output_value = evaluate_polynomial_in_evaluation_form(&poly, &input_value, &ts);
 
     assert!(output_value.equals(&expected_output_value));
@@ -185,16 +186,16 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
-    blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
+    blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     let z_fr = {
@@ -208,14 +209,14 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     };
 
     // Get a commitment to that particular blob
-    let commitment = blob_to_kzg_commitment(&blob, &ts);
+    let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
 
     // Compute the proof
-    let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts);
+    let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts).unwrap();
 
     // Now let's attempt to verify the proof
     // First convert the blob to field elements
-    let poly = blob_to_polynomial(&blob);
+    let poly = blob_to_polynomial(&blob).unwrap();
 
     // Now evaluate the poly at `z` to learn `y`
     let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
@@ -238,16 +239,16 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
-    blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
+    blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     for i in 0..25 {
@@ -257,14 +258,14 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
         };
 
         // Get a commitment to that particular blob
-        let commitment = blob_to_kzg_commitment(&blob, &ts);
+        let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
 
         // Get the polynomial version of the blob
-        let poly = blob_to_polynomial(&blob);
+        let poly = blob_to_polynomial(&blob).unwrap();
 
         // Compute the proof
         let z_fr = ts.get_roots_of_unity_at(i);
-        let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts);
+        let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts).unwrap();
 
         // Now evaluate the poly at `z` to learn `y`
         let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
@@ -287,16 +288,16 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
-    blob_to_polynomial: &dyn Fn(&[TFr]) -> TPoly,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
+    blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     let z_fr = {
@@ -310,14 +311,14 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     };
 
     // Get a commitment to that particular blob
-    let commitment = blob_to_kzg_commitment(&blob, &ts);
+    let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
 
     // Compute the proof
-    let (mut proof, _) = compute_kzg_proof(&blob, &z_fr, &ts);
+    let (mut proof, _) = compute_kzg_proof(&blob, &z_fr, &ts).unwrap();
 
     // Now let's attempt to verify the proof
     // First convert the blob to field elements
-    let poly = blob_to_polynomial(&blob);
+    let poly = blob_to_polynomial(&blob).unwrap();
 
     // Now evaluate the poly at `z` to learn `y`
     let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
@@ -339,14 +340,14 @@ pub fn compute_and_verify_blob_kzg_proof_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     // Some preparation
@@ -356,7 +357,7 @@ pub fn compute_and_verify_blob_kzg_proof_test<
     };
 
     // Compute the proof
-    let commitment = blob_to_kzg_commitment(&blob, &ts);
+    let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
     let proof = compute_blob_kzg_proof(&blob, &commitment, &ts).unwrap();
 
     // Finally verify the proof
@@ -373,14 +374,14 @@ pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     // Some preparation
@@ -390,7 +391,7 @@ pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
     };
 
     // Compute the proof
-    let commitment = blob_to_kzg_commitment(&blob, &ts);
+    let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
     let mut proof = compute_blob_kzg_proof(&blob, &commitment, &ts).unwrap();
 
     // Change the proof so it should not verify
@@ -410,8 +411,8 @@ pub fn verify_kzg_proof_batch_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
     verify_blob_kzg_proof_batch: &dyn Fn(
@@ -422,7 +423,7 @@ pub fn verify_kzg_proof_batch_test<
     ) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     const N_SAMPLES: usize = 16;
@@ -438,7 +439,7 @@ pub fn verify_kzg_proof_batch_test<
             bytes_to_blob(&blob_bytes).unwrap()
         };
 
-        let commitment = blob_to_kzg_commitment(&blob, &ts);
+        let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
         let proof = compute_blob_kzg_proof(&blob, &commitment, &ts).unwrap();
 
         blobs.push(blob);
@@ -469,8 +470,8 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
     verify_blob_kzg_proof_batch: &dyn Fn(
@@ -481,7 +482,7 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
     ) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     const N_SAMPLES: usize = 2;
@@ -497,7 +498,7 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
             bytes_to_blob(&blob_bytes).unwrap()
         };
 
-        let commitment = blob_to_kzg_commitment(&blob, &ts);
+        let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
         let proof = compute_blob_kzg_proof(&blob, &commitment, &ts).unwrap();
 
         blobs.push(blob);
@@ -521,6 +522,7 @@ const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str =
     "src/test_vectors/verify_blob_kzg_proof_batch/*/*/*";
 
 #[cfg(not(feature = "minimal-spec"))]
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_blob_to_kzg_commitment<
     TFr: Fr,
     TG1: G1,
@@ -529,12 +531,12 @@ pub fn test_vectors_blob_to_kzg_commitment<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> TG1,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(BLOB_TO_KZG_COMMITMENT_TESTS)
         .unwrap()
         .map(Result::unwrap)
@@ -558,12 +560,13 @@ pub fn test_vectors_blob_to_kzg_commitment<
             TG1::from_bytes(&commitment_bytes).unwrap()
         };
 
-        let commitment = blob_to_kzg_commitment(&blob, &ts);
+        let commitment = blob_to_kzg_commitment(&blob, &ts).unwrap();
         assert!(commitment.equals(&expected_commitment));
     }
 }
 
 #[cfg(not(feature = "minimal-spec"))]
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_compute_kzg_proof<
     TFr: Fr,
     TG1: G1,
@@ -572,12 +575,12 @@ pub fn test_vectors_compute_kzg_proof<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
-    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> (TG1, TFr),
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+    compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(COMPUTE_KZG_PROOF_TESTS)
         .unwrap()
         .map(Result::unwrap)
@@ -613,7 +616,7 @@ pub fn test_vectors_compute_kzg_proof<
         );
 
         // Compute the proof
-        let (proof, y) = compute_kzg_proof(&input.0, &input.1, &ts);
+        let (proof, y) = compute_kzg_proof(&input.0, &input.1, &ts).unwrap();
 
         // Compare the computed and expected proofs
         assert!(proof.equals(&output.0.unwrap()));
@@ -624,6 +627,7 @@ pub fn test_vectors_compute_kzg_proof<
 }
 
 #[cfg(not(feature = "minimal-spec"))]
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_compute_blob_kzg_proof<
     TFr: Fr,
     TG1: G1,
@@ -632,12 +636,12 @@ pub fn test_vectors_compute_blob_kzg_proof<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(COMPUTE_BLOB_KZG_PROOF_TESTS)
         .unwrap()
         .map(Result::unwrap)
@@ -665,7 +669,7 @@ pub fn test_vectors_compute_blob_kzg_proof<
             },
         );
 
-        let proof = match compute_blob_kzg_proof(&input.0, &input.1, &ts) {
+        match compute_blob_kzg_proof(&input.0, &input.1, &ts) {
             Ok(proof) => {
                 let expected_commitment = test
                     .get_output_bytes()
@@ -682,6 +686,7 @@ pub fn test_vectors_compute_blob_kzg_proof<
 }
 
 #[cfg(not(feature = "minimal-spec"))]
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_verify_kzg_proof<
     TFr: Fr,
     TG1: G1,
@@ -690,11 +695,11 @@ pub fn test_vectors_verify_kzg_proof<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(VERIFY_KZG_PROOF_TESTS)
         .unwrap()
         .map(Result::unwrap)
@@ -736,7 +741,7 @@ pub fn test_vectors_verify_kzg_proof<
             },
         );
 
-        let result = match verify_kzg_proof(&input.0, &input.1, &input.2, &input.3, &ts) {
+        match verify_kzg_proof(&input.0, &input.1, &input.2, &input.3, &ts) {
             Ok(result) => assert_eq!(result, test.get_output().unwrap()),
             Err(_) => {
                 assert!(test.get_output().is_none());
@@ -747,6 +752,7 @@ pub fn test_vectors_verify_kzg_proof<
 }
 
 #[cfg(not(feature = "minimal-spec"))]
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_verify_blob_kzg_proof<
     TFr: Fr,
     TG1: G1,
@@ -755,12 +761,12 @@ pub fn test_vectors_verify_blob_kzg_proof<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_TESTS)
         .unwrap()
         .map(Result::unwrap)
@@ -795,7 +801,7 @@ pub fn test_vectors_verify_blob_kzg_proof<
             },
         );
 
-        let result = match verify_blob_kzg_proof(&input.0, &input.1, &input.2, &ts) {
+        match verify_blob_kzg_proof(&input.0, &input.1, &input.2, &ts) {
             Ok(result) => assert_eq!(result, test.get_output().unwrap()),
             Err(_) => {
                 assert!(test.get_output().is_none());
@@ -806,6 +812,7 @@ pub fn test_vectors_verify_blob_kzg_proof<
 }
 
 #[cfg(not(feature = "minimal-spec"))]
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_verify_blob_kzg_proof_batch<
     TFr: Fr,
     TG1: G1,
@@ -814,7 +821,7 @@ pub fn test_vectors_verify_blob_kzg_proof_batch<
     TFFTSettings: FFTSettings<TFr>,
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     verify_blob_kzg_proof_batch: &dyn Fn(
         &[Vec<TFr>],
@@ -824,7 +831,7 @@ pub fn test_vectors_verify_blob_kzg_proof_batch<
     ) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
         .unwrap()
         .map(Result::unwrap)
@@ -876,7 +883,7 @@ pub fn test_vectors_verify_blob_kzg_proof_batch<
             continue;
         }
 
-        let result = match verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs, &ts) {
+        match verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs, &ts) {
             Ok(result) => assert_eq!(result, test.get_output().unwrap()),
             Err(_) => {
                 assert!(test.get_output().is_none());

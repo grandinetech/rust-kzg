@@ -6,7 +6,7 @@ use rust_kzg_blst::types::fr::FsFr;
 use rust_kzg_blst::types::poly::FsPoly;
 
 pub fn create_poly_of_length_ten() {
-    let poly = FsPoly::new(10).unwrap();
+    let poly = FsPoly::new(10);
     assert_eq!(poly.len(), 10);
 }
 
@@ -15,7 +15,7 @@ pub fn poly_pad_works_rand() {
 
     for _k in 0..256 {
         let poly_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
-        let mut poly = FsPoly::new(poly_length).unwrap();
+        let mut poly = FsPoly::new(poly_length);
         for i in 0..poly.len() {
             poly.set_coeff_at(i, &FsFr::rand());
         }
@@ -32,7 +32,7 @@ pub fn poly_pad_works_rand() {
 
 pub fn poly_eval_check() {
     let n: usize = 10;
-    let mut poly = FsPoly::new(n).unwrap();
+    let mut poly = FsPoly::new(n);
     for i in 0..n {
         let fr = FsFr::from_u64((i + 1) as u64);
         poly.set_coeff_at(i, &fr);
@@ -45,7 +45,7 @@ pub fn poly_eval_check() {
 pub fn poly_eval_0_check() {
     let n: usize = 7;
     let a: usize = 597;
-    let mut poly = FsPoly::new(n).unwrap();
+    let mut poly = FsPoly::new(n);
     for i in 0..n {
         let fr = FsFr::from_u64((i + a) as u64);
         poly.set_coeff_at(i, &fr);
@@ -57,7 +57,7 @@ pub fn poly_eval_0_check() {
 
 pub fn poly_eval_nil_check() {
     let n: usize = 0;
-    let poly = FsPoly::new(n).unwrap();
+    let poly = FsPoly::new(n);
     let actual = poly.eval(&FsFr::one());
     assert!(actual.equals(&FsFr::zero()));
 }
@@ -65,7 +65,7 @@ pub fn poly_eval_nil_check() {
 pub fn poly_inverse_simple_0() {
     // 1 / (1 - x) = 1 + x + x^2 + ...
     let d: usize = 16;
-    let mut p = FsPoly::new(2).unwrap();
+    let mut p = FsPoly::new(2);
     p.set_coeff_at(0, &FsFr::one());
     p.set_coeff_at(1, &FsFr::one());
     p.set_coeff_at(1, &FsFr::negate(&p.get_coeff_at(1)));
@@ -80,7 +80,7 @@ pub fn poly_inverse_simple_0() {
 pub fn poly_inverse_simple_1() {
     // 1 / (1 + x) = 1 - x + x^2 - ...
     let d: usize = 16;
-    let mut p = FsPoly::new(2).unwrap();
+    let mut p = FsPoly::new(2);
     p.set_coeff_at(0, &FsFr::one());
     p.set_coeff_at(1, &FsFr::one());
     let result = p.inverse(d);
@@ -174,7 +174,7 @@ fn test_data(a: usize, b: usize) -> Vec<i64> {
 }
 
 fn new_test_poly(coeffs: &[i64]) -> FsPoly {
-    let mut p = FsPoly::new(0).unwrap();
+    let mut p = FsPoly::new(0);
 
     for &coeff in coeffs.iter() {
         if coeff >= 0 {
@@ -237,12 +237,12 @@ pub fn poly_div_fast_test() {
 }
 
 pub fn test_poly_div_by_zero() {
-    let mut dividend = FsPoly::new(2).unwrap();
+    let mut dividend = FsPoly::new(2);
 
     dividend.set_coeff_at(0, &FsFr::from_u64(1));
     dividend.set_coeff_at(1, &FsFr::from_u64(1));
 
-    let divisor = FsPoly::new(0).unwrap();
+    let divisor = FsPoly::new(0);
 
     let dummy = dividend.div(&divisor);
     assert!(dummy.is_err());
@@ -304,13 +304,13 @@ pub fn poly_mul_random() {
 
     for _k in 0..256 {
         let multiplicand_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
-        let mut multiplicand = FsPoly::new(multiplicand_length).unwrap();
+        let mut multiplicand = FsPoly::new(multiplicand_length);
         for i in 0..multiplicand.len() {
             multiplicand.set_coeff_at(i, &FsFr::rand());
         }
 
         let multiplier_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
-        let mut multiplier = FsPoly::new(multiplier_length).unwrap();
+        let mut multiplier = FsPoly::new(multiplier_length);
         for i in 0..multiplier.len() {
             multiplier.set_coeff_at(i, &FsFr::rand());
         }
@@ -340,8 +340,8 @@ pub fn poly_div_random() {
         let dividend_length: usize = (2 + (rng.next_u64() % 1000)) as usize;
         let divisor_length: usize = 1 + ((rng.next_u64() as usize) % dividend_length);
 
-        let mut dividend = FsPoly::new(dividend_length).unwrap();
-        let mut divisor = FsPoly::new(divisor_length).unwrap();
+        let mut dividend = FsPoly::new(dividend_length);
+        let mut divisor = FsPoly::new(divisor_length);
 
         for i in 0..dividend_length {
             dividend.set_coeff_at(i, &FsFr::rand());

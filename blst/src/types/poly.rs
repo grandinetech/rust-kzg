@@ -17,10 +17,10 @@ pub struct FsPoly {
 }
 
 impl Poly<FsFr> for FsPoly {
-    fn new(size: usize) -> Result<Self, String> {
-        Ok(Self {
+    fn new(size: usize) -> Self {
+        Self {
             coeffs: vec![FsFr::default(); size],
-        })
+        }
     }
 
     fn get_coeff_at(&self, i: usize) -> FsFr {
@@ -251,7 +251,7 @@ impl Poly<FsFr> for FsPoly {
 
     fn mul_direct(&mut self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
         if self.len() == 0 || multiplier.len() == 0 {
-            return Ok(FsPoly::new(0).unwrap());
+            return Ok(FsPoly::new(0));
         }
 
         let a_degree = self.len() - 1;

@@ -3,13 +3,13 @@ use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 
 pub fn create_poly_of_length_ten<TFr: Fr, TPoly: Poly<TFr>>() {
-    let poly = TPoly::new(10).unwrap();
+    let poly = TPoly::new(10);
     assert_eq!(poly.len(), 10);
 }
 
 pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 10;
-    let mut poly = TPoly::new(n).unwrap();
+    let mut poly = TPoly::new(n);
     for i in 0..n {
         let fr = TFr::from_u64((i + 1) as u64);
         poly.set_coeff_at(i, &fr);
@@ -22,7 +22,7 @@ pub fn poly_eval_check<TFr: Fr, TPoly: Poly<TFr>>() {
 pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 7;
     let a: usize = 597;
-    let mut poly = TPoly::new(n).unwrap();
+    let mut poly = TPoly::new(n);
     for i in 0..n {
         let fr = TFr::from_u64((i + a) as u64);
         poly.set_coeff_at(i, &fr);
@@ -34,7 +34,7 @@ pub fn poly_eval_0_check<TFr: Fr, TPoly: Poly<TFr>>() {
 
 pub fn poly_eval_nil_check<TFr: Fr, TPoly: Poly<TFr>>() {
     let n: usize = 0;
-    let poly = TPoly::new(n).unwrap();
+    let poly = TPoly::new(n);
     let actual = poly.eval(&TFr::one());
     assert!(actual.equals(&TFr::zero()));
 }
@@ -42,7 +42,7 @@ pub fn poly_eval_nil_check<TFr: Fr, TPoly: Poly<TFr>>() {
 pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
     // 1 / (1 - x) = 1 + x + x^2 + ...
     let d: usize = 16;
-    let mut p = TPoly::new(2).unwrap();
+    let mut p = TPoly::new(2);
     p.set_coeff_at(0, &TFr::one());
     p.set_coeff_at(1, &TFr::one());
     p.set_coeff_at(1, &TFr::negate(&p.get_coeff_at(1)));
@@ -57,7 +57,7 @@ pub fn poly_inverse_simple_0<TFr: Fr, TPoly: Poly<TFr>>() {
 pub fn poly_inverse_simple_1<TFr: Fr, TPoly: Poly<TFr>>() {
     // 1 / (1 + x) = 1 - x + x^2 - ...
     let d: usize = 16;
-    let mut p = TPoly::new(2).unwrap();
+    let mut p = TPoly::new(2);
     p.set_coeff_at(0, &TFr::one());
     p.set_coeff_at(1, &TFr::one());
     let result = p.inverse(d);
@@ -122,7 +122,7 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
 }
 
 fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>) -> TPoly {
-    let mut p = TPoly::new(coeffs.len()).unwrap();
+    let mut p = TPoly::new(coeffs.len());
     for (i, &coeff) in coeffs.iter().enumerate() {
         if coeff >= 0 {
             let c = TFr::from_u64(coeff as u64);
@@ -161,7 +161,7 @@ pub fn poly_div_by_zero<TFr: Fr, TPoly: Poly<TFr>>() {
     //Arrange
     let coeffs: Vec<i32> = vec![1, 1];
     let mut dividend: TPoly = new_test_poly(&coeffs);
-    let divisor = TPoly::new(0).unwrap();
+    let divisor = TPoly::new(0);
 
     //Act
     let result = dividend.div(&divisor);
@@ -241,8 +241,8 @@ pub fn poly_mul_random<
         let multiplier_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
         let out_length: usize = (1 + (rng.next_u64() % 1000)) as usize;
 
-        let mut multiplicand = TPoly::new(multiplicand_length).unwrap();
-        let mut multiplier = TPoly::new(multiplier_length).unwrap();
+        let mut multiplicand = TPoly::new(multiplicand_length);
+        let mut multiplier = TPoly::new(multiplier_length);
 
         for i in 0..multiplicand_length {
             let coef = TFr::rand();
@@ -287,8 +287,8 @@ pub fn poly_div_random<TFr: Fr, TPoly: Poly<TFr>>() {
         let dividend_length: usize = (2 + (rng.next_u64() % 1000)) as usize;
         let divisor_length: usize = 1 + ((rng.next_u64() as usize) % dividend_length);
 
-        let mut dividend = TPoly::new(dividend_length).unwrap();
-        let mut divisor = TPoly::new(divisor_length).unwrap();
+        let mut dividend = TPoly::new(dividend_length);
+        let mut divisor = TPoly::new(divisor_length);
 
         for i in 0..dividend_length {
             let coef = TFr::rand();
