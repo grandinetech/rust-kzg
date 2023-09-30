@@ -9,9 +9,10 @@ use kzg::eip_4844::{
     FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_PATH,
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
+use pathdiff::diff_paths;
 use rand::rngs::ThreadRng;
 use rand::Rng;
-use std::env::set_current_dir;
+use std::env::current_dir;
 use std::fs;
 use std::path::PathBuf;
 
@@ -77,6 +78,22 @@ pub fn compute_powers_test<TFr: Fr>(compute_powers: &dyn Fn(&TFr, usize) -> Vec<
     }
 }
 
+fn get_manifest_dir() -> String {
+    let current = current_dir().unwrap();
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let relative = diff_paths(manifest, current).unwrap();
+
+    relative.into_os_string().into_string().unwrap()
+}
+
+pub fn get_trusted_setup_path() -> String {
+    PathBuf::from(get_manifest_dir())
+        .join(TRUSTED_SETUP_PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap()
+}
+
 #[allow(clippy::type_complexity)]
 pub fn blob_to_kzg_commitment_test<
     TFr: Fr + Copy,
@@ -89,8 +106,7 @@ pub fn blob_to_kzg_commitment_test<
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
 
     let field_element =
         TFr::from_hex("0x14629a3a39f7b854e6aa49aa2edb450267eac2c14bb2d4f97a0b81a3f57055ad")
@@ -136,8 +152,7 @@ pub fn compute_kzg_proof_test<
     blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
 
     let field_element =
         TFr::from_hex("0x69386e69dbae0357b399b8d645a57a3062dfbe00bd8e97170b9bdd6bc6168a13")
@@ -194,8 +209,7 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let mut rng = rand::thread_rng();
 
     let z_fr = {
@@ -247,8 +261,7 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let mut rng = rand::thread_rng();
 
     for i in 0..25 {
@@ -296,8 +309,7 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let mut rng = rand::thread_rng();
 
     let z_fr = {
@@ -346,8 +358,7 @@ pub fn compute_and_verify_blob_kzg_proof_test<
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let mut rng = rand::thread_rng();
 
     // Some preparation
@@ -380,8 +391,7 @@ pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let mut rng = rand::thread_rng();
 
     // Some preparation
@@ -422,8 +432,7 @@ pub fn verify_kzg_proof_batch_test<
         &TKZGSettings,
     ) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let mut rng = rand::thread_rng();
 
     const N_SAMPLES: usize = 16;
@@ -481,8 +490,7 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
         &TKZGSettings,
     ) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let mut rng = rand::thread_rng();
 
     const N_SAMPLES: usize = 2;
@@ -535,12 +543,15 @@ pub fn test_vectors_blob_to_kzg_commitment<
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
-    let test_files: Vec<PathBuf> = glob::glob(BLOB_TO_KZG_COMMITMENT_TESTS)
-        .unwrap()
-        .map(Result::unwrap)
-        .collect();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        BLOB_TO_KZG_COMMITMENT_TESTS
+    ))
+    .unwrap()
+    .map(Result::unwrap)
+    .collect();
     assert!(!test_files.is_empty());
 
     for test_file in test_files {
@@ -579,12 +590,15 @@ pub fn test_vectors_compute_kzg_proof<
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
-    let test_files: Vec<PathBuf> = glob::glob(COMPUTE_KZG_PROOF_TESTS)
-        .unwrap()
-        .map(Result::unwrap)
-        .collect();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        COMPUTE_KZG_PROOF_TESTS
+    ))
+    .unwrap()
+    .map(Result::unwrap)
+    .collect();
     assert!(!test_files.is_empty());
 
     for test_file in test_files {
@@ -640,12 +654,15 @@ pub fn test_vectors_compute_blob_kzg_proof<
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
-    let test_files: Vec<PathBuf> = glob::glob(COMPUTE_BLOB_KZG_PROOF_TESTS)
-        .unwrap()
-        .map(Result::unwrap)
-        .collect();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        COMPUTE_BLOB_KZG_PROOF_TESTS
+    ))
+    .unwrap()
+    .map(Result::unwrap)
+    .collect();
     assert!(!test_files.is_empty());
 
     for test_file in test_files {
@@ -698,12 +715,15 @@ pub fn test_vectors_verify_kzg_proof<
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
-    let test_files: Vec<PathBuf> = glob::glob(VERIFY_KZG_PROOF_TESTS)
-        .unwrap()
-        .map(Result::unwrap)
-        .collect();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        VERIFY_KZG_PROOF_TESTS
+    ))
+    .unwrap()
+    .map(Result::unwrap)
+    .collect();
     assert!(!test_files.is_empty());
 
     for test_file in test_files {
@@ -765,12 +785,15 @@ pub fn test_vectors_verify_blob_kzg_proof<
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
-    let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_TESTS)
-        .unwrap()
-        .map(Result::unwrap)
-        .collect();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        VERIFY_BLOB_KZG_PROOF_TESTS
+    ))
+    .unwrap()
+    .map(Result::unwrap)
+    .collect();
     assert!(!test_files.is_empty());
 
     for test_file in test_files {
@@ -830,12 +853,15 @@ pub fn test_vectors_verify_blob_kzg_proof_batch<
         &TKZGSettings,
     ) -> Result<bool, String>,
 ) {
-    set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
-    let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
-        .unwrap()
-        .map(Result::unwrap)
-        .collect();
+    let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        VERIFY_BLOB_KZG_PROOF_BATCH_TESTS
+    ))
+    .unwrap()
+    .map(Result::unwrap)
+    .collect();
     assert!(!test_files.is_empty());
 
     for test_file in test_files {

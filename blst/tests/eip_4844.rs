@@ -1,10 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use std::env::set_current_dir;
-
     use kzg::eip_4844::{
         Blob, KZGCommitment, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, C_KZG_RET_BADARGS,
-        TRUSTED_SETUP_PATH,
     };
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
@@ -17,10 +14,10 @@ mod tests {
     };
     #[cfg(not(feature = "minimal-spec"))]
     use kzg_bench::tests::eip_4844::{
-        compute_and_verify_kzg_proof_within_domain_test, test_vectors_blob_to_kzg_commitment,
-        test_vectors_compute_blob_kzg_proof, test_vectors_compute_kzg_proof,
-        test_vectors_verify_blob_kzg_proof, test_vectors_verify_blob_kzg_proof_batch,
-        test_vectors_verify_kzg_proof,
+        compute_and_verify_kzg_proof_within_domain_test, get_trusted_setup_path,
+        test_vectors_blob_to_kzg_commitment, test_vectors_compute_blob_kzg_proof,
+        test_vectors_compute_kzg_proof, test_vectors_verify_blob_kzg_proof,
+        test_vectors_verify_blob_kzg_proof_batch, test_vectors_verify_kzg_proof,
     };
     use rust_kzg_blst::eip_4844::{
         blob_to_kzg_commitment, blob_to_kzg_commitment_rust, blob_to_polynomial_rust,
@@ -256,10 +253,7 @@ mod tests {
 
     #[test]
     pub fn blob_to_kzg_commitment_invalid_blob() {
-        set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-        let settings =
-            load_trusted_setup_filename_rust(&format!("../kzg-bench/{}", TRUSTED_SETUP_PATH))
-                .unwrap();
+        let settings = load_trusted_setup_filename_rust(get_trusted_setup_path().as_str()).unwrap();
 
         let c_settings = kzg_settings_to_c(&settings);
 
