@@ -1,5 +1,7 @@
 #![allow(non_camel_case_types)]
 use crate::Vec;
+use alloc::string::String;
+use alloc::vec;
 pub use blst::{blst_fr, blst_p1, blst_p2};
 use core::ffi::c_uint;
 use sha2::{Digest, Sha256};
@@ -91,34 +93,77 @@ pub struct CKZGSettings {
 
 ////////////////////////////// Utility functions for EIP-4844 //////////////////////////////
 
-pub fn load_trusted_setup_string(contents: &str) -> (Vec<u8>, Vec<u8>) {
-    let mut lines = contents.lines();
-    let length = lines.next().unwrap().parse::<usize>().unwrap();
-    let n2 = lines.next().unwrap().parse::<usize>().unwrap();
+pub fn load_trusted_setup_string(contents: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
+    let mut offset = 0;
 
-    let g1_bytes = (0..length)
-        .flat_map(|_| {
-            let line = lines.next().unwrap();
-            assert_eq!(line.len(), 96);
-            (0..line.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-                .collect::<Vec<u8>>()
-        })
-        .collect::<Vec<u8>>();
+    const TRUSTED_SETUP_ERROR: &str = "Incorrect trusted setup format";
 
-    let g2_bytes = (0..n2)
-        .flat_map(|_| {
-            let line = lines.next().unwrap();
-            assert_eq!(line.len(), 192);
-            (0..line.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&line[i..i + 2], 16).unwrap())
-                .collect::<Vec<u8>>()
-        })
-        .collect::<Vec<u8>>();
+    #[inline(always)]
+    fn scan_number(offset: &mut usize, contents: &str) -> Result<usize, String> {
+        *offset += contents[(*offset)..]
+            .find(|c: char| !c.is_whitespace())
+            .ok_or_else(|| String::from(TRUSTED_SETUP_ERROR))?;
+        let start = *offset;
+        *offset += contents[(*offset)..]
+            .find(|c: char| !c.is_ascii_digit())
+            .ok_or_else(|| String::from(TRUSTED_SETUP_ERROR))?;
+        let end = *offset;
+        contents[start..end]
+            .parse::<usize>()
+            .map_err(|_| String::from(TRUSTED_SETUP_ERROR))
+    }
 
-    (g1_bytes, g2_bytes)
+    let g1_point_count = scan_number(&mut offset, contents)?;
+
+    if g1_point_count != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from(TRUSTED_SETUP_ERROR));
+    }
+
+    let g2_point_count = scan_number(&mut offset, contents)?;
+
+    if g2_point_count != TRUSTED_SETUP_NUM_G2_POINTS {
+        return Err(String::from(TRUSTED_SETUP_ERROR));
+    }
+
+    let mut g1_bytes = vec![0u8; g1_point_count * BYTES_PER_G1];
+    let mut g2_bytes = vec![0u8; g2_point_count * BYTES_PER_G2];
+
+    #[inline(always)]
+    fn scan_hex_byte(offset: &mut usize, contents: &str) -> Result<u8, String> {
+        *offset += contents[(*offset)..]
+            .find(|c: char| !c.is_whitespace())
+            .ok_or_else(|| String::from(TRUSTED_SETUP_ERROR))?;
+        let start = *offset;
+
+        let end = if contents
+            .get((*offset + 1)..)
+            .map(|it| {
+                it.chars()
+                    .next()
+                    .map(|c| c.is_ascii_hexdigit())
+                    .unwrap_or(false)
+            })
+            .unwrap_or(false)
+        {
+            *offset += 2;
+            *offset
+        } else {
+            *offset += 1;
+            *offset
+        };
+
+        u8::from_str_radix(&contents[start..end], 16).map_err(|_| String::from(TRUSTED_SETUP_ERROR))
+    }
+
+    for byte in &mut g1_bytes {
+        *byte = scan_hex_byte(&mut offset, contents)?
+    }
+
+    for byte in &mut g2_bytes {
+        *byte = scan_hex_byte(&mut offset, contents)?
+    }
+
+    Ok((g1_bytes, g2_bytes))
 }
 
 pub fn bytes_of_uint64(out: &mut [u8], mut n: u64) {

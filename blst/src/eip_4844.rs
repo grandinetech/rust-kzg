@@ -129,12 +129,12 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> Result<FsKZGSett
 
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings, String> {
-    let mut file = File::open(filepath).expect("Unable to open file");
+    let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)
-        .expect("Unable to read file");
+        .map_err(|_| "Unable to read file".to_string())?;
 
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents)?;
     load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
 
@@ -754,7 +754,10 @@ pub unsafe extern "C" fn load_trusted_setup_file(
     let mut buf = vec![0u8; 1024 * 1024];
     let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
     let s = String::from_utf8(buf[..len].to_vec()).unwrap();
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&s);
+    let (g1_bytes, g2_bytes) = match load_trusted_setup_string(&s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
     if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
         // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
