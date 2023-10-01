@@ -39,13 +39,14 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         let root_of_unity = FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
         // create max_width of roots & store them reversed as well
-        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
+        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
         // Permute the roots of unity
         let mut roots_of_unity = expanded_roots_of_unity.clone();
-        reverse_bit_order(&mut roots_of_unity);
+        roots_of_unity.pop();
+        reverse_bit_order(&mut roots_of_unity)?;
 
         Ok(FsFFTSettings {
             max_width,
@@ -95,6 +96,10 @@ pub fn expand_root_of_unity(root: &FsFr, width: usize) -> Result<Vec<FsFr>, Stri
         }
 
         generated_powers.push(generated_powers.last().unwrap().mul(root));
+    }
+
+    if generated_powers.len() != width + 1 {
+        return Err(String::from("Root of unity has invalid scale"));
     }
 
     Ok(generated_powers)

@@ -66,7 +66,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings>
         }
 
         let mut ret = self.data_availability_optimized(p).unwrap();
-        reverse_bit_order(&mut ret);
+        reverse_bit_order(&mut ret)?;
 
         Ok(ret)
     }

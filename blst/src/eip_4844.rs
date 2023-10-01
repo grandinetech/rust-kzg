@@ -87,45 +87,38 @@ fn is_trusted_setup_in_lagrange_form(g1_values: &Vec<FsG1>, g2_values: &Vec<FsG2
 fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> Result<FsKZGSettings, String> {
     let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
 
-    assert_eq!(num_g1_points, FIELD_ELEMENTS_PER_BLOB);
-    assert_eq!(g2_bytes.len() / BYTES_PER_G2, TRUSTED_SETUP_NUM_G2_POINTS);
+    if num_g1_points != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Invalid number of G1 points"));
+    }
 
-    let mut g1_values: Vec<FsG1> = g1_bytes
+    let num_g2_points = g2_bytes.len() / BYTES_PER_G2;
+    if num_g2_points != TRUSTED_SETUP_NUM_G2_POINTS {
+        return Err(String::from("Invalid number of G2 points"));
+    }
+
+    let mut g1_values = g1_bytes
         .chunks(BYTES_PER_G1)
-        .map(|chunk| {
-            FsG1::from_bytes(
-                chunk
-                    .try_into()
-                    .expect("Chunked into incorrect number of bytes"),
-            )
-            .unwrap()
-        })
-        .collect();
+        .map(FsG1::from_bytes)
+        .collect::<Result<Vec<FsG1>, String>>()?;
 
-    let g2_values: Vec<FsG2> = g2_bytes
+    let g2_values = g2_bytes
         .chunks(BYTES_PER_G2)
-        .map(|chunk| {
-            FsG2::from_bytes(
-                chunk
-                    .try_into()
-                    .expect("Chunked into incorrect number of bytes"),
-            )
-            .unwrap()
-        })
-        .collect();
+        .map(FsG2::from_bytes)
+        .collect::<Result<Vec<FsG2>, String>>()?;
+
+    // Sanity check, that user is not trying to load old trusted setup file
+    if !is_trusted_setup_in_lagrange_form(&g1_values, &g2_values) {
+        return Err(String::from("Trusted setup is not in Lagrange form"));
+    }
 
     let mut max_scale: usize = 0;
     while (1 << max_scale) < num_g1_points {
         max_scale += 1;
     }
 
-    let fs = FsFFTSettings::new(max_scale).unwrap();
+    let fs = FsFFTSettings::new(max_scale)?;
 
-    if !is_trusted_setup_in_lagrange_form(&g1_values, &g2_values) {
-        return Err(String::from("Trusted setup is not in Lagrange form"));
-    }
-
-    reverse_bit_order(&mut g1_values);
+    reverse_bit_order(&mut g1_values)?;
 
     Ok(FsKZGSettings {
         secret_g1: g1_values,
@@ -602,17 +595,18 @@ pub fn verify_blob_kzg_proof_batch_rust(
     }
 }
 
-fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> FsFFTSettings {
+fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FsFFTSettings, String> {
     let settings = unsafe { &*c_settings };
 
     let roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.roots_of_unity, (settings.max_width + 1) as usize)
+        core::slice::from_raw_parts(settings.roots_of_unity, settings.max_width as usize)
             .iter()
             .map(|r| FsFr(*r))
             .collect::<Vec<FsFr>>()
     };
     let mut expanded_roots_of_unity = roots_of_unity.clone();
-    reverse_bit_order(&mut expanded_roots_of_unity);
+    reverse_bit_order(&mut expanded_roots_of_unity)?;
+    expanded_roots_of_unity.push(FsFr::one());
     let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
     reverse_roots_of_unity.reverse();
 
@@ -620,24 +614,24 @@ fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> FsFFTSettings {
     let first_root_arr = [first_root; 1];
     first_root = first_root_arr[0];
 
-    FsFFTSettings {
+    Ok(FsFFTSettings {
         max_width: settings.max_width as usize,
         root_of_unity: first_root,
         expanded_roots_of_unity,
         reverse_roots_of_unity,
         roots_of_unity,
-    }
+    })
 }
 
-fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> FsKZGSettings {
+fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<FsKZGSettings, String> {
     let secret_g1 = unsafe {
         core::slice::from_raw_parts(c_settings.g1_values, TRUSTED_SETUP_NUM_G1_POINTS)
             .iter()
             .map(|r| FsG1(*r))
             .collect::<Vec<FsG1>>()
     };
-    let res = FsKZGSettings {
-        fs: fft_settings_to_rust(c_settings),
+    Ok(FsKZGSettings {
+        fs: fft_settings_to_rust(c_settings)?,
         secret_g1,
         secret_g2: unsafe {
             core::slice::from_raw_parts(c_settings.g2_values, TRUSTED_SETUP_NUM_G2_POINTS)
@@ -645,11 +639,10 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> FsKZGSettings {
                 .map(|r| FsG2(*r))
                 .collect::<Vec<FsG2>>()
         },
-    };
-    res
+    })
 }
 
-pub fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
+fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
     let g1_val = rust_settings
         .secret_g1
         .iter()
@@ -715,7 +708,12 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
         Err(err) => return err,
     };
 
-    let tmp = match blob_to_kzg_commitment_rust(&deserialized_blob, &kzg_settings_to_rust(s)) {
+    let settings = match kzg_settings_to_rust(s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
+    let tmp = match blob_to_kzg_commitment_rust(&deserialized_blob, &settings) {
         Ok(value) => value,
         Err(_) => return C_KZG_RET_BADARGS,
     };
@@ -790,10 +788,16 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     if commitment_g1.is_err() {
         return C_KZG_RET_BADARGS;
     }
+
+    let settings = match kzg_settings_to_rust(s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
     let proof = compute_blob_kzg_proof_rust(
         &deserialized_blob.unwrap(),
         &commitment_g1.unwrap(),
-        &kzg_settings_to_rust(s),
+        &settings,
     );
 
     if let Ok(proof) = proof {
@@ -853,12 +857,17 @@ pub unsafe extern "C" fn verify_kzg_proof(
         return C_KZG_RET_BADARGS;
     }
 
+    let settings = match kzg_settings_to_rust(s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
     let result = verify_kzg_proof_rust(
         &g1commitment.unwrap(),
         &frz.unwrap(),
         &fry.unwrap(),
         &g1proof.unwrap(),
-        &kzg_settings_to_rust(s),
+        &settings,
     );
 
     if let Ok(result) = result {
@@ -889,11 +898,16 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
         return C_KZG_RET_BADARGS;
     }
 
+    let settings = match kzg_settings_to_rust(s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
     let result = verify_blob_kzg_proof_rust(
         &deserialized_blob.unwrap(),
         &commitment_g1.unwrap(),
         &proof_g1.unwrap(),
-        &kzg_settings_to_rust(s),
+        &settings,
     );
 
     if let Ok(result) = result {
@@ -935,11 +949,16 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     if let (Ok(blobs), Ok(commitments), Ok(proofs)) =
         (deserialized_blobs, commitments_g1, proofs_g1)
     {
+        let settings = match kzg_settings_to_rust(s) {
+            Ok(value) => value,
+            Err(_) => return C_KZG_RET_BADARGS,
+        };
+
         let result = verify_blob_kzg_proof_batch_rust(
             blobs.as_slice(),
             &commitments,
             &proofs,
-            &kzg_settings_to_rust(s),
+            &settings,
         );
 
         if let Ok(result) = result {
@@ -973,8 +992,13 @@ pub unsafe extern "C" fn compute_kzg_proof(
         Err(_) => return C_KZG_RET_BADARGS,
     };
 
+    let settings = match kzg_settings_to_rust(s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
     let (proof_out_tmp, fry_tmp) =
-        match compute_kzg_proof_rust(&deserialized_blob, &frz, &kzg_settings_to_rust(s)) {
+        match compute_kzg_proof_rust(&deserialized_blob, &frz, &settings) {
             Ok(value) => value,
             Err(_) => return C_KZG_RET_BADARGS,
         };
@@ -982,4 +1006,29 @@ pub unsafe extern "C" fn compute_kzg_proof(
     (*proof_out).bytes = proof_out_tmp.to_bytes();
     (*y_out).bytes = fry_tmp.to_bytes();
     C_KZG_RET_OK
+}
+
+#[cfg(test)]
+mod tests {
+    use kzg_bench::tests::eip_4844::get_trusted_setup_path;
+
+    use crate::eip_4844::{kzg_settings_to_c, kzg_settings_to_rust};
+
+    use super::load_trusted_setup_filename_rust;
+
+    #[test]
+    fn kzg_settings_to_rust_check_conversion() {
+        let settings = load_trusted_setup_filename_rust(get_trusted_setup_path().as_str());
+
+        assert!(settings.is_ok());
+
+        let settings = settings.unwrap();
+        
+        let converted_settings = kzg_settings_to_rust(&kzg_settings_to_c(&settings)).unwrap();
+
+        assert_eq!(settings.fs.root_of_unity, converted_settings.fs.root_of_unity);
+        assert_eq!(settings.fs.roots_of_unity, converted_settings.fs.roots_of_unity);
+        assert_eq!(settings.fs.expanded_roots_of_unity, converted_settings.fs.expanded_roots_of_unity);
+        assert_eq!(settings.fs.reverse_roots_of_unity, converted_settings.fs.reverse_roots_of_unity);
+    }
 }

@@ -55,17 +55,50 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Ve
     (s1, s2)
 }
 
-pub fn reverse_bit_order<T>(values: &mut [T])
+pub fn reverse_bit_order<T>(values: &mut [T]) -> Result<(), String>
 where
     T: Clone,
 {
+    if values.is_empty() {
+        return Err(String::from("Values can not be empty"));
+    }
+
+    // does not match with c-kzg implementation, but required for internal tests
+    if values.len() == 1 {
+        return Ok(())
+    }
+
+    if !values.len().is_power_of_two() {
+        return Err(String::from("Values length has to be a power of 2"));
+    }
+
     let unused_bit_len = values.len().leading_zeros() + 1;
-    for i in 0..values.len() - 1 {
+
+    for i in 0..values.len() {
         let r = i.reverse_bits() >> unused_bit_len;
         if r > i {
             let tmp = values[r].clone();
             values[r] = values[i].clone();
             values[i] = tmp;
         }
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::reverse_bit_order;
+
+    #[test]
+    fn reverse_bit_order_bad_arguments() {
+        // empty array should fail
+        assert!(reverse_bit_order(&mut [0u8; 0]).is_err());
+        // array with 1 element should be ignored
+        assert!(reverse_bit_order(&mut [1u8]).is_ok());
+        // array with 3 elements should fail, because 3 is not a power of 2
+        assert!(reverse_bit_order(&mut [1u8, 2u8, 3u8]).is_err());
+        // array with 4 elements should pass
+        assert!(reverse_bit_order(&mut [1u8, 2u8, 3u8, 4u8]).is_ok());
     }
 }
