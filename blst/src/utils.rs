@@ -8,6 +8,7 @@ use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
+use alloc::string::String;
 
 pub fn log_2_byte(b: u8) -> usize {
     let mut r = u8::from(b > 0xF) << 2;
