@@ -3,11 +3,11 @@ mod tests {
     use std::path::PathBuf;
     use std::{fs::File, io::Read, ptr::null_mut};
 
-    use kzg::Fr;
     use kzg::eip_4844::{
         load_trusted_setup_string, Blob, CKZGSettings, KZGCommitment, BYTES_PER_COMMITMENT,
         BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET_BADARGS, C_KZG_RET_OK,
     };
+    use kzg::Fr;
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
@@ -273,7 +273,13 @@ mod tests {
         };
 
         let status = unsafe {
-            load_trusted_setup(&mut c_settings, g1_bytes.as_ptr(), g1_bytes.len() / BYTES_PER_G1, g2_bytes.as_ptr(), g2_bytes.len() / BYTES_PER_G2)
+            load_trusted_setup(
+                &mut c_settings,
+                g1_bytes.as_ptr(),
+                g1_bytes.len() / BYTES_PER_G1,
+                g2_bytes.as_ptr(),
+                g2_bytes.len() / BYTES_PER_G2,
+            )
         };
         assert_eq!(status, C_KZG_RET_OK);
 
@@ -455,7 +461,7 @@ mod tests {
 
         assert_eq!(status, C_KZG_RET_BADARGS)
     }
-    
+
     #[test]
     pub fn expand_root_of_unity_too_long() {
         let out = expand_root_of_unity(&FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[1]), 1);

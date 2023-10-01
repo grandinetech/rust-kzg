@@ -954,12 +954,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
             Err(_) => return C_KZG_RET_BADARGS,
         };
 
-        let result = verify_blob_kzg_proof_batch_rust(
-            blobs.as_slice(),
-            &commitments,
-            &proofs,
-            &settings,
-        );
+        let result =
+            verify_blob_kzg_proof_batch_rust(blobs.as_slice(), &commitments, &proofs, &settings);
 
         if let Ok(result) = result {
             *ok = result;
@@ -997,11 +993,11 @@ pub unsafe extern "C" fn compute_kzg_proof(
         Err(_) => return C_KZG_RET_BADARGS,
     };
 
-    let (proof_out_tmp, fry_tmp) =
-        match compute_kzg_proof_rust(&deserialized_blob, &frz, &settings) {
-            Ok(value) => value,
-            Err(_) => return C_KZG_RET_BADARGS,
-        };
+    let (proof_out_tmp, fry_tmp) = match compute_kzg_proof_rust(&deserialized_blob, &frz, &settings)
+    {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
 
     (*proof_out).bytes = proof_out_tmp.to_bytes();
     (*y_out).bytes = fry_tmp.to_bytes();
@@ -1023,12 +1019,24 @@ mod tests {
         assert!(settings.is_ok());
 
         let settings = settings.unwrap();
-        
+
         let converted_settings = kzg_settings_to_rust(&kzg_settings_to_c(&settings)).unwrap();
 
-        assert_eq!(settings.fs.root_of_unity, converted_settings.fs.root_of_unity);
-        assert_eq!(settings.fs.roots_of_unity, converted_settings.fs.roots_of_unity);
-        assert_eq!(settings.fs.expanded_roots_of_unity, converted_settings.fs.expanded_roots_of_unity);
-        assert_eq!(settings.fs.reverse_roots_of_unity, converted_settings.fs.reverse_roots_of_unity);
+        assert_eq!(
+            settings.fs.root_of_unity,
+            converted_settings.fs.root_of_unity
+        );
+        assert_eq!(
+            settings.fs.roots_of_unity,
+            converted_settings.fs.roots_of_unity
+        );
+        assert_eq!(
+            settings.fs.expanded_roots_of_unity,
+            converted_settings.fs.expanded_roots_of_unity
+        );
+        assert_eq!(
+            settings.fs.reverse_roots_of_unity,
+            converted_settings.fs.reverse_roots_of_unity
+        );
     }
 }

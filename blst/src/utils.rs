@@ -66,7 +66,7 @@ where
 
     // does not match with c-kzg implementation, but required for internal tests
     if values.len() == 1 {
-        return Ok(())
+        return Ok(());
     }
 
     if !values.len().is_power_of_two() {
