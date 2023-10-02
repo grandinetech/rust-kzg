@@ -150,7 +150,11 @@ pub fn compute_kzg_proof_test<
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
-    evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(
+        &TPoly,
+        &TFr,
+        &TKZGSettings,
+    ) -> Result<TFr, String>,
 ) {
     let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
 
@@ -187,7 +191,8 @@ pub fn compute_kzg_proof_test<
 
     // Get the expected y by evaluating the polynomial at input_value
     let poly = blob_to_polynomial(&blob).unwrap();
-    let expected_output_value = evaluate_polynomial_in_evaluation_form(&poly, &input_value, &ts);
+    let expected_output_value =
+        evaluate_polynomial_in_evaluation_form(&poly, &input_value, &ts).unwrap();
 
     assert!(output_value.equals(&expected_output_value));
 }
@@ -206,7 +211,11 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
-    evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(
+        &TPoly,
+        &TFr,
+        &TKZGSettings,
+    ) -> Result<TFr, String>,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
@@ -233,7 +242,7 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
     let poly = blob_to_polynomial(&blob).unwrap();
 
     // Now evaluate the poly at `z` to learn `y`
-    let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
+    let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts).unwrap();
 
     // Compare the recently evaluated y to the computed y
     assert!(y_fr.equals(&computed_y));
@@ -258,7 +267,11 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
-    evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(
+        &TPoly,
+        &TFr,
+        &TKZGSettings,
+    ) -> Result<TFr, String>,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
@@ -281,7 +294,7 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
         let (proof, computed_y) = compute_kzg_proof(&blob, &z_fr, &ts).unwrap();
 
         // Now evaluate the poly at `z` to learn `y`
-        let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
+        let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts).unwrap();
 
         // Compare the recently evaluated y to the computed y
         assert!(y_fr.equals(&computed_y));
@@ -306,7 +319,11 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
-    evaluate_polynomial_in_evaluation_form: &dyn Fn(&TPoly, &TFr, &TKZGSettings) -> TFr,
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(
+        &TPoly,
+        &TFr,
+        &TKZGSettings,
+    ) -> Result<TFr, String>,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
 ) {
     let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
@@ -333,7 +350,7 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     let poly = blob_to_polynomial(&blob).unwrap();
 
     // Now evaluate the poly at `z` to learn `y`
-    let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts);
+    let y_fr = evaluate_polynomial_in_evaluation_form(&poly, &z_fr, &ts).unwrap();
 
     // Change the proof so it should not verify
     proof = proof.add(&TG1::generator());
