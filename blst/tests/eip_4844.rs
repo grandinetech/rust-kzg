@@ -263,7 +263,7 @@ mod tests {
         let mut file = File::open(get_trusted_setup_path()).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+        let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
 
         let mut c_settings = CKZGSettings {
             g1_values: null_mut(),
@@ -309,7 +309,7 @@ mod tests {
         let mut file = File::open(get_trusted_setup_path()).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let (mut g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+        let (mut g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
         // Add one more point
         let additional = [0; BYTES_PER_G1];
         g1_bytes.extend_from_slice(&additional);
@@ -339,7 +339,7 @@ mod tests {
         let mut file = File::open(get_trusted_setup_path()).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let (g1_bytes, mut g2_bytes) = load_trusted_setup_string(&contents);
+        let (g1_bytes, mut g2_bytes) = load_trusted_setup_string(&contents).unwrap();
         // Add one more point
         let additional = [0; BYTES_PER_G2];
         g2_bytes.extend_from_slice(&additional);
@@ -369,7 +369,7 @@ mod tests {
         let mut file = File::open(get_trusted_setup_path()).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let (mut g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+        let (mut g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
         // Break first G1 point
         g1_bytes[0] = 0;
 
@@ -398,7 +398,7 @@ mod tests {
         let mut file = File::open(get_trusted_setup_path()).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let (g1_bytes, mut g2_bytes) = load_trusted_setup_string(&contents);
+        let (g1_bytes, mut g2_bytes) = load_trusted_setup_string(&contents).unwrap();
         // Break first G2 point
         g2_bytes[0] = 0;
 
@@ -440,7 +440,7 @@ mod tests {
         .unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+        let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
 
         let mut loaded_settings = CKZGSettings {
             g1_values: null_mut(),

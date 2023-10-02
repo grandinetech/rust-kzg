@@ -129,12 +129,12 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> Result<FsKZGSett
 
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings, String> {
-    let mut file = File::open(filepath).expect("Unable to open file");
+    let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)
-        .expect("Unable to read file");
+        .map_err(|_| "Unable to read file".to_string())?;
 
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents)?;
     load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
 
@@ -142,12 +142,20 @@ fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) -> Result<(), String> 
     if len <= 0 {
         return Err(String::from("Length is less than 0."));
     }
+    
+    if a == out {
+        return Err(String::from("Destination is the same as source."));
+    }
 
     let mut accumulator = FsFr::one();
 
     for i in 0..len {
         out[i] = accumulator;
         accumulator = accumulator.mul(&a[i]);
+    }
+
+    if accumulator.is_zero() {
+        return Err(String::from("Zero input"));
     }
 
     accumulator = accumulator.eucl_inverse();
@@ -316,6 +324,7 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(
         return Err(String::from("Incorrect field elements count."));
     }
 
+
     let roots_of_unity: &Vec<FsFr> = &s.fs.roots_of_unity;
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
@@ -463,7 +472,7 @@ pub fn compute_blob_kzg_proof_rust(
     commitment: &FsG1,
     ts: &FsKZGSettings,
 ) -> Result<FsG1, String> {
-    if !commitment.is_valid() {
+    if !commitment.is_inf() && !commitment.is_valid() {
         return Err("Invalid commitment".to_string());
     }
 
@@ -769,8 +778,14 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 ) -> C_KZG_RET {
     let mut buf = vec![0u8; 1024 * 1024];
     let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
-    let s = String::from_utf8(buf[..len].to_vec()).unwrap();
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&s);
+    let s = match String::from_utf8(buf[..len].to_vec()) {
+        Err(_) => return C_KZG_RET_BADARGS,
+        Ok(value) => value,
+    };
+    let (g1_bytes, g2_bytes) = match load_trusted_setup_string(&s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
     if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
         // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
@@ -796,32 +811,28 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
     commitment_bytes: *mut Bytes48,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
-    let deserialized_blob = deserialize_blob(blob);
-    if deserialized_blob.is_err() {
-        return deserialized_blob.err().unwrap();
-    }
-    let commitment_g1 = FsG1::from_bytes(&(*commitment_bytes).bytes);
-    if commitment_g1.is_err() {
-        return C_KZG_RET_BADARGS;
-    }
+    let deserialized_blob = match deserialize_blob(blob) {
+        Ok(value) => value,
+        Err(err) => return err,
+    };
+
+    let commitment_g1 = match FsG1::from_bytes(&(*commitment_bytes).bytes) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
 
     let settings = match kzg_settings_to_rust(s) {
         Ok(value) => value,
         Err(_) => return C_KZG_RET_BADARGS,
     };
 
-    let proof = compute_blob_kzg_proof_rust(
-        &deserialized_blob.unwrap(),
-        &commitment_g1.unwrap(),
-        &settings,
-    );
+    let proof = match compute_blob_kzg_proof_rust(&deserialized_blob, &commitment_g1, &settings) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
 
-    if let Ok(proof) = proof {
-        (*out).bytes = proof.to_bytes();
-        C_KZG_RET_OK
-    } else {
-        C_KZG_RET_BADARGS
-    }
+    (*out).bytes = proof.to_bytes();
+    C_KZG_RET_OK
 }
 
 /// # Safety
