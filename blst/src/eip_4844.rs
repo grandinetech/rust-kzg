@@ -139,10 +139,10 @@ pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings,
 }
 
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) -> Result<(), String> {
-    if len <= 0 {
+    if len == 0 {
         return Err(String::from("Length is less than 0."));
     }
-    
+
     if a == out {
         return Err(String::from("Destination is the same as source."));
     }
@@ -323,7 +323,6 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(
     if p.coeffs.len() != FIELD_ELEMENTS_PER_BLOB {
         return Err(String::from("Incorrect field elements count."));
     }
-
 
     let roots_of_unity: &Vec<FsFr> = &s.fs.roots_of_unity;
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
