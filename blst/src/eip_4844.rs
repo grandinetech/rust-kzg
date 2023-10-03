@@ -377,7 +377,7 @@ fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> Result<FsFr, String> {
     bytes_of_uint64(&mut bytes[24..32], FIELD_ELEMENTS_PER_BLOB as u64);
 
     // Copy blob
-    for i in 0..blob.len() {
+    for (i, _) in blob.iter().enumerate() {
         let v = blob[i].to_bytes();
         let size = (32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT);
 
