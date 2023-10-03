@@ -16,7 +16,7 @@ pub fn bench_eip_4844<
     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
 >(
     c: &mut Criterion,
-    load_trusted_setup: &dyn Fn(&str) -> TKZGSettings,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
@@ -31,7 +31,7 @@ pub fn bench_eip_4844<
     ) -> Result<bool, String>,
 ) {
     set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let ts = load_trusted_setup(TRUSTED_SETUP_PATH);
+    let ts = load_trusted_setup(TRUSTED_SETUP_PATH).unwrap();
     let mut rng = rand::thread_rng();
 
     const MAX_COUNT: usize = 64;

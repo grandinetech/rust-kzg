@@ -12,14 +12,10 @@ use rust_kzg_blst::{
     },
 };
 
-fn load_trusted_setup_filename_rust_tst(filepath: &str) -> FsKZGSettings {
-    load_trusted_setup_filename_rust(filepath).unwrap()
-}
-
 fn bench_eip_4844_(c: &mut Criterion) {
     bench_eip_4844::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
         c,
-        &load_trusted_setup_filename_rust_tst,
+        &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,
         &bytes_to_blob,
         &compute_kzg_proof_rust,
