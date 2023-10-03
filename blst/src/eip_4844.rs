@@ -698,6 +698,15 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, C_KZG_RET> {
         .collect::<Result<Vec<FsFr>, C_KZG_RET>>()
 }
 
+macro_rules! handle_ckzg_badargs {
+    ($x: expr) => {
+        match $x {
+            Ok(value) => value,
+            Err(_) => return C_KZG_RET_BADARGS,
+        }
+    };
+}
+
 /// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn blob_to_kzg_commitment(
@@ -710,20 +719,9 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
         TRUSTED_SETUP_NUM_G1_POINTS = FIELD_ELEMENTS_PER_BLOB
     };
 
-    let deserialized_blob = match deserialize_blob(blob) {
-        Ok(value) => value,
-        Err(err) => return err,
-    };
-
-    let settings = match kzg_settings_to_rust(s) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
-
-    let tmp = match blob_to_kzg_commitment_rust(&deserialized_blob, &settings) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
+    let deserialized_blob = handle_ckzg_badargs!(deserialize_blob(blob));
+    let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
+    let tmp = handle_ckzg_badargs!(blob_to_kzg_commitment_rust(&deserialized_blob, &settings));
 
     (*out).bytes = tmp.to_bytes();
     C_KZG_RET_OK
@@ -741,14 +739,10 @@ pub unsafe extern "C" fn load_trusted_setup(
     let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * BYTES_PER_G1);
     let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
-    let settings = load_trusted_setup_rust(g1_bytes, g2_bytes);
+    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(g1_bytes, g2_bytes));
 
-    if let Ok(settings) = settings {
-        *out = kzg_settings_to_c(&settings);
-        C_KZG_RET_OK
-    } else {
-        C_KZG_RET_BADARGS
-    }
+    *out = kzg_settings_to_c(&settings);
+    C_KZG_RET_OK
 }
 
 /// # Safety
@@ -760,14 +754,8 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 ) -> C_KZG_RET {
     let mut buf = vec![0u8; 1024 * 1024];
     let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
-    let s = match String::from_utf8(buf[..len].to_vec()) {
-        Err(_) => return C_KZG_RET_BADARGS,
-        Ok(value) => value,
-    };
-    let (g1_bytes, g2_bytes) = match load_trusted_setup_string(&s) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
+    let s = handle_ckzg_badargs!(String::from_utf8(buf[..len].to_vec()));
+    let (g1_bytes, g2_bytes) = handle_ckzg_badargs!(load_trusted_setup_string(&s));
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
     if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
         // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
@@ -775,14 +763,13 @@ pub unsafe extern "C" fn load_trusted_setup_file(
         // deallocate its KZGSettings pointer when no exception is thrown).
         return C_KZG_RET_BADARGS;
     }
-    let settings = load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice());
+    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(
+        g1_bytes.as_slice(),
+        g2_bytes.as_slice()
+    ));
 
-    if let Ok(settings) = settings {
-        *out = kzg_settings_to_c(&settings);
-        C_KZG_RET_OK
-    } else {
-        C_KZG_RET_BADARGS
-    }
+    *out = kzg_settings_to_c(&settings);
+    C_KZG_RET_OK
 }
 
 /// # Safety
@@ -798,20 +785,13 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
         Err(err) => return err,
     };
 
-    let commitment_g1 = match FsG1::from_bytes(&(*commitment_bytes).bytes) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
-
-    let settings = match kzg_settings_to_rust(s) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
-
-    let proof = match compute_blob_kzg_proof_rust(&deserialized_blob, &commitment_g1, &settings) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
+    let commitment_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
+    let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
+    let proof = handle_ckzg_badargs!(compute_blob_kzg_proof_rust(
+        &deserialized_blob,
+        &commitment_g1,
+        &settings
+    ));
 
     (*out).bytes = proof.to_bytes();
     C_KZG_RET_OK
@@ -857,34 +837,23 @@ pub unsafe extern "C" fn verify_kzg_proof(
     proof_bytes: *const Bytes48,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
-    let frz = FsFr::from_bytes(&(*z_bytes).bytes);
-    let fry = FsFr::from_bytes(&(*y_bytes).bytes);
-    let g1commitment = FsG1::from_bytes(&(*commitment_bytes).bytes);
-    let g1proof = FsG1::from_bytes(&(*proof_bytes).bytes);
+    let frz = handle_ckzg_badargs!(FsFr::from_bytes(&(*z_bytes).bytes));
+    let fry = handle_ckzg_badargs!(FsFr::from_bytes(&(*y_bytes).bytes));
+    let g1commitment = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
+    let g1proof = handle_ckzg_badargs!(FsG1::from_bytes(&(*proof_bytes).bytes));
 
-    if frz.is_err() || fry.is_err() || g1commitment.is_err() || g1proof.is_err() {
-        return C_KZG_RET_BADARGS;
-    }
+    let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
 
-    let settings = match kzg_settings_to_rust(s) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
+    let result = handle_ckzg_badargs!(verify_kzg_proof_rust(
+        &g1commitment,
+        &frz,
+        &fry,
+        &g1proof,
+        &settings
+    ));
 
-    let result = verify_kzg_proof_rust(
-        &g1commitment.unwrap(),
-        &frz.unwrap(),
-        &fry.unwrap(),
-        &g1proof.unwrap(),
-        &settings,
-    );
-
-    if let Ok(result) = result {
-        *ok = result;
-        C_KZG_RET_OK
-    } else {
-        C_KZG_RET_BADARGS
-    }
+    *ok = result;
+    C_KZG_RET_OK
 }
 
 /// # Safety
