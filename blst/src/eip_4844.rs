@@ -582,13 +582,13 @@ pub fn verify_blob_kzg_proof_batch_rust(
                             ts,
                         )?;
 
-                    Ok(verify_kzg_proof_batch(
+                    verify_kzg_proof_batch(
                         commitment_group,
                         &evaluation_challenges_fr,
                         &ys_fr,
                         proof_group,
                         ts,
-                    ))
+                    )
                 })
                 .try_reduce(|| true, |a, b| Ok(a && b))
         } else {
@@ -600,23 +600,23 @@ pub fn verify_blob_kzg_proof_batch_rust(
                     verify_blob_kzg_proof_rust(blob, commitment, proof, ts)
                 })
                 .try_reduce(|| true, |a, b| Ok(a && b))
-        };
+        }
     }
 
     #[cfg(not(feature = "parallel"))]
-    {
+    Ok({
         validate_batched_input(commitments_g1, proofs_g1)?;
         let (evaluation_challenges_fr, ys_fr) =
             compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts)?;
 
-        Ok(verify_kzg_proof_batch(
+        verify_kzg_proof_batch(
             commitments_g1,
             &evaluation_challenges_fr,
             &ys_fr,
             proofs_g1,
             ts,
-        )?)
-    }
+        )?
+    })
 }
 
 fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FsFFTSettings, String> {
