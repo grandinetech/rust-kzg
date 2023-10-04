@@ -347,7 +347,10 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(
     }
 
     tmp = FsFr::from_u64(FIELD_ELEMENTS_PER_BLOB as u64);
-    out = out.div(&tmp).unwrap();
+    out = match out.div(&tmp) {
+        Ok(value) => value,
+        Err(err) => return Err(err),
+    };
     tmp = x.pow(FIELD_ELEMENTS_PER_BLOB);
     tmp = tmp.sub(&FsFr::one());
     out = out.mul(&tmp);
@@ -882,35 +885,22 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     proof_bytes: *const Bytes48,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
-    let deserialized_blob = deserialize_blob(blob);
-    if deserialized_blob.is_err() {
-        return deserialized_blob.err().unwrap();
-    }
+    let deserialized_blob = handle_ckzg_badargs!(deserialize_blob(blob));
 
-    let commitment_g1 = FsG1::from_bytes(&(*commitment_bytes).bytes);
-    let proof_g1 = FsG1::from_bytes(&(*proof_bytes).bytes);
-    if commitment_g1.is_err() || proof_g1.is_err() {
-        return C_KZG_RET_BADARGS;
-    }
+    let commitment_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
+    let proof_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*proof_bytes).bytes));
 
-    let settings = match kzg_settings_to_rust(s) {
-        Ok(value) => value,
-        Err(_) => return C_KZG_RET_BADARGS,
-    };
+    let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
 
-    let result = verify_blob_kzg_proof_rust(
-        &deserialized_blob.unwrap(),
-        &commitment_g1.unwrap(),
-        &proof_g1.unwrap(),
+    let result = handle_ckzg_badargs!(verify_blob_kzg_proof_rust(
+        &deserialized_blob,
+        &commitment_g1,
+        &proof_g1,
         &settings,
-    );
+    ));
 
-    if let Ok(result) = result {
-        *ok = result;
-        C_KZG_RET_OK
-    } else {
-        C_KZG_RET_BADARGS
-    }
+    *ok = result;
+    C_KZG_RET_OK
 }
 
 /// # Safety
