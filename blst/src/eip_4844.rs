@@ -139,8 +139,13 @@ pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings,
 }
 
 fn fr_batch_inv(out: &mut [FsFr], a: &[FsFr], len: usize) -> Result<(), String> {
-    assert!(len > 0);
-    assert!(a != out);
+    if len == 0 {
+        return Err(String::from("Length is less than 0."));
+    }
+
+    if a == out {
+        return Err(String::from("Destination is the same as source."));
+    }
 
     let mut accumulator = FsFr::one();
 
@@ -202,13 +207,13 @@ pub fn verify_kzg_proof_batch(
     ys_fr: &[FsFr],
     proofs_g1: &[FsG1],
     ts: &FsKZGSettings,
-) -> bool {
+) -> Result<bool, String> {
     let n = commitments_g1.len();
     let mut c_minus_y: Vec<FsG1> = Vec::with_capacity(n);
     let mut r_times_z: Vec<FsFr> = Vec::with_capacity(n);
 
     // Compute the random lincomb challenges
-    let r_powers = compute_r_powers(commitments_g1, zs_fr, ys_fr, proofs_g1);
+    let r_powers = compute_r_powers(commitments_g1, zs_fr, ys_fr, proofs_g1)?;
 
     // Compute \sum r^i * Proof_i
     let proof_lincomb = g1_lincomb(proofs_g1, &r_powers, n);
@@ -231,12 +236,12 @@ pub fn verify_kzg_proof_batch(
     let rhs_g1 = c_minus_y_lincomb.add_or_dbl(&proof_z_lincomb);
 
     // Do the pairing check!
-    pairings_verify(
+    Ok(pairings_verify(
         &proof_lincomb,
         &ts.secret_g2[1],
         &rhs_g1,
         &FsG2::generator(),
-    )
+    ))
 }
 
 pub fn compute_kzg_proof_rust(
@@ -244,7 +249,9 @@ pub fn compute_kzg_proof_rust(
     z: &FsFr,
     s: &FsKZGSettings,
 ) -> Result<(FsG1, FsFr), String> {
-    assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
+    if blob.len() != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Incorrect field elements count."));
+    }
 
     let polynomial = blob_to_polynomial_rust(blob)?;
     let y = evaluate_polynomial_in_evaluation_form_rust(&polynomial, z, s)?;
@@ -313,7 +320,9 @@ pub fn evaluate_polynomial_in_evaluation_form_rust(
     x: &FsFr,
     s: &FsKZGSettings,
 ) -> Result<FsFr, String> {
-    assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
+    if p.coeffs.len() != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Incorrect field elements count."));
+    }
 
     let roots_of_unity: &Vec<FsFr> = &s.fs.roots_of_unity;
     let mut inverses_in: Vec<FsFr> = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
@@ -358,7 +367,7 @@ pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
     powers
 }
 
-fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
+fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> Result<FsFr, String> {
     let mut bytes: Vec<u8> = vec![0; CHALLENGE_INPUT_SIZE];
 
     // Copy domain separator
@@ -368,10 +377,15 @@ fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
     bytes_of_uint64(&mut bytes[24..32], FIELD_ELEMENTS_PER_BLOB as u64);
 
     // Copy blob
-    for i in 0..blob.len() {
+    for (i, _) in blob.iter().enumerate() {
         let v = blob[i].to_bytes();
-        bytes[(32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT)]
-            .copy_from_slice(&v);
+        let size = (32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT);
+
+        if size.len() != v.len() {
+            return Err(String::from("Sizes of src and dest are different"));
+        }
+
+        bytes[size].copy_from_slice(&v);
     }
 
     // Copy commitment
@@ -382,7 +396,7 @@ fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
 
     // Now let's create the challenge!
     let eval_challenge = hash(&bytes);
-    hash_to_bls_field(&eval_challenge)
+    Ok(hash_to_bls_field(&eval_challenge))
 }
 
 fn compute_r_powers(
@@ -390,7 +404,7 @@ fn compute_r_powers(
     zs_fr: &[FsFr],
     ys_fr: &[FsFr],
     proofs_g1: &[FsG1],
-) -> Vec<FsFr> {
+) -> Result<Vec<FsFr>, String> {
     let n = commitments_g1.len();
     let input_size =
         32 + n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF);
@@ -428,12 +442,15 @@ fn compute_r_powers(
     }
 
     // Make sure we wrote the entire buffer
-    assert_eq!(offset, input_size);
+    if offset != input_size {
+        return Err(String::from("Error while copying commitments"));
+    }
 
     // Now let's create the challenge!
     let eval_challenge = hash(&bytes);
     let r = hash_to_bls_field(&eval_challenge);
-    compute_powers(&r, n)
+
+    Ok(compute_powers(&r, n))
 }
 
 pub fn blob_to_polynomial_rust(blob: &[FsFr]) -> Result<FsPoly, String> {
@@ -458,7 +475,7 @@ pub fn compute_blob_kzg_proof_rust(
         return Err("Invalid commitment".to_string());
     }
 
-    let evaluation_challenge_fr = compute_challenge(blob, commitment);
+    let evaluation_challenge_fr = compute_challenge(blob, commitment)?;
     let (proof, _) = compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts)?;
     Ok(proof)
 }
@@ -477,7 +494,7 @@ pub fn verify_blob_kzg_proof_rust(
     }
 
     let polynomial = blob_to_polynomial_rust(blob)?;
-    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
+    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1)?;
     let y_fr =
         evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts)?;
     verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
@@ -493,7 +510,7 @@ fn compute_challenges_and_evaluate_polynomial(
 
     for i in 0..blobs.len() {
         let polynomial = blob_to_polynomial_rust(&blobs[i])?;
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i])?;
         let y_fr =
             evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts)?;
 
@@ -543,7 +560,7 @@ pub fn verify_blob_kzg_proof_batch_rust(
         let num_blobs = blobs.len();
         let num_cores = num_cpus::get_physical();
 
-        return if num_blobs > num_cores {
+        if num_blobs > num_cores {
             validate_batched_input(commitments_g1, proofs_g1)?;
 
             // Process blobs in parallel subgroups
@@ -565,13 +582,13 @@ pub fn verify_blob_kzg_proof_batch_rust(
                             ts,
                         )?;
 
-                    Ok(verify_kzg_proof_batch(
+                    verify_kzg_proof_batch(
                         commitment_group,
                         &evaluation_challenges_fr,
                         &ys_fr,
                         proof_group,
                         ts,
-                    ))
+                    )
                 })
                 .try_reduce(|| true, |a, b| Ok(a && b))
         } else {
@@ -583,23 +600,23 @@ pub fn verify_blob_kzg_proof_batch_rust(
                     verify_blob_kzg_proof_rust(blob, commitment, proof, ts)
                 })
                 .try_reduce(|| true, |a, b| Ok(a && b))
-        };
+        }
     }
 
     #[cfg(not(feature = "parallel"))]
-    {
+    Ok({
         validate_batched_input(commitments_g1, proofs_g1)?;
         let (evaluation_challenges_fr, ys_fr) =
             compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts)?;
 
-        Ok(verify_kzg_proof_batch(
+        verify_kzg_proof_batch(
             commitments_g1,
             &evaluation_challenges_fr,
             &ys_fr,
             proofs_g1,
             ts,
-        ))
-    }
+        )?
+    })
 }
 
 fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FsFFTSettings, String> {
