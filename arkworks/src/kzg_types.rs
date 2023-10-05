@@ -1,10 +1,9 @@
-use crate::fft::SCALE2_ROOT_OF_UNITY;
-use crate::fft_g1::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
+use crate::consts::{SCALE2_ROOT_OF_UNITY, G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::{
     check_proof_multi as check_multi, check_proof_single as check_single, commit_to_poly as commit,
     compute_proof_multi as compute_multi, compute_proof_single as compute_single, eval_poly,
     expand_root_of_unity, new_kzg_settings, FFTSettings as LFFTSettings,
-    KZGSettings as LKZGSettings, G2_GENERATOR, G2_NEGATIVE_GENERATOR,
+    KZGSettings as LKZGSettings,
 };
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
@@ -28,9 +27,6 @@ use std::ops::Neg;
 use ark_ec::CurveGroup;
 use ark_ec::Group;
 use std::ops::Mul;
-
-pub const SCALE_FACTOR: u64 = 5;
-pub const NUM_ROOTS: usize = 32;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct ArkG1(pub blst_p1);

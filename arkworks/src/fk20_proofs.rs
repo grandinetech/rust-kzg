@@ -1,4 +1,4 @@
-use crate::fft_g1::G1_IDENTITY;
+use crate::consts::G1_IDENTITY;
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
 use crate::utils::PolyData;

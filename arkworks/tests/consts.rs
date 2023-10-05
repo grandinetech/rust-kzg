@@ -4,7 +4,7 @@ mod tests {
         expand_roots_is_plausible, new_fft_settings_is_plausible, roots_of_unity_are_plausible,
         roots_of_unity_is_the_expected_size, roots_of_unity_out_of_bounds_fails,
     };
-    use rust_kzg_arkworks::fft::SCALE2_ROOT_OF_UNITY;
+    use rust_kzg_arkworks::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_arkworks::kzg_proofs::expand_root_of_unity;
     use rust_kzg_arkworks::kzg_proofs::FFTSettings;
     use rust_kzg_arkworks::kzg_types::FsFr;
