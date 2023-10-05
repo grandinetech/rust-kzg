@@ -1,5 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::FsFr as BlstFr;
+use crate::kzg_types::ArkFr as BlstFr;
 use kzg::{FFTFr, Fr as FFr};
 
 impl FFTFr<BlstFr> for FFTSettings {

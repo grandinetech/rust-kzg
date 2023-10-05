@@ -1,9 +1,10 @@
 use super::kzg_proofs::FFTSettings;
 use super::utils::{
-    blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_poly_into_blst_poly,
+    blst_fr_into_pc_fr, blst_poly_into_pc_poly,
     PolyData,
 };
-use crate::kzg_types::FsFr as BlstFr;
+use crate::kzg_types::ArkFr as BlstFr;
+use crate::utils::pc_poly_into_blst_poly;
 use crate::zero_poly::pad_poly;
 use ark_bls12_381::Fr;
 use ark_poly::univariate::DensePolynomial;
@@ -14,9 +15,9 @@ use kzg::{FFTFr, FFTSettings as FFTSettingsT, Fr as FrTrait, Poly};
 use std::cmp::min;
 use std::ops::Neg;
 
-fn neg(n: BlstFr) -> BlstFr {
-    pc_fr_into_blst_fr(blst_fr_into_pc_fr(&n).neg())
-}
+// fn neg(n: BlstFr) -> BlstFr {
+//     // pc_fr_into_blst_fr(blst_fr_into_pc_fr(&n).neg())
+// }
 
 pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
     if b.coeffs.is_empty() {
@@ -58,9 +59,9 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
         tmp0 = poly_mul(b, &output, Some(&fs), len_temp).unwrap();
 
         for i in 0..len_temp {
-            tmp0.coeffs[i] = neg(tmp0.coeffs[i]);
+            tmp0.coeffs[i] = tmp0.coeffs[i].negate();
         }
-        let fr_two = pc_fr_into_blst_fr(Fr::from(2));
+        let fr_two = BlstFr { fr: Fr::from(2) } ;
         tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
 
         let len_temp2: usize = d + 1;
@@ -81,10 +82,10 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
 }
 
 pub fn poly_mul_direct(p1: &PolyData, p2: &PolyData, len: usize) -> Result<PolyData, String> {
-    let p1 = blst_poly_into_pc_poly(p1).unwrap();
-    let p2 = blst_poly_into_pc_poly(p2).unwrap();
+    let p1 = blst_poly_into_pc_poly(&p1.coeffs);
+    let p2 = blst_poly_into_pc_poly(&p2.coeffs);
     if p1.is_zero() || p2.is_zero() {
-        pc_poly_into_blst_poly(DensePolynomial::zero())
+        Ok(pc_poly_into_blst_poly(DensePolynomial::zero()))
     } else {
         let mut result = vec![Fr::zero(); len];
         for (i, self_coeff) in p1.coeffs.iter().enumerate() {
@@ -95,7 +96,7 @@ pub fn poly_mul_direct(p1: &PolyData, p2: &PolyData, len: usize) -> Result<PolyD
                 result[i + j] += &(*self_coeff * other_coeff);
             }
         }
-        let p = pc_poly_into_blst_poly(DensePolynomial::from_coefficients_vec(result)).unwrap();
+        let p = pc_poly_into_blst_poly(DensePolynomial::from_coefficients_vec(result));
         Ok(PolyData {
             coeffs: pad_poly(&p, len).unwrap(),
         })
@@ -103,9 +104,9 @@ pub fn poly_mul_direct(p1: &PolyData, p2: &PolyData, len: usize) -> Result<PolyD
 }
 
 pub fn poly_long_div(p1: &PolyData, p2: &PolyData) -> Result<PolyData, String> {
-    pc_poly_into_blst_poly(
-        &blst_poly_into_pc_poly(p1).unwrap() / &blst_poly_into_pc_poly(p2).unwrap(),
-    )
+    Ok(pc_poly_into_blst_poly(
+        &blst_poly_into_pc_poly(&p1.coeffs) / &blst_poly_into_pc_poly(&p2.coeffs),
+    ))
 }
 
 pub fn poly_mul(

@@ -4,7 +4,7 @@ mod tests {
 
     use rust_kzg_arkworks::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings};
     use rust_kzg_arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-    use rust_kzg_arkworks::kzg_types::FsFr as BlstFr;
+    use rust_kzg_arkworks::kzg_types::ArkFr as BlstFr;
     use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2};
     use rust_kzg_arkworks::utils::PolyData;
 

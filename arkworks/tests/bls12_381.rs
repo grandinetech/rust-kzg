@@ -4,7 +4,7 @@ mod tests {
     use rust_kzg_arkworks::fft_g1::g1_linear_combination;
     use kzg::common_utils::log_2_byte;
     use rust_kzg_arkworks::kzg_proofs::pairings_verify;
-    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
+    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, ArkFr};
 
     #[test]
     pub fn log_2_byte_works_() {
@@ -13,53 +13,53 @@ mod tests {
 
     #[test]
     pub fn fr_is_zero_works_() {
-        fr_is_zero_works::<FsFr>();
+        fr_is_zero_works::<ArkFr>();
     }
 
     #[test]
     pub fn fr_is_one_works_() {
-        fr_is_one_works::<FsFr>();
+        fr_is_one_works::<ArkFr>();
     }
 
     #[test]
     pub fn fr_from_uint64_works_() {
-        fr_from_uint64_works::<FsFr>();
+        fr_from_uint64_works::<ArkFr>();
     }
 
     #[test]
     pub fn fr_equal_works_() {
-        fr_equal_works::<FsFr>();
+        fr_equal_works::<ArkFr>();
     }
 
     #[test]
     pub fn fr_negate_works_() {
-        fr_negate_works::<FsFr>();
+        fr_negate_works::<ArkFr>();
     }
 
     #[test]
     pub fn fr_pow_works_() {
-        fr_pow_works::<FsFr>();
+        fr_pow_works::<ArkFr>();
     }
 
     #[test]
     pub fn fr_div_works_() {
-        fr_div_works::<FsFr>();
+        fr_div_works::<ArkFr>();
     }
 
     #[test]
     #[should_panic]
     pub fn fr_div_by_zero_() {
-        fr_div_by_zero::<FsFr>();
+        fr_div_by_zero::<ArkFr>();
     }
 
     #[test]
     pub fn fr_uint64s_roundtrip_() {
-        fr_uint64s_roundtrip::<FsFr>();
+        fr_uint64s_roundtrip::<ArkFr>();
     }
 
     #[test]
     pub fn p1_mul_works_() {
-        p1_mul_works::<FsFr, ArkG1>();
+        p1_mul_works::<ArkFr, ArkG1>();
     }
 
     #[test]
@@ -74,7 +74,7 @@ mod tests {
 
     #[test]
     pub fn p2_mul_works_() {
-        p2_mul_works::<FsFr, ArkG2>();
+        p2_mul_works::<ArkFr, ArkG2>();
     }
 
     #[test]
@@ -94,21 +94,21 @@ mod tests {
 
     #[test]
     pub fn g1_make_linear_combination_() {
-        g1_make_linear_combination::<FsFr, ArkG1>(&g1_linear_combination);
+        g1_make_linear_combination::<ArkFr, ArkG1>(&g1_linear_combination);
     }
 
     #[test]
     pub fn g1_random_linear_combination_() {
-        g1_random_linear_combination::<FsFr, ArkG1>(&g1_linear_combination);
+        g1_random_linear_combination::<ArkFr, ArkG1>(&g1_linear_combination);
     }
 
     #[test]
     pub fn pairings_work_() {
-        pairings_work::<FsFr, ArkG1, ArkG2>(&pairings_verify);
+        pairings_work::<ArkFr, ArkG1, ArkG2>(&pairings_verify);
     }
 
     #[test]
     pub fn fr_is_null_works_() {
-        fr_is_null_works::<FsFr>();
+        fr_is_null_works::<ArkFr>();
     }
 }

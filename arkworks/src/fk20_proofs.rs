@@ -1,6 +1,6 @@
 use crate::consts::G1_IDENTITY;
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
-use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
+use crate::kzg_types::{ArkG1, ArkG2, ArkFr as BlstFr};
 use crate::utils::PolyData;
 use kzg::common_utils::reverse_bit_order;
 use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1};
@@ -123,7 +123,7 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
             };
             let mut j = start;
             for i in x.iter_mut().take(k - 1) {
-                i.0 = ks.secret_g1[j].0;
+                i.proj = ks.secret_g1[j].proj;
                 if j >= chunk_len {
                     j -= chunk_len;
                 } else {
@@ -229,7 +229,7 @@ fn fk20_multi_da_opt(p: &PolyData, fk: &KzgFK20MultiSettings) -> Result<Vec<ArkG
 
     // Overwrite the second half of `h` with zero
     for i in h.iter_mut().take(k2).skip(k) {
-        i.0 = G1_IDENTITY.0;
+        i.proj = G1_IDENTITY.proj;
     }
 
     fk.ks.fs.fft_g1(&h, false)
@@ -319,7 +319,7 @@ fn toeplitz_part_3(h_ext_fft: &[ArkG1], fs: &FFTSettings) -> Result<Vec<ArkG1>, 
 
     // Zero the second half of h
     for i in out.iter_mut().take(h_ext_fft.len()).skip(n) {
-        i.0 = G1_IDENTITY.0;
+        i.proj = G1_IDENTITY.proj;
     }
     Ok(out)
 }

@@ -1,5 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{FsFr as BlstFr};
+use crate::kzg_types::{ArkFr as BlstFr};
 use crate::consts::SCALE_FACTOR;
 use crate::utils::PolyData;
 use kzg::common_utils::next_pow_of_2;

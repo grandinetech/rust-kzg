@@ -782,12 +782,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "merkle_light"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b879f617ec392ad9c11a50356ca373009c52363c0953b34c2e1b2234037a26a9"
-
-[[package]]
 name = "num-bigint"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1063,13 +1057,13 @@ dependencies = [
  "ark-ff",
  "ark-poly",
  "ark-poly-commit",
+ "ark-serialize",
  "ark-std",
  "blst",
  "criterion",
  "hex",
  "kzg",
  "kzg-bench",
- "merkle_light",
  "num_cpus",
  "rand",
  "rayon",

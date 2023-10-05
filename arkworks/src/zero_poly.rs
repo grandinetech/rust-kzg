@@ -1,8 +1,9 @@
 use super::kzg_proofs::FFTSettings;
 use super::utils::{
-    blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_poly_into_blst_poly,
+    blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_poly_into_blst_poly,
     PolyData,
 };
+use crate::kzg_types::ArkFr as BlstFr;
 use kzg::common_utils::next_pow_of_2;
 use kzg::{FFTFr, Fr as FrTrait, ZeroPoly};
 use std::cmp::{min, Ordering};
@@ -34,12 +35,12 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         let blstpoly = PolyData {
             coeffs: vec![BlstFr::one(); indices.len() + 1],
         };
-        let mut poly = blst_poly_into_pc_poly(&blstpoly).unwrap();
+        let mut poly = blst_poly_into_pc_poly(&blstpoly.coeffs);
         poly.coeffs[0] =
-            blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indices[0] * stride]).neg();
+            (&self.expanded_roots_of_unity[indices[0] * stride]).fr.neg();
 
         for (i, indice) in indices.iter().enumerate().skip(1) {
-            let neg_di = blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indice * stride]).neg();
+            let neg_di = (&self.expanded_roots_of_unity[indice * stride]).fr.neg();
 
             poly.coeffs[i] = neg_di + poly.coeffs[i - 1];
 
@@ -53,7 +54,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             poly.coeffs[0] *= neg_di;
         }
 
-        Ok(pc_poly_into_blst_poly(poly).unwrap())
+        Ok(pc_poly_into_blst_poly(poly))
     }
 
     fn reduce_partials(&self, len_out: usize, partials: &[PolyData]) -> Result<PolyData, String> {
@@ -74,9 +75,9 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
             let p_eval = self.fft_fr(&p_partial, false).unwrap();
             for j in 0..len_out {
-                mul_eval_ps[j] = pc_fr_into_blst_fr(
-                    blst_fr_into_pc_fr(&mul_eval_ps[j]) * blst_fr_into_pc_fr(&p_eval[j]),
-                );
+                mul_eval_ps[j] = BlstFr{ fr: 
+                    (&mul_eval_ps[j]).fr * (&p_eval[j]).fr
+                };
             }
         }
 

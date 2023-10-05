@@ -15,6 +15,7 @@ pub mod eip_4844;
 pub mod fft;
 pub mod fft_g1;
 pub mod fk20_proofs;
+pub mod consts;
 pub mod kzg_proofs;
 pub mod kzg_types;
 pub mod poly;

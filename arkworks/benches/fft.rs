@@ -1,14 +1,14 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::fft::{bench_fft_fr, bench_fft_g1};
 use rust_kzg_arkworks::kzg_proofs::FFTSettings;
-use rust_kzg_arkworks::kzg_types::{ArkG1, FsFr};
+use rust_kzg_arkworks::kzg_types::{ArkG1, ArkFr};
 
 fn bench_fft_fr_(c: &mut Criterion) {
-    bench_fft_fr::<FsFr, FFTSettings>(c);
+    bench_fft_fr::<ArkFr, FFTSettings>(c);
 }
 
 fn bench_fft_g1_(c: &mut Criterion) {
-    bench_fft_g1::<FsFr, ArkG1, FFTSettings>(c);
+    bench_fft_g1::<ArkFr, ArkG1, FFTSettings>(c);
 }
 
 criterion_group! {

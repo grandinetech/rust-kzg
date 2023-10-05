@@ -1,5 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::FsFr as BlstFr;
+use crate::kzg_types::ArkFr as BlstFr;
 use kzg::{Fr, DAS};
 use std::cmp::Ordering;
 
@@ -79,7 +79,7 @@ impl DAS<BlstFr> for FFTSettings {
         let invlen = invlen.inverse();
 
         for val in &mut vals {
-            val.0 = val.mul(&invlen).0;
+            val.fr = val.fr * invlen.fr
         }
 
         Ok(vals)

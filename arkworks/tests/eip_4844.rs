@@ -16,32 +16,31 @@ pub mod tests {
         load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
     };
     use rust_kzg_arkworks::kzg_proofs::{FFTSettings, KZGSettings};
-    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, FsFr};
+    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, ArkFr};
     use rust_kzg_arkworks::utils::PolyData;
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<FsFr>();
+        bytes_to_bls_field_test::<ArkFr>();
     }
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<FsFr>(&compute_powers);
+        compute_powers_test::<ArkFr>(&compute_powers);
     }
 
     #[test]
-    #[ignore]
     pub fn blob_to_kzg_commitment_test_() {
-        blob_to_kzg_commitment_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
+        blob_to_kzg_commitment_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
         );
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn compute_kzg_proof_test_() {
-        compute_kzg_proof_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
+        compute_kzg_proof_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &compute_kzg_proof,
             &blob_to_polynomial,
@@ -50,10 +49,10 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn compute_and_verify_kzg_proof_round_trip_test_() {
         compute_and_verify_kzg_proof_round_trip_test::<
-            FsFr,
+            ArkFr,
             ArkG1,
             ArkG2,
             PolyData,
@@ -72,10 +71,10 @@ pub mod tests {
 
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn compute_and_verify_kzg_proof_within_domain_test_() {
         compute_and_verify_kzg_proof_within_domain_test::<
-            FsFr,
+            ArkFr,
             ArkG1,
             ArkG2,
             PolyData,
@@ -93,10 +92,10 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_kzg_proof_fails_with_incorrect_proof_test::<
-            FsFr,
+            ArkFr,
             ArkG1,
             ArkG2,
             PolyData,
@@ -114,10 +113,10 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn compute_and_verify_blob_kzg_proof_test_() {
         compute_and_verify_blob_kzg_proof_test::<
-            FsFr,
+            ArkFr,
             ArkG1,
             ArkG2,
             PolyData,
@@ -133,10 +132,10 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test::<
-            FsFr,
+            ArkFr,
             ArkG1,
             ArkG2,
             PolyData,
@@ -152,9 +151,9 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn verify_kzg_proof_batch_test_() {
-        verify_kzg_proof_batch_test::<FsFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
+        verify_kzg_proof_batch_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
             &blob_to_kzg_commitment,
             &bytes_to_blob,
@@ -164,10 +163,10 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test_() {
         verify_kzg_proof_batch_fails_with_incorrect_proof_test::<
-            FsFr,
+            ArkFr,
             ArkG1,
             ArkG2,
             PolyData,

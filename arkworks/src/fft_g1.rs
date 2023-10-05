@@ -1,16 +1,21 @@
+use std::ops::{MulAssign, AddAssign, Sub};
+
+use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ArkG1, FsFr as BlstFr};
+use crate::kzg_types::{ArkG1, ArkFr as BlstFr};
 use crate::utils::{
-    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, pc_g1projective_into_blst_p1,
+    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
 };
-use ark_bls12_381::{G1Affine};
+use ark_bls12_381::{G1Affine, G1Projective, Fr};
 use ark_ec::VariableBaseMSM;
 
-use ark_ff::{BigInteger256};
-use blst::{blst_fp, blst_p1};
-use kzg::{cfg_into_iter, G1Mul};
-use kzg::{Fr, FFTG1, G1};
+use ark_ec::scalar_mul::fixed_base::FixedBase;
+use ark_ff::BigInteger256;
+use kzg::{cfg_into_iter, G1Mul, Fr as KzgFr};
+use kzg::{FFTG1, G1};
 use ark_ec::CurveGroup;
+use ark_poly::{EvaluationDomain, DenseUVPolynomial};
+// use rust_kzg_blst::
 
 #[cfg(feature = "parallel")]
 use rayon::iter::IntoParallelIterator;
@@ -21,30 +26,27 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstF
     let ark_points: Vec<G1Affine> = {
         cfg_into_iter!(points)
             .map(|point| {
-                blst_p1_into_pc_g1projective(&point.0)
-                    .unwrap()
-                    .into_affine()
+                point.proj.into_affine()
             })
             .collect()
     };
 
-    let ark_scalars: Vec<BigInteger256> = {
+    let ark_scalars: Vec<Fr> = {
         cfg_into_iter!(scalars)
-            .map(|scalar| blst_fr_into_pc_fr(scalar).into())
+            .map(|scalar| scalar.fr)
             .collect()
     };
 
-    let res = VariableBaseMSM::msm_bigint(ark_points.as_slice(), ark_scalars.as_slice());
-    *out = pc_g1projective_into_blst_p1(res).unwrap();
+    out.proj = VariableBaseMSM::msm_unchecked(ark_points.as_slice(), ark_scalars.as_slice());
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
     let mut vec = Vec::new();
     if data != 0 {
-        vec.push(ArkG1(G1_GENERATOR));
+        vec.push(G1_GENERATOR);
         for i in 1..data as u64 {
-            let mut temp = vec[(i - 1) as usize];
-            vec.push(temp.add_or_dbl(&ArkG1(G1_GENERATOR)));
+            let res = vec[(i - 1) as usize].add_or_dbl(&G1_GENERATOR);
+            vec.push(res);
         }
     }
     vec
@@ -74,10 +76,36 @@ impl FFTG1<ArkG1> for FFTSettings {
             let inv_fr_len = BlstFr::from_u64(data.len() as u64).inverse();
             ret[..data.len()]
                 .iter_mut()
-                .for_each(|f| *f = f.mul(&inv_fr_len));
+                .for_each(|f| f.proj.mul_assign(&inv_fr_len.fr));
         }
-
         Ok(ret)
+
+        //////////
+
+        // let mut frs: Vec<G1Projective> = {
+        //     cfg_into_iter!(data)
+        //         .map(|x| {
+        //             x.proj
+        //         })
+        //         .collect()
+        // };
+
+        // if inverse {
+        //     self.domain.ifft_in_place(&mut frs);
+        // } else {
+            // self.domain.fft_in_place(&mut frs);
+        // }
+
+        // let ret: Vec<ArkG1> = { 
+        //     cfg_into_iter!(frs)
+        //         .map(|x| {
+        //             ArkG1 { proj: x }
+        //         })
+        //         .collect()
+        // };
+
+        // Ok(ret)
+
     }
 }
 
@@ -127,7 +155,7 @@ pub fn fft_g1_fast(
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1,
+                1
             );
             fft_g1_fast(
                 &mut ret[half..],
@@ -135,25 +163,16 @@ pub fn fft_g1_fast(
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1,
+                1
             );
         }
 
         for i in 0..half {
-            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
+            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]) ;
             ret[i + half] = ret[i].sub(&y_times_root);
             ret[i] = ret[i].add_or_dbl(&y_times_root);
         }
     } else {
         ret[0] = data[0];
     }
-}
-
-pub fn log_2_byte(b: u8) -> usize {
-    let mut r = u8::from(b > 0xF) << 2;
-    let mut b = b >> r;
-    let shift = u8::from(b > 0x3) << 1;
-    b >>= shift + 1;
-    r |= shift | b;
-    r.into()
 }
