@@ -3,7 +3,7 @@ name: blst benchmarks
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  C_KZG_4844_GIT_HASH: 'fbef59a3f9e8fa998bdb5069d212daf83d586aa5'
+  C_KZG_4844_GIT_HASH: 'b2e41491ad1859f1792964a2432a419b64dc6fb2'
 
 jobs:
   benchmarks:
