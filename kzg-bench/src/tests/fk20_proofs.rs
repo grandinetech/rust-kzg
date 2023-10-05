@@ -1,5 +1,5 @@
 use kzg::{
-    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2,
+    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2, common_utils::{reverse_bits_limited, is_power_of_two, log2_pow2, reverse_bit_order},
 };
 
 pub const SECRET: [u8; 32usize] = [
@@ -7,39 +7,20 @@ pub const SECRET: [u8; 32usize] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
-fn is_power_of_two(n: usize) -> bool {
-    n & (n - 1) == 0
-}
-
-fn log2_pow2(n: u32) -> usize {
-    let b: [u32; 5] = [0xaaaaaaaa, 0xcccccccc, 0xf0f0f0f0, 0xff00ff00, 0xffff0000];
-    let mut r: u32 = u32::from((n & b[0]) != 0);
-    r |= u32::from((n & b[1]) != 0) << 1;
-    r |= u32::from((n & b[2]) != 0) << 2;
-    r |= u32::from((n & b[3]) != 0) << 3;
-    r |= u32::from((n & b[4]) != 0) << 4;
-    r as usize
-}
-
-fn reverse_bits_limited(length: usize, value: usize) -> usize {
-    let unused_bits = length.leading_zeros();
-    value.reverse_bits() >> unused_bits
-}
-
-pub fn reverse_bit_order<T>(vals: &mut [T])
-where
-    T: Clone,
-{
-    let unused_bit_len = vals.len().leading_zeros() + 1;
-    for i in 0..vals.len() - 1 {
-        let r = i.reverse_bits() >> unused_bit_len;
-        if r > i {
-            let tmp = vals[r].clone();
-            vals[r] = vals[i].clone();
-            vals[i] = tmp;
-        }
-    }
-}
+// pub fn reverse_bit_order<T>(vals: &mut [T])
+// where
+//     T: Clone,
+// {
+//     let unused_bit_len = vals.len().leading_zeros() + 1;
+//     for i in 0..vals.len() - 1 {
+//         let r = i.reverse_bits() >> unused_bit_len;
+//         if r > i {
+//             let tmp = vals[r].clone();
+//             vals[r] = vals[i].clone();
+//             vals[i] = tmp;
+//         }
+//     }
+// }
 
 pub fn fk_single<
     TFr: Fr,
@@ -187,7 +168,7 @@ fn fk_multi_case<
 
     let chunk_count: usize = n / chunk_len;
     let secrets_len: usize = 2 * n;
-    let width: usize = log2_pow2(secrets_len as u32);
+    let width: usize = log2_pow2(secrets_len);
 
     // Initialise the secrets and data structures
     let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);

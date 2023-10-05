@@ -1,6 +1,7 @@
+use kzg::common_utils::is_power_of_2;
+
 use crate::data_types::fr::Fr;
 use crate::fk20_fft::*;
-use crate::utilities::is_power_of_2;
 
 impl FFTSettings {
     pub fn das_fft_extension(&self, values: &mut [Fr]) -> Result<(), String> {

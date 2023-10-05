@@ -1,6 +1,7 @@
 //! This module provides an implementation of polinomials over bls12_381::Scalar
 pub use super::{BlsScalar, ZPoly};
 use crate::zkfr::{blsScalar, fr_div};
+use kzg::common_utils::{log2_pow2, next_pow_of_2, log2_u64};
 pub use kzg::{FFTFr, FFTSettings, Fr, Poly};
 //use crate::Fr;
 use crate::consts::*;
@@ -444,7 +445,7 @@ pub fn pad_poly(input: &ZPoly, length: usize) -> Result<Vec<blsScalar>, String> 
 pub fn poly_mul_fft(out: usize, a: &ZPoly, b: &ZPoly) -> Result<ZPoly, String> {
     // +
 
-    let length = next_power_of_two(a.len() + b.len() - 1);
+    let length = next_pow_of_2(a.len() + b.len() - 1);
 
     let ft_size: usize = log2_pow2(length);
 

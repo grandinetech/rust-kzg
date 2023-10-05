@@ -1,6 +1,6 @@
 use criterion::Criterion;
 use kzg::{
-    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2,
+    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2, common_utils::{is_power_of_two, log2_pow2},
 };
 use rand::{thread_rng, RngCore};
 
@@ -10,20 +10,6 @@ pub const SECRET: [u8; 32usize] = [
 ];
 
 const BENCH_SCALE: usize = 14;
-
-fn is_power_of_two(n: usize) -> bool {
-    n & (n - 1) == 0
-}
-
-fn log2_pow2(n: u32) -> usize {
-    let b: [u32; 5] = [0xaaaaaaaa, 0xcccccccc, 0xf0f0f0f0, 0xff00ff00, 0xffff0000];
-    let mut r: u32 = u32::from((n & b[0]) != 0);
-    r |= u32::from((n & b[1]) != 0) << 1;
-    r |= u32::from((n & b[2]) != 0) << 2;
-    r |= u32::from((n & b[3]) != 0) << 3;
-    r |= u32::from((n & b[4]) != 0) << 4;
-    r as usize
-}
 
 pub fn bench_fk_single_da<
     TFr: Fr,
@@ -86,7 +72,7 @@ pub fn bench_fk_multi_da<
 
     let chunk_count: usize = n / chunk_len;
     let secrets_len: usize = 2 * n;
-    let width: usize = log2_pow2(secrets_len as u32);
+    let width: usize = log2_pow2(secrets_len);
 
     // Initialise the secrets and data structures
     let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);

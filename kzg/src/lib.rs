@@ -6,6 +6,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 pub mod eip_4844;
+pub mod common_utils;
 
 pub trait Fr: Default + Clone {
     fn null() -> Self;

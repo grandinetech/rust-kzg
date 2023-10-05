@@ -9,8 +9,8 @@ use ark_bls12_381::Fr;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use ark_std::{log2, Zero};
+use kzg::common_utils::{next_pow_of_2, log2_pow2};
 use kzg::{FFTFr, FFTSettings as FFTSettingsT, Fr as FrTrait, Poly};
-use merkle_light::merkle::log2_pow2;
 use std::cmp::min;
 use std::ops::Neg;
 
@@ -39,7 +39,7 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
     }
 
     let maxd = output_len - 1;
-    let scale = log2_pow2((2 * output_len - 1).next_power_of_two());
+    let scale = next_pow_of_2(log2_pow2(2 * output_len - 1));
     let fs = FFTSettings::new(scale).unwrap();
 
     let mut tmp0: PolyData;
@@ -130,7 +130,7 @@ pub fn poly_mul_fft(
     // Truncate a and b so as not to do excess work for the number of coefficients required.
     let a_len = min(a.len(), len);
     let b_len = min(b.len(), len);
-    let length = (a_len + b_len - 1).next_power_of_two();
+    let length = next_pow_of_2(a_len + b_len - 1);
 
     // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
     let fs_p = if let Some(x) = fs {

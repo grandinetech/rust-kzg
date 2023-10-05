@@ -2,6 +2,7 @@ use crate::consts::G1_IDENTITY;
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr as BlstFr};
 use crate::utils::PolyData;
+use kzg::common_utils::reverse_bit_order;
 use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1};
 
 #[cfg(feature = "parallel")]
@@ -22,21 +23,6 @@ pub struct KzgFK20MultiSettings {
     pub chunk_len: usize,
     pub x_ext_fft_files: Vec<Vec<ArkG1>>,
     pub length: usize,
-}
-
-fn reverse_bit_order<T>(vals: &mut [T])
-where
-    T: Clone,
-{
-    let unused_bit_len = vals.len().leading_zeros() + 1;
-    for i in 0..vals.len() - 1 {
-        let r = i.reverse_bits() >> unused_bit_len;
-        if r > i {
-            let tmp = vals[r].clone();
-            vals[r] = vals[i].clone();
-            vals[i] = tmp;
-        }
-    }
 }
 
 impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
@@ -89,7 +75,7 @@ impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings
         }
 
         let mut out = fk20_single_da_opt(p, self).unwrap();
-        reverse_bit_order(&mut out);
+        reverse_bit_order(&mut out)?;
         Ok(out)
     }
 
@@ -175,7 +161,7 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
         }
 
         let mut out = fk20_multi_da_opt(p, self).unwrap();
-        reverse_bit_order(&mut out);
+        reverse_bit_order(&mut out)?;
         Ok(out)
     }
 

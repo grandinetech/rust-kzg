@@ -2,6 +2,7 @@ use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{FsFr as BlstFr};
 use crate::consts::SCALE_FACTOR;
 use crate::utils::PolyData;
+use kzg::common_utils::next_pow_of_2;
 use kzg::{FFTFr, Fr, Poly, PolyRecover, ZeroPoly};
 
 #[cfg(feature = "parallel")]
@@ -15,7 +16,7 @@ pub fn scale_poly(p: &mut PolyData) {
     let inv_factor = scale_factor.inverse();
     #[cfg(feature = "parallel")]
     {
-        let optim = (p.len() - 1).next_power_of_two();
+        let optim = next_pow_of_2(p.len() - 1);
         if optim <= 1024 {
             unsafe {
                 if INVERSE_FACTORS.len() < p.len() {
@@ -132,7 +133,7 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
         };
 
         #[cfg(feature = "parallel")]
-        let optim = (poly_with_zero.len() - 1).next_power_of_two();
+        let optim = next_pow_of_2(poly_with_zero.len() - 1);
 
         #[cfg(feature = "parallel")]
         {

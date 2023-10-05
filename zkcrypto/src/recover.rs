@@ -1,7 +1,6 @@
-use crate::fftsettings::ZkFFTSettings;
+use crate::{fftsettings::ZkFFTSettings, curve::scalar::Scalar};
 use crate::poly::ZPoly;
 #[cfg(feature = "parallel")]
-use crate::utils::next_power_of_two;
 use crate::zkfr::blsScalar as Scalar;
 use kzg::{FFTFr, Fr, Poly, PolyRecover, ZeroPoly};
 
@@ -19,7 +18,7 @@ pub fn scale_poly(p: &mut ZPoly) {
 
     #[cfg(feature = "parallel")]
     {
-        let optim = (p.len() - 1).next_power_of_two();
+        let optim = next_pow_of_2(p.len() - 1);
         if optim <= 1024 {
             unsafe {
                 if INVERSE_FACTORS.len() < p.len() {
@@ -132,7 +131,7 @@ impl PolyRecover<Scalar, ZPoly, ZkFFTSettings> for ZPoly {
 
         #[cfg(feature = "parallel")]
         {
-            let optim = next_power_of_two(poly_with_zero.len() - 1);
+            let optim = next_pow_of_2(poly_with_zero.len() - 1);
 
             if optim > 1024 {
                 rayon::join(

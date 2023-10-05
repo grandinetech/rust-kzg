@@ -3,7 +3,7 @@ use crate::data_types::{fr::*, g1::G1, g2::G2};
 use crate::fk20_fft::*;
 use crate::kzg10::{Curve, Polynomial};
 use crate::kzg_settings::KZGSettings;
-use crate::utilities::reverse_bit_order;
+use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{
     bytes_of_uint64, hash, load_trusted_setup_string, BYTES_PER_BLOB, BYTES_PER_COMMITMENT,
     BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE,

@@ -1,3 +1,4 @@
+use kzg::common_utils::reverse_bit_order;
 use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{pairings_verify, FFTSettings, KZGSettings, UniPoly_381, KZG};
 use crate::kzg_types::{ArkG1, ArkG2, FsFr};

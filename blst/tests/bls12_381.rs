@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use kzg::common_utils::log_2_byte;
     use kzg_bench::tests::bls12_381::{
         fr_div_by_zero, fr_div_works, fr_equal_works, fr_from_uint64_works, fr_is_null_works,
         fr_is_one_works, fr_is_zero_works, fr_negate_works, fr_pow_works, fr_uint64s_roundtrip,
@@ -12,7 +13,6 @@ mod tests {
     use rust_kzg_blst::types::fr::FsFr;
     use rust_kzg_blst::types::g1::FsG1;
     use rust_kzg_blst::types::g2::FsG2;
-    use rust_kzg_blst::utils::log_2_byte;
 
     #[test]
     fn log_2_byte_works_() {

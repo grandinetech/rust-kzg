@@ -1,5 +1,6 @@
+use kzg::common_utils::{next_pow_of_2, is_power_of_2, reverse_bit_order};
+
 use crate::data_types::{fp::*, fr::*, g1::*};
-use crate::utilities::{is_power_of_2, next_pow_of_2, reverse_bit_order};
 use std::iter;
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
@@ -298,7 +299,7 @@ impl FFTSettings {
 
         // Permute the roots of unity
         let mut roots_of_unity = expanded_roots_of_unity.clone();
-        reverse_bit_order(&mut roots_of_unity);
+        reverse_bit_order(&mut roots_of_unity)?;
 
         Ok(FFTSettings {
             max_width: 1 << max_scale,

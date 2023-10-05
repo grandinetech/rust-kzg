@@ -3,7 +3,7 @@ use super::utils::{
     blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_poly_into_blst_poly,
     PolyData,
 };
-use crate::kzg_types::FsFr as BlstFr;
+use kzg::common_utils::next_pow_of_2;
 use kzg::{FFTFr, Fr as FrTrait, ZeroPoly};
 use std::cmp::{min, Ordering};
 use std::ops::Neg;
@@ -119,7 +119,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         let mut partial_count =
             (missing_per_partial + missing_indices.len() - 1) / missing_per_partial;
         let domain_ceiling = min(
-            (partial_count * degree_of_partial).next_power_of_two(),
+            next_pow_of_2(partial_count * degree_of_partial),
             length,
         );
 
@@ -127,7 +127,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             zero_poly = self.do_zero_poly_mul_partial(missing_indices, domain_stride)?;
         } else {
             let mut work =
-                vec![BlstFr::zero(); (partial_count * degree_of_partial).next_power_of_two()];
+                vec![BlstFr::zero(); next_pow_of_2(partial_count * degree_of_partial)];
 
             let mut partial_lens = Vec::new();
 
@@ -157,7 +157,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             let reduction_factor = 4;
             while partial_count > 1 {
                 let reduced_count = 1 + (partial_count - 1) / reduction_factor;
-                let partial_size = (partial_lens[0]).next_power_of_two();
+                let partial_size = next_pow_of_2(partial_lens[0]);
 
                 for i in 0..reduced_count {
                     let start = i * reduction_factor;

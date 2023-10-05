@@ -5,7 +5,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::cmp::{min, Ordering};
 
-use kzg::{FFTFr, Fr, ZeroPoly};
+use kzg::{FFTFr, Fr, ZeroPoly, common_utils::next_pow_of_2};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -203,7 +203,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
 
         let mut partial_count = 1 + (missing_idxs.len() - 1) / missing_per_partial; // TODO: explain why -1 is used here
 
-        let next_pow: usize = (partial_count * DEGREE_OF_PARTIAL).next_power_of_two();
+        let next_pow: usize = next_pow_of_2(partial_count * DEGREE_OF_PARTIAL);
         let domain_ceiling = min(next_pow, domain_size);
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
@@ -248,7 +248,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
             // Reduce all vectors into one by reducing them w/ varying size multiplications
             while partial_count > 1 {
                 let reduced_count = 1 + (partial_count - 1) / REDUCTION_FACTOR;
-                let partial_size = partial_lens[0].next_power_of_two();
+                let partial_size = next_pow_of_2(partial_lens[0]);
 
                 // Step over polynomial space and produce larger multiplied polynomials
                 for i in 0..reduced_count {

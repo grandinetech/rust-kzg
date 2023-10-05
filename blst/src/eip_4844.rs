@@ -7,6 +7,7 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::ptr::null_mut;
+use kzg::common_utils::reverse_bit_order;
 #[cfg(feature = "std")]
 use libc::FILE;
 #[cfg(feature = "std")]
@@ -36,7 +37,6 @@ use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
-use crate::utils::reverse_bit_order;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
