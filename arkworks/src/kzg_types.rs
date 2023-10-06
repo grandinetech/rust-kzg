@@ -1,7 +1,7 @@
 use crate::consts::{SCALE2_ROOT_OF_UNITY, G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{
-    expand_root_of_unity, new_kzg_settings, FFTSettings as LFFTSettings,
+    expand_root_of_unity, FFTSettings as LFFTSettings,
     KZGSettings as LKZGSettings, eval_poly,
 };
 use crate::utils::{PolyData, blst_p2_into_pc_g2projective};
@@ -98,17 +98,9 @@ impl G1 for ArkG1 {
     }
 
     fn to_bytes(&self) -> [u8; 48] {
-        // let mut buff: [u8; 48] = [0; 48];
-        // self.proj.serialize_compressed(&mut &mut buff[..]).unwrap();
-        // buff
-        // G1Affine::serialize_compressed();
-        // verify_blob_kzg_proof
-        // let mut hasher = H::new();
-        // self.serialize_compressed(HashMarshaller(&mut hasher))
-        //     .expect("HashMarshaller::flush should be infaillible!");
-        // hasher.finalize()
-        let projective = &self.proj;
-        <[u8; 48]>::try_from(projective.x.0.to_bytes_le()).unwrap()
+        let mut buff: [u8; 48] = [0; 48];
+        self.proj.serialize_compressed(&mut &mut buff[..]).unwrap();
+        buff
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
@@ -146,14 +138,6 @@ impl G1 for ArkG1 {
 impl G1Mul<ArkFr> for ArkG1 {
     fn mul(&self, b: &ArkFr) -> Self {
         Self { proj: self.proj.mul(b.fr) }
-        // let bit_cnt = b.fr.0.num_bits();
-        // if bit_cnt == 0 {
-        //     return G1_IDENTITY;
-        // } else if bit_cnt == 1 && b.fr.0.0[0] == 1 {
-        //     return *self;
-        // } else {
-        //     return Self { proj: self.proj.mul(b.fr) };
-        // }
     }
 }
 
@@ -200,11 +184,9 @@ impl G2 for ArkG2 {
     }
 
     fn to_bytes(&self) -> [u8; 96] {
-        // let mut buff: [u8; 96] = [0; 96];
-        // self.proj.serialize_compressed(&mut &mut buff[..]).unwrap();
-        // buff
-        let projective = self.proj;
-        <[u8; 96]>::try_from(projective.x.c0.0.to_bytes_le()).unwrap()
+        let mut buff: [u8; 96] = [0; 96];
+        self.proj.serialize_compressed(&mut &mut buff[..]).unwrap();
+        buff
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
@@ -279,8 +261,9 @@ impl KzgFr for ArkFr {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let fr = Fr::deserialize_compressed_unchecked(bytes.as_slice());
-                let fr = fr.unwrap_or_default();
+                let mut le_bytes: [u8; BYTES_PER_FIELD_ELEMENT] = bytes.clone();
+                le_bytes.reverse();
+                let fr = Fr::deserialize_compressed_unchecked(le_bytes.as_slice()).unwrap_or_default();
                 Ok(Self { fr })
             })
     }
@@ -299,11 +282,8 @@ impl KzgFr for ArkFr {
     }
 
     fn to_bytes(&self) -> [u8; 32] {
-        // let mut buff: [u8; 32] = [0; 32];
-        // self.fr.serialize_compressed(&mut &mut buff[..]).unwrap();
-        // buff
         let big_int_256: BigInteger256 = Fr::into(self.fr);
-        <[u8; 32]>::try_from(big_int_256.to_bytes_le()).unwrap()
+        <[u8; 32]>::try_from(big_int_256.to_bytes_be()).unwrap()
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
@@ -324,8 +304,6 @@ impl KzgFr for ArkFr {
     }
 
     fn sqr(&self) -> Self {
-        // let temp = blst_fr_into_pc_fr(self);
-        // pc_fr_into_blst_fr(temp.square())
         Self { fr: self.fr.square() }
     }
 
@@ -359,8 +337,6 @@ impl KzgFr for ArkFr {
     }
 
     fn div(&self, b: &Self) -> Result<Self, String> {
-        // let a = blst_fr_into_pc_fr(self);
-        // let b = blst_fr_into_pc_fr(b);
         let div = self.fr / b.fr;
         if div.0 .0.is_empty() {
             Ok(Self { fr: Fr::zero() } )
@@ -465,30 +441,26 @@ impl FFTSettings<ArkFr> for LFFTSettings {
                 "Scale is expected to be within root of unity matrix row size",
             ));
         }
+
         let max_width: usize = 1 << scale;
-        let domain = GeneralEvaluationDomain::<Fr>::new(max_width as usize).unwrap();
+        let root_of_unity = ArkFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
-        let expanded_roots_of_unity =
-                expand_root_of_unity(&ArkFr { fr: domain.group_gen() }, max_width)
-                .unwrap()
-                ;
-
+        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
         let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
-        // Permute the roots of unity
         let mut roots_of_unity = expanded_roots_of_unity.clone();
         roots_of_unity.pop();
         reverse_bit_order(&mut roots_of_unity)?;
 
         Ok(LFFTSettings {
             max_width,
-            // root_of_unity: ArkFr { fr: domain.group_gen() } ,
-            root_of_unity: ArkFr { fr: Fr::get_root_of_unity(domain.size().try_into().unwrap()).unwrap() } ,
+            root_of_unity,
             expanded_roots_of_unity,
             reverse_roots_of_unity,
             roots_of_unity,
-            domain,
+            // FIXME: This should probably be removed
+            domain: GeneralEvaluationDomain::<Fr>::new(max_width as usize).unwrap()
         })
     }
 
@@ -501,7 +473,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 
     fn get_expanded_roots_of_unity(&self) -> &[ArkFr] {
-        self.expanded_roots_of_unity.as_slice()
+        &self.expanded_roots_of_unity
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> ArkFr {
@@ -509,7 +481,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 
     fn get_reversed_roots_of_unity(&self) -> &[ArkFr] {
-        self.reverse_roots_of_unity.as_slice()
+        &self.reverse_roots_of_unity
     }
 
     fn get_roots_of_unity_at(&self, i: usize) -> ArkFr {
@@ -517,7 +489,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 
     fn get_roots_of_unity(&self) -> &[ArkFr] {
-        self.roots_of_unity.as_slice()
+        &self.roots_of_unity
     }
 }
 
@@ -526,9 +498,30 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         secret_g1: &[ArkG1],
         secret_g2: &[ArkG2],
         length: usize,
-        fs: &LFFTSettings,
+        fft_settings: &LFFTSettings,
     ) -> Result<LKZGSettings, String> {
-        Ok(new_kzg_settings(secret_g1, secret_g2, length as u64, fs))
+        let mut kzg_settings = Self::default();
+        if secret_g1.len() < fft_settings.max_width {
+            return Err(String::from(
+                "secret_g1 must have a length equal to or greater than fft_settings roots",
+            ));
+        } else if secret_g2.len() < fft_settings.max_width {
+            return Err(String::from(
+                "secret_g2 must have a length equal to or greater than fft_settings roots",
+            ));
+        } else if length < fft_settings.max_width {
+            return Err(String::from(
+                "length must be equal to or greater than number of fft_settings roots",
+            ));
+        }
+
+        for i in 0..length {
+            kzg_settings.secret_g1.push(secret_g1[i]);
+            kzg_settings.secret_g2.push(secret_g2[i].clone());
+        }
+        kzg_settings.fs = fft_settings.clone();
+
+        Ok(kzg_settings)
     }
 
     fn commit_to_poly(&self, p: &LPoly) -> Result<ArkG1, String> {

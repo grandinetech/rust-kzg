@@ -313,6 +313,10 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
         generated_powers.push(generated_powers.last().unwrap().mul(root));
     }
 
+    if generated_powers.len() != width + 1 {
+        return Err(String::from("Root of unity has invalid scale"));
+    }
+
     Ok(generated_powers)
 }
 
@@ -385,160 +389,11 @@ fn generate_trusted_setup_test(
     (s1, s2)
 }
 
-pub fn new_kzg_settings(
-    secret_g1: &[ArkG1],
-    _secret_g2: &[ArkG2],
-    length: u64,
-    ffs: &FFTSettings,
-) -> KZGSettings {
-    // let length = length + 1;
-    KZGSettings {
-        fs: ffs.borrow().clone(),
-        secret_g1: secret_g1.to_vec(),
-        secret_g2: _secret_g2.to_vec(),
-    }
-}
-
-// pub fn commit_to_poly(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, String> {
-//     // if p.coeffs.len() > ks.length as usize {
-//     //     Err(String::from("Poly given is too long"))
-//     // } else if blst_poly_into_pc_poly(p).unwrap().is_zero() {
-//     //     Ok(G1_IDENTITY)
-//     // } else {
-
-//         // let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
-//         // let (com, _rand) =
-//         //     KZG_Bls12_381::commit(&powers, &blst_poly_into_pc_poly(p).unwrap(), None, None)
-//         //         .unwrap();
-//         // Ok(pc_g1projective_into_blst_p1(com.0.into_group()).unwrap())
-//     //}
-//     if p.coeffs.len() > self.secret_g1.len() {
-//         return Err(String::from("Polynomial is longer than secret g1"));
-//     }
-
-//     let mut out = FsG1::default();
-//     g1_linear_combination(&mut out, &self.secret_g1, &poly.coeffs, poly.coeffs.len());
-
-//     Ok(out)
-// }
-
-// pub fn compute_proof_single(p: &PolyData, x: &BlstFr, ks: &KZGSettings) -> Result<ArkG1, String> {
-//     if p.coeffs.is_empty() {
-//         return Err(String::from("Polynomial must not be empty"));
-//     }
-    
-//     // `-(x0^n)`, where `n` is `1`
-//     let divisor_0 = x.negate();
-
-//     // Calculate `q = p / (x^n - x0^n)` for our reduced case (see `compute_proof_multi` for
-//     // generic implementation)
-//     let mut out_coeffs = Vec::from(&p.coeffs[1..]);
-//     for i in (1..out_coeffs.len()).rev() {
-//         let tmp = out_coeffs[i].mul(&divisor_0);
-//         out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
-//     }
-
-//     let q = PolyData { coeffs: out_coeffs };
-
-//     let ret = self.commit_to_poly(&q)?;
-
-//     Ok(ret)
-    
-//     // let (powers, _) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
-//     // let proof = KZG::<Bls12_381, UniPoly_381>::open(
-//     //     &powers,
-//     //     &blst_poly_into_pc_poly(p).unwrap(),
-//     //     blst_fr_into_pc_fr(x),
-//     //     &ks.rand2,
-//     // )
-//     // .unwrap();
-//     // pc_g1projective_into_blst_p1(proof.w.into_group()).unwrap()
-// }
 
 pub fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
     let poly = blst_poly_into_pc_poly(&p.coeffs);
     BlstFr { fr: poly.evaluate(&x.fr) }
 }
-
-// pub fn check_proof_single(
-//     com: &ArkG1,
-//     proof: &ArkG1,
-//     x: &BlstFr,
-//     value: &BlstFr,
-//     ks: &KZGSettings,
-// ) -> bool {
-//     let (_powers, vk) = trim(&ks.params, &ks.params.max_degree() - 1).unwrap();
-//     let projective = blst_p1_into_pc_g1projective(&com.0).unwrap();
-//     let affine = Affine::<g1::Config>::from(projective);
-//     let mut com = Commitment::empty();
-//     com.0 = affine;
-//     let arkproof = Proof {
-//         w: blst_p1_into_pc_g1projective(&proof.0)
-//             .unwrap()
-//             .into_affine(),
-//         random_v: None,
-//     };
-//     KZG_Bls12_381::check(
-//         &vk,
-//         &com,
-//         blst_fr_into_pc_fr(x),
-//         blst_fr_into_pc_fr(value),
-//         &arkproof,
-//     )
-//     .unwrap()
-// }
-
-// pub fn compute_proof_multi(p: &PolyData, x: &BlstFr, n: usize, ks: &KZGSettings) -> ArkG1 {
-//     let mut divisor = PolyData::new(n + 1).unwrap();
-//     let x_pow_n = x.pow(n);
-
-//     divisor.set_coeff_at(0, &x_pow_n.negate());
-
-//     for i in 1..n {
-//         divisor.set_coeff_at(i, &BlstFr::zero());
-//     }
-//     divisor.set_coeff_at(n, &BlstFr::one());
-
-//     let mut p = p.clone();
-//     let q = p.div(&divisor).unwrap();
-
-//     commit_to_poly(&q, ks).unwrap()
-// }
-
-// pub fn check_proof_multi(
-//     com: &ArkG1,
-//     proof: &ArkG1,
-//     x: &BlstFr,
-//     ys: &[BlstFr],
-//     n: usize,
-//     ks: &KZGSettings,
-// ) -> bool {
-//     let mut interp = PolyData::new(n).unwrap();
-
-//     interp.coeffs = ks.fs.fft_fr(ys, true).unwrap();
-
-//     let inv_x = x.inverse();
-//     let mut inv_x_pow = inv_x;
-//     for i in 1..n {
-//         interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
-//         inv_x_pow = inv_x_pow.mul(&inv_x);
-//     }
-
-//     let x_pow = inv_x_pow.inverse();
-//     let mut xn2 = ks.params.h.into_group();
-//     xn2.mul_assign(blst_fr_into_pc_fr(&x_pow));
-//     let xn_minus_yn = blst_p2_into_pc_g2projective(&ks.secret_g2[n]).unwrap() - xn2;
-
-//     let is1 = blst_p1_into_pc_g1projective(&ks.commit_to_poly(&interp).unwrap().0).unwrap();
-
-//     let commit_minus_interp = blst_p1_into_pc_g1projective(&com.0).unwrap() - is1;
-//     pairings_verify(
-//         &pc_g1projective_into_blst_p1(commit_minus_interp).unwrap(),
-//         &pc_g2projective_into_blst_p2(ks.params.h.into_group()).unwrap(),
-//         proof,
-//         &pc_g2projective_into_blst_p2(xn_minus_yn).unwrap(),
-//     )
-// }
 
 pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
     let ark_a1_neg = a1.proj

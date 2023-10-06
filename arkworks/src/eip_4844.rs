@@ -108,8 +108,14 @@ pub fn load_trusted_setup(filepath: &str) -> Result<KZGSettings, String> {
     load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
 
-fn fr_batch_inv(out: &mut [ArkFr], a: &[ArkFr], len: usize) {
-    assert!(len > 0);
+fn fr_batch_inv(out: &mut [ArkFr], a: &[ArkFr], len: usize) -> Result<(), String> {
+    if len == 0 {
+        return Err(String::from("Length is less than 0."));
+    }
+
+    if a == out {
+        return Err(String::from("Destination is the same as source."));
+    }
 
     let mut accumulator = ArkFr::one();
 
@@ -118,12 +124,18 @@ fn fr_batch_inv(out: &mut [ArkFr], a: &[ArkFr], len: usize) {
         accumulator = accumulator.mul(&a[i]);
     }
 
+    if accumulator.is_zero() {
+        return Err(String::from("Zero input"));
+    }
+
     accumulator = accumulator.inverse();
 
     for i in (0..len).rev() {
         out[i] = out[i].mul(&accumulator);
         accumulator = accumulator.mul(&a[i]);
     }
+
+    Ok(())
 }
 
 pub fn g1_lincomb(points: &[ArkG1], scalars: &[ArkFr], length: usize) -> ArkG1 {
@@ -212,9 +224,69 @@ pub fn verify_kzg_proof_batch(
 }
 
 pub fn compute_kzg_proof(blob: &[ArkFr], z: &ArkFr, ks: &KZGSettings) -> Result<(ArkG1, ArkFr),String> {
+    if blob.len() != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Incorrect field elements count."));
+    }
+
     let polynomial = blob_to_polynomial(blob)?;
     let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, ks)?;
-    let proof = ks.compute_proof_single(&polynomial, z)?;
+
+    let mut tmp: ArkFr;
+    let roots_of_unity: &Vec<ArkFr> = &ks.fs.roots_of_unity;
+
+    let mut m: usize = 0;
+    let mut q: PolyData = PolyData::new(FIELD_ELEMENTS_PER_BLOB);
+
+    let mut inverses_in: Vec<ArkFr> = vec![ArkFr::default(); FIELD_ELEMENTS_PER_BLOB];
+    let mut inverses: Vec<ArkFr> = vec![ArkFr::default(); FIELD_ELEMENTS_PER_BLOB];
+
+    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        if z.equals(&roots_of_unity[i]) {
+            // We are asked to compute a KZG proof inside the domain
+            m = i + 1;
+            inverses_in[i] = ArkFr::one();
+            continue;
+        }
+        // (p_i - y) / (ω_i - z)
+        q.coeffs[i] = polynomial.coeffs[i].sub(&y);
+        inverses_in[i] = roots_of_unity[i].sub(z);
+    }
+
+    fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB)?;
+
+    for (i, inverse) in inverses.iter().enumerate().take(FIELD_ELEMENTS_PER_BLOB) {
+        q.coeffs[i] = q.coeffs[i].mul(inverse);
+    }
+
+    if m != 0 {
+        // ω_{m-1} == z
+        m -= 1;
+        q.coeffs[m] = ArkFr::zero();
+        for i in 0..FIELD_ELEMENTS_PER_BLOB {
+            if i == m {
+                continue;
+            }
+            // Build denominator: z * (z - ω_i)
+            tmp = z.sub(&roots_of_unity[i]);
+            inverses_in[i] = tmp.mul(z);
+        }
+
+        fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB)?;
+
+        for i in 0..FIELD_ELEMENTS_PER_BLOB {
+            if i == m {
+                continue;
+            }
+            // Build numerator: ω_i * (p_i - y)
+            tmp = polynomial.coeffs[i].sub(&y);
+            tmp = tmp.mul(&roots_of_unity[i]);
+            // Do the division: (p_i - y) * ω_i / (z * (z - ω_i))
+            tmp = tmp.mul(&inverses[i]);
+            q.coeffs[m] = q.coeffs[m].add(&tmp);
+        }
+    }
+
+    let proof = g1_lincomb(&ks.secret_g1, &q.coeffs, FIELD_ELEMENTS_PER_BLOB);
     Ok((proof, y))
 }
 
@@ -232,7 +304,7 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &PolyData, x: &ArkFr, ks: &KZGS
         inverses_in[i] = x.sub(&roots_of_unity[i]);
     }
 
-    fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB)?;
 
     let mut tmp: ArkFr;
     let mut out = ArkFr::zero();

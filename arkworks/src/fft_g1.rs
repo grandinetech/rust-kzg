@@ -10,6 +10,7 @@ use ark_bls12_381::{G1Affine, G1Projective, Fr};
 use ark_ec::VariableBaseMSM;
 
 use ark_ec::scalar_mul::fixed_base::FixedBase;
+use ark_ec::scalar_mul::variable_base::ChunkedPippenger;
 use ark_ff::BigInteger256;
 use kzg::{cfg_into_iter, G1Mul, Fr as KzgFr};
 use kzg::{FFTG1, G1};
@@ -79,33 +80,6 @@ impl FFTG1<ArkG1> for FFTSettings {
                 .for_each(|f| f.proj.mul_assign(&inv_fr_len.fr));
         }
         Ok(ret)
-
-        //////////
-
-        // let mut frs: Vec<G1Projective> = {
-        //     cfg_into_iter!(data)
-        //         .map(|x| {
-        //             x.proj
-        //         })
-        //         .collect()
-        // };
-
-        // if inverse {
-        //     self.domain.ifft_in_place(&mut frs);
-        // } else {
-            // self.domain.fft_in_place(&mut frs);
-        // }
-
-        // let ret: Vec<ArkG1> = { 
-        //     cfg_into_iter!(frs)
-        //         .map(|x| {
-        //             ArkG1 { proj: x }
-        //         })
-        //         .collect()
-        // };
-
-        // Ok(ret)
-
     }
 }
 
