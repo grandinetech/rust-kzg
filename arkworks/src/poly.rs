@@ -195,7 +195,7 @@ pub fn poly_mul_fft(
     ab.coeffs = fs_p.fft_fr(&ab_fft.coeffs, true).unwrap();
 
     let data_len = min(len, length);
-    let mut out = PolyData::new(len).unwrap();
+    let mut out = PolyData::new(len);
 
     for i in 0..data_len {
         out.coeffs[i] = ab.coeffs[i];
@@ -220,14 +220,14 @@ pub fn poly_fast_div(dividend: &PolyData, divisor: &PolyData) -> Result<PolyData
     let n = divisor.coeffs.len() - 1;
 
     if n > m {
-        return PolyData::new(0);
+        return Ok(PolyData::new(0));
     }
 
     if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
         return Err(String::from("divisor coeffs last member is zero"));
     }
 
-    let mut out = PolyData::new(0).unwrap();
+    let mut out = PolyData::new(0);
 
     if divisor.len() == 1 {
         for i in 0..dividend.len() {
@@ -251,7 +251,7 @@ pub fn poly_fast_div(dividend: &PolyData, divisor: &PolyData) -> Result<PolyData
 }
 
 pub fn poly_flip(input: &PolyData) -> Result<PolyData, String> {
-    let mut output = PolyData::new(0).unwrap();
+    let mut output = PolyData::new(0);
     for i in 0..input.len() {
         output.coeffs.push(input.coeffs[input.coeffs.len() - i - 1]);
     }

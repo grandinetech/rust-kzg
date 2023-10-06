@@ -5,7 +5,7 @@ use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{pairings_verify, FFTSettings, KZGSettings, UniPoly_381, KZG};
 use crate::kzg_types::{ArkG1, ArkG2, ArkFr};
 use crate::utils::{PolyData};
-use ark_bls12_381::Bls12_381;
+use ark_bls12_381::{Bls12_381, g1};
 use ark_std::test_rng;
 use kzg::eip_4844::{
     bytes_of_uint64, hash, load_trusted_setup_string, BYTES_PER_BLOB, BYTES_PER_COMMITMENT,
@@ -47,35 +47,41 @@ pub fn bytes_to_blob(bytes: &[u8]) -> Result<Vec<ArkFr>, String> {
         .collect()
 }
 
-fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
+fn is_trusted_setup_in_lagrange_form(g1_values: &Vec<ArkG1>, g2_values: &Vec<ArkG2>) -> bool {
+    if g1_values.len() < 2 || g2_values.len() < 2 {
+        return false;
+    }
+
+    let is_monotomial_form =
+        pairings_verify(&g1_values[1], &g2_values[0], &g1_values[0], &g2_values[1]);
+
+    !is_monotomial_form
+}
+
+fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> Result<KZGSettings, String> {
     let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
+    if num_g1_points != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Invalid number of G1 points"));
+    }
 
-    assert_eq!(num_g1_points, FIELD_ELEMENTS_PER_BLOB);
-    assert_eq!(g2_bytes.len() / BYTES_PER_G2, TRUSTED_SETUP_NUM_G2_POINTS);
+    let num_g2_points = g2_bytes.len() / BYTES_PER_G2;
+    if num_g2_points != TRUSTED_SETUP_NUM_G2_POINTS {
+        return Err(String::from("Invalid number of G2 points"));
+    }
 
-    let g1_projectives: Vec<ArkG1> = g1_bytes
+    let mut g1_values = g1_bytes
         .chunks(BYTES_PER_G1)
-        .map(|chunk| {
-            ArkG1::from_bytes(
-                chunk
-                    .try_into()
-                    .expect("Chunked into incorrect number of bytes"),
-            )
-            .unwrap()
-        })
-        .collect();
-    
-    let g2_values: Vec<ArkG2> = g2_bytes
+        .map(ArkG1::from_bytes)
+        .collect::<Result<Vec<ArkG1>, String>>()?;
+
+    let g2_values = g2_bytes
         .chunks(BYTES_PER_G2)
-        .map(|chunk| {
-            ArkG2::from_bytes(
-                chunk
-                    .try_into()
-                    .expect("Chunked into incorrect number of bytes"),
-            )
-            .unwrap()
-        })
-        .collect();
+        .map(ArkG2::from_bytes)
+        .collect::<Result<Vec<ArkG2>, String>>()?;
+
+    if !is_trusted_setup_in_lagrange_form(&g1_values, &g2_values) {
+        return Err(String::from("Trusted setup is not in Lagrange form"));
+    }
 
     let mut max_scale: usize = 0;
     while (1 << max_scale) < num_g1_points {
@@ -83,26 +89,22 @@ fn load_trusted_setup_rust(g1_bytes: &[u8], g2_bytes: &[u8]) -> KZGSettings {
     }
 
     let fs = FFTSettings::new(max_scale).unwrap();
-    let mut g1_values = fs.fft_g1(&g1_projectives, true).unwrap();
-    reverse_bit_order(&mut g1_values);
+    reverse_bit_order(&mut g1_values)?;
 
-    let length = num_g1_points + 1;
-
-    KZGSettings {
-        length: length as u64,
-        fs,
+    Ok(KZGSettings {
         secret_g1: g1_values,
         secret_g2: g2_values,
-    }
+        fs,
+    })
 }
 
-pub fn load_trusted_setup(filepath: &str) -> KZGSettings {
+pub fn load_trusted_setup(filepath: &str) -> Result<KZGSettings, String> {
     let mut file = File::open(filepath).expect("Unable to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Unable to read file");
 
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents);
+    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents)?;
     load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
 
@@ -142,8 +144,8 @@ pub fn compute_powers(base: &ArkFr, num_powers: usize) -> Vec<ArkFr> {
     powers
 }
 
-pub fn blob_to_kzg_commitment(blob: &[ArkFr], ks: &KZGSettings) -> ArkG1 {
-    let p = blob_to_polynomial(blob);
+pub fn blob_to_kzg_commitment(blob: &[ArkFr], ks: &KZGSettings) -> Result<ArkG1, String> {
+    let p = blob_to_polynomial(blob)?;
     poly_to_kzg_commitment(&p, ks)
 }
 
@@ -209,14 +211,14 @@ pub fn verify_kzg_proof_batch(
     )
 }
 
-pub fn compute_kzg_proof(blob: &[ArkFr], z: &ArkFr, ks: &KZGSettings) -> (ArkG1, ArkFr) {
-    let polynomial = blob_to_polynomial(blob);
-    let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, ks);
-    let proof = ks.compute_proof_single(&polynomial, z).unwrap();
-    (proof, y)
+pub fn compute_kzg_proof(blob: &[ArkFr], z: &ArkFr, ks: &KZGSettings) -> Result<(ArkG1, ArkFr),String> {
+    let polynomial = blob_to_polynomial(blob)?;
+    let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, ks)?;
+    let proof = ks.compute_proof_single(&polynomial, z)?;
+    Ok((proof, y))
 }
 
-pub fn evaluate_polynomial_in_evaluation_form(p: &PolyData, x: &ArkFr, ks: &KZGSettings) -> ArkFr {
+pub fn evaluate_polynomial_in_evaluation_form(p: &PolyData, x: &ArkFr, ks: &KZGSettings) -> Result<ArkFr, String> {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
 
     let roots_of_unity: &Vec<ArkFr> = &ks.fs.roots_of_unity;
@@ -225,7 +227,7 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &PolyData, x: &ArkFr, ks: &KZGS
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         if x.equals(&roots_of_unity[i]) {
-            return p.get_coeff_at(i);
+            return Ok(p.get_coeff_at(i));
         }
         inverses_in[i] = x.sub(&roots_of_unity[i]);
     }
@@ -244,7 +246,7 @@ pub fn evaluate_polynomial_in_evaluation_form(p: &PolyData, x: &ArkFr, ks: &KZGS
     tmp = x.pow(FIELD_ELEMENTS_PER_BLOB);
     tmp = tmp.sub(&ArkFr::one());
     out = out.mul(&tmp);
-    out
+    Ok(out)
 }
 
 fn compute_challenge(blob: &[ArkFr], commitment: &ArkG1) -> ArkFr {
@@ -325,16 +327,16 @@ fn compute_r_powers(
     compute_powers(&r, n)
 }
 
-pub fn blob_to_polynomial(blob: &[ArkFr]) -> PolyData {
+pub fn blob_to_polynomial(blob: &[ArkFr]) -> Result<PolyData, String> {
     assert_eq!(blob.len(), FIELD_ELEMENTS_PER_BLOB);
-    let mut p: PolyData = PolyData::new(FIELD_ELEMENTS_PER_BLOB).unwrap();
+    let mut p: PolyData = PolyData::new(FIELD_ELEMENTS_PER_BLOB);
     p.coeffs = blob.to_vec();
-    p
+    Ok(p)
 }
 
-fn poly_to_kzg_commitment(p: &PolyData, ks: &KZGSettings) -> ArkG1 {
+fn poly_to_kzg_commitment(p: &PolyData, ks: &KZGSettings) -> Result<ArkG1, String> {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
-    g1_lincomb(&ks.secret_g1, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
+    Ok(g1_lincomb(&ks.secret_g1, &p.coeffs, FIELD_ELEMENTS_PER_BLOB))
 }
 
 pub fn compute_blob_kzg_proof(
@@ -347,7 +349,7 @@ pub fn compute_blob_kzg_proof(
     }
 
     let evaluation_challenge_fr = compute_challenge(blob, commitment);
-    let (proof, _) = compute_kzg_proof(blob, &evaluation_challenge_fr, ks);
+    let (proof, _) = compute_kzg_proof(blob, &evaluation_challenge_fr, ks)?;
     Ok(proof)
 }
 
@@ -364,9 +366,9 @@ pub fn verify_blob_kzg_proof(
         return Err("Invalid proof".to_string());
     }
 
-    let polynomial = blob_to_polynomial(blob);
+    let polynomial = blob_to_polynomial(blob)?;
     let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
-    let y_fr = evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ks);
+    let y_fr = evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ks)?;
     verify_kzg_proof(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ks)
 }
 
@@ -374,21 +376,21 @@ fn compute_challenges_and_evaluate_polynomial(
     blobs: &[Vec<ArkFr>],
     commitments_g1: &[ArkG1],
     ks: &KZGSettings,
-) -> (Vec<ArkFr>, Vec<ArkFr>) {
+) -> Result<(Vec<ArkFr>, Vec<ArkFr>), String> {
     let mut evaluation_challenges_fr = Vec::new();
     let mut ys_fr = Vec::new();
 
     for i in 0..blobs.len() {
-        let polynomial = blob_to_polynomial(&blobs[i]);
+        let polynomial = blob_to_polynomial(&blobs[i])?;
         let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
         let y_fr =
-            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ks);
+            evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ks)?;
 
         evaluation_challenges_fr.push(evaluation_challenge_fr);
         ys_fr.push(y_fr);
     }
 
-    (evaluation_challenges_fr, ys_fr)
+    Ok((evaluation_challenges_fr, ys_fr))
 }
 
 fn validate_batched_input(commitments: &[ArkG1], proofs: &[ArkG1]) -> Result<(), String> {
@@ -450,7 +452,7 @@ pub fn verify_blob_kzg_proof_batch(
                             blob_group,
                             commitment_group,
                             ks,
-                        );
+                        ).unwrap();
 
                     verify_kzg_proof_batch(
                         commitment_group,
@@ -475,7 +477,7 @@ pub fn verify_blob_kzg_proof_batch(
     {
         validate_batched_input(commitments_g1, proofs_g1)?;
         let (evaluation_challenges_fr, ys_fr) =
-            compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ks);
+            compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ks)?;
 
         Ok(verify_kzg_proof_batch(
             commitments_g1,

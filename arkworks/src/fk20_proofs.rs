@@ -213,7 +213,7 @@ fn fk20_multi_da_opt(p: &PolyData, fk: &KzgFK20MultiSettings) -> Result<Vec<ArkG
         h_ext_fft.push(G1_IDENTITY);
     }
 
-    let mut toeplitz_coeffs = PolyData::new(n2 / fk.chunk_len).unwrap();
+    let mut toeplitz_coeffs = PolyData::new(n2 / fk.chunk_len);
     for i in 0..fk.chunk_len {
         toeplitz_coeffs =
             toeplitz_coeffs_stride(p, i, fk.chunk_len, toeplitz_coeffs.len()).unwrap();
@@ -258,7 +258,7 @@ fn toeplitz_coeffs_stride(
         return Err(String::from("outlen must be equal or greater than k2"));
     }
 
-    let mut out = PolyData::new(outlen).unwrap();
+    let mut out = PolyData::new(outlen);
     out.set_coeff_at(0, &poly.coeffs[n - 1 - offset]);
     let mut i = 1;
     while i <= (k + 1) && i < k2 {

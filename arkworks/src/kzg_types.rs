@@ -280,12 +280,8 @@ impl KzgFr for ArkFr {
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let fr = Fr::deserialize_compressed_unchecked(bytes.as_slice());
-                // match fr {
-                //     Err(x) => Err("Failed to deserialize ArkFr: ".to_owned() + &(x.to_string())),
-                //     Ok(x) => Ok(Self { fr: x })
-                // }
                 let fr = fr.unwrap_or_default();
-                Ok(Self { fr: fr })
+                Ok(Self { fr })
             })
     }
 
@@ -346,13 +342,8 @@ impl KzgFr for ArkFr {
     }
 
     fn eucl_inverse(&self) -> Self {
-        // let mut ret = Self::default();
-        // unsafe {
-        //     blst_fr_eucl_inverse(&mut ret.0, &self.0);
-        // }
-
-        // return ret;
-        todo!()
+        // Inverse and eucl inverse work the same way
+        Self { fr: self.fr.inverse().unwrap() }
     }
 
     fn negate(&self) -> Self {
@@ -361,7 +352,6 @@ impl KzgFr for ArkFr {
 
     fn inverse(&self) -> Self {
         Self { fr: self.fr.inverse().unwrap() }
-        // pc_fr_into_blst_fr(blst_fr_into_pc_fr(self).inverse().unwrap())
     }
 
     fn pow(&self, n: usize) -> Self {
@@ -385,10 +375,10 @@ impl KzgFr for ArkFr {
 }
 
 impl Poly<ArkFr> for LPoly {
-    fn new(size: usize) -> Result<Self, String> {
-        Ok(Self {
+    fn new(size: usize) -> PolyData {
+        Self {
             coeffs: vec![ArkFr::default(); size],
-        })
+        }
     }
 
     fn get_coeff_at(&self, i: usize) -> ArkFr {
@@ -479,7 +469,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
         let domain = GeneralEvaluationDomain::<Fr>::new(max_width as usize).unwrap();
 
         let expanded_roots_of_unity =
-                expand_root_of_unity(&ArkFr { fr: domain.group_gen() }, domain.size() as usize)
+                expand_root_of_unity(&ArkFr { fr: domain.group_gen() }, max_width)
                 .unwrap()
                 ;
 
@@ -488,6 +478,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
 
         // Permute the roots of unity
         let mut roots_of_unity = expanded_roots_of_unity.clone();
+        roots_of_unity.pop();
         reverse_bit_order(&mut roots_of_unity)?;
 
         Ok(LFFTSettings {

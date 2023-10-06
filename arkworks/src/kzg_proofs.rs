@@ -321,10 +321,6 @@ pub struct KZGSettings {
     pub fs: FFTSettings,
     pub secret_g1: Vec<ArkG1>,
     pub secret_g2: Vec<ArkG2>,
-    pub length: u64,
-    // pub params: UniversalParams<Bls12_381>,
-    // pub rand: StdRng,
-    // pub rand2: Randomness<Fr, UniPoly_381>,
 }
 
 impl Default for KZGSettings {
@@ -333,10 +329,6 @@ impl Default for KZGSettings {
             fs: FFTSettings::default(),
             secret_g1: Vec::new(),
             secret_g2: Vec::new(),
-            length: 0,
-            // params: KZG_Bls12_381::setup(1, false, &mut test_rng()).unwrap(),
-            // rand: StdRng::seed_from_u64(0), // This is def wrong, just using rn
-            // rand2: Randomness::empty(),
         }
     }
 }
@@ -401,7 +393,6 @@ pub fn new_kzg_settings(
 ) -> KZGSettings {
     // let length = length + 1;
     KZGSettings {
-        length,
         fs: ffs.borrow().clone(),
         secret_g1: secret_g1.to_vec(),
         secret_g2: _secret_g2.to_vec(),
