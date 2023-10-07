@@ -991,7 +991,7 @@ pub unsafe extern "C" fn compute_kzg_proof(
 
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::eip_4844::get_trusted_setup_path;
+    use kzg_bench::tests::utils::get_trusted_setup_path;
 
     use crate::eip_4844::{kzg_settings_to_c, kzg_settings_to_rust};
 
