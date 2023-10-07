@@ -1,4 +1,10 @@
-use std::{ffi::CStr, fs::File, io::Read, os::fd::IntoRawFd, path::PathBuf, ptr::null_mut};
+use std::{
+    ffi::{CStr, CString},
+    fs::File,
+    io::Read,
+    path::PathBuf,
+    ptr::null_mut,
+};
 
 use kzg::eip_4844::{
     load_trusted_setup_string, Blob, CKZGSettings, KZGCommitment, BYTES_PER_COMMITMENT,
@@ -323,15 +329,15 @@ pub fn load_trusted_setup_file_invalid_format_test(
 
     for fixture in fixtures {
         let file_path = get_trusted_setup_fixture_path(&fixture.name);
-        let file = File::open(file_path.clone()).unwrap();
-        let c_file = unsafe {
-            libc::fdopen(
-                file.into_raw_fd(),
+        let file = unsafe {
+            let c_file_path = CString::new(file_path.clone()).unwrap();
+            libc::fopen(
+                c_file_path.as_ptr(),
                 CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
             )
         };
 
-        assert!(!c_file.is_null());
+        assert!(!file.is_null());
 
         let mut loaded_settings = CKZGSettings {
             g1_values: null_mut(),
@@ -340,7 +346,11 @@ pub fn load_trusted_setup_file_invalid_format_test(
             roots_of_unity: null_mut(),
         };
 
-        let output = unsafe { load_trusted_setup_file(&mut loaded_settings, c_file) };
+        let output = unsafe { load_trusted_setup_file(&mut loaded_settings, file) };
+
+        unsafe {
+            libc::fclose(file);
+        }
 
         assert!(
             output == C_KZG_RET_BADARGS,
