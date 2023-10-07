@@ -1,15 +1,33 @@
-use std::{fs::File, io::Read, path::PathBuf, ptr::null_mut};
+use std::{ffi::CStr, fs::File, io::Read, os::fd::IntoRawFd, path::PathBuf, ptr::null_mut};
 
 use kzg::eip_4844::{
     load_trusted_setup_string, Blob, CKZGSettings, KZGCommitment, BYTES_PER_COMMITMENT,
     BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS,
     C_KZG_RET_OK,
 };
+use libc::FILE;
 
 use crate::tests::{
     eip_4844::generate_random_blob_bytes,
     utils::{get_manifest_dir, get_trusted_setup_path},
 };
+
+fn get_trusted_setup_fixture_path(fixture: &str) -> String {
+    let filename = if cfg!(feature = "minimal-spec") {
+        "trusted_setup_4_fixture.txt"
+    } else {
+        "trusted_setup_fixture.txt"
+    };
+
+    PathBuf::from(get_manifest_dir())
+        .join("src/tests/fixtures")
+        .join(fixture)
+        .join(filename)
+        .as_os_str()
+        .to_str()
+        .unwrap()
+        .to_string()
+}
 
 pub fn blob_to_kzg_commitment_invalid_blob_test(
     load_trusted_setup: unsafe extern "C" fn(
@@ -226,20 +244,7 @@ pub fn load_trusted_setup_invalid_form_test(
         usize,
     ) -> C_KZG_RET,
 ) {
-    let trusted_setup_name = if cfg!(feature = "minimal-spec") {
-        "trusted_setup_4_old.txt"
-    } else {
-        "trusted_setup_old.txt"
-    };
-    let mut file = File::open(
-        PathBuf::from(get_manifest_dir())
-            .join("src/tests/fixtures")
-            .join(trusted_setup_name)
-            .as_os_str()
-            .to_str()
-            .unwrap(),
-    )
-    .unwrap();
+    let mut file = File::open(get_trusted_setup_fixture_path("old")).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
     let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
@@ -262,4 +267,85 @@ pub fn load_trusted_setup_invalid_form_test(
     };
 
     assert_eq!(status, C_KZG_RET_BADARGS)
+}
+
+pub fn load_trusted_setup_file_invalid_format_test(
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
+    ) -> C_KZG_RET,
+) {
+    struct Fixture {
+        name: String,
+        message: String,
+    }
+
+    let fixtures = [
+        Fixture {
+            name: "old".to_string(),
+            message: "Invalid format because trusted setup is old, i.e. is not in Lagrange form".to_string(),
+        },
+        Fixture {
+            name: "invalid_g1_point_count".to_string(),
+            message: "Invalid format because G1 point count in trusted setup file does not match expected".to_string(),
+        },
+        Fixture {
+            name: "invalid_g2_point_count".to_string(),
+            message: "Invalid format because G2 point count in trusted setup file does not match expected".to_string(),
+        },
+        Fixture {
+            name: "missing_g1_point_count".to_string(),
+            message: "Invalid format because G1 point count is was not found in trusted setup file".to_string(),
+        },
+        Fixture {
+            name: "missing_g2_point_count".to_string(),
+            message: "Invalid format because G2 point count is was not found in trusted setup file".to_string(),
+        },
+        Fixture {
+            name: "insufficient_g1_points".to_string(),
+            message: "Invalid format because failed to read specified amount of G1 points"
+                .to_string(),
+        },
+        Fixture {
+            name: "insufficient_g2_points".to_string(),
+            message: "Invalid format because failed to read specified amount of G2 points"
+                .to_string(),
+        },
+        Fixture {
+            name: "invalid_chars".to_string(),
+            message: "Invalid format because incorrect characters encountered".to_string(),
+        },
+        Fixture {
+            name: "not_a_number".to_string(),
+            message: "Invalid format because file starts with not a number".to_string(),
+        },
+    ];
+
+    for fixture in fixtures {
+        let file_path = get_trusted_setup_fixture_path(&fixture.name);
+        let file = File::open(file_path.clone()).unwrap();
+        let c_file = unsafe {
+            libc::fdopen(
+                file.into_raw_fd(),
+                CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
+            )
+        };
+
+        assert!(!c_file.is_null());
+
+        let mut loaded_settings = CKZGSettings {
+            g1_values: null_mut(),
+            g2_values: null_mut(),
+            max_width: 0,
+            roots_of_unity: null_mut(),
+        };
+
+        let output = unsafe { load_trusted_setup_file(&mut loaded_settings, c_file) };
+
+        assert!(
+            output == C_KZG_RET_BADARGS,
+            "{}, fixture: {file_path}",
+            fixture.message
+        );
+    }
 }
