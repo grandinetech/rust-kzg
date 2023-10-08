@@ -414,3 +414,67 @@ pub fn load_trusted_setup_file_valid_format_test(
         );
     }
 }
+
+pub fn free_trusted_setup_null_ptr_test(
+    free_trusted_setup: unsafe extern "C" fn(s: *mut CKZGSettings) -> (),
+) {
+    // just should not crash with SIGSEGV
+    unsafe {
+        free_trusted_setup(null_mut());
+    }
+
+    let mut settings = CKZGSettings {
+        g1_values: null_mut(),
+        g2_values: null_mut(),
+        max_width: 0,
+        roots_of_unity: null_mut(),
+    };
+
+    // same here, no asserts, just should not crash
+    unsafe {
+        free_trusted_setup(&mut settings);
+    }
+}
+
+pub fn free_trusted_setup_set_all_values_to_null_test(
+    free_trusted_setup: unsafe extern "C" fn(s: *mut CKZGSettings) -> (),
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
+    ) -> C_KZG_RET,
+) {
+    let file_path = get_trusted_setup_fixture_path("valid_short_hex");
+    let file = unsafe {
+        let c_file_path = CString::new(file_path.clone()).unwrap();
+        libc::fopen(
+            c_file_path.as_ptr(),
+            CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
+        )
+    };
+
+    let mut settings = CKZGSettings {
+        g1_values: null_mut(),
+        g2_values: null_mut(),
+        max_width: 0,
+        roots_of_unity: null_mut(),
+    };
+
+    let output = unsafe { load_trusted_setup_file(&mut settings, file) };
+
+    unsafe { libc::fclose(file) };
+
+    assert_eq!(output, C_KZG_RET_OK);
+    assert!(!settings.g1_values.is_null());
+    assert!(!settings.g2_values.is_null());
+    assert!(!settings.roots_of_unity.is_null());
+    assert_ne!(settings.max_width, 0);
+
+    unsafe {
+        free_trusted_setup(&mut settings);
+    };
+
+    assert!(settings.g1_values.is_null());
+    assert!(settings.g2_values.is_null());
+    assert!(settings.roots_of_unity.is_null());
+    assert_eq!(settings.max_width, 0);
+}

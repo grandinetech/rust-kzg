@@ -1,13 +1,15 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::c_bindings::{
-        blob_to_kzg_commitment_invalid_blob_test, load_trusted_setup_file_invalid_format_test,
-        load_trusted_setup_file_valid_format_test, load_trusted_setup_invalid_form_test,
-        load_trusted_setup_invalid_g1_byte_length_test, load_trusted_setup_invalid_g1_point_test,
-        load_trusted_setup_invalid_g2_byte_length_test, load_trusted_setup_invalid_g2_point_test,
+        blob_to_kzg_commitment_invalid_blob_test, free_trusted_setup_null_ptr_test,
+        free_trusted_setup_set_all_values_to_null_test,
+        load_trusted_setup_file_invalid_format_test, load_trusted_setup_file_valid_format_test,
+        load_trusted_setup_invalid_form_test, load_trusted_setup_invalid_g1_byte_length_test,
+        load_trusted_setup_invalid_g1_point_test, load_trusted_setup_invalid_g2_byte_length_test,
+        load_trusted_setup_invalid_g2_point_test,
     };
     use rust_kzg_blst::eip_4844::{
-        blob_to_kzg_commitment, load_trusted_setup, load_trusted_setup_file,
+        blob_to_kzg_commitment, free_trusted_setup, load_trusted_setup, load_trusted_setup_file,
     };
 
     #[test]
@@ -48,5 +50,15 @@ mod tests {
     #[test]
     fn load_trusted_setup_file_valid_format() {
         load_trusted_setup_file_valid_format_test(load_trusted_setup_file);
+    }
+
+    #[test]
+    fn free_trusted_setup_null_ptr() {
+        free_trusted_setup_null_ptr_test(free_trusted_setup);
+    }
+
+    #[test]
+    fn free_trusted_setup_set_all_values_to_null() {
+        free_trusted_setup_set_all_values_to_null_test(free_trusted_setup, load_trusted_setup_file);
     }
 }
