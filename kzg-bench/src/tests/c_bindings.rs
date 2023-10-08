@@ -359,3 +359,58 @@ pub fn load_trusted_setup_file_invalid_format_test(
         );
     }
 }
+
+pub fn load_trusted_setup_file_valid_format_test(
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
+    ) -> C_KZG_RET,
+) {
+    struct Fixture {
+        name: String,
+        message: String,
+    }
+
+    let fixtures = [
+        Fixture {
+            name: "valid_whitespace_characters".to_string(),
+            message: "Valid format, because whitespace characters must be ignored".to_string(),
+        }, 
+        Fixture {
+            name: "valid_short_hex".to_string(),
+            message: "Valid format, because first character of hex can be omitted, if it is zero (e.g. 07 -> 7)".to_string()
+        }
+    ];
+
+    for fixture in fixtures {
+        let file_path = get_trusted_setup_fixture_path(&fixture.name);
+        let file = unsafe {
+            let c_file_path = CString::new(file_path.clone()).unwrap();
+            libc::fopen(
+                c_file_path.as_ptr(),
+                CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
+            )
+        };
+
+        assert!(!file.is_null());
+
+        let mut loaded_settings = CKZGSettings {
+            g1_values: null_mut(),
+            g2_values: null_mut(),
+            max_width: 0,
+            roots_of_unity: null_mut(),
+        };
+
+        let output = unsafe { load_trusted_setup_file(&mut loaded_settings, file) };
+
+        unsafe {
+            libc::fclose(file);
+        }
+
+        assert!(
+            output == C_KZG_RET_OK,
+            "{}, fixture: {file_path}",
+            fixture.message
+        );
+    }
+}
