@@ -375,7 +375,7 @@ pub fn load_trusted_setup_file_valid_format_test(
         Fixture {
             name: "valid_whitespace_characters".to_string(),
             message: "Valid format, because whitespace characters must be ignored".to_string(),
-        }, 
+        },
         Fixture {
             name: "valid_short_hex".to_string(),
             message: "Valid format, because first character of hex can be omitted, if it is zero (e.g. 07 -> 7)".to_string()
