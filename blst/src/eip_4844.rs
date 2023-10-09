@@ -190,15 +190,14 @@ pub fn verify_kzg_proof_rust(
     proof: &FsG1,
     s: &FsKZGSettings,
 ) -> Result<bool, String> {
-    if !commitment.is_valid() {
+    if !commitment.is_inf() && !commitment.is_valid() {
         return Err("Invalid commitment".to_string());
     }
-    if !proof.is_valid() {
+    if !proof.is_inf() && !proof.is_valid() {
         return Err("Invalid proof".to_string());
     }
 
-    Ok(s.check_proof_single(commitment, proof, z, y)
-        .unwrap_or(false))
+    s.check_proof_single(commitment, proof, z, y)
 }
 
 pub fn verify_kzg_proof_batch(
