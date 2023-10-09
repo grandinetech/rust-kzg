@@ -7,9 +7,9 @@ use std::{
 };
 
 use kzg::eip_4844::{
-    load_trusted_setup_string, Blob, CKZGSettings, KZGCommitment, BYTES_PER_COMMITMENT,
-    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS,
-    C_KZG_RET_OK,
+    load_trusted_setup_string, Blob, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
+    BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, BYTES_PER_PROOF,
+    C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
 };
 use libc::FILE;
 
@@ -35,27 +35,12 @@ fn get_trusted_setup_fixture_path(fixture: &str) -> String {
         .to_string()
 }
 
-pub fn blob_to_kzg_commitment_invalid_blob_test(
-    load_trusted_setup: unsafe extern "C" fn(
-        *mut CKZGSettings,
-        *const u8,
-        usize,
-        *const u8,
-        usize,
+fn get_ckzg_settings(
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
     ) -> C_KZG_RET,
-    blob_to_kzg_commitment: unsafe extern "C" fn(
-        out: *mut KZGCommitment,
-        blob: *const Blob,
-        s: &CKZGSettings,
-    ) -> C_KZG_RET,
-) {
-    let mut file = File::open(get_trusted_setup_path())
-        .map_err(|_| {})
-        .unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
-
+) -> CKZGSettings {
     let mut c_settings = CKZGSettings {
         g1_values: null_mut(),
         g2_values: null_mut(),
@@ -63,16 +48,38 @@ pub fn blob_to_kzg_commitment_invalid_blob_test(
         roots_of_unity: null_mut(),
     };
 
-    let status = unsafe {
-        load_trusted_setup(
-            &mut c_settings,
-            g1_bytes.as_ptr(),
-            g1_bytes.len() / BYTES_PER_G1,
-            g2_bytes.as_ptr(),
-            g2_bytes.len() / BYTES_PER_G2,
+    let trusted_setup_path = CString::new(get_trusted_setup_path()).unwrap();
+    let file = unsafe {
+        libc::fopen(
+            trusted_setup_path.as_ptr(),
+            CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
         )
     };
-    assert_eq!(status, C_KZG_RET_OK);
+    assert!(!file.is_null());
+
+    let out = unsafe { load_trusted_setup_file(&mut c_settings, file) };
+
+    unsafe {
+        libc::fclose(file);
+    }
+
+    assert_ne!(out, C_KZG_RET_BADARGS);
+
+    c_settings
+}
+
+pub fn blob_to_kzg_commitment_invalid_blob_test(
+    blob_to_kzg_commitment: unsafe extern "C" fn(
+        out: *mut KZGCommitment,
+        blob: *const Blob,
+        s: &CKZGSettings,
+    ) -> C_KZG_RET,
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
+    ) -> C_KZG_RET,
+) {
+    let settings = get_ckzg_settings(load_trusted_setup_file);
 
     let mut rng = rand::thread_rng();
     let mut blob_bytes = generate_random_blob_bytes(&mut rng);
@@ -90,7 +97,7 @@ pub fn blob_to_kzg_commitment_invalid_blob_test(
         bytes: [0; BYTES_PER_COMMITMENT],
     };
 
-    let output = unsafe { blob_to_kzg_commitment(&mut commitment, &blob, &c_settings) };
+    let output = unsafe { blob_to_kzg_commitment(&mut commitment, &blob, &settings) };
 
     assert_eq!(output, C_KZG_RET_BADARGS)
 }
@@ -443,27 +450,8 @@ pub fn free_trusted_setup_set_all_values_to_null_test(
         in_: *mut FILE,
     ) -> C_KZG_RET,
 ) {
-    let file_path = get_trusted_setup_fixture_path("valid_short_hex");
-    let file = unsafe {
-        let c_file_path = CString::new(file_path.clone()).unwrap();
-        libc::fopen(
-            c_file_path.as_ptr(),
-            CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
-        )
-    };
+    let mut settings = get_ckzg_settings(load_trusted_setup_file);
 
-    let mut settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
-        roots_of_unity: null_mut(),
-    };
-
-    let output = unsafe { load_trusted_setup_file(&mut settings, file) };
-
-    unsafe { libc::fclose(file) };
-
-    assert_eq!(output, C_KZG_RET_OK);
     assert!(!settings.g1_values.is_null());
     assert!(!settings.g2_values.is_null());
     assert!(!settings.roots_of_unity.is_null());
@@ -477,4 +465,110 @@ pub fn free_trusted_setup_set_all_values_to_null_test(
     assert!(settings.g2_values.is_null());
     assert!(settings.roots_of_unity.is_null());
     assert_eq!(settings.max_width, 0);
+}
+
+pub fn compute_blob_kzg_proof_invalid_blob_test(
+    compute_blob_kzg_proof: unsafe extern "C" fn(
+        out: *mut KZGProof,
+        blob: *const Blob,
+        commitment_bytes: *const Bytes48,
+        s: &CKZGSettings,
+    ) -> C_KZG_RET,
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
+    ) -> C_KZG_RET,
+) {
+    let settings = get_ckzg_settings(load_trusted_setup_file);
+
+    let mut rng = rand::thread_rng();
+    let mut blob_bytes = generate_random_blob_bytes(&mut rng);
+
+    let bls_modulus: [u8; BYTES_PER_FIELD_ELEMENT] = [
+        0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
+        0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
+        0x00, 0x01,
+    ];
+    // Make first field element equal to BLS_MODULUS
+    blob_bytes[0..BYTES_PER_FIELD_ELEMENT].copy_from_slice(&bls_modulus);
+
+    let blob = Blob { bytes: blob_bytes };
+
+    let mut out = KZGProof {
+        bytes: [0; BYTES_PER_PROOF],
+    };
+    let commitment = Bytes48 {
+        bytes: [0u8; BYTES_PER_COMMITMENT],
+    };
+
+    let out = unsafe { compute_blob_kzg_proof(&mut out, &blob, &commitment, &settings) };
+
+    assert_eq!(out, C_KZG_RET_BADARGS);
+}
+
+pub fn compute_blob_kzg_proof_commitment_is_point_at_infinity_test(
+    compute_blob_kzg_proof: unsafe extern "C" fn(
+        out: *mut KZGProof,
+        blob: *const Blob,
+        commitment_bytes: *const Bytes48,
+        s: &CKZGSettings,
+    ) -> C_KZG_RET,
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
+    ) -> C_KZG_RET,
+) {
+    let settings = get_ckzg_settings(load_trusted_setup_file);
+
+    let mut rng = rand::thread_rng();
+    let blob_bytes = generate_random_blob_bytes(&mut rng);
+
+    let blob = Blob { bytes: blob_bytes };
+
+    let mut out = KZGProof {
+        bytes: [0; BYTES_PER_PROOF],
+    };
+
+    /* set commitment to point at infinity */
+    let mut commitment = Bytes48 {
+        bytes: [0; BYTES_PER_COMMITMENT],
+    };
+    commitment.bytes[0] = 0xc0;
+
+    let out = unsafe { compute_blob_kzg_proof(&mut out, &blob, &commitment, &settings) };
+
+    assert_eq!(out, C_KZG_RET_OK);
+}
+
+pub fn compute_blob_kzg_proof_zero_input_test(
+    compute_blob_kzg_proof: unsafe extern "C" fn(
+        out: *mut KZGProof,
+        blob: *const Blob,
+        commitment_bytes: *const Bytes48,
+        s: &CKZGSettings,
+    ) -> C_KZG_RET,
+    load_trusted_setup_file: unsafe extern "C" fn(
+        out: *mut CKZGSettings,
+        in_: *mut FILE,
+    ) -> C_KZG_RET,
+) {
+    let settings = get_ckzg_settings(load_trusted_setup_file);
+
+    let mut rng = rand::thread_rng();
+    let blob_bytes = generate_random_blob_bytes(&mut rng);
+
+    let blob = Blob { bytes: blob_bytes };
+
+    let mut out = KZGProof {
+        bytes: [0; BYTES_PER_PROOF],
+    };
+
+    /* set commitment to zero */
+    let commitment = Bytes48 {
+        bytes: [0; BYTES_PER_COMMITMENT],
+    };
+
+    let out = unsafe { compute_blob_kzg_proof(&mut out, &blob, &commitment, &settings) };
+
+    assert_eq!(out, C_KZG_RET_OK);
 }

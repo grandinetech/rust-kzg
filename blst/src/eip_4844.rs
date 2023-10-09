@@ -249,10 +249,6 @@ pub fn compute_kzg_proof_rust(
     z: &FsFr,
     s: &FsKZGSettings,
 ) -> Result<(FsG1, FsFr), String> {
-    if blob.len() != FIELD_ELEMENTS_PER_BLOB {
-        return Err(String::from("Incorrect field elements count."));
-    }
-
     let polynomial = blob_to_polynomial_rust(blob)?;
     let y = evaluate_polynomial_in_evaluation_form_rust(&polynomial, z, s)?;
 
@@ -370,7 +366,7 @@ pub fn compute_powers(base: &FsFr, num_powers: usize) -> Vec<FsFr> {
     powers
 }
 
-fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> Result<FsFr, String> {
+fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> FsFr {
     let mut bytes: Vec<u8> = vec![0; CHALLENGE_INPUT_SIZE];
 
     // Copy domain separator
@@ -380,13 +376,11 @@ fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> Result<FsFr, String> {
     bytes_of_uint64(&mut bytes[24..32], FIELD_ELEMENTS_PER_BLOB as u64);
 
     // Copy blob
-    for (i, _) in blob.iter().enumerate() {
-        let v = blob[i].to_bytes();
+    for (i, field) in blob.iter().enumerate() {
+        let v = field.to_bytes();
         let size = (32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT);
 
-        if size.len() != v.len() {
-            return Err(String::from("Sizes of src and dest are different"));
-        }
+        assert!(size.len() == v.len());
 
         bytes[size].copy_from_slice(&v);
     }
@@ -399,7 +393,7 @@ fn compute_challenge(blob: &[FsFr], commitment: &FsG1) -> Result<FsFr, String> {
 
     // Now let's create the challenge!
     let eval_challenge = hash(&bytes);
-    Ok(hash_to_bls_field(&eval_challenge))
+    hash_to_bls_field(&eval_challenge)
 }
 
 fn compute_r_powers(
@@ -478,7 +472,7 @@ pub fn compute_blob_kzg_proof_rust(
         return Err("Invalid commitment".to_string());
     }
 
-    let evaluation_challenge_fr = compute_challenge(blob, commitment)?;
+    let evaluation_challenge_fr = compute_challenge(blob, commitment);
     let (proof, _) = compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts)?;
     Ok(proof)
 }
@@ -497,7 +491,7 @@ pub fn verify_blob_kzg_proof_rust(
     }
 
     let polynomial = blob_to_polynomial_rust(blob)?;
-    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1)?;
+    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
     let y_fr =
         evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts)?;
     verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
@@ -513,7 +507,7 @@ fn compute_challenges_and_evaluate_polynomial(
 
     for i in 0..blobs.len() {
         let polynomial = blob_to_polynomial_rust(&blobs[i])?;
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i])?;
+        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
         let y_fr =
             evaluate_polynomial_in_evaluation_form_rust(&polynomial, &evaluation_challenge_fr, ts)?;
 
@@ -797,7 +791,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
     blob: *const Blob,
-    commitment_bytes: *mut Bytes48,
+    commitment_bytes: *const Bytes48,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = match deserialize_blob(blob) {
