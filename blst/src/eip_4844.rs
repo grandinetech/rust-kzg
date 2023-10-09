@@ -482,10 +482,10 @@ pub fn verify_blob_kzg_proof_rust(
     proof_g1: &FsG1,
     ts: &FsKZGSettings,
 ) -> Result<bool, String> {
-    if !commitment_g1.is_valid() {
+    if !commitment_g1.is_inf() && !commitment_g1.is_valid() {
         return Err("Invalid commitment".to_string());
     }
-    if !proof_g1.is_valid() {
+    if !proof_g1.is_inf() && !proof_g1.is_valid() {
         return Err("Invalid proof".to_string());
     }
 
@@ -880,10 +880,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = handle_ckzg_badargs!(deserialize_blob(blob));
-
     let commitment_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
     let proof_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*proof_bytes).bytes));
-
     let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
 
     let result = handle_ckzg_badargs!(verify_blob_kzg_proof_rust(
