@@ -405,15 +405,13 @@ fn compute_r_powers(
     let input_size =
         32 + n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF);
 
-    #[allow(unused_assignments)]
-    let mut offset = 0;
     let mut bytes: Vec<u8> = vec![0; input_size];
 
     // Copy domain separator
     bytes[..16].copy_from_slice(&RANDOM_CHALLENGE_KZG_BATCH_DOMAIN);
     bytes_of_uint64(&mut bytes[16..24], FIELD_ELEMENTS_PER_BLOB as u64);
     bytes_of_uint64(&mut bytes[24..32], n as u64);
-    offset = 32;
+    let mut offset = 32;
 
     for i in 0..n {
         // Copy commitment
@@ -518,8 +516,9 @@ fn compute_challenges_and_evaluate_polynomial(
 }
 
 fn validate_batched_input(commitments: &[FsG1], proofs: &[FsG1]) -> Result<(), String> {
-    let invalid_commitment = cfg_into_iter!(commitments).any(|&commitment| !commitment.is_valid());
-    let invalid_proof = cfg_into_iter!(proofs).any(|&proof| !proof.is_valid());
+    let invalid_commitment = cfg_into_iter!(commitments)
+        .any(|&commitment| !commitment.is_inf() && !commitment.is_valid());
+    let invalid_proof = cfg_into_iter!(proofs).any(|&proof| !proof.is_inf() && !proof.is_valid());
 
     if invalid_commitment {
         return Err("Invalid commitment".to_string());
@@ -600,7 +599,7 @@ pub fn verify_blob_kzg_proof_batch_rust(
     }
 
     #[cfg(not(feature = "parallel"))]
-    Ok({
+    {
         validate_batched_input(commitments_g1, proofs_g1)?;
         let (evaluation_challenges_fr, ys_fr) =
             compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts)?;
@@ -611,8 +610,8 @@ pub fn verify_blob_kzg_proof_batch_rust(
             &ys_fr,
             proofs_g1,
             ts,
-        )?
-    })
+        )
+    }
 }
 
 fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FsFFTSettings, String> {
