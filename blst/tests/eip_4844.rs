@@ -3,11 +3,12 @@ mod tests {
     use std::path::PathBuf;
     use std::{fs::File, io::Read, ptr::null_mut};
 
+    use kzg::common_utils::{compute_powers, bytes_to_blob, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, verify_kzg_proof_rust, verify_blob_kzg_proof_rust};
     use kzg::eip_4844::{
         load_trusted_setup_string, Blob, CKZGSettings, KZGCommitment, BYTES_PER_COMMITMENT,
         BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET_BADARGS, C_KZG_RET_OK,
     };
-    use kzg::Fr;
+    use kzg::{Fr, blob_to_kzg_commitment_rust, compute_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, compute_blob_kzg_proof_rust};
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
@@ -26,11 +27,9 @@ mod tests {
     };
     use rust_kzg_blst::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_blst::eip_4844::{
-        blob_to_kzg_commitment, blob_to_kzg_commitment_rust, blob_to_polynomial_rust,
-        bytes_to_blob, compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
-        evaluate_polynomial_in_evaluation_form_rust, load_trusted_setup,
-        load_trusted_setup_filename_rust, verify_blob_kzg_proof_batch_rust,
-        verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
+        blob_to_kzg_commitment,
+        load_trusted_setup,
+        load_trusted_setup_filename_rust
     };
     use rust_kzg_blst::types::fft_settings::expand_root_of_unity;
     use rust_kzg_blst::types::{
@@ -61,8 +60,8 @@ mod tests {
         compute_kzg_proof_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
         );
     }
 
@@ -77,11 +76,11 @@ mod tests {
             FsKZGSettings,
         >(
             &load_trusted_setup_filename_rust,
-            &blob_to_kzg_commitment_rust,
+            &blob_to_kzg_commitment_rust::<>,
             &bytes_to_blob,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
             &verify_kzg_proof_rust,
         );
     }
@@ -101,8 +100,8 @@ mod tests {
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
             &verify_kzg_proof_rust,
         );
     }
@@ -121,8 +120,8 @@ mod tests {
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
             &verify_kzg_proof_rust,
         );
     }

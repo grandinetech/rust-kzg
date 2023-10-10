@@ -6,7 +6,6 @@ use crate::kzg_proofs::{
 };
 use crate::utils::{PolyData, blst_p2_into_pc_g2projective};
 use ark_ec::scalar_mul::fixed_base::FixedBase;
-// use crate::kzg_proofs::check_proof_single as check_single;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, CanonicalSerializeHashExt};
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
@@ -27,7 +26,7 @@ use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
-use kzg::{FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2, FFTFr};
+use kzg::{FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2, FFTFr, PairingVerify};
 
 use std::ops::{MulAssign, Sub, SubAssign, AddAssign};
 use ark_ff::FftField;
@@ -36,7 +35,146 @@ use ark_ec::CurveGroup;
 use ark_ec::Group;
 use std::ops::Mul;
 
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+pub struct ArkFr {
+    pub fr: Fr,
+}
+
+impl ArkFr {
+    pub fn from_blst_fr(fr: blst_fr) -> Self {
+        Self { fr: blst_fr_into_pc_fr(fr) }
+    }
+}
+
+impl KzgFr for ArkFr {
+    fn null() -> Self {
+        ArkFr::from_blst_fr(blst_fr {
+            l: [
+                14526898868952669296,
+                2784871451429007392,
+                11493358522590675359,
+                7138715389977065193,
+            ],
+        })
+    }
+
+    fn zero() -> Self {
+        Self::from_u64(0)
+    }
+
+    fn one() -> Self {
+        Self::from_u64(1)
+    }
+
+    fn rand() -> Self {
+        let mut rng = rand::thread_rng();
+        Self { fr: Fr::rand(&mut rng) }
+    }
+
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let mut le_bytes: [u8; BYTES_PER_FIELD_ELEMENT] = bytes.clone();
+                le_bytes.reverse();
+                let fr = Fr::deserialize_compressed(le_bytes.as_slice()).unwrap_or_default();
+                Ok(Self { fr })
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
+    fn from_u64_arr(u: &[u64; 4]) -> Self {
+        Self { fr: Fr::new(BigInteger256::new(*u)) }
+    }
+
+    fn from_u64(val: u64) -> Self {
+        Self::from_u64_arr(&[val, 0, 0, 0])
+    }
+
+    fn to_bytes(&self) -> [u8; 32] {
+        let big_int_256: BigInteger256 = Fr::into(self.fr);
+        <[u8; 32]>::try_from(big_int_256.to_bytes_be()).unwrap()
+    }
+
+    fn to_u64_arr(&self) -> [u64; 4] {
+        let b: BigInteger256 = Fr::into(self.fr);
+        b.0
+    }
+
+    fn is_one(&self) -> bool {
+        self.fr.is_one()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.fr.is_zero()
+    }
+
+    fn is_null(&self) -> bool {
+        self.equals(&ArkFr::null())
+    }
+
+    fn sqr(&self) -> Self {
+        Self { fr: self.fr.square() }
+    }
+
+    fn mul(&self, b: &Self) -> Self {
+        Self { fr: self.fr * b.fr }
+    }
+
+    fn add(&self, b: &Self) -> Self {
+        Self { fr: self.fr + b.fr }
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        Self { fr: self.fr - b.fr }
+    }
+
+    fn eucl_inverse(&self) -> Self {
+        // Inverse and eucl inverse work the same way
+        Self { fr: self.fr.inverse().unwrap() }
+    }
+
+    fn negate(&self) -> Self {
+        Self { fr: self.fr.neg() }
+    }
+
+    fn inverse(&self) -> Self {
+        Self { fr: self.fr.inverse().unwrap() }
+    }
+
+    fn pow(&self, n: usize) -> Self {
+        Self { fr: self.fr.pow([n as u64]) }
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        let div = self.fr / b.fr;
+        if div.0 .0.is_empty() {
+            Ok(Self { fr: Fr::zero() } )
+        } else {
+            Ok(Self { fr: div } )
+        }
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        self.fr == b.fr
+    }
+}
+
+
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ArkG1 {
     pub proj: Projective<g1::Config>
 }
@@ -139,9 +277,19 @@ impl G1Mul<ArkFr> for ArkG1 {
     fn mul(&self, b: &ArkFr) -> Self {
         Self { proj: self.proj.mul(b.fr) }
     }
+
+    fn g1_lincomb(points: &[Self], scalars: &[ArkFr], len: usize) -> Self {
+        let mut out = Self::default();
+        g1_linear_combination(&mut out, points, scalars, len);
+        out
+    }
 }
 
-impl Copy for ArkG1 {}
+impl PairingVerify<ArkG1, ArkG2> for ArkG1 {
+    fn verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
+        pairings_verify(a1, a2, b1, b2)
+    }
+}
 
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct ArkG2 {
@@ -175,7 +323,7 @@ impl G2 for ArkG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let affine = G2Affine::deserialize_compressed_unchecked(bytes.as_slice());
+                let affine = G2Affine::deserialize_compressed(bytes.as_slice());
                 match affine {
                     Err(x) => Err("Failed to deserialize G2: ".to_owned() + &(x.to_string())),
                     Ok(x) => Ok(Self { proj: x.into_group() })
@@ -210,143 +358,6 @@ impl G2Mul<ArkFr> for ArkG2 {
     fn mul(&self, b: &ArkFr) -> Self {
         // FIXME: Is this right?
         Self { proj: self.proj.mul(b.fr) }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct ArkFr {
-    pub fr: Fr,
-}
-
-impl ArkFr {
-    pub fn from_blst_fr(fr: blst_fr) -> Self {
-        Self { fr: blst_fr_into_pc_fr(fr) }
-    }
-}
-
-impl KzgFr for ArkFr {
-    fn null() -> Self {
-        ArkFr::from_blst_fr(blst_fr {
-            l: [
-                14526898868952669296,
-                2784871451429007392,
-                11493358522590675359,
-                7138715389977065193,
-            ],
-        })
-    }
-
-    fn zero() -> Self {
-        Self::from_u64(0)
-    }
-
-    fn one() -> Self {
-        Self::from_u64(1)
-    }
-
-    fn rand() -> Self {
-        let mut rng = rand::thread_rng();
-        Self { fr: Fr::rand(&mut rng) }
-    }
-
-    #[allow(clippy::bind_instead_of_map)]
-    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
-        bytes
-            .try_into()
-            .map_err(|_| {
-                format!(
-                    "Invalid byte length. Expected {}, got {}",
-                    BYTES_PER_FIELD_ELEMENT,
-                    bytes.len()
-                )
-            })
-            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let mut le_bytes: [u8; BYTES_PER_FIELD_ELEMENT] = bytes.clone();
-                le_bytes.reverse();
-                let fr = Fr::deserialize_compressed_unchecked(le_bytes.as_slice()).unwrap_or_default();
-                Ok(Self { fr })
-            })
-    }
-
-    fn from_hex(hex: &str) -> Result<Self, String> {
-        let bytes = hex::decode(&hex[2..]).unwrap();
-        Self::from_bytes(&bytes)
-    }
-
-    fn from_u64_arr(u: &[u64; 4]) -> Self {
-        Self { fr: Fr::new(BigInteger256::new(*u)) }
-    }
-
-    fn from_u64(val: u64) -> Self {
-        Self { fr: Fr::from(val) }
-    }
-
-    fn to_bytes(&self) -> [u8; 32] {
-        let big_int_256: BigInteger256 = Fr::into(self.fr);
-        <[u8; 32]>::try_from(big_int_256.to_bytes_be()).unwrap()
-    }
-
-    fn to_u64_arr(&self) -> [u64; 4] {
-        let b: BigInteger256 = Fr::into(self.fr);
-        b.0
-    }
-
-    fn is_one(&self) -> bool {
-        self.fr.is_one()
-    }
-
-    fn is_zero(&self) -> bool {
-        self.fr.is_zero()
-    }
-
-    fn is_null(&self) -> bool {
-        self.equals(&ArkFr::null())
-    }
-
-    fn sqr(&self) -> Self {
-        Self { fr: self.fr.square() }
-    }
-
-    fn mul(&self, b: &Self) -> Self {
-        Self { fr: self.fr * b.fr }
-    }
-
-    fn add(&self, b: &Self) -> Self {
-        Self { fr: self.fr + b.fr }
-    }
-
-    fn sub(&self, b: &Self) -> Self {
-        Self { fr: self.fr - b.fr }
-    }
-
-    fn eucl_inverse(&self) -> Self {
-        // Inverse and eucl inverse work the same way
-        Self { fr: self.fr.inverse().unwrap() }
-    }
-
-    fn negate(&self) -> Self {
-        Self { fr: self.fr.neg() }
-    }
-
-    fn inverse(&self) -> Self {
-        Self { fr: self.fr.inverse().unwrap() }
-    }
-
-    fn pow(&self, n: usize) -> Self {
-        Self { fr: self.fr.pow([n as u64]) }
-    }
-
-    fn div(&self, b: &Self) -> Result<Self, String> {
-        let div = self.fr / b.fr;
-        if div.0 .0.is_empty() {
-            Ok(Self { fr: Fr::zero() } )
-        } else {
-            Ok(Self { fr: div } )
-        }
-    }
-
-    fn equals(&self, b: &Self) -> bool {
-        self.fr == b.fr
     }
 }
 
@@ -429,7 +440,6 @@ impl Default for LFFTSettings {
             expanded_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
             roots_of_unity: Vec::new(),
-            domain: GeneralEvaluationDomain::<Fr>::new(0_usize).unwrap(),
         }
     }
 }
@@ -459,8 +469,6 @@ impl FFTSettings<ArkFr> for LFFTSettings {
             expanded_roots_of_unity,
             reverse_roots_of_unity,
             roots_of_unity,
-            // FIXME: This should probably be removed
-            domain: GeneralEvaluationDomain::<Fr>::new(max_width as usize).unwrap()
         })
     }
 
@@ -500,28 +508,11 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         length: usize,
         fft_settings: &LFFTSettings,
     ) -> Result<LKZGSettings, String> {
-        let mut kzg_settings = Self::default();
-        if secret_g1.len() < fft_settings.max_width {
-            return Err(String::from(
-                "secret_g1 must have a length equal to or greater than fft_settings roots",
-            ));
-        } else if secret_g2.len() < fft_settings.max_width {
-            return Err(String::from(
-                "secret_g2 must have a length equal to or greater than fft_settings roots",
-            ));
-        } else if length < fft_settings.max_width {
-            return Err(String::from(
-                "length must be equal to or greater than number of fft_settings roots",
-            ));
-        }
-
-        for i in 0..length {
-            kzg_settings.secret_g1.push(secret_g1[i]);
-            kzg_settings.secret_g2.push(secret_g2[i].clone());
-        }
-        kzg_settings.fs = fft_settings.clone();
-
-        Ok(kzg_settings)
+        Ok(Self {
+            secret_g1: secret_g1.to_vec(),
+            secret_g2: secret_g2.to_vec(),
+            fs: fft_settings.clone(),
+        })
     }
 
     fn commit_to_poly(&self, p: &LPoly) -> Result<ArkG1, String> {
@@ -662,5 +653,17 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
 
     fn get_roots_of_unity_at(&self, i: usize) -> ArkFr {
         self.fs.get_roots_of_unity_at(i)
+    }
+
+    fn get_fft_settings(&self) -> &LFFTSettings {
+        &self.fs
+    }
+
+    fn get_g1_secret(&self) -> &[ArkG1] {
+        &self.secret_g1
+    }
+
+    fn get_g2_secret(&self) -> &[ArkG2] {
+        &self.secret_g2
     }
 }

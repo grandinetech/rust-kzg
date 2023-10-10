@@ -27,29 +27,11 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
         length: usize,
         fft_settings: &FsFFTSettings,
     ) -> Result<Self, String> {
-        let mut kzg_settings = Self::default();
-
-        if secret_g1.len() < fft_settings.max_width {
-            return Err(String::from(
-                "secret_g1 must have a length equal to or greater than fft_settings roots",
-            ));
-        } else if secret_g2.len() < fft_settings.max_width {
-            return Err(String::from(
-                "secret_g2 must have a length equal to or greater than fft_settings roots",
-            ));
-        } else if length < fft_settings.max_width {
-            return Err(String::from(
-                "length must be equal to or greater than number of fft_settings roots",
-            ));
-        }
-
-        for i in 0..length {
-            kzg_settings.secret_g1.push(secret_g1[i]);
-            kzg_settings.secret_g2.push(secret_g2[i]);
-        }
-        kzg_settings.fs = fft_settings.clone();
-
-        Ok(kzg_settings)
+        Ok(Self {
+            secret_g1: secret_g1.to_vec(),
+            secret_g2: secret_g2.to_vec(),
+            fs: fft_settings.clone(),
+        })
     }
 
     fn commit_to_poly(&self, poly: &FsPoly) -> Result<FsG1, String> {
@@ -193,5 +175,17 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
 
     fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.fs.get_roots_of_unity_at(i)
+    }
+
+    fn get_fft_settings(&self) -> &FsFFTSettings {
+        &self.fs
+    }
+
+    fn get_g1_secret(&self) -> &[FsG1] {
+        &self.secret_g1
+    }
+
+    fn get_g2_secret(&self) -> &[FsG2] {
+        &self.secret_g2
     }
 }

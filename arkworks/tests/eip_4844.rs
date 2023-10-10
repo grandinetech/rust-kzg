@@ -1,5 +1,7 @@
 #[cfg(test)]
 pub mod tests {
+    use kzg::{blob_to_kzg_commitment_rust, compute_kzg_proof_rust, compute_blob_kzg_proof_rust, verify_blob_kzg_proof_batch_rust};
+    use kzg::common_utils::{compute_powers, bytes_to_blob, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, verify_kzg_proof_rust, verify_blob_kzg_proof_rust};
     #[cfg(not(feature = "minimal-spec"))]
     use kzg_bench::tests::eip_4844::compute_and_verify_kzg_proof_within_domain_test;
     use kzg_bench::tests::eip_4844::{
@@ -11,9 +13,7 @@ pub mod tests {
         verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
     use rust_kzg_arkworks::eip_4844::{
-        blob_to_kzg_commitment, blob_to_polynomial, bytes_to_blob, compute_blob_kzg_proof,
-        compute_kzg_proof, compute_powers, evaluate_polynomial_in_evaluation_form,
-        load_trusted_setup, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
+        load_trusted_setup
     };
     use rust_kzg_arkworks::kzg_proofs::{FFTSettings, KZGSettings};
     use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, ArkFr};
@@ -33,7 +33,7 @@ pub mod tests {
     pub fn blob_to_kzg_commitment_test_() {
         blob_to_kzg_commitment_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
         );
     }
 
@@ -42,7 +42,7 @@ pub mod tests {
     pub fn compute_kzg_proof_test_() {
         compute_kzg_proof_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
-            &compute_kzg_proof,
+            &compute_kzg_proof_rust,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
         );
@@ -60,12 +60,12 @@ pub mod tests {
             KZGSettings,
         >(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
-            &compute_kzg_proof,
+            &compute_kzg_proof_rust,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
-            &verify_kzg_proof,
+            &verify_kzg_proof_rust,
         );
     }
 
@@ -82,12 +82,12 @@ pub mod tests {
             KZGSettings,
         >(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
-            &compute_kzg_proof,
+            &compute_kzg_proof_rust,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
-            &verify_kzg_proof,
+            &verify_kzg_proof_rust,
         );
     }
 
@@ -103,12 +103,12 @@ pub mod tests {
             KZGSettings,
         >(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
-            &compute_kzg_proof,
+            &compute_kzg_proof_rust,
             &blob_to_polynomial,
             &evaluate_polynomial_in_evaluation_form,
-            &verify_kzg_proof,
+            &verify_kzg_proof_rust,
         );
     }
 
@@ -124,10 +124,10 @@ pub mod tests {
             KZGSettings,
         >(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
-            &compute_blob_kzg_proof,
-            &verify_blob_kzg_proof,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_rust,
         );
     }
 
@@ -143,10 +143,10 @@ pub mod tests {
             KZGSettings,
         >(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
-            &compute_blob_kzg_proof,
-            &verify_blob_kzg_proof,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_rust,
         );
     }
 
@@ -155,10 +155,10 @@ pub mod tests {
     pub fn verify_kzg_proof_batch_test_() {
         verify_kzg_proof_batch_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
-            &compute_blob_kzg_proof,
-            &verify_blob_kzg_proof_batch,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_batch_rust,
         );
     }
 
@@ -174,10 +174,10 @@ pub mod tests {
             KZGSettings,
         >(
             &load_trusted_setup,
-            &blob_to_kzg_commitment,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
-            &compute_blob_kzg_proof,
-            &verify_blob_kzg_proof_batch,
+            &compute_blob_kzg_proof_rust,
+            &verify_blob_kzg_proof_batch_rust,
         );
     }
 }

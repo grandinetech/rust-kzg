@@ -23,7 +23,7 @@ use rayon::iter::IntoParallelIterator;
 #[cfg(feature = "parallel")]
 use rayon::iter::ParallelIterator;
 
-pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], _len: usize) {
+pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], len: usize) {
     let ark_points: Vec<G1Affine> = {
         cfg_into_iter!(points)
             .map(|point| {
@@ -32,13 +32,12 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstF
             .collect()
     };
 
-    let ark_scalars: Vec<Fr> = {
+    let ark_scalars: Vec<BigInteger256> = {
         cfg_into_iter!(scalars)
-            .map(|scalar| scalar.fr)
+            .map(|scalar| BigInteger256::from(scalar.fr))
             .collect()
     };
-
-    out.proj = VariableBaseMSM::msm_unchecked(ark_points.as_slice(), ark_scalars.as_slice());
+    out.proj = VariableBaseMSM::msm_bigint(ark_points.as_slice(), ark_scalars.as_slice());
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {

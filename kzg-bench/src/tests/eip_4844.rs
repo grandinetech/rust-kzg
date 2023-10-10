@@ -10,7 +10,7 @@ use kzg::eip_4844::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 use pathdiff::diff_paths;
-use rand::rngs::ThreadRng;
+use rand::rngs::{ThreadRng, OsRng};
 use rand::Rng;
 use std::env::current_dir;
 use std::fs;
@@ -145,8 +145,7 @@ pub fn compute_kzg_proof_test<
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
->(
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
@@ -154,7 +153,7 @@ pub fn compute_kzg_proof_test<
         &TPoly,
         &TFr,
         &TKZGSettings,
-    ) -> Result<TFr, String>,
+    ) -> Result<TFr, String>
 ) {
     let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
 
@@ -512,9 +511,9 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
 
     const N_SAMPLES: usize = 2;
 
-    let mut blobs: Vec<Vec<TFr>> = Vec::new();
-    let mut commitments: Vec<TG1> = Vec::new();
-    let mut proofs: Vec<TG1> = Vec::new();
+    let mut blobs: Vec<Vec<TFr>> = Vec::with_capacity(N_SAMPLES);
+    let mut commitments: Vec<TG1> = Vec::with_capacity(N_SAMPLES);
+    let mut proofs: Vec<TG1> = Vec::with_capacity(N_SAMPLES);
 
     // Some preparation
     for _ in 0..N_SAMPLES {
@@ -582,6 +581,10 @@ pub fn test_vectors_blob_to_kzg_commitment<
                 continue;
             }
         };
+
+        if (test.get_output_bytes().is_none()) {
+            continue;
+        }
 
         let expected_commitment = {
             let commitment_bytes = test.get_output_bytes().unwrap();

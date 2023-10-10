@@ -14,6 +14,8 @@ use kzg::eip_4844::BYTES_PER_G1;
 use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
+use crate::kzg_proofs::g1_linear_combination;
+use crate::kzg_proofs::pairings_verify;
 use crate::types::fr::FsFr;
 
 #[repr(C)]
@@ -162,5 +164,11 @@ impl G1Mul<FsFr> for FsG1 {
             }
         }
         result
+    }
+
+    fn g1_lincomb(points: &[Self], scalars: &[FsFr], len: usize) -> Self {
+        let mut out = FsG1::default();
+        g1_linear_combination(&mut out, points, scalars, len);
+        out
     }
 }

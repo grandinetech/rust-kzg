@@ -2,6 +2,7 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+use kzg::common_utils::hash_to_bls_field;
 use kzg::{Fr, G1Mul, G2Mul};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
@@ -11,7 +12,7 @@ use crate::types::g2::FsG2;
 use alloc::string::String;
 
 pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Vec<FsG2>) {
-    let s = FsFr::hash_to_bls_field(secret);
+    let s = hash_to_bls_field(&secret);
     let mut s_pow = Fr::one();
 
     let mut s1 = Vec::with_capacity(n);
