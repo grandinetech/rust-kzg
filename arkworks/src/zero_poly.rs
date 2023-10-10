@@ -1,6 +1,6 @@
 use super::kzg_proofs::FFTSettings;
 use super::utils::{
-    blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_poly_into_blst_poly,
+    blst_poly_into_pc_poly, pc_poly_into_blst_poly,
     PolyData,
 };
 use crate::kzg_types::ArkFr as BlstFr;

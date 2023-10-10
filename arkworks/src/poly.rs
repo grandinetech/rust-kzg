@@ -1,6 +1,6 @@
 use super::kzg_proofs::FFTSettings;
 use super::utils::{
-    blst_fr_into_pc_fr, blst_poly_into_pc_poly,
+    blst_poly_into_pc_poly,
     PolyData,
 };
 use crate::kzg_types::ArkFr as BlstFr;
@@ -13,11 +13,7 @@ use ark_std::{log2, Zero};
 use kzg::common_utils::{next_pow_of_2, log2_pow2};
 use kzg::{FFTFr, FFTSettings as FFTSettingsT, Fr as FrTrait, Poly};
 use std::cmp::min;
-use std::ops::Neg;
 
-// fn neg(n: BlstFr) -> BlstFr {
-//     // pc_fr_into_blst_fr(blst_fr_into_pc_fr(&n).neg())
-// }
 
 pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
     if b.coeffs.is_empty() {

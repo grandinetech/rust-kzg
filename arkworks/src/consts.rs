@@ -1,7 +1,7 @@
 use blst::{blst_fp, blst_fp2, blst_p1};
 use crate::P2;
 use crate::kzg_types::{ArkG1, ArkG2};
-use crate::utils::{blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective};
+
 
 /** The G1 identity/infinity */
 #[rustfmt::skip]

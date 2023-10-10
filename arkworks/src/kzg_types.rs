@@ -5,33 +5,33 @@ use crate::kzg_proofs::{
     KZGSettings as LKZGSettings, eval_poly,
 };
 use crate::utils::{PolyData, blst_p2_into_pc_g2projective};
-use ark_ec::scalar_mul::fixed_base::FixedBase;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, CanonicalSerializeHashExt};
+
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::PolyData as LPoly;
-use ark_poly::Polynomial;
+
 use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
 };
 use crate::kzg_proofs::pairings_verify;
 use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
 use ark_ec::models::short_weierstrass::{Projective};
-use ark_ec::{AffineRepr, VariableBaseMSM};
-use ark_ec::short_weierstrass::SWCurveConfig;
-use ark_ff::{PrimeField, BigInt};
+use ark_ec::{AffineRepr};
+
+
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
-use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
+use ark_poly::{EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2, FFTFr, PairingVerify};
 
-use std::ops::{MulAssign, Sub, SubAssign, AddAssign};
-use ark_ff::FftField;
+use std::ops::{Sub};
+
 use std::ops::Neg;
-use ark_ec::CurveGroup;
+
 use ark_ec::Group;
 use std::ops::Mul;
 
@@ -323,7 +323,7 @@ impl G2 for ArkG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let affine = G2Affine::deserialize_compressed(bytes.as_slice());
+                let affine = G2Affine::deserialize_compressed_unchecked(bytes.as_slice());
                 match affine {
                     Err(x) => Err("Failed to deserialize G2: ".to_owned() + &(x.to_string())),
                     Ok(x) => Ok(Self { proj: x.into_group() })
@@ -505,7 +505,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
     fn new(
         secret_g1: &[ArkG1],
         secret_g2: &[ArkG2],
-        length: usize,
+        _length: usize,
         fft_settings: &LFFTSettings,
     ) -> Result<LKZGSettings, String> {
         Ok(Self {

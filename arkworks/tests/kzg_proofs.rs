@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::kzg_proofs::{
-        commit_to_nil_poly, commit_to_too_long_poly, proof_multi, proof_single, commit_to_too_long_poly_returns_err,
+        commit_to_nil_poly, proof_multi, proof_single, commit_to_too_long_poly_returns_err,
     };
     use rust_kzg_arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
     use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, ArkFr};

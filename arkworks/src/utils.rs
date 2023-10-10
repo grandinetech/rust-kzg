@@ -1,6 +1,6 @@
 use super::{Fp, P1};
 use crate::P2;
-use crate::kzg_types::{ArkG1, ArkG2, ArkFr};
+use crate::kzg_types::{ArkFr};
 use ark_bls12_381::{g1, g2, Fq, Fr};
 use ark_ec::models::short_weierstrass::Projective;
 use ark_ff::{biginteger::BigInteger256, biginteger::BigInteger384, Fp2, Fp384};

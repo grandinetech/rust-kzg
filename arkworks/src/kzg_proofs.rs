@@ -1,52 +1,43 @@
 #![allow(non_camel_case_types)]
 
-use ark_serialize::Valid;
-use rand::SeedableRng;
-use std::borrow::Borrow;
 
-use ark_ec::VariableBaseMSM;
+use kzg::common_utils::hash_to_bls_field;
+
+
+
+
 use ark_ec::pairing::Pairing;
-use ark_ec::scalar_mul::fixed_base::FixedBase;
-use ark_poly::GeneralEvaluationDomain;
+
+
 use ark_poly_commit::*;
 use ark_std::{
-    marker::PhantomData, ops::Div, rand::RngCore, test_rng, vec, One, UniformRand, Zero,
+    vec, One,
 };
 
-use kzg::cfg_into_iter;
+use crate::kzg_types::ArkFr;
+
+use kzg::{G1Mul, G2Mul};
 
 use super::utils::{
-    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
     blst_poly_into_pc_poly,
     PolyData,
 };
-use crate::consts::{G1_GENERATOR, G1_IDENTITY, G2_GENERATOR};
+use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::kzg_types::{ArkG1, ArkG2, ArkFr as BlstFr};
-use crate::utils::blst_p2_into_pc_g2projective;
-use ark_bls12_381::{g1, g2, Bls12_381, Fr};
+
+use ark_bls12_381::{Bls12_381};
 use ark_ec::CurveGroup;
-use ark_ec::{
-    models::short_weierstrass::Affine,
-    models::short_weierstrass::Projective,
-    // ProjectiveCurve,
-};
-use ark_ff::{BigInteger256, PrimeField};
-use ark_poly::univariate::DensePolynomial as DensePoly;
-use kzg::{FFTFr, Fr as FrTrait, Poly};
-use rand::rngs::StdRng;
-use std::collections::BTreeMap;
+
+
+
+use kzg::{Fr as FrTrait, Poly};
+
+
 use std::convert::TryInto;
-use std::ops::{MulAssign, Neg};
+use std::ops::{Neg};
 
-use ark_ec::AffineRepr;
+
 use std::ops::Mul;
-
-// pub type UniPoly_381 = DensePoly<<Bls12_381 as Pairing>::ScalarField>;
-// pub struct setup_type {
-//     // pub params: UniversalParams<Bls12_381>,
-//     pub g1_secret: Vec<Projective<g1::Config>>,
-//     pub g2_secret: Vec<Projective<g2::Config>>,
-// }
 
 #[derive(Debug, Clone)]
 pub struct FFTSettings {
@@ -55,7 +46,6 @@ pub struct FFTSettings {
     pub expanded_roots_of_unity: Vec<BlstFr>,
     pub reverse_roots_of_unity: Vec<BlstFr>,
     pub roots_of_unity: Vec<BlstFr>,
-    // pub domain: GeneralEvaluationDomain<Fr>,
 }
 
 pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, String> {
@@ -100,51 +90,21 @@ fn read_be_u64(input: &mut &[u8]) -> u64 {
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
-    let mut s_pow = Fr::from(1);
-    let mut temp = vec![0; 4];
-    for i in 0..4 {
-        temp[i] = read_be_u64(&mut &secret[i * 8..(i + 1) * 8]);
-    }
-    let s = Fr::new_unchecked(BigInteger256::new([temp[0], temp[1], temp[2], temp[3]]));
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
-    for _i in 0..len {
-        let mut temp =
-            g1::G1Affine::new_unchecked(g1::G1_GENERATOR_X, g1::G1_GENERATOR_Y).into_group();
-        temp.mul_assign(s_pow);
-        s1.push(ArkG1{proj: temp});
-        let mut temp =
-            g2::G2Affine::new_unchecked(g2::G2_GENERATOR_X, g2::G2_GENERATOR_Y).into_group();
-        temp.mul_assign(s_pow);
-        s2.push(ArkG2{proj: temp});
-        s_pow *= s;
-    }
-    (s1, s2)
-}
+    let s = hash_to_bls_field::<ArkFr>(&secret);
+    let mut s_pow = ArkFr::one();
 
-fn generate_trusted_setup_test(
-    len: usize,
-    s: Fr,
-) -> (
-    Vec<Projective<g1::Config>>,
-    Vec<Projective<g2::Config>>,
-) {
-    let mut s_pow = Fr::from(1);
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
-    for _i in 0..len {
-        let mut temp = G1_GENERATOR.proj;
-        temp.mul_assign(s_pow);
-        s1.push(temp);
-        let mut temp = G2_GENERATOR.proj;
-        temp.mul_assign(s_pow);
-        s2.push(temp);
-        s_pow *= s;
+    let mut s1 = Vec::with_capacity(len);
+    let mut s2 = Vec::with_capacity(len);
+
+    for _ in 0..len {
+        s1.push(G1_GENERATOR.mul(&s_pow));
+        s2.push(G2_GENERATOR.mul(&s_pow));
+
+        s_pow = s_pow.mul(&s);
     }
 
     (s1, s2)
 }
-
 
 pub fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
     let poly = blst_poly_into_pc_poly(&p.coeffs);

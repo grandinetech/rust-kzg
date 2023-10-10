@@ -1,43 +1,57 @@
-use std::ops::{MulAssign, AddAssign, Sub};
+use std::ops::{MulAssign, Sub};
 
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkG1, ArkFr as BlstFr};
-use crate::utils::{
-    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
-};
-use ark_bls12_381::{G1Affine, G1Projective, Fr};
-use ark_ec::VariableBaseMSM;
 
-use ark_ec::scalar_mul::fixed_base::FixedBase;
-use ark_ec::scalar_mul::variable_base::ChunkedPippenger;
+use ark_bls12_381::{G1Projective};
+use ark_ec::{VariableBaseMSM, CurveGroup};
+
+
+
 use ark_ff::BigInteger256;
+
 use kzg::{cfg_into_iter, G1Mul, Fr as KzgFr};
 use kzg::{FFTG1, G1};
-use ark_ec::CurveGroup;
-use ark_poly::{EvaluationDomain, DenseUVPolynomial};
-// use rust_kzg_blst::
+use ark_poly::{EvaluationDomain};
 
+// use rust_kzg_blst::
+#[cfg(feature = "parallel")]
+use rayon::iter::IntoParallelRefIterator;
 #[cfg(feature = "parallel")]
 use rayon::iter::IntoParallelIterator;
 #[cfg(feature = "parallel")]
 use rayon::iter::ParallelIterator;
+#[cfg(feature = "parallel")]
+use rayon::iter::IndexedParallelIterator;
 
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], len: usize) {
-    let ark_points: Vec<G1Affine> = {
+    if len < 8 {
+        *out = ArkG1::default();
+        for i in 0..len {
+            let tmp = points[i].mul(&scalars[i]);
+            *out = out.add_or_dbl(&tmp);
+        }
+        return;
+    }
+
+    let ark_points: Vec<G1Projective> = {
         cfg_into_iter!(points)
+            .take(len)
             .map(|point| {
-                point.proj.into_affine()
+                point.proj
             })
             .collect()
     };
-
+    let ark_points = CurveGroup::normalize_batch(&ark_points);
     let ark_scalars: Vec<BigInteger256> = {
         cfg_into_iter!(scalars)
+            .take(len)
             .map(|scalar| BigInteger256::from(scalar.fr))
             .collect()
     };
-    out.proj = VariableBaseMSM::msm_bigint(ark_points.as_slice(), ark_scalars.as_slice());
+
+    out.proj = VariableBaseMSM::msm_bigint(&ark_points, &ark_scalars);
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
