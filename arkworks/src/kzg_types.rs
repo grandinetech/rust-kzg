@@ -3,38 +3,24 @@ use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{
     expand_root_of_unity, FFTSettings as LFFTSettings,
     KZGSettings as LKZGSettings, eval_poly,
+    pairings_verify
 };
-use crate::utils::{PolyData, blst_p2_into_pc_g2projective};
-
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
-use crate::utils::PolyData as LPoly;
-
 use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
+    PolyData, blst_p2_into_pc_g2projective, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2
 };
-use crate::kzg_proofs::pairings_verify;
 use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
-use ark_ec::models::short_weierstrass::{Projective};
-use ark_ec::{AffineRepr};
-
-
+use ark_ec::{Group, AffineRepr, models::short_weierstrass::Projective};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
-use ark_poly::{EvaluationDomain};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2, FFTFr, PairingVerify};
-
-use std::ops::{Sub};
-
-use std::ops::Neg;
-
-use ark_ec::Group;
-use std::ops::Mul;
-
+use std::ops::{Sub, Neg, Mul};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct ArkFr {
@@ -44,6 +30,10 @@ pub struct ArkFr {
 impl ArkFr {
     pub fn from_blst_fr(fr: blst_fr) -> Self {
         Self { fr: blst_fr_into_pc_fr(fr) }
+    }
+
+    pub fn to_blst_fr(&self) -> blst_fr {
+        pc_fr_into_blst_fr(self.fr)
     }
 }
 
@@ -180,8 +170,12 @@ pub struct ArkG1 {
 }
 
 impl ArkG1 {
-    pub const fn from_blst_p1(p2: blst_p1) -> Self {
-        Self {proj: blst_p1_into_pc_g1projective(&p2)}
+    pub const fn from_blst_p1(p1: blst_p1) -> Self {
+        Self {proj: blst_p1_into_pc_g1projective(&p1)}
+    }
+
+    pub const fn to_blst_p1(&self) -> blst_p1 {
+        pc_g1projective_into_blst_p1(self.proj)
     }
 }
 
@@ -300,6 +294,10 @@ impl ArkG2 {
     pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
         Self {proj: blst_p2_into_pc_g2projective(&p2)}
     }
+
+    pub const fn to_blst_p2(&self) -> blst::blst_p2 {
+        pc_g2projective_into_blst_p2(self.proj)
+    }
 }
 
 impl G2 for ArkG2 {
@@ -361,7 +359,7 @@ impl G2Mul<ArkFr> for ArkG2 {
     }
 }
 
-impl Poly<ArkFr> for LPoly {
+impl Poly<ArkFr> for PolyData {
     fn new(size: usize) -> PolyData {
         Self {
             coeffs: vec![ArkFr::default(); size],
@@ -421,13 +419,13 @@ impl Poly<ArkFr> for LPoly {
     }
 }
 
-impl FFTSettingsPoly<ArkFr, LPoly, LFFTSettings> for LFFTSettings {
+impl FFTSettingsPoly<ArkFr, PolyData, LFFTSettings> for LFFTSettings {
     fn poly_mul_fft(
-        a: &LPoly,
-        x: &LPoly,
+        a: &PolyData,
+        x: &PolyData,
         len: usize,
         fs: Option<&LFFTSettings>,
-    ) -> Result<LPoly, String> {
+    ) -> Result<PolyData, String> {
         poly_mul_fft(a, x, fs, len)
     }
 }
@@ -501,7 +499,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 }
 
-impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
+impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
     fn new(
         secret_g1: &[ArkG1],
         secret_g2: &[ArkG2],
@@ -515,7 +513,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         })
     }
 
-    fn commit_to_poly(&self, p: &LPoly) -> Result<ArkG1, String> {
+    fn commit_to_poly(&self, p: &PolyData) -> Result<ArkG1, String> {
         if p.coeffs.len() > self.secret_g1.len() {
             return Err(String::from("Polynomial is longer than secret g1"));
         }
@@ -526,7 +524,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         Ok(out)
     }
 
-    fn compute_proof_single(&self, p: &LPoly, x: &ArkFr) -> Result<ArkG1, String> {
+    fn compute_proof_single(&self, p: &PolyData, x: &ArkFr) -> Result<ArkG1, String> {
         if p.coeffs.is_empty() {
             return Err(String::from("Polynomial must not be empty"));
         }
@@ -542,7 +540,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
             out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
         }
 
-        let q = LPoly { coeffs: out_coeffs };
+        let q = PolyData { coeffs: out_coeffs };
         let ret = self.commit_to_poly(&q)?;
         Ok(ret)
         // Ok(compute_single(p, x, self))
@@ -568,7 +566,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, LPoly> for LKZGSettings {
         ))
     }
 
-    fn compute_proof_multi(&self, p: &LPoly, x: &ArkFr, n: usize) -> Result<ArkG1, String> {
+    fn compute_proof_multi(&self, p: &PolyData, x: &ArkFr, n: usize) -> Result<ArkG1, String> {
         if p.coeffs.is_empty() {
             return Err(String::from("Polynomial must not be empty"));
         }

@@ -18,6 +18,8 @@ ark-std = { version = "^0.4.0", default-features = false }
 rayon = { version = "1", optional = true }
 num_cpus = "1.15.0"
 hex = "0.4.2"
+# Needed for ckzg extern C interface
+libc = { version = "0.2.148", default-features = false }
 
 [dev-dependencies]
 criterion = "0.5.1"

@@ -1,20 +1,12 @@
-use std::ops::{MulAssign, Sub};
-
+use std::ops::MulAssign;
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkG1, ArkFr as BlstFr};
-
-use ark_bls12_381::{G1Projective};
+use ark_bls12_381::G1Projective;
 use ark_ec::{VariableBaseMSM, CurveGroup};
-
-
-
 use ark_ff::BigInteger256;
-
 use kzg::{cfg_into_iter, G1Mul, Fr as KzgFr};
 use kzg::{FFTG1, G1};
-use ark_poly::{EvaluationDomain};
-
 // use rust_kzg_blst::
 #[cfg(feature = "parallel")]
 use rayon::iter::IntoParallelRefIterator;

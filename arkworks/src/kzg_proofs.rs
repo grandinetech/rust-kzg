@@ -1,43 +1,22 @@
 #![allow(non_camel_case_types)]
-
-
 use kzg::common_utils::hash_to_bls_field;
-
-
-
-
 use ark_ec::pairing::Pairing;
-
-
 use ark_poly_commit::*;
 use ark_std::{
     vec, One,
 };
-
 use crate::kzg_types::ArkFr;
-
 use kzg::{G1Mul, G2Mul};
-
 use super::utils::{
     blst_poly_into_pc_poly,
     PolyData,
 };
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::kzg_types::{ArkG1, ArkG2, ArkFr as BlstFr};
-
-use ark_bls12_381::{Bls12_381};
+use ark_bls12_381::Bls12_381;
 use ark_ec::CurveGroup;
-
-
-
-use kzg::{Fr as FrTrait, Poly};
-
-
-use std::convert::TryInto;
-use std::ops::{Neg};
-
-
-use std::ops::Mul;
+use kzg::Fr as FrTrait;
+use std::ops::Neg;
 
 #[derive(Debug, Clone)]
 pub struct FFTSettings {
@@ -81,12 +60,6 @@ impl Default for KZGSettings {
             secret_g2: Vec::new(),
         }
     }
-}
-
-fn read_be_u64(input: &mut &[u8]) -> u64 {
-    let (int_bytes, rest) = input.split_at(std::mem::size_of::<u64>());
-    *input = rest;
-    u64::from_be_bytes(int_bytes.try_into().unwrap())
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {

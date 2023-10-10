@@ -212,7 +212,7 @@ fn fk_multi_case<
         *extended_coeff = p.get_coeff_at(i);
     }
     let mut extended_coeffs_fft = fs.fft_fr(&extended_coeffs, false).unwrap();
-    reverse_bit_order(&mut extended_coeffs_fft);
+    reverse_bit_order(&mut extended_coeffs_fft).unwrap();
 
     // Verify the proofs
     let mut ys = vec![TFr::default(); chunk_len];
@@ -226,7 +226,7 @@ fn fk_multi_case<
         for i in 0..chunk_len {
             ys[i] = extended_coeffs_fft[chunk_len * pos + i].clone();
         }
-        reverse_bit_order(&mut ys);
+        reverse_bit_order(&mut ys).unwrap();
 
         // Now recreate the ys by evaluating the polynomial in the sub-domain range
         let stride = fs.get_max_width() / chunk_len;

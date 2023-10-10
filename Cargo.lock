@@ -1064,6 +1064,7 @@ dependencies = [
  "hex",
  "kzg",
  "kzg-bench",
+ "libc",
  "num_cpus",
  "rand",
  "rayon",
