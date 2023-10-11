@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kzg::Fr;
+
+    use kzg::eip_4844::FIELD_ELEMENTS_PER_BLOB;
+    use kzg::{Fr, Poly};
+
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
@@ -16,6 +19,7 @@ mod tests {
         test_vectors_verify_blob_kzg_proof, test_vectors_verify_blob_kzg_proof_batch,
         test_vectors_verify_kzg_proof,
     };
+    use kzg_bench::tests::utils::get_trusted_setup_path;
     use rust_kzg_blst::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_blst::eip_4844::{
         blob_to_kzg_commitment_rust, blob_to_polynomial_rust, bytes_to_blob,
@@ -259,5 +263,84 @@ mod tests {
     pub fn expand_root_of_unity_too_short() {
         let out = expand_root_of_unity(&FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[1]), 3);
         assert!(out.is_err());
+    }
+
+    #[test]
+    pub fn compute_kzg_proof_incorrect_blob_length() {
+        let blob = &[FsFr::zero()];
+        let out = blob_to_polynomial_rust(blob);
+        // let = compute_kzg_proof_rust(blob, blob, load_kzg)
+        assert!(out.is_err());
+    }
+
+    #[test]
+    pub fn compute_kzg_proof_incorrect_poly_length() {
+        let out = evaluate_polynomial_in_evaluation_form_rust(
+            &Poly::new(1),
+            &FsFr::zero(),
+            &FsKZGSettings::default(),
+        );
+
+        assert!(out.is_err());
+    }
+
+    #[test]
+    pub fn compute_kzg_proof_empty_blob_vector() {
+        let res = verify_blob_kzg_proof_batch_rust(
+            &[],
+            &[FsG1::default()],
+            &[FsG1::default()],
+            &FsKZGSettings::default(),
+        );
+
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    pub fn compute_kzg_proof_incorrect_commitments_len() {
+        let blob1 = vec![FsFr::default(); 3];
+        let blob2 = vec![FsFr::default(); 3];
+
+        let res = verify_blob_kzg_proof_batch_rust(
+            &[blob1, blob2],
+            &[FsG1::default()],
+            &[FsG1::default(), FsG1::default()],
+            &FsKZGSettings::default(),
+        );
+
+        assert!(res.is_err());
+    }
+
+    #[test]
+    pub fn compute_kzg_proof_incorrect_proofs_len() {
+        let blob1 = vec![FsFr::default(); 3];
+        let blob2 = vec![FsFr::default(); 3];
+
+        let res = verify_blob_kzg_proof_batch_rust(
+            &[blob1, blob2],
+            &[FsG1::default(), FsG1::default()],
+            &[FsG1::default()],
+            &FsKZGSettings::default(),
+        );
+
+        assert!(res.is_err());
+    }
+
+    #[test]
+    pub fn validate_batched_input_test() {
+        let path = get_trusted_setup_path();
+        let setup = &load_trusted_setup_filename_rust(path.as_str()).unwrap();
+
+        let blob1 = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
+        let blob2 = vec![FsFr::default(); FIELD_ELEMENTS_PER_BLOB];
+
+        let res = verify_blob_kzg_proof_batch_rust(
+            &[blob1, blob2],
+            &[FsG1::default(), FsG1::default()],
+            &[FsG1::default(), FsG1::default()],
+            &setup,
+        );
+
+        assert!(res.is_ok());
     }
 }
