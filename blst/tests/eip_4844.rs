@@ -338,7 +338,7 @@ mod tests {
             &[blob1, blob2],
             &[FsG1::default(), FsG1::default()],
             &[FsG1::default(), FsG1::default()],
-            &setup,
+            setup,
         );
 
         assert!(res.is_ok());
