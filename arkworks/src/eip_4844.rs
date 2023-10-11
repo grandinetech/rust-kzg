@@ -1,13 +1,13 @@
 extern crate alloc;
 
 use blst::{blst_p1, blst_p2, blst_fr};
-use kzg::common_utils::{load_trusted_setup_rust, reverse_bit_order, verify_kzg_proof_rust, verify_blob_kzg_proof_rust};
+use kzg::common_utils::{load_trusted_setup_rust, reverse_bit_order, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, fr_batch_inv};
 use crate::kzg_proofs::{KZGSettings, FFTSettings};
 use crate::kzg_types::{ArkFr, ArkG1, ArkG2};
 use kzg::eip_4844::{
     load_trusted_setup_string, CKZGSettings, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS, Blob, C_KZG_RET, BYTES_PER_FIELD_ELEMENT, C_KZG_RET_BADARGS, KZGCommitment, FIELD_ELEMENTS_PER_BLOB, C_KZG_RET_OK, BYTES_PER_G1, BYTES_PER_G2, KZGProof, Bytes48, Bytes32,
 };
-use kzg::{FFTSettings as FFTSettingsT, KZGSettings as LKZGSettings, Fr, blob_to_kzg_commitment_rust, G1, compute_blob_kzg_proof_rust, cfg_into_iter, verify_blob_kzg_proof_batch_rust, compute_kzg_proof_rust};
+use kzg::{FFTSettings as FFTSettingsT, KZGSettings as LKZGSettings, Fr, blob_to_kzg_commitment_rust, G1, compute_blob_kzg_proof_rust, cfg_into_iter, verify_blob_kzg_proof_batch_rust, compute_kzg_proof_rust, Poly};
 use std::ptr::null_mut;
 
 #[cfg(feature = "std")]
@@ -19,6 +19,7 @@ use std::io::Read;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
+use crate::utils::PolyData;
 
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, String> {
@@ -130,6 +131,57 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C_KZG_RET> {
         .collect::<Result<Vec<ArkFr>, C_KZG_RET>>()
 }
 
+pub fn evaluate_polynomial_in_evaluation_form_rust(
+    p: &PolyData,
+    x: &ArkFr,
+    s: &KZGSettings,
+) -> Result<ArkFr, String> {
+    if p.coeffs.len() != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Incorrect field elements count."));
+    }
+
+    let roots_of_unity: &Vec<ArkFr> = &s.fs.roots_of_unity;
+    let mut inverses_in: Vec<ArkFr> = vec![ArkFr::default(); FIELD_ELEMENTS_PER_BLOB];
+    let mut inverses: Vec<ArkFr> = vec![ArkFr::default(); FIELD_ELEMENTS_PER_BLOB];
+
+    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        if x.equals(&roots_of_unity[i]) {
+            return Ok(p.get_coeff_at(i));
+        }
+        inverses_in[i] = x.sub(&roots_of_unity[i]);
+    }
+
+    fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB)?;
+
+    let mut tmp: ArkFr;
+    let mut out = ArkFr::zero();
+
+    for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        tmp = inverses[i].mul(&roots_of_unity[i]);
+        tmp = tmp.mul(&p.coeffs[i]);
+        out = out.add(&tmp);
+    }
+
+    tmp = ArkFr::from_u64(FIELD_ELEMENTS_PER_BLOB as u64);
+    out = match out.div(&tmp) {
+        Ok(value) => value,
+        Err(err) => return Err(err),
+    };
+    tmp = x.pow(FIELD_ELEMENTS_PER_BLOB);
+    tmp = tmp.sub(&ArkFr::one());
+    out = out.mul(&tmp);
+    Ok(out)
+}
+
+pub fn blob_to_polynomial_rust(blob: &[ArkFr]) -> Result<PolyData, String> {
+    if blob.len() != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Blob length must be FIELD_ELEMENTS_PER_BLOB"));
+    }
+    let mut p: PolyData = PolyData::new(FIELD_ELEMENTS_PER_BLOB);
+    p.coeffs = blob.to_vec();
+    Ok(p)
+}
+
 macro_rules! handle_ckzg_badargs {
     ($x: expr) => {
         match $x {
@@ -236,5 +288,65 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     ));
     drop(g2);
     (*s).g2_values = null_mut();
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_blob_kzg_proof(
+    out: *mut KZGProof,
+    blob: *const Blob,
+    commitment_bytes: *mut Bytes48,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let deserialized_blob = match deserialize_blob(blob) {
+        Ok(value) => value,
+        Err(err) => return err,
+    };
+
+    let commitment_g1 = handle_ckzg_badargs!(ArkG1::from_bytes(&(*commitment_bytes).bytes));
+    let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
+    let proof = handle_ckzg_badargs!(compute_blob_kzg_proof_rust(
+        &deserialized_blob,
+        &commitment_g1,
+        &settings
+    ));
+
+    (*out).bytes = proof.to_bytes();
+    C_KZG_RET_OK
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_kzg_proof(
+    proof_out: *mut KZGProof,
+    y_out: *mut Bytes32,
+    blob: *const Blob,
+    z_bytes: *const Bytes32,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let deserialized_blob = match deserialize_blob(blob) {
+        Ok(value) => value,
+        Err(err) => return err,
+    };
+
+    let frz = match ArkFr::from_bytes(&(*z_bytes).bytes) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
+    let settings = match kzg_settings_to_rust(s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
+    let (proof_out_tmp, fry_tmp) = match compute_kzg_proof_rust(&deserialized_blob, &frz, &settings)
+    {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
+    (*proof_out).bytes = proof_out_tmp.to_bytes();
+    (*y_out).bytes = fry_tmp.to_bytes();
+    C_KZG_RET_OK
 }
 
