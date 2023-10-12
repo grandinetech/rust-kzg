@@ -38,7 +38,6 @@ pub mod tests {
     }
 
     #[test]
-    // #[ignore]
     pub fn compute_kzg_proof_test_() {
         compute_kzg_proof_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup_filename_rust,
@@ -49,7 +48,6 @@ pub mod tests {
     }
 
     #[test]
-    // #[ignore]
     pub fn compute_and_verify_kzg_proof_round_trip_test_() {
         compute_and_verify_kzg_proof_round_trip_test::<
             ArkFr,
@@ -71,7 +69,6 @@ pub mod tests {
 
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
-    // #[ignore]
     pub fn compute_and_verify_kzg_proof_within_domain_test_() {
         compute_and_verify_kzg_proof_within_domain_test::<
             ArkFr,
@@ -92,7 +89,6 @@ pub mod tests {
     }
 
     #[test]
-    // #[ignore]
     pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_kzg_proof_fails_with_incorrect_proof_test::<
             ArkFr,
@@ -113,7 +109,6 @@ pub mod tests {
     }
 
     #[test]
-    // #[ignore]
     pub fn compute_and_verify_blob_kzg_proof_test_() {
         compute_and_verify_blob_kzg_proof_test::<
             ArkFr,
@@ -132,7 +127,6 @@ pub mod tests {
     }
 
     #[test]
-    // #[ignore]
     pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test::<
             ArkFr,
@@ -151,7 +145,6 @@ pub mod tests {
     }
 
     #[test]
-    // #[ignore]
     pub fn verify_kzg_proof_batch_test_() {
         verify_kzg_proof_batch_test::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup_filename_rust,
@@ -163,7 +156,6 @@ pub mod tests {
     }
 
     #[test]
-    // #[ignore]
     pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test_() {
         verify_kzg_proof_batch_fails_with_incorrect_proof_test::<
             ArkFr,
