@@ -344,3 +344,63 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         C_KZG_RET_BADARGS
     }
 }
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_blob_kzg_proof(
+    out: *mut KZGProof,
+    blob: *const Blob,
+    commitment_bytes: *mut Bytes48,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let deserialized_blob = match deserialize_blob(blob) {
+        Ok(value) => value,
+        Err(err) => return err,
+    };
+
+    let commitment_g1 = handle_ckzg_badargs!(ArkG1::from_bytes(&(*commitment_bytes).bytes));
+    let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
+    let proof = handle_ckzg_badargs!(compute_blob_kzg_proof_rust(
+        &deserialized_blob,
+        &commitment_g1,
+        &settings
+    ));
+
+    (*out).bytes = proof.to_bytes();
+    C_KZG_RET_OK
+}
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_kzg_proof(
+    proof_out: *mut KZGProof,
+    y_out: *mut Bytes32,
+    blob: *const Blob,
+    z_bytes: *const Bytes32,
+    s: &CKZGSettings,
+) -> C_KZG_RET {
+    let deserialized_blob = match deserialize_blob(blob) {
+        Ok(value) => value,
+        Err(err) => return err,
+    };
+
+    let frz = match ArkFr::from_bytes(&(*z_bytes).bytes) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
+    let settings = match kzg_settings_to_rust(s) {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
+    let (proof_out_tmp, fry_tmp) = match compute_kzg_proof_rust(&deserialized_blob, &frz, &settings)
+    {
+        Ok(value) => value,
+        Err(_) => return C_KZG_RET_BADARGS,
+    };
+
+    (*proof_out).bytes = proof_out_tmp.to_bytes();
+    (*y_out).bytes = fry_tmp.to_bytes();
+    C_KZG_RET_OK
+}
