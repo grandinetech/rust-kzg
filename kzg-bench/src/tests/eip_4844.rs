@@ -977,9 +977,7 @@ pub fn compute_kzg_proof_empty_blob_vector_test<
         &TKZGSettings::default(),
     );
 
-    let out = res.unwrap();
-
-    assert_eq!(true, out);
+    assert!(res.unwrap());
 }
 
 pub fn compute_kzg_proof_incorrect_commitments_len_test<
