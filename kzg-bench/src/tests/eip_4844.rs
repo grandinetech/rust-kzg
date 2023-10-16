@@ -920,3 +920,152 @@ pub fn test_vectors_verify_blob_kzg_proof_batch<
         };
     }
 }
+
+#[allow(clippy::type_complexity)]
+pub fn compute_kzg_proof_incorrect_blob_length_test<TFr: Fr, TPoly: Poly<TFr>>(
+    blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
+) {
+    let blob = &[TFr::zero()];
+    let out = blob_to_polynomial(blob);
+    assert!(out.is_err());
+}
+
+#[allow(clippy::type_complexity)]
+pub fn compute_kzg_proof_incorrect_poly_length_test<
+    TPoly: Poly<TFr>,
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    evaluate_polynomial_in_evaluation_form: &dyn Fn(
+        &TPoly,
+        &TFr,
+        &TKZGSettings,
+    ) -> Result<TFr, String>,
+) {
+    let out = evaluate_polynomial_in_evaluation_form(
+        &TPoly::new(1),
+        &TFr::zero(),
+        &TKZGSettings::default(),
+    );
+
+    assert!(out.is_err());
+}
+
+#[allow(clippy::type_complexity)]
+pub fn compute_kzg_proof_empty_blob_vector_test<
+    TPoly: Poly<TFr>,
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    verify_blob_kzg_proof_batch: &dyn Fn(
+        &[Vec<TFr>],
+        &[TG1],
+        &[TG1],
+        &TKZGSettings,
+    ) -> Result<bool, String>,
+) {
+    let res = verify_blob_kzg_proof_batch(
+        &[],
+        &[TG1::default()],
+        &[TG1::default()],
+        &TKZGSettings::default(),
+    );
+
+    let out = res.unwrap();
+
+    assert_eq!(true, out);
+}
+
+pub fn compute_kzg_proof_incorrect_commitments_len_test<
+    TPoly: Poly<TFr>,
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    verify_blob_kzg_proof_batch: &dyn Fn(
+        &[Vec<TFr>],
+        &[TG1],
+        &[TG1],
+        &TKZGSettings,
+    ) -> Result<bool, String>,
+) {
+    let blob1 = vec![TFr::default(); 3];
+    let blob2 = vec![TFr::default(); 3];
+
+    let res = verify_blob_kzg_proof_batch(
+        &[blob1, blob2],
+        &[TG1::default()],
+        &[TG1::default(), TG1::default()],
+        &TKZGSettings::default(),
+    );
+
+    assert!(res.is_err());
+}
+
+pub fn compute_kzg_proof_incorrect_proofs_len_test<
+    TPoly: Poly<TFr>,
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    verify_blob_kzg_proof_batch: &dyn Fn(
+        &[Vec<TFr>],
+        &[TG1],
+        &[TG1],
+        &TKZGSettings,
+    ) -> Result<bool, String>,
+) {
+    let blob1 = vec![TFr::default(); 3];
+    let blob2 = vec![TFr::default(); 3];
+
+    let res = verify_blob_kzg_proof_batch(
+        &[blob1, blob2],
+        &[TG1::default(), TG1::default()],
+        &[TG1::default()],
+        &TKZGSettings::default(),
+    );
+
+    assert!(res.is_err());
+}
+
+pub fn validate_batched_input_test<
+    TPoly: Poly<TFr>,
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    verify_blob_kzg_proof_batch: &dyn Fn(
+        &[Vec<TFr>],
+        &[TG1],
+        &[TG1],
+        &TKZGSettings,
+    ) -> Result<bool, String>,
+    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
+) {
+    let path = get_trusted_setup_path();
+    let setup = &load_trusted_setup(path.as_str()).unwrap();
+
+    let blob1 = vec![TFr::default(); 3];
+    let blob2 = vec![TFr::default(); 3];
+
+    let res = verify_blob_kzg_proof_batch(
+        &[blob1, blob2],
+        &[TG1::default(), TG1::default()],
+        &[TG1::default(), TG1::default()],
+        setup,
+    );
+
+    assert!(res.is_err());
+}
