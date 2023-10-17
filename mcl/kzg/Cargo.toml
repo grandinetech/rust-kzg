@@ -18,7 +18,7 @@ num_cpus = "1.15.0"
 hex = "0.4.2"
 
 [features]
-parallel = ["rayon"]
+parallel = ["rayon", "kzg/parallel"]
 minimal-spec = ["kzg/minimal-spec"]
 
 [build-dependencies]
