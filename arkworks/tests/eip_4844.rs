@@ -1,7 +1,6 @@
 #[cfg(test)]
 pub mod tests {
-    use kzg::{blob_to_kzg_commitment_rust, compute_kzg_proof_rust, compute_blob_kzg_proof_rust, verify_blob_kzg_proof_batch_rust};
-    use kzg::common_utils::{compute_powers, bytes_to_blob, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, load_trusted_setup_rust};
+    use kzg::{blob_to_kzg_commitment_rust, compute_kzg_proof_rust, compute_blob_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, bytes_to_blob, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, compute_powers};
     #[cfg(not(feature = "minimal-spec"))]
     use kzg_bench::tests::eip_4844::compute_and_verify_kzg_proof_within_domain_test;
     use kzg_bench::tests::eip_4844::{
@@ -12,9 +11,7 @@ pub mod tests {
         compute_and_verify_kzg_proof_round_trip_test, compute_kzg_proof_test, compute_powers_test,
         verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
-    use rust_kzg_arkworks::eip_4844::{
-        load_trusted_setup, load_trusted_setup_filename_rust
-    };
+    use rust_kzg_arkworks::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_arkworks::kzg_proofs::{FFTSettings, KZGSettings};
     use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, ArkFr};
     use rust_kzg_arkworks::utils::PolyData;

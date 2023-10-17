@@ -24,7 +24,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly> for FsKZGSettings {
     fn new(
         secret_g1: &[FsG1],
         secret_g2: &[FsG2],
-        length: usize,
+        _length: usize,
         fft_settings: &FsFFTSettings,
     ) -> Result<Self, String> {
         Ok(Self {

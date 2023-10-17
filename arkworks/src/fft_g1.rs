@@ -7,15 +7,9 @@ use ark_ec::{VariableBaseMSM, CurveGroup};
 use ark_ff::BigInteger256;
 use kzg::{cfg_into_iter, G1Mul, Fr as KzgFr};
 use kzg::{FFTG1, G1};
-// use rust_kzg_blst::
+
 #[cfg(feature = "parallel")]
-use rayon::iter::IntoParallelRefIterator;
-#[cfg(feature = "parallel")]
-use rayon::iter::IntoParallelIterator;
-#[cfg(feature = "parallel")]
-use rayon::iter::ParallelIterator;
-#[cfg(feature = "parallel")]
-use rayon::iter::IndexedParallelIterator;
+use rayon::prelude::*;
 
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], len: usize) {
     if len < 8 {

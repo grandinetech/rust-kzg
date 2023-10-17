@@ -3,12 +3,11 @@ mod tests {
     use std::path::PathBuf;
     use std::{fs::File, io::Read, ptr::null_mut};
 
-    use kzg::common_utils::{compute_powers, bytes_to_blob, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, verify_kzg_proof_rust, verify_blob_kzg_proof_rust};
     use kzg::eip_4844::{
         load_trusted_setup_string, Blob, CKZGSettings, KZGCommitment, BYTES_PER_COMMITMENT,
         BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET_BADARGS, C_KZG_RET_OK,
     };
-    use kzg::{Fr, blob_to_kzg_commitment_rust, compute_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, compute_blob_kzg_proof_rust};
+    use kzg::{Fr, blob_to_kzg_commitment_rust, compute_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, compute_blob_kzg_proof_rust, bytes_to_blob, compute_powers, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, verify_kzg_proof_rust, verify_blob_kzg_proof_rust};
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,

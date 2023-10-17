@@ -15,7 +15,6 @@ use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::g1_linear_combination;
-use crate::kzg_proofs::pairings_verify;
 use crate::types::fr::FsFr;
 
 #[repr(C)]

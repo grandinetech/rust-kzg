@@ -1,10 +1,12 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ArkFr as BlstFr};
+use crate::kzg_types::ArkFr as BlstFr;
 use crate::consts::SCALE_FACTOR;
 use crate::utils::PolyData;
 
-use kzg::common_utils::next_pow_of_2;
 use kzg::{FFTFr, Fr, Poly, PolyRecover, ZeroPoly};
+
+#[cfg(feature = "parallel")]
+use kzg::common_utils::next_pow_of_2;
 
 #[cfg(feature = "parallel")]
 static mut INVERSE_FACTORS: Vec<BlstFr> = Vec::new();

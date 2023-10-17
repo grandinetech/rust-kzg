@@ -1,12 +1,11 @@
 #![allow(non_camel_case_types)]
-use kzg::common_utils::hash_to_bls_field;
 use ark_ec::pairing::Pairing;
-use ark_poly_commit::*;
 use ark_std::{
     vec, One,
 };
 use crate::kzg_types::ArkFr;
-use kzg::{G1Mul, G2Mul};
+use ark_poly::Polynomial;
+use kzg::{G1Mul, G2Mul, hash_to_bls_field};
 use super::utils::{
     blst_poly_into_pc_poly,
     PolyData,

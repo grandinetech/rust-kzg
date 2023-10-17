@@ -1,26 +1,11 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
-use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
-use kzg::blob_to_kzg_commitment_rust;
-use kzg::common_utils::blob_to_polynomial;
-use kzg::common_utils::compute_challenge;
-use kzg::common_utils::compute_challenges_and_evaluate_polynomial;
-use kzg::common_utils::compute_r_powers;
-use kzg::common_utils::evaluate_polynomial_in_evaluation_form;
-use kzg::common_utils::fr_batch_inv;
-use kzg::common_utils::load_trusted_setup_rust;
-use kzg::common_utils::validate_batched_input;
-use kzg::common_utils::verify_blob_kzg_proof_rust;
-use kzg::common_utils::verify_kzg_proof_rust;
-use kzg::compute_blob_kzg_proof_rust;
-use kzg::compute_kzg_proof_rust;
-use kzg::verify_blob_kzg_proof_batch_rust;
-use kzg::verify_kzg_proof_batch;
+use kzg::{blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust, load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust, cfg_into_iter, G1, Fr};
 use core::ptr::null_mut;
 use kzg::common_utils::reverse_bit_order;
 #[cfg(feature = "std")]
@@ -30,17 +15,16 @@ use std::fs::File;
 #[cfg(feature = "std")]
 use std::io::Read;
 
-use blst::{blst_fr, blst_fr_from_scalar, blst_p1, blst_p2, blst_scalar, blst_scalar_from_bendian};
-use kzg::{cfg_into_iter, FFTSettings, Fr, G1Mul, KZGSettings, Poly, G1, G2};
+use blst::{blst_fr, blst_p1, blst_p2};
 
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
 
 use kzg::eip_4844::{
-    bytes_of_uint64, hash, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
-    BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2,
-    BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
-    FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN,
+    Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2,
+    C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
+    FIELD_ELEMENTS_PER_BLOB,
     TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
 };
 
@@ -48,10 +32,8 @@ use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 
-use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
-use crate::types::poly::FsPoly;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
