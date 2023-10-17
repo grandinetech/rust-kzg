@@ -1,0 +1,89 @@
+From 356c7ae798d125ee638ee0283fab9abca47a2e84 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Sun, 24 Sep 2023 21:54:36 +0300
+Subject: [PATCH] Update linking
+
+---
+ bindings/node.js/Makefile    |  1 -
+ bindings/node.js/binding.gyp | 33 +++------------------------------
+ bindings/node.js/src/kzg.cxx |  4 ++++
+ 3 files changed, 7 insertions(+), 31 deletions(-)
+
+diff --git a/bindings/node.js/Makefile b/bindings/node.js/Makefile
+index 17850ec..efc9961 100644
+--- a/bindings/node.js/Makefile
++++ b/bindings/node.js/Makefile
+@@ -31,7 +31,6 @@ build: install clean
+ 	@# Prepare the dependencies directory
+ 	@mkdir -p deps/c-kzg
+ 	@cp -r ../../blst deps
+-	@cp ../../src/c_kzg_4844.c deps/c-kzg
+ 	@cp ../../src/c_kzg_4844.h deps/c-kzg
+ 	@# Build the bindings
+ 	@$(YARN) node-gyp --loglevel=warn configure
+diff --git a/bindings/node.js/binding.gyp b/bindings/node.js/binding.gyp
+index 4f1e28b..6cde37f 100644
+--- a/bindings/node.js/binding.gyp
++++ b/bindings/node.js/binding.gyp
+@@ -3,9 +3,7 @@
+     {
+       "target_name": "kzg",
+       "sources": [
+-        "src/kzg.cxx",
+-        "deps/blst/src/server.c",
+-        "deps/c-kzg/c_kzg_4844.c"
++        "src/kzg.cxx"
+       ],
+       "include_dirs": [
+         "<(module_root_dir)/deps/blst/bindings",
+@@ -16,33 +14,8 @@
+         "__BLST_PORTABLE__",
+         "NAPI_DISABLE_CPP_EXCEPTIONS"
+       ],
+-      "conditions": [
+-        ["OS!='win'", {
+-          "sources": ["deps/blst/build/assembly.S"],
+-          "defines": ["FIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})"],
+-          "cflags_cc": [
+-            "-std=c++17",
+-            "-fPIC"
+-          ]
+-        }],
+-        ["OS=='win'", {
+-          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
+-          "defines": [
+-            "_CRT_SECURE_NO_WARNINGS",
+-            "FIELD_ELEMENTS_PER_BLOB=<!(powershell -Command \"if ($env:FIELD_ELEMENTS_PER_BLOB) { $env:FIELD_ELEMENTS_PER_BLOB } else { 4096 }\")"
+-          ],
+-          "msbuild_settings": {
+-            "ClCompile": {
+-              "AdditionalOptions": ["/std:c++17"]
+-            }
+-          }
+-        }],
+-        ["OS=='mac'", {
+-          "xcode_settings": {
+-            "CLANG_CXX_LIBRARY": "libc++",
+-            "MACOSX_DEPLOYMENT_TARGET": "13.0"
+-          }
+-        }]
++      "libraries": [
++        "<(module_root_dir)/../../../../target/release/rust_kzg_blst.a"
+       ]
+     }
+   ]
+diff --git a/bindings/node.js/src/kzg.cxx b/bindings/node.js/src/kzg.cxx
+index 871aa90..f89b1e3 100644
+--- a/bindings/node.js/src/kzg.cxx
++++ b/bindings/node.js/src/kzg.cxx
+@@ -1,3 +1,7 @@
++#ifndef FIELD_ELEMENTS_PER_BLOB
++#define FIELD_ELEMENTS_PER_BLOB 4096
++#endif
++
+ #include "blst.h"
+ #include "c_kzg_4844.h"
+ #include <iostream>
+-- 
+2.34.1
+

@@ -28,7 +28,7 @@ done
 
 ###################### building static libs ######################
 
-print_msg "Compiling rust-kzg-blst"
+print_msg "Compiling rust-kzg-arkworks"
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
   cargo rustc --release --crate-type=staticlib --features=parallel
@@ -37,7 +37,7 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
-mv ../target/release/librust_kzg_blst.a ../target/release/rust_kzg_blst.a
+mv ../target/release/librust_kzg_arkworks.a ../target/release/rust_kzg_arkworks.a
 
 ###################### cloning c-kzg-4844 ######################
 
@@ -50,10 +50,10 @@ cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
-print_msg "Applying patches and building blst"
+print_msg "Applying patches and building arkworks"
 cd src
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
-make blst
+make arkworks
 unset CFLAGS
 cd ..
 
@@ -98,10 +98,10 @@ print_msg "Running rust tests"
 cargo test --release
 cd ../..
 
-print_msg "Rebuilding blst"
+print_msg "Rebuilding arkworks"
 cd src
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
-make blst
+make arkworks
 unset CFLAGS
 cd ..
 
@@ -142,7 +142,7 @@ git apply < ../go.patch
 cd bindings/go || exit
 
 print_msg "Running go tests"
-CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
+CGO_CFLAGS="-O2 -D__ARKWORKS_PORTABLE__" go test
 cd ../../..
 
 ###################### cleaning up ######################

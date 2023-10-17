@@ -1,0 +1,143 @@
+From 74305f649d9173efc6761cd99a4cb8c251d74578 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Sun, 24 Sep 2023 14:59:07 +0300
+Subject: [PATCH] Update linking
+
+---
+ bindings/rust/Cargo.toml          |  1 +
+ bindings/rust/build.rs            | 34 +++++--------------------------
+ bindings/rust/src/bindings/mod.rs | 24 ----------------------
+ 3 files changed, 6 insertions(+), 53 deletions(-)
+
+diff --git a/bindings/rust/Cargo.toml b/bindings/rust/Cargo.toml
+index 299c6fd..b8e9a5b 100644
+--- a/bindings/rust/Cargo.toml
++++ b/bindings/rust/Cargo.toml
+@@ -1,3 +1,4 @@
++[workspace]
+ [package]
+ name = "c-kzg"
+ version = "0.1.0"
+diff --git a/bindings/rust/build.rs b/bindings/rust/build.rs
+index bc81615..c0ed8c7 100644
+--- a/bindings/rust/build.rs
++++ b/bindings/rust/build.rs
+@@ -12,13 +12,12 @@ fn main() {
+         .parent()
+         .expect("bindings dir is nested");
+ 
+-    let (lib_name, field_elements_per_blob) = if cfg!(feature = "minimal-spec") {
++    let (_lib_name, field_elements_per_blob) = if cfg!(feature = "minimal-spec") {
+         ("ckzg_min", MINIMAL_FIELD_ELEMENTS_PER_BLOB)
+     } else {
+         ("ckzg", MAINNET_FIELD_ELEMENTS_PER_BLOB)
+     };
+ 
+-    eprintln!("Using LIB_PREFIX={lib_name}");
+     eprintln!("Using FIELD_ELEMENTS_PER_BLOB={field_elements_per_blob}");
+ 
+     // Obtain the header files of blst
+@@ -27,26 +26,7 @@ fn main() {
+ 
+     let c_src_dir = root_dir.join("src");
+ 
+-    let mut cc = cc::Build::new();
+-
+-    #[cfg(windows)]
+-    {
+-        cc.flag("-D_CRT_SECURE_NO_WARNINGS");
+-
+-        // In blst, if __STDC_VERSION__ isn't defined as c99 or greater, it will typedef a bool to
+-        // an int. There is a bug in bindgen associated with this. It assumes that a bool in C is
+-        // the same size as a bool in Rust. This is the root cause of the issues on Windows. If/when
+-        // this is fixed in bindgen, it should be safe to remove this compiler flag.
+-        cc.flag("/std:c11");
+-    }
+-
+-    cc.include(blst_headers_dir.clone());
+-    cc.warnings(false);
+-    cc.flag(format!("-DLIB_PREFIX={lib_name}").as_str());
+-    cc.flag(format!("-DFIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob).as_str());
+-    cc.file(c_src_dir.join("c_kzg_4844.c"));
+-
+-    cc.try_compile(lib_name).expect("Failed to compile ckzg");
++    let rust_kzg_target_dir = root_dir.join("../../target/release/");
+ 
+     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+     let bindings_out_path = out_dir.join("generated.rs");
+@@ -54,7 +34,6 @@ fn main() {
+     let header_file = header_file_path.to_str().expect("valid header file");
+ 
+     make_bindings(
+-        lib_name,
+         field_elements_per_blob,
+         header_file,
+         &blst_headers_dir.to_string_lossy(),
+@@ -62,11 +41,11 @@ fn main() {
+     );
+ 
+     // Finally, tell cargo this provides ckzg/ckzg_min
+-    println!("cargo:rustc-link-lib={lib_name}");
++    println!("cargo:rustc-link-search={}", rust_kzg_target_dir.display());
++    println!("cargo:rustc-link-arg=-l:rust_kzg_blst.a");
+ }
+ 
+ fn make_bindings<P>(
+-    lib_name: &str,
+     field_elements_per_blob: usize,
+     header_path: &str,
+     blst_headers_dir: &str,
+@@ -103,14 +82,11 @@ fn make_bindings<P>(
+         .header_contents(
+             "consts",
+             &format!(
+-                "#define LIB_PREFIX {lib_name}
+-                 #define FIELD_ELEMENTS_PER_BLOB {field_elements_per_blob}"
++                "#define FIELD_ELEMENTS_PER_BLOB {field_elements_per_blob}"
+             ),
+         )
+         .header(header_path)
+         .clang_args([format!("-I{blst_headers_dir}")])
+-        // Since this is not part of the header file, needs to be allowed explicitly.
+-        .allowlist_var("LIB_PREFIX")
+         .allowlist_var("FIELD_ELEMENTS_PER_BLOB")
+         // Get bindings only for the header file.
+         .allowlist_file(".*c_kzg_4844.h")
+diff --git a/bindings/rust/src/bindings/mod.rs b/bindings/rust/src/bindings/mod.rs
+index d5d115c..0f41e1b 100644
+--- a/bindings/rust/src/bindings/mod.rs
++++ b/bindings/rust/src/bindings/mod.rs
+@@ -9,30 +9,6 @@ mod test_formats;
+ 
+ include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+ 
+-#[cfg(not(feature = "minimal-spec"))]
+-use {
+-    ckzg_blob_to_kzg_commitment as blob_to_kzg_commitment,
+-    ckzg_compute_blob_kzg_proof as compute_blob_kzg_proof,
+-    ckzg_compute_kzg_proof as compute_kzg_proof, ckzg_free_trusted_setup as free_trusted_setup,
+-    ckzg_load_trusted_setup as load_trusted_setup,
+-    ckzg_load_trusted_setup_file as load_trusted_setup_file,
+-    ckzg_verify_blob_kzg_proof as verify_blob_kzg_proof,
+-    ckzg_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
+-    ckzg_verify_kzg_proof as verify_kzg_proof,
+-};
+-#[cfg(feature = "minimal-spec")]
+-use {
+-    ckzg_min_blob_to_kzg_commitment as blob_to_kzg_commitment,
+-    ckzg_min_compute_blob_kzg_proof as compute_blob_kzg_proof,
+-    ckzg_min_compute_kzg_proof as compute_kzg_proof,
+-    ckzg_min_free_trusted_setup as free_trusted_setup,
+-    ckzg_min_load_trusted_setup as load_trusted_setup,
+-    ckzg_min_load_trusted_setup_file as load_trusted_setup_file,
+-    ckzg_min_verify_blob_kzg_proof as verify_blob_kzg_proof,
+-    ckzg_min_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
+-    ckzg_min_verify_kzg_proof as verify_kzg_proof,
+-};
+-
+ use alloc::string::String;
+ use alloc::vec::Vec;
+ use core::ffi::CStr;
+-- 
+2.34.1
+
