@@ -79,7 +79,7 @@ index bc81615..c0ed8c7 100644
      // Finally, tell cargo this provides ckzg/ckzg_min
 -    println!("cargo:rustc-link-lib={lib_name}");
 +    println!("cargo:rustc-link-search={}", rust_kzg_target_dir.display());
-+    println!("cargo:rustc-link-arg=-l:rust_kzg_blst.a");
++    println!("cargo:rustc-link-arg=-l:rust_kzg_arkworks.a");
  }
  
  fn make_bindings<P>(

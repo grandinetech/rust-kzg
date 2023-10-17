@@ -14,7 +14,7 @@ index d5fa3dc..0a77983 100644
 @@ -31,7 +31,7 @@ endif
  
  FIELD_ELEMENTS_PER_BLOB ?= 4096
- INCLUDE_DIRS = ../../src ../../blst/bindings
+ INCLUDE_DIRS = ../../src ../../arkworks/bindings
 -TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 +TARGETS = ckzg.c ../../../../target/release/rust_kzg_arkworks.a
  

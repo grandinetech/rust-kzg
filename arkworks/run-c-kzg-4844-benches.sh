@@ -74,7 +74,7 @@ git apply < ../go.patch
 cd bindings/go || exit
 
 print_msg "Running go benchmarks"
-CGO_CFLAGS="-O2 -D__ARKWORKS_PORTABLE__" go test -run ^$ -bench .
+CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test -run ^$ -bench .
 cd ../../..
 
 ###################### cleaning up ######################

@@ -12,7 +12,7 @@ index 9be2fd6..1e59378 100644
 --- a/bindings/java/Makefile
 +++ b/bindings/java/Makefile
 @@ -1,6 +1,6 @@
- INCLUDE_DIRS = ../../src ../../blst/bindings
+ INCLUDE_DIRS = ../../src ../../arkworks/bindings
  
 -TARGETS=c_kzg_4844_jni.c ../../src/c_kzg_4844.c ../../lib/libblst.a
 +TARGETS=c_kzg_4844_jni.c ../../../../target/release/rust_kzg_arkworks.a

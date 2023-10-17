@@ -50,10 +50,10 @@ cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
-print_msg "Applying patches and building arkworks"
+print_msg "Applying patches and building blst"
 cd src
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
-make arkworks
+make blst
 unset CFLAGS
 cd ..
 
@@ -142,7 +142,7 @@ git apply < ../go.patch
 cd bindings/go || exit
 
 print_msg "Running go tests"
-CGO_CFLAGS="-O2 -D__ARKWORKS_PORTABLE__" go test
+CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
 cd ../../..
 
 ###################### cleaning up ######################
