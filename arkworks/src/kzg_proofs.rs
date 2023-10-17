@@ -5,7 +5,8 @@ use ark_std::{
 };
 use crate::kzg_types::ArkFr;
 use ark_poly::Polynomial;
-use kzg::{G1Mul, G2Mul, hash_to_bls_field};
+use kzg::{G1Mul, G2Mul};
+use kzg::eip_4844::hash_to_bls_field;
 use super::utils::{
     blst_poly_into_pc_poly,
     PolyData,

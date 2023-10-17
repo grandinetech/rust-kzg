@@ -5,9 +5,10 @@ use kzg::common_utils::reverse_bit_order;
 use crate::kzg_proofs::{KZGSettings, FFTSettings};
 use crate::kzg_types::{ArkFr, ArkG1, ArkG2};
 use kzg::eip_4844::{
-    load_trusted_setup_string, CKZGSettings, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS, Blob, C_KZG_RET, BYTES_PER_FIELD_ELEMENT, C_KZG_RET_BADARGS, KZGCommitment, FIELD_ELEMENTS_PER_BLOB, C_KZG_RET_OK, BYTES_PER_G1, BYTES_PER_G2, KZGProof, Bytes48, Bytes32,
+    load_trusted_setup_string, CKZGSettings, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS, Blob, C_KZG_RET, BYTES_PER_FIELD_ELEMENT, C_KZG_RET_BADARGS, KZGCommitment, FIELD_ELEMENTS_PER_BLOB, C_KZG_RET_OK, BYTES_PER_G1, BYTES_PER_G2, KZGProof, Bytes48, Bytes32, blob_to_kzg_commitment_rust,
+    compute_blob_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, compute_kzg_proof_rust, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, load_trusted_setup_rust
 };
-use kzg::{Fr, blob_to_kzg_commitment_rust, G1, compute_blob_kzg_proof_rust, cfg_into_iter, verify_blob_kzg_proof_batch_rust, compute_kzg_proof_rust, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, load_trusted_setup_rust};
+use kzg::{Fr, G1, cfg_into_iter};
 use std::ptr::null_mut;
 
 #[cfg(feature = "std")]

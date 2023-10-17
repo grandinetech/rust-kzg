@@ -5,7 +5,8 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
-use kzg::{blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust, load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust, cfg_into_iter, G1, Fr};
+use kzg::{cfg_into_iter, G1, Fr};
+use kzg::eip_4844::{blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust, load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust};
 use core::ptr::null_mut;
 use kzg::common_utils::reverse_bit_order;
 #[cfg(feature = "std")]

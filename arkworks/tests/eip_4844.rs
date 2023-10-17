@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod tests {
-    use kzg::{blob_to_kzg_commitment_rust, compute_kzg_proof_rust, compute_blob_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, bytes_to_blob, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, compute_powers};
+    use kzg::eip_4844::{blob_to_kzg_commitment_rust, compute_kzg_proof_rust, compute_blob_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, bytes_to_blob, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, compute_powers};
     #[cfg(not(feature = "minimal-spec"))]
     use kzg_bench::tests::eip_4844::compute_and_verify_kzg_proof_within_domain_test;
     use kzg_bench::tests::eip_4844::{
