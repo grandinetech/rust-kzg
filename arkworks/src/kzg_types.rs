@@ -22,6 +22,10 @@ use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2, FFTFr, PairingVerify};
 use std::ops::{Sub, Neg, Mul};
 
+fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
+    u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct ArkFr {
     pub fr: Fr,
@@ -39,14 +43,7 @@ impl ArkFr {
 
 impl KzgFr for ArkFr {
     fn null() -> Self {
-        ArkFr::from_blst_fr(blst_fr {
-            l: [
-                14526898868952669296,
-                2784871451429007392,
-                11493358522590675359,
-                7138715389977065193,
-            ],
-        })
+        Self { fr: Fr::new_unchecked(BigInteger256::new([u64::MAX; 4]) ) }
     }
 
     fn zero() -> Self {
@@ -74,10 +71,9 @@ impl KzgFr for ArkFr {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let mut le_bytes: [u8; BYTES_PER_FIELD_ELEMENT] = bytes.clone();
-                le_bytes.reverse();
-                let fr = Fr::deserialize_compressed(le_bytes.as_slice()).unwrap_or_default();
-                Ok(Self { fr })
+                let storage: [u64; 4] = [bytes_be_to_uint64(&bytes[24..32]), bytes_be_to_uint64(&bytes[16..24]), bytes_be_to_uint64(&bytes[8..16]), bytes_be_to_uint64(&bytes[0..8])];
+                let big_int = BigInteger256::new(storage);
+                Ok (Self {fr: Fr::new(big_int)})
             })
     }
 
