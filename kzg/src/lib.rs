@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 pub mod eip_4844;
 pub mod common_utils;
 
-pub trait Fr: Default + Clone + PartialEq {
+pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
 
     fn zero() -> Self;
@@ -65,7 +65,7 @@ pub trait Fr: Default + Clone + PartialEq {
     }
 }
 
-pub trait G1: Clone + Default + PartialEq {
+pub trait G1: Clone + Default + PartialEq + Sync {
     fn identity() -> Self;
 
     fn generator() -> Self;
