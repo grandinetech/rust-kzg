@@ -233,15 +233,13 @@ fn compute_r_powers<TG1: G1, TFr: Fr>(
     let input_size =
         32 + n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF);
 
-    #[allow(unused_assignments)]
-    let mut offset = 0;
     let mut bytes: Vec<u8> = vec![0; input_size];
 
     // Copy domain separator
     bytes[..16].copy_from_slice(&RANDOM_CHALLENGE_KZG_BATCH_DOMAIN);
     bytes_of_uint64(&mut bytes[16..24], FIELD_ELEMENTS_PER_BLOB as u64);
     bytes_of_uint64(&mut bytes[24..32], n as u64);
-    offset = 32;
+    let mut offset = 32;
 
     for i in 0..n {
         // Copy commitment
@@ -326,10 +324,6 @@ pub fn compute_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFF
     z: &TFr,
     s: &TKZGSettings,
 ) -> Result<(TG1, TFr), String> {
-    if blob.len() != FIELD_ELEMENTS_PER_BLOB {
-        return Err(String::from("Incorrect field elements count."));
-    }
-
     let polynomial = blob_to_polynomial(blob)?;
     let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, s)?;
 
@@ -403,7 +397,7 @@ pub fn compute_blob_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2
         return Err("Invalid commitment".to_string());
     }
 
-    let evaluation_challenge_fr = compute_challenge(blob, commitment)?;
+    let evaluation_challenge_fr = compute_challenge(blob, commitment);
     let (proof, _) = compute_kzg_proof_rust::<_,_,_,_,_,_>(blob, &evaluation_challenge_fr, ts)?;
     Ok(proof)
 }
@@ -415,15 +409,14 @@ pub fn verify_kzg_proof_rust<TFr: Fr, TG1: G1, TG2: G2, TFFTSettings: FFTSetting
     proof: &TG1,
     s: &TKZGSettings,
 ) -> Result<bool, String> {
-    if !commitment.is_valid() {
+    if !commitment.is_inf() && !commitment.is_valid() {
         return Err("Invalid commitment".to_string());
     }
-    if !proof.is_valid() {
+    if !proof.is_inf() && !proof.is_valid() {
         return Err("Invalid proof".to_string());
     }
 
-    Ok(s.check_proof_single(commitment, proof, z, y)
-        .unwrap_or(false))
+    s.check_proof_single(commitment, proof, z, y)
 }
 
 pub fn verify_blob_kzg_proof_rust<TFr: Fr + Copy, TG1: G1, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
@@ -432,15 +425,15 @@ pub fn verify_blob_kzg_proof_rust<TFr: Fr + Copy, TG1: G1, TG2: G2, TFFTSettings
     proof_g1: &TG1,
     ts: &TKZGSettings,
 ) -> Result<bool, String> {
-    if !commitment_g1.is_valid() {
+    if !commitment_g1.is_inf() && !commitment_g1.is_valid() {
         return Err("Invalid commitment".to_string());
     }
-    if !proof_g1.is_valid() {
+    if !proof_g1.is_inf() && !proof_g1.is_valid() {
         return Err("Invalid proof".to_string());
     }
 
     let polynomial = blob_to_polynomial(blob)?;
-    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1)?;
+    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
     let y_fr =
         evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts)?;
     verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
@@ -456,7 +449,7 @@ fn compute_challenges_and_evaluate_polynomial<TFr: Fr + Copy, TG1: G1, TG2: G2, 
 
     for i in 0..blobs.len() {
         let polynomial = blob_to_polynomial(&blobs[i])?;
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i])?;
+        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
         let y_fr =
             evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts)?;
 
@@ -468,8 +461,8 @@ fn compute_challenges_and_evaluate_polynomial<TFr: Fr + Copy, TG1: G1, TG2: G2, 
 }
 
 fn validate_batched_input<TG1: G1>(commitments: &[TG1], proofs: &[TG1]) -> Result<(), String> {
-    let invalid_commitment = cfg_into_iter!(commitments).any(|commitment| !commitment.is_valid());
-    let invalid_proof = cfg_into_iter!(proofs).any(|proof| !proof.is_valid());
+    let invalid_commitment = cfg_into_iter!(commitments).any(|commitment| !commitment.is_inf() && !commitment.is_valid());
+    let invalid_proof = cfg_into_iter!(proofs).any(|proof| !proof.is_inf() && !proof.is_valid());
 
     if invalid_commitment {
         return Err("Invalid commitment".to_string());
@@ -550,7 +543,7 @@ pub fn verify_blob_kzg_proof_batch_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr> + P
     }
 
     #[cfg(not(feature = "parallel"))]
-    Ok({
+    {
         validate_batched_input(commitments_g1, proofs_g1)?;
         let (evaluation_challenges_fr, ys_fr) =
             compute_challenges_and_evaluate_polynomial(blobs, commitments_g1, ts)?;
@@ -561,8 +554,8 @@ pub fn verify_blob_kzg_proof_batch_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr> + P
             &ys_fr,
             proofs_g1,
             ts,
-        )?
-    })
+        )
+    }
 }
 
 #[allow(clippy::useless_conversion)]
@@ -615,7 +608,7 @@ pub fn hash_to_bls_field<TFr: Fr>(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> TFr {
     TFr::from_bytes_unchecked(x).unwrap()
 }
 
-fn compute_challenge<TFr: Fr, TG1: G1>(blob: &[TFr], commitment: &TG1) -> Result<TFr, String> {
+fn compute_challenge<TFr: Fr, TG1: G1>(blob: &[TFr], commitment: &TG1) -> TFr {
     let mut bytes: Vec<u8> = vec![0; CHALLENGE_INPUT_SIZE];
 
     // Copy domain separator
@@ -624,8 +617,8 @@ fn compute_challenge<TFr: Fr, TG1: G1>(blob: &[TFr], commitment: &TG1) -> Result
     bytes_of_uint64(&mut bytes[16..24], 0);
     bytes_of_uint64(&mut bytes[24..32], FIELD_ELEMENTS_PER_BLOB as u64);
 
-    for (i, _) in blob.iter().enumerate() {
-        let v = blob[i].to_bytes();
+    for (i, field) in blob.iter().enumerate() {
+        let v = field.to_bytes();
         let size = (32 + i * BYTES_PER_FIELD_ELEMENT)..(32 + (i + 1) * BYTES_PER_FIELD_ELEMENT);
 
         bytes[size].copy_from_slice(&v);
@@ -639,7 +632,7 @@ fn compute_challenge<TFr: Fr, TG1: G1>(blob: &[TFr], commitment: &TG1) -> Result
 
     // Now let's create the challenge!
     let eval_challenge = hash(&bytes);
-    Ok(hash_to_bls_field(&eval_challenge))
+    hash_to_bls_field(&eval_challenge)
 }
 
 pub fn blob_to_polynomial<TFr: Fr, TPoly: Poly<TFr>>(blob: &[TFr]) -> Result<TPoly, String> {

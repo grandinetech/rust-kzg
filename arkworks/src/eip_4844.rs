@@ -352,7 +352,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
 pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
     blob: *const Blob,
-    commitment_bytes: *mut Bytes48,
+    commitment_bytes: *const Bytes48,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = match deserialize_blob(blob) {
