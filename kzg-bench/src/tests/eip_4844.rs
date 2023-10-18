@@ -980,6 +980,7 @@ pub fn compute_kzg_proof_empty_blob_vector_test<
     assert!(res.unwrap());
 }
 
+#[allow(clippy::type_complexity)]
 pub fn compute_kzg_proof_incorrect_commitments_len_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
@@ -1008,6 +1009,7 @@ pub fn compute_kzg_proof_incorrect_commitments_len_test<
     assert!(res.is_err());
 }
 
+#[allow(clippy::type_complexity)]
 pub fn compute_kzg_proof_incorrect_proofs_len_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
@@ -1036,6 +1038,7 @@ pub fn compute_kzg_proof_incorrect_proofs_len_test<
     assert!(res.is_err());
 }
 
+#[allow(clippy::type_complexity)]
 pub fn validate_batched_input_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
