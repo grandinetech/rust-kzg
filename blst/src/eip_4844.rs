@@ -233,7 +233,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 pub unsafe extern "C" fn compute_blob_kzg_proof(
     out: *mut KZGProof,
     blob: *const Blob,
-    commitment_bytes: *mut Bytes48,
+    commitment_bytes: *const Bytes48,
     s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = match deserialize_blob(blob) {
@@ -281,6 +281,7 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     ));
     drop(g2);
     (*s).g2_values = null_mut();
+    (*s).max_width = 0;
 }
 
 /// # Safety
@@ -322,10 +323,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = handle_ckzg_badargs!(deserialize_blob(blob));
-
     let commitment_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
     let proof_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*proof_bytes).bytes));
-
     let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
 
     let result = handle_ckzg_badargs!(verify_blob_kzg_proof_rust(
@@ -427,7 +426,7 @@ pub unsafe extern "C" fn compute_kzg_proof(
 
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::eip_4844::get_trusted_setup_path;
+    use kzg_bench::tests::utils::get_trusted_setup_path;
 
     use crate::eip_4844::{kzg_settings_to_c, kzg_settings_to_rust};
 

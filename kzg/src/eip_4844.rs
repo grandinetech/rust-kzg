@@ -1,6 +1,12 @@
 #![allow(non_camel_case_types)]
+extern crate alloc;
+
 use alloc::string::String;
+use alloc::string::ToString;
 use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
+
 pub use blst::{blst_fr, blst_p1, blst_p2};
 use core::ffi::c_uint;
 use sha2::{Digest, Sha256};
@@ -120,6 +126,7 @@ pub fn load_trusted_setup_string(contents: &str) -> Result<(Vec<u8>, Vec<u8>), S
 
     let g1_point_count = scan_number(&mut offset, contents)?;
 
+    // FIXME: must be TRUSTED_SETUP_NUM_G1_POINTS
     if g1_point_count != FIELD_ELEMENTS_PER_BLOB {
         return Err(String::from(TRUSTED_SETUP_ERROR));
     }

@@ -1,3 +1,8 @@
+extern crate alloc;
+
+use core::mem;
+use alloc::string::String;
+
 pub fn reverse_bit_order<T>(vals: &mut [T]) -> Result<(), String>
 where
     T: Clone,
@@ -58,7 +63,7 @@ pub fn log2_u64(n: usize) -> usize {
 }
 
 pub const fn num_bits<T>() -> usize {
-    std::mem::size_of::<T>() * 8
+    mem::size_of::<T>() * 8
 }
 
 pub fn log_2(x: usize) -> usize {

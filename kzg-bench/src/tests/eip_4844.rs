@@ -4,6 +4,7 @@ use crate::test_vectors::{
     blob_to_kzg_commitment, compute_blob_kzg_proof, compute_kzg_proof, verify_blob_kzg_proof,
     verify_blob_kzg_proof_batch, verify_kzg_proof,
 };
+use crate::tests::utils::{get_manifest_dir, get_trusted_setup_path};
 use kzg::eip_4844::{
     BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
     FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_PATH,
@@ -76,22 +77,6 @@ pub fn compute_powers_test<TFr: Fr>(compute_powers: &dyn Fn(&TFr, usize) -> Vec<
     for (p, expected_p) in powers.iter().zip(EXPECTED_POWERS.iter()) {
         assert_eq!(expected_p, &p.to_u64_arr());
     }
-}
-
-fn get_manifest_dir() -> String {
-    let current = current_dir().unwrap();
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let relative = diff_paths(manifest, current).unwrap();
-
-    relative.into_os_string().into_string().unwrap()
-}
-
-pub fn get_trusted_setup_path() -> String {
-    PathBuf::from(get_manifest_dir())
-        .join(TRUSTED_SETUP_PATH)
-        .into_os_string()
-        .into_string()
-        .unwrap()
 }
 
 #[allow(clippy::type_complexity)]

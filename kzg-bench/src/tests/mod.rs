@@ -1,4 +1,5 @@
 pub mod bls12_381;
+pub mod c_bindings;
 pub mod consts;
 pub mod das;
 pub mod eip_4844;
@@ -9,4 +10,5 @@ pub mod fk20_proofs;
 pub mod kzg_proofs;
 pub mod poly;
 pub mod recover;
+pub mod utils;
 pub mod zero_poly;

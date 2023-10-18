@@ -657,6 +657,7 @@ dependencies = [
  "glob",
  "hex",
  "kzg",
+ "libc",
  "pathdiff",
  "rand",
  "serde",
