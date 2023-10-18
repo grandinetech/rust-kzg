@@ -1,0 +1,25 @@
+From 4989dace3b71ebb422ca86545f937f8d3c77031a Mon Sep 17 00:00:00 2001
+From: belijzajac <tautvydas749@gmail.com>
+Date: Tue, 7 Mar 2023 20:50:46 +0200
+Subject: [PATCH] Update linking
+
+---
+ bindings/csharp/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bindings/csharp/Makefile b/bindings/csharp/Makefile
+index d5fa3dc..0a77983 100644
+--- a/bindings/csharp/Makefile
++++ b/bindings/csharp/Makefile
+@@ -31,7 +31,7 @@ endif
+ 
+ FIELD_ELEMENTS_PER_BLOB ?= 4096
+ INCLUDE_DIRS = ../../src ../../arkworks/bindings
+-TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
++TARGETS = ckzg.c ../../../../target/release/rust_kzg_arkworks.a
+ 
+ CFLAGS += -O2 -Wall -Wextra -shared
+ CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+-- 
+2.39.2
+
