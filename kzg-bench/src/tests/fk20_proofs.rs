@@ -1,26 +1,12 @@
 use kzg::{
-    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2, common_utils::{reverse_bits_limited, is_power_of_two, log2_pow2, reverse_bit_order},
+    common_utils::{is_power_of_two, log2_pow2, reverse_bit_order, reverse_bits_limited},
+    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2,
 };
 
 pub const SECRET: [u8; 32usize] = [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
-
-// pub fn reverse_bit_order<T>(vals: &mut [T])
-// where
-//     T: Clone,
-// {
-//     let unused_bit_len = vals.len().leading_zeros() + 1;
-//     for i in 0..vals.len() - 1 {
-//         let r = i.reverse_bits() >> unused_bit_len;
-//         if r > i {
-//             let tmp = vals[r].clone();
-//             vals[r] = vals[i].clone();
-//             vals[i] = tmp;
-//         }
-//     }
-// }
 
 pub fn fk_single<
     TFr: Fr,

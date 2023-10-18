@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::kzg::{bench_commit_to_poly, bench_compute_proof_single};
 
 use rust_kzg_arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2, ArkFr};
+use rust_kzg_arkworks::kzg_types::{ArkFr, ArkG1, ArkG2};
 use rust_kzg_arkworks::utils::PolyData;
 
 fn bench_commit_to_poly_(c: &mut Criterion) {

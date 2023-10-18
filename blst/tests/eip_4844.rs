@@ -1,7 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use kzg::eip_4844::{
+        blob_to_kzg_commitment_rust, blob_to_polynomial, bytes_to_blob,
+        compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
+        evaluate_polynomial_in_evaluation_form, verify_blob_kzg_proof_batch_rust,
+        verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
+    };
     use kzg::Fr;
-    use kzg::eip_4844::{blob_to_kzg_commitment_rust, compute_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, compute_blob_kzg_proof_rust, bytes_to_blob, compute_powers, evaluate_polynomial_in_evaluation_form, blob_to_polynomial, verify_kzg_proof_rust, verify_blob_kzg_proof_rust};
     use kzg_bench::tests::eip_4844::{
         blob_to_kzg_commitment_test, bytes_to_bls_field_test,
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
@@ -64,7 +69,7 @@ mod tests {
             FsKZGSettings,
         >(
             &load_trusted_setup_filename_rust,
-            &blob_to_kzg_commitment_rust::<>,
+            &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
             &compute_kzg_proof_rust,
             &blob_to_polynomial,

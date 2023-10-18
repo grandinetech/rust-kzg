@@ -11,7 +11,7 @@ use kzg::eip_4844::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 use pathdiff::diff_paths;
-use rand::rngs::{ThreadRng, OsRng};
+use rand::rngs::{OsRng, ThreadRng};
 use rand::Rng;
 use std::env::current_dir;
 use std::fs;
@@ -130,7 +130,8 @@ pub fn compute_kzg_proof_test<
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     blob_to_polynomial: &dyn Fn(&[TFr]) -> Result<TPoly, String>,
@@ -138,7 +139,7 @@ pub fn compute_kzg_proof_test<
         &TPoly,
         &TFr,
         &TKZGSettings,
-    ) -> Result<TFr, String>
+    ) -> Result<TFr, String>,
 ) {
     let ts = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
 

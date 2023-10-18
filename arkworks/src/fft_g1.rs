@@ -1,12 +1,12 @@
-use std::ops::MulAssign;
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ArkG1, ArkFr as BlstFr};
+use crate::kzg_types::{ArkFr as BlstFr, ArkG1};
 use ark_bls12_381::G1Projective;
-use ark_ec::{VariableBaseMSM, CurveGroup};
+use ark_ec::{CurveGroup, VariableBaseMSM};
 use ark_ff::BigInteger256;
-use kzg::{cfg_into_iter, G1Mul, Fr as KzgFr};
+use kzg::{cfg_into_iter, Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
+use std::ops::MulAssign;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -24,9 +24,7 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstF
     let ark_points: Vec<G1Projective> = {
         cfg_into_iter!(points)
             .take(len)
-            .map(|point| {
-                point.proj
-            })
+            .map(|point| point.proj)
             .collect()
     };
     let ark_points = CurveGroup::normalize_batch(&ark_points);
@@ -128,7 +126,7 @@ pub fn fft_g1_fast(
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1
+                1,
             );
             fft_g1_fast(
                 &mut ret[half..],
@@ -136,12 +134,12 @@ pub fn fft_g1_fast(
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1
+                1,
             );
         }
 
         for i in 0..half {
-            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]) ;
+            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
             ret[i + half] = ret[i].sub(&y_times_root);
             ret[i] = ret[i].add_or_dbl(&y_times_root);
         }

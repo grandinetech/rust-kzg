@@ -1,10 +1,10 @@
 #![allow(non_camel_case_types)]
 extern crate alloc;
 
+use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
-use alloc::format;
 use alloc::vec::Vec;
 
 pub use blst::{blst_fr, blst_p1, blst_p2};
@@ -12,7 +12,7 @@ use core::ffi::c_uint;
 use sha2::{Digest, Sha256};
 
 use crate::common_utils::reverse_bit_order;
-use crate::{Fr, G1, G1Mul, G2, FFTSettings, Poly, KZGSettings, PairingVerify};
+use crate::{FFTSettings, Fr, G1Mul, KZGSettings, PairingVerify, Poly, G1, G2};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -204,11 +204,28 @@ macro_rules! cfg_into_iter {
 
 ////////////////////////////// Trait based implementations of functions for EIP-4844 //////////////////////////////
 
-fn poly_to_kzg_commitment<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(p: &TPoly, s: &TKZGSettings) -> TG1 {
+fn poly_to_kzg_commitment<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    p: &TPoly,
+    s: &TKZGSettings,
+) -> TG1 {
     TG1::g1_lincomb(s.get_g1_secret(), p.get_coeffs(), FIELD_ELEMENTS_PER_BLOB)
 }
 
-pub fn blob_to_kzg_commitment_rust<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>> (
+pub fn blob_to_kzg_commitment_rust<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     blob: &[TFr],
     settings: &TKZGSettings,
 ) -> Result<TG1, String> {
@@ -228,7 +245,6 @@ pub fn compute_powers<TFr: Fr>(base: &TFr, num_powers: usize) -> Vec<TFr> {
     }
     powers
 }
-
 
 fn compute_r_powers<TG1: G1, TFr: Fr>(
     commitments_g1: &[TG1],
@@ -282,8 +298,14 @@ fn compute_r_powers<TG1: G1, TFr: Fr>(
     Ok(compute_powers(&r, n))
 }
 
-
-fn verify_kzg_proof_batch<TFr: Fr, TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+fn verify_kzg_proof_batch<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     commitments_g1: &[TG1],
     zs_fr: &[TFr],
     ys_fr: &[TFr],
@@ -326,7 +348,14 @@ fn verify_kzg_proof_batch<TFr: Fr, TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2
     ))
 }
 
-pub fn compute_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+pub fn compute_kzg_proof_rust<
+    TFr: Fr + Copy,
+    TG1: G1 + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     blob: &[TFr],
     z: &TFr,
     s: &TKZGSettings,
@@ -395,7 +424,14 @@ pub fn compute_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFF
     Ok((proof, y))
 }
 
-pub fn compute_blob_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+pub fn compute_blob_kzg_proof_rust<
+    TFr: Fr + Copy,
+    TG1: G1 + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     blob: &[TFr],
     commitment: &TG1,
     ts: &TKZGSettings,
@@ -405,11 +441,19 @@ pub fn compute_blob_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2
     }
 
     let evaluation_challenge_fr = compute_challenge(blob, commitment);
-    let (proof, _) = compute_kzg_proof_rust::<_,_,_,_,_,_>(blob, &evaluation_challenge_fr, ts)?;
+    let (proof, _) =
+        compute_kzg_proof_rust::<_, _, _, _, _, _>(blob, &evaluation_challenge_fr, ts)?;
     Ok(proof)
 }
 
-pub fn verify_kzg_proof_rust<TFr: Fr, TG1: G1, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+pub fn verify_kzg_proof_rust<
+    TFr: Fr,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     commitment: &TG1,
     z: &TFr,
     y: &TFr,
@@ -426,7 +470,14 @@ pub fn verify_kzg_proof_rust<TFr: Fr, TG1: G1, TG2: G2, TFFTSettings: FFTSetting
     s.check_proof_single(commitment, proof, z, y)
 }
 
-pub fn verify_blob_kzg_proof_rust<TFr: Fr + Copy, TG1: G1, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+pub fn verify_blob_kzg_proof_rust<
+    TFr: Fr + Copy,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     blob: &[TFr],
     commitment_g1: &TG1,
     proof_g1: &TG1,
@@ -441,12 +492,18 @@ pub fn verify_blob_kzg_proof_rust<TFr: Fr + Copy, TG1: G1, TG2: G2, TFFTSettings
 
     let polynomial = blob_to_polynomial(blob)?;
     let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
-    let y_fr =
-        evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts)?;
+    let y_fr = evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts)?;
     verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
 }
 
-fn compute_challenges_and_evaluate_polynomial<TFr: Fr + Copy, TG1: G1, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+fn compute_challenges_and_evaluate_polynomial<
+    TFr: Fr + Copy,
+    TG1: G1,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     blobs: &[Vec<TFr>],
     commitments_g1: &[TG1],
     ts: &TKZGSettings,
@@ -468,7 +525,8 @@ fn compute_challenges_and_evaluate_polynomial<TFr: Fr + Copy, TG1: G1, TG2: G2, 
 }
 
 fn validate_batched_input<TG1: G1>(commitments: &[TG1], proofs: &[TG1]) -> Result<(), String> {
-    let invalid_commitment = cfg_into_iter!(commitments).any(|commitment| !commitment.is_inf() && !commitment.is_valid());
+    let invalid_commitment = cfg_into_iter!(commitments)
+        .any(|commitment| !commitment.is_inf() && !commitment.is_valid());
     let invalid_proof = cfg_into_iter!(proofs).any(|proof| !proof.is_inf() && !proof.is_valid());
 
     if invalid_commitment {
@@ -481,7 +539,14 @@ fn validate_batched_input<TG1: G1>(commitments: &[TG1], proofs: &[TG1]) -> Resul
     Ok(())
 }
 
-pub fn verify_blob_kzg_proof_batch_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2> , TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly> + Sync>(
+pub fn verify_blob_kzg_proof_batch_rust<
+    TFr: Fr + Copy,
+    TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly> + Sync,
+>(
     blobs: &[Vec<TFr>],
     commitments_g1: &[TG1],
     proofs_g1: &[TG1],
@@ -581,7 +646,11 @@ pub fn bytes_to_blob<TFr: Fr>(bytes: &[u8]) -> Result<Vec<TFr>, String> {
         .collect()
 }
 
-fn fr_batch_inv<TFr: Fr + PartialEq + Copy>(out: &mut [TFr], a: &[TFr], len: usize) -> Result<(), String> {
+fn fr_batch_inv<TFr: Fr + PartialEq + Copy>(
+    out: &mut [TFr],
+    a: &[TFr],
+    len: usize,
+) -> Result<(), String> {
     if len == 0 {
         return Err(String::from("Length is less than 0."));
     }
@@ -649,7 +718,14 @@ pub fn blob_to_polynomial<TFr: Fr, TPoly: Poly<TFr>>(blob: &[TFr]) -> Result<TPo
     Ok(TPoly::from_coeffs(blob))
 }
 
-pub fn evaluate_polynomial_in_evaluation_form<TG1: G1, TG2: G2, TFr: Fr + Copy, TPoly: Poly<TFr>, TFFTSettings: FFTSettings<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(
+pub fn evaluate_polynomial_in_evaluation_form<
+    TG1: G1,
+    TG2: G2,
+    TFr: Fr + Copy,
+    TPoly: Poly<TFr>,
+    TFFTSettings: FFTSettings<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
     p: &TPoly,
     x: &TFr,
     s: &TKZGSettings,
@@ -693,17 +769,31 @@ pub fn evaluate_polynomial_in_evaluation_form<TG1: G1, TG2: G2, TFr: Fr + Copy, 
     Ok(out)
 }
 
-fn is_trusted_setup_in_lagrange_form<TG1: G1 + PairingVerify<TG1, TG2>, TG2: G2>(g1_values: &Vec<TG1>, g2_values: &Vec<TG2>) -> bool {
+fn is_trusted_setup_in_lagrange_form<TG1: G1 + PairingVerify<TG1, TG2>, TG2: G2>(
+    g1_values: &Vec<TG1>,
+    g2_values: &Vec<TG2>,
+) -> bool {
     if g1_values.len() < 2 || g2_values.len() < 2 {
         return false;
     }
 
-    let is_monotomial_form = TG1::verify(&g1_values[1], &g2_values[0], &g1_values[0], &g2_values[1]);
+    let is_monotomial_form =
+        TG1::verify(&g1_values[1], &g2_values[0], &g1_values[0], &g2_values[1]);
     !is_monotomial_form
 }
 
 #[allow(clippy::useless_conversion)]
-pub fn load_trusted_setup_rust<TFr: Fr, TG1: G1 + PairingVerify<TG1, TG2>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(g1_bytes: &[u8], g2_bytes: &[u8]) -> Result<TKZGSettings, String> {
+pub fn load_trusted_setup_rust<
+    TFr: Fr,
+    TG1: G1 + PairingVerify<TG1, TG2>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+>(
+    g1_bytes: &[u8],
+    g2_bytes: &[u8],
+) -> Result<TKZGSettings, String> {
     let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
     if num_g1_points != FIELD_ELEMENTS_PER_BLOB {
         return Err(String::from("Invalid number of G1 points"));

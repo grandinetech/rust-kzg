@@ -1,7 +1,7 @@
 extern crate alloc;
 
-use core::mem;
 use alloc::string::String;
+use core::mem;
 
 pub fn reverse_bit_order<T>(vals: &mut [T]) -> Result<(), String>
 where

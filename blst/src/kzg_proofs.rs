@@ -18,7 +18,7 @@ use blst::{
     blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing,
 };
 
-use kzg::{G1Mul, G1, PairingVerify};
+use kzg::{G1Mul, PairingVerify, G1};
 
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;

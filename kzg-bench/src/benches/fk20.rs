@@ -1,6 +1,7 @@
 use criterion::Criterion;
 use kzg::{
-    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2, common_utils::{is_power_of_two, log2_pow2},
+    common_utils::{is_power_of_two, log2_pow2},
+    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, G1, G2,
 };
 use rand::{thread_rng, RngCore};
 

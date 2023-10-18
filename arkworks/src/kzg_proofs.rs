@@ -1,21 +1,16 @@
 #![allow(non_camel_case_types)]
-use ark_ec::pairing::Pairing;
-use ark_std::{
-    vec, One,
-};
-use crate::kzg_types::ArkFr;
-use ark_poly::Polynomial;
-use kzg::{G1Mul, G2Mul};
-use kzg::eip_4844::hash_to_bls_field;
-use super::utils::{
-    blst_poly_into_pc_poly,
-    PolyData,
-};
+use super::utils::{blst_poly_into_pc_poly, PolyData};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-use crate::kzg_types::{ArkG1, ArkG2, ArkFr as BlstFr};
+use crate::kzg_types::ArkFr;
+use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
 use ark_bls12_381::Bls12_381;
+use ark_ec::pairing::Pairing;
 use ark_ec::CurveGroup;
+use ark_poly::Polynomial;
+use ark_std::{vec, One};
+use kzg::eip_4844::hash_to_bls_field;
 use kzg::Fr as FrTrait;
+use kzg::{G1Mul, G2Mul};
 use std::ops::Neg;
 
 #[derive(Debug, Clone)]
@@ -71,16 +66,18 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>,
 
 pub fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
     let poly = blst_poly_into_pc_poly(&p.coeffs);
-    BlstFr { fr: poly.evaluate(&x.fr) }
+    BlstFr {
+        fr: poly.evaluate(&x.fr),
+    }
 }
 
 pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
-    let ark_a1_neg = a1.proj
-        .neg()
-        .into_affine();
+    let ark_a1_neg = a1.proj.neg().into_affine();
     let ark_b1 = b1.proj.into_affine();
     let ark_a2 = a2.proj.into_affine();
     let ark_b2 = b2.proj.into_affine();
-        
-    Bls12_381::multi_pairing([ark_a1_neg, ark_b1], [ark_a2, ark_b2]).0.is_one()
+
+    Bls12_381::multi_pairing([ark_a1_neg, ark_b1], [ark_a2, ark_b2])
+        .0
+        .is_one()
 }

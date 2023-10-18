@@ -2,8 +2,8 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-use kzg::{Fr, G1Mul, G2Mul};
 use kzg::eip_4844::hash_to_bls_field;
+use kzg::{Fr, G1Mul, G2Mul};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::types::g1::FsG1;

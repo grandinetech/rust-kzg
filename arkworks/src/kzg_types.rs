@@ -1,26 +1,31 @@
-use crate::consts::{SCALE2_ROOT_OF_UNITY, G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR};
+use crate::consts::{
+    G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR,
+    SCALE2_ROOT_OF_UNITY,
+};
 use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{
-    expand_root_of_unity, FFTSettings as LFFTSettings,
-    KZGSettings as LKZGSettings, eval_poly,
-    pairings_verify
+    eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
+    KZGSettings as LKZGSettings,
 };
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::{
-    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
-    PolyData, blst_p2_into_pc_g2projective, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2
+    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
+    pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData,
 };
 use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
-use ark_ec::{Group, AffineRepr, models::short_weierstrass::Projective};
+use ark_ec::{models::short_weierstrass::Projective, AffineRepr, Group};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{One, UniformRand, Zero};
 use blst::{blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
-use kzg::{FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2, FFTFr, PairingVerify};
-use std::ops::{Sub, Neg, Mul};
+use kzg::{
+    FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, PairingVerify,
+    Poly, G1, G2,
+};
+use std::ops::{Mul, Neg, Sub};
 
 fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
     u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
@@ -33,7 +38,9 @@ pub struct ArkFr {
 
 impl ArkFr {
     pub fn from_blst_fr(fr: blst_fr) -> Self {
-        Self { fr: blst_fr_into_pc_fr(fr) }
+        Self {
+            fr: blst_fr_into_pc_fr(fr),
+        }
     }
 
     pub fn to_blst_fr(&self) -> blst_fr {
@@ -43,7 +50,9 @@ impl ArkFr {
 
 impl KzgFr for ArkFr {
     fn null() -> Self {
-        Self { fr: Fr::new_unchecked(BigInteger256::new([u64::MAX; 4]) ) }
+        Self {
+            fr: Fr::new_unchecked(BigInteger256::new([u64::MAX; 4])),
+        }
     }
 
     fn zero() -> Self {
@@ -56,7 +65,9 @@ impl KzgFr for ArkFr {
 
     fn rand() -> Self {
         let mut rng = rand::thread_rng();
-        Self { fr: Fr::rand(&mut rng) }
+        Self {
+            fr: Fr::rand(&mut rng),
+        }
     }
 
     #[allow(clippy::bind_instead_of_map)]
@@ -71,9 +82,16 @@ impl KzgFr for ArkFr {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let storage: [u64; 4] = [bytes_be_to_uint64(&bytes[24..32]), bytes_be_to_uint64(&bytes[16..24]), bytes_be_to_uint64(&bytes[8..16]), bytes_be_to_uint64(&bytes[0..8])];
+                let storage: [u64; 4] = [
+                    bytes_be_to_uint64(&bytes[24..32]),
+                    bytes_be_to_uint64(&bytes[16..24]),
+                    bytes_be_to_uint64(&bytes[8..16]),
+                    bytes_be_to_uint64(&bytes[0..8]),
+                ];
                 let big_int = BigInteger256::new(storage);
-                Ok (Self {fr: Fr::new(big_int)})
+                Ok(Self {
+                    fr: Fr::new(big_int),
+                })
             })
     }
 
@@ -83,7 +101,9 @@ impl KzgFr for ArkFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        Self { fr: Fr::new(BigInteger256::new(*u)) }
+        Self {
+            fr: Fr::new(BigInteger256::new(*u)),
+        }
     }
 
     fn from_u64(val: u64) -> Self {
@@ -113,7 +133,9 @@ impl KzgFr for ArkFr {
     }
 
     fn sqr(&self) -> Self {
-        Self { fr: self.fr.square() }
+        Self {
+            fr: self.fr.square(),
+        }
     }
 
     fn mul(&self, b: &Self) -> Self {
@@ -130,7 +152,9 @@ impl KzgFr for ArkFr {
 
     fn eucl_inverse(&self) -> Self {
         // Inverse and eucl inverse work the same way
-        Self { fr: self.fr.inverse().unwrap() }
+        Self {
+            fr: self.fr.inverse().unwrap(),
+        }
     }
 
     fn negate(&self) -> Self {
@@ -138,19 +162,23 @@ impl KzgFr for ArkFr {
     }
 
     fn inverse(&self) -> Self {
-        Self { fr: self.fr.inverse().unwrap() }
+        Self {
+            fr: self.fr.inverse().unwrap(),
+        }
     }
 
     fn pow(&self, n: usize) -> Self {
-        Self { fr: self.fr.pow([n as u64]) }
+        Self {
+            fr: self.fr.pow([n as u64]),
+        }
     }
 
     fn div(&self, b: &Self) -> Result<Self, String> {
         let div = self.fr / b.fr;
         if div.0 .0.is_empty() {
-            Ok(Self { fr: Fr::zero() } )
+            Ok(Self { fr: Fr::zero() })
         } else {
-            Ok(Self { fr: div } )
+            Ok(Self { fr: div })
         }
     }
 
@@ -159,15 +187,16 @@ impl KzgFr for ArkFr {
     }
 }
 
-
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ArkG1 {
-    pub proj: Projective<g1::Config>
+    pub proj: Projective<g1::Config>,
 }
 
 impl ArkG1 {
     pub const fn from_blst_p1(p1: blst_p1) -> Self {
-        Self {proj: blst_p1_into_pc_g1projective(&p1)}
+        Self {
+            proj: blst_p1_into_pc_g1projective(&p1),
+        }
     }
 
     pub const fn to_blst_p1(&self) -> blst_p1 {
@@ -178,7 +207,7 @@ impl ArkG1 {
 impl From<blst_p1> for ArkG1 {
     fn from(p1: blst_p1) -> Self {
         let proj = blst_p1_into_pc_g1projective(&p1);
-        Self {proj}
+        Self { proj }
     }
 }
 
@@ -197,7 +226,9 @@ impl G1 for ArkG1 {
 
     fn rand() -> Self {
         let mut rng = rand::thread_rng();
-        Self { proj: Projective::rand(&mut rng) }
+        Self {
+            proj: Projective::rand(&mut rng),
+        }
     }
 
     #[allow(clippy::bind_instead_of_map)]
@@ -215,7 +246,9 @@ impl G1 for ArkG1 {
                 let affine = G1Affine::deserialize_compressed_unchecked(bytes.as_slice());
                 match affine {
                     Err(x) => Err("Failed to deserialize G1: ".to_owned() + &(x.to_string())),
-                    Ok(x) => Ok(Self { proj: x.into_group() })
+                    Ok(x) => Ok(Self {
+                        proj: x.into_group(),
+                    }),
                 }
             })
     }
@@ -232,7 +265,9 @@ impl G1 for ArkG1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        Self {proj: self.proj + b.proj}
+        Self {
+            proj: self.proj + b.proj,
+        }
     }
 
     fn is_inf(&self) -> bool {
@@ -245,15 +280,21 @@ impl G1 for ArkG1 {
     }
 
     fn dbl(&self) -> Self {
-        Self { proj: self.proj.double() }
+        Self {
+            proj: self.proj.double(),
+        }
     }
 
     fn add(&self, b: &Self) -> Self {
-        Self { proj: self.proj + b.proj }
+        Self {
+            proj: self.proj + b.proj,
+        }
     }
 
     fn sub(&self, b: &Self) -> Self {
-        Self { proj: self.proj.sub(&b.proj)}
+        Self {
+            proj: self.proj.sub(&b.proj),
+        }
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -263,7 +304,9 @@ impl G1 for ArkG1 {
 
 impl G1Mul<ArkFr> for ArkG1 {
     fn mul(&self, b: &ArkFr) -> Self {
-        Self { proj: self.proj.mul(b.fr) }
+        Self {
+            proj: self.proj.mul(b.fr),
+        }
     }
 
     fn g1_lincomb(points: &[Self], scalars: &[ArkFr], len: usize) -> Self {
@@ -281,12 +324,14 @@ impl PairingVerify<ArkG1, ArkG2> for ArkG1 {
 
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct ArkG2 {
-    pub proj: Projective<g2::Config>
+    pub proj: Projective<g2::Config>,
 }
 
 impl ArkG2 {
     pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
-        Self {proj: blst_p2_into_pc_g2projective(&p2)}
+        Self {
+            proj: blst_p2_into_pc_g2projective(&p2),
+        }
     }
 
     pub const fn to_blst_p2(&self) -> blst::blst_p2 {
@@ -318,7 +363,9 @@ impl G2 for ArkG2 {
                 let affine = G2Affine::deserialize_compressed_unchecked(bytes.as_slice());
                 match affine {
                     Err(x) => Err("Failed to deserialize G2: ".to_owned() + &(x.to_string())),
-                    Ok(x) => Ok(Self { proj: x.into_group() })
+                    Ok(x) => Ok(Self {
+                        proj: x.into_group(),
+                    }),
                 }
             })
     }
@@ -330,15 +377,21 @@ impl G2 for ArkG2 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        Self { proj: self.proj + b.proj }
+        Self {
+            proj: self.proj + b.proj,
+        }
     }
 
     fn dbl(&self) -> Self {
-        Self { proj: self.proj.double() }
+        Self {
+            proj: self.proj.double(),
+        }
     }
 
     fn sub(&self, b: &Self) -> Self {
-        Self { proj: self.proj - b.proj }
+        Self {
+            proj: self.proj - b.proj,
+        }
     }
 
     fn equals(&self, b: &Self) -> bool {
@@ -349,7 +402,9 @@ impl G2 for ArkG2 {
 impl G2Mul<ArkFr> for ArkG2 {
     fn mul(&self, b: &ArkFr) -> Self {
         // FIXME: Is this right?
-        Self { proj: self.proj.mul(b.fr) }
+        Self {
+            proj: self.proj.mul(b.fr),
+        }
     }
 }
 
@@ -522,7 +577,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
         if p.coeffs.is_empty() {
             return Err(String::from("Polynomial must not be empty"));
         }
-        
+
         // `-(x0^n)`, where `n` is `1`
         let divisor_0 = x.negate();
 
@@ -581,11 +636,11 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
 
         // Zeros
         for _ in 1..n {
-            divisor.coeffs.push( ArkFr { fr: Fr::zero() } );
+            divisor.coeffs.push(ArkFr { fr: Fr::zero() });
         }
 
         // x^n
-        divisor.coeffs.push( ArkFr { fr: Fr::one() } );
+        divisor.coeffs.push(ArkFr { fr: Fr::one() });
 
         let mut new_polina = p.clone();
 

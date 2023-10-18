@@ -5,8 +5,8 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-pub mod eip_4844;
 pub mod common_utils;
+pub mod eip_4844;
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
@@ -210,7 +210,7 @@ pub trait Poly<Coeff: Fr>: Default + Clone {
     // Default implementation not as efficient, should be implemented by type itself!
     fn from_coeffs(coeffs: &[Coeff]) -> Self {
         let mut poly = Self::new(coeffs.len());
-        
+
         for (i, coeff) in coeffs.iter().enumerate() {
             poly.set_coeff_at(i, coeff);
         }
@@ -302,7 +302,7 @@ pub trait KZGSettings<
     fn get_roots_of_unity_at(&self, i: usize) -> Coeff1;
 
     fn get_fft_settings(&self) -> &Fs;
-    
+
     fn get_g1_secret(&self) -> &[Coeff2];
 
     fn get_g2_secret(&self) -> &[Coeff3];

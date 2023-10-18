@@ -1,8 +1,5 @@
 use super::kzg_proofs::FFTSettings;
-use super::utils::{
-    blst_poly_into_pc_poly,
-    PolyData,
-};
+use super::utils::{blst_poly_into_pc_poly, PolyData};
 use crate::kzg_types::ArkFr as BlstFr;
 use crate::utils::pc_poly_into_blst_poly;
 use crate::zero_poly::pad_poly;
@@ -10,10 +7,9 @@ use ark_bls12_381::Fr;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use ark_std::{log2, Zero};
-use kzg::common_utils::{next_pow_of_2, log2_pow2};
+use kzg::common_utils::{log2_pow2, next_pow_of_2};
 use kzg::{FFTFr, FFTSettings as FFTSettingsT, Fr as FrTrait, Poly};
 use std::cmp::min;
-
 
 pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
     if b.coeffs.is_empty() {
@@ -57,7 +53,7 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
         for i in 0..len_temp {
             tmp0.coeffs[i] = tmp0.coeffs[i].negate();
         }
-        let fr_two = BlstFr { fr: Fr::from(2) } ;
+        let fr_two = BlstFr { fr: Fr::from(2) };
         tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
 
         let len_temp2: usize = d + 1;

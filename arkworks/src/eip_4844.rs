@@ -1,14 +1,18 @@
 extern crate alloc;
 
-use blst::{blst_p1, blst_p2, blst_fr};
-use kzg::common_utils::reverse_bit_order;
-use crate::kzg_proofs::{KZGSettings, FFTSettings};
+use crate::kzg_proofs::{FFTSettings, KZGSettings};
 use crate::kzg_types::{ArkFr, ArkG1, ArkG2};
+use blst::{blst_fr, blst_p1, blst_p2};
+use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{
-    load_trusted_setup_string, CKZGSettings, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS, Blob, C_KZG_RET, BYTES_PER_FIELD_ELEMENT, C_KZG_RET_BADARGS, KZGCommitment, FIELD_ELEMENTS_PER_BLOB, C_KZG_RET_OK, BYTES_PER_G1, BYTES_PER_G2, KZGProof, Bytes48, Bytes32, blob_to_kzg_commitment_rust,
-    compute_blob_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, compute_kzg_proof_rust, verify_kzg_proof_rust, verify_blob_kzg_proof_rust, load_trusted_setup_rust
+    blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
+    load_trusted_setup_rust, load_trusted_setup_string, verify_blob_kzg_proof_batch_rust,
+    verify_blob_kzg_proof_rust, verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings,
+    KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET,
+    C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS,
 };
-use kzg::{Fr, G1, cfg_into_iter};
+use kzg::{cfg_into_iter, Fr, G1};
 use std::ptr::null_mut;
 
 #[cfg(feature = "std")]
@@ -29,10 +33,7 @@ pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, S
         .map_err(|_| "Unable to read file".to_string())?;
 
     let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents)?;
-    load_trusted_setup_rust(
-        g1_bytes.as_slice(),
-        g2_bytes.as_slice()
-    )
+    load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
 
 fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {
@@ -70,15 +71,15 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<KZGSettings, String
             .collect::<Vec<ArkG1>>()
     };
     let secret_g2 = unsafe {
-            core::slice::from_raw_parts(c_settings.g2_values, TRUSTED_SETUP_NUM_G2_POINTS)
-                .iter()
-                .map(|r| ArkG2::from_blst_p2(*r))
-                .collect::<Vec<ArkG2>>()
+        core::slice::from_raw_parts(c_settings.g2_values, TRUSTED_SETUP_NUM_G2_POINTS)
+            .iter()
+            .map(|r| ArkG2::from_blst_p2(*r))
+            .collect::<Vec<ArkG2>>()
     };
     Ok(KZGSettings {
         fs: fft_settings_to_rust(c_settings)?,
         secret_g1,
-        secret_g2
+        secret_g2,
     })
 }
 
@@ -172,11 +173,7 @@ pub unsafe extern "C" fn load_trusted_setup(
     let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * BYTES_PER_G1);
     let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
-    let settings = handle_ckzg_badargs!(
-    load_trusted_setup_rust(
-        g1_bytes,
-        g2_bytes
-    ));
+    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(g1_bytes, g2_bytes));
 
     *out = kzg_settings_to_c(&settings);
     C_KZG_RET_OK

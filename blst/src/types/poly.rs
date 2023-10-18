@@ -4,7 +4,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use kzg::common_utils::{next_pow_of_2, log2_u64, log2_pow2};
+use kzg::common_utils::{log2_pow2, log2_u64, next_pow_of_2};
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr, Poly};
 
 use crate::consts::SCALE_FACTOR;

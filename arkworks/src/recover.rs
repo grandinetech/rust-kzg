@@ -1,6 +1,6 @@
+use crate::consts::SCALE_FACTOR;
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
-use crate::consts::SCALE_FACTOR;
 use crate::utils::PolyData;
 
 use kzg::{FFTFr, Fr, Poly, PolyRecover, ZeroPoly};

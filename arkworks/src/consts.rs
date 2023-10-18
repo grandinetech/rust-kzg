@@ -1,7 +1,6 @@
-use blst::{blst_fp, blst_fp2, blst_p1};
-use crate::P2;
 use crate::kzg_types::{ArkG1, ArkG2};
-
+use crate::P2;
+use blst::{blst_fp, blst_fp2, blst_p1};
 
 /** The G1 identity/infinity */
 #[rustfmt::skip]
@@ -85,7 +84,6 @@ pub const G1_GENERATOR: ArkG1 = ArkG1::from_blst_p1(blst_p1 {
     },
 });
 
-
 pub const G1_NEGATIVE_GENERATOR: ArkG1 = ArkG1::from_blst_p1(blst_p1 {
     x: blst_fp {
         l: [
@@ -119,8 +117,7 @@ pub const G1_NEGATIVE_GENERATOR: ArkG1 = ArkG1::from_blst_p1(blst_p1 {
     },
 });
 
-
-pub const G2_GENERATOR: ArkG2 = ArkG2::from_blst_p2( P2 {
+pub const G2_GENERATOR: ArkG2 = ArkG2::from_blst_p2(P2 {
     x: blst_fp2 {
         fp: [
             blst_fp {

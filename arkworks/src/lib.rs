@@ -10,12 +10,12 @@ pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
+pub mod consts;
 pub mod das;
 pub mod eip_4844;
 pub mod fft;
 pub mod fft_g1;
 pub mod fk20_proofs;
-pub mod consts;
 pub mod kzg_proofs;
 pub mod kzg_types;
 pub mod poly;

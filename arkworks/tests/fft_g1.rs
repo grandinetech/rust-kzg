@@ -3,7 +3,7 @@ mod tests {
     use kzg_bench::tests::fft_g1::{compare_sft_fft, roundtrip_fft, stride_fft};
     use rust_kzg_arkworks::fft_g1::{fft_g1_fast, fft_g1_slow, make_data};
     use rust_kzg_arkworks::kzg_proofs::FFTSettings;
-    use rust_kzg_arkworks::kzg_types::{ArkG1, ArkFr};
+    use rust_kzg_arkworks::kzg_types::{ArkFr, ArkG1};
 
     #[test]
     fn roundtrip_fft_() {
