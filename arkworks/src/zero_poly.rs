@@ -37,10 +37,10 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         };
         let mut poly = blst_poly_into_pc_poly(&blstpoly.coeffs);
         poly.coeffs[0] =
-            (&self.expanded_roots_of_unity[indices[0] * stride]).fr.neg();
+            (self.expanded_roots_of_unity[indices[0] * stride]).fr.neg();
 
         for (i, indice) in indices.iter().enumerate().skip(1) {
-            let neg_di = (&self.expanded_roots_of_unity[indice * stride]).fr.neg();
+            let neg_di = (self.expanded_roots_of_unity[indice * stride]).fr.neg();
 
             poly.coeffs[i] = neg_di + poly.coeffs[i - 1];
 
@@ -75,9 +75,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
             let p_eval = self.fft_fr(&p_partial, false).unwrap();
             for j in 0..len_out {
-                mul_eval_ps[j] = BlstFr{ fr: 
-                    (&mul_eval_ps[j]).fr * (&p_eval[j]).fr
-                };
+                mul_eval_ps[j].fr *= p_eval[j].fr;
             }
         }
 
@@ -106,7 +104,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
         if missing_indices.len() >= length {
             return Err(String::from("Missing idxs greater than domain size"));
-        } else if length > self.max_width as usize {
+        } else if length > self.max_width {
             return Err(String::from(
                 "Domain size greater than fft_settings.max_width",
             ));
@@ -116,7 +114,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
         let degree_of_partial = 256;
         let missing_per_partial = degree_of_partial - 1;
-        let domain_stride = self.max_width as usize / length;
+        let domain_stride = self.max_width / length;
         let mut partial_count =
             (missing_per_partial + missing_indices.len() - 1) / missing_per_partial;
         let domain_ceiling = min(

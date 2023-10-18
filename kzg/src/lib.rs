@@ -207,12 +207,12 @@ pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSett
 pub trait Poly<Coeff: Fr>: Default + Clone {
     fn new(size: usize) -> Self;
 
-    // Default implementation not as efficient, should be implemented by type itself
+    // Default implementation not as efficient, should be implemented by type itself!
     fn from_coeffs(coeffs: &[Coeff]) -> Self {
         let mut poly = Self::new(coeffs.len());
         
-        for i in 0..coeffs.len() {
-            poly.set_coeff_at(i, &coeffs[i]);
+        for (i, coeff) in coeffs.iter().enumerate() {
+            poly.set_coeff_at(i, coeff);
         }
 
         poly

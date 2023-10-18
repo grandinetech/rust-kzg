@@ -232,9 +232,7 @@ impl G1 for ArkG1 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let res = &self.proj
-            + &b.proj;
-        Self {proj: res}
+        Self {proj: self.proj + b.proj}
     }
 
     fn is_inf(&self) -> bool {
@@ -251,7 +249,7 @@ impl G1 for ArkG1 {
     }
 
     fn add(&self, b: &Self) -> Self {
-        Self { proj: &self.proj + &b.proj }
+        Self { proj: self.proj + b.proj }
     }
 
     fn sub(&self, b: &Self) -> Self {
@@ -340,7 +338,7 @@ impl G2 for ArkG2 {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        Self { proj: &self.proj - b.proj }
+        Self { proj: self.proj - b.proj }
     }
 
     fn equals(&self, b: &Self) -> bool {

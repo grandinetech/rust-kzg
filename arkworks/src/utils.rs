@@ -69,7 +69,7 @@ pub const fn pc_g1projective_into_blst_p1(p1: Projective<g1::Config>) -> blst_p1
 }
 
 pub const fn blst_p2_into_pc_g2projective(p2: &P2) -> Projective<g2::Config> {
-    let pc_projective = Projective::new_unchecked(
+    Projective::new_unchecked(
         Fp2::new(
             Fp384::new_unchecked(BigInteger384::new(p2.x.fp[0].l)),
             Fp384::new_unchecked(BigInteger384::new(p2.x.fp[1].l)),
@@ -82,8 +82,7 @@ pub const fn blst_p2_into_pc_g2projective(p2: &P2) -> Projective<g2::Config> {
             Fp384::new_unchecked(BigInteger384::new(p2.z.fp[0].l)),
             Fp384::new_unchecked(BigInteger384::new(p2.z.fp[1].l)),
         ),
-    );
-    pc_projective
+    )
 }
 
 pub const fn pc_g2projective_into_blst_p2(p2: Projective<g2::Config>) -> blst_p2 {

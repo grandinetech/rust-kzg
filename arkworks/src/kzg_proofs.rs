@@ -45,21 +45,11 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
     Ok(generated_powers)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct KZGSettings {
     pub fs: FFTSettings,
     pub secret_g1: Vec<ArkG1>,
     pub secret_g2: Vec<ArkG2>,
-}
-
-impl Default for KZGSettings {
-    fn default() -> Self {
-        Self {
-            fs: FFTSettings::default(),
-            secret_g1: Vec::new(),
-            secret_g2: Vec::new(),
-        }
-    }
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {

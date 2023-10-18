@@ -198,7 +198,7 @@ macro_rules! cfg_into_iter {
 ////////////////////////////// Trait based implementations of functions for EIP-4844 //////////////////////////////
 
 fn poly_to_kzg_commitment<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>>(p: &TPoly, s: &TKZGSettings) -> TG1 {
-    TG1::g1_lincomb(&s.get_g1_secret(), &p.get_coeffs(), FIELD_ELEMENTS_PER_BLOB)
+    TG1::g1_lincomb(s.get_g1_secret(), p.get_coeffs(), FIELD_ELEMENTS_PER_BLOB)
 }
 
 pub fn blob_to_kzg_commitment_rust<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2, TFFTSettings: FFTSettings<TFr>, TPoly: Poly<TFr>, TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>> (
@@ -334,7 +334,6 @@ pub fn compute_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFF
     let y = evaluate_polynomial_in_evaluation_form(&polynomial, z, s)?;
 
     let mut tmp: TFr;
-    // let roots_of_unity: &Vec<TFr> = &s.get_roots_of_unity_at().roots_of_unity;
 
     let mut m: usize = 0;
     let mut q: TPoly = TPoly::new(FIELD_ELEMENTS_PER_BLOB);
@@ -342,16 +341,19 @@ pub fn compute_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFF
     let mut inverses_in: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
 
+    let roots_of_unity = s.get_fft_settings().get_roots_of_unity();
+    let poly_coeffs = polynomial.get_coeffs();
+
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
-        if z.equals(&s.get_roots_of_unity_at(i)) {
+        if z.equals(&roots_of_unity[i]) {
             // We are asked to compute a KZG proof inside the domain
             m = i + 1;
             inverses_in[i] = TFr::one();
             continue;
         }
         // (p_i - y) / (ω_i - z)
-        q.set_coeff_at(i, &polynomial.get_coeff_at(i).sub(&y));
-        inverses_in[i] = s.get_roots_of_unity_at(i).sub(z);
+        q.set_coeff_at(i, &poly_coeffs[i].sub(&y));
+        inverses_in[i] = roots_of_unity[i].sub(z);
     }
 
     fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB)?;
@@ -369,7 +371,7 @@ pub fn compute_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFF
                 continue;
             }
             // Build denominator: z * (z - ω_i)
-            tmp = z.sub(&s.get_roots_of_unity_at(i));
+            tmp = z.sub(&roots_of_unity[i]);
             inverses_in[i] = tmp.mul(z);
         }
 
@@ -380,15 +382,15 @@ pub fn compute_kzg_proof_rust<TFr: Fr + Copy, TG1: G1 + G1Mul<TFr>, TG2: G2, TFF
                 continue;
             }
             // Build numerator: ω_i * (p_i - y)
-            tmp = polynomial.get_coeff_at(i).sub(&y);
-            tmp = tmp.mul(&s.get_roots_of_unity_at(i));
+            tmp = poly_coeffs[i].sub(&y);
+            tmp = tmp.mul(&roots_of_unity[i]);
             // Do the division: (p_i - y) * ω_i / (z * (z - ω_i))
             tmp = tmp.mul(&inverses[i]);
             q.set_coeff_at(m, &q.get_coeff_at(m).add(&tmp))
         }
     }
 
-    let proof = TG1::g1_lincomb(&s.get_g1_secret(), &q.get_coeffs(), FIELD_ELEMENTS_PER_BLOB);
+    let proof = TG1::g1_lincomb(s.get_g1_secret(), q.get_coeffs(), FIELD_ELEMENTS_PER_BLOB);
     Ok((proof, y))
 }
 
@@ -659,11 +661,14 @@ pub fn evaluate_polynomial_in_evaluation_form<TG1: G1, TG2: G2, TFr: Fr + Copy, 
     let mut inverses_in: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
 
+    let roots_of_unity = s.get_fft_settings().get_roots_of_unity();
+    let poly_coeffs = p.get_coeffs();
+
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
-        if x == &s.get_roots_of_unity_at(i) {
-            return Ok(p.get_coeff_at(i));
+        if x == &roots_of_unity[i] {
+            return Ok(poly_coeffs[i]);
         }
-        inverses_in[i] = x.sub(&s.get_roots_of_unity_at(i));
+        inverses_in[i] = x.sub(&roots_of_unity[i]);
     }
 
     fr_batch_inv(&mut inverses, &inverses_in, FIELD_ELEMENTS_PER_BLOB)?;
@@ -672,8 +677,8 @@ pub fn evaluate_polynomial_in_evaluation_form<TG1: G1, TG2: G2, TFr: Fr + Copy, 
     let mut out = TFr::zero();
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
-        tmp = inverses[i].mul(&s.get_roots_of_unity_at(i));
-        tmp = tmp.mul(&p.get_coeff_at(i));
+        tmp = inverses[i].mul(&roots_of_unity[i]);
+        tmp = tmp.mul(&poly_coeffs[i]);
         out = out.add(&tmp);
     }
 
@@ -731,5 +736,5 @@ pub fn load_trusted_setup_rust<TFr: Fr, TG1: G1 + PairingVerify<TG1, TG2>, TG2: 
 
     let fs = TFFTSettings::new(max_scale)?;
     reverse_bit_order(&mut g1_values)?;
-    TKZGSettings::new(g1_values.as_slice(), &g2_values.as_slice(), max_scale, &fs)
+    TKZGSettings::new(g1_values.as_slice(), g2_values.as_slice(), max_scale, &fs)
 }

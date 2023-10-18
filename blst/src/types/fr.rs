@@ -79,14 +79,14 @@ impl Fr for FsFr {
                     bytes.len()
                 )
             })
-            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let mut bls_scalar = blst_scalar::default();
                 let mut fr = blst_fr::default();
                 unsafe {
                     blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
                     blst_fr_from_scalar(&mut fr, &bls_scalar);
                 }
-                Ok(Self(fr))
+                Self(fr)
             })
     }
 

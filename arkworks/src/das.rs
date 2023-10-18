@@ -79,7 +79,7 @@ impl DAS<BlstFr> for FFTSettings {
         let invlen = invlen.inverse();
 
         for val in &mut vals {
-            val.fr = val.fr * invlen.fr
+            val.fr *= invlen.fr
         }
 
         Ok(vals)
