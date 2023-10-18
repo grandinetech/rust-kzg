@@ -2,6 +2,9 @@ name: arkworks tests
 
 on: [push, pull_request, workflow_dispatch]
 
+env:
+  C_KZG_4844_GIT_HASH: 'a1d03803059471948e518820afa8518643e1b638'
+
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
@@ -11,6 +14,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install py_ecc
+          pip install PyYAML
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.19
 
       - name: "[arkworks] Tests (minimal preset)"
         uses: actions-rs/cargo@v1
@@ -29,6 +51,16 @@ jobs:
         with:
           command: test
           args: --manifest-path arkworks/Cargo.toml --no-fail-fast --features parallel
+
+      - name: "[arkworks] Tests (c-kzg-4844)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd arkworks && bash run-c-kzg-4844-tests.sh
+
+      - name: "[arkworks] Tests (c-kzg-4844 parallel)"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd arkworks && bash run-c-kzg-4844-tests.sh --parallel
 
       - name: "[arkworks] Clippy"
         uses: actions-rs/cargo@v1

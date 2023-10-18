@@ -237,6 +237,7 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     ));
     drop(g2);
     (*s).g2_values = null_mut();
+    (*s).max_width = 0;
 }
 
 /// # Safety
