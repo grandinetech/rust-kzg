@@ -18,7 +18,7 @@ use ark_ec::{models::short_weierstrass::Projective, AffineRepr, Group};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{One, UniformRand, Zero};
-use blst::{blst_fr, blst_p1};
+use blst::{blst_fr, blst_p1, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{
@@ -72,6 +72,42 @@ impl KzgFr for ArkFr {
 
     #[allow(clippy::bind_instead_of_map)]
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let storage: [u64; 4] = [
+                    bytes_be_to_uint64(&bytes[24..32]),
+                    bytes_be_to_uint64(&bytes[16..24]),
+                    bytes_be_to_uint64(&bytes[8..16]),
+                    bytes_be_to_uint64(&bytes[0..8]),
+                ];
+                let big_int = BigInteger256::new(storage);
+
+                // FIXME: That blst_scalar_fr_check is necessary
+                // but should be replaced!!!
+                let mut bls_scalar = blst_scalar::default();
+                unsafe {
+                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
+                    if !blst_scalar_fr_check(&bls_scalar) {
+                        return Err("Invalid scalar".to_string());
+                    }
+                }
+
+                Ok(Self {
+                    fr: Fr::new(big_int),
+                })
+            })
+    }
+
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes_unchecked(bytes: &[u8]) -> Result<Self, String> {
         bytes
             .try_into()
             .map_err(|_| {
@@ -243,7 +279,7 @@ impl G1 for ArkG1 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G1]| {
-                let affine = G1Affine::deserialize_compressed_unchecked(bytes.as_slice());
+                let affine = G1Affine::deserialize_compressed(bytes.as_slice());
                 match affine {
                     Err(x) => Err("Failed to deserialize G1: ".to_owned() + &(x.to_string())),
                     Ok(x) => Ok(Self {
@@ -259,7 +295,7 @@ impl G1 for ArkG1 {
     }
 
     fn to_bytes(&self) -> [u8; 48] {
-        let mut buff: [u8; 48] = [0; 48];
+        let mut buff = [0u8; BYTES_PER_G1];
         self.proj.serialize_compressed(&mut &mut buff[..]).unwrap();
         buff
     }
@@ -360,7 +396,7 @@ impl G2 for ArkG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let affine = G2Affine::deserialize_compressed_unchecked(bytes.as_slice());
+                let affine = G2Affine::deserialize_compressed(bytes.as_slice());
                 match affine {
                     Err(x) => Err("Failed to deserialize G2: ".to_owned() + &(x.to_string())),
                     Ok(x) => Ok(Self {
@@ -371,7 +407,7 @@ impl G2 for ArkG2 {
     }
 
     fn to_bytes(&self) -> [u8; 96] {
-        let mut buff: [u8; 96] = [0; 96];
+        let mut buff = [0u8; BYTES_PER_G2];
         self.proj.serialize_compressed(&mut &mut buff[..]).unwrap();
         buff
     }
