@@ -34,7 +34,7 @@ index 518d58c..10e6ab3 100644
  	"unsafe"
 -
 -	// So its functions are available during compilation.
--	_ "github.com/supranational/arkworks/bindings/go"
+-	_ "github.com/supranational/blst/bindings/go"
  )
  
  const (

@@ -35,7 +35,7 @@ index 4f1e28b..6cde37f 100644
 +        "src/kzg.cxx"
        ],
        "include_dirs": [
-         "<(module_root_dir)/deps/arkworks/bindings",
+         "<(module_root_dir)/deps/blst/bindings",
 @@ -16,33 +14,8 @@
          "__BLST_PORTABLE__",
          "NAPI_DISABLE_CPP_EXCEPTIONS"
@@ -50,7 +50,7 @@ index 4f1e28b..6cde37f 100644
 -          ]
 -        }],
 -        ["OS=='win'", {
--          "sources": ["deps/arkworks/build/win64/*-x86_64.asm"],
+-          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
 -          "defines": [
 -            "_CRT_SECURE_NO_WARNINGS",
 -            "FIELD_ELEMENTS_PER_BLOB=<!(powershell -Command \"if ($env:FIELD_ELEMENTS_PER_BLOB) { $env:FIELD_ELEMENTS_PER_BLOB } else { 4096 }\")"
