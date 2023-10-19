@@ -98,10 +98,10 @@ print_msg "Running rust tests"
 cargo test --release
 cd ../..
 
-print_msg "Rebuilding arkworks"
+print_msg "Rebuilding blst"
 cd src
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
-make arkworks
+make blst
 unset CFLAGS
 cd ..
 
