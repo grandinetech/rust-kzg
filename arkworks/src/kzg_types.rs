@@ -18,7 +18,7 @@ use ark_ec::{models::short_weierstrass::Projective, AffineRepr, Group};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{One, UniformRand, Zero};
-use blst::{blst_fr, blst_p1, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian};
+use blst::{blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{
@@ -30,6 +30,13 @@ use std::ops::{Mul, Neg, Sub};
 fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
     u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
 }
+
+const BLS12_381_MOD_256: [u64; 4] = [
+    0xffffffff00000001,
+    0x53bda402fffe5bfe,
+    0x3339d80809a1d805,
+    0x73eda753299d7d48,
+];
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct ArkFr {
@@ -46,6 +53,14 @@ impl ArkFr {
     pub fn to_blst_fr(&self) -> blst_fr {
         pc_fr_into_blst_fr(self.fr)
     }
+}
+
+fn bigint_check_mod_256(a: &[u64; 4]) -> bool {
+    let (_, overflow) = a[0].overflowing_sub(BLS12_381_MOD_256[0]);
+    let (_, overflow) = a[1].overflowing_sub(BLS12_381_MOD_256[1] + overflow as u64);
+    let (_, overflow) = a[2].overflowing_sub(BLS12_381_MOD_256[2] + overflow as u64);
+    let (_, overflow) = a[3].overflowing_sub(BLS12_381_MOD_256[3] + overflow as u64);
+    overflow
 }
 
 impl KzgFr for ArkFr {
@@ -70,7 +85,6 @@ impl KzgFr for ArkFr {
         }
     }
 
-    #[allow(clippy::bind_instead_of_map)]
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
         bytes
             .try_into()
@@ -89,24 +103,15 @@ impl KzgFr for ArkFr {
                     bytes_be_to_uint64(&bytes[0..8]),
                 ];
                 let big_int = BigInteger256::new(storage);
-
-                // FIXME: That blst_scalar_fr_check is necessary
-                // but should be replaced!!!
-                let mut bls_scalar = blst_scalar::default();
-                unsafe {
-                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
-                    if !blst_scalar_fr_check(&bls_scalar) {
-                        return Err("Invalid scalar".to_string());
-                    }
+                if !big_int.is_zero() && !bigint_check_mod_256(&big_int.0) {
+                    return Err("Invalid scalar".to_string());
                 }
-
                 Ok(Self {
                     fr: Fr::new(big_int),
                 })
             })
     }
 
-    #[allow(clippy::bind_instead_of_map)]
     fn from_bytes_unchecked(bytes: &[u8]) -> Result<Self, String> {
         bytes
             .try_into()
@@ -117,7 +122,7 @@ impl KzgFr for ArkFr {
                     bytes.len()
                 )
             })
-            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let storage: [u64; 4] = [
                     bytes_be_to_uint64(&bytes[24..32]),
                     bytes_be_to_uint64(&bytes[16..24]),
@@ -125,9 +130,9 @@ impl KzgFr for ArkFr {
                     bytes_be_to_uint64(&bytes[0..8]),
                 ];
                 let big_int = BigInteger256::new(storage);
-                Ok(Self {
+                Self {
                     fr: Fr::new(big_int),
-                })
+                }
             })
     }
 
