@@ -26,7 +26,6 @@ criterion = "0.5.1"
 
 [features]
 parallel = ["kzg/parallel"]
-minimal-spec = ["kzg/minimal-spec", "kzg-bench/minimal-spec"]
 
 [[bench]]
 name = "zero_poly"

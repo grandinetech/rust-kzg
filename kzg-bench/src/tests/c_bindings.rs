@@ -19,11 +19,7 @@ use crate::tests::{
 };
 
 fn get_trusted_setup_fixture_path(fixture: &str) -> String {
-    let filename = if cfg!(feature = "minimal-spec") {
-        "trusted_setup_4_fixture.txt"
-    } else {
-        "trusted_setup_fixture.txt"
-    };
+    let filename = "trusted_setup_fixture.txt";
 
     PathBuf::from(get_manifest_dir())
         .join("src/tests/fixtures")

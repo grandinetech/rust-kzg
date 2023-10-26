@@ -13,9 +13,6 @@ kzg-bench = { path = "../../kzg-bench" }
 rand = "0.8.5"
 criterion = "0.5.1"
 
-[features]
-minimal-spec = ["kzg/minimal-spec", "kzg-bench/minimal-spec"]
-
 [[bench]]
 name = "shared_fk20"
 harness = false
