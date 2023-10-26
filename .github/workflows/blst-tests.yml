@@ -3,7 +3,7 @@ name: blst tests
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  C_KZG_4844_GIT_HASH: 'a1d03803059471948e518820afa8518643e1b638'
+  C_KZG_4844_GIT_HASH: '624aa60d01da524827123506975431aa5454c80d'
 
 jobs:
   tests:
@@ -50,19 +50,13 @@ jobs:
           command: build
           args: --manifest-path blst/Cargo.toml --target wasm32-unknown-unknown --no-default-features
 
-      - name: "[blst] Tests (minimal preset)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path blst/Cargo.toml --no-fail-fast --test eip_4844 tests --features minimal-spec
-
-      - name: "[blst] Tests (mainnet preset)"
+      - name: "[blst] Tests"
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --manifest-path blst/Cargo.toml --no-fail-fast
 
-      - name: "[blst] Tests (mainnet preset, parallel)"
+      - name: "[blst] Tests (parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test
@@ -82,7 +76,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path blst/Cargo.toml --all-targets --features=default,std,rand,parallel,minimal-spec -- -D warnings
+          args: --manifest-path blst/Cargo.toml --all-targets --features=default,std,rand,parallel -- -D warnings
 
       - name: "[blst] Formatting"
         uses: actions-rs/cargo@v1

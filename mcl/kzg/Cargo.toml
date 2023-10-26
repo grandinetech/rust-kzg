@@ -19,7 +19,6 @@ hex = "0.4.2"
 
 [features]
 parallel = ["rayon"]
-minimal-spec = ["kzg/minimal-spec"]
 
 [build-dependencies]
 cc = "1.0"

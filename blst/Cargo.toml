@@ -39,7 +39,6 @@ parallel = [
     "dep:rayon",
     "dep:num_cpus",
 ]
-minimal-spec = ["kzg/minimal-spec", "kzg-bench/minimal-spec"]
 
 # By default, compile with ADX extension if the host supports it.
 # Binary can be executed on systems similar to the host.
