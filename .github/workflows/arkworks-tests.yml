@@ -3,7 +3,7 @@ name: arkworks tests
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  C_KZG_4844_GIT_HASH: 'a1d03803059471948e518820afa8518643e1b638'
+  C_KZG_4844_GIT_HASH: '624aa60d01da524827123506975431aa5454c80d'
 
 jobs:
   tests:
@@ -34,19 +34,13 @@ jobs:
         with:
           go-version: ^1.19
 
-      - name: "[arkworks] Tests (minimal preset)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path arkworks/Cargo.toml --no-fail-fast --test eip_4844 tests --features minimal-spec
-
-      - name: "[arkworks] Tests (mainnet preset)"
+      - name: "[arkworks] Tests"
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --manifest-path arkworks/Cargo.toml --no-fail-fast
 
-      - name: "[arkworks] Tests (mainnet preset, parallel)"
+      - name: "[arkworks] Tests (parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test

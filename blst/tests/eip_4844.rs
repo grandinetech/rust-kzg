@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     pub fn compute_kzg_proof_incorrect_blob_length() {
-        compute_kzg_proof_incorrect_blob_length_test::<FsFr, FsPoly>(&blob_to_polynomial_rust);
+        compute_kzg_proof_incorrect_blob_length_test::<FsFr, FsPoly>(&blob_to_polynomial);
     }
 
     #[test]
@@ -271,7 +271,7 @@ mod tests {
             FsG2,
             FsFFTSettings,
             FsKZGSettings,
-        >(&evaluate_polynomial_in_evaluation_form_rust);
+        >(&evaluate_polynomial_in_evaluation_form);
     }
 
     #[test]

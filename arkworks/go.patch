@@ -1,20 +1,20 @@
-From ed81f88f25548e15543df92905e72ab17726b21e Mon Sep 17 00:00:00 2001
-From: ProgrammingBen <benas.nikitinas@mif.stud.vu.lt>
-Date: Sun, 24 Sep 2023 18:31:10 +0300
-Subject: [PATCH] update linking
+From 90e9a518ca03716ef1d9d77e263db25b56030867 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 26 Oct 2023 14:09:11 +0300
+Subject: [PATCH] Patch go binding
 
 ---
  bindings/go/main.go | 13 +++++++++----
  1 file changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/bindings/go/main.go b/bindings/go/main.go
-index 518d58c..10e6ab3 100644
+index bdd5385..155fc81 100644
 --- a/bindings/go/main.go
 +++ b/bindings/go/main.go
-@@ -5,7 +5,15 @@ package ckzg4844
- // #ifndef FIELD_ELEMENTS_PER_BLOB
- // #define FIELD_ELEMENTS_PER_BLOB 4096
- // #endif
+@@ -2,7 +2,15 @@ package ckzg4844
+ 
+ // #cgo CFLAGS: -I${SRCDIR}/../../src
+ // #cgo CFLAGS: -I${SRCDIR}/blst_headers
 -// #include "c_kzg_4844.c"
 +// #ifndef BYTES_PER_G1
 +// #define BYTES_PER_G1 48
@@ -28,7 +28,7 @@ index 518d58c..10e6ab3 100644
  import "C"
  
  import (
-@@ -14,9 +22,6 @@ import (
+@@ -11,9 +19,6 @@ import (
  	"fmt"
  	"strings"
  	"unsafe"
