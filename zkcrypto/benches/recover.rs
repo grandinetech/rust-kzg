@@ -1,12 +1,12 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::recover::bench_recover;
 
-use rust_kzg_arkworks::kzg_proofs::FFTSettings;
-use rust_kzg_arkworks::kzg_types::ArkFr;
-use rust_kzg_arkworks::utils::PolyData;
+use rust_kzg_zkcrypto::kzg_proofs::FFTSettings;
+use rust_kzg_zkcrypto::kzg_types::ZFr;
+use rust_kzg_zkcrypto::poly::PolyData;
 
 fn bench_recover_(c: &mut Criterion) {
-    bench_recover::<ArkFr, FFTSettings, PolyData, PolyData>(c);
+    bench_recover::<ZFr, FFTSettings, PolyData, PolyData>(c);
 }
 
 criterion_group! {

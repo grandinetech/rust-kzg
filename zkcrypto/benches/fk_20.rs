@@ -1,15 +1,15 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::fk20::{bench_fk_multi_da, bench_fk_single_da};
-use rust_kzg_arkworks::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings};
-use rust_kzg_arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-use rust_kzg_arkworks::kzg_types::{ArkFr, ArkG1, ArkG2};
-use rust_kzg_arkworks::utils::PolyData;
+use rust_kzg_zkcrypto::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings};
+use rust_kzg_zkcrypto::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
+use rust_kzg_zkcrypto::kzg_types::{ZFr, ZG1, ZG2};
+use rust_kzg_zkcrypto::poly::PolyData;
 
 fn bench_fk_single_da_(c: &mut Criterion) {
     bench_fk_single_da::<
-        ArkFr,
-        ArkG1,
-        ArkG2,
+        ZFr,
+        ZG1,
+        ZG2,
         PolyData,
         FFTSettings,
         KZGSettings,
@@ -18,7 +18,7 @@ fn bench_fk_single_da_(c: &mut Criterion) {
 }
 
 fn bench_fk_multi_da_(c: &mut Criterion) {
-    bench_fk_multi_da::<ArkFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20MultiSettings>(
+    bench_fk_multi_da::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings, KzgFK20MultiSettings>(
         c,
         &generate_trusted_setup,
     )
