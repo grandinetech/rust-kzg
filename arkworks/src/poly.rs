@@ -1,22 +1,15 @@
 use super::kzg_proofs::FFTSettings;
-use super::utils::{
-    blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_poly_into_blst_poly,
-    PolyData,
-};
-use crate::kzg_types::FsFr as BlstFr;
+use super::utils::{blst_poly_into_pc_poly, PolyData};
+use crate::kzg_types::ArkFr as BlstFr;
+use crate::utils::pc_poly_into_blst_poly;
 use crate::zero_poly::pad_poly;
 use ark_bls12_381::Fr;
 use ark_poly::univariate::DensePolynomial;
-use ark_poly::UVPolynomial;
+use ark_poly::DenseUVPolynomial;
 use ark_std::{log2, Zero};
+use kzg::common_utils::{log2_pow2, next_pow_of_2};
 use kzg::{FFTFr, FFTSettings as FFTSettingsT, Fr as FrTrait, Poly};
-use merkle_light::merkle::log2_pow2;
 use std::cmp::min;
-use std::ops::Neg;
-
-fn neg(n: BlstFr) -> BlstFr {
-    pc_fr_into_blst_fr(blst_fr_into_pc_fr(&n).neg())
-}
 
 pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String> {
     if b.coeffs.is_empty() {
@@ -39,7 +32,7 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
     }
 
     let maxd = output_len - 1;
-    let scale = log2_pow2((2 * output_len - 1).next_power_of_two());
+    let scale = next_pow_of_2(log2_pow2(2 * output_len - 1));
     let fs = FFTSettings::new(scale).unwrap();
 
     let mut tmp0: PolyData;
@@ -58,9 +51,9 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
         tmp0 = poly_mul(b, &output, Some(&fs), len_temp).unwrap();
 
         for i in 0..len_temp {
-            tmp0.coeffs[i] = neg(tmp0.coeffs[i]);
+            tmp0.coeffs[i] = tmp0.coeffs[i].negate();
         }
-        let fr_two = pc_fr_into_blst_fr(Fr::from(2));
+        let fr_two = BlstFr { fr: Fr::from(2) };
         tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
 
         let len_temp2: usize = d + 1;
@@ -81,10 +74,10 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
 }
 
 pub fn poly_mul_direct(p1: &PolyData, p2: &PolyData, len: usize) -> Result<PolyData, String> {
-    let p1 = blst_poly_into_pc_poly(p1).unwrap();
-    let p2 = blst_poly_into_pc_poly(p2).unwrap();
+    let p1 = blst_poly_into_pc_poly(&p1.coeffs);
+    let p2 = blst_poly_into_pc_poly(&p2.coeffs);
     if p1.is_zero() || p2.is_zero() {
-        pc_poly_into_blst_poly(DensePolynomial::zero())
+        Ok(pc_poly_into_blst_poly(DensePolynomial::zero()))
     } else {
         let mut result = vec![Fr::zero(); len];
         for (i, self_coeff) in p1.coeffs.iter().enumerate() {
@@ -95,7 +88,7 @@ pub fn poly_mul_direct(p1: &PolyData, p2: &PolyData, len: usize) -> Result<PolyD
                 result[i + j] += &(*self_coeff * other_coeff);
             }
         }
-        let p = pc_poly_into_blst_poly(DensePolynomial::from_coefficients_vec(result)).unwrap();
+        let p = pc_poly_into_blst_poly(DensePolynomial::from_coefficients_vec(result));
         Ok(PolyData {
             coeffs: pad_poly(&p, len).unwrap(),
         })
@@ -103,9 +96,9 @@ pub fn poly_mul_direct(p1: &PolyData, p2: &PolyData, len: usize) -> Result<PolyD
 }
 
 pub fn poly_long_div(p1: &PolyData, p2: &PolyData) -> Result<PolyData, String> {
-    pc_poly_into_blst_poly(
-        &blst_poly_into_pc_poly(p1).unwrap() / &blst_poly_into_pc_poly(p2).unwrap(),
-    )
+    Ok(pc_poly_into_blst_poly(
+        &blst_poly_into_pc_poly(&p1.coeffs) / &blst_poly_into_pc_poly(&p2.coeffs),
+    ))
 }
 
 pub fn poly_mul(
@@ -130,7 +123,7 @@ pub fn poly_mul_fft(
     // Truncate a and b so as not to do excess work for the number of coefficients required.
     let a_len = min(a.len(), len);
     let b_len = min(b.len(), len);
-    let length = (a_len + b_len - 1).next_power_of_two();
+    let length = next_pow_of_2(a_len + b_len - 1);
 
     // If the FFT settings are NULL then make a local set, otherwise use the ones passed in.
     let fs_p = if let Some(x) = fs {
@@ -194,7 +187,7 @@ pub fn poly_mul_fft(
     ab.coeffs = fs_p.fft_fr(&ab_fft.coeffs, true).unwrap();
 
     let data_len = min(len, length);
-    let mut out = PolyData::new(len).unwrap();
+    let mut out = PolyData::new(len);
 
     for i in 0..data_len {
         out.coeffs[i] = ab.coeffs[i];
@@ -219,14 +212,14 @@ pub fn poly_fast_div(dividend: &PolyData, divisor: &PolyData) -> Result<PolyData
     let n = divisor.coeffs.len() - 1;
 
     if n > m {
-        return PolyData::new(0);
+        return Ok(PolyData::new(0));
     }
 
     if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
         return Err(String::from("divisor coeffs last member is zero"));
     }
 
-    let mut out = PolyData::new(0).unwrap();
+    let mut out = PolyData::new(0);
 
     if divisor.len() == 1 {
         for i in 0..dividend.len() {
@@ -250,7 +243,7 @@ pub fn poly_fast_div(dividend: &PolyData, divisor: &PolyData) -> Result<PolyData
 }
 
 pub fn poly_flip(input: &PolyData) -> Result<PolyData, String> {
-    let mut output = PolyData::new(0).unwrap();
+    let mut output = PolyData::new(0);
     for i in 0..input.len() {
         output.coeffs.push(input.coeffs[input.coeffs.len() - i - 1]);
     }

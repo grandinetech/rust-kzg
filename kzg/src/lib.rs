@@ -5,9 +5,10 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+pub mod common_utils;
 pub mod eip_4844;
 
-pub trait Fr: Default + Clone {
+pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
 
     fn zero() -> Self;
@@ -18,6 +19,10 @@ pub trait Fr: Default + Clone {
     fn rand() -> Self;
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String>;
+
+    fn from_bytes_unchecked(bytes: &[u8]) -> Result<Self, String> {
+        Self::from_bytes(bytes)
+    }
 
     fn from_hex(hex: &str) -> Result<Self, String>;
 
@@ -54,9 +59,13 @@ pub trait Fr: Default + Clone {
     fn div(&self, b: &Self) -> Result<Self, String>;
 
     fn equals(&self, b: &Self) -> bool;
+
+    fn eq(&self, other: &Self) -> bool {
+        self.equals(other)
+    }
 }
 
-pub trait G1: Clone + Default {
+pub trait G1: Clone + Default + PartialEq + Sync {
     fn identity() -> Self;
 
     fn generator() -> Self;
@@ -85,10 +94,17 @@ pub trait G1: Clone + Default {
     fn sub(&self, b: &Self) -> Self;
 
     fn equals(&self, b: &Self) -> bool;
+
+    fn eq(&self, other: &Self) -> bool {
+        self.equals(other)
+    }
 }
 
-pub trait G1Mul<Fr>: Clone {
-    fn mul(&self, b: &Fr) -> Self;
+pub trait G1Mul<TFr: Fr>: G1 + Clone {
+    fn mul(&self, b: &TFr) -> Self;
+
+    // Instead of creating separate trait, keep linear comb here for simplicity
+    fn g1_lincomb(points: &[Self], scalars: &[TFr], len: usize) -> Self;
 }
 
 pub trait G2: Clone + Default {
@@ -111,6 +127,10 @@ pub trait G2: Clone + Default {
 
 pub trait G2Mul<Fr>: Clone {
     fn mul(&self, b: &Fr) -> Self;
+}
+
+pub trait PairingVerify<TG1: G1, TG2: G2> {
+    fn verify(a1: &TG1, a2: &TG2, b1: &TG1, b2: &TG2) -> bool;
 }
 
 pub trait FFTFr<Coeff: Fr> {
@@ -186,6 +206,17 @@ pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSett
 
 pub trait Poly<Coeff: Fr>: Default + Clone {
     fn new(size: usize) -> Self;
+
+    // Default implementation not as efficient, should be implemented by type itself!
+    fn from_coeffs(coeffs: &[Coeff]) -> Self {
+        let mut poly = Self::new(coeffs.len());
+
+        for (i, coeff) in coeffs.iter().enumerate() {
+            poly.set_coeff_at(i, coeff);
+        }
+
+        poly
+    }
 
     fn get_coeff_at(&self, i: usize) -> Coeff;
 
@@ -269,6 +300,12 @@ pub trait KZGSettings<
     fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
 
     fn get_roots_of_unity_at(&self, i: usize) -> Coeff1;
+
+    fn get_fft_settings(&self) -> &Fs;
+
+    fn get_g1_secret(&self) -> &[Coeff2];
+
+    fn get_g2_secret(&self) -> &[Coeff3];
 }
 
 pub trait FK20SingleSettings<

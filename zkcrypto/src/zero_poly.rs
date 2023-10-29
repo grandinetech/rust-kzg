@@ -1,7 +1,7 @@
 use crate::fftsettings::ZkFFTSettings;
 use crate::poly::{pad, ZPoly};
-use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
+use kzg::common_utils::{next_pow_of_2, is_power_of_two};
 use kzg::{FFTFr, ZeroPoly};
 use std::cmp::min;
 use std::ops::Neg;
@@ -120,7 +120,7 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
         let mut partial_count =
             (missing_per_partial + missing_indices.len() - 1) / missing_per_partial;
         let domain_ceiling = min(
-            (partial_count * degree_of_partial).next_power_of_two(),
+            next_pow_of_2(partial_count * degree_of_partial),
             length,
         );
 
@@ -130,7 +130,7 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
                 .unwrap();
         } else {
             let mut work =
-                vec![blsScalar::zero(); (partial_count * degree_of_partial).next_power_of_two()];
+                vec![blsScalar::zero(); next_pow_of_2(partial_count * degree_of_partial)];
 
             let mut partial_lens = Vec::new();
             let mut partial_offsets = Vec::new();
@@ -162,7 +162,7 @@ impl ZeroPoly<blsScalar, ZPoly> for ZkFFTSettings {
             let reduction_factor = 4;
             while partial_count > 1 {
                 let reduced_count = 1 + (partial_count - 1) / reduction_factor;
-                let partial_size = (partial_lens[0]).next_power_of_two();
+                let partial_size = next_pow_of_2(partial_lens[0]);
 
                 for i in 0..reduced_count {
                     let start = i * reduction_factor;

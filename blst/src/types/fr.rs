@@ -69,6 +69,27 @@ impl Fr for FsFr {
             })
     }
 
+    fn from_bytes_unchecked(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let mut bls_scalar = blst_scalar::default();
+                let mut fr = blst_fr::default();
+                unsafe {
+                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
+                    blst_fr_from_scalar(&mut fr, &bls_scalar);
+                }
+                Self(fr)
+            })
+    }
+
     fn from_hex(hex: &str) -> Result<Self, String> {
         let bytes = hex::decode(&hex[2..]).unwrap();
         Self::from_bytes(&bytes)
@@ -229,16 +250,5 @@ impl Fr for FsFr {
         }
 
         val_a[0] == val_b[0] && val_a[1] == val_b[1] && val_a[2] == val_b[2] && val_a[3] == val_b[3]
-    }
-}
-
-impl FsFr {
-    pub fn hash_to_bls_field(scalar: [u8; 32usize]) -> Self {
-        let bls_scalar = blst_scalar { b: scalar };
-        let mut fr = blst_fr::default();
-        unsafe {
-            blst_fr_from_scalar(&mut fr, &bls_scalar);
-        }
-        Self(fr)
     }
 }

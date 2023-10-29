@@ -1,7 +1,7 @@
 use crate::data_types::{fr::*, g1::*, g2::*, gt::*};
 use crate::fk20_fft::{FFTSettings, G1_GENERATOR};
 use crate::mcl_methods::{final_exp, mclBn_FrEvaluatePolynomial, pairing};
-use crate::utilities::{log_2, next_pow_of_2};
+use kzg::common_utils::{log_2, next_pow_of_2};
 use std::{cmp::min, iter, ops};
 
 #[cfg(feature = "parallel")]

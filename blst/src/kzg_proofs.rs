@@ -18,11 +18,17 @@ use blst::{
     blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing,
 };
 
-use kzg::{G1Mul, G1};
+use kzg::{G1Mul, PairingVerify, G1};
 
 use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
+
+impl PairingVerify<FsG1, FsG2> for FsG1 {
+    fn verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
+        pairings_verify(a1, a2, b1, b2)
+    }
+}
 
 pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], len: usize) {
     if len < 8 {

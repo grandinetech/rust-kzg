@@ -1,0 +1,25 @@
+From 86aa67b0e3775514cc484ddd2adf6b5dc6e26803 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 26 Oct 2023 13:40:30 +0300
+Subject: [PATCH] Patch csharp binding
+
+---
+ bindings/csharp/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bindings/csharp/Makefile b/bindings/csharp/Makefile
+index 5158aad..af3b2a8 100644
+--- a/bindings/csharp/Makefile
++++ b/bindings/csharp/Makefile
+@@ -39,7 +39,7 @@ else
+ endif
+ 
+ INCLUDE_DIRS = ../../src ../../blst/bindings
+-TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
++TARGETS = ckzg.c ../../../../target/release/rust_kzg_arkworks.a
+ 
+ CFLAGS += -O2 -Wall -Wextra -shared
+ CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}
+-- 
+2.34.1
+

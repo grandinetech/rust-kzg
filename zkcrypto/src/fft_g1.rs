@@ -1,8 +1,7 @@
 use crate::fftsettings::ZkFFTSettings;
 use crate::kzg_types::ZkG1Projective;
-use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
-use kzg::{Fr, FFTG1, G1};
+use kzg::{Fr, FFTG1, G1, common_utils::is_power_of_two};
 
 pub fn fft_g1_slow(
     ret: &mut [ZkG1Projective],

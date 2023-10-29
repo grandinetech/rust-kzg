@@ -9,12 +9,13 @@ use blst::{
     blst_p1_compress, blst_p1_double, blst_p1_from_affine, blst_p1_in_g1, blst_p1_is_equal,
     blst_p1_is_inf, blst_p1_mult, blst_p1_uncompress, blst_scalar, blst_scalar_from_fr, BLST_ERROR,
 };
+use kzg::common_utils::log_2_byte;
 use kzg::eip_4844::BYTES_PER_G1;
 use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
+use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fr::FsFr;
-use crate::utils::log_2_byte;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
@@ -162,5 +163,11 @@ impl G1Mul<FsFr> for FsG1 {
             }
         }
         result
+    }
+
+    fn g1_lincomb(points: &[Self], scalars: &[FsFr], len: usize) -> Self {
+        let mut out = FsG1::default();
+        g1_linear_combination(&mut out, points, scalars, len);
+        out
     }
 }

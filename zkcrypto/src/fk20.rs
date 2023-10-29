@@ -4,6 +4,7 @@ use crate::kzg_types::{ZkG1Projective, ZkG2Projective};
 use crate::poly::ZPoly;
 use crate::utils::*;
 use crate::zkfr::blsScalar;
+use kzg::common_utils::{is_power_of_two, reverse_bit_order};
 use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Poly, FFTG1, G1};
 
 #[cfg(feature = "parallel")]
@@ -62,7 +63,7 @@ impl
         }
 
         let mut out = self.data_availability_optimized(p).unwrap();
-        reverse_bit_order(&mut out); // reverse bit order
+        reverse_bit_order(&mut out)?; // reverse bit order
 
         Ok(out)
     }
@@ -179,7 +180,7 @@ impl FK20MultiSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings,
         }
 
         let mut out = self.data_availability_optimized(p).unwrap();
-        reverse_bit_order(&mut out);
+        reverse_bit_order(&mut out)?;
 
         Ok(out)
     }
@@ -317,17 +318,17 @@ pub fn toeplitz_coeffs_step(poly: &ZPoly) -> ZPoly {
     toeplitz_coeffs_stride(0, 1, poly)
 }
 
-pub fn reverse_bit_order<T>(values: &mut [T])
-where
-    T: Clone,
-{
-    let unused_bit_len = values.len().leading_zeros() + 1;
-    for i in 0..values.len() - 1 {
-        let r = i.reverse_bits() >> unused_bit_len;
-        if r > i {
-            let tmp = values[r].clone();
-            values[r] = values[i].clone();
-            values[i] = tmp;
-        }
-    }
-}
+// pub fn reverse_bit_order<T>(values: &mut [T])
+// where
+//     T: Clone,
+// {
+//     let unused_bit_len = values.len().leading_zeros() + 1;
+//     for i in 0..values.len() - 1 {
+//         let r = i.reverse_bits() >> unused_bit_len;
+//         if r > i {
+//             let tmp = values[r].clone();
+//             values[r] = values[i].clone();
+//             values[i] = tmp;
+//         }
+//     }
+// }

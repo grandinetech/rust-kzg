@@ -1,9 +1,9 @@
 use crate::data_types::fr::Fr;
 use crate::fk20_fft::*;
 use crate::kzg10::*;
-use crate::utilities::is_power_of_2;
 #[cfg(feature = "parallel")]
 use crate::utilities::next_pow_of_2;
+use kzg::common_utils::is_power_of_2;
 #[cfg(feature = "parallel")]
 use once_cell::sync::OnceCell;
 

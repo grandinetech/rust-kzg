@@ -3,11 +3,11 @@ use std::fs::File;
 use std::io::Read;
 use std::ops::Sub;
 
-use crate::fk20::reverse_bit_order;
 use crate::kzg_proofs::{check_proof_single, KZGSettings};
 use crate::kzg_types::{pairings_verify, ZkG1Projective, ZkG2Projective};
 use crate::poly::KzgPoly;
 use crate::zkfr::blsScalar;
+use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{
     bytes_of_uint64, hash, load_trusted_setup_string, BYTES_PER_BLOB, BYTES_PER_COMMITMENT,
     BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, BYTES_PER_PROOF, CHALLENGE_INPUT_SIZE,

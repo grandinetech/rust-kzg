@@ -2,7 +2,7 @@
 mod recover_tests {
     use kzg_bench::tests::recover::*;
     use rust_kzg_arkworks::kzg_proofs::FFTSettings;
-    use rust_kzg_arkworks::kzg_types::FsFr as Fr;
+    use rust_kzg_arkworks::kzg_types::ArkFr as Fr;
     use rust_kzg_arkworks::utils::PolyData;
 
     #[test]

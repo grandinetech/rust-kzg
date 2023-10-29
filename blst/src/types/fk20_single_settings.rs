@@ -3,6 +3,7 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use kzg::common_utils::reverse_bit_order;
 use kzg::{FK20SingleSettings, Poly, FFTG1, G1};
 
 use crate::types::fft_settings::FsFFTSettings;
@@ -11,7 +12,6 @@ use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
-use crate::utils::reverse_bit_order;
 
 #[derive(Debug, Clone, Default)]
 pub struct FsFK20SingleSettings {

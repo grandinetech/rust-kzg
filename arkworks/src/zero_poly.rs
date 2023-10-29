@@ -1,9 +1,7 @@
 use super::kzg_proofs::FFTSettings;
-use super::utils::{
-    blst_fr_into_pc_fr, blst_poly_into_pc_poly, pc_fr_into_blst_fr, pc_poly_into_blst_poly,
-    PolyData,
-};
-use crate::kzg_types::FsFr as BlstFr;
+use super::utils::{blst_poly_into_pc_poly, pc_poly_into_blst_poly, PolyData};
+use crate::kzg_types::ArkFr as BlstFr;
+use kzg::common_utils::next_pow_of_2;
 use kzg::{FFTFr, Fr as FrTrait, ZeroPoly};
 use std::cmp::{min, Ordering};
 use std::ops::Neg;
@@ -34,12 +32,11 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         let blstpoly = PolyData {
             coeffs: vec![BlstFr::one(); indices.len() + 1],
         };
-        let mut poly = blst_poly_into_pc_poly(&blstpoly).unwrap();
-        poly.coeffs[0] =
-            blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indices[0] * stride]).neg();
+        let mut poly = blst_poly_into_pc_poly(&blstpoly.coeffs);
+        poly.coeffs[0] = (self.expanded_roots_of_unity[indices[0] * stride]).fr.neg();
 
         for (i, indice) in indices.iter().enumerate().skip(1) {
-            let neg_di = blst_fr_into_pc_fr(&self.expanded_roots_of_unity[indice * stride]).neg();
+            let neg_di = (self.expanded_roots_of_unity[indice * stride]).fr.neg();
 
             poly.coeffs[i] = neg_di + poly.coeffs[i - 1];
 
@@ -53,7 +50,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             poly.coeffs[0] *= neg_di;
         }
 
-        Ok(pc_poly_into_blst_poly(poly).unwrap())
+        Ok(pc_poly_into_blst_poly(poly))
     }
 
     fn reduce_partials(&self, len_out: usize, partials: &[PolyData]) -> Result<PolyData, String> {
@@ -74,9 +71,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
             let p_eval = self.fft_fr(&p_partial, false).unwrap();
             for j in 0..len_out {
-                mul_eval_ps[j] = pc_fr_into_blst_fr(
-                    blst_fr_into_pc_fr(&mul_eval_ps[j]) * blst_fr_into_pc_fr(&p_eval[j]),
-                );
+                mul_eval_ps[j].fr *= p_eval[j].fr;
             }
         }
 
@@ -105,7 +100,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
         if missing_indices.len() >= length {
             return Err(String::from("Missing idxs greater than domain size"));
-        } else if length > self.max_width as usize {
+        } else if length > self.max_width {
             return Err(String::from(
                 "Domain size greater than fft_settings.max_width",
             ));
@@ -115,19 +110,15 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
 
         let degree_of_partial = 256;
         let missing_per_partial = degree_of_partial - 1;
-        let domain_stride = self.max_width as usize / length;
+        let domain_stride = self.max_width / length;
         let mut partial_count =
             (missing_per_partial + missing_indices.len() - 1) / missing_per_partial;
-        let domain_ceiling = min(
-            (partial_count * degree_of_partial).next_power_of_two(),
-            length,
-        );
+        let domain_ceiling = min(next_pow_of_2(partial_count * degree_of_partial), length);
 
         if missing_indices.len() <= missing_per_partial {
             zero_poly = self.do_zero_poly_mul_partial(missing_indices, domain_stride)?;
         } else {
-            let mut work =
-                vec![BlstFr::zero(); (partial_count * degree_of_partial).next_power_of_two()];
+            let mut work = vec![BlstFr::zero(); next_pow_of_2(partial_count * degree_of_partial)];
 
             let mut partial_lens = Vec::new();
 
@@ -157,7 +148,7 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
             let reduction_factor = 4;
             while partial_count > 1 {
                 let reduced_count = 1 + (partial_count - 1) / reduction_factor;
-                let partial_size = (partial_lens[0]).next_power_of_two();
+                let partial_size = next_pow_of_2(partial_lens[0]);
 
                 for i in 0..reduced_count {
                     let start = i * reduction_factor;

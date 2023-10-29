@@ -3,9 +3,10 @@ use crate::data_types::g1::G1;
 use crate::fk20_fft::*;
 use crate::kzg10::*;
 use crate::kzg_settings::KZGSettings;
-use crate::utilities::*;
 use std::iter;
 
+use kzg::common_utils::is_power_of_2;
+use kzg::common_utils::reverse_bit_order;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
@@ -107,7 +108,7 @@ impl FK20SingleMatrix {
         }
 
         let mut proofs = self.fk20_single_dao_optimized(polynomial).unwrap();
-        reverse_bit_order(&mut proofs);
+        reverse_bit_order(&mut proofs)?;
 
         Ok(proofs)
     }
@@ -255,7 +256,7 @@ impl FK20Matrix {
 
         let extended_poly = polynomial.get_extended(n2);
         let mut proofs = self.fk20_multi_dao_optimized(&extended_poly).unwrap();
-        reverse_bit_order(&mut proofs);
+        reverse_bit_order(&mut proofs)?;
 
         Ok(proofs)
     }

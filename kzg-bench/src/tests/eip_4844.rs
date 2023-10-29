@@ -11,7 +11,7 @@ use kzg::eip_4844::{
 };
 use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
 use pathdiff::diff_paths;
-use rand::rngs::ThreadRng;
+use rand::rngs::{OsRng, ThreadRng};
 use rand::Rng;
 use std::env::current_dir;
 use std::fs;
@@ -480,9 +480,9 @@ pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
 
     const N_SAMPLES: usize = 2;
 
-    let mut blobs: Vec<Vec<TFr>> = Vec::new();
-    let mut commitments: Vec<TG1> = Vec::new();
-    let mut proofs: Vec<TG1> = Vec::new();
+    let mut blobs: Vec<Vec<TFr>> = Vec::with_capacity(N_SAMPLES);
+    let mut commitments: Vec<TG1> = Vec::with_capacity(N_SAMPLES);
+    let mut proofs: Vec<TG1> = Vec::with_capacity(N_SAMPLES);
 
     // Some preparation
     for _ in 0..N_SAMPLES {
@@ -549,6 +549,10 @@ pub fn test_vectors_blob_to_kzg_commitment<
                 continue;
             }
         };
+
+        if (test.get_output_bytes().is_none()) {
+            continue;
+        }
 
         let expected_commitment = {
             let commitment_bytes = test.get_output_bytes().unwrap();

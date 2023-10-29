@@ -1,11 +1,11 @@
 use crate::consts::*;
 use crate::fft_fr::*;
 use crate::poly::*;
-use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
 use std::cmp::Ordering;
 
-use crate::fk20::reverse_bit_order;
+use kzg::common_utils::is_power_of_two;
+use kzg::common_utils::reverse_bit_order;
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr};
 
 #[derive(Debug, Clone, Default)]
@@ -137,7 +137,7 @@ impl FFTSettings<blsScalar> for ZkFFTSettings {
 
         // Permute the roots of unity
         let mut roots_of_unity = expanded_roots_of_unity.clone();
-        reverse_bit_order(&mut roots_of_unity);
+        reverse_bit_order(&mut roots_of_unity)?;
 
         Ok(Self {
             max_width,

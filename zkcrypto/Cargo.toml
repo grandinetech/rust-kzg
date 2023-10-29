@@ -22,10 +22,10 @@ version = "0.12"
 default-features = false
 
 [dev-dependencies]
-criterion = "0.4.0"
+criterion = "0.5.1"
 
 [features]
-parallel = []
+parallel = ["kzg/parallel"]
 
 [[bench]]
 name = "zero_poly"

@@ -1,7 +1,7 @@
 use crate::fftsettings::ZkFFTSettings;
-use crate::utils::is_power_of_two;
 use crate::zkfr::blsScalar;
 use kzg::Fr;
+use kzg::common_utils::is_power_of_two;
 
 pub fn fft_fr_slow(
     ret: &mut [blsScalar],

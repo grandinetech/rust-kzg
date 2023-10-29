@@ -2,7 +2,7 @@ use crate::data_types::{fr::Fr, g1::G1, g2::G2};
 use crate::fk20_fft::FFTSettings;
 use crate::kzg10::Curve;
 use crate::kzg10::Polynomial;
-use crate::utilities::is_power_of_2;
+use kzg::common_utils::is_power_of_2;
 
 #[derive(Debug, Clone, Default)]
 pub struct KZGSettings {

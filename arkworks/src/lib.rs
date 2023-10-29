@@ -10,6 +10,7 @@ pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
+pub mod consts;
 pub mod das;
 pub mod eip_4844;
 pub mod fft;

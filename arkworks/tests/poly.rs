@@ -7,77 +7,77 @@ mod tests {
         poly_mul_random, poly_test_div,
     };
     use rust_kzg_arkworks::kzg_proofs::FFTSettings;
-    use rust_kzg_arkworks::kzg_types::FsFr;
+    use rust_kzg_arkworks::kzg_types::ArkFr;
     use rust_kzg_arkworks::utils::PolyData;
 
     #[test]
     fn create_poly_of_length_ten_() {
-        create_poly_of_length_ten::<FsFr, PolyData>();
+        create_poly_of_length_ten::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_eval_check_() {
-        poly_eval_check::<FsFr, PolyData>();
+        poly_eval_check::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_eval_0_check_() {
-        poly_eval_0_check::<FsFr, PolyData>();
+        poly_eval_0_check::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_eval_nil_check_() {
-        poly_eval_nil_check::<FsFr, PolyData>();
+        poly_eval_nil_check::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_inverse_simple_0_() {
-        poly_inverse_simple_0::<FsFr, PolyData>();
+        poly_inverse_simple_0::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_inverse_simple_1_() {
-        poly_inverse_simple_1::<FsFr, PolyData>();
+        poly_inverse_simple_1::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_test_div_() {
-        poly_test_div::<FsFr, PolyData>();
+        poly_test_div::<ArkFr, PolyData>();
     }
 
     #[test]
     #[should_panic]
     fn poly_div_by_zero_() {
-        poly_div_by_zero::<FsFr, PolyData>();
+        poly_div_by_zero::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_mul_direct_test_() {
-        poly_mul_direct_test::<FsFr, PolyData>();
+        poly_mul_direct_test::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_mul_fft_test_() {
-        poly_mul_fft_test::<FsFr, PolyData, FFTSettings>();
+        poly_mul_fft_test::<ArkFr, PolyData, FFTSettings>();
     }
 
     #[test]
     fn poly_mul_random_() {
-        poly_mul_random::<FsFr, PolyData, FFTSettings>();
+        poly_mul_random::<ArkFr, PolyData, FFTSettings>();
     }
 
     #[test]
     fn poly_div_random_() {
-        poly_div_random::<FsFr, PolyData>();
+        poly_div_random::<ArkFr, PolyData>();
     }
 
     #[test]
     fn poly_div_long_test_() {
-        poly_div_long_test::<FsFr, PolyData>()
+        poly_div_long_test::<ArkFr, PolyData>()
     }
 
     #[test]
     fn poly_div_fast_test_() {
-        poly_div_fast_test::<FsFr, PolyData>()
+        poly_div_fast_test::<ArkFr, PolyData>()
     }
 }

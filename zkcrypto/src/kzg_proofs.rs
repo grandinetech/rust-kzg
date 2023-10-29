@@ -8,7 +8,7 @@ use crate::kzg_types::{
     pairings_verify, ZkG1Projective as G1, ZkG2Projective as G2, G1_GENERATOR, G2_GENERATOR,
 };
 
-use kzg::{FFTFr, Fr, Poly as OtherPoly, G1 as _G1, G2 as _G2};
+use kzg::{FFTFr, Fr, Poly as OtherPoly, G1 as _G1, G2 as _G2, common_utils::is_power_of_two};
 
 use crate::curve::multiscalar_mul::msm_variable_base;
 
@@ -82,10 +82,6 @@ pub(crate) fn check_proof_single(
         proof,
         &s_minus_x,
     ))
-}
-
-fn is_power_of_two(x: usize) -> bool {
-    (x != 0) && ((x & (x - 1)) == 0)
 }
 
 pub(crate) fn compute_proof_multi(

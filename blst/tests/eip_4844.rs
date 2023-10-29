@@ -1,6 +1,11 @@
 #[cfg(test)]
 mod tests {
-
+    use kzg::eip_4844::{
+        blob_to_kzg_commitment_rust, blob_to_polynomial, bytes_to_blob,
+        compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
+        evaluate_polynomial_in_evaluation_form, verify_blob_kzg_proof_batch_rust,
+        verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
+    };
     use kzg::Fr;
 
     use kzg_bench::tests::eip_4844::{
@@ -20,12 +25,7 @@ mod tests {
         verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
     use rust_kzg_blst::consts::SCALE2_ROOT_OF_UNITY;
-    use rust_kzg_blst::eip_4844::{
-        blob_to_kzg_commitment_rust, blob_to_polynomial_rust, bytes_to_blob,
-        compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
-        evaluate_polynomial_in_evaluation_form_rust, load_trusted_setup_filename_rust,
-        verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
-    };
+    use rust_kzg_blst::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_blst::types::fft_settings::expand_root_of_unity;
     use rust_kzg_blst::types::{
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
@@ -55,8 +55,8 @@ mod tests {
         compute_kzg_proof_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
         );
     }
 
@@ -74,8 +74,8 @@ mod tests {
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
             &verify_kzg_proof_rust,
         );
     }
@@ -94,8 +94,8 @@ mod tests {
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
             &verify_kzg_proof_rust,
         );
     }
@@ -114,8 +114,8 @@ mod tests {
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
             &compute_kzg_proof_rust,
-            &blob_to_polynomial_rust,
-            &evaluate_polynomial_in_evaluation_form_rust,
+            &blob_to_polynomial,
+            &evaluate_polynomial_in_evaluation_form,
             &verify_kzg_proof_rust,
         );
     }
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     pub fn compute_kzg_proof_incorrect_blob_length() {
-        compute_kzg_proof_incorrect_blob_length_test::<FsFr, FsPoly>(&blob_to_polynomial_rust);
+        compute_kzg_proof_incorrect_blob_length_test::<FsFr, FsPoly>(&blob_to_polynomial);
     }
 
     #[test]
@@ -271,7 +271,7 @@ mod tests {
             FsG2,
             FsFFTSettings,
             FsKZGSettings,
-        >(&evaluate_polynomial_in_evaluation_form_rust);
+        >(&evaluate_polynomial_in_evaluation_form);
     }
 
     #[test]
