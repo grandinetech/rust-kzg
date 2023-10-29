@@ -2,11 +2,11 @@
 mod tests {
     use kzg_bench::tests::fk20_proofs::*;
 
-    use rust_kzg_arkworks::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings};
-    use rust_kzg_arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-    use rust_kzg_arkworks::kzg_types::ZFr as BlstFr;
-    use rust_kzg_arkworks::kzg_types::{ZG1, ZG2};
-    use rust_kzg_arkworks::poly::PolyData;
+    use rust_kzg_zkcrypto::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings};
+    use rust_kzg_zkcrypto::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
+    use rust_kzg_zkcrypto::kzg_types::ZFr as BlstFr;
+    use rust_kzg_zkcrypto::kzg_types::{ZG1, ZG2};
+    use rust_kzg_zkcrypto::poly::PolyData;
 
     #[test]
     fn test_fk_single() {

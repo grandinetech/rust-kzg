@@ -22,8 +22,14 @@ subtle = "2.5.0"
 criterion = "0.5.1"
 
 [features]
+default = [
+    "std"
+]
 parallel = ["kzg/parallel"]
-std = ["ff/std", "kzg/std"]
+std = [
+    "kzg/std",
+    "libc/std",
+]
 
 [[bench]]
 name = "fft"
