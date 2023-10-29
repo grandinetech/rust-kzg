@@ -23,7 +23,7 @@ criterion = "0.5.1"
 
 [features]
 parallel = ["kzg/parallel"]
-std = ["ff/std"]
+std = ["ff/std", "kzg/std"]
 
 [[bench]]
 name = "fft"

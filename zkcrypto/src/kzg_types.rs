@@ -375,7 +375,6 @@ impl G1 for ZG1 {
             proj: self.proj.double(),
         }
     }
-    //zyme
     fn add(&self, b: &Self) -> Self {
         Self {
             proj: self.proj + b.proj,
