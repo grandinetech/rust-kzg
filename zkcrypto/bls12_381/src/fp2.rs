@@ -1,4 +1,5 @@
 //! This module implements arithmetic over the quadratic extension field Fp2.
+#![allow(clippy::all)]
 
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};

@@ -6,16 +6,12 @@ use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
-
 pub fn g1_linear_combination(out: &mut ZG1, points: &[ZG1], scalars: &[BlstFr], len: usize) {
     *out = ZG1::default();
     for i in 0..len {
         let tmp = points[i].mul(&scalars[i]);
         *out = out.add_or_dbl(&tmp);
     }
-    return;
 }
 pub fn make_data(data: usize) -> Vec<ZG1> {
     let mut vec = Vec::new();

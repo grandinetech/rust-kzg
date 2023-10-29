@@ -121,7 +121,7 @@ impl KzgFr for ZFr {
                     bytes.len()
                 )
             })
-            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let mut tmp = Scalar([0, 0, 0, 0]);
 
                 tmp.0[0] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
@@ -142,7 +142,7 @@ impl KzgFr for ZFr {
                 tmp2.0[3] = tmp.0[0];
 
                 tmp2 *= &R2;
-                Ok(Self { fr: tmp2 })
+                Self { fr: tmp2 }
             })
     }
 

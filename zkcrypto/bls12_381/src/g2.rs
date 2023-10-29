@@ -1,4 +1,5 @@
 //! This module provides an implementation of the $\mathbb{G}_2$ group of BLS12-381.
+#![allow(clippy::all)]
 
 use core::borrow::Borrow;
 use core::fmt;
