@@ -25,7 +25,9 @@ criterion = "0.5.1"
 default = [
     "std"
 ]
-parallel = ["kzg/parallel"]
+parallel = [
+    "std", "dep:rayon", "kzg/parallel"
+]
 std = [
     "kzg/std",
     "libc/std",
