@@ -1,189 +1,5 @@
-use super::fp::*;
-use super::fp2::*;
-
-// ================ util.rs ========================
-
-// #[cfg(feature = "groups")]
-// const BLS_X: u64 = 0xd201_0000_0001_0000;
-// #[cfg(feature = "groups")]
-// const BLS_X_IS_NEGATIVE: bool = true;
-
-/// Compute a + b + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + (b as u128) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a - (b + borrow), returning the result and the new borrow.
-#[inline(always)]
-pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
-    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a + (b * c) + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn mac(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + ((b as u128) * (c as u128)) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-macro_rules! impl_add_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Add<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: &'b $rhs) -> $output {
-                &self + rhs
-            }
-        }
-
-        impl<'a> Add<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                self + &rhs
-            }
-        }
-
-        impl Add<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                &self + &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_sub_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Sub<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: &'b $rhs) -> $output {
-                &self - rhs
-            }
-        }
-
-        impl<'a> Sub<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                self - &rhs
-            }
-        }
-
-        impl Sub<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                &self - &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl_add_binop_specify_output!($lhs, $rhs, $output);
-        impl_sub_binop_specify_output!($lhs, $rhs, $output);
-    };
-}
-
-macro_rules! impl_binops_multiplicative_mixed {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Mul<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: &'b $rhs) -> $output {
-                &self * rhs
-            }
-        }
-
-        impl<'a> Mul<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                self * &rhs
-            }
-        }
-
-        impl Mul<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                &self * &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_additive_specify_output!($lhs, $rhs, $lhs);
-
-        impl SubAssign<$rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: $rhs) {
-                *self = &*self - &rhs;
-            }
-        }
-
-        impl AddAssign<$rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: $rhs) {
-                *self = &*self + &rhs;
-            }
-        }
-
-        impl<'b> SubAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self - rhs;
-            }
-        }
-
-        impl<'b> AddAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self + rhs;
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_multiplicative {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_multiplicative_mixed!($lhs, $rhs, $lhs);
-
-        impl MulAssign<$rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: $rhs) {
-                *self = &*self * &rhs;
-            }
-        }
-
-        impl<'b> MulAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self * rhs;
-            }
-        }
-    };
-}
-
-// =================================================
+use crate::fp::*;
+use crate::fp2::*;
 
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -295,17 +111,10 @@ impl Fp6 {
     }
 
     pub fn mul_by_1(&self, c1: &Fp2) -> Fp6 {
-        let b_b = self.c1 * c1;
-
-        let t1 = (self.c1 + self.c2) * c1 - b_b;
-        let t1 = t1.mul_by_nonresidue();
-
-        let t2 = (self.c0 + self.c1) * c1 - b_b;
-
         Fp6 {
-            c0: t1,
-            c1: t2,
-            c2: b_b,
+            c0: (self.c2 * c1).mul_by_nonresidue(),
+            c1: self.c0 * c1,
+            c2: self.c1 * c1,
         }
     }
 
@@ -313,12 +122,11 @@ impl Fp6 {
         let a_a = self.c0 * c0;
         let b_b = self.c1 * c1;
 
-        let t1 = (self.c1 + self.c2) * c1 - b_b;
-        let t1 = t1.mul_by_nonresidue() + a_a;
+        let t1 = (self.c2 * c1).mul_by_nonresidue() + a_a;
 
         let t2 = (c0 + c1) * (self.c0 + self.c1) - a_a - b_b;
 
-        let t3 = (self.c0 + self.c2) * c0 - a_a + b_b;
+        let t3 = self.c2 * c0 + b_b;
 
         Fp6 {
             c0: t1,
@@ -384,6 +192,87 @@ impl Fp6 {
         self.c0.is_zero() & self.c1.is_zero() & self.c2.is_zero()
     }
 
+    /// Returns `c = self * b`.
+    ///
+    /// Implements the full-tower interleaving strategy from
+    /// [ePrint 2022-376](https://eprint.iacr.org/2022/367).
+    #[inline]
+    fn mul_interleaved(&self, b: &Self) -> Self {
+        // The intuition for this algorithm is that we can look at F_p^6 as a direct
+        // extension of F_p^2, and express the overall operations down to the base field
+        // F_p instead of only over F_p^2. This enables us to interleave multiplications
+        // and reductions, ensuring that we don't require double-width intermediate
+        // representations (with around twice as many limbs as F_p elements).
+
+        // We want to express the multiplication c = a x b, where a = (a_0, a_1, a_2) is
+        // an element of F_p^6, and a_i = (a_i,0, a_i,1) is an element of F_p^2. The fully
+        // expanded multiplication is given by (2022-376 §5):
+        //
+        //   c_0,0 = a_0,0 b_0,0 - a_0,1 b_0,1 + a_1,0 b_2,0 - a_1,1 b_2,1 + a_2,0 b_1,0 - a_2,1 b_1,1
+        //                                     - a_1,0 b_2,1 - a_1,1 b_2,0 - a_2,0 b_1,1 - a_2,1 b_1,0.
+        //         = a_0,0 b_0,0 - a_0,1 b_0,1 + a_1,0 (b_2,0 - b_2,1) - a_1,1 (b_2,0 + b_2,1)
+        //                                     + a_2,0 (b_1,0 - b_1,1) - a_2,1 (b_1,0 + b_1,1).
+        //
+        //   c_0,1 = a_0,0 b_0,1 + a_0,1 b_0,0 + a_1,0 b_2,1 + a_1,1 b_2,0 + a_2,0 b_1,1 + a_2,1 b_1,0
+        //                                     + a_1,0 b_2,0 - a_1,1 b_2,1 + a_2,0 b_1,0 - a_2,1 b_1,1.
+        //         = a_0,0 b_0,1 + a_0,1 b_0,0 + a_1,0(b_2,0 + b_2,1) + a_1,1(b_2,0 - b_2,1)
+        //                                     + a_2,0(b_1,0 + b_1,1) + a_2,1(b_1,0 - b_1,1).
+        //
+        //   c_1,0 = a_0,0 b_1,0 - a_0,1 b_1,1 + a_1,0 b_0,0 - a_1,1 b_0,1 + a_2,0 b_2,0 - a_2,1 b_2,1
+        //                                                                 - a_2,0 b_2,1 - a_2,1 b_2,0.
+        //         = a_0,0 b_1,0 - a_0,1 b_1,1 + a_1,0 b_0,0 - a_1,1 b_0,1 + a_2,0(b_2,0 - b_2,1)
+        //                                                                 - a_2,1(b_2,0 + b_2,1).
+        //
+        //   c_1,1 = a_0,0 b_1,1 + a_0,1 b_1,0 + a_1,0 b_0,1 + a_1,1 b_0,0 + a_2,0 b_2,1 + a_2,1 b_2,0
+        //                                                                 + a_2,0 b_2,0 - a_2,1 b_2,1
+        //         = a_0,0 b_1,1 + a_0,1 b_1,0 + a_1,0 b_0,1 + a_1,1 b_0,0 + a_2,0(b_2,0 + b_2,1)
+        //                                                                 + a_2,1(b_2,0 - b_2,1).
+        //
+        //   c_2,0 = a_0,0 b_2,0 - a_0,1 b_2,1 + a_1,0 b_1,0 - a_1,1 b_1,1 + a_2,0 b_0,0 - a_2,1 b_0,1.
+        //   c_2,1 = a_0,0 b_2,1 + a_0,1 b_2,0 + a_1,0 b_1,1 + a_1,1 b_1,0 + a_2,0 b_0,1 + a_2,1 b_0,0.
+        //
+        // Each of these is a "sum of products", which we can compute efficiently.
+
+        let a = self;
+        let b10_p_b11 = b.c1.c0 + b.c1.c1;
+        let b10_m_b11 = b.c1.c0 - b.c1.c1;
+        let b20_p_b21 = b.c2.c0 + b.c2.c1;
+        let b20_m_b21 = b.c2.c0 - b.c2.c1;
+
+        Fp6 {
+            c0: Fp2 {
+                c0: Fp::sum_of_products(
+                    [a.c0.c0, -a.c0.c1, a.c1.c0, -a.c1.c1, a.c2.c0, -a.c2.c1],
+                    [b.c0.c0, b.c0.c1, b20_m_b21, b20_p_b21, b10_m_b11, b10_p_b11],
+                ),
+                c1: Fp::sum_of_products(
+                    [a.c0.c0, a.c0.c1, a.c1.c0, a.c1.c1, a.c2.c0, a.c2.c1],
+                    [b.c0.c1, b.c0.c0, b20_p_b21, b20_m_b21, b10_p_b11, b10_m_b11],
+                ),
+            },
+            c1: Fp2 {
+                c0: Fp::sum_of_products(
+                    [a.c0.c0, -a.c0.c1, a.c1.c0, -a.c1.c1, a.c2.c0, -a.c2.c1],
+                    [b.c1.c0, b.c1.c1, b.c0.c0, b.c0.c1, b20_m_b21, b20_p_b21],
+                ),
+                c1: Fp::sum_of_products(
+                    [a.c0.c0, a.c0.c1, a.c1.c0, a.c1.c1, a.c2.c0, a.c2.c1],
+                    [b.c1.c1, b.c1.c0, b.c0.c1, b.c0.c0, b20_p_b21, b20_m_b21],
+                ),
+            },
+            c2: Fp2 {
+                c0: Fp::sum_of_products(
+                    [a.c0.c0, -a.c0.c1, a.c1.c0, -a.c1.c1, a.c2.c0, -a.c2.c1],
+                    [b.c2.c0, b.c2.c1, b.c1.c0, b.c1.c1, b.c0.c0, b.c0.c1],
+                ),
+                c1: Fp::sum_of_products(
+                    [a.c0.c0, a.c0.c1, a.c1.c0, a.c1.c1, a.c2.c0, a.c2.c1],
+                    [b.c2.c1, b.c2.c0, b.c1.c1, b.c1.c0, b.c0.c1, b.c0.c0],
+                ),
+            },
+        }
+    }
+
     #[inline]
     pub fn square(&self) -> Self {
         let s0 = self.c0.square();
@@ -428,38 +317,7 @@ impl<'a, 'b> Mul<&'b Fp6> for &'a Fp6 {
 
     #[inline]
     fn mul(self, other: &'b Fp6) -> Self::Output {
-        let aa = self.c0 * other.c0;
-        let bb = self.c1 * other.c1;
-        let cc = self.c2 * other.c2;
-
-        let t1 = other.c1 + other.c2;
-        let tmp = self.c1 + self.c2;
-        let t1 = t1 * tmp;
-        let t1 = t1 - bb;
-        let t1 = t1 - cc;
-        let t1 = t1.mul_by_nonresidue();
-        let t1 = t1 + aa;
-
-        let t3 = other.c0 + other.c2;
-        let tmp = self.c0 + self.c2;
-        let t3 = t3 * tmp;
-        let t3 = t3 - aa;
-        let t3 = t3 + bb;
-        let t3 = t3 - cc;
-
-        let t2 = other.c0 + other.c1;
-        let tmp = self.c0 + self.c1;
-        let t2 = t2 * tmp;
-        let t2 = t2 - aa;
-        let t2 = t2 - bb;
-        let cc = cc.mul_by_nonresidue();
-        let t2 = t2 + cc;
-
-        Fp6 {
-            c0: t1,
-            c1: t2,
-            c2: t3,
-        }
+        self.mul_interleaved(other)
     }
 }
 
@@ -516,7 +374,7 @@ impl_binops_multiplicative!(Fp6, Fp6);
 
 #[test]
 fn test_arithmetic() {
-    use super::fp::*;
+    use crate::fp::*;
 
     let a = Fp6 {
         c0: Fp2 {

@@ -1,198 +1,18 @@
 //! This module provides an implementation of the BLS12-381 base field `GF(p)`
 //! where `p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab`
 
-// ================ util.rs ========================
-
-/// Compute a + b + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + (b as u128) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a - (b + borrow), returning the result and the new borrow.
-#[inline(always)]
-pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
-    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a + (b * c) + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn mac(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + ((b as u128) * (c as u128)) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-macro_rules! impl_add_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Add<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: &'b $rhs) -> $output {
-                &self + rhs
-            }
-        }
-
-        impl<'a> Add<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                self + &rhs
-            }
-        }
-
-        impl Add<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                &self + &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_sub_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Sub<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: &'b $rhs) -> $output {
-                &self - rhs
-            }
-        }
-
-        impl<'a> Sub<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                self - &rhs
-            }
-        }
-
-        impl Sub<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                &self - &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl_add_binop_specify_output!($lhs, $rhs, $output);
-        impl_sub_binop_specify_output!($lhs, $rhs, $output);
-    };
-}
-
-macro_rules! impl_binops_multiplicative_mixed {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Mul<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: &'b $rhs) -> $output {
-                &self * rhs
-            }
-        }
-
-        impl<'a> Mul<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                self * &rhs
-            }
-        }
-
-        impl Mul<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                &self * &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_additive_specify_output!($lhs, $rhs, $lhs);
-
-        impl SubAssign<$rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: $rhs) {
-                *self = &*self - &rhs;
-            }
-        }
-
-        impl AddAssign<$rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: $rhs) {
-                *self = &*self + &rhs;
-            }
-        }
-
-        impl<'b> SubAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self - rhs;
-            }
-        }
-
-        impl<'b> AddAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self + rhs;
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_multiplicative {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_multiplicative_mixed!($lhs, $rhs, $lhs);
-
-        impl MulAssign<$rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: $rhs) {
-                *self = &*self * &rhs;
-            }
-        }
-
-        impl<'b> MulAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self * rhs;
-            }
-        }
-    };
-}
-
-// =================================================
-
-use core::convert::TryFrom;
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-// use crate::util::{adc, mac, sbb};
+use crate::util::{adc, mac, sbb};
 
 // The internal representation of this type is six 64-bit unsigned
 // integers in little-endian order. `Fp` values are always in
 // Montgomery form; i.e., Scalar(a) = aR mod p, with R = 2^384.
 #[derive(Copy, Clone)]
-pub struct Fp(pub(crate) [u64; 6]);
+pub struct Fp(pub [u64; 6]);
 
 impl fmt::Debug for Fp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -388,7 +208,7 @@ impl Fp {
 
     /// Converts an element of `Fp` into a byte representation in
     /// big-endian byte order.
-    pub fn to_bytes(&self) -> [u8; 48] {
+    pub fn to_bytes(self) -> [u8; 48] {
         // Turn into canonical form by computing
         // (a.R) / R = a
         let tmp = Fp::montgomery_reduce(
@@ -557,6 +377,7 @@ impl Fp {
 
         Fp([r0, r1, r2, r3, r4, r5])
     }
+
     #[inline]
     pub const fn add(&self, rhs: &Fp) -> Fp {
         let (d0, carry) = adc(self.0[0], rhs.0[0], 0);
@@ -568,7 +389,7 @@ impl Fp {
 
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
-        Fp([d0, d1, d2, d3, d4, d5]).subtract_p()
+        (&Fp([d0, d1, d2, d3, d4, d5])).subtract_p()
     }
 
     #[inline]
@@ -597,10 +418,71 @@ impl Fp {
     }
 
     #[inline]
-    pub fn sub(&self, rhs: &Fp) -> Fp {
-        rhs.neg().add(self)
+    pub const fn sub(&self, rhs: &Fp) -> Fp {
+        (&rhs.neg()).add(self)
     }
-    #[allow(clippy::too_many_arguments)]
+
+    /// Returns `c = a.zip(b).fold(0, |acc, (a_i, b_i)| acc + a_i * b_i)`.
+    ///
+    /// Implements Algorithm 2 from Patrick Longa's
+    /// [ePrint 2022-367](https://eprint.iacr.org/2022/367) §3.
+    #[inline]
+    pub(crate) fn sum_of_products<const T: usize>(a: [Fp; T], b: [Fp; T]) -> Fp {
+        // For a single `a x b` multiplication, operand scanning (schoolbook) takes each
+        // limb of `a` in turn, and multiplies it by all of the limbs of `b` to compute
+        // the result as a double-width intermediate representation, which is then fully
+        // reduced at the end. Here however we have pairs of multiplications (a_i, b_i),
+        // the results of which are summed.
+        //
+        // The intuition for this algorithm is two-fold:
+        // - We can interleave the operand scanning for each pair, by processing the jth
+        //   limb of each `a_i` together. As these have the same offset within the overall
+        //   operand scanning flow, their results can be summed directly.
+        // - We can interleave the multiplication and reduction steps, resulting in a
+        //   single bitshift by the limb size after each iteration. This means we only
+        //   need to store a single extra limb overall, instead of keeping around all the
+        //   intermediate results and eventually having twice as many limbs.
+
+        // Algorithm 2, line 2
+        let (u0, u1, u2, u3, u4, u5) =
+            (0..6).fold((0, 0, 0, 0, 0, 0), |(u0, u1, u2, u3, u4, u5), j| {
+                // Algorithm 2, line 3
+                // For each pair in the overall sum of products:
+                let (t0, t1, t2, t3, t4, t5, t6) = (0..T).fold(
+                    (u0, u1, u2, u3, u4, u5, 0),
+                    |(t0, t1, t2, t3, t4, t5, t6), i| {
+                        // Compute digit_j x row and accumulate into `u`.
+                        let (t0, carry) = mac(t0, a[i].0[j], b[i].0[0], 0);
+                        let (t1, carry) = mac(t1, a[i].0[j], b[i].0[1], carry);
+                        let (t2, carry) = mac(t2, a[i].0[j], b[i].0[2], carry);
+                        let (t3, carry) = mac(t3, a[i].0[j], b[i].0[3], carry);
+                        let (t4, carry) = mac(t4, a[i].0[j], b[i].0[4], carry);
+                        let (t5, carry) = mac(t5, a[i].0[j], b[i].0[5], carry);
+                        let (t6, _) = adc(t6, 0, carry);
+
+                        (t0, t1, t2, t3, t4, t5, t6)
+                    },
+                );
+
+                // Algorithm 2, lines 4-5
+                // This is a single step of the usual Montgomery reduction process.
+                let k = t0.wrapping_mul(INV);
+                let (_, carry) = mac(t0, k, MODULUS[0], 0);
+                let (r1, carry) = mac(t1, k, MODULUS[1], carry);
+                let (r2, carry) = mac(t2, k, MODULUS[2], carry);
+                let (r3, carry) = mac(t3, k, MODULUS[3], carry);
+                let (r4, carry) = mac(t4, k, MODULUS[4], carry);
+                let (r5, carry) = mac(t5, k, MODULUS[5], carry);
+                let (r6, _) = adc(t6, 0, carry);
+
+                (r1, r2, r3, r4, r5, r6)
+            });
+
+        // Because we represent F_p elements in non-redundant form, we need a final
+        // conditional subtraction to ensure the output is in range.
+        (&Fp([u0, u1, u2, u3, u4, u5])).subtract_p()
+    }
+
     #[inline(always)]
     pub(crate) const fn montgomery_reduce(
         t0: u64,
@@ -676,7 +558,7 @@ impl Fp {
 
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
-        Fp([r6, r7, r8, r9, r10, r11]).subtract_p()
+        (&Fp([r6, r7, r8, r9, r10, r11])).subtract_p()
     }
 
     #[inline]
@@ -794,7 +676,6 @@ fn test_conditional_selection() {
 }
 
 #[test]
-#[allow(clippy::needless_borrow)]
 fn test_equality() {
     fn is_equal(a: &Fp, b: &Fp) -> bool {
         let eq = a == b;

@@ -1,195 +1,11 @@
 //! This module implements arithmetic over the quadratic extension field Fp2.
 
-// ================ util.rs ========================
-
-// #[cfg(feature = "groups")]
-// const BLS_X: u64 = 0xd201_0000_0001_0000;
-// #[cfg(feature = "groups")]
-// const BLS_X_IS_NEGATIVE: bool = true;
-
-/// Compute a + b + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + (b as u128) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a - (b + borrow), returning the result and the new borrow.
-#[inline(always)]
-pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
-    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a + (b * c) + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn mac(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + ((b as u128) * (c as u128)) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-macro_rules! impl_add_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Add<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: &'b $rhs) -> $output {
-                &self + rhs
-            }
-        }
-
-        impl<'a> Add<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                self + &rhs
-            }
-        }
-
-        impl Add<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                &self + &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_sub_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Sub<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: &'b $rhs) -> $output {
-                &self - rhs
-            }
-        }
-
-        impl<'a> Sub<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                self - &rhs
-            }
-        }
-
-        impl Sub<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                &self - &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl_add_binop_specify_output!($lhs, $rhs, $output);
-        impl_sub_binop_specify_output!($lhs, $rhs, $output);
-    };
-}
-
-macro_rules! impl_binops_multiplicative_mixed {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Mul<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: &'b $rhs) -> $output {
-                &self * rhs
-            }
-        }
-
-        impl<'a> Mul<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                self * &rhs
-            }
-        }
-
-        impl Mul<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                &self * &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_additive_specify_output!($lhs, $rhs, $lhs);
-
-        impl SubAssign<$rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: $rhs) {
-                *self = &*self - &rhs;
-            }
-        }
-
-        impl AddAssign<$rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: $rhs) {
-                *self = &*self + &rhs;
-            }
-        }
-
-        impl<'b> SubAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self - rhs;
-            }
-        }
-
-        impl<'b> AddAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self + rhs;
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_multiplicative {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_multiplicative_mixed!($lhs, $rhs, $lhs);
-
-        impl MulAssign<$rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: $rhs) {
-                *self = &*self * &rhs;
-            }
-        }
-
-        impl<'b> MulAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self * rhs;
-            }
-        }
-    };
-}
-
-// =================================================
-
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use super::fp::Fp;
+use crate::fp::Fp;
 
 #[derive(Copy, Clone)]
 pub struct Fp2 {
@@ -363,7 +179,7 @@ impl Fp2 {
             | (self.c1.is_zero() & self.c0.lexicographically_largest())
     }
 
-    pub fn square(&self) -> Fp2 {
+    pub const fn square(&self) -> Fp2 {
         // Complex squaring:
         //
         // v0  = c0 * c1
@@ -376,61 +192,53 @@ impl Fp2 {
         // c0' = (c0 + c1) * (c0 - c1)
         // c1' = 2 * c0 * c1
 
-        let a = self.c0.add(&self.c1);
-        let b = self.c0.sub(&self.c1);
-        let c = self.c0.add(&self.c0);
+        let a = (&self.c0).add(&self.c1);
+        let b = (&self.c0).sub(&self.c1);
+        let c = (&self.c0).add(&self.c0);
 
         Fp2 {
-            c0: a.mul(&b),
-            c1: c.mul(&self.c1),
+            c0: (&a).mul(&b),
+            c1: (&c).mul(&self.c1),
         }
     }
 
     pub fn mul(&self, rhs: &Fp2) -> Fp2 {
-        // Karatsuba multiplication:
+        // F_{p^2} x F_{p^2} multiplication implemented with operand scanning (schoolbook)
+        // computes the result as:
         //
-        // v0  = a0 * b0
-        // v1  = a1 * b1
-        // c0 = v0 + \beta * v1
-        // c1 = (a0 + a1) * (b0 + b1) - v0 - v1
+        //   a·b = (a_0 b_0 + a_1 b_1 β) + (a_0 b_1 + a_1 b_0)i
         //
-        // In BLS12-381's F_{p^2}, our \beta is -1 so we
-        // can modify this formula. (Also, since we always
-        // subtract v1, we can compute v1 = -a1 * b1.)
+        // In BLS12-381's F_{p^2}, our β is -1, so the resulting F_{p^2} element is:
         //
-        // v0  = a0 * b0
-        // v1  = (-a1) * b1
-        // c0 = v0 + v1
-        // c1 = (a0 + a1) * (b0 + b1) - v0 + v1
+        //   c_0 = a_0 b_0 - a_1 b_1
+        //   c_1 = a_0 b_1 + a_1 b_0
+        //
+        // Each of these is a "sum of products", which we can compute efficiently.
 
-        let v0 = self.c0.mul(&rhs.c0);
-        let v1 = self.c1.neg().mul(&rhs.c1);
-        let c0 = v0.add(&v1);
-        let c1 = self.c0.add(&self.c1).mul(&rhs.c0.add(&rhs.c1));
-        let c1 = c1.sub(&v0);
-        let c1 = c1.add(&v1);
-
-        Fp2 { c0, c1 }
-    }
-
-    pub fn add(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
-            c0: self.c0.add(&rhs.c0),
-            c1: self.c1.add(&rhs.c1),
+            c0: Fp::sum_of_products([self.c0, -self.c1], [rhs.c0, rhs.c1]),
+            c1: Fp::sum_of_products([self.c0, self.c1], [rhs.c1, rhs.c0]),
         }
     }
 
-    pub fn sub(&self, rhs: &Fp2) -> Fp2 {
+    pub const fn add(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
-            c0: self.c0.sub(&rhs.c0),
-            c1: self.c1.sub(&rhs.c1),
+            c0: (&self.c0).add(&rhs.c0),
+            c1: (&self.c1).add(&rhs.c1),
         }
     }
 
-    pub fn neg(&self) -> Fp2 {
+    pub const fn sub(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
-            c0: self.c0.neg(),
-            c1: self.c1.neg(),
+            c0: (&self.c0).sub(&rhs.c0),
+            c1: (&self.c1).sub(&rhs.c1),
+        }
+    }
+
+    pub const fn neg(&self) -> Fp2 {
+        Fp2 {
+            c0: (&self.c0).neg(),
+            c1: (&self.c1).neg(),
         }
     }
 
@@ -464,7 +272,7 @@ impl Fp2 {
                     c0: -x0.c1,
                     c1: x0.c0,
                 },
-                alpha.ct_eq(&Fp2::one().neg()),
+                alpha.ct_eq(&(&Fp2::one()).neg()),
             )
             // Otherwise, the correct solution is (1 + alpha)^((q - 1) // 2) * x0
             .or_else(|| {
@@ -567,7 +375,6 @@ fn test_conditional_selection() {
 }
 
 #[test]
-#[allow(clippy::needless_borrow)]
 fn test_equality() {
     fn is_equal(a: &Fp2, b: &Fp2) -> bool {
         let eq = a == b;

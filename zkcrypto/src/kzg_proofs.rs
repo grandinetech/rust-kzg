@@ -1,46 +1,57 @@
-use crate::fftsettings::ZkFFTSettings;
-use crate::poly::ZPoly as Poly;
-use crate::zkfr::blsScalar as Scalar;
-use core::borrow::Borrow;
-use std::ops::Mul;
-
-use crate::kzg_types::{
-    pairings_verify, ZkG1Projective as G1, ZkG2Projective as G2, G1_GENERATOR, G2_GENERATOR,
+#![allow(non_camel_case_types)]
+use crate::consts::{G1_GENERATOR, G2_GENERATOR};
+use crate::kzg_types::ZFr;
+use crate::kzg_types::{ZFr as BlstFr, ZG1, ZG2};
+use crate::poly::PolyData;
+use bls12_381::{
+    multi_miller_loop, Fp12 as ZFp12, G1Affine, G2Affine, G2Prepared, MillerLoopResult,
 };
+use kzg::eip_4844::hash_to_bls_field;
+use kzg::{Fr as FrTrait, G1Mul, G2Mul};
+use std::ops::{Add, Neg};
 
-use kzg::{FFTFr, Fr, Poly as OtherPoly, G1 as _G1, G2 as _G2, common_utils::is_power_of_two};
+#[derive(Debug, Clone)]
+pub struct FFTSettings {
+    pub max_width: usize,
+    pub root_of_unity: BlstFr,
+    pub expanded_roots_of_unity: Vec<BlstFr>,
+    pub reverse_roots_of_unity: Vec<BlstFr>,
+    pub roots_of_unity: Vec<BlstFr>,
+}
 
-use crate::curve::multiscalar_mul::msm_variable_base;
+pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, String> {
+    let mut generated_powers = vec![BlstFr::one(), *root];
+
+    while !(generated_powers.last().unwrap().is_one()) {
+        if generated_powers.len() > width {
+            return Err(String::from("Root of unity multiplied for too long"));
+        }
+
+        generated_powers.push(generated_powers.last().unwrap().mul(root));
+    }
+
+    if generated_powers.len() != width + 1 {
+        return Err(String::from("Root of unity has invalid scale"));
+    }
+
+    Ok(generated_powers)
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct KZGSettings {
-    pub fs: ZkFFTSettings,
-    pub secret_g1: Vec<G1>,
-    pub secret_g2: Vec<G2>,
-    pub length: u64,
+    pub fs: FFTSettings,
+    pub secret_g1: Vec<ZG1>,
+    pub secret_g2: Vec<ZG2>,
 }
 
-pub(crate) fn new_kzg_settings(
-    _secret_g1: Vec<G1>,
-    _secret_g2: Vec<G2>,
-    secrets_len: u64,
-    _fs: &ZkFFTSettings,
-) -> KZGSettings {
-    KZGSettings {
-        fs: _fs.borrow().clone(),
-        secret_g1: _secret_g1,
-        secret_g2: _secret_g2,
-        length: secrets_len,
-    }
-}
+pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ZG1>, Vec<ZG2>) {
+    let s = hash_to_bls_field::<ZFr>(&secret);
+    let mut s_pow = ZFr::one();
 
-pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<G2>) {
-    let s = Scalar::from_bytes(&secret).unwrap();
-    let mut s_pow = Scalar::one();
+    let mut s1 = Vec::with_capacity(len);
+    let mut s2 = Vec::with_capacity(len);
 
-    let mut s1 = Vec::new();
-    let mut s2 = Vec::new();
-    for _ in 0..n {
+    for _ in 0..len {
         s1.push(G1_GENERATOR.mul(&s_pow));
         s2.push(G2_GENERATOR.mul(&s_pow));
 
@@ -50,100 +61,45 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<G1>, Vec<
     (s1, s2)
 }
 
-pub(crate) fn commit_to_poly(p: &Poly, ks: &KZGSettings) -> Result<G1, String> {
-    if p.coeffs.len() > ks.secret_g1.len() {
-        Err(String::from("Poly given is too long"))
-    } else if p.is_zero() {
-        Ok(G1::identity())
-    } else {
-        Ok(msm_variable_base(&ks.secret_g1, &p.coeffs))
+pub fn eval_poly(p: &PolyData, x: &ZFr) -> ZFr {
+    if p.coeffs.is_empty() {
+        return ZFr::zero();
+    } else if x.is_zero() {
+        return p.coeffs[0];
     }
+
+    let mut out = p.coeffs[p.coeffs.len() - 1];
+    let mut i = p.coeffs.len() - 2;
+
+    loop {
+        let temp = out.mul(x);
+        out = temp.add(&p.coeffs[i]);
+
+        if i == 0 {
+            break;
+        }
+        i -= 1;
+    }
+    out
 }
 
-pub(crate) fn compute_proof_single(p: &Poly, x: &Scalar, ks: &KZGSettings) -> Result<G1, String> {
-    compute_proof_multi(p, x, 1, ks)
-}
+pub fn pairings_verify(a1: &ZG1, a2: &ZG2, b1: &ZG1, b2: &ZG2) -> bool {
+    let a1neg = a1.proj.neg();
 
-pub(crate) fn check_proof_single(
-    com: &G1,
-    proof: &G1,
-    x: &Scalar,
-    value: &Scalar,
-    ks: &KZGSettings,
-) -> Result<bool, String> {
-    let x_g2: G2 = G2_GENERATOR.mul(x);
-    let s_minus_x: G2 = ks.secret_g2[1].sub(&x_g2);
-    let y_g1 = G1_GENERATOR.mul(value);
-    let commitment_minus_y: G1 = com.sub(&y_g1);
+    let aa1 = G1Affine::from(&a1neg);
+    let bb1 = G1Affine::from(b1.proj);
+    let aa2 = G2Affine::from(a2.proj);
+    let bb2 = G2Affine::from(b2.proj);
 
-    Ok(pairings_verify(
-        &commitment_minus_y,
-        &G2_GENERATOR,
-        proof,
-        &s_minus_x,
-    ))
-}
+    let aa2_prepared = G2Prepared::from(aa2);
+    let bb2_prepared = G2Prepared::from(bb2);
 
-pub(crate) fn compute_proof_multi(
-    p: &Poly,
-    x: &Scalar,
-    n: usize,
-    ks: &KZGSettings,
-) -> Result<G1, String> {
-    if !is_power_of_two(n) {
-        return Err(String::from("n has to be power of two"));
-    }
+    let loop0 = multi_miller_loop(&[(&aa1, &aa2_prepared)]);
+    let loop1 = multi_miller_loop(&[(&bb1, &bb2_prepared)]);
 
-    let mut p2: Poly = Poly { coeffs: Vec::new() };
+    let gt_point = loop0.add(loop1);
 
-    let x_power_n = <Scalar as Fr>::pow(x, n);
-    p2.coeffs.push(x_power_n.negate());
+    let new_point = MillerLoopResult::final_exponentiation(&gt_point);
 
-    for _ in 1..n {
-        p2.coeffs.push(Scalar::zero());
-    }
-
-    p2.coeffs.push(Scalar::one());
-
-    let mut p = p.clone();
-    let q = p.div(&p2).unwrap();
-    Ok(commit_to_poly(&q, ks).unwrap())
-}
-
-pub(crate) fn check_proof_multi(
-    com: &G1,
-    proof: &G1,
-    x: &Scalar,
-    values: &[Scalar],
-    n: usize,
-    ks: &KZGSettings,
-) -> Result<bool, String> {
-    if !is_power_of_two(n) {
-        return Err(String::from("n has to be power of two"));
-    }
-
-    let mut poly = Poly {
-        coeffs: ks.fs.fft_fr(values, true)?,
-    };
-
-    let x_inverse = x.inverse();
-    let mut x_inverse_power = x_inverse;
-    for i in 1..n {
-        poly.coeffs[i] = poly.coeffs[i].mul(&x_inverse_power);
-        x_inverse_power = x_inverse_power.mul(&x_inverse);
-    }
-
-    let x_power = x_inverse_power.inverse();
-    let xn2 = G2_GENERATOR.mul(&x_power);
-    let xn_minus_yn = ks.secret_g2[n].sub(&xn2);
-
-    let g1 = commit_to_poly(&poly, ks).unwrap();
-    let commit_minus_interp = com.sub(&g1);
-
-    Ok(pairings_verify(
-        &commit_minus_interp,
-        &G2_GENERATOR,
-        proof,
-        &xn_minus_yn,
-    ))
+    ZFp12::eq(&ZFp12::one(), &new_point.0)
 }

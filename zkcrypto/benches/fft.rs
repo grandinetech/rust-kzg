@@ -1,15 +1,14 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::fft::{bench_fft_fr, bench_fft_g1};
-use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
-use rust_kzg_zkcrypto::kzg_types::ZkG1Projective;
-use rust_kzg_zkcrypto::zkfr::blsScalar;
+use rust_kzg_arkworks::kzg_proofs::FFTSettings;
+use rust_kzg_arkworks::kzg_types::{ArkFr, ArkG1};
 
 fn bench_fft_fr_(c: &mut Criterion) {
-    bench_fft_fr::<blsScalar, ZkFFTSettings>(c);
+    bench_fft_fr::<ArkFr, FFTSettings>(c);
 }
 
 fn bench_fft_g1_(c: &mut Criterion) {
-    bench_fft_g1::<blsScalar, ZkG1Projective, ZkFFTSettings>(c);
+    bench_fft_g1::<ArkFr, ArkG1, FFTSettings>(c);
 }
 
 criterion_group! {
