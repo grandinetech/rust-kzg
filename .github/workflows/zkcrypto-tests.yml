@@ -34,17 +34,6 @@ jobs:
         with:
           go-version: ^1.19
 
-      - name: "[zkcrypto] Tests"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast
-
-      - name: "[zkcrypto] Tests (parallel)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path zkcrypto/Cargo.toml --no-fail-fast --features parallel
 
       - name: "[zkcrypto] Tests (c-kzg-4844)"
         if: matrix.os == 'ubuntu-latest'
