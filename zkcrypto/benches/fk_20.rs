@@ -6,15 +6,10 @@ use rust_kzg_zkcrypto::kzg_types::{ZFr, ZG1, ZG2};
 use rust_kzg_zkcrypto::poly::PolyData;
 
 fn bench_fk_single_da_(c: &mut Criterion) {
-    bench_fk_single_da::<
-        ZFr,
-        ZG1,
-        ZG2,
-        PolyData,
-        FFTSettings,
-        KZGSettings,
-        KzgFK20SingleSettings,
-    >(c, &generate_trusted_setup)
+    bench_fk_single_da::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings, KzgFK20SingleSettings>(
+        c,
+        &generate_trusted_setup,
+    )
 }
 
 fn bench_fk_multi_da_(c: &mut Criterion) {

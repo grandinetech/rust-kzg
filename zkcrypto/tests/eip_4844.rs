@@ -119,14 +119,7 @@ mod tests {
 
     #[test]
     pub fn compute_and_verify_blob_kzg_proof_test_() {
-        compute_and_verify_blob_kzg_proof_test::<
-            ZFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-        >(
+        compute_and_verify_blob_kzg_proof_test::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
@@ -185,14 +178,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_blob_to_kzg_commitment_() {
-        test_vectors_blob_to_kzg_commitment::<
-            ZFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-        >(
+        test_vectors_blob_to_kzg_commitment::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
@@ -212,14 +198,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_compute_blob_kzg_proof_() {
-        test_vectors_compute_blob_kzg_proof::<
-            ZFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-        >(
+        test_vectors_compute_blob_kzg_proof::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
             &compute_blob_kzg_proof_rust,
@@ -244,18 +223,10 @@ mod tests {
             &verify_blob_kzg_proof_rust,
         );
     }
-
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_verify_blob_kzg_proof_batch_() {
-        test_vectors_verify_blob_kzg_proof_batch::<
-            ZFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-        >(
+        test_vectors_verify_blob_kzg_proof_batch::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
             &verify_blob_kzg_proof_batch_rust,

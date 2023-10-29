@@ -1,7 +1,7 @@
-use super::{P1};
+use super::P1;
 use crate::P2;
-use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 use bls12_381::{Fp as ZFp, Fp2 as ZFp2, G1Projective, G2Projective, Scalar};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error;
