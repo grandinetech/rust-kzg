@@ -28,7 +28,7 @@ done
 
 ###################### building static libs ######################
 
-print_msg "Compiling rust-kzg-arkworks"
+print_msg "Compiling rust_kzg_zkcrypto"
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
   cargo rustc --release --crate-type=staticlib --features=parallel
@@ -37,7 +37,7 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
-mv ../target/release/librust_kzg_arkworks.a ../target/release/rust_kzg_arkworks.a
+mv ../target/release/librust_kzg_zkcrypto.a ../target/release/rust_kzg_zkcrypto.a
 
 ###################### cloning c-kzg-4844 ######################
 

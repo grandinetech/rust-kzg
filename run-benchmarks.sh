@@ -99,13 +99,13 @@ do
   # rust crates
   cd rust-kzg || exit
 
-  # 3.3. rust-kzg with arkworks backend (sequential)
-  print_msg "rust-kzg with arkworks backend (sequential)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml >> ../"$paste_file"
+  # 3.3. rust-kzg with zkcrypto backend (sequential)
+  print_msg "rust-kzg with zkcrypto backend (sequential)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path zkcrypto/Cargo.toml >> ../"$paste_file"
 
-  # 3.4. rust-kzg with arkworks backend (parallel)
-  print_msg "rust-kzg with arkworks backend (parallel)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --features parallel >> ../"$paste_file"
+  # 3.4. rust-kzg with zkcrypto backend (parallel)
+  print_msg "rust-kzg with zkcrypto backend (parallel)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path zkcrypto/Cargo.toml --features parallel >> ../"$paste_file"
 
   # 3.5. rust-kzg with zkcrypto backend (sequential)
   print_msg "rust-kzg with zkcrypto backend (sequential)" ../"$paste_file"
