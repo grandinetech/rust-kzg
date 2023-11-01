@@ -6,29 +6,37 @@ print_msg () {
   echo "[*]" "$1"
 }
 
-###################### parallel configuration ######################
+###################### parallel & backend configuration ######################
 
 parallel=false
+backend="unknown"
 
 while [[ -n $# ]]; do
   case $1 in
     -p|--parallel)
       parallel=true
       ;;
-    -*)
-      echo "Unknown parameter: $1"
-      exit 1
+    blst|arkworks|mcl|zkcrypto)
+      backend="$1"
       ;;
     *)
       break
       ;;
-  esac;
+  esac
   shift
 done
 
-###################### building static libs ######################
+if [ "$backend" == "unknown" ]; then
+  echo "Unknown backend: $backend"
+  exit 1
+fi
 
-print_msg "Compiling rust-kzg-blst"
+###################### building static libs ######################
+print_msg "Selected backend: $backend"
+
+print_msg "Compiling rust-kzg-$backend"
+cd $backend
+
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
   cargo rustc --release --crate-type=staticlib --features=parallel
@@ -37,7 +45,7 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
-mv ../target/release/librust_kzg_blst.a ../target/release/rust_kzg_blst.a
+mv ../target/release/librust_kzg_$backend.a ../target/release/rust_kzg_$backend.a
 
 ###################### cloning c-kzg-4844 ######################
 
