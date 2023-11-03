@@ -17,7 +17,11 @@ use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
 use ark_ec::{models::short_weierstrass::Projective, AffineRepr, Group};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use ark_std::{One, UniformRand, Zero};
+use ark_std::{One, Zero};
+
+#[cfg(feature = "rand")]
+use ark_std::UniformRand;
+
 use blst::{blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
@@ -78,6 +82,7 @@ impl KzgFr for ArkFr {
         Self::from_u64(1)
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
         let mut rng = rand::thread_rng();
         Self {
@@ -265,6 +270,7 @@ impl G1 for ArkG1 {
         G1_NEGATIVE_GENERATOR
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
         let mut rng = rand::thread_rng();
         Self {
