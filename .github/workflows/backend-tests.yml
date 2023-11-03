@@ -1,0 +1,140 @@
+name: tests
+on: [push, pull_request, workflow_dispatch]
+env:
+  C_KZG_4844_GIT_HASH: '624aa60d01da524827123506975431aa5454c80d'
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-11]
+        # Excluding mcl for now due to they have different project layout
+        backend: [blst, arkworks, zkcrypto]
+        include:
+          # Set default clippy flag to all-features
+          - clippy-flag: --all-features
+          # Setup exec_once_per_backend flag
+          - os: ubuntu-latest
+            exec_once_per_backend: true
+          # Setup exec_once_overall flag
+          - os: ubuntu-latest
+            backend: blst
+            exec_once_overall: true
+          # Select backends which support wasm & which support ckzg drop-in
+          - backend: blst
+            support_wasm: true
+            support_ckzg: true
+            # Override all-features flag for blst, due to incompatibility between portable & force-adx
+            clippy-flag: --features=default,std,rand,parallel
+          - backend: arkworks
+            support_wasm: true
+            support_ckzg: true
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "11"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install py_ecc
+          pip install PyYAML
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.19
+
+      # Check kzg clippy
+      - name: "kzg clippy"
+        if: matrix.exec_once_overall
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --all-features -- -D warnings
+
+      # Check kzg formatting
+      - name: "kzg format"
+        uses: actions-rs/cargo@v1
+        if: matrix.exec_once_overall
+        with:
+          command: fmt
+          args: --manifest-path kzg/Cargo.toml -- --check
+
+      # Check kzg-bench clippy
+      - name: "kzg-bench clippy"
+        if: matrix.exec_once_overall
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
+
+      # Check kzg-bench formatting
+      - name: "kzg-bench format"
+        uses: actions-rs/cargo@v1
+        if: matrix.exec_once_overall
+        with:
+          command: fmt
+          args: --manifest-path kzg-bench/Cargo.toml -- --check
+
+      # Check backend clippy
+      - name: "${{ matrix.backend }} clippy"
+        if: matrix.exec_once_per_backend
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --all-targets ${{ matrix.clippy-flag }} -- -D warnings
+
+      # Check backend formatting
+      - name: "${{ matrix.backend }} format"
+        if: matrix.exec_once_per_backend
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml -- --check
+
+      # Check wasm32 target clippy for backend
+      - name: "[wasm32] ${{ matrix.backend }} clippy"
+        if: matrix.exec_once_per_backend && matrix.support_wasm
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --target wasm32-unknown-unknown --no-default-features
+
+      # Check wasm32 target backend build
+      - name: "[wasm32] ${{ matrix.backend }} build"
+        if: matrix.exec_once_per_backend && matrix.support_wasm
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --target wasm32-unknown-unknown --no-default-features
+
+      # Check non-parallel backend tests
+      - name: "${{ matrix.backend }} Tests"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release
+
+      # Check parallel backend tests
+      - name: "${{ matrix.backend }} Tests (parallel)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release --features parallel
+
+      # Check ckzg backend tests
+      - name: "${{ matrix.backend }} Tests (c-kzg-4844)"
+        if: matrix.exec_once_per_backend && matrix.support_ckzg
+        run: |
+          bash run-c-kzg-4844-tests.sh ${{ matrix.backend }}
+
+      # Check parallel ckzg backend tests
+      - name: "${{ matrix.backend }} Tests (c-kzg-4844 parallel)"
+        if: matrix.exec_once_per_backend && matrix.support_ckzg
+        run: |
+          bash run-c-kzg-4844-tests.sh --parallel ${{ matrix.backend }}

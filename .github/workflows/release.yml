@@ -7,74 +7,72 @@ on:
   workflow_dispatch:
 
 env:
-  C_KZG_4844_GIT_HASH: '5703f6f3536b7692616bc289ac3f3867ab8db9d8'
+  C_KZG_4844_GIT_HASH: '624aa60d01da524827123506975431aa5454c80d'
 
 jobs:
-  release:
+  release-build:
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [blst, arkworks]
+        target: [windows, linux]
+        include:
+          # Set target-name for target builds
+          - target: linux
+            target-name: x86_64-unknown-linux-gnu
+          - target: windows
+            target-name: x86_64-pc-windows-gnu
+    env:
+      matrix-name: "[${{ matrix.backend }}, ${{ matrix.target }}]"
+      staging-dir: staging/${{ matrix.backend }}/${{ matrix.target }}
+      archive-name: rust-kzg-${{ matrix.backend }}-${{ matrix.target }}.zip
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install packages
+      - if: matrix.target == 'windows'
+        name: Install MinGW
         run: |
           sudo apt install -y mingw-w64
 
-      - name: "[blst] Prepare artifact folders"
+      - name: "${{ env.matrix-name }} Prepare artifact folders"
         run: |
-          # Linux
-          mkdir -p staging/linux/non-parallel
-          mkdir -p staging/linux/non-parallel-force-adx
-          mkdir -p staging/linux/parallel
-          mkdir -p staging/linux/parallel-force-adx
-          # Windows
-          mkdir -p staging/windows/non-parallel
-          mkdir -p staging/windows/non-parallel-force-adx
-          mkdir -p staging/windows/parallel
-          mkdir -p staging/windows/parallel-force-adx
+          mkdir -p ${{ env.staging-dir }}/parallel
+          mkdir -p ${{ env.staging-dir }}/non-parallel
 
-      - name: "[blst] Build Linux"
+      - name: "${{ env.matrix-name }} Build"
         run: |
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=blst-portable
-          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/non-parallel/rust_kzg_blst.a
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=blst-force-adx
-          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/non-parallel-force-adx/rust_kzg_blst.a
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=parallel,blst-portable
-          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/parallel/rust_kzg_blst.a
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-unknown-linux-gnu --crate-type=staticlib --features=parallel,blst-force-adx
-          mv target/x86_64-unknown-linux-gnu/release/librust_kzg_blst.a staging/linux/parallel-force-adx/rust_kzg_blst.a
+          # Non-parallel build
+          cargo rustc --manifest-path ${{ matrix.backend }}/Cargo.toml --release --target ${{ matrix.target-name }} --crate-type=staticlib
+          mv target/${{ matrix.target-name }}/release/librust_kzg_${{ matrix.backend}}.a ${{ env.staging-dir }}/non-parallel/rust_kzg_${{ matrix.backend}}.a
+          # Parallel build
+          cargo rustc --manifest-path ${{ matrix.backend }}/Cargo.toml --release --target ${{ matrix.target-name }} --crate-type=staticlib --features=parallel
+          mv target/${{ matrix.target-name }}/release/librust_kzg_${{ matrix.backend}}.a ${{ env.staging-dir }}/parallel/rust_kzg_${{ matrix.backend}}.a
 
-      - name: "[blst] Compress Linux artifacts"
+      - name: "${{ env.matrix-name }} Compress artifacts"
         run: |
-          cp LICENSE staging/linux/
-          cp blst/*.patch staging/linux/
-          cd staging/linux/
-          zip -rz rust-kzg-blst-linux.zip * <<< "Compatible with c-kzg-4844 git hash: $C_KZG_4844_GIT_HASH."
+          cp LICENSE ${{ env.staging-dir }}/
+          cp ${{ matrix.backend }}/*.patch ${{ env.staging-dir }}/
+          cd ${{ env.staging-dir }}
+          zip -rz ${{ env.archive-name }} * <<< "Compatible with c-kzg-4844 git hash: $C_KZG_4844_GIT_HASH."
 
-      - name: "[blst] Build Windows"
-        run: |
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=blst-portable
-          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/non-parallel/rust_kzg_blst.a
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=blst-force-adx
-          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/non-parallel-force-adx/rust_kzg_blst.a
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=parallel,blst-portable
-          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/parallel/rust_kzg_blst.a
-          cargo rustc --manifest-path blst/Cargo.toml --release --target x86_64-pc-windows-gnu --crate-type=staticlib --features=parallel,blst-force-adx
-          mv target/x86_64-pc-windows-gnu/release/librust_kzg_blst.a staging/windows/parallel-force-adx/rust_kzg_blst.a
-
-      - name: "[blst] Compress Windows artifacts"
-        run: |
-          cp LICENSE staging/windows/
-          cp blst/*.patch staging/windows/
-          cd staging/windows/
-          zip -rz rust-kzg-blst-windows.zip * <<< "Compatible with c-kzg-4844 git hash: $C_KZG_4844_GIT_HASH."
-
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: "${{ env.matrix-name }} Upload"
+        uses: actions/upload-artifact@v3
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
-          prerelease: false
-          title: "Automatic Release"
-          files: |
-            staging/linux/rust-kzg-blst-linux.zip
-            staging/windows/rust-kzg-blst-windows.zip
+          name: ${{ env.archive-name }}
+          path: ${{ env.staging-dir }}/${{ env.archive-name }}
+
+  release-publish:
+    runs-on: ubuntu-latest
+    needs: release-build
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: false
+        title: "Automatic Release"
+        files: |
+          ./rust-kzg-*.zip/rust-kzg-*.zip
