@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-11]
         # Excluding mcl for now due to they have different project layout
-        backend: [blst, arkworks, zkcrypto]
+        backend: [blst, zkcrypto, arkworks]
         include:
           # Set default clippy flag to all-features
           - clippy-flag: --all-features
@@ -27,15 +27,17 @@ jobs:
             support_wasm: true
             support_ckzg: true
             # Override all-features flag for blst, due to incompatibility between portable & force-adx
-            clippy-flag: --features=default,std,rand,parallel
-          - backend: arkworks
-            support_wasm: true
-            support_ckzg: true
 
             clippy-flag: --features=default,std,rand,parallel
           - backend: zkcrypto
             support_wasm: true
             support_ckzg: true
+
+            clippy-flag: --features=default,std,rand,parallel
+          - backend: arkworks
+            support_wasm: true
+            support_ckzg: true
+
 
     steps:
       - uses: actions/checkout@v2

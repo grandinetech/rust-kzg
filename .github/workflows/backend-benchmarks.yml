@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-11]
         # Excluding mcl for now due to they have different project layout
-        backend: [blst, arkworks, zkcrypto]
+        backend: [blst, zkcrypto, arkworks]
         include:
           # Setup exec_once_per_backend flag
           - os: ubuntu-latest
@@ -19,10 +19,11 @@ jobs:
           # Select backends which support wasm & which support ckzg drop-in
           - backend: blst
             support_ckzg: true
-          - backend: arkworks
-            support_ckzg: true
           - backend: zkcrypto
             support_ckzg: true
+          - backend: arkworks
+            support_ckzg: true
+
 
     steps:
       - uses: actions/checkout@v2
