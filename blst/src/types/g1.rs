@@ -4,6 +4,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 
+use blst::p1_affines;
 use blst::{
     blst_fp, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_affine, blst_p1_cneg,
     blst_p1_compress, blst_p1_double, blst_p1_from_affine, blst_p1_in_g1, blst_p1_is_equal,
@@ -11,11 +12,15 @@ use blst::{
 };
 use kzg::common_utils::log_2_byte;
 use kzg::eip_4844::BYTES_PER_G1;
+use kzg::G1Affine;
+use kzg::G1ProjAddAffine;
 use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fr::FsFr;
+
+use super::fp::FsFp;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
@@ -131,6 +136,50 @@ impl G1 for FsG1 {
     fn equals(&self, b: &Self) -> bool {
         unsafe { blst_p1_is_equal(&self.0, &b.0) }
     }
+
+    const ZERO: Self = Self(blst_p1 {
+        x: blst_fp {
+            l: [
+                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,
+            ],
+        },
+        y: blst_fp {
+            l: [
+                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,
+            ],
+        },
+        z: blst_fp {
+            l: [0, 0, 0, 0, 0, 0],
+        },
+    });
+
+    fn add_or_dbl_assign(&mut self, b: &Self) {
+        unsafe {
+            blst::blst_p1_add_or_double(&mut self.0, &self.0, &b.0);
+        }
+    }
+
+    fn add_assign(&mut self, b: &Self) {
+        unsafe {
+            blst::blst_p1_add(&mut self.0, &self.0, &b.0);
+        }
+    }
+
+    fn dbl_assign(&mut self) {
+        unsafe {
+            blst::blst_p1_double(&mut self.0, &self.0);
+        }
+    }
 }
 
 impl G1Mul<FsFr> for FsG1 {
@@ -169,5 +218,97 @@ impl G1Mul<FsFr> for FsG1 {
         let mut out = FsG1::default();
         g1_linear_combination(&mut out, points, scalars, len);
         out
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+pub struct FsG1Affine(pub blst_p1_affine);
+
+impl G1Affine<FsG1, FsFp> for FsG1Affine {
+    const ZERO: Self = Self(blst_p1_affine {
+        x: {
+            blst_fp {
+                l: [0, 0, 0, 0, 0, 0],
+            }
+        },
+        y: {
+            blst_fp {
+                l: [0, 0, 0, 0, 0, 0],
+            }
+        },
+    });
+
+    fn into_affine(g1: &FsG1) -> Self {
+        let mut ret: Self = Default::default();
+        unsafe {
+            blst::blst_p1_to_affine(&mut ret.0, &g1.0);
+        }
+        ret
+    }
+
+    fn into_affines(g1: &[FsG1]) -> Vec<Self> {
+        let points =
+            unsafe { core::slice::from_raw_parts(g1.as_ptr() as *const blst_p1, g1.len()) };
+        let points = p1_affines::from(points);
+        unsafe {
+            // Transmute safe due to repr(C) on FsG1Affine
+            core::mem::transmute(points)
+        }
+    }
+
+    fn to_proj(&self) -> FsG1 {
+        let mut ret: FsG1 = Default::default();
+        unsafe {
+            blst::blst_p1_from_affine(&mut ret.0, &self.0);
+        }
+        ret
+    }
+
+    fn x(&self) -> &FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.0.x)
+        }
+    }
+
+    fn y(&self) -> &FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.0.y)
+        }
+    }
+
+    fn is_infinity(&self) -> bool {
+        unsafe { blst::blst_p1_affine_is_inf(&self.0) }
+    }
+
+    fn x_mut(&mut self) -> &mut FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.0.y)
+        }
+    }
+
+    fn y_mut(&mut self) -> &mut FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.0.y)
+        }
+    }
+}
+
+pub struct FsG1ProjAddAffine;
+impl G1ProjAddAffine<FsG1, FsFp, FsG1Affine> for FsG1ProjAddAffine {
+    fn add_assign_affine(proj: &mut FsG1, aff: &FsG1Affine) {
+        unsafe {
+            blst::blst_p1_add_affine(&mut proj.0, &proj.0, &aff.0);
+        }
+    }
+
+    fn add_or_double_assign_affine(proj: &mut FsG1, aff: &FsG1Affine) {
+        unsafe {
+            blst::blst_p1_add_or_double_affine(&mut proj.0, &proj.0, &aff.0);
+        }
     }
 }
