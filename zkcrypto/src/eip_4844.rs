@@ -6,10 +6,10 @@ use blst::{blst_fr, blst_p1, blst_p2};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
-    load_trusted_setup_rust, load_trusted_setup_string, verify_blob_kzg_proof_batch_rust,
-    verify_blob_kzg_proof_rust, verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings,
-    KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET,
-    C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
+    verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS,
+    C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
     TRUSTED_SETUP_NUM_G2_POINTS,
 };
 use kzg::{cfg_into_iter, Fr, G1};
@@ -26,6 +26,9 @@ use std::io::Read;
 use rayon::prelude::*;
 
 #[cfg(feature = "std")]
+use kzg::eip_4844::load_trusted_setup_string;
+
+#[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, String> {
     let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
@@ -35,7 +38,6 @@ pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, S
     let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents)?;
     load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
-
 
 fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {
     let settings = unsafe { &*c_settings };
@@ -313,7 +315,9 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         .collect();
 
     let commitments_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_commitments)
-        .map(|raw_commitment| ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS))
+        .map(|raw_commitment| {
+            ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS)
+        })
         .collect();
 
     let proofs_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_proofs)
