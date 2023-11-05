@@ -32,10 +32,11 @@ jobs:
             support_wasm: true
             support_ckzg: true
 
+            clippy-flag: --features=default,std,rand,parallel
           - backend: zkcrypto
             support_wasm: true
             support_ckzg: true
-            clippy-flag: --features=default,std,rand,parallel
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v3
