@@ -31,6 +31,9 @@ jobs:
           - backend: arkworks
             support_wasm: true
             support_ckzg: true
+          - backend: zkcrypto
+            support_wasm: true
+            support_ckzg: true
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v3

@@ -21,6 +21,8 @@ jobs:
             support_ckzg: true
           - backend: arkworks
             support_ckzg: true
+          - backend: zkcrypto
+            support_ckzg: true
 
     steps:
       - uses: actions/checkout@v2
