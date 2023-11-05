@@ -315,9 +315,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         .collect();
 
     let commitments_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_commitments)
-        .map(|raw_commitment| {
-            ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS)
-        })
+        .map(|raw_commitment| ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS))
         .collect();
 
     let proofs_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_proofs)
