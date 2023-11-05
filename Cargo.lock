@@ -1244,7 +1244,6 @@ dependencies = [
  "libc",
  "rand",
  "rayon",
- "smallvec",
  "subtle",
 ]
 
