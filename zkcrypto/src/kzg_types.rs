@@ -66,6 +66,7 @@ impl KzgFr for ZFr {
         Self::from_u64(1)
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
         let rng = rand::thread_rng();
         let rusult = ff::Field::random(rng);
@@ -321,6 +322,7 @@ impl G1 for ZG1 {
         G1_NEGATIVE_GENERATOR
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
         let mut rng = rand::thread_rng();
         Self {

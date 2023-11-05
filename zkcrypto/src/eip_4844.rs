@@ -25,6 +25,7 @@ use std::io::Read;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
+#[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, String> {
     let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
@@ -34,6 +35,7 @@ pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, S
     let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents)?;
     load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
 }
+
 
 fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {
     let settings = unsafe { &*c_settings };
