@@ -4,26 +4,28 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-kzg = { path = "../kzg" }
-kzg-bench = { path = "../kzg-bench" }
+kzg = { path = "../kzg", default-features = false }
 blst = {'git' = 'https://github.com/supranational/blst.git'}
 bls12_381 = { path = "../zkcrypto/bls12_381" }
 ff = { version = "0.13", features = ["derive"] }
 
 
-rand = "0.8"
+rand = { version = "0.8.5", optional = true }
 hex = "0.4.2"
 libc = { version = "0.2.148", default-features = false }
-rayon = { version = "1.6.0", optional = true }
+rayon = { version = "1.8.0", optional = true }
 smallvec = { version = "1.11.1", features = [] }
 subtle = "2.5.0"
 
 [dev-dependencies]
 criterion = "0.5.1"
+kzg-bench = { path = "../kzg-bench" }
+rand = { version = "0.8.5" }
 
 [features]
 default = [
-    "std"
+    "std",
+    "rand"
 ]
 parallel = [
     "std", "dep:rayon", "kzg/parallel"
@@ -32,7 +34,10 @@ std = [
     "kzg/std",
     "libc/std",
 ]
-
+rand = [
+    "dep:rand",
+    "kzg/rand",
+]
 [[bench]]
 name = "fft"
 harness = false
