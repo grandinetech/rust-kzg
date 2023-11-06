@@ -27,7 +27,6 @@ jobs:
             support_wasm: true
             support_ckzg: true
             # Override all-features flag for blst, due to incompatibility between portable & force-adx
-
             clippy-flag: --features=default,std,rand,parallel
           - backend: zkcrypto
             support_wasm: true
@@ -37,7 +36,6 @@ jobs:
           - backend: arkworks
             support_wasm: true
             support_ckzg: true
-
 
     steps:
       - uses: actions/checkout@v2
