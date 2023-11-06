@@ -8,6 +8,7 @@ use core::fmt::Debug;
 
 pub mod common_utils;
 pub mod eip_4844;
+pub mod msm;
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
@@ -84,7 +85,7 @@ pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {
 
     fn to_bytes(&self) -> [u8; 48];
 
-    fn add_or_dbl(&mut self, b: &Self) -> Self;
+    fn add_or_dbl(&self, b: &Self) -> Self;
 
     fn is_inf(&self) -> bool;
 
@@ -114,7 +115,7 @@ pub trait G1Mul<TFr: Fr>: G1 + Clone {
     fn g1_lincomb(points: &[Self], scalars: &[TFr], len: usize) -> Self;
 }
 
-pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug {
+pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
     const ZERO: Self;
     const ONE: Self;
 
@@ -171,7 +172,7 @@ pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug {
 }
 
 pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
-    Clone + Default + PartialEq + Sync + Copy + Debug
+    Clone + Default + PartialEq + Sync + Copy + Debug + Send
 {
     const ZERO: Self;
 
@@ -206,7 +207,7 @@ pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
     }
 }
 
-pub trait G1ProjAddAffine<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>: Sized {
+pub trait G1ProjAddAffine<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>: Sized + Sync + Send {
     fn add_assign_affine(proj: &mut TG1, aff: &TG1Affine);
 
     fn add_or_double_assign_affine(proj: &mut TG1, aff: &TG1Affine);
@@ -220,6 +221,11 @@ pub trait G1ProjAddAffine<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>
         Self::add_or_double_assign_affine(&mut proj, aff);
         proj
     }
+
+    fn sub_assign_affine(proj: &mut TG1, mut aff: TG1Affine) {
+        aff.y_mut().neg_assign();
+        Self::add_assign_affine(proj, &aff);
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
@@ -232,7 +238,11 @@ impl Scalar256 {
     const ONE: Self = Self { data: [1, 0, 0, 0] };
     const ZERO: Self = Self { data: [0; 4] };
 
-    fn from_u64(arr: [u64; 4]) -> Self {
+    pub fn from_u64_s(arr: u64) -> Self {
+        Scalar256 { data: [arr, 0, 0, 0] }
+    }
+
+    pub fn from_u64(arr: [u64; 4]) -> Self {
         Scalar256 { data: arr }
     }
 
@@ -249,6 +259,38 @@ impl Scalar256 {
 
         unsafe { core::slice::from_raw_parts(&*(ptr as *const [u64; N]), 1)[0] }
     }
+
+    fn is_zero(&self) -> bool {
+        return self.data == Self::ZERO.data;
+    }
+
+    fn divn(&mut self, mut n: u32) {
+        const N: usize = 4;
+        if n >= (64 * N) as u32 {
+            *self = Self::from_u64_s(0);
+            return;
+        }
+
+        while n >= 64 {
+            let mut t = 0;
+            for i in 0..N {
+                core::mem::swap(&mut t, &mut self.data[N - i - 1]);
+            }
+            n -= 64;
+        }
+
+        if n > 0 {
+            let mut t = 0;
+            #[allow(unused)]
+            for i in 0..N {
+                let a = &mut self.data[N - i - 1];
+                let t2 = *a << (64 - n);
+                *a >>= n;
+                *a |= t;
+                t = t2;
+            }
+        }
+}
 }
 
 pub trait G2: Clone + Default {

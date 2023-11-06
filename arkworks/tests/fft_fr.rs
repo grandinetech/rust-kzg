@@ -1,3 +1,5 @@
+mod batch_adder;
+
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fft_fr::{compare_sft_fft, inverse_fft, roundtrip_fft, stride_fft};

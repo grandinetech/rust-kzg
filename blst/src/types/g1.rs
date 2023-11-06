@@ -88,7 +88,7 @@ impl G1 for FsG1 {
         out
     }
 
-    fn add_or_dbl(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&self, b: &Self) -> Self {
         let mut ret = Self::default();
         unsafe {
             blst_p1_add_or_double(&mut ret.0, &self.0, &b.0);
@@ -286,7 +286,7 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     fn x_mut(&mut self) -> &mut FsFp {
         unsafe {
             // Transmute safe due to repr(C) on FsFp
-            core::mem::transmute(&mut self.0.y)
+            core::mem::transmute(&mut self.0.x)
         }
     }
 

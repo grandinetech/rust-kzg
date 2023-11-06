@@ -13,7 +13,8 @@ use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
     pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData,
 };
-use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
+use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine, G1Projective};
+use ark_ec::{CurveConfig, CurveGroup};
 use ark_ec::{models::short_weierstrass::Projective, AffineRepr, Group};
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -22,14 +23,14 @@ use ark_std::{One, Zero};
 #[cfg(feature = "rand")]
 use ark_std::UniformRand;
 
-use blst::{blst_fr, blst_p1};
+use blst::{blst_fr, blst_p1, blst_fp};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, PairingVerify,
-    Poly, G1, G2,
+    Poly, G1, G2, G1Fp, G1Affine as G1AffineTrait, cfg_into_iter, G1ProjAddAffine,
 };
-use std::ops::{Mul, Neg, Sub};
+use std::ops::{Mul, Neg, Sub, AddAssign};
 
 fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
     u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
@@ -75,11 +76,15 @@ impl KzgFr for ArkFr {
     }
 
     fn zero() -> Self {
-        Self::from_u64(0)
+        // Self::from_u64(0)
+        Self { fr: Fr::zero() }
     }
 
     fn one() -> Self {
-        Self::from_u64(1)
+        let one = Fr::one();
+        // assert_eq!(one.0.0, [0, 1, 1, 1], "must be eq");
+        Self { fr: one }
+        // Self::from_u64(1)
     }
 
     #[cfg(feature = "rand")]
@@ -311,7 +316,7 @@ impl G1 for ArkG1 {
         buff
     }
 
-    fn add_or_dbl(&mut self, b: &Self) -> Self {
+    fn add_or_dbl(&self, b: &Self) -> Self {
         Self {
             proj: self.proj + b.proj,
         }
@@ -346,6 +351,34 @@ impl G1 for ArkG1 {
 
     fn equals(&self, b: &Self) -> bool {
         self.proj.eq(&b.proj)
+    }
+
+    const ZERO: ArkG1 = ArkG1::from_blst_p1( blst_p1 {
+        x: blst_fp { l: [                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,], },
+        y: blst_fp { l: [                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,], },
+        z: blst_fp { l: [0, 0, 0, 0, 0, 0], },
+    });
+
+    fn add_or_dbl_assign(&mut self, b: &Self) {
+        self.proj += b.proj;
+    }
+
+    fn add_assign(&mut self, b: &Self) {
+        self.proj.add_assign(b.proj);
+    }
+
+    fn dbl_assign(&mut self) {
+        self.proj.double_in_place();
     }
 }
 
@@ -759,5 +792,172 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
 
     fn get_g2_secret(&self) -> &[ArkG2] {
         &self.secret_g2
+    }
+}
+
+type ArkFpInt = <ark_bls12_381::g1::Config as CurveConfig>::BaseField;
+#[repr(C)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+pub struct ArkFp(pub ArkFpInt);
+
+impl ArkFp {
+    const fn from_internal(fp: &ArkFpInt) -> Self {
+        Self {
+            0: *fp
+        }
+    }
+}
+
+impl G1Fp for ArkFp {
+    fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+    
+    fn set_zero(&mut self) {
+        self.0.set_zero();
+    }
+
+    fn is_one(&self) -> bool {
+        self.0.is_one()
+    }
+
+    fn set_one(&mut self) {
+        self.0.set_one();
+    }
+
+    fn inverse(&self) -> Option<Self> {
+        Some(Self {
+            0: self.0.inverse().unwrap()
+        })
+    }
+
+    fn square(&self) -> Self {
+        Self {
+            0: self.0.square()
+        }
+    }
+
+    fn double(&self) -> Self {
+        Self {
+            0: self.0.double()
+        }
+    }
+
+    fn from_underlying_arr(arr: &[u64; 6]) -> Self {
+        let mut default = ArkFpInt::default();
+        default.0.0 = *arr;
+        Self {
+            0: default
+        }
+    }
+
+    fn neg_assign(&mut self) {
+        self.0 = -self.0;
+    }
+
+    fn mul_assign_fp(&mut self, b: &Self) {
+        self.0 *= b.0;
+    }
+
+    fn sub_assign_fp(&mut self, b: &Self) {
+        self.0 -= b.0;
+    }
+
+    fn add_assign_fp(&mut self, b: &Self) {
+        self.0 += b.0;
+    }
+
+    const ZERO: Self = Self { 0: ArkFpInt::ZERO };
+    const ONE: Self = Self { 0: ArkFpInt::ONE  };
+}
+
+#[repr(C)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+pub struct ArkG1Affine {
+    pub aff: G1Affine,
+}
+
+impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
+    fn into_affine(g1: &ArkG1) -> Self {
+        Self {
+            aff: g1.proj.into_affine()
+        }
+    }
+
+    fn into_affines(g1: &[ArkG1]) -> Vec<Self> {
+        let ark_points: Vec<G1Projective> = {
+            g1.into_iter()
+                .map(|point| point.proj)
+                .collect()
+        };
+        let ark_points = CurveGroup::normalize_batch(&ark_points);
+        let ark_points: Vec<Self> = {
+            ark_points.into_iter()
+                .map(|point| Self { aff: point })
+                .collect()
+        };
+        ark_points
+    }
+
+    fn to_proj(&self) -> ArkG1 {
+        ArkG1 { proj: self.aff.into_group() }
+    }
+
+    fn x(&self) -> &ArkFp {
+        unsafe {
+            core::mem::transmute(&self.aff.x)
+        }
+    }
+
+    fn y(&self) -> &ArkFp {
+        unsafe {
+            core::mem::transmute(&self.aff.y)
+        }
+    }
+
+    fn is_infinity(&self) -> bool {
+        self.aff.infinity
+    }
+
+    fn is_zero(&self) -> bool {
+        self.aff.is_zero()
+    }
+
+    const ZERO: Self = Self { aff: 
+        G1Affine {
+            x: ArkFp::ZERO.0,
+            y: ArkFp::ZERO.0,
+            infinity: true,
+        }
+    };
+
+    fn x_mut(&mut self) -> &mut ArkFp {
+        unsafe {
+            core::mem::transmute(&mut self.aff.x)
+        }
+    }
+
+    fn y_mut(&mut self) -> &mut ArkFp {
+        unsafe {
+            core::mem::transmute(&mut self.aff.y)
+        }
+    }
+}
+
+pub struct ArkG1ProjAddAffine;
+impl G1ProjAddAffine<ArkG1, ArkFp, ArkG1Affine> for ArkG1ProjAddAffine {
+    // FIXME: Doubel check this
+    fn add_assign_affine(proj: &mut ArkG1, aff: &ArkG1Affine) {
+        proj.proj += aff.aff;
+        // unsafe {
+        //     blst::blst_p1_add_affine(&mut proj.0, &proj.0, &aff.0);
+        // }
+    }
+
+    fn add_or_double_assign_affine(proj: &mut ArkG1, aff: &ArkG1Affine) {
+        proj.proj += aff.aff;
+        // unsafe {
+        //     blst::blst_p1_add_or_double_affine(&mut proj.0, &proj.0, &aff.0);
+        // }
     }
 }

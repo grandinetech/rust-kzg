@@ -20,7 +20,7 @@ impl G1Fp for FsFp {
     });
 
     fn inverse(&self) -> Option<Self> {
-        let mut out: Self = Default::default();
+        let mut out: Self = *self;
         unsafe {
             blst::blst_fp_inverse(&mut out.0, &self.0);
         }
