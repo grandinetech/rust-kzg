@@ -6,7 +6,6 @@
 use crate::kzg_types::{ZFr, ZG1};
 use bls12_381::{G1Projective, Scalar};
 
-#[cfg(feature = "std")]
 pub fn divn(mut scalar: Scalar, mut n: u32) -> Scalar {
     if n >= 256 {
         return Scalar::from(0);
