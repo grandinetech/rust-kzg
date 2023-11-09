@@ -21,6 +21,7 @@ pub mod poly;
 pub mod recover;
 pub mod utils;
 pub mod zero_poly;
+mod multiscalar_mul;
 
 trait Eq<T> {
     fn equals(&self, other: &T) -> bool;

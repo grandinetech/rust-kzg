@@ -50,6 +50,11 @@ impl ZFr {
     pub fn to_blst_fr(&self) -> blst_fr {
         pc_fr_into_blst_fr(self.fr)
     }
+
+    pub fn to_scalar_slice(scalars: &[ZFr]) -> &[Scalar] {
+        unsafe {
+            core::slice::from_raw_parts(scalars.as_ptr() as *const Scalar, scalars.len())
+        }    }
 }
 
 impl KzgFr for ZFr {
@@ -298,6 +303,12 @@ impl ZG1 {
     fn affine_to_projective(p: G1Affine) -> Self {
         Self {
             proj: G1Projective::from(&p),
+        }
+    }
+    pub fn to_g1_projective_slice(points: &[ZG1]) -> &[G1Projective] {
+        let g1_projectives: Vec<G1Projective> = points.iter().map(|zg1| zg1.proj).collect();
+        unsafe {
+            core::slice::from_raw_parts(g1_projectives.as_ptr(), g1_projectives.len())
         }
     }
 }
