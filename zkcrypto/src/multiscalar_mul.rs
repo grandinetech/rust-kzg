@@ -3,10 +3,8 @@
 
 // use alloc::vec::*;
 
-use bls12_381::{G1Projective, Scalar};
 use crate::kzg_types::{ZFr, ZG1};
-
-
+use bls12_381::{G1Projective, Scalar};
 
 #[cfg(feature = "std")]
 pub fn divn(mut scalar: Scalar, mut n: u32) -> Scalar {
@@ -39,10 +37,10 @@ pub fn divn(mut scalar: Scalar, mut n: u32) -> Scalar {
 #[allow(clippy::needless_collect)]
 pub fn msm_variable_base(points_zg1: &[ZG1], zfrscalars: &[ZFr]) -> G1Projective {
     let g1_projective_vec = ZG1::converter(points_zg1);
-    let points= g1_projective_vec.as_slice();
+    let points = g1_projective_vec.as_slice();
 
     let scalars_vec = ZFr::converter(zfrscalars);
-    let scalars= scalars_vec.as_slice();
+    let scalars = scalars_vec.as_slice();
 
     #[cfg(feature = "parallel")]
     use rayon::prelude::*;
@@ -83,13 +81,20 @@ pub fn msm_variable_base(points_zg1: &[ZG1], zfrscalars: &[ZFr]) -> G1Projective
                             res = res.add(base);
                         }
                     } else {
-                        let mut scalar =         Scalar::montgomery_reduce(scalar.0[0], scalar.0[1], scalar.0[2], scalar.0[3], 0, 0, 0, 0);
-
+                        let mut scalar = Scalar::montgomery_reduce(
+                            scalar.0[0],
+                            scalar.0[1],
+                            scalar.0[2],
+                            scalar.0[3],
+                            0,
+                            0,
+                            0,
+                            0,
+                        );
 
                         // We right-shift by w_start, thus getting rid of the
                         // lower bits.
-                        scalar = divn(scalar,w_start as u32);
-
+                        scalar = divn(scalar, w_start as u32);
                         // We mod the remaining bits by the window size.
                         let scalar = scalar.0[0] % (1 << c);
 

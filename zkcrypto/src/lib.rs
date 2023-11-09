@@ -17,12 +17,11 @@ pub mod fft_g1;
 pub mod fk20_proofs;
 pub mod kzg_proofs;
 pub mod kzg_types;
+mod multiscalar_mul;
 pub mod poly;
 pub mod recover;
 pub mod utils;
 pub mod zero_poly;
-mod multiscalar_mul;
-
 trait Eq<T> {
     fn equals(&self, other: &T) -> bool;
 }
