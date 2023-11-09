@@ -38,8 +38,11 @@ pub fn divn(mut scalar: Scalar, mut n: u32) -> Scalar {
 /// Performs a Variable Base Multiscalar Multiplication.
 #[allow(clippy::needless_collect)]
 pub fn msm_variable_base(points_zg1: &[ZG1], zfrscalars: &[ZFr]) -> G1Projective {
-    let points: &[G1Projective] = ZG1::to_g1_projective_slice(points_zg1);
-    let scalars: &[Scalar] = ZFr::to_scalar_slice(zfrscalars);
+    let g1_projective_vec = ZG1::converter(points_zg1);
+    let points= g1_projective_vec.as_slice();
+
+    let scalars_vec = ZFr::converter(zfrscalars);
+    let scalars= scalars_vec.as_slice();
 
     #[cfg(feature = "parallel")]
     use rayon::prelude::*;
