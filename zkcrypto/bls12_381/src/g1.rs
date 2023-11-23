@@ -1,207 +1,10 @@
 //! This module provides an implementation of the $\mathbb{G}_1$ group of BLS12-381.
-use crate::zkfr::blsScalar;
-use std::convert::TryInto;
-// ================ util.rs ========================
 
-// The recoding width that determines the length and size of precomputation table.
-// Tested values are in 3..8.
-const G1_WIDTH: i32 = 5;
-
-const BETA: Fp = Fp::from_raw_unchecked([
-    0xCD03_C9E4_8671_F071,
-    0x5DAB_2246_1FCD_A5D2,
-    0x5870_42AF_D385_1B95,
-    0x8EB6_0EBE_01BA_CB9E,
-    0x03F9_7D6E_83D0_50D2,
-    0x18F0_2065_5463_8741,
-]);
-
-// #[cfg(feature = "groups")]
-const BLS_X: u64 = 0xd201_0000_0001_0000;
-// #[cfg(feature = "groups")]
-const BLS_X_IS_NEGATIVE: bool = true;
-
-/// Compute a + b + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + (b as u128) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a - (b + borrow), returning the result and the new borrow.
-#[inline(always)]
-pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
-    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a + (b * c) + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn mac(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + ((b as u128) * (c as u128)) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-macro_rules! impl_add_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Add<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: &'b $rhs) -> $output {
-                &self + rhs
-            }
-        }
-
-        impl<'a> Add<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                self + &rhs
-            }
-        }
-
-        impl Add<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                &self + &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_sub_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Sub<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: &'b $rhs) -> $output {
-                &self - rhs
-            }
-        }
-
-        impl<'a> Sub<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                self - &rhs
-            }
-        }
-
-        impl Sub<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                &self - &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl_add_binop_specify_output!($lhs, $rhs, $output);
-        impl_sub_binop_specify_output!($lhs, $rhs, $output);
-    };
-}
-
-macro_rules! impl_binops_multiplicative_mixed {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Mul<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: &'b $rhs) -> $output {
-                &self * rhs
-            }
-        }
-
-        impl<'a> Mul<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                self * &rhs
-            }
-        }
-
-        impl Mul<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                &self * &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_additive_specify_output!($lhs, $rhs, $lhs);
-
-        impl SubAssign<$rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: $rhs) {
-                *self = &*self - &rhs;
-            }
-        }
-
-        impl AddAssign<$rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: $rhs) {
-                *self = &*self + &rhs;
-            }
-        }
-
-        impl<'b> SubAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self - rhs;
-            }
-        }
-
-        impl<'b> AddAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self + rhs;
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_multiplicative {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_multiplicative_mixed!($lhs, $rhs, $lhs);
-
-        impl MulAssign<$rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: $rhs) {
-                *self = &*self * &rhs;
-            }
-        }
-
-        impl<'b> MulAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self * rhs;
-            }
-        }
-    };
-}
-
-// =================================================
 use core::borrow::Borrow;
 use core::fmt;
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use pairing::group::{
+use group::{
     prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
     Curve, Group, GroupEncoding, UncompressedEncoding,
 };
@@ -211,8 +14,8 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 #[cfg(feature = "alloc")]
 use group::WnafGroup;
 
-use super::fp::Fp;
-use super::scalar::Scalar;
+use crate::fp::Fp;
+use crate::Scalar;
 
 /// This is an element of $\mathbb{G}_1$ represented in the affine coordinate space.
 /// It is ideal to keep elements in this representation to reduce memory usage and
@@ -596,15 +399,14 @@ impl G1Affine {
     /// exists within the $q$-order subgroup $\mathbb{G}_1$. This should always return true
     /// unless an "unchecked" API was used.
     pub fn is_torsion_free(&self) -> Choice {
-        const FQ_MODULUS_BYTES: [u8; 32] = [
-            1, 0, 0, 0, 255, 255, 255, 255, 254, 91, 254, 255, 2, 164, 189, 83, 5, 216, 161, 9, 8,
-            216, 57, 51, 72, 125, 157, 41, 83, 167, 237, 115,
-        ];
+        // Algorithm from Section 6 of https://eprint.iacr.org/2021/1130
+        // Updated proof of correctness in https://eprint.iacr.org/2022/352
+        //
+        // Check that endomorphism_p(P) == -[x^2] P
 
-        // Clear the r-torsion from the point and check if it is the identity
-        G1Projective::from(*self)
-            .multiply(&FQ_MODULUS_BYTES)
-            .is_identity()
+        let minus_x_squared_times_p = G1Projective::from(self).mul_by_x().mul_by_x().neg();
+        let endomorphism_p = endomorphism(self);
+        minus_x_squared_times_p.ct_eq(&G1Projective::from(endomorphism_p))
     }
 
     /// Returns true if this point is on the curve. This should always return
@@ -615,24 +417,37 @@ impl G1Affine {
     }
 }
 
+/// A nontrivial third root of unity in Fp
+pub const BETA: Fp = Fp::from_raw_unchecked([
+    0x30f1_361b_798a_64e8,
+    0xf3b8_ddab_7ece_5a2a,
+    0x16a8_ca3a_c615_77f7,
+    0xc26a_2ff8_74fd_029b,
+    0x3636_b766_6070_1c6e,
+    0x051b_a4ab_241b_6160,
+]);
+
+fn endomorphism(p: &G1Affine) -> G1Affine {
+    // Endomorphism of the points on the curve.
+    // endomorphism_p(x,y) = (BETA * x, y)
+    // where BETA is a non-trivial cubic root of unity in Fq.
+    let mut res = *p;
+    res.x *= BETA;
+    res
+}
+
 /// This is an element of $\mathbb{G}_1$ represented in the projective coordinate space.
 #[cfg_attr(docsrs, doc(cfg(feature = "groups")))]
 #[derive(Copy, Clone, Debug)]
 pub struct G1Projective {
-    pub(crate) x: Fp,
-    pub(crate) y: Fp,
-    pub(crate) z: Fp,
+    pub x: Fp,
+    pub y: Fp,
+    pub z: Fp,
 }
 
 impl Default for G1Projective {
     fn default() -> G1Projective {
         G1Projective::identity()
-    }
-}
-
-impl G1Projective {
-    pub fn mul(&self, b: &blsScalar) -> Self {
-        self * b
     }
 }
 
@@ -746,6 +561,15 @@ impl<'a, 'b> Mul<&'b Scalar> for &'a G1Projective {
     }
 }
 
+impl<'a, 'b> Mul<&'b G1Projective> for &'a Scalar {
+    type Output = G1Projective;
+
+    #[inline]
+    fn mul(self, rhs: &'b G1Projective) -> Self::Output {
+        rhs * self
+    }
+}
+
 impl<'a, 'b> Mul<&'b Scalar> for &'a G1Affine {
     type Output = G1Projective;
 
@@ -754,20 +578,31 @@ impl<'a, 'b> Mul<&'b Scalar> for &'a G1Affine {
     }
 }
 
+impl<'a, 'b> Mul<&'b G1Affine> for &'a Scalar {
+    type Output = G1Projective;
+
+    #[inline]
+    fn mul(self, rhs: &'b G1Affine) -> Self::Output {
+        rhs * self
+    }
+}
+
 impl_binops_additive!(G1Projective, G1Projective);
 impl_binops_multiplicative!(G1Projective, Scalar);
 impl_binops_multiplicative_mixed!(G1Affine, Scalar, G1Projective);
-#[allow(clippy::let_and_return)]
+impl_binops_multiplicative_mixed!(Scalar, G1Affine, G1Projective);
+impl_binops_multiplicative_mixed!(Scalar, G1Projective, G1Projective);
+
 #[inline(always)]
 fn mul_by_3b(a: Fp) -> Fp {
     let a = a + a; // 2
     let a = a + a; // 4
-    let a = a + a + a; // 12
-    a
+    a + a + a // 12
 }
 
 impl G1Projective {
     /// Returns the identity of the group: the point at infinity.
+    ///
     pub fn identity() -> G1Projective {
         G1Projective {
             x: Fp::zero(),
@@ -878,7 +713,6 @@ impl G1Projective {
     }
 
     /// Adds this point to another point in the affine model.
-    #[allow(clippy::needless_borrow)]
     pub fn add_mixed(&self, rhs: &G1Affine) -> G1Projective {
         // Algorithm 8, https://eprint.iacr.org/2015/1060.pdf
 
@@ -915,175 +749,57 @@ impl G1Projective {
             z: z3,
         };
 
-        G1Projective::conditional_select(&tmp, &self, rhs.is_identity())
+        G1Projective::conditional_select(&tmp, self, rhs.is_identity())
     }
 
-    //------------
+    pub fn random(mut rng: impl RngCore) -> Self {
+        loop {
+            let x = Fp::random(&mut rng);
+            let flip_sign = rng.next_u32() % 2 != 0;
 
-    #[inline]
-    const fn sub_borrow(&self, a: &[u64; 4], b: &[u64; 4]) -> ([u64; 4], i8) {
-        let (d0, borrow) = sbb(a[0], b[0], 0);
-        let (d1, borrow) = sbb(a[1], b[1], borrow);
-        let (d2, borrow) = sbb(a[2], b[2], borrow);
-        let (d3, borrow) = sbb(a[3], b[3], borrow);
-        ([d0, d1, d2, d3], borrow as i8)
-    }
+            // Obtain the corresponding y-coordinate given x as y = sqrt(x^3 + 4)
+            let p = ((x.square() * x) + B).sqrt().map(|y| G1Affine {
+                x,
+                y: if flip_sign { -y } else { y },
+                infinity: 0.into(),
+            });
 
-    #[inline]
-    fn mul_short(&self, a: &[u64; 4], b: &[u64; 4]) -> [u64; 8] {
-        // Schoolbook multiplication
-        let (r0, carry) = mac(0, a[0], b[0], 0);
-        let (r1, carry) = mac(0, a[0], b[1], carry);
-        let (r2, carry) = mac(0, a[0], b[2], carry);
-        let r3 = carry;
+            if p.is_some().into() {
+                let p = p.unwrap().to_curve().clear_cofactor();
 
-        let (r1, carry) = mac(r1, a[1], b[0], 0);
-        let (r2, carry) = mac(r2, a[1], b[1], carry);
-        let (r3, carry) = mac(r3, a[1], b[2], carry);
-        let r4 = carry;
-
-        let (r2, carry) = mac(r2, a[2], b[0], 0);
-        let (r3, carry) = mac(r3, a[2], b[1], carry);
-        let (r4, carry) = mac(r4, a[2], b[2], carry);
-        let r5 = carry;
-
-        let (r3, carry) = mac(r3, a[3], b[0], 0);
-        let (r4, carry) = mac(r4, a[3], b[1], carry);
-        let (r5, carry) = mac(r5, a[3], b[2], carry);
-        let r6 = carry;
-
-        [r0, r1, r2, r3, r4, r5, r6, 0]
-    }
-
-    fn glv_recoding(&self, k: &[u8; 32]) -> (i8, [u8; 32], i8, [u8; 32]) {
-        const V: [[u64; 4]; 2] = [
-            [0x63f6_e522_f6cf_ee2f, 0x7c6b_ecf1_e01f_aadd, 1, 0],
-            [0x0000_0000_ffff_ffff, 0xac45_a401_0001_a402, 0, 0],
-        ];
-
-        let t: [u64; 4] = [
-            u64::from_le_bytes(k[0..8].try_into().unwrap()),
-            u64::from_le_bytes(k[8..16].try_into().unwrap()),
-            u64::from_le_bytes(k[16..24].try_into().unwrap()),
-            u64::from_le_bytes(k[24..32].try_into().unwrap()),
-        ];
-
-        /* Multiply b2 by v[0] and round. */
-        let b2 = self.mul_short(&t, &V[0]);
-        let b2h = [b2[4] + (b2[3] >> 63), b2[5], b2[6], b2[7]];
-
-        let b1 = self.mul_short(&b2h, &V[1]);
-        let b1l = [b1[0], b1[1], b1[2], b1[3]];
-        let (b1l, s1) = self.sub_borrow(&t, &b1l);
-        let minus_k1 = Scalar::from_raw([!b1l[0], !b1l[1], !b1l[2], !b1l[3]]) + Scalar::one();
-
-        let k1 = Scalar::from_raw(b1l);
-        let k1 = Scalar::conditional_select(&k1, &minus_k1, Choice::from(-s1 as u8));
-        let k2 = Scalar::from_raw(b2h);
-
-        // k2 is always positive for this curve.
-        (s1, k1.to_bytes(), 0, k2.to_bytes())
-    }
-
-    #[allow(clippy::needless_range_loop)]
-    fn regular_recoding(&self, naf: &mut [i8; 128], sc: &mut [u8; 32], w: i32) {
-        // Joux-Tunstall regular recoding algorithm for parameterized w.
-        let mask = (1 << w) - 1;
-        let len = 2 + (naf.len() - 1) / (w - 1) as usize;
-
-        for i in 0..(len - 1) {
-            naf[i] = ((sc[0] & mask) as i8) - (1 << (w - 1));
-            sc[0] = ((sc[0] as i8) - naf[i]) as u8;
-            // Divide by (w - 1)
-            for j in 0..31 {
-                sc[j] = (sc[j] >> (w - 1)) | sc[j + 1] << (8 - (w - 1));
+                if bool::from(!p.is_identity()) {
+                    return p;
+                }
             }
-            sc[31] >>= w - 1;
         }
-        naf[len - 1] = sc[0] as i8;
     }
-    #[allow(clippy::clone_on_copy)]
-    fn precompute(&self, table: &mut [G1Affine]) {
-        let mut proj_table = [G1Projective::identity(); 1 << (G1_WIDTH - 2)];
-        let double_point = self.double();
-        proj_table[0] = self.clone();
-        for i in 1..table.len() {
-            proj_table[i] = proj_table[i - 1] + double_point;
-        }
-        G1Projective::batch_normalize(&proj_table[1..], &mut table[1..]);
-    }
-
-    fn linear_pass(&self, index: u8, table: &[G1Affine]) -> G1Affine {
-        // Scan table of points to read table[index]
-        let mut tmp = G1Affine::identity();
-        for j in 0..table.len() as u8 {
-            let eq = j ^ index;
-            let bit4 = (eq & 0xF) | (eq >> 4);
-            let bit2 = (bit4 & 0x3) | (bit4 >> 2);
-            let bit1 = (bit2 & 0x1) | (bit2 >> 1);
-            tmp = G1Affine::conditional_select(&tmp, &table[j as usize], !Choice::from(bit1));
-        }
-        tmp
-    }
-
     fn multiply(&self, by: &[u8; 32]) -> G1Projective {
         let mut acc = G1Projective::identity();
 
-        // Length of recoding is ceil(scalar bitlength, w - 1).
-        let len = 2 + (128 - 1) / (G1_WIDTH - 1) as usize;
-        // Size of precomputation table is 2^(w-2).
-        let mut table = [G1Affine::from(self); 1 << (G1_WIDTH - 2)];
-
-        // Allocate longest possible vector, recode scalar and precompute table.
-        let mut naf1 = [0_i8; 128];
-        let mut naf2 = [0_i8; 128];
-        let (s1, mut k1, s2, mut k2) = self.glv_recoding(by);
-        if G1_WIDTH > 2 {
-            self.precompute(&mut table);
+        // This is a simple double-and-add implementation of point
+        // multiplication, moving from most significant to least
+        // significant bit of the scalar.
+        //
+        // We skip the leading bit because it's always unset for Fq
+        // elements.
+        for bit in by
+            .iter()
+            .rev()
+            .flat_map(|byte| (0..8).rev().map(move |i| Choice::from((byte >> i) & 1u8)))
+            .skip(1)
+        {
+            acc = acc.double();
+            acc = G1Projective::conditional_select(&acc, &(acc + self), bit);
         }
 
-        let bit1 = k1[0] & 1u8;
-        k1[0] |= 1;
-        let bit2 = k2[0] & 1u8;
-        k2[0] |= 1;
-
-        self.regular_recoding(&mut naf1, &mut k1, G1_WIDTH);
-        self.regular_recoding(&mut naf2, &mut k2, G1_WIDTH);
-
-        for i in (0..len).rev() {
-            for _ in 1..G1_WIDTH {
-                acc = acc.double();
-            }
-            let sign = naf1[i] >> 7;
-            let index = ((naf1[i] ^ sign) - sign) >> 1;
-            let mut t = self.linear_pass(index as u8, &table);
-            // Negate point if either k1 or naf1[i] is negative.
-            let flag = sign ^ s1;
-            t = G1Affine::conditional_select(&t, &-t, Choice::from(-flag as u8));
-            acc += t;
-
-            let sign = naf2[i] >> 7;
-            let index = ((naf2[i] ^ sign) - sign) >> 1;
-            let mut t = self.linear_pass(index as u8, &table);
-            // Negate point if either k2 or naf2[i] is negative.
-            let flag = sign ^ s2;
-            t = G1Affine::conditional_select(&t, &-t, Choice::from(-flag as u8));
-            t.x *= BETA;
-            acc += t;
-        }
-        // If the subscalars were even, fix result here.
-        let t = G1Affine::conditional_select(&table[0], &-table[0], Choice::from(-s1 as u8));
-        acc = G1Projective::conditional_select(&acc, &(acc - t), Choice::from(1u8 - bit1));
-        table[0].x *= BETA;
-        let t = G1Affine::conditional_select(&table[0], &-table[0], Choice::from(-s2 as u8));
-        G1Projective::conditional_select(&acc, &(acc - t), Choice::from(1u8 - bit2))
+        acc
     }
 
     /// Multiply `self` by `crate::BLS_X`, using double and add.
     fn mul_by_x(&self) -> G1Projective {
         let mut xself = G1Projective::identity();
         // NOTE: in BLS12-381 we can just skip the first bit.
-        let mut x = BLS_X >> 1;
+        let mut x = crate::BLS_X >> 1;
         let mut tmp = *self;
         while x != 0 {
             tmp = tmp.double();
@@ -1094,7 +810,7 @@ impl G1Projective {
             x >>= 1;
         }
         // finally, flip the sign
-        if BLS_X_IS_NEGATIVE {
+        if crate::BLS_X_IS_NEGATIVE {
             xself = -xself;
         }
         xself
@@ -1109,7 +825,6 @@ impl G1Projective {
 
     /// Converts a batch of `G1Projective` elements into `G1Affine` elements. This
     /// function will panic if `p.len() != q.len()`.
-    #[allow(clippy::needless_borrow)]
     pub fn batch_normalize(p: &[Self], q: &mut [G1Affine]) {
         assert_eq!(p.len(), q.len());
 
@@ -1141,7 +856,7 @@ impl G1Projective {
             q.y = p.y * tmp;
             q.infinity = Choice::from(0u8);
 
-            *q = G1Affine::conditional_select(&q, &G1Affine::identity(), skip);
+            *q = G1Affine::conditional_select(q, &G1Affine::identity(), skip);
         }
     }
 
@@ -1398,6 +1113,22 @@ impl UncompressedEncoding for G1Affine {
     }
 }
 
+#[test]
+fn test_beta() {
+    assert_eq!(
+        BETA,
+        Fp::from_bytes(&[
+            0x00u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5f, 0x19, 0x67, 0x2f, 0xdf, 0x76,
+            0xce, 0x51, 0xba, 0x69, 0xc6, 0x07, 0x6a, 0x0f, 0x77, 0xea, 0xdd, 0xb3, 0xa9, 0x3b,
+            0xe6, 0xf8, 0x96, 0x88, 0xde, 0x17, 0xd8, 0x13, 0x62, 0x0a, 0x00, 0x02, 0x2e, 0x01,
+            0xff, 0xff, 0xff, 0xfe, 0xff, 0xfe
+        ])
+        .unwrap()
+    );
+    assert_ne!(BETA, Fp::one());
+    assert_ne!(BETA * BETA, Fp::one());
+    assert_eq!(BETA * BETA * BETA, Fp::one());
+}
 #[test]
 fn test_is_on_curve() {
     assert!(bool::from(G1Affine::identity().is_on_curve()));
@@ -1917,10 +1648,10 @@ fn test_mul_by_x() {
     // multiplying by `x` a point in G1 is the same as multiplying by
     // the equivalent scalar.
     let generator = G1Projective::generator();
-    let x = if BLS_X_IS_NEGATIVE {
-        -Scalar::from(BLS_X)
+    let x = if crate::BLS_X_IS_NEGATIVE {
+        -Scalar::from(crate::BLS_X)
     } else {
-        Scalar::from(BLS_X)
+        Scalar::from(crate::BLS_X)
     };
     assert_eq!(generator.mul_by_x(), generator * x);
 
@@ -1974,20 +1705,19 @@ fn test_clear_cofactor() {
 
     // in BLS12-381 the cofactor in G1 can be
     // cleared multiplying by (1-x)
-    let h_eff = Scalar::from(1) + Scalar::from(BLS_X);
+    let h_eff = Scalar::from(1) + Scalar::from(crate::BLS_X);
     assert_eq!(point.clear_cofactor(), point * h_eff);
 }
 
 #[test]
-#[allow(clippy::many_single_char_names)]
 fn test_batch_normalize() {
     let a = G1Projective::generator().double();
     let b = a.double();
     let c = b.double();
 
-    for a_identity in (0..1).map(|n| n == 1) {
-        for b_identity in (0..1).map(|n| n == 1) {
-            for c_identity in (0..1).map(|n| n == 1) {
+    for a_identity in (0..=1).map(|n| n == 1) {
+        for b_identity in (0..=1).map(|n| n == 1) {
+            for c_identity in (0..=1).map(|n| n == 1) {
                 let mut v = [a, b, c];
                 if a_identity {
                     v[0] = G1Projective::identity()
@@ -2038,4 +1768,31 @@ fn test_zeroize() {
     let mut a = UncompressedEncoding::to_uncompressed(&G1Affine::generator());
     a.zeroize();
     assert_eq!(&a, &G1Uncompressed::default());
+}
+
+#[test]
+fn test_commutative_scalar_subgroup_multiplication() {
+    let a = Scalar::from_raw([
+        0x1fff_3231_233f_fffd,
+        0x4884_b7fa_0003_4802,
+        0x998c_4fef_ecbc_4ff3,
+        0x1824_b159_acc5_0562,
+    ]);
+
+    let g1_a = G1Affine::generator();
+    let g1_p = G1Projective::generator();
+
+    // By reference.
+    assert_eq!(&g1_a * &a, &a * &g1_a);
+    assert_eq!(&g1_p * &a, &a * &g1_p);
+
+    // Mixed
+    assert_eq!(&g1_a * a.clone(), a.clone() * &g1_a);
+    assert_eq!(&g1_p * a.clone(), a.clone() * &g1_p);
+    assert_eq!(g1_a.clone() * &a, &a * g1_a.clone());
+    assert_eq!(g1_p.clone() * &a, &a * g1_p.clone());
+
+    // By value.
+    assert_eq!(g1_p * a, a * g1_p);
+    assert_eq!(g1_a * a, a * g1_a);
 }

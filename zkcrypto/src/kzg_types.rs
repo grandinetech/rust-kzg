@@ -1,224 +1,332 @@
-// pub use super::{ZPoly, BlsScalar};
-use kzg::{Fr, G1Mul, G2Mul, KZGSettings, G1, G2};
-// use ff::{Field, PrimeField};
-
-// use std::ptr;
-
-use kzg::eip_4844::{BYTES_PER_G1, BYTES_PER_G2};
-use std::ops::{Add, Neg};
-// use std::convert::TryInto;
-
-// use blst::blst_p1_affine as P1Affine;
-// use blst::blst_p1 as P1;
-// use blst::blst_fr as BlstFr;
-
-// use blst::blst_scalar;
-
-// use crate::utils::*;
-
-// use crate::utils::*;
-pub use crate::curve::fp::Fp as ZkFp;
-pub use crate::curve::fp12::Fp12 as ZkFp12;
-pub use crate::curve::fp2::Fp2 as ZkFp2;
-pub use crate::curve::g1::G1Affine as ZkG1Affine;
-pub use crate::curve::g1::G1Projective as ZkG1Projective;
-pub use crate::curve::g2::G2Affine as ZkG2Affine;
-pub use crate::curve::g2::G2Projective as ZkG2Projective;
-
-// #[cfg(all(feature = "pairings", feature = "alloc"))]
-pub use crate::curve::pairings::{multi_miller_loop, G2Prepared, MillerLoopResult};
-
-// use super::G2Prepared;
-// use super::multi_miller_loop;
-
-use crate::zkfr::blsScalar;
-
-use crate::curve::g2::G2Affine;
-use crate::fftsettings::ZkFFTSettings;
-use crate::poly::ZPoly;
-use kzg::FFTSettings;
-
+use crate::consts::{
+    G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR, G2_GENERATOR, G2_NEGATIVE_GENERATOR,
+    SCALE2_ROOT_OF_UNITY,
+};
+use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{
-    check_proof_multi as check_multi, check_proof_single as check_single,
-    commit_to_poly as poly_commit, compute_proof_multi as open_multi,
-    compute_proof_single as open_single, new_kzg_settings, KZGSettings as LKZGSettings,
+    expand_root_of_unity, pairings_verify, FFTSettings as ZFFTSettings, KZGSettings as ZKZGSettings,
 };
-
-pub const G1_GENERATOR: ZkG1Projective = ZkG1Projective {
-    x: ZkFp::from_raw_unchecked([
-        0x5cb3_8790_fd53_0c16,
-        0x7817_fc67_9976_fff5,
-        0x154f_95c7_143b_a1c1,
-        0xf0ae_6acd_f3d0_e747,
-        0xedce_6ecc_21db_f440,
-        0x1201_7741_9e0b_fb75,
-    ]),
-    y: ZkFp::from_raw_unchecked([
-        0xbaac_93d5_0ce7_2271,
-        0x8c22_631a_7918_fd8e,
-        0xdd59_5f13_5707_25ce,
-        0x51ac_5829_5040_5194,
-        0x0e1c_8c3f_ad00_59c0,
-        0x0bbc_3efc_5008_a26a,
-    ]),
-    z: ZkFp::from_raw_unchecked([
-        0x7609_0000_0002_fffd,
-        0xebf4_000b_c40c_0002,
-        0x5f48_9857_53c7_58ba,
-        0x77ce_5853_7052_5745,
-        0x5c07_1a97_a256_ec6d,
-        0x15f6_5ec3_fa80_e493,
-    ]),
+use crate::poly::PolyData;
+use crate::utils::{
+    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
+    pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
 };
-
-pub const G1_NEGATIVE_GENERATOR: ZkG1Projective = ZkG1Projective {
-    x: ZkFp::from_raw_unchecked([
-        0x5cb3_8790_fd53_0c16,
-        0x7817_fc67_9976_fff5,
-        0x154f_95c7_143b_a1c1,
-        0xf0ae_6acd_f3d0_e747,
-        0xedce_6ecc_21db_f440,
-        0x1201_7741_9e0b_fb75,
-    ]),
-    y: ZkFp::from_raw_unchecked([
-        0xff52_6c2a_f318_883a,
-        0x9289_9ce4_383b_0270,
-        0x89d7_738d_9fa9_d055,
-        0x12ca_f35b_a344_c12a,
-        0x3cff_1b76_964b_5317,
-        0x0e44_d2ed_e977_4430,
-    ]),
-    z: ZkFp::from_raw_unchecked([
-        0x7609_0000_0002_fffd,
-        0xebf4_000b_c40c_0002,
-        0x5f48_9857_53c7_58ba,
-        0x77ce_5853_7052_5745,
-        0x5c07_1a97_a256_ec6d,
-        0x15f6_5ec3_fa80_e493,
-    ]),
+use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective, Scalar, MODULUS, R2};
+use blst::{blst_fr, blst_p1};
+use ff::Field;
+use kzg::common_utils::reverse_bit_order;
+use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
+use kzg::{
+    FFTFr, FFTSettings, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, PairingVerify, Poly, G1, G2,
 };
+use std::ops::{Mul, Sub};
 
-pub const G1_IDENTITY: ZkG1Projective = ZkG1Projective {
-    x: ZkFp::zero(),
-    y: ZkFp::one(),
-    z: ZkFp::zero(),
-};
+use ff::derive::sbb;
+use subtle::{ConstantTimeEq, CtOption};
 
-pub const G2_GENERATOR: ZkG2Projective = ZkG2Projective {
-    x: ZkFp2 {
-        c0: ZkFp([
-            0xf5f28fa202940a10,
-            0xb3f5fb2687b4961a,
-            0xa1a893b53e2ae580,
-            0x9894999d1a3caee9,
-            0x6f67b7631863366b,
-            0x058191924350bcd7,
-        ]),
-        c1: ZkFp([
-            0xa5a9c0759e23f606,
-            0xaaa0c59dbccd60c3,
-            0x3bb17e18e2867806,
-            0x1b1ab6cc8541b367,
-            0xc2b6ed0ef2158547,
-            0x11922a097360edf3,
-        ]),
-    },
-    y: ZkFp2 {
-        c0: ZkFp([
-            0x4c730af860494c4a,
-            0x597cfa1f5e369c5a,
-            0xe7e6856caa0a635a,
-            0xbbefb5e96e0d495f,
-            0x07d3a975f0ef25a2,
-            0x0083fd8e7e80dae5,
-        ]),
-        c1: ZkFp([
-            0xadc0fc92df64b05d,
-            0x18aa270a2b1461dc,
-            0x86adac6a3be4eba0,
-            0x79495c4ec93da33a,
-            0xe7175850a43ccaed,
-            0x0b2bc2a163de1bf2,
-        ]),
-    },
-    z: ZkFp2 {
-        c0: ZkFp([
-            0x760900000002fffd,
-            0xebf4000bc40c0002,
-            0x5f48985753c758ba,
-            0x77ce585370525745,
-            0x5c071a97a256ec6d,
-            0x15f65ec3fa80e493,
-        ]),
-        c1: ZkFp([
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-        ]),
-    },
-};
+fn to_scalar(zfr: &ZFr) -> Scalar {
+    zfr.fr
+}
 
-pub const G2_NEGATIVE_GENERATOR: ZkG2Projective = ZkG2Projective {
-    x: ZkFp2 {
-        c0: ZkFp([
-            0xf5f28fa202940a10,
-            0xb3f5fb2687b4961a,
-            0xa1a893b53e2ae580,
-            0x9894999d1a3caee9,
-            0x6f67b7631863366b,
-            0x058191924350bcd7,
-        ]),
-        c1: ZkFp([
-            0xa5a9c0759e23f606,
-            0xaaa0c59dbccd60c3,
-            0x3bb17e18e2867806,
-            0x1b1ab6cc8541b367,
-            0xc2b6ed0ef2158547,
-            0x11922a097360edf3,
-        ]),
-    },
-    y: ZkFp2 {
-        c0: ZkFp([
-            0x6d8bf5079fb65e61,
-            0xc52f05df531d63a5,
-            0x7f4a4d344ca692c9,
-            0xa887959b8577c95f,
-            0x4347fe40525c8734,
-            0x197d145bbaff0bb5,
-        ]),
-        c1: ZkFp([
-            0x0c3e036d209afa4e,
-            0x0601d8f4863f9e23,
-            0xe0832636bacc0a84,
-            0xeb2def362a476f84,
-            0x64044f659f0ee1e9,
-            0x0ed54f48d5a1caa7,
-        ]),
-    },
-    z: ZkFp2 {
-        c0: ZkFp([
-            0x760900000002fffd,
-            0xebf4000bc40c0002,
-            0x5f48985753c758ba,
-            0x77ce585370525745,
-            0x5c071a97a256ec6d,
-            0x15f65ec3fa80e493,
-        ]),
-        c1: ZkFp([
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-        ]),
-    },
-};
+fn bigint_check_mod_256(a: &[u64; 4]) -> bool {
+    let (_, overflow) = a[0].overflowing_sub(MODULUS.0[0]);
+    let (_, overflow) = a[1].overflowing_sub(MODULUS.0[1] + overflow as u64);
+    let (_, overflow) = a[2].overflowing_sub(MODULUS.0[2] + overflow as u64);
+    let (_, overflow) = a[3].overflowing_sub(MODULUS.0[3] + overflow as u64);
+    overflow
+}
 
-impl G1 for ZkG1Projective {
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+pub struct ZFr {
+    pub fr: Scalar,
+}
+
+impl ZFr {
+    pub fn from_blst_fr(fr: blst_fr) -> Self {
+        Self {
+            fr: blst_fr_into_pc_fr(fr),
+        }
+    }
+    pub fn to_blst_fr(&self) -> blst_fr {
+        pc_fr_into_blst_fr(self.fr)
+    }
+
+    pub fn converter(points: &[ZFr]) -> Vec<Scalar> {
+        let mut result = Vec::new();
+
+        for zg1 in points {
+            result.push(zg1.fr);
+        }
+        result
+    }
+}
+
+impl KzgFr for ZFr {
+    fn null() -> Self {
+        Self {
+            fr: Scalar([u64::MAX, u64::MAX, u64::MAX, u64::MAX]),
+        }
+    }
+    fn zero() -> Self {
+        Self::from_u64(0)
+    }
+
+    fn one() -> Self {
+        Self::from_u64(1)
+    }
+
+    #[cfg(feature = "rand")]
+    fn rand() -> Self {
+        let rng = rand::thread_rng();
+        let rusult = ff::Field::random(rng);
+        Self { fr: rusult }
+    }
+    #[allow(clippy::bind_instead_of_map)]
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let mut tmp = Scalar([0, 0, 0, 0]);
+
+                tmp.0[0] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
+                tmp.0[1] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[8..16]).unwrap());
+                tmp.0[2] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[16..24]).unwrap());
+                tmp.0[3] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[24..32]).unwrap());
+
+                // Try to subtract the modulus
+                let (_, borrow) = sbb(tmp.0[0], MODULUS.0[0], 0);
+                let (_, borrow) = sbb(tmp.0[1], MODULUS.0[1], borrow);
+                let (_, borrow) = sbb(tmp.0[2], MODULUS.0[2], borrow);
+                let (_, _borrow) = sbb(tmp.0[3], MODULUS.0[3], borrow);
+                let mut tmp2 = Scalar::default();
+
+                tmp2.0[0] = tmp.0[3];
+                tmp2.0[1] = tmp.0[2];
+                tmp2.0[2] = tmp.0[1];
+                tmp2.0[3] = tmp.0[0];
+
+                let is_zero: bool = tmp2.is_zero().into();
+                if !is_zero && !bigint_check_mod_256(&tmp2.0) {
+                    return Err("Invalid scalar".to_string());
+                }
+
+                tmp2 *= &R2;
+                Ok(Self { fr: tmp2 })
+            })
+    }
+    fn from_bytes_unchecked(bytes: &[u8]) -> Result<Self, String> {
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let mut tmp = Scalar([0, 0, 0, 0]);
+
+                tmp.0[0] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
+                tmp.0[1] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[8..16]).unwrap());
+                tmp.0[2] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[16..24]).unwrap());
+                tmp.0[3] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[24..32]).unwrap());
+
+                // Try to subtract the modulus
+                let (_, borrow) = sbb(tmp.0[0], MODULUS.0[0], 0);
+                let (_, borrow) = sbb(tmp.0[1], MODULUS.0[1], borrow);
+                let (_, borrow) = sbb(tmp.0[2], MODULUS.0[2], borrow);
+                let (_, _borrow) = sbb(tmp.0[3], MODULUS.0[3], borrow);
+                let mut tmp2 = Scalar::default();
+
+                tmp2.0[0] = tmp.0[3];
+                tmp2.0[1] = tmp.0[2];
+                tmp2.0[2] = tmp.0[1];
+                tmp2.0[3] = tmp.0[0];
+
+                tmp2 *= &R2;
+                Self { fr: tmp2 }
+            })
+    }
+
+    fn from_hex(hex: &str) -> Result<Self, String> {
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
+    }
+
+    fn from_u64_arr(u: &[u64; 4]) -> Self {
+        Self {
+            fr: Scalar::from_raw(*u),
+        }
+    }
+
+    fn from_u64(val: u64) -> Self {
+        Self {
+            fr: Scalar::from(val),
+        }
+    }
+
+    fn to_bytes(&self) -> [u8; 32] {
+        let scalar = self.fr;
+        let tmp = Scalar::montgomery_reduce(
+            scalar.0[0],
+            scalar.0[1],
+            scalar.0[2],
+            scalar.0[3],
+            0,
+            0,
+            0,
+            0,
+        );
+        let mut res = [0; 32];
+        res[0..8].copy_from_slice(&tmp.0[3].to_be_bytes());
+        res[8..16].copy_from_slice(&tmp.0[2].to_be_bytes());
+        res[16..24].copy_from_slice(&tmp.0[1].to_be_bytes());
+        res[24..32].copy_from_slice(&tmp.0[0].to_be_bytes());
+        res
+    }
+
+    //testuoti
+    fn to_u64_arr(&self) -> [u64; 4] {
+        let bytes = self.to_bytes();
+        [
+            u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
+            u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
+            u64::from_be_bytes(bytes[8..16].try_into().unwrap()),
+            u64::from_be_bytes(bytes[0..8].try_into().unwrap()),
+        ]
+    }
+
+    fn is_one(&self) -> bool {
+        self.fr.ct_eq(&ZFr::one().fr).unwrap_u8() == 1
+    }
+
+    fn is_zero(&self) -> bool {
+        self.fr.is_zero().unwrap_u8() == 1
+    }
+
+    fn is_null(&self) -> bool {
+        self.fr.ct_eq(&ZFr::null().fr).unwrap_u8() == 1
+    }
+
+    fn sqr(&self) -> Self {
+        Self {
+            fr: self.fr.square(),
+        }
+    }
+
+    fn mul(&self, b: &Self) -> Self {
+        Self {
+            fr: Scalar::mul(&to_scalar(self), &to_scalar(b)),
+        }
+    }
+
+    fn add(&self, b: &Self) -> Self {
+        Self { fr: self.fr + b.fr }
+    }
+
+    fn sub(&self, b: &Self) -> Self {
+        Self { fr: self.fr - b.fr }
+    }
+
+    fn eucl_inverse(&self) -> Self {
+        Self {
+            fr: self.fr.invert().unwrap(),
+        }
+    }
+
+    fn negate(&self) -> Self {
+        Self { fr: self.fr.neg() }
+    }
+
+    fn inverse(&self) -> Self {
+        Self {
+            fr: self.fr.invert().unwrap(),
+        }
+    }
+
+    fn pow(&self, n: usize) -> Self {
+        let mut tmp = *self;
+        let mut out = Self::one();
+        let mut n2 = n;
+
+        loop {
+            if n2 & 1 == 1 {
+                out = out.mul(&tmp);
+            }
+            n2 >>= 1;
+            if n2 == 0 {
+                break;
+            }
+            tmp = tmp.sqr();
+        }
+
+        out
+    }
+
+    fn div(&self, b: &Self) -> Result<Self, String> {
+        if <ZFr>::is_zero(b) {
+            return Err("Cannot divide by zero".to_string());
+        }
+        let tmp = b.eucl_inverse();
+        let out = self.mul(&tmp);
+        Ok(out)
+    }
+
+    fn equals(&self, b: &Self) -> bool {
+        self.fr == b.fr
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+pub struct ZG1 {
+    pub proj: G1Projective,
+}
+
+impl ZG1 {
+    pub const fn from_blst_p1(p1: blst_p1) -> Self {
+        Self {
+            proj: blst_p1_into_pc_g1projective(&p1),
+        }
+    }
+
+    pub const fn to_blst_p1(&self) -> blst_p1 {
+        pc_g1projective_into_blst_p1(self.proj)
+    }
+    pub const fn from_g1_projective(proj: G1Projective) -> Self {
+        Self { proj }
+    }
+
+    fn affine_to_projective(p: G1Affine) -> Self {
+        Self {
+            proj: G1Projective::from(&p),
+        }
+    }
+    pub fn converter(points: &[ZG1]) -> Vec<G1Projective> {
+        let mut result = Vec::new();
+
+        for zg1 in points {
+            result.push(zg1.proj);
+        }
+        result
+    }
+}
+
+impl From<blst_p1> for ZG1 {
+    fn from(p1: blst_p1) -> Self {
+        let proj = blst_p1_into_pc_g1projective(&p1);
+        Self { proj }
+    }
+}
+
+impl G1 for ZG1 {
     fn identity() -> Self {
         G1_IDENTITY
     }
@@ -231,9 +339,12 @@ impl G1 for ZkG1Projective {
         G1_NEGATIVE_GENERATOR
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
-        let result: ZkG1Projective = G1_GENERATOR;
-        result.mul(&blsScalar::rand())
+        let mut rng = rand::thread_rng();
+        Self {
+            proj: G1Projective::random(&mut rng),
+        }
     }
 
     #[allow(clippy::bind_instead_of_map)]
@@ -248,61 +359,98 @@ impl G1 for ZkG1Projective {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G1]| {
-                let affine: ZkG1Affine = ZkG1Affine::from_compressed(bytes).unwrap();
-                Ok(ZkG1Projective::from(affine))
+                let affine: CtOption<G1Affine> = G1Affine::from_compressed(bytes);
+                match affine.into() {
+                    Some(x) => Ok(ZG1::affine_to_projective(x)),
+                    None => Err("Failed to deserialize G1: Affine not available".to_string()),
+                }
             })
     }
 
     fn from_hex(hex: &str) -> Result<Self, String> {
         let bytes = hex::decode(&hex[2..]).unwrap();
-        G1::from_bytes(&bytes)
+        Self::from_bytes(&bytes)
     }
 
     fn to_bytes(&self) -> [u8; 48] {
-        let g1_affine = ZkG1Affine::from(self);
+        let g1_affine = G1Affine::from(self.proj);
         g1_affine.to_compressed()
     }
-
+    //zyme
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        if self.eq(&b) {
-            self.dbl()
-        } else {
-            ZkG1Projective::add(self, b)
+        Self {
+            proj: self.proj + b.proj,
         }
     }
-
     fn is_inf(&self) -> bool {
-        bool::from(self.is_identity())
+        bool::from(self.proj.is_identity())
     }
-
     fn is_valid(&self) -> bool {
-        bool::from(self.is_on_curve())
+        bool::from(self.proj.is_on_curve())
     }
 
     fn dbl(&self) -> Self {
-        self.double()
+        Self {
+            proj: self.proj.double(),
+        }
     }
-
     fn add(&self, b: &Self) -> Self {
-        self + b
+        Self {
+            proj: self.proj + b.proj,
+        }
     }
 
     fn sub(&self, b: &Self) -> Self {
-        self + (-b)
+        Self {
+            proj: self.proj.sub(&b.proj),
+        }
     }
 
     fn equals(&self, b: &Self) -> bool {
-        self.eq(b)
+        self.proj.eq(&b.proj)
     }
 }
 
-impl G1Mul<blsScalar> for ZkG1Projective {
-    fn mul(&self, b: &blsScalar) -> Self {
-        self * b
+impl G1Mul<ZFr> for ZG1 {
+    fn mul(&self, b: &ZFr) -> Self {
+        Self {
+            proj: self.proj.mul(b.fr),
+        }
+    }
+
+    fn g1_lincomb(points: &[Self], scalars: &[ZFr], len: usize) -> Self {
+        let mut out = Self::default();
+        g1_linear_combination(&mut out, points, scalars, len);
+        out
     }
 }
 
-impl G2 for ZkG2Projective {
+impl PairingVerify<ZG1, ZG2> for ZG1 {
+    fn verify(a1: &ZG1, a2: &ZG2, b1: &ZG1, b2: &ZG2) -> bool {
+        pairings_verify(a1, a2, b1, b2)
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
+pub struct ZG2 {
+    pub proj: G2Projective,
+}
+
+impl ZG2 {
+    pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
+        Self {
+            proj: blst_p2_into_pc_g2projective(&p2),
+        }
+    }
+    pub const fn from_g2_projective(proj: G2Projective) -> Self {
+        Self { proj }
+    }
+    pub const fn to_blst_p2(&self) -> blst::blst_p2 {
+        pc_g2projective_into_blst_p2(self.proj)
+    }
+}
+
+impl G2 for ZG2 {
     fn generator() -> Self {
         G2_GENERATOR
     }
@@ -323,129 +471,275 @@ impl G2 for ZkG2Projective {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let affine: G2Affine = G2Affine::from_compressed(bytes).unwrap();
-                Ok(ZkG2Projective::from(affine))
+                let affine = G2Affine::from_compressed(bytes).unwrap();
+                Ok(ZG2::from_g2_projective(G2Projective::from(affine)))
             })
     }
 
     fn to_bytes(&self) -> [u8; 96] {
-        let g2_affine = ZkG2Affine::from(self);
+        let g2_affine = G2Affine::from(self.proj);
         g2_affine.to_compressed()
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        if self.eq(&b) {
-            self.dbl()
-        } else {
-            self.add(b)
+        Self {
+            proj: self.proj + b.proj,
         }
     }
 
     fn dbl(&self) -> Self {
-        self.double()
+        Self {
+            proj: self.proj.double(),
+        }
     }
 
     fn sub(&self, b: &Self) -> Self {
-        self + (-b)
+        Self {
+            proj: self.proj - b.proj,
+        }
     }
 
     fn equals(&self, b: &Self) -> bool {
-        self.eq(b)
+        self.proj.eq(&b.proj)
     }
 }
 
-impl G2Mul<blsScalar> for ZkG2Projective {
-    fn mul(&self, b: &blsScalar) -> Self {
-        self * b
+impl G2Mul<ZFr> for ZG2 {
+    fn mul(&self, b: &ZFr) -> Self {
+        // FIXME: Is this right?
+        Self {
+            proj: self.proj.mul(b.fr),
+        }
     }
 }
 
-pub fn pairings_verify(
-    a1: &ZkG1Projective,
-    a2: &ZkG2Projective,
-    b1: &ZkG1Projective,
-    b2: &ZkG2Projective,
-) -> bool {
-    // As an optimisation, we want to invert one of the pairings,
-
-    let a1neg = ZkG1Projective::neg(*a1);
-
-    let aa1 = ZkG1Affine::from(&a1neg);
-    let bb1 = ZkG1Affine::from(b1);
-    let aa2 = ZkG2Affine::from(a2);
-    let bb2 = ZkG2Affine::from(b2);
-
-    let aa2_prepared = G2Prepared::from(aa2);
-    let bb2_prepared = G2Prepared::from(bb2);
-
-    let loop0 = multi_miller_loop(&[(&aa1, &aa2_prepared)]);
-    let loop1 = multi_miller_loop(&[(&bb1, &bb2_prepared)]);
-
-    let gt_point = loop0.add(loop1);
-
-    let new_point = MillerLoopResult::final_exponentiation(&gt_point);
-
-    ZkFp12::eq(&ZkFp12::one(), &new_point.0)
+impl Default for ZFFTSettings {
+    fn default() -> Self {
+        Self {
+            max_width: 0,
+            root_of_unity: ZFr::zero(),
+            expanded_roots_of_unity: Vec::new(),
+            reverse_roots_of_unity: Vec::new(),
+            roots_of_unity: Vec::new(),
+        }
+    }
 }
 
-impl KZGSettings<blsScalar, ZkG1Projective, ZkG2Projective, ZkFFTSettings, ZPoly> for LKZGSettings {
+impl FFTSettings<ZFr> for ZFFTSettings {
+    fn new(scale: usize) -> Result<Self, String> {
+        if scale >= SCALE2_ROOT_OF_UNITY.len() {
+            return Err(String::from(
+                "Scale is expected to be within root of unity matrix row size",
+            ));
+        }
+
+        // max_width = 2 ^ max_scale
+        let max_width: usize = 1 << scale;
+        let root_of_unity = ZFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
+
+        // create max_width of roots & store them reversed as well
+        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width).unwrap();
+        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
+
+        // Permute the roots of unity
+        let mut roots_of_unity = expanded_roots_of_unity.clone();
+        roots_of_unity.pop();
+        reverse_bit_order(&mut roots_of_unity)?;
+
+        Ok(Self {
+            max_width,
+            root_of_unity,
+            expanded_roots_of_unity,
+            reverse_roots_of_unity,
+            roots_of_unity,
+        })
+    }
+
+    fn get_max_width(&self) -> usize {
+        self.max_width
+    }
+
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> ZFr {
+        self.expanded_roots_of_unity[i]
+    }
+
+    fn get_expanded_roots_of_unity(&self) -> &[ZFr] {
+        &self.expanded_roots_of_unity
+    }
+
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> ZFr {
+        self.reverse_roots_of_unity[i]
+    }
+
+    fn get_reversed_roots_of_unity(&self) -> &[ZFr] {
+        &self.reverse_roots_of_unity
+    }
+
+    fn get_roots_of_unity_at(&self, i: usize) -> ZFr {
+        self.roots_of_unity[i]
+    }
+
+    fn get_roots_of_unity(&self) -> &[ZFr] {
+        &self.roots_of_unity
+    }
+}
+
+impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData> for ZKZGSettings {
     fn new(
-        secret_g1: &[ZkG1Projective],
-        secret_g2: &[ZkG2Projective],
-        length: usize,
-        fs: &ZkFFTSettings,
-    ) -> Result<LKZGSettings, String> {
-        Ok(new_kzg_settings(
-            secret_g1.to_vec(),
-            secret_g2.to_vec(),
-            length as u64,
-            fs,
+        secret_g1: &[ZG1],
+        secret_g2: &[ZG2],
+        _length: usize,
+        fft_settings: &ZFFTSettings,
+    ) -> Result<ZKZGSettings, String> {
+        Ok(Self {
+            secret_g1: secret_g1.to_vec(),
+            secret_g2: secret_g2.to_vec(),
+            fs: fft_settings.clone(),
+        })
+    }
+
+    fn commit_to_poly(&self, p: &PolyData) -> Result<ZG1, String> {
+        if p.coeffs.len() > self.secret_g1.len() {
+            return Err(String::from("Polynomial is longer than secret g1"));
+        }
+
+        let mut out = ZG1::default();
+        g1_linear_combination(&mut out, &self.secret_g1, &p.coeffs, p.coeffs.len());
+
+        Ok(out)
+    }
+
+    fn compute_proof_single(&self, p: &PolyData, x: &ZFr) -> Result<ZG1, String> {
+        if p.coeffs.is_empty() {
+            return Err(String::from("Polynomial must not be empty"));
+        }
+
+        // `-(x0^n)`, where `n` is `1`
+        let divisor_0 = x.negate();
+
+        // Calculate `q = p / (x^n - x0^n)` for our reduced case (see `compute_proof_multi` for
+        // generic implementation)
+        let mut out_coeffs = Vec::from(&p.coeffs[1..]);
+        for i in (1..out_coeffs.len()).rev() {
+            let tmp = out_coeffs[i].mul(&divisor_0);
+            out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
+        }
+
+        let q = PolyData { coeffs: out_coeffs };
+        let ret = self.commit_to_poly(&q)?;
+        Ok(ret)
+    }
+
+    fn check_proof_single(&self, com: &ZG1, proof: &ZG1, x: &ZFr, y: &ZFr) -> Result<bool, String> {
+        let x_g2 = G2_GENERATOR.mul(x);
+        let s_minus_x: ZG2 = self.secret_g2[1].sub(&x_g2);
+        let y_g1 = G1_GENERATOR.mul(y);
+        let commitment_minus_y: ZG1 = com.sub(&y_g1);
+
+        Ok(pairings_verify(
+            &commitment_minus_y,
+            &G2_GENERATOR,
+            proof,
+            &s_minus_x,
         ))
     }
 
-    fn commit_to_poly(&self, p: &ZPoly) -> Result<ZkG1Projective, String> {
-        Ok(poly_commit(p, self).unwrap())
-    }
+    fn compute_proof_multi(&self, p: &PolyData, x: &ZFr, n: usize) -> Result<ZG1, String> {
+        if p.coeffs.is_empty() {
+            return Err(String::from("Polynomial must not be empty"));
+        }
 
-    fn compute_proof_single(&self, p: &ZPoly, x: &blsScalar) -> Result<ZkG1Projective, String> {
-        open_single(p, x, self)
-    }
+        if !n.is_power_of_two() {
+            return Err(String::from("n must be a power of two"));
+        }
 
-    fn check_proof_single(
-        &self,
-        com: &ZkG1Projective,
-        proof: &ZkG1Projective,
-        x: &blsScalar,
-        value: &blsScalar,
-    ) -> Result<bool, String> {
-        check_single(com, proof, x, value, self)
-    }
+        // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
+        let mut divisor = PolyData {
+            coeffs: Vec::with_capacity(n + 1),
+        };
 
-    fn compute_proof_multi(
-        &self,
-        p: &ZPoly,
-        x: &blsScalar,
-        n: usize,
-    ) -> Result<ZkG1Projective, String> {
-        open_multi(p, x, n, self)
+        // -(x0^n)
+        let x_pow_n = x.pow(n);
+
+        divisor.coeffs.push(x_pow_n.negate());
+
+        // Zeros
+        for _ in 1..n {
+            divisor.coeffs.push(ZFr { fr: Scalar::zero() });
+        }
+
+        // x^n
+        divisor.coeffs.push(ZFr { fr: Scalar::one() });
+
+        let mut new_polina = p.clone();
+
+        // Calculate q = p / (x^n - x0^n)
+        // let q = p.div(&divisor).unwrap();
+        let q = new_polina.div(&divisor)?;
+        let ret = self.commit_to_poly(&q)?;
+        Ok(ret)
     }
 
     fn check_proof_multi(
         &self,
-        com: &ZkG1Projective,
-        proof: &ZkG1Projective,
-        x: &blsScalar,
-        values: &[blsScalar],
+        com: &ZG1,
+        proof: &ZG1,
+        x: &ZFr,
+        ys: &[ZFr],
         n: usize,
     ) -> Result<bool, String> {
-        check_multi(com, proof, x, values, n, self)
+        if !n.is_power_of_two() {
+            return Err(String::from("n is not a power of two"));
+        }
+
+        // Interpolate at a coset.
+        let mut interp = PolyData {
+            coeffs: self.fs.fft_fr(ys, true)?,
+        };
+
+        let inv_x = x.inverse(); // Not euclidean?
+        let mut inv_x_pow = inv_x;
+        for i in 1..n {
+            interp.coeffs[i] = interp.coeffs[i].mul(&inv_x_pow);
+            inv_x_pow = inv_x_pow.mul(&inv_x);
+        }
+
+        // [x^n]_2
+        let x_pow = inv_x_pow.inverse();
+
+        let xn2 = G2_GENERATOR.mul(&x_pow);
+
+        // [s^n - x^n]_2
+        let xn_minus_yn = self.secret_g2[n].sub(&xn2);
+
+        // [interpolation_polynomial(s)]_1
+        let is1 = self.commit_to_poly(&interp).unwrap();
+
+        // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
+        let commit_minus_interp = com.sub(&is1);
+        let ret = pairings_verify(&commit_minus_interp, &G2_GENERATOR, proof, &xn_minus_yn);
+
+        Ok(ret)
     }
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> blsScalar {
+    fn get_expanded_roots_of_unity_at(&self, i: usize) -> ZFr {
         self.fs.get_expanded_roots_of_unity_at(i)
     }
 
-    fn get_roots_of_unity_at(&self, i: usize) -> blsScalar {
+    fn get_roots_of_unity_at(&self, i: usize) -> ZFr {
         self.fs.get_roots_of_unity_at(i)
+    }
+
+    fn get_fft_settings(&self) -> &ZFFTSettings {
+        &self.fs
+    }
+
+    fn get_g1_secret(&self) -> &[ZG1] {
+        &self.secret_g1
+    }
+
+    fn get_g2_secret(&self) -> &[ZG2] {
+        &self.secret_g2
     }
 }

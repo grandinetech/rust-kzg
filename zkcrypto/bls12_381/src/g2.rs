@@ -1,194 +1,11 @@
 //! This module provides an implementation of the $\mathbb{G}_2$ group of BLS12-381.
-
-// ================ util.rs ========================
-
-// #[cfg(feature = "groups")]
-const BLS_X: u64 = 0xd201_0000_0001_0000;
-// #[cfg(feature = "groups")]
-const BLS_X_IS_NEGATIVE: bool = true;
-
-/// Compute a + b + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + (b as u128) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a - (b + borrow), returning the result and the new borrow.
-#[inline(always)]
-pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
-    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a + (b * c) + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn mac(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + ((b as u128) * (c as u128)) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-macro_rules! impl_add_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Add<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: &'b $rhs) -> $output {
-                &self + rhs
-            }
-        }
-
-        impl<'a> Add<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                self + &rhs
-            }
-        }
-
-        impl Add<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                &self + &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_sub_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Sub<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: &'b $rhs) -> $output {
-                &self - rhs
-            }
-        }
-
-        impl<'a> Sub<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                self - &rhs
-            }
-        }
-
-        impl Sub<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                &self - &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl_add_binop_specify_output!($lhs, $rhs, $output);
-        impl_sub_binop_specify_output!($lhs, $rhs, $output);
-    };
-}
-
-macro_rules! impl_binops_multiplicative_mixed {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Mul<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: &'b $rhs) -> $output {
-                &self * rhs
-            }
-        }
-
-        impl<'a> Mul<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                self * &rhs
-            }
-        }
-
-        impl Mul<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                &self * &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_additive_specify_output!($lhs, $rhs, $lhs);
-
-        impl SubAssign<$rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: $rhs) {
-                *self = &*self - &rhs;
-            }
-        }
-
-        impl AddAssign<$rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: $rhs) {
-                *self = &*self + &rhs;
-            }
-        }
-
-        impl<'b> SubAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self - rhs;
-            }
-        }
-
-        impl<'b> AddAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self + rhs;
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_multiplicative {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_multiplicative_mixed!($lhs, $rhs, $lhs);
-
-        impl MulAssign<$rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: $rhs) {
-                *self = &*self * &rhs;
-            }
-        }
-
-        impl<'b> MulAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self * rhs;
-            }
-        }
-    };
-}
-
-// =================================================
+#![allow(clippy::all)]
 
 use core::borrow::Borrow;
 use core::fmt;
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use pairing::group::{
+use group::{
     prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
     Curve, Group, GroupEncoding, UncompressedEncoding,
 };
@@ -198,9 +15,9 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 #[cfg(feature = "alloc")]
 use group::WnafGroup;
 
-use super::fp::Fp;
-use super::fp2::Fp2;
-use super::scalar::Scalar;
+use crate::fp::Fp;
+use crate::fp2::Fp2;
+use crate::Scalar;
 
 /// This is an element of $\mathbb{G}_2$ represented in the affine coordinate space.
 /// It is ideal to keep elements in this representation to reduce memory usage and
@@ -377,6 +194,8 @@ const B: Fp2 = Fp2 {
     ]),
 };
 
+const B3: Fp2 = Fp2::add(&Fp2::add(&B, &B), &B);
+
 impl G2Affine {
     /// Returns the identity of the group: the point at infinity.
     pub fn identity() -> G2Affine {
@@ -440,8 +259,8 @@ impl G2Affine {
 
         let mut res = [0; 96];
 
-        res[0..48].copy_from_slice(&x.c1.to_bytes()[..]);
-        res[48..96].copy_from_slice(&x.c0.to_bytes()[..]);
+        (&mut res[0..48]).copy_from_slice(&x.c1.to_bytes()[..]);
+        (&mut res[48..96]).copy_from_slice(&x.c0.to_bytes()[..]);
 
         // This point is in compressed form, so we set the most significant bit.
         res[0] |= 1u8 << 7;
@@ -655,15 +474,12 @@ impl G2Affine {
     /// exists within the $q$-order subgroup $\mathbb{G}_2$. This should always return true
     /// unless an "unchecked" API was used.
     pub fn is_torsion_free(&self) -> Choice {
-        const FQ_MODULUS_BYTES: [u8; 32] = [
-            1, 0, 0, 0, 255, 255, 255, 255, 254, 91, 254, 255, 2, 164, 189, 83, 5, 216, 161, 9, 8,
-            216, 57, 51, 72, 125, 157, 41, 83, 167, 237, 115,
-        ];
-
-        // Clear the r-torsion from the point and check if it is the identity
-        G2Projective::from(*self)
-            .multiply(&FQ_MODULUS_BYTES)
-            .is_identity()
+        // Algorithm from Section 4 of https://eprint.iacr.org/2021/1130
+        // Updated proof of correctness in https://eprint.iacr.org/2022/352
+        //
+        // Check that psi(P) == [x] P
+        let p = G2Projective::from(self);
+        p.psi().ct_eq(&p.mul_by_x())
     }
 
     /// Returns true if this point is on the curve. This should always return
@@ -678,9 +494,9 @@ impl G2Affine {
 #[cfg_attr(docsrs, doc(cfg(feature = "groups")))]
 #[derive(Copy, Clone, Debug)]
 pub struct G2Projective {
-    pub(crate) x: Fp2,
-    pub(crate) y: Fp2,
-    pub(crate) z: Fp2,
+    pub x: Fp2,
+    pub y: Fp2,
+    pub z: Fp2,
 }
 
 impl Default for G2Projective {
@@ -799,6 +615,15 @@ impl<'a, 'b> Mul<&'b Scalar> for &'a G2Projective {
     }
 }
 
+impl<'a, 'b> Mul<&'b G2Projective> for &'a Scalar {
+    type Output = G2Projective;
+
+    #[inline]
+    fn mul(self, rhs: &'b G2Projective) -> Self::Output {
+        rhs * self
+    }
+}
+
 impl<'a, 'b> Mul<&'b Scalar> for &'a G2Affine {
     type Output = G2Projective;
 
@@ -807,14 +632,24 @@ impl<'a, 'b> Mul<&'b Scalar> for &'a G2Affine {
     }
 }
 
+impl<'a, 'b> Mul<&'b G2Affine> for &'a Scalar {
+    type Output = G2Projective;
+
+    #[inline]
+    fn mul(self, rhs: &'b G2Affine) -> Self::Output {
+        rhs * self
+    }
+}
+
 impl_binops_additive!(G2Projective, G2Projective);
 impl_binops_multiplicative!(G2Projective, Scalar);
 impl_binops_multiplicative_mixed!(G2Affine, Scalar, G2Projective);
+impl_binops_multiplicative_mixed!(Scalar, G2Affine, G2Projective);
+impl_binops_multiplicative_mixed!(Scalar, G2Projective, G2Projective);
 
 #[inline(always)]
 fn mul_by_3b(x: Fp2) -> Fp2 {
-    let b3: Fp2 = Fp2::add(&Fp2::add(&B, &B), &B);
-    x * b3
+    x * B3
 }
 
 impl G2Projective {
@@ -949,7 +784,6 @@ impl G2Projective {
     }
 
     /// Adds this point to another point in the affine model.
-    #[allow(clippy::needless_borrow)]
     pub fn add_mixed(&self, rhs: &G2Affine) -> G2Projective {
         // Algorithm 8, https://eprint.iacr.org/2015/1060.pdf
 
@@ -986,7 +820,7 @@ impl G2Projective {
             z: z3,
         };
 
-        G2Projective::conditional_select(&tmp, &self, rhs.is_identity())
+        G2Projective::conditional_select(&tmp, self, rhs.is_identity())
     }
 
     fn multiply(&self, by: &[u8]) -> G2Projective {
@@ -1082,7 +916,7 @@ impl G2Projective {
     fn mul_by_x(&self) -> G2Projective {
         let mut xself = G2Projective::identity();
         // NOTE: in BLS12-381 we can just skip the first bit.
-        let mut x = BLS_X >> 1;
+        let mut x = crate::BLS_X >> 1;
         let mut acc = *self;
         while x != 0 {
             acc = acc.double();
@@ -1092,7 +926,7 @@ impl G2Projective {
             x >>= 1;
         }
         // finally, flip the sign
-        if BLS_X_IS_NEGATIVE {
+        if crate::BLS_X_IS_NEGATIVE {
             xself = -xself;
         }
         xself
@@ -1115,7 +949,6 @@ impl G2Projective {
 
     /// Converts a batch of `G2Projective` elements into `G2Affine` elements. This
     /// function will panic if `p.len() != q.len()`.
-    #[allow(clippy::needless_borrow)]
     pub fn batch_normalize(p: &[Self], q: &mut [G2Affine]) {
         assert_eq!(p.len(), q.len());
 
@@ -1147,7 +980,7 @@ impl G2Projective {
             q.y = p.y * tmp;
             q.infinity = Choice::from(0u8);
 
-            *q = G2Affine::conditional_select(&q, &G2Affine::identity(), skip);
+            *q = G2Affine::conditional_select(q, &G2Affine::identity(), skip);
         }
     }
 
@@ -2078,10 +1911,10 @@ fn test_mul_by_x() {
     // multiplying by `x` a point in G2 is the same as multiplying by
     // the equivalent scalar.
     let generator = G2Projective::generator();
-    let x = if BLS_X_IS_NEGATIVE {
-        -Scalar::from(BLS_X)
+    let x = if crate::BLS_X_IS_NEGATIVE {
+        -Scalar::from(crate::BLS_X)
     } else {
-        Scalar::from(BLS_X)
+        Scalar::from(crate::BLS_X)
     };
     assert_eq!(generator.mul_by_x(), generator * x);
 
@@ -2259,15 +2092,14 @@ fn test_clear_cofactor() {
 }
 
 #[test]
-#[allow(clippy::many_single_char_names)]
 fn test_batch_normalize() {
     let a = G2Projective::generator().double();
     let b = a.double();
     let c = b.double();
 
-    for a_identity in (0..1).map(|n| n == 1) {
-        for b_identity in (0..1).map(|n| n == 1) {
-            for c_identity in (0..1).map(|n| n == 1) {
+    for a_identity in (0..=1).map(|n| n == 1) {
+        for b_identity in (0..=1).map(|n| n == 1) {
+            for c_identity in (0..=1).map(|n| n == 1) {
                 let mut v = [a, b, c];
                 if a_identity {
                     v[0] = G2Projective::identity()
@@ -2318,4 +2150,31 @@ fn test_zeroize() {
     let mut a = UncompressedEncoding::to_uncompressed(&G2Affine::generator());
     a.zeroize();
     assert_eq!(&a, &G2Uncompressed::default());
+}
+
+#[test]
+fn test_commutative_scalar_subgroup_multiplication() {
+    let a = Scalar::from_raw([
+        0x1fff_3231_233f_fffd,
+        0x4884_b7fa_0003_4802,
+        0x998c_4fef_ecbc_4ff3,
+        0x1824_b159_acc5_0562,
+    ]);
+
+    let g2_a = G2Affine::generator();
+    let g2_p = G2Projective::generator();
+
+    // By reference.
+    assert_eq!(&g2_a * &a, &a * &g2_a);
+    assert_eq!(&g2_p * &a, &a * &g2_p);
+
+    // Mixed
+    assert_eq!(&g2_a * a.clone(), a.clone() * &g2_a);
+    assert_eq!(&g2_p * a.clone(), a.clone() * &g2_p);
+    assert_eq!(g2_a.clone() * &a, &a * g2_a.clone());
+    assert_eq!(g2_p.clone() * &a, &a * g2_p.clone());
+
+    // By value.
+    assert_eq!(g2_p * a, a * g2_p);
+    assert_eq!(g2_a * a, a * g2_a);
 }

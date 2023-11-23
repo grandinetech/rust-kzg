@@ -1,0 +1,24 @@
+From b1f8f612f8c1bda0b4ea58e01e9a60235a88cc83 Mon Sep 17 00:00:00 2001
+From: povilassl <slivinskas.povilas@gmail.com>
+Date: Sun, 24 Sep 2023 18:01:51 +0300
+Subject: [PATCH] java patch
+
+---
+ bindings/java/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bindings/java/Makefile b/bindings/java/Makefile
+index 9be2fd6..1e59378 100644
+--- a/bindings/java/Makefile
++++ b/bindings/java/Makefile
+@@ -1,6 +1,6 @@
+ INCLUDE_DIRS = ../../src ../../blst/bindings
+ 
+-TARGETS=c_kzg_4844_jni.c ../../src/c_kzg_4844.c ../../lib/libblst.a
++TARGETS=c_kzg_4844_jni.c ../../../../target/release/rust_kzg_zkcrypto.a
+ 
+ CC_FLAGS=
+ OPTIMIZATION_LEVEL=-O2
+-- 
+2.37.0.windows.1
+

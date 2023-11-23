@@ -1,18 +1,14 @@
-use super::fp::Fp;
-use super::fp12::Fp12;
-use super::fp2::Fp2;
-use super::fp6::Fp6;
-// use super::{G1Affine, G1Projective, G2Affine, G2Projective, Scalar, BLS_X, BLS_X_IS_NEGATIVE};
-use super::g1::{G1Affine, G1Projective};
-use super::g2::{G2Affine, G2Projective};
-use super::scalar::Scalar;
-// use bls12_381::multi_miller_loop;
+use crate::fp::Fp;
+use crate::fp12::Fp12;
+use crate::fp2::Fp2;
+use crate::fp6::Fp6;
+use crate::{G1Affine, G1Projective, G2Affine, G2Projective, Scalar, BLS_X, BLS_X_IS_NEGATIVE};
 
 use core::borrow::Borrow;
 use core::fmt;
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use pairing::group::Group;
+use group::Group;
 use pairing::{Engine, PairingCurveAffine};
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
@@ -21,190 +17,6 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 use alloc::vec::Vec;
 #[cfg(feature = "alloc")]
 use pairing::MultiMillerLoop;
-
-// ================ util.rs ========================
-
-// #[cfg(feature = "groups")]
-const BLS_X: u64 = 0xd201_0000_0001_0000;
-// #[cfg(feature = "groups")]
-const BLS_X_IS_NEGATIVE: bool = true;
-
-/// Compute a + b + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + (b as u128) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a - (b + borrow), returning the result and the new borrow.
-#[inline(always)]
-pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
-    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a + (b * c) + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn mac(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + ((b as u128) * (c as u128)) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-macro_rules! impl_add_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Add<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: &'b $rhs) -> $output {
-                &self + rhs
-            }
-        }
-
-        impl<'a> Add<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                self + &rhs
-            }
-        }
-
-        impl Add<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                &self + &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_sub_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Sub<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: &'b $rhs) -> $output {
-                &self - rhs
-            }
-        }
-
-        impl<'a> Sub<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                self - &rhs
-            }
-        }
-
-        impl Sub<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                &self - &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl_add_binop_specify_output!($lhs, $rhs, $output);
-        impl_sub_binop_specify_output!($lhs, $rhs, $output);
-    };
-}
-
-macro_rules! impl_binops_multiplicative_mixed {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Mul<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: &'b $rhs) -> $output {
-                &self * rhs
-            }
-        }
-
-        impl<'a> Mul<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                self * &rhs
-            }
-        }
-
-        impl Mul<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                &self * &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_additive_specify_output!($lhs, $rhs, $lhs);
-
-        impl SubAssign<$rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: $rhs) {
-                *self = &*self - &rhs;
-            }
-        }
-
-        impl AddAssign<$rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: $rhs) {
-                *self = &*self + &rhs;
-            }
-        }
-
-        impl<'b> SubAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self - rhs;
-            }
-        }
-
-        impl<'b> AddAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self + rhs;
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_multiplicative {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_multiplicative_mixed!($lhs, $rhs, $lhs);
-
-        impl MulAssign<$rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: $rhs) {
-                *self = &*self * &rhs;
-            }
-        }
-
-        impl<'b> MulAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self * rhs;
-            }
-        }
-    };
-}
-
-// =================================================
 
 /// Represents results of a Miller loop, one of the most expensive portions
 /// of the pairing function. `MillerLoopResult`s cannot be compared with each
@@ -366,7 +178,7 @@ impl MillerLoopResult {
 
 impl<'a, 'b> Add<&'b MillerLoopResult> for &'a MillerLoopResult {
     type Output = MillerLoopResult;
-    #[allow(clippy::suspicious_arithmetic_impl)]
+
     #[inline]
     fn add(self, rhs: &'b MillerLoopResult) -> MillerLoopResult {
         MillerLoopResult(self.0 * rhs.0)
@@ -376,17 +188,16 @@ impl<'a, 'b> Add<&'b MillerLoopResult> for &'a MillerLoopResult {
 impl_add_binop_specify_output!(MillerLoopResult, MillerLoopResult, MillerLoopResult);
 
 impl AddAssign<MillerLoopResult> for MillerLoopResult {
-    #[allow(clippy::op_ref)]
     #[inline]
     fn add_assign(&mut self, rhs: MillerLoopResult) {
-        *self = &*self + &rhs;
+        *self = *self + rhs;
     }
 }
-#[allow(clippy::op_ref)]
+
 impl<'b> AddAssign<&'b MillerLoopResult> for MillerLoopResult {
     #[inline]
     fn add_assign(&mut self, rhs: &'b MillerLoopResult) {
-        *self = &*self + rhs;
+        *self = *self + rhs;
     }
 }
 
@@ -397,13 +208,16 @@ impl<'b> AddAssign<&'b MillerLoopResult> for MillerLoopResult {
 /// keep code and abstractions consistent.
 #[cfg_attr(docsrs, doc(cfg(feature = "pairings")))]
 #[derive(Copy, Clone, Debug)]
-pub struct Gt(pub(crate) Fp12);
+pub struct Gt(pub Fp12);
 
 impl Default for Gt {
     fn default() -> Self {
         Self::identity()
     }
 }
+
+#[cfg(feature = "zeroize")]
+impl zeroize::DefaultIsZeroes for Gt {}
 
 impl fmt::Display for Gt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -465,7 +279,6 @@ impl Neg for Gt {
 impl<'a, 'b> Add<&'b Gt> for &'a Gt {
     type Output = Gt;
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
     #[inline]
     fn add(self, rhs: &'b Gt) -> Gt {
         Gt(self.0 * rhs.0)
@@ -483,7 +296,7 @@ impl<'a, 'b> Sub<&'b Gt> for &'a Gt {
 
 impl<'a, 'b> Mul<&'b Scalar> for &'a Gt {
     type Output = Gt;
-    #[allow(clippy::suspicious_arithmetic_impl)]
+
     fn mul(self, other: &'b Scalar) -> Self::Output {
         let mut acc = Gt::identity();
 
@@ -526,31 +339,9 @@ where
 impl Group for Gt {
     type Scalar = Scalar;
 
-    // DONT USE random()
-    // IT THROWS AN ERROR WITH THE ORIGINAL FUNCTION
-
-    /*
-
     fn random(mut rng: impl RngCore) -> Self {
         loop {
             let inner = Fp12::random(&mut rng);
-
-            // Not all elements of Fp12 are elements of the prime-order multiplicative
-            // subgroup. We run the random element through final_exponentiation to obtain
-            // a valid element, which requires that it is non-zero.
-            if !bool::from(inner.is_zero()) {
-                return MillerLoopResult(inner).final_exponentiation();
-            }
-        }
-    }
-
-    */
-
-    fn random(_rng: impl RngCore) -> Self {
-        // was mut rng: impl rngCore
-        loop {
-            // let inner = Fp12::random(&mut rng);
-            let inner = Fp12::one();
 
             // Not all elements of Fp12 are elements of the prime-order multiplicative
             // subgroup. We run the random element through final_exponentiation to obtain
@@ -693,8 +484,8 @@ impl Group for Gt {
     }
 }
 
-// #[cfg(feature = "alloc")]
-// #[cfg_attr(docsrs, doc(cfg(all(feature = "pairings", feature = "alloc"))))]
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "pairings", feature = "alloc"))))]
 #[derive(Clone, Debug)]
 /// This structure contains cached computations pertaining to a $\mathbb{G}_2$
 /// element as part of the pairing function (specifically, the Miller loop) and
@@ -709,7 +500,7 @@ pub struct G2Prepared {
     coeffs: Vec<(Fp2, Fp2, Fp2)>,
 }
 
-// #[cfg(feature = "alloc")]
+#[cfg(feature = "alloc")]
 impl From<G2Affine> for G2Prepared {
     fn from(q: G2Affine) -> G2Prepared {
         struct Adder {
@@ -754,8 +545,8 @@ impl From<G2Affine> for G2Prepared {
     }
 }
 
-// #[cfg(feature = "alloc")]
-// #[cfg_attr(docsrs, doc(cfg(all(feature = "pairings", feature = "alloc"))))]
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "pairings", feature = "alloc"))))]
 /// Computes $$\sum_{i=1}^n \textbf{ML}(a_i, b_i)$$ given a series of terms
 /// $$(a_1, b_1), (a_2, b_2), ..., (a_n, b_n).$$
 ///
@@ -812,7 +603,6 @@ pub fn multi_miller_loop(terms: &[(&G1Affine, &G2Prepared)]) -> MillerLoopResult
 }
 
 /// Invoke the pairing function without the use of precomputation and other optimizations.
-#[allow(clippy::needless_borrow)]
 #[cfg_attr(docsrs, doc(cfg(feature = "pairings")))]
 pub fn pairing(p: &G1Affine, q: &G2Affine) -> Gt {
     struct Adder {
@@ -844,8 +634,8 @@ pub fn pairing(p: &G1Affine, q: &G2Affine) -> Gt {
     }
 
     let either_identity = p.is_identity() | q.is_identity();
-    let p = G1Affine::conditional_select(&p, &G1Affine::generator(), either_identity);
-    let q = G2Affine::conditional_select(&q, &G2Affine::generator(), either_identity);
+    let p = G1Affine::conditional_select(p, &G1Affine::generator(), either_identity);
+    let q = G2Affine::conditional_select(q, &G2Affine::generator(), either_identity);
 
     let mut adder = Adder {
         cur: G2Projective::from(q),
@@ -1042,9 +832,8 @@ fn test_gt_generator() {
 }
 
 #[test]
-#[allow(clippy::many_single_char_names)]
 fn test_bilinearity() {
-    use super::scalar::Scalar;
+    use crate::Scalar;
 
     let a = Scalar::from_raw([1, 2, 3, 4]).invert().unwrap().square();
     let b = Scalar::from_raw([5, 6, 7, 8]).invert().unwrap().square();
@@ -1066,7 +855,6 @@ fn test_bilinearity() {
 }
 
 #[test]
-#[allow(clippy::many_single_char_names)]
 fn test_unitary() {
     let g = G1Affine::generator();
     let h = G2Affine::generator();
@@ -1153,8 +941,6 @@ fn test_miller_loop_result_zeroize() {
     assert_eq!(m.0, MillerLoopResult::default().0);
 }
 
-/*
-
 #[test]
 fn tricking_miller_loop_result() {
     assert_eq!(
@@ -1182,5 +968,3 @@ fn tricking_miller_loop_result() {
         Gt::identity()
     );
 }
-
-*/

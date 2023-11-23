@@ -1,112 +1,58 @@
-//use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
-use crate::zkfr::blsScalar; // Gal naudot crate::zkfr::blsScalar;?
-                            //use bls12_381::*;
-use blst::blst_fp as BlstFp;
-use blst::blst_fr as BlstFr;
-use blst::blst_p1 as BlstP1;
-use kzg::Fr;
-use std::fmt;
+use super::P1;
+use crate::P2;
+use bls12_381::{Fp as ZFp, Fp2 as ZFp2, G1Projective, G2Projective, Scalar};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 
-use core::fmt::Error;
+#[derive(Debug, PartialEq, Eq)]
+pub struct Error;
 
-pub use crate::curve::fp::Fp as ZkFp;
-pub use crate::curve::fp12::Fp12 as ZkFp12;
-pub use crate::curve::fp2::Fp2 as ZkFp2;
-pub use crate::curve::g1::G1Affine as ZkG1Affine;
-pub use crate::curve::g1::G1Projective as ZkG1Projective;
-pub use crate::curve::g2::G2Affine as ZkG2Affine;
-pub use crate::curve::g2::G2Projective as ZkG2Projective;
-
-use crate::poly::ZPoly as Poly;
-
-pub struct Polydata {
-    coeffs: Vec<BlstFr>,
+pub const fn blst_fr_into_pc_fr(fr: blst_fr) -> Scalar {
+    Scalar(fr.l)
+}
+pub const fn pc_fr_into_blst_fr(scalar: Scalar) -> blst_fr {
+    blst_fr { l: scalar.0 }
+}
+pub const fn blst_fp2_into_pc_fq2(fp: &blst_fp2) -> ZFp2 {
+    let c0 = ZFp(fp.fp[0].l);
+    let c1 = ZFp(fp.fp[1].l);
+    ZFp2 { c0, c1 }
 }
 
-pub fn blst_poly_into_zk_poly(pd: Polydata) -> Result<Poly, fmt::Error> {
-    //use bls12_381::Scalar as blsScalar;
-    let mut poly = Vec::new();
-    for x in pd.coeffs {
-        poly.push(blsScalar::from(x.l[0]))
+pub const fn blst_p1_into_pc_g1projective(p1: &P1) -> G1Projective {
+    let x = ZFp(p1.x.l);
+    let y = ZFp(p1.y.l);
+    let z = ZFp(p1.z.l);
+    G1Projective { x, y, z }
+}
+
+pub const fn pc_g1projective_into_blst_p1(p1: G1Projective) -> blst_p1 {
+    let x = blst_fp { l: p1.x.0 };
+    let y = blst_fp { l: p1.y.0 };
+    let z = blst_fp { l: p1.z.0 };
+
+    blst_p1 { x, y, z }
+}
+
+pub const fn blst_p2_into_pc_g2projective(p2: &P2) -> G2Projective {
+    G2Projective {
+        x: blst_fp2_into_pc_fq2(&p2.x),
+        y: blst_fp2_into_pc_fq2(&p2.y),
+        z: blst_fp2_into_pc_fq2(&p2.z),
     }
-
-    let p = Poly { coeffs: poly }; // Poly(poly)
-    Ok(p)
 }
 
-pub fn pc_poly_into_blst_poly(poly: Poly) -> Result<Polydata, fmt::Error> {
-    let mut bls_pol = Polydata { coeffs: Vec::new() };
-
-    for x in poly.coeffs {
-        // poly.0
-        bls_pol.coeffs.push(BlstFr { l: x.0 });
-    }
-
-    Ok(bls_pol)
-}
-
-pub fn zk_fr_into_blst_fr(fr: &blsScalar) -> BlstFr {
-    // BlstFr::from_u64_arr(&fr.0);
-    let mut ret = blst::blst_fr::default();
-    unsafe {
-        blst::blst_fr_from_uint64(&mut ret, fr.0.as_ptr());
-    }
-    // let temp = blst::blst_fr { l: fr.0};
-    // // BlstFr(temp)
-    // return temp;
-    blst::blst_fr { l: fr.0 }
-    // BlstFr { l: fr.0 }
-}
-
-pub fn blst_fr_into_zk_fr(fr: &BlstFr) -> blsScalar {
-    let mut size: [u64; 4] = [0; 4];
-    unsafe {
-        blst::blst_uint64_from_fr(size.as_mut_ptr(), fr);
-    }
-    // // blst::blst_uint64_from_fr
-
-    // let zk_fr = blsScalar::from_u64_arr(&size);
-    // zk_fr
-    blsScalar::from_u64_arr(&size)
-}
-
-pub fn zk_fp_into_blst_fp(fp: ZkFp) -> BlstFp {
-    BlstFp { l: fp.0 }
-}
-
-pub fn blst_fp_into_zk_fp(fp: &BlstFp) -> ZkFp {
-    let mut size: [u64; 6] = [0; 6];
-    unsafe {
-        blst::blst_uint64_from_fp(size.as_mut_ptr(), fp);
-    }
-    // let zk_fp = ZkFp::from_raw_unchecked(size);
-    // zk_fp
-    ZkFp::from_raw_unchecked(size)
-}
-
-// turbut reikia is zkcrypto i savo repo isidet visus fp ir t.t
-pub fn zk_g1projective_into_blst_p1(gp: ZkG1Projective) -> Result<BlstP1, Error> {
-    let p1 = BlstP1 {
-        x: zk_fp_into_blst_fp(gp.x),
-        y: zk_fp_into_blst_fp(gp.y),
-        z: zk_fp_into_blst_fp(gp.z),
+pub const fn pc_g2projective_into_blst_p2(p2: G2Projective) -> blst_p2 {
+    let x = blst_fp2 {
+        fp: [blst_fp { l: p2.x.c0.0 }, blst_fp { l: p2.x.c1.0 }],
     };
-    Ok(p1)
-}
 
-pub fn blst_p1_into_zk_g1projective(p1: &BlstP1) -> Result<ZkG1Projective, Error> {
-    let zk_g1projective: ZkG1Projective = ZkG1Projective {
-        x: blst_fp_into_zk_fp(&p1.x),
-        y: blst_fp_into_zk_fp(&p1.y),
-        z: blst_fp_into_zk_fp(&p1.z),
+    let y = blst_fp2 {
+        fp: [blst_fp { l: p2.y.c0.0 }, blst_fp { l: p2.y.c1.0 }],
     };
-    Ok(zk_g1projective)
-}
 
-pub fn min_u64(a: usize, b: usize) -> Result<usize, String> {
-    if a < b {
-        Ok(a)
-    } else {
-        Ok(b)
-    }
+    let z = blst_fp2 {
+        fp: [blst_fp { l: p2.z.c0.0 }, blst_fp { l: p2.z.c1.0 }],
+    };
+
+    blst_p2 { x, y, z }
 }

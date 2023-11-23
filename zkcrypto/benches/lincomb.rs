@@ -1,20 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::lincomb::bench_g1_lincomb;
-use rust_kzg_zkcrypto::curve::multiscalar_mul::msm_variable_base;
-use rust_kzg_zkcrypto::kzg_types::ZkG1Projective;
-use rust_kzg_zkcrypto::zkfr::blsScalar;
-
-fn g1_linear_combination(
-    out: &mut ZkG1Projective,
-    points: &[ZkG1Projective],
-    scalars: &[blsScalar],
-    _len: usize,
-) {
-    *out = msm_variable_base(points, scalars);
-}
+use rust_kzg_zkcrypto::fft_g1::g1_linear_combination;
+use rust_kzg_zkcrypto::kzg_types::{ZFr, ZG1};
 
 fn bench_g1_lincomb_(c: &mut Criterion) {
-    bench_g1_lincomb::<blsScalar, ZkG1Projective>(c, &g1_linear_combination);
+    bench_g1_lincomb::<ZFr, ZG1>(c, &g1_linear_combination);
 }
 
 criterion_group! {

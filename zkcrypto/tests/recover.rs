@@ -1,22 +1,23 @@
 #[cfg(test)]
 mod recover_tests {
     use kzg_bench::tests::recover::*;
-    use rust_kzg_zkcrypto::fftsettings::ZkFFTSettings;
-    use rust_kzg_zkcrypto::poly::ZPoly;
-    use rust_kzg_zkcrypto::zkfr::blsScalar;
+    use rust_kzg_zkcrypto::kzg_proofs::FFTSettings;
+    use rust_kzg_zkcrypto::kzg_types::ZFr as Fr;
+    use rust_kzg_zkcrypto::poly::PolyData;
 
     #[test]
     fn recover_simple_() {
-        recover_simple::<blsScalar, ZkFFTSettings, ZPoly, ZPoly>();
+        recover_simple::<Fr, FFTSettings, PolyData, PolyData>();
     }
 
+    //Could be not working because of zero poly.
     #[test]
     fn recover_random_() {
-        recover_random::<blsScalar, ZkFFTSettings, ZPoly, ZPoly>();
+        recover_random::<Fr, FFTSettings, PolyData, PolyData>();
     }
 
     #[test]
     fn more_than_half_missing_() {
-        more_than_half_missing::<blsScalar, ZkFFTSettings, ZPoly, ZPoly>();
+        more_than_half_missing::<Fr, FFTSettings, PolyData, PolyData>();
     }
 }

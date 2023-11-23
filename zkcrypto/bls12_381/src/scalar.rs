@@ -1,7 +1,7 @@
 //! This module provides an implementation of the BLS12-381 scalar field $\mathbb{F}_q$
 //! where `q = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001`
+#![allow(clippy::all)]
 
-use core::convert::TryFrom;
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use rand_core::RngCore;
@@ -10,193 +10,16 @@ use ff::{Field, PrimeField};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "bits")]
-use core::convert::TryInto;
-
-#[cfg(feature = "bits")]
 use ff::{FieldBits, PrimeFieldBits};
 
-//use crate::curve::util::*;
-/// Compute a + b + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + (b as u128) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a - (b + borrow), returning the result and the new borrow.
-#[inline(always)]
-pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
-    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
-    (ret as u64, (ret >> 64) as u64)
-}
-
-/// Compute a + (b * c) + carry, returning the result and the new carry over.
-#[inline(always)]
-pub const fn mac(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
-    let ret = (a as u128) + ((b as u128) * (c as u128)) + (carry as u128);
-    (ret as u64, (ret >> 64) as u64)
-}
-
-macro_rules! impl_add_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Add<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: &'b $rhs) -> $output {
-                &self + rhs
-            }
-        }
-
-        impl<'a> Add<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                self + &rhs
-            }
-        }
-
-        impl Add<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn add(self, rhs: $rhs) -> $output {
-                &self + &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_sub_binop_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Sub<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: &'b $rhs) -> $output {
-                &self - rhs
-            }
-        }
-
-        impl<'a> Sub<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                self - &rhs
-            }
-        }
-
-        impl Sub<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn sub(self, rhs: $rhs) -> $output {
-                &self - &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive_specify_output {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl_add_binop_specify_output!($lhs, $rhs, $output);
-        impl_sub_binop_specify_output!($lhs, $rhs, $output);
-    };
-}
-
-macro_rules! impl_binops_multiplicative_mixed {
-    ($lhs:ident, $rhs:ident, $output:ident) => {
-        impl<'b> Mul<&'b $rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: &'b $rhs) -> $output {
-                &self * rhs
-            }
-        }
-
-        impl<'a> Mul<$rhs> for &'a $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                self * &rhs
-            }
-        }
-
-        impl Mul<$rhs> for $lhs {
-            type Output = $output;
-
-            #[inline]
-            fn mul(self, rhs: $rhs) -> $output {
-                &self * &rhs
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_additive {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_additive_specify_output!($lhs, $rhs, $lhs);
-
-        impl SubAssign<$rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: $rhs) {
-                *self = &*self - &rhs;
-            }
-        }
-
-        impl AddAssign<$rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: $rhs) {
-                *self = &*self + &rhs;
-            }
-        }
-
-        impl<'b> SubAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn sub_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self - rhs;
-            }
-        }
-
-        impl<'b> AddAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn add_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self + rhs;
-            }
-        }
-    };
-}
-
-macro_rules! impl_binops_multiplicative {
-    ($lhs:ident, $rhs:ident) => {
-        impl_binops_multiplicative_mixed!($lhs, $rhs, $lhs);
-
-        impl MulAssign<$rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: $rhs) {
-                *self = &*self * &rhs;
-            }
-        }
-
-        impl<'b> MulAssign<&'b $rhs> for $lhs {
-            #[inline]
-            fn mul_assign(&mut self, rhs: &'b $rhs) {
-                *self = &*self * rhs;
-            }
-        }
-    };
-}
+use crate::util::{adc, mac, sbb};
 
 /// Represents an element of the scalar field $\mathbb{F}_q$ of the BLS12-381 elliptic
 /// curve construction.
 // The internal representation of this type is four 64-bit unsigned
 // integers in little-endian order. `Scalar` values are always in
 // Montgomery form; i.e., Scalar(a) = aR mod q, with R = 2^256.
-#[derive(Clone, Copy, Eq, Default)]
+#[derive(Clone, Copy, Eq)]
 pub struct Scalar(pub [u64; 4]);
 
 impl fmt::Debug for Scalar {
@@ -357,6 +180,14 @@ const R3: Scalar = Scalar([
     0x6e2a_5bb9_c8db_33e9,
 ]);
 
+/// 2^-1
+const TWO_INV: Scalar = Scalar([
+    0x0000_0000_ffff_ffff,
+    0xac42_5bfd_0001_a401,
+    0xccc6_27f7_f65e_27fa,
+    0x0c12_58ac_d662_82b7,
+]);
+
 // 2^S * t = MODULUS - 1 with t odd
 const S: u32 = 32;
 
@@ -374,6 +205,30 @@ const ROOT_OF_UNITY: Scalar = Scalar([
     0x5bf3_adda_19e9_b27b,
 ]);
 
+/// ROOT_OF_UNITY^-1
+const ROOT_OF_UNITY_INV: Scalar = Scalar([
+    0x4256_481a_dcf3_219a,
+    0x45f3_7b7f_96b6_cad3,
+    0xf9c3_f1d7_5f7a_3b27,
+    0x2d2f_c049_658a_fd43,
+]);
+
+/// GENERATOR^{2^s} where t * 2^s + 1 = q with t odd.
+/// In other words, this is a t root of unity.
+const DELTA: Scalar = Scalar([
+    0x70e3_10d3_d146_f96a,
+    0x4b64_c089_19e2_99e6,
+    0x51e1_1418_6a8b_970d,
+    0x6185_d066_27c0_67cb,
+]);
+
+impl Default for Scalar {
+    #[inline]
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
 #[cfg(feature = "zeroize")]
 impl zeroize::DefaultIsZeroes for Scalar {}
 
@@ -390,14 +245,9 @@ impl Scalar {
         R
     }
 
-    #[inline]
-    pub const fn null() -> Scalar {
-        Scalar([u64::MAX, u64::MAX, u64::MAX, u64::MAX])
-    }
-
     /// Doubles this field element.
     #[inline]
-    pub fn double(&self) -> Scalar {
+    pub const fn double(&self) -> Scalar {
         // TODO: This can be achieved more efficiently with a bitshift.
         self.add(self)
     }
@@ -483,13 +333,13 @@ impl Scalar {
 
     /// Converts from an integer represented in little endian
     /// into its (congruent) `Scalar` representation.
-    pub fn from_raw(val: [u64; 4]) -> Self {
-        Scalar(val).mul(&R2)
+    pub const fn from_raw(val: [u64; 4]) -> Self {
+        (&Scalar(val)).mul(&R2)
     }
 
     /// Squares this element.
     #[inline]
-    pub fn square(&self) -> Scalar {
+    pub const fn square(&self) -> Scalar {
         let (r1, carry) = mac(0, self.0[0], self.0[1], 0);
         let (r2, carry) = mac(0, self.0[0], self.0[2], carry);
         let (r3, r4) = mac(0, self.0[0], self.0[3], carry);
@@ -517,56 +367,6 @@ impl Scalar {
         let (r7, _) = adc(0, r7, carry);
 
         Scalar::montgomery_reduce(r0, r1, r2, r3, r4, r5, r6, r7)
-    }
-
-    /// Computes the square root of this element, if it exists.
-    #[allow(clippy::many_single_char_names)]
-    pub fn sqrt(&self) -> CtOption<Self> {
-        // Tonelli-Shank's algorithm for q mod 16 = 1
-        // https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
-
-        // w = self^((t - 1) // 2)
-        //   = self^6104339283789297388802252303364915521546564123189034618274734669823
-        let w = self.pow_vartime(&[
-            0x7fff_2dff_7fff_ffff,
-            0x04d0_ec02_a9de_d201,
-            0x94ce_bea4_199c_ec04,
-            0x0000_0000_39f6_d3a9,
-        ]);
-
-        let mut v = S;
-        let mut x = self * w;
-        let mut b = x * w;
-
-        // Initialize z as the 2^S root of unity.
-        let mut z = ROOT_OF_UNITY;
-
-        for max_v in (1..=S).rev() {
-            let mut k = 1;
-            let mut tmp = b.square();
-            let mut j_less_than_v: Choice = 1.into();
-
-            for j in 2..max_v {
-                let tmp_is_one = tmp.ct_eq(&Scalar::one());
-                let squared = Scalar::conditional_select(&tmp, &z, tmp_is_one).square();
-                tmp = Scalar::conditional_select(&squared, &tmp, tmp_is_one);
-                let new_z = Scalar::conditional_select(&z, &squared, tmp_is_one);
-                j_less_than_v &= !j.ct_eq(&v);
-                k = u32::conditional_select(&j, &k, tmp_is_one);
-                z = Scalar::conditional_select(&z, &new_z, j_less_than_v);
-            }
-
-            let result = x * z;
-            x = Scalar::conditional_select(&result, &x, b.ct_eq(&Scalar::one()));
-            z = z.square();
-            b *= z;
-            v = k;
-        }
-
-        CtOption::new(
-            x,
-            (x * x).ct_eq(self), // Only return Some if it's the square root.
-        )
     }
 
     /// Exponentiates `self` by `by`, where `by` is a
@@ -702,9 +502,9 @@ impl Scalar {
 
         CtOption::new(t0, !self.ct_eq(&Self::zero()))
     }
-    #[allow(clippy::too_many_arguments)]
+
     #[inline(always)]
-    fn montgomery_reduce(
+    pub const fn montgomery_reduce(
         r0: u64,
         r1: u64,
         r2: u64,
@@ -747,12 +547,12 @@ impl Scalar {
         let (r7, _) = adc(r7, carry2, carry);
 
         // Result may be within MODULUS of the correct value
-        Scalar([r4, r5, r6, r7]).sub(&MODULUS)
+        (&Scalar([r4, r5, r6, r7])).sub(&MODULUS)
     }
 
     /// Multiplies `rhs` by `self`, returning the result.
     #[inline]
-    pub fn mul(&self, rhs: &Self) -> Self {
+    pub const fn mul(&self, rhs: &Self) -> Self {
         // Schoolbook multiplication
 
         let (r0, carry) = mac(0, self.0[0], rhs.0[0], 0);
@@ -798,7 +598,7 @@ impl Scalar {
 
     /// Adds `rhs` to `self`, returning the result.
     #[inline]
-    pub fn add(&self, rhs: &Self) -> Self {
+    pub const fn add(&self, rhs: &Self) -> Self {
         let (d0, carry) = adc(self.0[0], rhs.0[0], 0);
         let (d1, carry) = adc(self.0[1], rhs.0[1], carry);
         let (d2, carry) = adc(self.0[2], rhs.0[2], carry);
@@ -806,7 +606,7 @@ impl Scalar {
 
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
-        Scalar([d0, d1, d2, d3]).sub(&MODULUS)
+        (&Scalar([d0, d1, d2, d3])).sub(&MODULUS)
     }
 
     /// Negates `self`.
@@ -826,39 +626,6 @@ impl Scalar {
 
         Scalar([d0 & mask, d1 & mask, d2 & mask, d3 & mask])
     }
-
-    /// Reduces the scalar and returns it multiplied by the montgomery
-    /// radix.
-    pub fn reduce(&self) -> Scalar {
-        Scalar::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0)
-    }
-
-    /// SHR impl
-    #[inline]
-    pub fn divn(&mut self, mut n: u32) {
-        if n >= 256 {
-            *self = Self::from(0);
-            return;
-        }
-
-        while n >= 64 {
-            let mut t = 0;
-            for i in self.0.iter_mut().rev() {
-                core::mem::swap(&mut t, i);
-            }
-            n -= 64;
-        }
-
-        if n > 0 {
-            let mut t = 0;
-            for i in self.0.iter_mut().rev() {
-                let t2 = *i << (64 - n);
-                *i >>= n;
-                *i |= t;
-                t = t2;
-            }
-        }
-    }
 }
 
 impl From<Scalar> for [u8; 32] {
@@ -874,18 +641,13 @@ impl<'a> From<&'a Scalar> for [u8; 32] {
 }
 
 impl Field for Scalar {
+    const ZERO: Self = Self::zero();
+    const ONE: Self = Self::one();
+
     fn random(mut rng: impl RngCore) -> Self {
         let mut buf = [0; 64];
         rng.fill_bytes(&mut buf);
         Self::from_bytes_wide(&buf)
-    }
-
-    fn zero() -> Self {
-        Self::zero()
-    }
-
-    fn one() -> Self {
-        Self::one()
     }
 
     #[must_use]
@@ -902,8 +664,25 @@ impl Field for Scalar {
         self.invert()
     }
 
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        ff::helpers::sqrt_ratio_generic(num, div)
+    }
+
     fn sqrt(&self) -> CtOption<Self> {
-        self.sqrt()
+        // (t - 1) // 2 = 6104339283789297388802252303364915521546564123189034618274734669823
+        ff::helpers::sqrt_tonelli_shanks(
+            self,
+            &[
+                0x7fff_2dff_7fff_ffff,
+                0x04d0_ec02_a9de_d201,
+                0x94ce_bea4_199c_ec04,
+                0x0000_0000_39f6_d3a9,
+            ],
+        )
+    }
+
+    fn is_zero_vartime(&self) -> bool {
+        self.0 == Self::zero().0
     }
 }
 
@@ -922,18 +701,16 @@ impl PrimeField for Scalar {
         Choice::from(self.to_bytes()[0] & 1)
     }
 
+    const MODULUS: &'static str =
+        "0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001";
     const NUM_BITS: u32 = MODULUS_BITS;
     const CAPACITY: u32 = Self::NUM_BITS - 1;
-
-    fn multiplicative_generator() -> Self {
-        GENERATOR
-    }
-
+    const TWO_INV: Self = TWO_INV;
+    const MULTIPLICATIVE_GENERATOR: Self = GENERATOR;
     const S: u32 = S;
-
-    fn root_of_unity() -> Self {
-        ROOT_OF_UNITY
-    }
+    const ROOT_OF_UNITY: Self = ROOT_OF_UNITY;
+    const ROOT_OF_UNITY_INV: Self = ROOT_OF_UNITY_INV;
+    const DELTA: Self = DELTA;
 }
 
 #[cfg(all(feature = "bits", not(target_pointer_width = "64")))]
@@ -995,6 +772,50 @@ where
     }
 }
 
+impl<T> core::iter::Product<T> for Scalar
+where
+    T: core::borrow::Borrow<Scalar>,
+{
+    fn product<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = T>,
+    {
+        iter.fold(Self::one(), |acc, item| acc * item.borrow())
+    }
+}
+
+#[test]
+fn test_constants() {
+    assert_eq!(
+        Scalar::MODULUS,
+        "0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001",
+    );
+
+    assert_eq!(Scalar::from(2) * Scalar::TWO_INV, Scalar::ONE);
+
+    assert_eq!(
+        Scalar::ROOT_OF_UNITY * Scalar::ROOT_OF_UNITY_INV,
+        Scalar::ONE,
+    );
+
+    // ROOT_OF_UNITY^{2^s} mod m == 1
+    assert_eq!(
+        Scalar::ROOT_OF_UNITY.pow(&[1u64 << Scalar::S, 0, 0, 0]),
+        Scalar::ONE,
+    );
+
+    // DELTA^{t} mod m == 1
+    assert_eq!(
+        Scalar::DELTA.pow(&[
+            0xfffe_5bfe_ffff_ffff,
+            0x09a1_d805_53bd_a402,
+            0x299d_7d48_3339_d808,
+            0x0000_0000_73ed_a753,
+        ]),
+        Scalar::ONE,
+    );
+}
+
 #[test]
 fn test_inv() {
     // Compute -(q^{-1} mod 2^64) mod 2^64 by exponentiating
@@ -1028,7 +849,6 @@ fn test_debug() {
 }
 
 #[test]
-#[allow(clippy::eq_op)]
 fn test_equality() {
     assert_eq!(Scalar::zero(), Scalar::zero());
     assert_eq!(Scalar::one(), Scalar::one());

@@ -1,0 +1,48 @@
+From a8ff3fe1e4372380f15769bbb8490b0089aa2928 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 26 Oct 2023 13:51:37 +0300
+Subject: [PATCH] Patch python binding
+
+---
+ bindings/python/Makefile | 5 +----
+ bindings/python/setup.py | 6 +++---
+ 2 files changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/bindings/python/Makefile b/bindings/python/Makefile
+index c6bd222..99d6501 100644
+--- a/bindings/python/Makefile
++++ b/bindings/python/Makefile
+@@ -1,11 +1,8 @@
+ .PHONY: all
+ all: install test
+
+-../../src/c_kzg_4844.o:
+-	make -C../../src c_kzg_4844.o
+-
+ .PHONY: install
+-install: setup.py ckzg.c ../../src/c_kzg_4844.o
++install: setup.py ckzg.c
+ 	python3 setup.py install
+ 
+ .PHONY: test
+diff --git a/bindings/python/setup.py b/bindings/python/setup.py
+index b072833..db37db4 100644
+--- a/bindings/python/setup.py
++++ b/bindings/python/setup.py
+@@ -8,10 +8,10 @@ def main():
+         ext_modules=[
+             Extension(
+                 "ckzg",
+-                sources=["ckzg.c", "../../src/c_kzg_4844.c"],
++                sources=["ckzg.c"],
+                 include_dirs=["../../inc", "../../src"],
+-                library_dirs=["../../lib"],
+-                libraries=["blst"])])
++                library_dirs=["../../lib", "../../../../target/release"],
++                libraries=[":rust_kzg_zkcrypto.a"])])
+ 
+ if __name__ == "__main__":
+     main()
+-- 
+2.34.1
+
