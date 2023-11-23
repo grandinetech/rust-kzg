@@ -50,6 +50,15 @@ impl ZFr {
     pub fn to_blst_fr(&self) -> blst_fr {
         pc_fr_into_blst_fr(self.fr)
     }
+
+    pub fn converter(points: &[ZFr]) -> Vec<Scalar> {
+        let mut result = Vec::new();
+
+        for zg1 in points {
+            result.push(zg1.fr);
+        }
+        result
+    }
 }
 
 impl KzgFr for ZFr {
@@ -299,6 +308,14 @@ impl ZG1 {
         Self {
             proj: G1Projective::from(&p),
         }
+    }
+    pub fn converter(points: &[ZG1]) -> Vec<G1Projective> {
+        let mut result = Vec::new();
+
+        for zg1 in points {
+            result.push(zg1.proj);
+        }
+        result
     }
 }
 

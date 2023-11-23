@@ -1,17 +1,15 @@
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ZFr as BlstFr, ZG1};
-
+use crate::kzg_types::{ZFr, ZG1};
+use crate::multiscalar_mul::msm_variable_base;
 use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
-pub fn g1_linear_combination(out: &mut ZG1, points: &[ZG1], scalars: &[BlstFr], len: usize) {
-    *out = ZG1::default();
-    for i in 0..len {
-        let tmp = points[i].mul(&scalars[i]);
-        *out = out.add_or_dbl(&tmp);
-    }
+#[warn(unused_variables)]
+pub fn g1_linear_combination(out: &mut ZG1, points: &[ZG1], scalars: &[ZFr], _len: usize) {
+    let g1 = msm_variable_base(points, scalars);
+    out.proj = g1
 }
 pub fn make_data(data: usize) -> Vec<ZG1> {
     let mut vec = Vec::new();
@@ -46,7 +44,7 @@ impl FFTG1<ZG1> for FFTSettings {
         fft_g1_fast(&mut ret, data, 1, roots, stride, 1);
 
         if inverse {
-            let inv_fr_len = BlstFr::from_u64(data.len() as u64).inverse();
+            let inv_fr_len = ZFr::from_u64(data.len() as u64).inverse();
             ret[..data.len()]
                 .iter_mut()
                 .for_each(|f| f.proj.mul_assign(&inv_fr_len.fr));
@@ -59,7 +57,7 @@ pub fn fft_g1_slow(
     ret: &mut [ZG1],
     data: &[ZG1],
     stride: usize,
-    roots: &[BlstFr],
+    roots: &[ZFr],
     roots_stride: usize,
     _width: usize,
 ) {
@@ -78,7 +76,7 @@ pub fn fft_g1_fast(
     ret: &mut [ZG1],
     data: &[ZG1],
     stride: usize,
-    roots: &[BlstFr],
+    roots: &[ZFr],
     roots_stride: usize,
     _width: usize,
 ) {
