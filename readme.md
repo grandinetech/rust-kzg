@@ -10,10 +10,9 @@ Support for multiple backend ECC libraries is implemented via [Traits](https://g
 | :---: | :---: | :---: | :---: | :---: |
 | [blst](https://github.com/supranational/blst) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | [mcl](https://github.com/herumi/mcl) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
-| [arkworks](https://github.com/arkworks-rs/algebra) (1) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
-| [zkcrypto](https://github.com/zkcrypto/bls12_381) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
+| [arkworks](https://github.com/arkworks-rs/algebra) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| [zkcrypto](https://github.com/zkcrypto/bls12_381) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
-(1) There are several known issues with the Arkworks implementation.
 
 # Drop-in replacement for c-kzg-4844
 
