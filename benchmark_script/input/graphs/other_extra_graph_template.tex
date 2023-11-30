@@ -1,0 +1,73 @@
+\documentclass[border=10pt]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.12}
+\begin{document}
+% --------------------------------------------------------------------------------
+%                         parallelized
+% --------------------------------------------------------------------------------
+\begin{tikzpicture}
+  \begin{axis}[
+      title={TITLE}, %%% change this
+      legend style={at={(1.8, 0.5)}, anchor=north, legend cell align=left, draw=none},
+      symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
+      xtick=data,
+      x tick label style={rotate=45, anchor=east},
+      ymin=0, ymax=MAX_TIME, %%% change this
+      ylabel near ticks,
+      yticklabel pos=right,
+      ylabel={TIME_UNIT}, %%% change this
+      grid = major,
+      grid style=dashed,
+  ]
+  %%% rust-kzg with blst backend
+  \addlegendentry{rust-kzg with blst backend}
+  \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+      (1 core,   BLST_PARALLELIZED_1_CORES)
+      (2 cores,  BLST_PARALLELIZED_2_CORES)
+      (4 cores,  BLST_PARALLELIZED_4_CORES)
+      (8 cores,  BLST_PARALLELIZED_8_CORES)
+      (16 cores, BLST_PARALLELIZED_16_CORES) };
+   %%% go-kzg-4844 (VerifyBlobKZGProofBatch)
+   \addlegendentry{go-kzg-4844 (VerifyBlobKZGProofBatch)}  % TODO: pick new name
+   \addplot[mark=*, mark options={scale=1.5}, thick, teal] coordinates {
+      (1 core,   GO_KZG_4844_1_CORES)
+      (2 cores,  GO_KZG_4844_2_CORES)
+      (4 cores,  GO_KZG_4844_4_CORES)
+      (8 cores,  GO_KZG_4844_8_CORES)
+      (16 cores, GO_KZG_4844_16_CORES) };
+   %%% go-kzg-4844 (VerifyBlobKZGProofBatchPar)
+   \addlegendentry{go-kzg-4844 (VerifyBlobKZGProofBatchPar)}  % TODO: pick new name
+   \addplot[mark=*, mark options={scale=1.5}, thick, cyan] coordinates {
+      (1 core,   GO_KZG_4844_EXTRA_1_CORES)
+      (2 cores,  GO_KZG_4844_EXTRA_2_CORES)
+      (4 cores,  GO_KZG_4844_EXTRA_4_CORES)
+      (8 cores,  GO_KZG_4844_EXTRA_8_CORES)
+      (16 cores, GO_KZG_4844_EXTRA_16_CORES) };
+   %%% rust binding (c-kzg-4844)
+  \addlegendentry{rust binding (c-kzg-4844)}
+  \addplot[mark=*, mark options={scale=1.5}, thick, red] coordinates {
+      (1 core,   C_KZG_4844_RUST_BINDING_1_CORES)
+      (2 cores,  C_KZG_4844_RUST_BINDING_2_CORES)
+      (4 cores,  C_KZG_4844_RUST_BINDING_4_CORES)
+      (8 cores,  C_KZG_4844_RUST_BINDING_8_CORES)
+      (16 cores, C_KZG_4844_RUST_BINDING_16_CORES) };
+   %%% rust binding (rust-kzg with blst backend)
+   \addlegendentry{rust binding (rust-kzg with blst backend)}
+   \addplot[mark=*, mark options={scale=1.5}, thick, orange] coordinates {
+      (1 core,   RUST_BINDING_PARALLELIZED_1_CORES)
+      (2 cores,  RUST_BINDING_PARALLELIZED_2_CORES)
+      (4 cores,  RUST_BINDING_PARALLELIZED_4_CORES)
+      (8 cores,  RUST_BINDING_PARALLELIZED_8_CORES)
+      (16 cores, RUST_BINDING_PARALLELIZED_16_CORES) };
+   %%% go binding (rust-kzg with blst backend)
+   \addlegendentry{go binding (rust-kzg with blst backend)}
+   \addplot[mark=*, mark options={scale=1.5}, thick, blue] coordinates {
+      (1 core,   GO_BINDING_PARALLELIZED_1_CORES)
+      (2 cores,  GO_BINDING_PARALLELIZED_2_CORES)
+      (4 cores,  GO_BINDING_PARALLELIZED_4_CORES)
+      (8 cores,  GO_BINDING_PARALLELIZED_8_CORES)
+      (16 cores, GO_BINDING_PARALLELIZED_16_CORES) };
+
+\end{axis}
+\end{tikzpicture}
+\end{document}
