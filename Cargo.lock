@@ -1201,6 +1201,7 @@ dependencies = [
  "rand",
  "rayon",
  "smallvec",
+ "threadpool",
 ]
 
 [[package]]

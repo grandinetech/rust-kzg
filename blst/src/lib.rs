@@ -7,6 +7,7 @@ pub mod fft_fr;
 pub mod fft_g1;
 pub mod fk20_proofs;
 pub mod kzg_proofs;
+mod msm;
 pub mod recovery;
 pub mod types;
 pub mod utils;
