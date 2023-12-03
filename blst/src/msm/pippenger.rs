@@ -415,7 +415,7 @@ unsafe fn p1_to_jacobian(out: *mut blst_p1, input: *const P1XYZZ) {
 
 /// Calculate bucket sum
 ///
-/// This function multiplies each point in each bucket by it's index. Then, it will sum all multiplication results and write
+/// This function multiplies the point in each bucket by it's index. Then, it will sum all multiplication results and write
 /// resulting point to the `out`.
 ///
 /// This function also clears all buckets (sets all values in buckets to zero.)
