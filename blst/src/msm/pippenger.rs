@@ -809,7 +809,7 @@ mod tests {
         // (little-endian order). So if we repeatedly take 6 bits from this scalar, we will get q-ary representation
         // of this scalar:
 
-        //                     this is [128u8, 15u8, 3u8, 253u8] written in binary
+        // this is [128u8, 15u8, 3u8, 253u8] written in binary
         let scalar = [0b10000000, 0b00001111u8, 0b00000011u8, 0b11111101u8];
         let limb_1 = get_wval_limb(&scalar, 0, 6);
         // function leaves trash on all other bytes, so real answer only in 6 bits from right
