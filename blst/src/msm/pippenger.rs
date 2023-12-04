@@ -9,8 +9,7 @@ use alloc::{vec, vec::Vec};
 
 use blst::{
     blst_fp, blst_p1, blst_p1_add, blst_p1_affine, blst_p1_double, blst_p1s_mult_wbits,
-    blst_p1s_mult_wbits_precompute, blst_p1s_mult_wbits_scratch_sizeof, blst_scalar,
-    blst_scalar_from_fr, byte, limb_t,
+    blst_p1s_mult_wbits_precompute, blst_scalar, blst_scalar_from_fr, byte, limb_t,
 };
 
 use crate::types::{fr::FsFr, g1::FsG1};
@@ -695,11 +694,7 @@ fn pippenger_sync(points: &[FsG1], scalars: &[FsFr]) -> FsG1 {
     } else {
         let window = pippenger_window_size(points.len());
 
-        let mut buckets = vec![
-            P1XYZZ::default();
-            unsafe { blst_p1s_mult_wbits_scratch_sizeof(points.len()) }
-                / size_of::<P1XYZZ>()
-        ];
+        let mut buckets = vec![P1XYZZ::default(); 1usize << (window - 1)];
 
         // Convert FsFr to bytes
         let scalars = scalars_to_bytes(scalars);
