@@ -1,5 +1,5 @@
 // The code in this file was ported from blst library https://github.com/supranational/blst
-// Original code license could be found here https://github.com/supranational/blst/blob/4a21b61dd40dbe1f411037f1e5eb1c527022eae4/LICENSE
+// Original code license can be found here https://github.com/supranational/blst/blob/4a21b61dd40dbe1f411037f1e5eb1c527022eae4/LICENSE
 
 use core::{mem::size_of, ptr};
 
@@ -41,7 +41,7 @@ fn is_zero(val: limb_t) -> limb_t {
 }
 
 /// Window value encoding that utilizes the fact that -P is trivially
-/// calculated, which allows to halve the size of pre-computed table,
+/// calculated, which allows to halve the size of the pre-computed table,
 /// is attributed to A. D. Booth, hence the name of the subroutines...
 ///
 /// TODO: figure out how this function works exactly
@@ -64,9 +64,9 @@ unsafe fn vec_zero(ret: *mut limb_t, mut num: usize) {
 /// Extract `bits` from the beginning of `d` array, with offset `off`.
 ///
 /// This function is used to extract N bits from the scalar, decomposing it into q-ary representation.
-/// This works because `q` is `2^bits`, so extracting `bits` from scalar will break it to correct representation.
+/// This works because `q` is `2^bits`, so extracting `bits` from scalar will break it into the correct representation.
 ///
-/// Caution! This function guarantees only that `bits` bits from the right will contain extracted. All unused bits
+/// Caution! This function guarantees only that `bits` amount of bits from the right will be extracted. All unused bits
 /// will contain "trash". For example, if we try to extract first 4 bits from the array `[0b01010111u8]`, this
 /// function will return `0111`, but other bits will contain trash (see tests::get_wval_limb_example_1)
 ///
@@ -81,13 +81,13 @@ unsafe fn vec_zero(ret: *mut limb_t, mut num: usize) {
 /// See tests::get_wval_limb_example_2
 ///
 pub fn get_wval_limb(mut d: &[u8], off: usize, bits: usize) -> limb_t {
-    // Calculate topmost byte that needs to be considered.
+    // Calculate top-most byte that needs to be considered.
     let top = ((off + bits - 1) / 8).wrapping_sub((off / 8).wrapping_sub(1));
 
     // Skipping first `off/8` of bytes, because offset specified how many bits must be ignored
     d = &d[off / 8..];
 
-    // For first iteration, none bits will be ignored - all bits added to result
+    // For the first iteration, none bits will be ignored - all bits added to result
     let mut mask = limb_t::MAX;
 
     let mut ret: limb_t = 0;
@@ -95,10 +95,10 @@ pub fn get_wval_limb(mut d: &[u8], off: usize, bits: usize) -> limb_t {
         /*
          * Add bits from current byte to the result.
          *
-         * Applying bitwise and (&) on current byte and mask will keep or ignore all bits from current byte, because
-         * mask can only be 0 or limb_t::MAX. Doing right bit shift will move those bits to correct position, e.g. when
+         * Applying bitwise and (&) on current byte and mask will keep or ignore all bits from the current byte, because
+         * mask can only be 0 or limb_t::MAX. Doing right bit shift will move those bits to the correct position, e.g. when
          * `i=0` (we are processing first byte), bits won't move, when `i=1` bits will be moved by 8 (1 byte) and so on.
-         * After that, we will get value, that is zero-padded from the right and left, so doing bitwise or (|) operation
+         * After that, we will get a value that is zero-padded from the right and left, so doing bitwise or (|) operation
          * with the result, will just append bytes to it.
          */
         ret |= (d[0] as limb_t & mask) << (8 * i);
@@ -106,14 +106,14 @@ pub fn get_wval_limb(mut d: &[u8], off: usize, bits: usize) -> limb_t {
         /*
          * Create new mask - either 0 or limb_t::MAX.
          *
-         * If `i+1` is greater than or equal to `top`, then byte must be ignored, so the mask is set to `0`. Otherwise,
+         * If `i+1` is greater than or equal to `top`, then the byte must be ignored, so the mask is set to `0`. Otherwise,
          * mask is set to `limb_t::MAX` (include all bits). This is done for branch optimization (avoid if).
          */
         mask =
             (0 as limb_t).wrapping_sub(((i + 1).wrapping_sub(top) >> (usize::BITS - 1)) as limb_t);
 
         /*
-         * Conditionally move current array by `1`, if not all needed bytes already read.
+         * Conditionally move current array by `1`, if not all needed bytes are already read.
          *
          * This is done by applying bitwise and (&) on `1` and `mask`. Because mask is `0` when `i + 1` is >= `top`,
          * doing bitwise and will result in `0`, so slice will not be moved. Otherwise, mask will be `limb_t::MAX`, and
@@ -357,14 +357,14 @@ fn p1s_bucket(
     /*
      * Normalize bucket index.
      *
-     * `(1 << wbits) - 1` generates number, which has `wbits` ones at the end.
+     * `(1 << wbits) - 1` generates number, which has `wbits` amount of ones at the end.
      * For example:
      *     `wbits = 3` -> 0b00000111 (7)
      *     `wbits = 4` -> 0b00001111 (15)
      *     `wbits = 5` -> 0b00011111 (31)
      * And so on.
      *
-     * Applying bitwise and (&) on `booth_idx` with such mask, means "leave only `wbits` bits from the end, and set all others to zero"
+     * Applying bitwise and (&) on `booth_idx` with such mask, means "leave only `wbits` amount of bits from the end, and set all others to zero"
      * For example:
      *     `booth_idx = 14`,  `wbits = 3` -> 0b00001110 & 0b00000111 = 0b00000110
      *     `booth_idx = 255`, `wbits = 4` -> 0b11111111 & 0b00001111 = 0b00001111
@@ -414,7 +414,7 @@ unsafe fn p1_to_jacobian(out: *mut blst_p1, input: *const P1XYZZ) {
 
 /// Calculate bucket sum
 ///
-/// This function multiplies point in each bucket by it's index. Then, it will sum all multiplication results and write
+/// This function multiplies the point in each bucket by it's index. Then, it will sum all multiplication results and write
 /// resulting point to the `out`.
 ///
 /// This function also clears all buckets (sets all values in buckets to zero.)
@@ -440,7 +440,7 @@ fn p1_integrate_buckets(out: &mut blst_p1, buckets: &mut [P1XYZZ], wbits: usize)
     /*
      * Sum all buckets.
      *
-     * Starting from the end, this loop adds point to accumulator, and then adds point to the result.
+     * Starting from the end, this loop adds points to accumulator, and then adds points to the result.
      * If the point is in the bucket `i`, then adding this point to the accumulator and adding accumulator `i` times
      * helps to avoid multiplication of point by `i`.
      *
@@ -524,7 +524,7 @@ fn pippenger_tile(
     // Get first point
     let point = &points[0];
 
-    // Create mask, that contains `wbits` ones at the end.
+    // Create mask, that contains `wbits` amount of ones at the end.
     let wmask = ((1 as limb_t) << (wbits + 1)) - 1;
 
     /*
