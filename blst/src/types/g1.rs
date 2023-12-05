@@ -1,5 +1,7 @@
 extern crate alloc;
 
+use core::ptr;
+
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
@@ -13,6 +15,7 @@ use blst::{
 use kzg::common_utils::log_2_byte;
 use kzg::eip_4844::BYTES_PER_G1;
 use kzg::G1Affine;
+use kzg::G1GetFp;
 use kzg::G1ProjAddAffine;
 use kzg::{G1Mul, G1};
 
@@ -182,6 +185,50 @@ impl G1 for FsG1 {
     }
 }
 
+impl G1GetFp<FsFp> for FsG1 {
+    fn x(&self) -> &FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.0.x)
+        }
+    }
+
+    fn y(&self) -> &FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.0.y)
+        }
+    }
+
+    fn z(&self) -> &FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.0.z)
+        }
+    }
+
+    fn x_mut(&mut self) -> &mut FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.0.x)
+        }
+    }
+
+    fn y_mut(&mut self) -> &mut FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.0.y)
+        }
+    }
+
+    fn z_mut(&mut self) -> &mut FsFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.0.z)
+        }
+    }
+}
+
 impl G1Mul<FsFr> for FsG1 {
     fn mul(&self, b: &FsFr) -> Self {
         let mut scalar: blst_scalar = blst_scalar::default();
@@ -245,6 +292,13 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
             blst::blst_p1_to_affine(&mut ret.0, &g1.0);
         }
         ret
+    }
+
+    fn into_affines_loc(out: &mut [Self], g1: &[FsG1]) {
+        let p: [*const blst_p1; 2] = [g1.as_ptr() as *const blst_p1, ptr::null()];
+        unsafe {
+            blst::blst_p1s_to_affine(out.as_mut_ptr() as *mut blst_p1_affine, &p[0], g1.len());
+        }
     }
 
     fn into_affines(g1: &[FsG1]) -> Vec<Self> {

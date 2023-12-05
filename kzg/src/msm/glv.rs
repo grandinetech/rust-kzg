@@ -1,9 +1,9 @@
-// Based on 
+// Based on
 // Decompose scalar = q * lambda + r with barret reduction
 // Here we implement algorithm 2 example 1 described in
 // https://hackmd.io/@chaosma/SyAvcYFxh
 
-use crate::{Fr, G1Affine, G1Fp, G1, Scalar256};
+use crate::{Fr, G1Affine, G1Fp, G1};
 
 const LMDA1: u128 = 0xac45a4010001a402; // lambda high 64 bit
 const LMDA0: u128 = 0x00000000ffffffff; // lambda low 64 bit
@@ -11,10 +11,7 @@ const INV1: u128 = 0x7c6becf1e01faadd; // 2**256 // lambda - [64, 127] bit
 const INV0: u128 = 0x63f6e522f6cfee30; // 2**256 // lambda - [0, 63] bit
 const MASK64: u128 = 0xffffffffffffffff;
 
-pub fn decompose<TFr: Fr>(
-    scalar: &TFr,
-    window_bits: u32,
-) -> (TFr, TFr, bool, bool) {
+pub fn decompose<TFr: Fr>(scalar: &TFr, window_bits: u32) -> (TFr, TFr, bool, bool) {
     let (s0, s1, s2, s3, is_neg_scalar) = glv_preprocess_scalar(scalar, window_bits);
 
     // 255 bits in four 64b limbs
@@ -169,7 +166,14 @@ fn glv_post_processing(q0: &mut u128, q1: &mut u128, r0: &mut u64, r1: &mut u64)
     false
 }
 
-const BETA: [u64; 6usize] = [14772873186050699377, 6749526151121446354, 6372666795664677781, 10283423008382700446, 286397964926079186, 1796971870900422465];
+const BETA: [u64; 6usize] = [
+    14772873186050699377,
+    6749526151121446354,
+    6372666795664677781,
+    10283423008382700446,
+    286397964926079186,
+    1796971870900422465,
+];
 
 // lambda * (x, y) = (beta * x, y)
 pub fn endomorphism<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(point: &mut TG1Affine) {
@@ -177,5 +181,7 @@ pub fn endomorphism<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(point
         return;
     }
 
-    point.x_mut().mul_assign_fp(&TG1Fp::from_underlying_arr(&BETA));
+    point
+        .x_mut()
+        .mul_assign_fp(&TG1Fp::from_underlying_arr(&BETA));
 }

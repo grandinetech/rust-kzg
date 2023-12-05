@@ -1,11 +1,11 @@
 use ark_bls12_381::g1::Config as G1Parameters;
 use ark_bls12_381::G1Affine;
+use ark_ec::AffineRepr;
 use ark_ec::{
     models::short_weierstrass::SWCurveConfig as Parameters,
     short_weierstrass::{Affine, Projective},
-    CurveGroup, Group,
+    Group,
 };
-use ark_ec::AffineRepr;
 use ark_std::Zero;
 use std::{any::TypeId, ops::AddAssign};
 
@@ -318,16 +318,17 @@ impl<P: Parameters> BucketMSM<P> {
 
         // We're traversing windows from high to low.
         lowest
-            + window_sums.iter().skip(1).rev().fold(
-                Projective::<P>::zero(),
-                |mut total, sum_i| {
+            + window_sums
+                .iter()
+                .skip(1)
+                .rev()
+                .fold(Projective::<P>::zero(), |mut total, sum_i| {
                     total += sum_i;
                     for _ in 0..self.window_bits {
                         total.double_in_place();
                     }
                     total
-                },
-            )
+                })
     }
 }
 

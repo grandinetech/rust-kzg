@@ -326,7 +326,7 @@ fn verify_kzg_proof_batch<
     // Get \sum r^i z_i Proof_i
     let proof_z_lincomb = TG1::g1_lincomb(proofs_g1, &r_times_z, n);
     // Get \sum r^i (C_i - [y_i])
-    let mut c_minus_y_lincomb = TG1::g1_lincomb(&c_minus_y, &r_powers, n);
+    let c_minus_y_lincomb = TG1::g1_lincomb(&c_minus_y, &r_powers, n);
 
     // Get C_minus_y_lincomb + proof_z_lincomb
     let rhs_g1 = c_minus_y_lincomb.add_or_dbl(&proof_z_lincomb);

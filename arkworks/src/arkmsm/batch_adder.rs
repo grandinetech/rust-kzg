@@ -1,4 +1,6 @@
-use ark_ec::{models::short_weierstrass::SWCurveConfig as Parameters, short_weierstrass::Affine, AffineRepr};
+use ark_ec::{
+    models::short_weierstrass::SWCurveConfig as Parameters, short_weierstrass::Affine, AffineRepr,
+};
 use ark_ff::Field;
 use ark_std::{One, Zero};
 

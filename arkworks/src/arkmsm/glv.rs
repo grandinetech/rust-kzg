@@ -1,16 +1,12 @@
 use ark_bls12_381::G1Affine;
 use ark_ec::AffineRepr;
-use ark_ff::{BigInteger256, PrimeField, MontFp};
-use ark_std::Zero;
+use ark_ff::{BigInteger256, MontFp, PrimeField};
 
 use crate::arkmsm::types::{G1BaseField, G1ScalarField};
 
 // Decompose scalar = q * lambda + r with barret reduction
 // Here we implement algorithm 2 example 1 described in
 // https://hackmd.io/@chaosma/SyAvcYFxh
-
-// decompose_slow() is a 10x slower implementation of decompose()
-const LAMBDA: u128 = 0xac45a4010001a40200000000ffffffff;
 
 const LMDA1: u128 = 0xac45a4010001a402; // lambda high 64 bit
 const LMDA0: u128 = 0x00000000ffffffff; // lambda low 64 bit
@@ -90,7 +86,12 @@ pub fn decompose(
     }
 
     (
-        G1ScalarField::from(BigInteger256::new([quotient0 as u64, quotient1 as u64, 0, 0])),
+        G1ScalarField::from(BigInteger256::new([
+            quotient0 as u64,
+            quotient1 as u64,
+            0,
+            0,
+        ])),
         G1ScalarField::from(BigInteger256::new([r0, r1, 0, 0])),
         is_neg_scalar,
         is_neg_remainder,

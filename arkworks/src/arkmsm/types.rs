@@ -1,6 +1,6 @@
 use ark_bls12_381::G1Affine;
 use ark_ec::{models::CurveConfig, AffineRepr};
-use ark_ff::{FpConfig, PrimeField, Field};
+use ark_ff::PrimeField;
 
 pub const G1_SCALAR_SIZE: u32 =
     <<G1Affine as AffineRepr>::ScalarField as PrimeField>::MODULUS_BIT_SIZE;

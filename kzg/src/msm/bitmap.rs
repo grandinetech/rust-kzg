@@ -25,13 +25,18 @@ impl Bitmap {
             if old & bit != 0 {
                 return true;
             }
-            
+
             let new = old | bit;
-            match self.data[word].compare_exchange_weak(old, new, Ordering::Release, Ordering::Relaxed) {
+            match self.data[word].compare_exchange_weak(
+                old,
+                new,
+                Ordering::Release,
+                Ordering::Relaxed,
+            ) {
                 // We managed to take bit, return false
                 Ok(_) => return false,
                 // If write failed either another bit at index was set, or wanted index was set
-                Err(x) => old = x
+                Err(x) => old = x,
             };
         }
     }

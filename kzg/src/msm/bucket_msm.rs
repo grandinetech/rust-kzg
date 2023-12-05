@@ -1,27 +1,25 @@
 use core::marker::PhantomData;
-// use ark_bls12_381::g1::Config as G1Parameters;
-// use ark_bls12_381::G1Affine;
-// use ark_ec::{
-//     models::short_weierstrass::SWCurveConfig as Parameters,
-//     short_weierstrass::{Affine, Projective},
-//     CurveGroup, Group,
-// };
-// use ark_ec::AffineRepr;
-// use ark_std::Zero;
-use std::{any::TypeId, ops::AddAssign};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-use crate::{msm::{
-    batch_adder::BatchAdder,
-    bitmap::Bitmap,
-    glv::endomorphism,
-    types::{GROUP_SIZE, GROUP_SIZE_IN_BITS},
-}, G1Affine, G1, G1Fp, cfg_into_iter, G1ProjAddAffine};
+use crate::{
+    cfg_into_iter,
+    msm::{
+        batch_adder::BatchAdder,
+        bitmap::Bitmap,
+        glv::endomorphism,
+        types::{GROUP_SIZE, GROUP_SIZE_IN_BITS},
+    },
+    G1Affine, G1Fp, G1ProjAddAffine, G1,
+};
 
-
-pub struct BucketMSM<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>> {
+pub struct BucketMSM<
+    TG1: G1,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+    TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+> {
     pub num_windows: u32,
     pub window_bits: u32,
     pub bucket_bits: u32,
@@ -37,10 +35,16 @@ pub struct BucketMSM<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TPro
 
     // batch affine adder
     pub batch_adder: BatchAdder<TG1, TG1Fp, TG1Affine>,
-    _p: PhantomData<TProjAddAffine> 
+    _p: PhantomData<TProjAddAffine>,
 }
 
-impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>> BucketMSM<TG1, TG1Fp, TG1Affine, TProjAddAffine> {
+impl<
+        TG1: G1,
+        TG1Fp: G1Fp,
+        TG1Affine: G1Affine<TG1, TG1Fp>,
+        TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+    > BucketMSM<TG1, TG1Fp, TG1Affine, TProjAddAffine>
+{
     pub fn new(
         scalar_bits: u32,
         window_bits: u32,
@@ -69,7 +73,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1Pr
             cur_points: vec![TG1Affine::ZERO; batch_size as usize],
 
             batch_adder: BatchAdder::new(batch_adder_size as usize),
-            _p: PhantomData::default()
+            _p: PhantomData,
         }
     }
 
@@ -128,7 +132,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1Pr
         }
 
         // this isn't the cleanest of doing this, we'd better figure out a way to do this at compile time
-        let p_g1: &mut TG1Affine = unsafe { &mut *(std::ptr::addr_of_mut!(p) as *mut TG1Affine) };
+        let p_g1: &mut TG1Affine = &mut p;
         endomorphism(p_g1);
 
         self.cur_points.push(p);
@@ -285,12 +289,9 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1Pr
         self.intra_window_reduce(&sum_by_window)
     }
 
-    fn inner_window_reduce(
-        &self,
-        running_sums: &[TG1Affine],
-        sum_of_sums: &[TG1Affine],
-    ) -> TG1 {
-        self.calc_sum_of_sum_total(sum_of_sums).add_or_dbl(&self.calc_running_sum_total(running_sums))
+    fn inner_window_reduce(&self, running_sums: &[TG1Affine], sum_of_sums: &[TG1Affine]) -> TG1 {
+        self.calc_sum_of_sum_total(sum_of_sums)
+            .add_or_dbl(&self.calc_running_sum_total(running_sums))
     }
 
     fn calc_running_sum_total(&self, running_sums: &[TG1Affine]) -> TG1 {
@@ -309,7 +310,9 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1Pr
 
     fn calc_sum_of_sum_total(&self, sum_of_sums: &[TG1Affine]) -> TG1 {
         let mut sum = TG1::ZERO;
-        sum_of_sums.iter().for_each(|p| TProjAddAffine::add_or_double_assign_affine(&mut sum, p));
+        sum_of_sums
+            .iter()
+            .for_each(|p| TProjAddAffine::add_or_double_assign_affine(&mut sum, p));
         sum
     }
 
@@ -326,7 +329,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1Pr
                         total.dbl_assign();
                     }
                     total
-                }))
+                }),
+        )
     }
 }
-

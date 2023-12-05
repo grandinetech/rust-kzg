@@ -162,7 +162,8 @@ where
 
     /// should call inverse() between phase_one and phase_two
     pub fn batch_add_phase_two(&mut self, p: &mut TG1Affine, q: &TG1Affine, idx: usize) {
-        assert!(idx < self.inverses.len(),
+        assert!(
+            idx < self.inverses.len(),
             "index exceeds the max_batch_cnt, please increase max_batch_cnt during initialization!"
         );
         if q.is_zero() {

@@ -1,7 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::msm::batch_adder::{test_phase_one_zero_or_neg, test_phase_one_p_add_p, test_phase_one_p_add_q, test_phase_one_p_add_q_twice, test_phase_two_zero_add_p, test_phase_two_p_add_neg, test_phase_two_p_add_q, test_phase_two_p_add_p, test_batch_add, test_batch_add_step_n, test_batch_add_indexed_single_bucket, test_batch_add_indexed};
-    use rust_kzg_blst::types::{g1::{FsG1Affine, FsG1}, fp::FsFp};
+    use kzg_bench::tests::msm::batch_adder::{
+        test_batch_add, test_batch_add_indexed, test_batch_add_indexed_single_bucket,
+        test_batch_add_step_n, test_phase_one_p_add_p, test_phase_one_p_add_q,
+        test_phase_one_p_add_q_twice, test_phase_one_zero_or_neg, test_phase_two_p_add_neg,
+        test_phase_two_p_add_p, test_phase_two_p_add_q, test_phase_two_zero_add_p,
+    };
+    use rust_kzg_blst::types::{
+        fp::FsFp,
+        g1::{FsG1, FsG1Affine},
+    };
     // use rust_kzg_blst::types::
 
     #[test]

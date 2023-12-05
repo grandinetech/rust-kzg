@@ -18,6 +18,16 @@ impl G1Fp for FsFp {
     const ZERO: Self = Self(blst_fp {
         l: [0, 0, 0, 0, 0, 0],
     });
+    const BLS12_381_RX_P: Self = Self(blst_fp {
+        l: [
+            8505329371266088957,
+            17002214543764226050,
+            6865905132761471162,
+            8632934651105793861,
+            6631298214892334189,
+            1582556514881692819,
+        ],
+    });
 
     fn inverse(&self) -> Option<Self> {
         let mut out: Self = *self;

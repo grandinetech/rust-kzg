@@ -10,6 +10,7 @@ pub type P2Affine = blst::blst_p2_affine;
 pub type Scalar = blst::blst_scalar;
 pub type Uniq = blst::blst_uniq;
 
+pub mod arkmsm;
 pub mod consts;
 pub mod das;
 pub mod eip_4844;
@@ -22,7 +23,6 @@ pub mod poly;
 pub mod recover;
 pub mod utils;
 pub mod zero_poly;
-pub mod arkmsm;
 
 trait Eq<T> {
     fn equals(&self, other: &T) -> bool;

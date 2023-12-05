@@ -108,6 +108,26 @@ pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {
     fn dbl_assign(&mut self);
 }
 
+pub trait G1GetFp<TFp: G1Fp>: G1 + Clone {
+    // Return field X of G1
+    fn x(&self) -> &TFp;
+
+    // Return field Y of G1
+    fn y(&self) -> &TFp;
+
+    // Return field Z of G1
+    fn z(&self) -> &TFp;
+
+    // Return field X of G1 as mutable
+    fn x_mut(&mut self) -> &mut TFp;
+
+    // Return field Y of G1 as mutable
+    fn y_mut(&mut self) -> &mut TFp;
+
+    // Return field Z of G1 as mutable
+    fn z_mut(&mut self) -> &mut TFp;
+}
+
 pub trait G1Mul<TFr: Fr>: G1 + Clone {
     fn mul(&self, b: &TFr) -> Self;
 
@@ -118,6 +138,7 @@ pub trait G1Mul<TFr: Fr>: G1 + Clone {
 pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
     const ZERO: Self;
     const ONE: Self;
+    const BLS12_381_RX_P: Self;
 
     fn inverse(&self) -> Option<Self>;
 
@@ -177,8 +198,19 @@ pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
     const ZERO: Self;
 
     fn into_affine(g1: &TG1) -> Self;
+
     // Batch conversion can be faster than transforming each individually
-    fn into_affines(g1: &[TG1]) -> Vec<Self>;
+    fn into_affines_loc(out: &mut [Self], g1: &[TG1]);
+
+    fn into_affines(g1: &[TG1]) -> Vec<Self> {
+        let mut vec = Vec::<Self>::with_capacity(g1.len());
+        #[allow(clippy::uninit_vec)]
+        unsafe {
+            vec.set_len(g1.len());
+        }
+        Self::into_affines_loc(&mut vec, g1);
+        vec
+    }
 
     fn to_proj(&self) -> TG1;
 
@@ -207,7 +239,9 @@ pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
     }
 }
 
-pub trait G1ProjAddAffine<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>: Sized + Sync + Send {
+pub trait G1ProjAddAffine<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>:
+    Sized + Sync + Send
+{
     fn add_assign_affine(proj: &mut TG1, aff: &TG1Affine);
 
     fn add_or_double_assign_affine(proj: &mut TG1, aff: &TG1Affine);
@@ -239,7 +273,9 @@ impl Scalar256 {
     const ZERO: Self = Self { data: [0; 4] };
 
     pub fn from_u64_s(arr: u64) -> Self {
-        Scalar256 { data: [arr, 0, 0, 0] }
+        Scalar256 {
+            data: [arr, 0, 0, 0],
+        }
     }
 
     pub fn from_u64(arr: [u64; 4]) -> Self {
@@ -252,6 +288,11 @@ impl Scalar256 {
         }
     }
 
+    pub fn as_u8(&self) -> &[u8] {
+        // FIXME: This is probably not super correct
+        unsafe { core::slice::from_raw_parts(&*(self.data.as_ptr() as *const u8), 32) }
+    }
+
     const fn cast_scalar_to_u64_arr<const N: usize, const N_U8: usize>(
         input: &[u8; N_U8],
     ) -> [u64; N] {
@@ -261,7 +302,7 @@ impl Scalar256 {
     }
 
     fn is_zero(&self) -> bool {
-        return self.data == Self::ZERO.data;
+        self.data == Self::ZERO.data
     }
 
     fn divn(&mut self, mut n: u32) {
@@ -290,7 +331,7 @@ impl Scalar256 {
                 t = t2;
             }
         }
-}
+    }
 }
 
 pub trait G2: Clone + Default {

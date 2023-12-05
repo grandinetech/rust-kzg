@@ -1,51 +1,14 @@
 use std::sync::mpsc::channel;
 
+use alloc::vec;
+
 use crate::{
-    cfg_into_iter, common_utils::log2_u64, G1Affine, G1Fp, G1ProjAddAffine, Scalar256, G1, msm::batch_adder::{self, BatchAdder},
+    cfg_into_iter, common_utils::log2_u64, msm::thread_pool::*, G1Affine, G1Fp, G1ProjAddAffine,
+    Scalar256, G1,
 };
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
-
-trait ThreadPoolExt {
-    fn joined_execute<'any, F>(&self, job: F)
-    where
-        F: FnOnce() + Send + 'any;
-}
-
-mod mt {
-    use super::*;
-    use core::mem::transmute;
-    use std::sync::{Mutex, Once};
-    use threadpool::ThreadPool;
-
-    pub fn da_pool() -> ThreadPool {
-        static INIT: Once = Once::new();
-        static mut POOL: *const Mutex<ThreadPool> =
-            0 as *const Mutex<ThreadPool>;
-
-        INIT.call_once(|| {
-            let pool = Mutex::new(ThreadPool::default());
-            unsafe { POOL = transmute(Box::new(pool)) };
-        });
-        unsafe { (*POOL).lock().unwrap().clone() }
-    }
-
-    type Thunk<'any> = Box<dyn FnOnce() + Send + 'any>;
-
-    impl ThreadPoolExt for ThreadPool {
-        fn joined_execute<'scope, F>(&self, job: F)
-        where
-            F: FnOnce() + Send + 'scope,
-        {
-            // Bypass 'lifetime limitations by brute force. It works,
-            // because we explicitly join the threads...
-            self.execute(unsafe {
-                transmute::<Thunk<'scope>, Thunk<'static>>(Box::new(job))
-            })
-        }
-    }
-}
 
 macro_rules! cfg_into_mut_chunks {
     ($e: expr, $f: expr) => {{
@@ -82,7 +45,7 @@ pub fn parallel_pippinger<
     let c = if size < 32 {
         3
     } else {
-        ((log2_u64(size) * 69 / 100) as usize) + 2
+        (log2_u64(size) * 69 / 100) + 2
     };
 
     // Divide 0..NUM_BITS into windows of size c & process in parallel
@@ -179,7 +142,7 @@ pub fn parallel_pippinger_wnaf<
     let c = if size < 32 {
         3
     } else {
-        ((log2_u64(size) * 69 / 100) as usize) + 2
+        (log2_u64(size) * 69 / 100) + 2
     };
 
     let digits_count = (NUM_BITS + c - 1) / c;
@@ -187,27 +150,30 @@ pub fn parallel_pippinger_wnaf<
     cfg_into_mut_chunks!(scalar_digits, digits_count)
         .zip(scalars)
         // .filter(|(_, s)| **s != Scalar256::ZERO)
-        .for_each(|(chunk , scalar)| {
+        .for_each(|(chunk, scalar)| {
             make_digits_into(scalar, c, chunk);
         });
-    
-    let pool = mt::da_pool();
-    let ncpus = pool.max_count();
+
+    let pool = da_pool();
     let scalar_digits_it = scalar_digits.chunks(digits_count).zip(bases);
-    
+
     let (tx, rx) = channel();
     for i in (0..digits_count).rev() {
         let tx = tx.clone();
-        let i = i.clone();
         let scalar_digits_it = scalar_digits_it.clone();
         pool.joined_execute(move || {
             let mut buckets = vec![TG1::ZERO; 1 << c];
-            for ( digits, base) in scalar_digits_it {
+            for (digits, base) in scalar_digits_it {
                 use core::cmp::Ordering;
                 let scalar = digits[i];
                 match 0.cmp(&scalar) {
-                    Ordering::Less => ProjAddAffine::add_assign_affine(&mut buckets[(scalar - 1) as usize], base),
-                    Ordering::Greater => ProjAddAffine::sub_assign_affine(&mut buckets[(-scalar - 1) as usize], *base),
+                    Ordering::Less => {
+                        ProjAddAffine::add_assign_affine(&mut buckets[(scalar - 1) as usize], base)
+                    }
+                    Ordering::Greater => ProjAddAffine::sub_assign_affine(
+                        &mut buckets[(-scalar - 1) as usize],
+                        *base,
+                    ),
                     Ordering::Equal => (),
                 }
             }
@@ -218,7 +184,7 @@ pub fn parallel_pippinger_wnaf<
                 running_sum.add_or_dbl_assign(&b);
                 window_sum.add_or_dbl_assign(&running_sum);
             });
-            tx.send(window_sum);
+            tx.send(window_sum).expect("disaster");
         });
     }
 
@@ -230,57 +196,6 @@ pub fn parallel_pippinger_wnaf<
         }
     }
     total_window_sum
-
-    // let lowest = window_sums.first().unwrap();
-    // lowest.add(
-    //     &window_sums[1..]
-    //         .iter()
-    //         .rev()
-    //         .fold(TG1::ZERO, |mut total, sum_i| {
-    //             total.add_assign(sum_i);
-    //             for _ in 0..c {
-    //                 total.dbl_assign();
-    //             }
-    //             total
-    //         }))
-}
-
-// From: https://github.com/arkworks-rs/gemini/blob/main/src/kzg/msm/variable_base.rs#L20
-fn make_digits(a: &Scalar256, w: usize) -> Vec<i64> {
-    let scalar = &a.data;
-    let radix: u64 = 1 << w;
-    let window_mask: u64 = radix - 1;
-
-    const NUM_BITS: usize = 255;
-    let mut carry = 0u64;
-    let digits_count = (NUM_BITS + w - 1) / w;
-    let mut digits = vec![0i64; digits_count];
-    for (i, digit) in digits.iter_mut().enumerate() {
-        // Construct a buffer of bits of the scalar, starting at `bit_offset`.
-        let bit_offset = i * w;
-        let u64_idx = bit_offset / 64;
-        let bit_idx = bit_offset % 64;
-        // Read the bits from the scalar
-        let bit_buf = if bit_idx < 64 - w || u64_idx == scalar.len() - 1 {
-            // This window's bits are contained in a single u64,
-            // or it's the last u64 anyway.
-            scalar[u64_idx] >> bit_idx
-        } else {
-            // Combine the current u64's bits with the bits from the next u64
-            (scalar[u64_idx] >> bit_idx) | (scalar[1 + u64_idx] << (64 - bit_idx))
-        };
-
-        // Read the actual coefficient value from the window
-        let coef = carry + (bit_buf & window_mask); // coef = [0, 2^r)
-
-        // Recenter coefficients from [0,2^w) to [-2^w/2, 2^w/2)
-        carry = (coef + radix / 2) >> w;
-        *digit = (coef as i64) - (carry << w) as i64;
-    }
-
-    digits[digits_count - 1] += (carry << w) as i64;
-
-    digits
 }
 
 // From: https://github.com/arkworks-rs/gemini/blob/main/src/kzg/msm/variable_base.rs#L20

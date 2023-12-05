@@ -55,7 +55,7 @@ pub fn fr_equal_works<TFr: Fr>() {
     assert!(!a.equals(&b));
 }
 
-pub fn fr_negate_works<TFr: Fr>() {
+pub fn fr_negate_works<TFr: Fr + std::fmt::Debug>() {
     let m1: [u64; 4] = [
         0xffffffff00000000,
         0x53bda402fffe5bfe,

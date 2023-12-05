@@ -1,9 +1,7 @@
 use crate::{
-    msm::bucket_msm::BucketMSM,
-    msm::glv::decompose,
-    msm::types::{G1_SCALAR_SIZE_GLV, GROUP_SIZE_IN_BITS}, Scalar256, G1Affine, G1, G1Fp, G1ProjAddAffine, Fr, common_utils::log2_u64,
+    common_utils::log2_u64, msm::bucket_msm::BucketMSM, msm::glv::decompose,
+    msm::types::G1_SCALAR_SIZE_GLV, Fr, G1Affine, G1Fp, G1ProjAddAffine, Scalar256, G1,
 };
-use std::any::TypeId;
 
 use super::types::G1_SCALAR_SIZE;
 
@@ -51,7 +49,14 @@ impl VariableBaseMSM {
         );
     }
 
-    fn multi_scalar_mul_g1_glv<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>, TFr: Fr>(
+    #[allow(dead_code)]
+    fn multi_scalar_mul_g1_glv<
+        TG1: G1,
+        TG1Fp: G1Fp,
+        TG1Affine: G1Affine<TG1, TG1Fp>,
+        TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+        TFr: Fr,
+    >(
         points: &[TG1Affine],
         scalars: &[Scalar256],
         window_bits: u32,
@@ -59,8 +64,12 @@ impl VariableBaseMSM {
         max_collisions: u32,
     ) -> TG1 {
         let num_slices: usize = ((G1_SCALAR_SIZE_GLV + window_bits - 1) / window_bits) as usize;
-        let mut bucket_msm =
-            BucketMSM::<TG1, TG1Fp, TG1Affine, TProjAddAffine>::new(G1_SCALAR_SIZE_GLV, window_bits, max_batch, max_collisions);
+        let mut bucket_msm = BucketMSM::<TG1, TG1Fp, TG1Affine, TProjAddAffine>::new(
+            G1_SCALAR_SIZE_GLV,
+            window_bits,
+            max_batch,
+            max_collisions,
+        );
         // scalar = phi * lambda + normal
         let mut phi_slices = vec![0u32; num_slices];
         let mut normal_slices = vec![0u32; num_slices];
@@ -70,12 +79,7 @@ impl VariableBaseMSM {
             .zip(points)
             .filter(|(s, _)| !s.is_zero())
             .for_each(|(scalar, point)| {
-                // TODO
-                // use unsafe cast for type conversion until we have a better approach
-                // let g1_scalar: G1BigInt =
-                //     unsafe { *(std::ptr::addr_of!(scalar) as *const G1BigInt) };
-
-                let (phi, normal, is_neg_scalar, is_neg_normal) =
+                let (phi, _normal, is_neg_scalar, is_neg_normal) =
                     decompose(&TFr::from_u64_arr(&scalar.data), window_bits);
 
                 Self::msm_slice(
@@ -101,7 +105,12 @@ impl VariableBaseMSM {
         bucket_msm.batch_reduce()
     }
 
-    fn multi_scalar_mul_general<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>, TFr: Fr>(
+    fn multi_scalar_mul_general<
+        TG1: G1,
+        TG1Fp: G1Fp,
+        TG1Affine: G1Affine<TG1, TG1Fp>,
+        TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+    >(
         points: &[TG1Affine],
         scalars: &[Scalar256],
         window_bits: u32,
@@ -109,8 +118,12 @@ impl VariableBaseMSM {
         max_collisions: u32,
     ) -> TG1 {
         let num_slices: usize = ((G1_SCALAR_SIZE + window_bits - 1) / window_bits) as usize;
-        let mut bucket_msm =
-            BucketMSM::<TG1, TG1Fp, TG1Affine, TProjAddAffine>::new(G1_SCALAR_SIZE, window_bits, max_batch, max_collisions);
+        let mut bucket_msm = BucketMSM::<TG1, TG1Fp, TG1Affine, TProjAddAffine>::new(
+            G1_SCALAR_SIZE,
+            window_bits,
+            max_batch,
+            max_collisions,
+        );
 
         let mut slices = vec![0u32; num_slices];
         scalars
@@ -126,12 +139,23 @@ impl VariableBaseMSM {
         bucket_msm.batch_reduce()
     }
 
-    pub fn multi_scalar_mul<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>, TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>, TFr: Fr>(
+    pub fn multi_scalar_mul<
+        TG1: G1,
+        TG1Fp: G1Fp,
+        TG1Affine: G1Affine<TG1, TG1Fp>,
+        TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+    >(
         points: &[TG1Affine],
         scalars: &[Scalar256],
     ) -> TG1 {
         let opt_window_size = Self::get_opt_window_size(log2_u64(points.len()) as u32);
         // Self::multi_scalar_mul_g1_glv::<TG1, TG1Fp, TG1Affine, TProjAddAffine, TFr>(points, scalars, opt_window_size, 2048, 256)
-        Self::multi_scalar_mul_general::<TG1, TG1Fp, TG1Affine, TProjAddAffine, TFr>(points, scalars, opt_window_size, 2048, 256)
+        Self::multi_scalar_mul_general::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(
+            points,
+            scalars,
+            opt_window_size,
+            2048,
+            256,
+        )
     }
 }

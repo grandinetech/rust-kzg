@@ -1,4 +1,4 @@
-use kzg::{G1, G1Fp, G1Affine, G1ProjAddAffine, Scalar256, msm::msm::VariableBaseMSM};
+use kzg::{msm::arkmsm_msm::VariableBaseMSM, Scalar256};
 
 pub fn test_msm_slice_window_size_1() {
     let scalar = Scalar256::from_u64_s(0b101);

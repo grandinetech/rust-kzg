@@ -9,28 +9,13 @@ use ark_ec::{
     short_weierstrass::{Affine, Projective},
 };
 use ark_ff::{BigInteger, PrimeField};
-use ark_std::log2;
+
 use kzg::common_utils::log2_u64;
 use std::any::TypeId;
 
 pub struct VariableBaseMSM;
 
 impl VariableBaseMSM {
-    /// WARNING: this function is derived from benchmark results running
-    /// on a Ubuntu 20.04.2 LTS server with AMD EPYC 7282 16-Core CPU
-    /// and 128G memory, the optimal performance may vary on a different
-    /// configuration.
-    const fn get_opt_window_size(k: u32) -> u32 {
-        match k {
-            0..=9 => 8,
-            10..=12 => 10,
-            13..=14 => 12,
-            15..=19 => 13,
-            20..=22 => 15,
-            23.. => 16,
-        }
-    }
-
     fn msm_slice<P: Parameters>(mut scalar: BigInt<P>, slices: &mut [u32], window_bits: u32) {
         assert!(window_bits <= 31); // reserve one bit for marking signed slices
 
@@ -114,7 +99,7 @@ impl VariableBaseMSM {
         max_batch: u32,
         max_collisions: u32,
     ) -> Projective<P> {
-        let scalar_size = <P::ScalarField as PrimeField>::MODULUS_BIT_SIZE as u32;
+        let scalar_size = <P::ScalarField as PrimeField>::MODULUS_BIT_SIZE;
         let num_slices: usize = ((scalar_size + window_bits - 1) / window_bits) as usize;
         let mut bucket_msm =
             BucketMSM::<P>::new(scalar_size, window_bits, max_batch, max_collisions);
@@ -164,7 +149,7 @@ impl VariableBaseMSM {
         let c = if size < 32 {
             3
         } else {
-            ((log2_u64(size) * 69 / 100) as usize) + 2
+            (log2_u64(size) * 69 / 100) + 2
         };
         Self::multi_scalar_mul_custom(points, scalars, c as u32, 2048, 256, true)
     }
@@ -173,11 +158,11 @@ impl VariableBaseMSM {
 #[cfg(test)]
 mod collision_method_pippenger_tests {
     use super::*;
-    use ark_bls12_381::g1::{Config, self};
+    use ark_bls12_381::g1;
 
     #[test]
     fn test_msm_slice_window_size_1() {
-        let scalar = G1BigInt::from(0b101 as u32);
+        let scalar = G1BigInt::from(0b101u32);
         let mut slices: Vec<u32> = vec![0; 3];
         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 1);
         // print!("slices {:?}\n", slices);
@@ -185,7 +170,7 @@ mod collision_method_pippenger_tests {
     }
     #[test]
     fn test_msm_slice_window_size_2() {
-        let scalar = G1BigInt::from(0b000110 as u32);
+        let scalar = G1BigInt::from(0b000110u32);
         let mut slices: Vec<u32> = vec![0; 3];
         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 2);
         assert!(slices.iter().eq([2, 1, 0].iter()));
@@ -193,7 +178,7 @@ mod collision_method_pippenger_tests {
 
     #[test]
     fn test_msm_slice_window_size_3() {
-        let scalar = G1BigInt::from(0b010111000 as u32);
+        let scalar = G1BigInt::from(0b010111000u32);
         let mut slices: Vec<u32> = vec![0; 3];
         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 3);
         assert!(slices.iter().eq([0, 0x80000001, 3].iter()));
@@ -201,7 +186,7 @@ mod collision_method_pippenger_tests {
 
     #[test]
     fn test_msm_slice_window_size_16() {
-        let scalar = G1BigInt::from(0x123400007FFF as u64);
+        let scalar = G1BigInt::from(0x123400007FFFu64);
         let mut slices: Vec<u32> = vec![0; 3];
         VariableBaseMSM::msm_slice::<g1::Config>(scalar, &mut slices, 16);
         assert!(slices.iter().eq([0x7FFF, 0, 0x1234].iter()));

@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use kzg_bench::tests::msm::msm::{test_msm_slice_window_size_16, test_msm_slice_window_size_3, test_msm_slice_window_size_2, test_msm_slice_window_size_1};
+    use kzg_bench::tests::msm::msm_slice::{
+        test_msm_slice_window_size_1, test_msm_slice_window_size_16, test_msm_slice_window_size_2,
+        test_msm_slice_window_size_3,
+    };
 
     #[test]
     pub fn test_msm_slice_window_size_1_() {
