@@ -7,6 +7,9 @@ use crate::types::{fr::FsFr, g1::FsG1Affine};
 #[cfg(not(feature = "parallel"))]
 use crate::types::g1::FsG1ProjAddAffine;
 
+#[cfg(not(feature = "parallel"))]
+use kzg::msm::arkmsm::arkmsm_msm::VariableBaseMSM;
+
 use crate::types::g2::FsG2;
 use alloc::vec::Vec;
 use blst::{
@@ -25,7 +28,7 @@ impl PairingVerify<FsG1, FsG2> for FsG1 {
 }
 
 #[cfg(feature = "parallel")]
-use kzg::msm::tilling_parallel_pippinger::{parallel_affine_conv, tiling_parallel_pippinger};
+use kzg::msm::tiling_parallel_pippenger::{parallel_affine_conv, tiling_parallel_pippenger};
 
 pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], len: usize) {
     if len < 8 {
@@ -51,13 +54,13 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 Scalar256::from_u8(&scalar.b)
             })
             .collect::<Vec<_>>();
-        *out = tiling_parallel_pippinger(&points, scalars.as_slice());
+        *out = tiling_parallel_pippenger(&points, scalars.as_slice());
     }
 
     #[cfg(not(feature = "parallel"))]
     {
-        let ark_points = FsG1Affine::into_affines(points);
-        let ark_scalars = {
+        let points = FsG1Affine::into_affines(points);
+        let scalars = {
             scalars
                 .iter()
                 .take(len)
@@ -70,12 +73,9 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
                 })
                 .collect::<Vec<_>>()
         };
-        *out = kzg::msm::arkmsm_msm::VariableBaseMSM::multi_scalar_mul::<
-            FsG1,
-            FsFp,
-            FsG1Affine,
-            FsG1ProjAddAffine,
-        >(&ark_points, &ark_scalars)
+        *out = VariableBaseMSM::multi_scalar_mul::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
+            &points, &scalars,
+        )
     }
 }
 

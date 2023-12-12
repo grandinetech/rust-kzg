@@ -1,6 +1,9 @@
 use crate::{G1Affine, G1Fp, G1};
 use core::marker::PhantomData;
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 pub struct BatchAdder<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp>> {
     pub inverse_state: TFp,
     pub inverses: Vec<TFp>,

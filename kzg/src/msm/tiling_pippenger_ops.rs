@@ -2,6 +2,8 @@ use core::mem::size_of;
 
 use crate::{G1Affine, G1Fp, G1GetFp, Scalar256, G1};
 
+use alloc::vec;
+
 const fn is_zero(val: u64) -> u64 {
     (!val & (val.wrapping_sub(1))) >> (u64::BITS - 1)
 }
@@ -167,7 +169,7 @@ fn p1_dadd_affine<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp>>(
     } else {
         vec_zero_rt(
             &mut out.zzz as *mut TFp as *mut u64,
-            2 * std::mem::size_of_val(&out.zzz),
+            2 * core::mem::size_of_val(&out.zzz),
         );
     }
 }
@@ -367,4 +369,54 @@ pub fn p1s_tile_pippenger<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine
     p1s_bucket(buckets, wnxt, cbits, point);
     // Integrate buckets - multiply point in each bucket by scalar and sum all results
     p1_integrate_buckets(ret, buckets, cbits - 1);
+}
+
+pub fn tiling_pippenger<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
+    points: &[TG1Affine],
+    scalars: &[Scalar256],
+) -> TG1 {
+    let window = pippenger_window_size(points.len());
+    let mut buckets = vec![P1XYZZ::<TG1Fp>::default(); 1 << (window - 1)];
+
+    let mut wbits: usize = 255 % window;
+    let mut cbits: usize = wbits + 1;
+    let mut bit0: usize = 255;
+    let mut tile = TG1::default();
+
+    let mut ret = TG1::default();
+
+    loop {
+        bit0 -= wbits;
+        if bit0 == 0 {
+            break;
+        }
+
+        p1s_tile_pippenger(&mut tile, points, scalars, &mut buckets, bit0, wbits, cbits);
+
+        ret.add_assign(&tile);
+        for _ in 0..window {
+            ret.dbl_assign();
+        }
+        cbits = window;
+        wbits = window;
+    }
+    p1s_tile_pippenger(&mut tile, points, scalars, &mut buckets, 0, wbits, cbits);
+    ret.add_assign(&tile);
+    ret
+}
+
+pub const fn pippenger_window_size(npoints: usize) -> usize {
+    let wbits = num_bits(npoints);
+
+    if wbits > 13 {
+        return wbits - 4;
+    }
+    if wbits > 5 {
+        return wbits - 3;
+    }
+    2
+}
+
+pub const fn num_bits(l: usize) -> usize {
+    8 * core::mem::size_of::<usize>() - l.leading_zeros() as usize
 }

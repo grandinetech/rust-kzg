@@ -1,4 +1,4 @@
-use kzg::{msm::arkmsm_msm::VariableBaseMSM, Scalar256};
+use kzg::{msm::arkmsm::arkmsm_msm::VariableBaseMSM, Scalar256};
 
 pub fn test_msm_slice_window_size_1() {
     let scalar = Scalar256::from_u64_s(0b101);

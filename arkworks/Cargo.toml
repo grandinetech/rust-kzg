@@ -76,7 +76,3 @@ harness = false
 [[bench]]
 name = "lincomb"
 harness = false
-
-[[bench]]
-name = "arkmsm_bench"
-harness = false

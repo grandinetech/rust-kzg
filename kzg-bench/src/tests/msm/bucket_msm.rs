@@ -1,5 +1,5 @@
-use kzg::msm::bucket_msm::BucketMSM;
-use kzg::msm::glv::endomorphism;
+use kzg::msm::arkmsm::bucket_msm::BucketMSM;
+use kzg::msm::arkmsm::glv::endomorphism;
 use kzg::{G1Affine, G1Fp, G1ProjAddAffine, G1};
 
 pub fn test_process_point_and_slices_deal_two_points<

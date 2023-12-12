@@ -2,19 +2,21 @@ use core::{
     num::Wrapping,
     sync::atomic::{AtomicUsize, Ordering},
 };
-use std::sync::{mpsc::channel, Barrier};
 
 use alloc::sync::Arc;
+use std::sync::{mpsc::channel, Barrier};
 
-use crate::{G1Affine, G1Fp, G1GetFp, Scalar256, G1};
+use crate::{msm::tiling_pippenger_ops::num_bits, G1Affine, G1Fp, G1GetFp, Scalar256, G1};
 
 use super::{
     cell::Cell,
     thread_pool::{da_pool, ThreadPoolExt},
-    tilling_pippinger_ops::{p1s_tile_pippenger, p1s_tile_pippenger_pub, P1XYZZ},
+    tiling_pippenger_ops::{
+        p1s_tile_pippenger_pub, pippenger_window_size, tiling_pippenger, P1XYZZ,
+    },
 };
 
-pub struct Tile {
+struct Tile {
     x: usize,
     dx: usize,
     y: usize,
@@ -65,41 +67,7 @@ pub fn parallel_affine_conv<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + 
     ret
 }
 
-pub fn tilling_pippinger<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
-    points: &[TG1Affine],
-    scalars: &[Scalar256],
-) -> TG1 {
-    let window = pippenger_window_size(points.len());
-    let mut buckets = vec![P1XYZZ::<TG1Fp>::default(); 1 << (window - 1)];
-
-    let mut wbits: usize = 255 % window;
-    let mut cbits: usize = wbits + 1;
-    let mut bit0: usize = 255;
-    let mut tile = TG1::default();
-
-    let mut ret = TG1::default();
-
-    loop {
-        bit0 -= wbits;
-        if bit0 == 0 {
-            break;
-        }
-
-        p1s_tile_pippenger(&mut tile, points, scalars, &mut buckets, bit0, wbits, cbits);
-
-        ret.add_assign(&tile);
-        for _ in 0..window {
-            ret.dbl_assign();
-        }
-        cbits = window;
-        wbits = window;
-    }
-    p1s_tile_pippenger(&mut tile, points, scalars, &mut buckets, 0, wbits, cbits);
-    ret.add_assign(&tile);
-    ret
-}
-
-pub fn tiling_parallel_pippinger<
+pub fn tiling_parallel_pippenger<
     TG1: G1 + G1GetFp<TG1Fp>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
@@ -116,7 +84,7 @@ pub fn tiling_parallel_pippinger<
     let ncpus = pool.max_count();
 
     if ncpus < 2 || npoints < 32 {
-        return tilling_pippinger(points, scalars);
+        return tiling_pippenger(points, scalars);
     }
 
     let (nx, ny, window) = breakdown(pippenger_window_size(npoints), ncpus);
@@ -249,20 +217,4 @@ const fn breakdown(window: usize, ncpus: usize) -> (usize, usize, usize) {
     wnd = NBITS / ny + 1;
 
     (nx, ny, wnd)
-}
-
-const fn num_bits(l: usize) -> usize {
-    8 * std::mem::size_of::<usize>() - l.leading_zeros() as usize
-}
-
-const fn pippenger_window_size(npoints: usize) -> usize {
-    let wbits = num_bits(npoints);
-
-    if wbits > 13 {
-        return wbits - 4;
-    }
-    if wbits > 5 {
-        return wbits - 3;
-    }
-    2
 }

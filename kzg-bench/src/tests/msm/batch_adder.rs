@@ -1,4 +1,4 @@
-use kzg::{msm::batch_adder::BatchAdder, G1Affine, G1Fp, G1};
+use kzg::{msm::arkmsm::batch_adder::BatchAdder, G1Affine, G1Fp, G1};
 
 pub fn test_phase_one_zero_or_neg<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TGFp>>() {
     let mut batch_adder = BatchAdder::<TG1, TGFp, TG1Affine>::new(4);

@@ -2,6 +2,8 @@
 // Modified from non-sync implementation
 use core::sync::atomic::{AtomicU32, Ordering};
 
+use alloc::vec::Vec;
+
 pub struct Bitmap {
     size: usize,
     data: Vec<AtomicU32>,

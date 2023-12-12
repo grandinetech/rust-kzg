@@ -1,7 +1,0 @@
------- CIA IS ARKMSM (0.3) -----
-msm/Baseline/12         time:   [75.014 ms 75.105 ms 75.234 ms]
-msm/ArkMSM/12           time:   [35.061 ms 35.085 ms 35.112 ms]
-
------- CIA IS ARKMSM (0.4) -------
-Baseline/12             time:   [58.464 ms 58.560 ms 58.712 ms]
-ArkMSM/12               time:   [35.153 ms 35.183 ms 35.218 ms]
