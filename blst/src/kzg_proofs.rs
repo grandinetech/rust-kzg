@@ -4,11 +4,9 @@ use crate::types::fp::FsFp;
 use crate::types::g1::FsG1;
 use crate::types::{fr::FsFr, g1::FsG1Affine};
 
-#[cfg(not(feature = "parallel"))]
 use crate::types::g1::FsG1ProjAddAffine;
 
-#[cfg(not(feature = "parallel"))]
-use kzg::msm::arkmsm::arkmsm_msm::VariableBaseMSM;
+use kzg::msm::msm_impls::{batch_convert, msm};
 
 use crate::types::g2::FsG2;
 use alloc::vec::Vec;
@@ -16,19 +14,14 @@ use blst::{
     blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
     blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing,
 };
-use kzg::{G1Mul, PairingVerify, Scalar256, G1};
 
-#[cfg(not(feature = "parallel"))]
-use kzg::G1Affine;
+use kzg::{G1Mul, PairingVerify, Scalar256, G1};
 
 impl PairingVerify<FsG1, FsG2> for FsG1 {
     fn verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
         pairings_verify(a1, a2, b1, b2)
     }
 }
-
-#[cfg(feature = "parallel")]
-use kzg::msm::tiling_parallel_pippenger::{parallel_affine_conv, tiling_parallel_pippenger};
 
 pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], len: usize) {
     if len < 8 {
@@ -40,43 +33,19 @@ pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], 
         return;
     }
 
-    #[cfg(feature = "parallel")]
-    {
-        // Atleast on my machine - performance was *slightly worse* with the parallel version
-        // let points = FsG1Affine::into_affines(points);
-        let points = parallel_affine_conv::<FsG1, FsFp, FsG1Affine>(points);
+    let points = batch_convert(&points[0..len]);
+    let scalars = scalars[0..len]
+        .iter()
+        .map(|scalar| {
+            let mut blst_scalar = blst_scalar::default();
+            unsafe {
+                blst_scalar_from_fr(&mut blst_scalar, &scalar.0);
+            }
+            Scalar256::from_u8(&blst_scalar.b)
+        })
+        .collect::<Vec<_>>();
 
-        let scalars = scalars
-            .iter()
-            .map(|b| {
-                let mut scalar = blst_scalar::default();
-                unsafe { blst_scalar_from_fr(&mut scalar, &b.0) }
-                Scalar256::from_u8(&scalar.b)
-            })
-            .collect::<Vec<_>>();
-        *out = tiling_parallel_pippenger(&points, scalars.as_slice());
-    }
-
-    #[cfg(not(feature = "parallel"))]
-    {
-        let points = FsG1Affine::into_affines(points);
-        let scalars = {
-            scalars
-                .iter()
-                .take(len)
-                .map(|scalar| {
-                    let mut blst_scalar = blst_scalar::default();
-                    unsafe {
-                        blst_scalar_from_fr(&mut blst_scalar, &scalar.0);
-                    }
-                    Scalar256::from_u8(&blst_scalar.b)
-                })
-                .collect::<Vec<_>>()
-        };
-        *out = VariableBaseMSM::multi_scalar_mul::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(
-            &points, &scalars,
-        )
-    }
+    *out = msm::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(&points, &scalars);
 }
 
 pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {

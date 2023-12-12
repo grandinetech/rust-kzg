@@ -428,9 +428,9 @@ pub fn compute_blob_kzg_proof_rust<
     commitment: &TG1,
     ts: &TKZGSettings,
 ) -> Result<TG1, String> {
-    // if !commitment.is_inf() && !commitment.is_valid() {
-    //     return Err("Invalid commitment".to_string());
-    // }
+    if !commitment.is_inf() && !commitment.is_valid() {
+        return Err("Invalid commitment".to_string());
+    }
 
     let evaluation_challenge_fr = compute_challenge(blob, commitment);
     let (proof, _) =

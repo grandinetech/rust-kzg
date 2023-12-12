@@ -1,24 +1,16 @@
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ArkFr, ArkG1, ArkG1Affine};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
 
-#[cfg(not(feature = "parallel"))]
 use crate::kzg_types::ArkG1ProjAddAffine;
 
-#[cfg(feature = "parallel")]
-use kzg::msm::tiling_parallel_pippenger::tiling_parallel_pippenger;
-
-#[cfg(not(feature = "parallel"))]
-use kzg::msm::arkmsm::arkmsm_msm::VariableBaseMSM;
+use kzg::msm::msm_impls::{batch_convert, msm};
 
 use ark_ff::BigInteger256;
 
-use kzg::{cfg_into_iter, Fr as KzgFr, G1Affine, G1Mul, Scalar256};
+use kzg::{Fr as KzgFr, G1Mul, Scalar256};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
-
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[ArkFr], len: usize) {
     if len < 8 {
@@ -30,34 +22,13 @@ pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[ArkFr
         return;
     }
 
-    #[cfg(feature = "parallel")]
-    {
-        let ark_points = ArkG1Affine::into_affines(points);
-        // let ark_points = parallel_affine_conv(points);
-        let ark_scalars = {
-            cfg_into_iter!(scalars)
-                .take(len)
-                .map(|scalar| Scalar256::from_u64(BigInteger256::from(scalar.fr).0))
-                .collect::<Vec<_>>()
-        };
+    let points = batch_convert(&points[0..len]);
+    let scalars = scalars[0..len]
+        .iter()
+        .map(|scalar| Scalar256::from_u64(BigInteger256::from(scalar.fr).0))
+        .collect::<Vec<_>>();
 
-        *out = tiling_parallel_pippenger(&ark_points, ark_scalars.as_slice());
-    }
-
-    #[cfg(not(feature = "parallel"))]
-    {
-        let ark_points = ArkG1Affine::into_affines(points);
-        let ark_scalars = {
-            cfg_into_iter!(scalars)
-                .take(len)
-                .map(|scalar| Scalar256::from_u64(BigInteger256::from(scalar.fr).0))
-                .collect::<Vec<_>>()
-        };
-        *out = VariableBaseMSM::multi_scalar_mul::<_, _, _, ArkG1ProjAddAffine>(
-            &ark_points,
-            &ark_scalars,
-        );
-    }
+    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &scalars);
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {

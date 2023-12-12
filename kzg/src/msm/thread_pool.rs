@@ -14,7 +14,6 @@ pub fn da_pool() -> ThreadPool {
 
     INIT.call_once(|| {
         let pool = Mutex::new(ThreadPool::default());
-        // let pool = Mutex::new(ThreadPool::default());
         unsafe { POOL = transmute(Box::new(pool)) };
     });
     unsafe { (*POOL).lock().unwrap().clone() }
