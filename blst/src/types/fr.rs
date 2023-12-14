@@ -10,6 +10,7 @@ use blst::{
     blst_fr_sub, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr,
     blst_uint64_from_fr,
 };
+use kzg::Scalar256;
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
 
@@ -250,5 +251,13 @@ impl Fr for FsFr {
         }
 
         val_a[0] == val_b[0] && val_a[1] == val_b[1] && val_a[2] == val_b[2] && val_a[3] == val_b[3]
+    }
+
+    fn to_scalar(&self) -> Scalar256 {
+        let mut blst_scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut blst_scalar, &self.0);
+        }
+        Scalar256::from_u8(&blst_scalar.b)
     }
 }

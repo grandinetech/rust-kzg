@@ -65,6 +65,8 @@ pub trait Fr: Default + Clone + PartialEq + Sync {
     fn eq(&self, other: &Self) -> bool {
         self.equals(other)
     }
+
+    fn to_scalar(&self) -> Scalar256;
 }
 
 pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {

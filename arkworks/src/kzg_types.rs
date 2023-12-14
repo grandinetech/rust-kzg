@@ -29,7 +29,7 @@ use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
-    G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, G1, G2,
+    G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, G1, G2, Scalar256,
 };
 use std::ops::{AddAssign, Mul, Neg, Sub};
 
@@ -236,6 +236,10 @@ impl KzgFr for ArkFr {
 
     fn equals(&self, b: &Self) -> bool {
         self.fr == b.fr
+    }
+
+    fn to_scalar(&self) -> Scalar256 {
+        Scalar256::from_u64(BigInteger256::from(self.fr).0)
     }
 }
 
