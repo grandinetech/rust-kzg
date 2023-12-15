@@ -10,9 +10,9 @@ use blst::{
     blst_fr_sub, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr,
     blst_uint64_from_fr,
 };
-use kzg::Scalar256;
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
+use kzg::Scalar256;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct FsFr(pub blst_fr);

@@ -1,29 +1,26 @@
-use crate::{G1Affine, G1Fp, G1GetFp, G1ProjAddAffine, Scalar256, G1};
+use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, Scalar256, G1};
 use alloc::vec::Vec;
 
-#[cfg(feature = "arkmsm")]
+#[cfg(all(feature = "arkmsm", not(feature = "parallel")))]
 use super::arkmsm::arkmsm_msm::VariableBaseMSM;
 
-#[cfg(not(feature = "arkmsm"))]
+#[cfg(all(not(feature = "arkmsm"), not(feature = "parallel")))]
 use super::tiling_pippenger_ops::tiling_pippenger;
 
 #[cfg(feature = "parallel")]
 use super::tiling_parallel_pippenger::{parallel_affine_conv, tiling_parallel_pippenger};
 
 #[cfg(feature = "parallel")]
-pub fn msm_parallel<
-    TG1: G1 + G1GetFp<TG1Fp>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
-    TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
->(
+fn msm_parallel<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
     points: &[TG1Affine],
     scalars: &[Scalar256],
 ) -> TG1 {
     tiling_parallel_pippenger(points, scalars)
 }
 
-pub fn msm_sequential<
+#[cfg(not(feature = "parallel"))]
+#[allow(clippy::extra_unused_type_parameters)]
+fn msm_sequential<
     TG1: G1 + G1GetFp<TG1Fp>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
@@ -34,7 +31,8 @@ pub fn msm_sequential<
 ) -> TG1 {
     #[cfg(not(feature = "arkmsm"))]
     {
-        tiling_pippenger(points, scalars)
+        assert!(core::cmp::min(points.len(), scalars.len()) > 1);
+        tiling_pippenger::<TG1, TG1Fp, TG1Affine>(points, scalars)
     }
 
     #[cfg(feature = "arkmsm")]
@@ -43,23 +41,7 @@ pub fn msm_sequential<
     }
 }
 
-pub fn msm<
-    TG1: G1 + G1GetFp<TG1Fp>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
-    TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
->(
-    points: &[TG1Affine],
-    scalars: &[Scalar256],
-) -> TG1 {
-    #[cfg(feature = "parallel")]
-    return msm_parallel::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars);
-
-    #[cfg(not(feature = "parallel"))]
-    return msm_sequential::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars);
-}
-
-pub fn batch_convert<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + Sized>(
+fn batch_convert<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + Sized>(
     points: &[TG1],
 ) -> Vec<TG1Affine> {
     #[cfg(feature = "parallel")]
@@ -67,4 +49,38 @@ pub fn batch_convert<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + Sized>(
 
     #[cfg(not(feature = "parallel"))]
     return TG1Affine::into_affines(points);
+}
+
+#[allow(clippy::extra_unused_type_parameters)]
+pub fn msm<
+    TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+    TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+    TFr: Fr,
+>(
+    points: &[TG1],
+    scalars: &[TFr],
+    len: usize,
+) -> TG1 {
+    if len < 8 {
+        let mut out = TG1::default();
+        for i in 0..len {
+            let tmp = points[i].mul(&scalars[i]);
+            out.add_or_dbl_assign(&tmp);
+        }
+        return out;
+    }
+
+    let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points[0..len]);
+    let scalars = scalars[0..len]
+        .iter()
+        .map(TFr::to_scalar)
+        .collect::<Vec<_>>();
+
+    #[cfg(feature = "parallel")]
+    return msm_parallel::<TG1, TG1Fp, TG1Affine>(&points, &scalars);
+
+    #[cfg(not(feature = "parallel"))]
+    return msm_sequential::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(&points, &scalars);
 }

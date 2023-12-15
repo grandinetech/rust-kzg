@@ -4,31 +4,14 @@ use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
 
 use crate::kzg_types::ArkG1ProjAddAffine;
 
-use kzg::msm::msm_impls::{batch_convert, msm};
+use kzg::msm::msm_impls::msm;
 
-use ark_ff::BigInteger256;
-
-use kzg::{Fr as KzgFr, G1Mul, Scalar256};
+use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
 pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[ArkFr], len: usize) {
-    if len < 8 {
-        *out = ArkG1::default();
-        for i in 0..len {
-            let tmp = points[i].mul(&scalars[i]);
-            *out = out.add_or_dbl(&tmp);
-        }
-        return;
-    }
-
-    let points = batch_convert(&points[0..len]);
-    let scalars = scalars[0..len]
-        .iter()
-        .map(|scalar| Scalar256::from_u64(BigInteger256::from(scalar.fr).0))
-        .collect::<Vec<_>>();
-
-    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &scalars);
+    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(points, scalars, len);
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
