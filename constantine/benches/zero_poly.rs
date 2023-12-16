@@ -1,12 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::zero_poly::bench_zero_poly;
-
-use rust_kzg_zkcrypto::kzg_proofs::FFTSettings;
-use rust_kzg_zkcrypto::kzg_types::ZFr;
-use rust_kzg_zkcrypto::poly::PolyData;
+use rust_kzg_blst::types::{fft_settings::CtFFTSettings, fr::CtFr, poly::CtPoly};
 
 fn bench_zero_poly_(c: &mut Criterion) {
-    bench_zero_poly::<ZFr, FFTSettings, PolyData>(c);
+    bench_zero_poly::<CtFr, CtFFTSettings, CtPoly>(c);
 }
 
 criterion_group! {

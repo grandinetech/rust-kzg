@@ -5,13 +5,16 @@ use kzg::eip_4844::{
     verify_kzg_proof_rust,
 };
 use kzg_bench::benches::eip_4844::bench_eip_4844;
-use rust_kzg_zkcrypto::eip_4844::load_trusted_setup_filename_rust;
-use rust_kzg_zkcrypto::kzg_proofs::{FFTSettings, KZGSettings};
-use rust_kzg_zkcrypto::kzg_types::{ZFr, ZG1, ZG2};
-use rust_kzg_zkcrypto::poly::PolyData;
+use rust_kzg_blst::{
+    eip_4844::load_trusted_setup_filename_rust,
+    types::{
+        fft_settings::CtFFTSettings, fr::CtFr, g1::CtG1, g2::CtG2, kzg_settings::CtKZGSettings,
+        poly::CtPoly,
+    },
+};
 
 fn bench_eip_4844_(c: &mut Criterion) {
-    bench_eip_4844::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
+    bench_eip_4844::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
         c,
         &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,
@@ -24,5 +27,5 @@ fn bench_eip_4844_(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, bench_eip_4844_,);
+criterion_group!(benches, bench_eip_4844_);
 criterion_main!(benches);

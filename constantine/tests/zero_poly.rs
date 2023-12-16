@@ -4,42 +4,42 @@ mod tests {
         check_test_data, reduce_partials_random, test_reduce_partials, zero_poly_252,
         zero_poly_all_but_one, zero_poly_known, zero_poly_random,
     };
-    use rust_kzg_zkcrypto::kzg_proofs::FFTSettings;
-    use rust_kzg_zkcrypto::kzg_types::ZFr;
-    use rust_kzg_zkcrypto::poly::PolyData;
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::poly::FsPoly;
 
     #[test]
     fn test_reduce_partials_() {
-        test_reduce_partials::<ZFr, FFTSettings, PolyData>();
+        test_reduce_partials::<FsFr, FsFFTSettings, FsPoly>();
     }
 
     #[test]
     fn reduce_partials_random_() {
-        reduce_partials_random::<ZFr, FFTSettings, PolyData>();
+        reduce_partials_random::<FsFr, FsFFTSettings, FsPoly>();
     }
 
     #[test]
     fn check_test_data_() {
-        check_test_data::<ZFr, FFTSettings, PolyData>();
+        check_test_data::<FsFr, FsFFTSettings, FsPoly>();
     }
 
     #[test]
     fn zero_poly_known_() {
-        zero_poly_known::<ZFr, FFTSettings, PolyData>();
+        zero_poly_known::<FsFr, FsFFTSettings, FsPoly>();
     }
 
     #[test]
     fn zero_poly_random_() {
-        zero_poly_random::<ZFr, FFTSettings, PolyData>();
+        zero_poly_random::<FsFr, FsFFTSettings, FsPoly>();
     }
 
     #[test]
     fn zero_poly_all_but_one_() {
-        zero_poly_all_but_one::<ZFr, FFTSettings, PolyData>();
+        zero_poly_all_but_one::<FsFr, FsFFTSettings, FsPoly>();
     }
 
     #[test]
     fn zero_poly_252_() {
-        zero_poly_252::<ZFr, FFTSettings, PolyData>();
+        zero_poly_252::<FsFr, FsFFTSettings, FsPoly>();
     }
 }

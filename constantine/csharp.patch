@@ -16,7 +16,7 @@ index 5158aad..af3b2a8 100644
  
  INCLUDE_DIRS = ../../src ../../blst/bindings
 -TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
-+TARGETS = ckzg.c ../../../../target/release/rust_kzg_zkcrypto.a
++TARGETS = ckzg.c ../../../../target/release/rust_kzg_blst.a
  
  CFLAGS += -O2 -Wall -Wextra -shared
  CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}

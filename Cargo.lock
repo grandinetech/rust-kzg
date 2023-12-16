@@ -397,7 +397,7 @@ checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 [[package]]
 name = "constantine-sys"
 version = "0.1.0"
-source = "git+https://github.com/mratsim/constantine.git#8367d7d19cdbba874aab961b70d272e742184c37"
+source = "git+https://github.com/mratsim/constantine.git?rev=0afccb412e2b0d2a182d13d1f42f6528307802ae#0afccb412e2b0d2a182d13d1f42f6528307802ae"
 
 [[package]]
 name = "cpufeatures"
@@ -1215,19 +1215,16 @@ dependencies = [
 name = "rust-kzg-constantine"
 version = "0.1.0"
 dependencies = [
- "bls12_381",
- "blst",
- "byteorder",
  "constantine-sys",
  "criterion 0.5.1",
- "ff",
  "hex",
  "kzg",
  "kzg-bench",
  "libc",
+ "once_cell",
  "rand",
  "rayon",
- "subtle",
+ "smallvec",
 ]
 
 [[package]]

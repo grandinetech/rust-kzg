@@ -1,10 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::das::bench_das_extension;
-use rust_kzg_zkcrypto::kzg_proofs::FFTSettings;
-use rust_kzg_zkcrypto::kzg_types::ZFr;
+use rust_kzg_blst::types::fft_settings::CtFFTSettings;
+use rust_kzg_blst::types::fr::CtFr;
 
 fn bench_das_extension_(c: &mut Criterion) {
-    bench_das_extension::<ZFr, FFTSettings>(c);
+    bench_das_extension::<CtFr, CtFFTSettings>(c)
 }
 
 criterion_group! {

@@ -1,324 +1,93 @@
-use crate::consts::G1_IDENTITY;
-use crate::kzg_proofs::{FFTSettings, KZGSettings};
-use crate::kzg_types::{ZFr as BlstFr, ZG1, ZG2};
-use crate::poly::PolyData;
-use kzg::common_utils::reverse_bit_order;
-use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1};
+extern crate alloc;
+
+use alloc::vec;
+use alloc::vec::Vec;
+
+use kzg::{FFTFr, Fr, G1Mul, Poly, FFTG1, G1};
+
+use crate::types::fft_settings::CtFFTSettings;
+use crate::types::fr::CtFr;
+use crate::types::g1::CtG1;
+use crate::types::poly::CtPoly;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-#[repr(C)]
-#[derive(Debug, Clone, Default)]
-pub struct KzgFK20SingleSettings {
-    pub ks: KZGSettings,
-    pub x_ext_fft: Vec<ZG1>,
-    pub x_ext_fft_len: usize,
-}
-#[repr(C)]
-#[derive(Debug, Clone, Default)]
-pub struct KzgFK20MultiSettings {
-    pub ks: KZGSettings,
-    pub chunk_len: usize,
-    pub x_ext_fft_files: Vec<Vec<ZG1>>,
-    pub length: usize,
-}
+impl CtFFTSettings {
+    pub fn toeplitz_part_1(&self, x: &[CtG1]) -> Vec<CtG1> {
+        let n = x.len();
+        let n2 = n * 2;
+        let mut x_ext = Vec::with_capacity(n2);
 
-impl FK20SingleSettings<BlstFr, ZG1, ZG2, FFTSettings, PolyData, KZGSettings>
-    for KzgFK20SingleSettings
-{
-    fn new(ks: &KZGSettings, n2: usize) -> Result<Self, String> {
+        x_ext.extend(x.iter().take(n));
+        x_ext.resize(n2, CtG1::identity());
+
+        self.fft_g1(&x_ext, false).unwrap()
+    }
+
+    /// poly and x_ext_fft should be of same length
+    pub fn toeplitz_part_2(&self, poly: &CtPoly, x_ext_fft: &[CtG1]) -> Vec<CtG1> {
+        let coeffs_fft = self.fft_fr(&poly.coeffs, false).unwrap();
+
+        #[cfg(feature = "parallel")]
+        {
+            coeffs_fft
+                .into_par_iter()
+                .zip(x_ext_fft)
+                .take(poly.len())
+                .map(|(coeff_fft, x_ext_fft)| x_ext_fft.mul(&coeff_fft))
+                .collect()
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        {
+            coeffs_fft
+                .into_iter()
+                .zip(x_ext_fft)
+                .take(poly.len())
+                .map(|(coeff_fft, x_ext_fft)| x_ext_fft.mul(&coeff_fft))
+                .collect()
+        }
+    }
+
+    pub fn toeplitz_part_3(&self, h_ext_fft: &[CtG1]) -> Vec<CtG1> {
+        let n2 = h_ext_fft.len();
         let n = n2 / 2;
 
-        if n2 > ks.fs.max_width {
-            return Err(String::from(
-                "n2 must be equal or less than kzg settings max width",
-            ));
-        }
-        if !n2.is_power_of_two() {
-            return Err(String::from("n2 must be power of 2"));
-        }
-        if n2 < 2 {
-            return Err(String::from("n2 must be equal or greater than 2"));
-        }
+        let mut ret = self.fft_g1(h_ext_fft, true).unwrap();
+        ret[n..n2].copy_from_slice(&vec![CtG1::identity(); n2 - n]);
 
-        let mut x = Vec::new();
-        for i in 0..(n - 1) {
-            x.push(ks.secret_g1[n - 2 - i])
-        }
-        x.push(G1_IDENTITY);
-
-        let new_ks = KZGSettings {
-            fs: ks.fs.clone(),
-            ..KZGSettings::default()
-        };
-
-        Ok(KzgFK20SingleSettings {
-            ks: new_ks,
-            x_ext_fft: toeplitz_part_1(&x, &ks.fs).unwrap(),
-            x_ext_fft_len: n2,
-        })
-    }
-
-    fn data_availability(&self, p: &PolyData) -> Result<Vec<ZG1>, String> {
-        let n = p.len();
-        let n2 = n * 2;
-
-        if n2 > self.ks.fs.max_width {
-            return Err(String::from(
-                "n2 must be equal or less than kzg settings max width",
-            ));
-        }
-        if !n.is_power_of_two() {
-            return Err(String::from("n2 must be power of 2"));
-        }
-
-        let mut out = fk20_single_da_opt(p, self).unwrap();
-        reverse_bit_order(&mut out)?;
-        Ok(out)
-    }
-
-    fn data_availability_optimized(&self, p: &PolyData) -> Result<Vec<ZG1>, String> {
-        fk20_single_da_opt(p, self)
+        ret
     }
 }
 
-impl FK20MultiSettings<BlstFr, ZG1, ZG2, FFTSettings, PolyData, KZGSettings>
-    for KzgFK20MultiSettings
-{
-    fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
-        if n2 > ks.fs.max_width {
-            return Err(String::from(
-                "n2 must be equal or less than kzg settings max width",
-            ));
-        }
-        if !n2.is_power_of_two() {
-            return Err(String::from("n2 must be power of 2"));
-        }
-        if n2 < 2 {
-            return Err(String::from("n2 must be equal or greater than 2"));
-        }
-        if chunk_len > n2 / 2 {
-            return Err(String::from("chunk_len must be equal or less than n2/2"));
-        }
-        if !chunk_len.is_power_of_two() {
-            return Err(String::from("chunk_len must be power of 2"));
-        }
-        if chunk_len == 0 {
-            return Err(String::from("chunk_len must be greater than 0"));
+impl CtPoly {
+    pub fn toeplitz_coeffs_stride(&self, offset: usize, stride: usize) -> CtPoly {
+        let n = self.len();
+        let k = n / stride;
+        let k2 = k * 2;
+
+        let mut ret = CtPoly::default();
+        ret.coeffs.push(self.coeffs[n - 1 - offset]);
+
+        let num_of_zeroes = if k + 2 < k2 { k + 2 - 1 } else { k2 - 1 };
+        for _ in 0..num_of_zeroes {
+            ret.coeffs.push(CtFr::zero());
         }
 
-        let n = n2 / 2;
-        let k = n / chunk_len;
+        let mut i = k + 2;
+        let mut j = 2 * stride - offset - 1;
+        while i < k2 {
+            ret.coeffs.push(self.coeffs[j]);
 
-        let mut x_ext_fft_files = Vec::new();
-
-        for offset in 0..chunk_len {
-            let mut x = vec![ZG1::default(); k];
-            let start = if n >= chunk_len + 1 + offset {
-                n - chunk_len - 1 - offset
-            } else {
-                0
-            };
-            let mut j = start;
-            for i in x.iter_mut().take(k - 1) {
-                i.proj = ks.secret_g1[j].proj;
-                if j >= chunk_len {
-                    j -= chunk_len;
-                } else {
-                    j = 0;
-                }
-            }
-            x[k - 1] = G1_IDENTITY;
-            x_ext_fft_files.push(toeplitz_part_1(&x, &ks.fs).unwrap());
+            i += 1;
+            j += stride;
         }
 
-        let new_ks = KZGSettings {
-            fs: ks.fs.clone(),
-            ..KZGSettings::default()
-        };
-
-        Ok(KzgFK20MultiSettings {
-            ks: new_ks,
-            x_ext_fft_files,
-            chunk_len,
-            length: n, //unsure if this is right
-        })
+        ret
     }
 
-    fn data_availability(&self, p: &PolyData) -> Result<Vec<ZG1>, String> {
-        let n = p.len();
-        let n2 = n * 2;
-
-        if n2 > self.ks.fs.max_width {
-            return Err(String::from(
-                "n2 must be equal or less than kzg settings max width",
-            ));
-        }
-        if !n.is_power_of_two() {
-            return Err(String::from("n2 must be power of 2"));
-        }
-
-        let mut out = fk20_multi_da_opt(p, self).unwrap();
-        reverse_bit_order(&mut out)?;
-        Ok(out)
+    pub fn toeplitz_coeffs_step(&self) -> CtPoly {
+        self.toeplitz_coeffs_stride(0, 1)
     }
-
-    fn data_availability_optimized(&self, p: &PolyData) -> Result<Vec<ZG1>, String> {
-        fk20_multi_da_opt(p, self)
-    }
-}
-
-fn fk20_single_da_opt(p: &PolyData, fk: &KzgFK20SingleSettings) -> Result<Vec<ZG1>, String> {
-    let n = p.len();
-    let n2 = n * 2;
-
-    if n2 > fk.ks.fs.max_width {
-        return Err(String::from(
-            "n2 must be equal or less than kzg settings max width",
-        ));
-    }
-    if !n.is_power_of_two() {
-        return Err(String::from("n2 must be power of 2"));
-    }
-
-    let outlen = 2 * p.len();
-    let toeplitz_coeffs = toeplitz_coeffs_step(p, outlen).unwrap();
-    let h_ext_fft = toeplitz_part_2(&toeplitz_coeffs, &fk.x_ext_fft, &fk.ks.fs).unwrap();
-    let h = toeplitz_part_3(&h_ext_fft, &fk.ks.fs).unwrap();
-
-    fk.ks.fs.fft_g1(&h, false)
-}
-
-fn fk20_multi_da_opt(p: &PolyData, fk: &KzgFK20MultiSettings) -> Result<Vec<ZG1>, String> {
-    let n = p.len();
-    let n2 = n * 2;
-
-    if n2 > fk.ks.fs.max_width {
-        return Err(String::from(
-            "n2 must be equal or less than kzg settings max width",
-        ));
-    }
-    if !n.is_power_of_two() {
-        return Err(String::from("n2 must be power of 2"));
-    }
-
-    let n = n2 / 2;
-    let k = n / fk.chunk_len;
-    let k2 = k * 2;
-
-    let mut h_ext_fft = Vec::new();
-    for _i in 0..k2 {
-        h_ext_fft.push(G1_IDENTITY);
-    }
-
-    let mut toeplitz_coeffs = PolyData::new(n2 / fk.chunk_len);
-    for i in 0..fk.chunk_len {
-        toeplitz_coeffs =
-            toeplitz_coeffs_stride(p, i, fk.chunk_len, toeplitz_coeffs.len()).unwrap();
-        let h_ext_fft_file =
-            toeplitz_part_2(&toeplitz_coeffs, &fk.x_ext_fft_files[i], &fk.ks.fs).unwrap();
-        for j in 0..k2 {
-            h_ext_fft[j] = h_ext_fft[j].add_or_dbl(&h_ext_fft_file[j]);
-        }
-    }
-
-    // Calculate `h`
-    let mut h = toeplitz_part_3(&h_ext_fft, &fk.ks.fs).unwrap();
-
-    // Overwrite the second half of `h` with zero
-    for i in h.iter_mut().take(k2).skip(k) {
-        i.proj = G1_IDENTITY.proj;
-    }
-
-    fk.ks.fs.fft_g1(&h, false)
-}
-
-fn toeplitz_coeffs_step(p: &PolyData, outlen: usize) -> Result<PolyData, String> {
-    toeplitz_coeffs_stride(p, 0, 1, outlen)
-}
-
-fn toeplitz_coeffs_stride(
-    poly: &PolyData,
-    offset: usize,
-    stride: usize,
-    outlen: usize,
-) -> Result<PolyData, String> {
-    let n = poly.len();
-
-    if stride == 0 {
-        return Err(String::from("stride must be greater than 0"));
-    }
-
-    let k = n / stride;
-    let k2 = k * 2;
-
-    if outlen < k2 {
-        return Err(String::from("outlen must be equal or greater than k2"));
-    }
-
-    let mut out = PolyData::new(outlen);
-    out.set_coeff_at(0, &poly.coeffs[n - 1 - offset]);
-    let mut i = 1;
-    while i <= (k + 1) && i < k2 {
-        out.set_coeff_at(i, &BlstFr::zero());
-        i += 1;
-    }
-    let mut j = 2 * stride - offset - 1;
-    for i in (k + 2)..k2 {
-        out.set_coeff_at(i, &poly.coeffs[j]);
-        j += stride;
-    }
-    Ok(out)
-}
-
-fn toeplitz_part_1(x: &[ZG1], fs: &FFTSettings) -> Result<Vec<ZG1>, String> {
-    let n = x.len();
-    let n2 = n * 2;
-
-    let mut x_ext = Vec::new();
-    for i in x.iter().take(n) {
-        x_ext.push(*i);
-    }
-    for _i in n..n2 {
-        x_ext.push(G1_IDENTITY);
-    }
-    fs.fft_g1(&x_ext, false)
-}
-
-fn toeplitz_part_2(
-    toeplitz_coeffs: &PolyData,
-    x_ext_fft: &[ZG1],
-    fs: &FFTSettings,
-) -> Result<Vec<ZG1>, String> {
-    let toeplitz_coeffs_fft = fs.fft_fr(&toeplitz_coeffs.coeffs, false).unwrap();
-
-    #[cfg(feature = "parallel")]
-    {
-        let out: Vec<_> = (0..toeplitz_coeffs.len())
-            .into_par_iter()
-            .map(|i| x_ext_fft[i].mul(&toeplitz_coeffs_fft[i]))
-            .collect();
-        Ok(out)
-    }
-
-    #[cfg(not(feature = "parallel"))]
-    {
-        let mut out = Vec::new();
-        for i in 0..toeplitz_coeffs.len() {
-            out.push(x_ext_fft[i].mul(&toeplitz_coeffs_fft[i]));
-        }
-        Ok(out)
-    }
-}
-
-fn toeplitz_part_3(h_ext_fft: &[ZG1], fs: &FFTSettings) -> Result<Vec<ZG1>, String> {
-    let n = h_ext_fft.len() / 2;
-    let mut out = fs.fft_g1(h_ext_fft, true).unwrap();
-
-    // Zero the second half of h
-    for i in out.iter_mut().take(h_ext_fft.len()).skip(n) {
-        i.proj = G1_IDENTITY.proj;
-    }
-    Ok(out)
 }

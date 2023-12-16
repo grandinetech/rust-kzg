@@ -1,16 +1,19 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fk20_proofs::*;
-
-    use rust_kzg_zkcrypto::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings};
-    use rust_kzg_zkcrypto::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-    use rust_kzg_zkcrypto::kzg_types::ZFr as BlstFr;
-    use rust_kzg_zkcrypto::kzg_types::{ZG1, ZG2};
-    use rust_kzg_zkcrypto::poly::PolyData;
+    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
+    use rust_kzg_blst::types::fk20_multi_settings::FsFK20MultiSettings;
+    use rust_kzg_blst::types::fk20_single_settings::FsFK20SingleSettings;
+    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_blst::types::g1::FsG1;
+    use rust_kzg_blst::types::g2::FsG2;
+    use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
+    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_blst::utils::generate_trusted_setup;
 
     #[test]
     fn test_fk_single() {
-        fk_single::<BlstFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings, KzgFK20SingleSettings>(
+        fk_single::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings, FsFK20SingleSettings>(
             &generate_trusted_setup,
         );
     }
@@ -18,65 +21,65 @@ mod tests {
     #[test]
     fn test_fk_single_strided() {
         fk_single_strided::<
-            BlstFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-            KzgFK20SingleSettings,
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFK20SingleSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_settings() {
         fk_multi_settings::<
-            BlstFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-            KzgFK20MultiSettings,
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_chunk_len_1_512() {
         fk_multi_chunk_len_1_512::<
-            BlstFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-            KzgFK20MultiSettings,
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_chunk_len_16_512() {
         fk_multi_chunk_len_16_512::<
-            BlstFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-            KzgFK20MultiSettings,
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_chunk_len_16_16() {
         fk_multi_chunk_len_16_16::<
-            BlstFr,
-            ZG1,
-            ZG2,
-            PolyData,
-            FFTSettings,
-            KZGSettings,
-            KzgFK20MultiSettings,
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 }

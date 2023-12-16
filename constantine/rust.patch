@@ -53,7 +53,7 @@ index 692305a..e874ccd 100644
      // Finally, tell cargo this provides ckzg/ckzg_min
 -    println!("cargo:rustc-link-lib=ckzg");
 +    println!("cargo:rustc-link-search={}", rust_kzg_target_dir.display());
-+    println!("cargo:rustc-link-arg=-l:rust_kzg_zkcrypto.a");
++    println!("cargo:rustc-link-arg=-l:rust_kzg_blst.a");
  }
  
 -fn make_bindings<P>(

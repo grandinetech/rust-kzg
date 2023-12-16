@@ -15,7 +15,7 @@ index c6bd222..99d6501 100644
 @@ -1,11 +1,8 @@
  .PHONY: all
  all: install test
-
+ 
 -../../src/c_kzg_4844.o:
 -	make -C../../src c_kzg_4844.o
 -
@@ -39,7 +39,7 @@ index b072833..db37db4 100644
 -                library_dirs=["../../lib"],
 -                libraries=["blst"])])
 +                library_dirs=["../../lib", "../../../../target/release"],
-+                libraries=[":rust_kzg_zkcrypto.a"])])
++                libraries=[":rust_kzg_blst.a"])])
  
  if __name__ == "__main__":
      main()

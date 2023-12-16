@@ -1,22 +1,25 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::kzg::{bench_commit_to_poly, bench_compute_proof_single};
-
-use rust_kzg_zkcrypto::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-use rust_kzg_zkcrypto::kzg_types::{ZFr, ZG1, ZG2};
-use rust_kzg_zkcrypto::poly::PolyData;
+use rust_kzg_blst::types::fft_settings::CtFFTSettings;
+use rust_kzg_blst::types::fr::CtFr;
+use rust_kzg_blst::types::g1::CtG1;
+use rust_kzg_blst::types::g2::CtG2;
+use rust_kzg_blst::types::kzg_settings::CtKZGSettings;
+use rust_kzg_blst::types::poly::CtPoly;
+use rust_kzg_blst::utils::generate_trusted_setup;
 
 fn bench_commit_to_poly_(c: &mut Criterion) {
-    bench_commit_to_poly::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
+    bench_commit_to_poly::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
         c,
         &generate_trusted_setup,
-    );
+    )
 }
 
 fn bench_compute_proof_single_(c: &mut Criterion) {
-    bench_compute_proof_single::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
+    bench_compute_proof_single::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
         c,
         &generate_trusted_setup,
-    );
+    )
 }
 
 criterion_group! {
