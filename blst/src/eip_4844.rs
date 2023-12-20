@@ -94,6 +94,8 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<FsKZGSettings, Stri
                 .map(|r| FsG2(*r))
                 .collect::<Vec<FsG2>>()
         },
+        // TODO: load precomputation table here
+        precomputation: None,
     })
 }
 

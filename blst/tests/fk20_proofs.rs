@@ -4,8 +4,9 @@ mod tests {
     use rust_kzg_blst::types::fft_settings::FsFFTSettings;
     use rust_kzg_blst::types::fk20_multi_settings::FsFK20MultiSettings;
     use rust_kzg_blst::types::fk20_single_settings::FsFK20SingleSettings;
+    use rust_kzg_blst::types::fp::FsFp;
     use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::g1::FsG1;
+    use rust_kzg_blst::types::g1::{FsG1, FsG1Affine};
     use rust_kzg_blst::types::g2::FsG2;
     use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
     use rust_kzg_blst::types::poly::FsPoly;
@@ -13,9 +14,17 @@ mod tests {
 
     #[test]
     fn test_fk_single() {
-        fk_single::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings, FsFK20SingleSettings>(
-            &generate_trusted_setup,
-        );
+        fk_single::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFK20SingleSettings,
+            FsFp,
+            FsG1Affine,
+        >(&generate_trusted_setup);
     }
 
     #[test]
@@ -28,6 +37,8 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
             FsFK20SingleSettings,
+            FsFp,
+            FsG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -41,6 +52,8 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
             FsFK20MultiSettings,
+            FsFp,
+            FsG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -54,6 +67,8 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
             FsFK20MultiSettings,
+            FsFp,
+            FsG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -67,6 +82,8 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
             FsFK20MultiSettings,
+            FsFp,
+            FsG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -80,6 +97,8 @@ mod tests {
             FsFFTSettings,
             FsKZGSettings,
             FsFK20MultiSettings,
+            FsFp,
+            FsG1Affine,
         >(&generate_trusted_setup);
     }
 }

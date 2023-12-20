@@ -15,8 +15,10 @@ use blst::{
 };
 use kzg::common_utils::log_2_byte;
 use kzg::eip_4844::BYTES_PER_G1;
+use kzg::msm::precompute::PrecomputationTable;
 use kzg::G1Affine;
 use kzg::G1GetFp;
+use kzg::G1LinComb;
 use kzg::G1ProjAddAffine;
 use kzg::{G1Mul, G1};
 
@@ -261,10 +263,17 @@ impl G1Mul<FsFr> for FsG1 {
         }
         result
     }
+}
 
-    fn g1_lincomb(points: &[Self], scalars: &[FsFr], len: usize) -> Self {
+impl G1LinComb<FsFr, FsFp, FsG1Affine> for FsG1 {
+    fn g1_lincomb(
+        points: &[Self],
+        scalars: &[FsFr],
+        len: usize,
+        precomputation: Option<&PrecomputationTable<FsFr, Self, FsFp, FsG1Affine>>,
+    ) -> Self {
         let mut out = FsG1::default();
-        g1_linear_combination(&mut out, points, scalars, len);
+        g1_linear_combination(&mut out, points, scalars, len, precomputation);
         out
     }
 }

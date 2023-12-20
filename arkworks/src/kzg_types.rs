@@ -27,9 +27,10 @@ use ark_std::UniformRand;
 use blst::{blst_fp, blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
+use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
-    G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
+    G1LinComb, G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
 };
 use std::ops::{AddAssign, Mul, Neg, Sub};
 
@@ -385,10 +386,17 @@ impl G1Mul<ArkFr> for ArkG1 {
     fn mul(&self, b: &ArkFr) -> Self {
         Self(self.0.mul(b.fr))
     }
+}
 
-    fn g1_lincomb(points: &[Self], scalars: &[ArkFr], len: usize) -> Self {
+impl G1LinComb<ArkFr, ArkFp, ArkG1Affine> for ArkG1 {
+    fn g1_lincomb(
+        points: &[Self],
+        scalars: &[ArkFr],
+        len: usize,
+        precomputation: Option<&PrecomputationTable<ArkFr, Self, ArkFp, ArkG1Affine>>,
+    ) -> Self {
         let mut out = Self::default();
-        g1_linear_combination(&mut out, points, scalars, len);
+        g1_linear_combination(&mut out, points, scalars, len, precomputation);
         out
     }
 }
@@ -611,7 +619,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 }
 
-impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
+impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine> for LKZGSettings {
     fn new(
         secret_g1: &[ArkG1],
         secret_g2: &[ArkG2],
@@ -622,6 +630,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
+            precomputation: precompute(secret_g1).ok().flatten(),
         })
     }
 
@@ -631,7 +640,13 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
         }
 
         let mut out = ArkG1::default();
-        g1_linear_combination(&mut out, &self.secret_g1, &p.coeffs, p.coeffs.len());
+        g1_linear_combination(
+            &mut out,
+            &self.secret_g1,
+            &p.coeffs,
+            p.coeffs.len(),
+            self.get_precomputation(),
+        );
 
         Ok(out)
     }
@@ -775,6 +790,10 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData> for LKZGSettings {
 
     fn get_g2_secret(&self) -> &[ArkG2] {
         &self.secret_g2
+    }
+
+    fn get_precomputation(&self) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>> {
+        self.precomputation.as_ref()
     }
 }
 

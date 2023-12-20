@@ -6,12 +6,24 @@ use crate::kzg_types::ArkG1ProjAddAffine;
 
 use kzg::msm::msm_impls::msm;
 
+use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
-pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[ArkFr], len: usize) {
-    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(points, scalars, len);
+pub fn g1_linear_combination(
+    out: &mut ArkG1,
+    points: &[ArkG1],
+    scalars: &[ArkFr],
+    len: usize,
+    precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
+) {
+    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+        points,
+        scalars,
+        len,
+        precomputation,
+    );
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {

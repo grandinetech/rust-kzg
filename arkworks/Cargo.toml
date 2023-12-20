@@ -40,6 +40,12 @@ rand = [
     "dep:rand",
     "kzg/rand",
 ]
+bgmw = [
+    "kzg/bgmw"
+]
+arkmsm = [
+    "kzg/arkmsm"
+]
 
 [[bench]]
 name = "fft"

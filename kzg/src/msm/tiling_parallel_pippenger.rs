@@ -6,14 +6,14 @@ use core::{
 use alloc::sync::Arc;
 use std::sync::{mpsc::channel, Barrier};
 
-use crate::{msm::tiling_pippenger_ops::num_bits, G1Affine, G1Fp, G1GetFp, Scalar256, G1};
+use crate::{G1Affine, G1Fp, G1GetFp, Scalar256, G1};
 
 use super::{
     cell::Cell,
+    parallel_pippenger_utils::breakdown,
+    pippenger_utils::{pippenger_window_size, P1XYZZ},
     thread_pool::{da_pool, ThreadPoolExt},
-    tiling_pippenger_ops::{
-        p1s_tile_pippenger_pub, pippenger_window_size, tiling_pippenger, P1XYZZ,
-    },
+    tiling_pippenger_ops::{p1s_tile_pippenger_pub, tiling_pippenger},
 };
 
 struct Tile {
@@ -183,38 +183,4 @@ pub fn tiling_parallel_pippenger<
         }
     }
     ret
-}
-
-const fn breakdown(window: usize, ncpus: usize) -> (usize, usize, usize) {
-    const NBITS: usize = 255;
-    let mut nx: usize;
-    let mut wnd: usize;
-
-    if NBITS > window * ncpus {
-        nx = 1;
-        wnd = num_bits(ncpus / 4);
-        if (window + wnd) > 18 {
-            wnd = window - wnd;
-        } else {
-            wnd = (NBITS / window + ncpus - 1) / ncpus;
-            if (NBITS / (window + 1) + ncpus - 1) / ncpus < wnd {
-                wnd = window + 1;
-            } else {
-                wnd = window;
-            }
-        }
-    } else {
-        nx = 2;
-        wnd = window - 2;
-        while (NBITS / wnd + 1) * nx < ncpus {
-            nx += 1;
-            wnd = window - num_bits(3 * nx / 2);
-        }
-        nx -= 1;
-        wnd = window - num_bits(3 * nx / 2);
-    }
-    let ny = NBITS / wnd + 1;
-    wnd = NBITS / ny + 1;
-
-    (nx, ny, wnd)
 }

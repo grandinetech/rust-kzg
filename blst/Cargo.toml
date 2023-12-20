@@ -37,6 +37,12 @@ parallel = [
     "dep:rayon",
     "kzg/parallel"
 ]
+bgmw = [
+    "kzg/bgmw"
+]
+arkmsm = [
+    "kzg/arkmsm"
+]
 
 [[bench]]
 name = "das"

@@ -27,6 +27,8 @@ mod tests {
     use rust_kzg_blst::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_blst::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_blst::types::fft_settings::expand_root_of_unity;
+    use rust_kzg_blst::types::fp::FsFp;
+    use rust_kzg_blst::types::g1::FsG1Affine;
     use rust_kzg_blst::types::{
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
         poly::FsPoly,
@@ -44,7 +46,16 @@ mod tests {
 
     #[test]
     pub fn blob_to_kzg_commitment_test_() {
-        blob_to_kzg_commitment_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+        blob_to_kzg_commitment_test::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
         );
@@ -52,7 +63,16 @@ mod tests {
 
     #[test]
     pub fn compute_kzg_proof_test_() {
-        compute_kzg_proof_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+        compute_kzg_proof_test::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
             &blob_to_polynomial,
@@ -69,6 +89,8 @@ mod tests {
             FsPoly,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -89,6 +111,8 @@ mod tests {
             FsPoly,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -109,6 +133,8 @@ mod tests {
             FsPoly,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -129,6 +155,8 @@ mod tests {
             FsPoly,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -147,6 +175,8 @@ mod tests {
             FsPoly,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -158,7 +188,16 @@ mod tests {
 
     #[test]
     pub fn verify_kzg_proof_batch_test_() {
-        verify_kzg_proof_batch_test::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+        verify_kzg_proof_batch_test::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
@@ -176,6 +215,8 @@ mod tests {
             FsPoly,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -187,7 +228,16 @@ mod tests {
 
     #[test]
     pub fn test_vectors_blob_to_kzg_commitment_() {
-        test_vectors_blob_to_kzg_commitment::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+        test_vectors_blob_to_kzg_commitment::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
@@ -196,7 +246,16 @@ mod tests {
 
     #[test]
     pub fn test_vectors_compute_kzg_proof_() {
-        test_vectors_compute_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+        test_vectors_compute_kzg_proof::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
             &bytes_to_blob,
@@ -205,7 +264,16 @@ mod tests {
 
     #[test]
     pub fn test_vectors_compute_blob_kzg_proof_() {
-        test_vectors_compute_blob_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+        test_vectors_compute_blob_kzg_proof::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
             &compute_blob_kzg_proof_rust,
@@ -214,15 +282,30 @@ mod tests {
 
     #[test]
     pub fn test_vectors_verify_kzg_proof_() {
-        test_vectors_verify_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
-            &load_trusted_setup_filename_rust,
-            &verify_kzg_proof_rust,
-        );
+        test_vectors_verify_kzg_proof::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(&load_trusted_setup_filename_rust, &verify_kzg_proof_rust);
     }
 
     #[test]
     pub fn test_vectors_verify_blob_kzg_proof_() {
-        test_vectors_verify_blob_kzg_proof::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings>(
+        test_vectors_verify_blob_kzg_proof::<
+            FsFr,
+            FsG1,
+            FsG2,
+            FsPoly,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
             &verify_blob_kzg_proof_rust,
@@ -238,6 +321,8 @@ mod tests {
             FsPoly,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -271,6 +356,8 @@ mod tests {
             FsG2,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(&evaluate_polynomial_in_evaluation_form);
     }
 
@@ -283,6 +370,8 @@ mod tests {
             FsG2,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -295,6 +384,8 @@ mod tests {
             FsG2,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -307,12 +398,23 @@ mod tests {
             FsG2,
             FsFFTSettings,
             FsKZGSettings,
+            FsFp,
+            FsG1Affine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
     #[test]
     pub fn validate_batched_input() {
-        validate_batched_input_test::<FsPoly, FsFr, FsG1, FsG2, FsFFTSettings, FsKZGSettings>(
+        validate_batched_input_test::<
+            FsPoly,
+            FsFr,
+            FsG1,
+            FsG2,
+            FsFFTSettings,
+            FsKZGSettings,
+            FsFp,
+            FsG1Affine,
+        >(
             &verify_blob_kzg_proof_batch_rust,
             &load_trusted_setup_filename_rust,
         )
