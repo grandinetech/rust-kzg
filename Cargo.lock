@@ -1201,6 +1201,7 @@ dependencies = [
  "once_cell",
  "rand",
  "rayon",
+ "siphasher",
  "smallvec",
 ]
 
@@ -1393,6 +1394,12 @@ dependencies = [
  "keccak",
  "opaque-debug",
 ]
+
+[[package]]
+name = "siphasher"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54ac45299ccbd390721be55b412d41931911f654fa99e2cb8bfb57184b2061fe"
 
 [[package]]
 name = "smallvec"
