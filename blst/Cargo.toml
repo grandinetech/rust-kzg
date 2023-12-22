@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-blst = { git = 'https://github.com/supranational/blst.git' }
+blst = "0.3.11"
 kzg = { path = "../kzg", default-features = false }
 libc = { version = "0.2.148", default-features = false }
 once_cell = { version = "1.18.0", features = ["critical-section"], default-features = false }
