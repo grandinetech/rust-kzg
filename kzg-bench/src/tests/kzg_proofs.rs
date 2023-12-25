@@ -1,4 +1,4 @@
-use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
+use kzg::{FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2};
 
 pub const SECRET: [u8; 32usize] = [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
@@ -8,11 +8,13 @@ pub const SECRET: [u8; 32usize] = [
 /// Check that both FFT implementations produce the same results
 pub fn proof_single<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
@@ -52,11 +54,13 @@ pub fn proof_single<
 
 pub fn commit_to_nil_poly<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
@@ -78,11 +82,13 @@ pub fn commit_to_nil_poly<
 //#[should_panic(expected = "Poly given is too long")]
 pub fn commit_to_too_long_poly<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
@@ -103,11 +109,13 @@ pub fn commit_to_too_long_poly<
 // Instead of panicking, commit should return an err
 pub fn commit_to_too_long_poly_returns_err<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {
@@ -127,11 +135,13 @@ pub fn commit_to_too_long_poly_returns_err<
 //It was not verified that this test works, use with caution
 pub fn proof_multi<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
 ) {

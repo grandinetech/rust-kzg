@@ -1,6 +1,6 @@
 use crate::consts::G1_IDENTITY;
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
-use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
+use crate::kzg_types::{ArkFp, ArkFr as BlstFr, ArkG1, ArkG1Affine, ArkG2};
 use crate::utils::PolyData;
 use kzg::common_utils::reverse_bit_order;
 use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1};
@@ -25,7 +25,8 @@ pub struct KzgFK20MultiSettings {
     pub length: usize,
 }
 
-impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
+impl
+    FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings, ArkFp, ArkG1Affine>
     for KzgFK20SingleSettings
 {
     fn new(ks: &KZGSettings, n2: usize) -> Result<Self, String> {
@@ -84,7 +85,7 @@ impl FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings
     }
 }
 
-impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings>
+impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings, ArkFp, ArkG1Affine>
     for KzgFK20MultiSettings
 {
     fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {

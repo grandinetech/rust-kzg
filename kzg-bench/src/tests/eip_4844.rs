@@ -9,7 +9,7 @@ use kzg::eip_4844::{
     BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
     FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_PATH,
 };
-use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
+use kzg::{FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2};
 use pathdiff::diff_paths;
 use rand::rngs::{OsRng, ThreadRng};
 use rand::Rng;
@@ -82,11 +82,13 @@ pub fn compute_powers_test<TFr: Fr>(compute_powers: &dyn Fn(&TFr, usize) -> Vec<
 #[allow(clippy::type_complexity)]
 pub fn blob_to_kzg_commitment_test<
     TFr: Fr + Copy,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -118,11 +120,13 @@ pub fn blob_to_kzg_commitment_test<
 #[allow(clippy::type_complexity)]
 pub fn compute_kzg_proof_test<
     TFr: Fr + Copy,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
@@ -169,11 +173,13 @@ pub fn compute_kzg_proof_test<
 #[allow(clippy::type_complexity)]
 pub fn compute_and_verify_kzg_proof_round_trip_test<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -224,11 +230,13 @@ pub fn compute_and_verify_kzg_proof_round_trip_test<
 #[allow(clippy::type_complexity)]
 pub fn compute_and_verify_kzg_proof_within_domain_test<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -276,11 +284,13 @@ pub fn compute_and_verify_kzg_proof_within_domain_test<
 #[allow(clippy::type_complexity)]
 pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -331,11 +341,13 @@ pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test<
 #[allow(clippy::type_complexity)]
 pub fn compute_and_verify_blob_kzg_proof_test<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -364,11 +376,13 @@ pub fn compute_and_verify_blob_kzg_proof_test<
 #[allow(clippy::type_complexity)]
 pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -400,11 +414,13 @@ pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test<
 #[allow(clippy::type_complexity)]
 pub fn verify_kzg_proof_batch_test<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -458,11 +474,13 @@ pub fn verify_kzg_proof_batch_test<
 #[allow(clippy::type_complexity)]
 pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -517,11 +535,13 @@ const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str =
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_blob_to_kzg_commitment<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
@@ -567,11 +587,13 @@ pub fn test_vectors_blob_to_kzg_commitment<
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_compute_kzg_proof<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
@@ -630,11 +652,13 @@ pub fn test_vectors_compute_kzg_proof<
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_compute_blob_kzg_proof<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
@@ -691,11 +715,13 @@ pub fn test_vectors_compute_blob_kzg_proof<
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_verify_kzg_proof<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
@@ -759,11 +785,13 @@ pub fn test_vectors_verify_kzg_proof<
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_verify_blob_kzg_proof<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
@@ -821,11 +849,13 @@ pub fn test_vectors_verify_blob_kzg_proof<
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_verify_blob_kzg_proof_batch<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
@@ -915,10 +945,12 @@ pub fn compute_kzg_proof_incorrect_blob_length_test<TFr: Fr, TPoly: Poly<TFr>>(
 pub fn compute_kzg_proof_incorrect_poly_length_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     evaluate_polynomial_in_evaluation_form: &dyn Fn(
         &TPoly,
@@ -939,10 +971,12 @@ pub fn compute_kzg_proof_incorrect_poly_length_test<
 pub fn compute_kzg_proof_empty_blob_vector_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     verify_blob_kzg_proof_batch: &dyn Fn(
         &[Vec<TFr>],
@@ -965,10 +999,12 @@ pub fn compute_kzg_proof_empty_blob_vector_test<
 pub fn compute_kzg_proof_incorrect_commitments_len_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     verify_blob_kzg_proof_batch: &dyn Fn(
         &[Vec<TFr>],
@@ -994,10 +1030,12 @@ pub fn compute_kzg_proof_incorrect_commitments_len_test<
 pub fn compute_kzg_proof_incorrect_proofs_len_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     verify_blob_kzg_proof_batch: &dyn Fn(
         &[Vec<TFr>],
@@ -1023,10 +1061,12 @@ pub fn compute_kzg_proof_incorrect_proofs_len_test<
 pub fn validate_batched_input_test<
     TPoly: Poly<TFr>,
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     verify_blob_kzg_proof_batch: &dyn Fn(
         &[Vec<TFr>],

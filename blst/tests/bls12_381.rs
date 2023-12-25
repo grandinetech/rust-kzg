@@ -10,8 +10,9 @@ mod tests {
     };
 
     use rust_kzg_blst::kzg_proofs::{g1_linear_combination, pairings_verify};
+    use rust_kzg_blst::types::fp::FsFp;
     use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::g1::FsG1;
+    use rust_kzg_blst::types::g1::{FsG1, FsG1Affine};
     use rust_kzg_blst::types::g2::FsG2;
 
     #[test]
@@ -106,12 +107,12 @@ mod tests {
 
     #[test]
     fn g1_make_linear_combination_() {
-        g1_make_linear_combination::<FsFr, FsG1>(&g1_linear_combination)
+        g1_make_linear_combination::<FsFr, FsG1, FsFp, FsG1Affine>(&g1_linear_combination)
     }
 
     #[test]
     fn g1_random_linear_combination_() {
-        g1_random_linear_combination::<FsFr, FsG1>(&g1_linear_combination)
+        g1_random_linear_combination::<FsFr, FsG1, FsFp, FsG1Affine>(&g1_linear_combination)
     }
 
     #[test]
