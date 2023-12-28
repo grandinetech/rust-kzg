@@ -7,23 +7,23 @@ mod tests {
     // uncomment to use the local tests
     //use crate::local_recovery::{recover_random, recover_simple};
 
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_constantine::types::fft_settings::CtFFTSettings;
+    use rust_kzg_constantine::types::fr::CtFr;
+    use rust_kzg_constantine::types::poly::CtPoly;
 
     // Shared tests
     #[test]
     fn recover_simple_() {
-        recover_simple::<FsFr, FsFFTSettings, FsPoly, FsPoly>();
+        recover_simple::<CtFr, CtFFTSettings, CtPoly, CtPoly>();
     }
 
     #[test]
     fn recover_random_() {
-        recover_random::<FsFr, FsFFTSettings, FsPoly, FsPoly>();
+        recover_random::<CtFr, CtFFTSettings, CtPoly, CtPoly>();
     }
 
     #[test]
     fn more_than_half_missing_() {
-        more_than_half_missing::<FsFr, FsFFTSettings, FsPoly, FsPoly>();
+        more_than_half_missing::<CtFr, CtFFTSettings, CtPoly, CtPoly>();
     }
 }

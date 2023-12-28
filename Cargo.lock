@@ -395,9 +395,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 
 [[package]]
+name = "constantine-core"
+version = "0.1.0"
+dependencies = [
+ "constantine-sys",
+]
+
+[[package]]
+name = "constantine-ethereum-kzg"
+version = "0.1.0"
+dependencies = [
+ "constantine-core",
+ "constantine-sys",
+]
+
+[[package]]
 name = "constantine-sys"
 version = "0.1.0"
-source = "git+https://github.com/mratsim/constantine.git?rev=0afccb412e2b0d2a182d13d1f42f6528307802ae#0afccb412e2b0d2a182d13d1f42f6528307802ae"
 
 [[package]]
 name = "cpufeatures"
@@ -1215,6 +1229,9 @@ dependencies = [
 name = "rust-kzg-constantine"
 version = "0.1.0"
 dependencies = [
+ "blst",
+ "constantine-core",
+ "constantine-ethereum-kzg",
  "constantine-sys",
  "criterion 0.5.1",
  "hex",

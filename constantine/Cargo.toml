@@ -4,10 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+blst = { git = 'https://github.com/supranational/blst.git' }
 kzg = { path = "../kzg", default-features = false }
 libc = { version = "0.2.148", default-features = false }
 once_cell = { version = "1.18.0", features = ["critical-section"], default-features = false }
-constantine-sys = { 'git' = 'https://github.com/mratsim/constantine.git', rev = "0afccb412e2b0d2a182d13d1f42f6528307802ae" }
+constantine-ethereum-kzg = { path = "../../constantine/constantine-rust/constantine-ethereum-kzg" }
+constantine-sys = { path = "../../constantine/constantine-rust/constantine-sys" }
+constantine-core = { path = "../../constantine/constantine-rust/constantine-core" }
 rand = { version = "0.8.5", optional = true }
 rayon = { version = "1.8.0", optional = true } 
 smallvec = { version = "1.11.1", features = ["const_generics"] }
@@ -22,6 +25,7 @@ rand = "0.8.5"
 default = [
     "std",
     "rand",
+    "constantine_msm"
 ]
 std = [
     "hex/std",
@@ -36,6 +40,13 @@ rand = [
 parallel = [
     "dep:rayon",
     "kzg/parallel"
+]
+constantine_msm = []
+bgmw = [
+    "kzg/bgmw"
+]
+arkmsm = [
+    "kzg/arkmsm"
 ]
 
 [[bench]]
@@ -68,6 +79,14 @@ harness = false
 
 [[bench]]
 name = "eip_4844"
+harness = false
+
+[[bench]]
+name = "eip_4844_constantine"
+harness = false
+
+[[bench]]
+name = "eip_4844_constantine_no_conv"
 harness = false
 
 [[bench]]

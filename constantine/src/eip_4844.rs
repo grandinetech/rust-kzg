@@ -34,7 +34,7 @@ use crate::types::g1::CtG1;
 use crate::types::g2::CtG2;
 use crate::types::kzg_settings::CtKZGSettings;
 
-use constantine_sys::{bls12_381_g1_jac, bls12_381_g2_jac, bls12_381_fr};
+use constantine_sys::{bls12_381_fr, bls12_381_g1_jac, bls12_381_g2_jac};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -56,7 +56,7 @@ fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<CtFFTSettings
     let roots_of_unity = unsafe {
         core::slice::from_raw_parts(settings.roots_of_unity, settings.max_width as usize)
             .iter()
-            .map(|r| CtFr(*r))
+            .map(|r| CtFr::from_blst_fr(*r))
             .collect::<Vec<CtFr>>()
     };
     let mut expanded_roots_of_unity = roots_of_unity.clone();
@@ -82,7 +82,7 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<CtKZGSettings, Stri
     let secret_g1 = unsafe {
         core::slice::from_raw_parts(c_settings.g1_values, TRUSTED_SETUP_NUM_G1_POINTS)
             .iter()
-            .map(|r| CtG1(*r))
+            .map(|r| CtG1::from_blst_p1(*r))
             .collect::<Vec<CtG1>>()
     };
     Ok(CtKZGSettings {
@@ -91,7 +91,7 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<CtKZGSettings, Stri
         secret_g2: unsafe {
             core::slice::from_raw_parts(c_settings.g2_values, TRUSTED_SETUP_NUM_G2_POINTS)
                 .iter()
-                .map(|r| CtG2(*r))
+                .map(|r| CtG2::from_blst_p2(*r))
                 .collect::<Vec<CtG2>>()
         },
     })
@@ -101,14 +101,14 @@ fn kzg_settings_to_c(rust_settings: &CtKZGSettings) -> CKZGSettings {
     let g1_val = rust_settings
         .secret_g1
         .iter()
-        .map(|r| r.0)
-        .collect::<Vec<bls12_381_g1_jac>>();
+        .map(|r| r.to_blst_p1())
+        .collect::<Vec<blst::blst_p1>>();
     let g1_val = Box::new(g1_val);
     let g2_val = rust_settings
         .secret_g2
         .iter()
-        .map(|r| r.0)
-        .collect::<Vec<bls12_381_g2_jac>>();
+        .map(|r| r.to_blst_p2())
+        .collect::<Vec<blst::blst_p2>>();
     let x = g2_val.into_boxed_slice();
     let stat_ref = Box::leak(x);
     let v = Box::into_raw(g1_val);
@@ -118,8 +118,8 @@ fn kzg_settings_to_c(rust_settings: &CtKZGSettings) -> CKZGSettings {
             .fs
             .roots_of_unity
             .iter()
-            .map(|r| r.0)
-            .collect::<Vec<bls12_381_fr>>(),
+            .map(|r| r.to_blst_fr())
+            .collect::<Vec<blst::blst_fr>>(),
     );
 
     CKZGSettings {

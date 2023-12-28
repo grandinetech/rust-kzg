@@ -9,9 +9,9 @@ mod tests {
         poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test,
         poly_mul_random, poly_test_div,
     };
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_constantine::types::fft_settings::CtFFTSettings;
+    use rust_kzg_constantine::types::fr::CtFr;
+    use rust_kzg_constantine::types::poly::CtPoly;
 
     // Local tests
     // #[test]
@@ -85,71 +85,71 @@ mod tests {
     // Shared tests
     #[test]
     fn create_poly_of_length_ten_() {
-        create_poly_of_length_ten::<FsFr, FsPoly>()
+        create_poly_of_length_ten::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_eval_check_() {
-        poly_eval_check::<FsFr, FsPoly>()
+        poly_eval_check::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_eval_0_check_() {
-        poly_eval_0_check::<FsFr, FsPoly>()
+        poly_eval_0_check::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_eval_nil_check_() {
-        poly_eval_nil_check::<FsFr, FsPoly>()
+        poly_eval_nil_check::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_inverse_simple_0_() {
-        poly_inverse_simple_0::<FsFr, FsPoly>()
+        poly_inverse_simple_0::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_inverse_simple_1_() {
-        poly_inverse_simple_1::<FsFr, FsPoly>()
+        poly_inverse_simple_1::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_test_div_() {
-        poly_test_div::<FsFr, FsPoly>()
+        poly_test_div::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_div_by_zero_() {
-        poly_div_by_zero::<FsFr, FsPoly>()
+        poly_div_by_zero::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_mul_direct_test_() {
-        poly_mul_direct_test::<FsFr, FsPoly>()
+        poly_mul_direct_test::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_mul_fft_test_() {
-        poly_mul_fft_test::<FsFr, FsPoly, FsFFTSettings>()
+        poly_mul_fft_test::<CtFr, CtPoly, CtFFTSettings>()
     }
 
     #[test]
     fn poly_mul_random_() {
-        poly_mul_random::<FsFr, FsPoly, FsFFTSettings>()
+        poly_mul_random::<CtFr, CtPoly, CtFFTSettings>()
     }
 
     #[test]
     fn poly_div_random_() {
-        poly_div_random::<FsFr, FsPoly>()
+        poly_div_random::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_div_long_test_() {
-        poly_div_long_test::<FsFr, FsPoly>()
+        poly_div_long_test::<CtFr, CtPoly>()
     }
 
     #[test]
     fn poly_div_fast_test_() {
-        poly_div_fast_test::<FsFr, FsPoly>()
+        poly_div_fast_test::<CtFr, CtPoly>()
     }
 }

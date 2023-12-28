@@ -1,10 +1,16 @@
-//blst_fp = bls12_381_fp, FsG1 = CtG1, blst_p1 = bls12_381_g1_jac, blst_fr = bls12_381_fr
-use constantine_sys::{bls12_381_fp, bls12_381_fp2, bls12_381_g1_jac, bls12_381_g2_jac};
+//blst_fp = bls12_381_fp, CtG1 = CtG1, blst_p1 = bls12_381_g1_jac, blst_fr = bls12_381_fr
+use constantine_sys::{
+    bls12_381_fp, bls12_381_fp2, bls12_381_g1_aff, bls12_381_g1_jac, bls12_381_g2_jac,
+};
 
 use crate::types::g1::CtG1;
 use crate::types::g2::CtG2;
 
-pub const G1_IDENTITY: CtG1 = CtG1::from_xyz(bls12_381_fp { limbs: [0; 6] },bls12_381_fp { limbs: [0; 6] }, bls12_381_fp { limbs: [0; 6] });
+pub const G1_IDENTITY: CtG1 = CtG1::from_xyz(
+    bls12_381_fp { limbs: [0; 6] },
+    bls12_381_fp { limbs: [0; 6] },
+    bls12_381_fp { limbs: [0; 6] },
+);
 
 pub const SCALE_FACTOR: u64 = 5;
 
@@ -45,6 +51,29 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x694341f608c9dd56, 0xed3a181fabb30adc, 0x1339a815da8b398f, 0x2c6d4e4511657e1e],
     [0x63e7cb4906ffc93f, 0xf070bb00e28a193d, 0xad1715b02e5713b5, 0x4b5371495990693f]
 ];
+
+// pub const G1_GENERATOR_AFFINE: bls12_381_g1_aff = bls12_381_g1_aff {
+//     x: bls12_381_fp {
+//         limbs: [
+//             0x17f1d3a73197d794,
+//             0x2695638c4fa9ac0f,
+//             0xc3688c4f9774b905,
+//             0xa14e3a3f171bac58,
+//             0x6c55e83ff97a1aef,
+//             0xfb3af00adb22c6bb,
+//         ],
+//     },
+//     y: bls12_381_fp {
+//         limbs: [
+//             0xbaac93d50ce72271,
+//             0x8c22631a7918fd8e,
+//             0xdd595f13570725ce,
+//             0x51ac582950405194,
+//             0x0e1c8c3fad0059c0,
+//             0x0bbc3efc5008a26a,
+//         ],
+//     },
+// });
 
 pub const G1_GENERATOR: CtG1 = CtG1(bls12_381_g1_jac {
     x: bls12_381_fp {
@@ -213,7 +242,7 @@ pub const G2_NEGATIVE_GENERATOR: CtG2 = CtG2(bls12_381_g2_jac {
         ],
     },
     y: bls12_381_fp2 {
-        fp: [
+        c: [
             bls12_381_fp {
                 limbs: [
                     0x6d8bf5079fb65e61,
@@ -237,7 +266,7 @@ pub const G2_NEGATIVE_GENERATOR: CtG2 = CtG2(bls12_381_g2_jac {
         ],
     },
     z: bls12_381_fp2 {
-        fp: [
+        c: [
             bls12_381_fp {
                 limbs: [
                     0x760900000002fffd,

@@ -9,10 +9,10 @@ mod tests {
         p2_add_or_dbl_works, p2_mul_works, p2_sub_works, pairings_work,
     };
 
-    use rust_kzg_blst::kzg_proofs::{g1_linear_combination, pairings_verify};
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::g1::FsG1;
-    use rust_kzg_blst::types::g2::FsG2;
+    use rust_kzg_constantine::kzg_proofs::{g1_linear_combination, pairings_verify};
+    use rust_kzg_constantine::types::fr::CtFr;
+    use rust_kzg_constantine::types::g1::CtG1;
+    use rust_kzg_constantine::types::g2::CtG2;
 
     #[test]
     fn log_2_byte_works_() {
@@ -21,101 +21,101 @@ mod tests {
 
     #[test]
     fn fr_is_null_works_() {
-        fr_is_null_works::<FsFr>()
+        fr_is_null_works::<CtFr>()
     }
 
     #[test]
     fn fr_is_zero_works_() {
-        fr_is_zero_works::<FsFr>()
+        fr_is_zero_works::<CtFr>()
     }
 
     #[test]
     fn fr_is_one_works_() {
-        fr_is_one_works::<FsFr>()
+        fr_is_one_works::<CtFr>()
     }
 
     #[test]
     fn fr_from_uint64_works_() {
-        fr_from_uint64_works::<FsFr>()
+        fr_from_uint64_works::<CtFr>()
     }
 
     #[test]
     fn fr_equal_works_() {
-        fr_equal_works::<FsFr>()
+        fr_equal_works::<CtFr>()
     }
 
     #[test]
     fn fr_negate_works_() {
-        fr_negate_works::<FsFr>()
+        fr_negate_works::<CtFr>()
     }
 
     #[test]
     fn fr_pow_works_() {
-        fr_pow_works::<FsFr>()
+        fr_pow_works::<CtFr>()
     }
 
     #[test]
     fn fr_div_works_() {
-        fr_div_works::<FsFr>()
+        fr_div_works::<CtFr>()
     }
 
     #[test]
     fn fr_div_by_zero_() {
-        fr_div_by_zero::<FsFr>()
+        fr_div_by_zero::<CtFr>()
     }
 
     #[test]
     fn fr_uint64s_roundtrip_() {
-        fr_uint64s_roundtrip::<FsFr>()
+        fr_uint64s_roundtrip::<CtFr>()
     }
 
     #[test]
     fn p1_mul_works_() {
-        p1_mul_works::<FsFr, FsG1>()
+        p1_mul_works::<CtFr, CtG1>()
     }
 
     #[test]
     fn p1_sub_works_() {
-        p1_sub_works::<FsG1>()
+        p1_sub_works::<CtG1>()
     }
 
     #[test]
     fn p2_add_or_dbl_works_() {
-        p2_add_or_dbl_works::<FsG2>()
+        p2_add_or_dbl_works::<CtG2>()
     }
 
     #[test]
     fn p2_mul_works_() {
-        p2_mul_works::<FsFr, FsG2>()
+        p2_mul_works::<CtFr, CtG2>()
     }
 
     #[test]
     fn p2_sub_works_() {
-        p2_sub_works::<FsG2>()
+        p2_sub_works::<CtG2>()
     }
 
     #[test]
     fn g1_identity_is_infinity_() {
-        g1_identity_is_infinity::<FsG1>()
+        g1_identity_is_infinity::<CtG1>()
     }
 
     #[test]
     fn g1_identity_is_identity_() {
-        g1_identity_is_identity::<FsG1>()
+        g1_identity_is_identity::<CtG1>()
     }
 
     #[test]
     fn g1_make_linear_combination_() {
-        g1_make_linear_combination::<FsFr, FsG1>(&g1_linear_combination)
+        g1_make_linear_combination::<CtFr, CtG1>(&g1_linear_combination)
     }
 
     #[test]
     fn g1_random_linear_combination_() {
-        g1_random_linear_combination::<FsFr, FsG1>(&g1_linear_combination)
+        g1_random_linear_combination::<CtFr, CtG1>(&g1_linear_combination)
     }
 
     #[test]
     fn pairings_work_() {
-        pairings_work::<FsFr, FsG1, FsG2>(&pairings_verify)
+        pairings_work::<CtFr, CtG1, CtG2>(&pairings_verify)
     }
 }

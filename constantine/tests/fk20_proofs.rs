@@ -1,19 +1,19 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fk20_proofs::*;
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fk20_multi_settings::FsFK20MultiSettings;
-    use rust_kzg_blst::types::fk20_single_settings::FsFK20SingleSettings;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::g1::FsG1;
-    use rust_kzg_blst::types::g2::FsG2;
-    use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
-    use rust_kzg_blst::types::poly::FsPoly;
-    use rust_kzg_blst::utils::generate_trusted_setup;
+    use rust_kzg_constantine::types::fft_settings::CtFFTSettings;
+    use rust_kzg_constantine::types::fk20_multi_settings::CtFK20MultiSettings;
+    use rust_kzg_constantine::types::fk20_single_settings::CtFK20SingleSettings;
+    use rust_kzg_constantine::types::fr::CtFr;
+    use rust_kzg_constantine::types::g1::CtG1;
+    use rust_kzg_constantine::types::g2::CtG2;
+    use rust_kzg_constantine::types::kzg_settings::CtKZGSettings;
+    use rust_kzg_constantine::types::poly::CtPoly;
+    use rust_kzg_constantine::utils::generate_trusted_setup;
 
     #[test]
     fn test_fk_single() {
-        fk_single::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings, FsFK20SingleSettings>(
+        fk_single::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFK20SingleSettings>(
             &generate_trusted_setup,
         );
     }
@@ -21,65 +21,65 @@ mod tests {
     #[test]
     fn test_fk_single_strided() {
         fk_single_strided::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFK20SingleSettings,
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFK20SingleSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_settings() {
         fk_multi_settings::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFK20MultiSettings,
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_chunk_len_1_512() {
         fk_multi_chunk_len_1_512::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFK20MultiSettings,
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_chunk_len_16_512() {
         fk_multi_chunk_len_16_512::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFK20MultiSettings,
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 
     #[test]
     fn test_fk_multi_chunk_len_16_16() {
         fk_multi_chunk_len_16_16::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFK20MultiSettings,
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFK20MultiSettings,
         >(&generate_trusted_setup);
     }
 }

@@ -1,4 +1,4 @@
-//blst_fp = bls12_381_fp, FsG1 = CtG1, blst_p1 = bls12_381_g1_jacbls12_381_g1_jac
+//blst_fp = bls12_381_fp, CtG1 = CtG1, blst_p1 = bls12_381_g1_jacbls12_381_g1_jac
 extern crate alloc;
 
 use alloc::string::String;
