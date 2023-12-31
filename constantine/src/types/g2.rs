@@ -22,7 +22,7 @@ use constantine_sys::{
 
 use constantine_sys as constantine;
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct CtG2(pub bls12_381_g2_jac);
 
 impl CtG2 {
@@ -138,8 +138,12 @@ impl G2 for CtG2 {
                 let mut g2 = bls12_381_g2_jac::default();
                 unsafe {
                     // The uncompress routine also checks that the point is on the curve
-                    let res = constantine::ctt_bls12_381_deserialize_g2_compressed(&mut tmp, bytes.as_ptr());
-                    if res != ctt_codec_ecc_status::cttCodecEcc_Success && res != ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity
+                    let res = constantine::ctt_bls12_381_deserialize_g2_compressed(
+                        &mut tmp,
+                        bytes.as_ptr(),
+                    );
+                    if res != ctt_codec_ecc_status::cttCodecEcc_Success
+                        && res != ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity
                     {
                         return Err("Failed to uncompress".to_string());
                     }
@@ -154,7 +158,7 @@ impl G2 for CtG2 {
         let mut tmp = bls12_381_g2_aff::default();
         unsafe {
             constantine::ctt_bls12_381_g2_jac_affine(&mut tmp, &self.0);
-            constantine::ctt_bls12_381_serialize_g2_compressed(out.as_mut_ptr(), &tmp);
+            let _ = constantine::ctt_bls12_381_serialize_g2_compressed(out.as_mut_ptr(), &tmp);
         }
         out
     }

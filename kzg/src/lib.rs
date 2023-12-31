@@ -204,7 +204,7 @@ pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
 }
 
 pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
-    Clone + Default + PartialEq + Sync + Copy + Debug + Send
+    Clone + Default + PartialEq + Sync + Copy + Send + Debug
 {
     const ZERO: Self;
 

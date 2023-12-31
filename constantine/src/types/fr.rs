@@ -7,6 +7,7 @@ use alloc::string::ToString;
 
 use blst::blst_fr;
 use constantine::ctt_codec_scalar_status;
+use core::fmt::{Debug, Formatter};
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
 use kzg::Scalar256;
@@ -19,8 +20,21 @@ use crate::utils::ptr_transmute;
 use crate::utils::ptr_transmute_mut;
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default)]
 pub struct CtFr(pub bls12_381_fr);
+
+impl Debug for CtFr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CtFr({:?})", self.0.limbs)
+    }
+}
+
+impl PartialEq for CtFr {
+    fn eq(&self, other: &Self) -> bool {
+        self.equals(other)
+    }
+}
+impl Eq for CtFr {}
 
 impl CtFr {
     pub fn from_blst_fr(fr: blst::blst_fr) -> Self {
@@ -75,8 +89,12 @@ impl Fr for CtFr {
                 let mut ret: Self = Self::default();
                 let mut bls_scalar = blst::blst_scalar::default();
                 unsafe {
-                    let status = constantine::ctt_bls12_381_deserialize_scalar(ptr_transmute_mut(&mut bls_scalar), bytes.as_ptr());
-                    if status == ctt_codec_scalar_status::cttCodecScalar_ScalarLargerThanCurveOrder {
+                    let status = constantine::ctt_bls12_381_deserialize_scalar(
+                        ptr_transmute_mut(&mut bls_scalar),
+                        bytes.as_ptr(),
+                    );
+                    if status == ctt_codec_scalar_status::cttCodecScalar_ScalarLargerThanCurveOrder
+                    {
                         return Err("Invalid scalar".to_string());
                     }
                     // FIXME: Change when big255->Fr conversion is available

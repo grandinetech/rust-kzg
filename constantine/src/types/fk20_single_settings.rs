@@ -16,7 +16,7 @@ use crate::types::poly::CtPoly;
 use super::fp::CtFp;
 use super::g1::CtG1Affine;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct CtFK20SingleSettings {
     pub kzg_settings: CtKZGSettings,
     pub x_ext_fft: Vec<CtG1>,

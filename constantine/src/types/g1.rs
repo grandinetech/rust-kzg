@@ -7,6 +7,8 @@ use constantine::ctt_codec_ecc_status;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::G1LinComb;
 
+use core::fmt::{Debug, Formatter};
+
 use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
@@ -29,12 +31,22 @@ use constantine_sys::{
 };
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CtG1(pub bls12_381_g1_jac);
 
 impl PartialEq for CtG1 {
     fn eq(&self, other: &Self) -> bool {
         unsafe { constantine::ctt_bls12_381_g1_jac_is_eq(&self.0, &other.0) != 0 }
+    }
+}
+
+impl Debug for CtG1 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "CtG1({:?}, {:?}, {:?})",
+            self.0.x.limbs, self.0.y.limbs, self.0.z.limbs
+        )
     }
 }
 
@@ -94,8 +106,12 @@ impl G1 for CtG1 {
                 let mut g1 = bls12_381_g1_jac::default();
                 unsafe {
                     // The uncompress routine also checks that the point is on the curve
-                    let res = constantine::ctt_bls12_381_deserialize_g1_compressed(&mut tmp, bytes.as_ptr());
-                    if res != ctt_codec_ecc_status::cttCodecEcc_Success && res != ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity
+                    let res = constantine::ctt_bls12_381_deserialize_g1_compressed(
+                        &mut tmp,
+                        bytes.as_ptr(),
+                    );
+                    if res != ctt_codec_ecc_status::cttCodecEcc_Success
+                        && res != ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity
                     {
                         return Err("Failed to uncompress".to_string());
                     }
@@ -113,7 +129,10 @@ impl G1 for CtG1 {
     fn to_bytes(&self) -> [u8; 48] {
         let mut out = [0u8; BYTES_PER_G1];
         unsafe {
-            let _ = constantine::ctt_bls12_381_serialize_g1_compressed(out.as_mut_ptr(), &CtG1Affine::into_affine(&self).0);
+            let _ = constantine::ctt_bls12_381_serialize_g1_compressed(
+                out.as_mut_ptr(),
+                &CtG1Affine::into_affine(self).0,
+            );
         }
         out
     }
@@ -132,7 +151,8 @@ impl G1 for CtG1 {
 
     fn is_valid(&self) -> bool {
         unsafe {
-            constantine::ctt_bls12_381_validate_g1(&CtG1Affine::into_affine(&self).0) == ctt_codec_ecc_status::cttCodecEcc_Success
+            constantine::ctt_bls12_381_validate_g1(&CtG1Affine::into_affine(self).0)
+                == ctt_codec_ecc_status::cttCodecEcc_Success
         }
     }
 
@@ -299,8 +319,20 @@ impl G1GetFp<CtFp> for CtG1 {
 }
 
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+#[derive(Default, Clone, Copy)]
 pub struct CtG1Affine(pub constantine::bls12_381_g1_aff);
+
+impl PartialEq for CtG1Affine {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { constantine::ctt_bls12_381_g1_aff_is_eq(&self.0, &other.0) != 0 }
+    }
+}
+
+impl Debug for CtG1Affine {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CtG1Affine({:?}, {:?})", self.0.x.limbs, self.0.y.limbs)
+    }
+}
 
 impl G1Affine<CtG1, CtFp> for CtG1Affine {
     const ZERO: Self = Self(bls12_381_g1_aff {

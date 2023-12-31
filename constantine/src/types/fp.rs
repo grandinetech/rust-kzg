@@ -1,10 +1,24 @@
 use constantine_sys as constantine;
 use constantine_sys::bls12_381_fp;
+use core::fmt::{Debug, Formatter};
 use kzg::G1Fp;
 
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+#[derive(Default, Clone, Copy)]
 pub struct CtFp(pub bls12_381_fp);
+
+impl PartialEq for CtFp {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { constantine::ctt_bls12_381_fp_is_eq(&self.0, &other.0) != 0 }
+    }
+}
+
+impl Debug for CtFp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CtFp({:?})", self.0.limbs)
+    }
+}
+
 impl G1Fp for CtFp {
     const ONE: Self = Self(bls12_381_fp {
         limbs: [

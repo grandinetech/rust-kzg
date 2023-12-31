@@ -10,7 +10,7 @@ use kzg::{FFTSettings, Fr};
 use crate::consts::SCALE2_ROOT_OF_UNITY;
 use crate::types::fr::CtFr;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CtFFTSettings {
     pub max_width: usize,
     pub root_of_unity: CtFr,
