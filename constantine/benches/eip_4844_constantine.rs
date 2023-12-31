@@ -18,14 +18,14 @@ use rust_kzg_constantine::{
         mixed_kzg_settings::MixedKzgSettings,
     },
     types::{
-        fft_settings::CtFFTSettings, fr::CtFr, g1::CtG1, g2::CtG2, kzg_settings::CtKZGSettings,
-        poly::CtPoly,
+        fft_settings::CtFFTSettings, fr::CtFr, g1::{CtG1, CtG1Affine}, g2::CtG2, kzg_settings::CtKZGSettings,
+        poly::CtPoly, fp::CtFp,
     },
 };
 
 fn bench_eip_4844_constantine_(c: &mut Criterion) {
     // Mixed KZG eip_4844 test - lots of conversions so not indicative of 'true' performance
-    bench_eip_4844::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, MixedKzgSettings>(
+    bench_eip_4844::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, MixedKzgSettings, CtFp, CtG1Affine>(
         c,
         &load_trusted_setup_filename_mixed,
         &blob_to_kzg_commitment_mixed,

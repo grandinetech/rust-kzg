@@ -8,13 +8,13 @@ use kzg_bench::benches::eip_4844::bench_eip_4844;
 use rust_kzg_constantine::{
     eip_4844::load_trusted_setup_filename_rust,
     types::{
-        fft_settings::CtFFTSettings, fr::CtFr, g1::CtG1, g2::CtG2, kzg_settings::CtKZGSettings,
-        poly::CtPoly,
+        fft_settings::CtFFTSettings, fr::CtFr, g1::{CtG1, CtG1Affine}, g2::CtG2, kzg_settings::CtKZGSettings,
+        poly::CtPoly, fp::CtFp,
     },
 };
 
 fn bench_eip_4844_(c: &mut Criterion) {
-    bench_eip_4844::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+    bench_eip_4844::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
         c,
         &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,

@@ -27,8 +27,9 @@ mod tests {
     use rust_kzg_constantine::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_constantine::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_constantine::types::fft_settings::expand_root_of_unity;
+    use rust_kzg_constantine::types::g1::CtG1Affine;
     use rust_kzg_constantine::types::{
-        fft_settings::CtFFTSettings, fr::CtFr, g1::CtG1, g2::CtG2, kzg_settings::CtKZGSettings,
+        fft_settings::CtFFTSettings, fr::CtFr, g1::CtG1, g2::CtG2, kzg_settings::CtKZGSettings, fp::CtFp,
         poly::CtPoly,
     };
 
@@ -44,7 +45,7 @@ mod tests {
 
     #[test]
     pub fn blob_to_kzg_commitment_test_() {
-        blob_to_kzg_commitment_test::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        blob_to_kzg_commitment_test::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
         );
@@ -52,7 +53,7 @@ mod tests {
 
     #[test]
     pub fn compute_kzg_proof_test_() {
-        compute_kzg_proof_test::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        compute_kzg_proof_test::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
             &blob_to_polynomial,
@@ -68,7 +69,7 @@ mod tests {
             CtG2,
             CtPoly,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -88,7 +89,7 @@ mod tests {
             CtG2,
             CtPoly,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -108,7 +109,7 @@ mod tests {
             CtG2,
             CtPoly,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -128,7 +129,7 @@ mod tests {
             CtG2,
             CtPoly,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -146,7 +147,7 @@ mod tests {
             CtG2,
             CtPoly,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -158,7 +159,7 @@ mod tests {
 
     #[test]
     pub fn verify_kzg_proof_batch_test_() {
-        verify_kzg_proof_batch_test::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        verify_kzg_proof_batch_test::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
@@ -175,7 +176,7 @@ mod tests {
             CtG2,
             CtPoly,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -187,7 +188,7 @@ mod tests {
 
     #[test]
     pub fn test_vectors_blob_to_kzg_commitment_() {
-        test_vectors_blob_to_kzg_commitment::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        test_vectors_blob_to_kzg_commitment::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
             &bytes_to_blob,
@@ -196,7 +197,7 @@ mod tests {
 
     #[test]
     pub fn test_vectors_compute_kzg_proof_() {
-        test_vectors_compute_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        test_vectors_compute_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
             &bytes_to_blob,
@@ -205,7 +206,7 @@ mod tests {
 
     #[test]
     pub fn test_vectors_compute_blob_kzg_proof_() {
-        test_vectors_compute_blob_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        test_vectors_compute_blob_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
             &compute_blob_kzg_proof_rust,
@@ -214,7 +215,7 @@ mod tests {
 
     #[test]
     pub fn test_vectors_verify_kzg_proof_() {
-        test_vectors_verify_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        test_vectors_verify_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &verify_kzg_proof_rust,
         );
@@ -222,7 +223,7 @@ mod tests {
 
     #[test]
     pub fn test_vectors_verify_blob_kzg_proof_() {
-        test_vectors_verify_blob_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings>(
+        test_vectors_verify_blob_kzg_proof::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
             &verify_blob_kzg_proof_rust,
@@ -237,7 +238,7 @@ mod tests {
             CtG2,
             CtPoly,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -270,7 +271,7 @@ mod tests {
             CtG1,
             CtG2,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(&evaluate_polynomial_in_evaluation_form);
     }
 
@@ -282,7 +283,7 @@ mod tests {
             CtG1,
             CtG2,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -294,7 +295,7 @@ mod tests {
             CtG1,
             CtG2,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -306,13 +307,13 @@ mod tests {
             CtG1,
             CtG2,
             CtFFTSettings,
-            CtKZGSettings,
+            CtKZGSettings, CtFp, CtG1Affine
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
     #[test]
     pub fn validate_batched_input() {
-        validate_batched_input_test::<CtPoly, CtFr, CtG1, CtG2, CtFFTSettings, CtKZGSettings>(
+        validate_batched_input_test::<CtPoly, CtFr, CtG1, CtG2, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
             &verify_blob_kzg_proof_batch_rust,
             &load_trusted_setup_filename_rust,
         )

@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-11]
         # Excluding mcl for now due to they have different project layout
-        backend: [blst, zkcrypto, arkworks]
+        backend: [blst, zkcrypto, arkworks, constantine]
         include:
           # Setup exec_once_per_backend flag
           - os: ubuntu-latest
@@ -22,6 +22,8 @@ jobs:
           - backend: zkcrypto
             support_ckzg: true
           - backend: arkworks
+            support_ckzg: true
+          - backend: constantine
             support_ckzg: true
 
     steps:

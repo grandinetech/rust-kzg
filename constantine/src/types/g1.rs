@@ -3,7 +3,10 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
+use kzg::G1LinComb;
+use kzg::msm::precompute::PrecomputationTable;
 
+use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
 use kzg::common_utils::log_2_byte;
@@ -221,10 +224,14 @@ impl G1Mul<CtFr> for CtG1 {
         }
         result
     }
+}
 
-    fn g1_lincomb(points: &[Self], scalars: &[CtFr], len: usize) -> Self {
+impl G1LinComb<CtFr, CtFp, CtG1Affine> for CtG1 {
+    fn g1_lincomb(
+        points: &[Self], scalars: &[CtFr], len: usize, precomputation: Option<&PrecomputationTable<CtFr, Self, CtFp, CtG1Affine>>,
+    ) -> Self {
         let mut out = CtG1::default();
-        crate::kzg_proofs::g1_linear_combination(&mut out, points, scalars, len);
+        g1_linear_combination(&mut out, points, scalars, len, precomputation);
         out
     }
 }

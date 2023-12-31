@@ -14,6 +14,9 @@ use crate::types::g2::CtG2;
 use crate::types::kzg_settings::CtKZGSettings;
 use crate::types::poly::CtPoly;
 
+use super::fp::CtFp;
+use super::g1::CtG1Affine;
+
 pub struct CtFK20MultiSettings {
     pub kzg_settings: CtKZGSettings,
     pub chunk_len: usize,
@@ -40,7 +43,7 @@ impl Default for CtFK20MultiSettings {
     }
 }
 
-impl FK20MultiSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtKZGSettings>
+impl FK20MultiSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtKZGSettings, CtFp, CtG1Affine>
     for CtFK20MultiSettings
 {
     #[allow(clippy::many_single_char_names)]

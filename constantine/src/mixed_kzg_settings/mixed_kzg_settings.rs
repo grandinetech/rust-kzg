@@ -1,8 +1,8 @@
 use std::path::Path;
 
 use crate::types::{
-    fft_settings::CtFFTSettings, fr::CtFr, g1::CtG1, g2::CtG2,
-    kzg_settings::CtKZGSettings as GenericContext, poly::CtPoly,
+    fft_settings::CtFFTSettings, fr::CtFr, g1::{CtG1, CtG1Affine}, g2::CtG2,
+    kzg_settings::CtKZGSettings as GenericContext, poly::CtPoly, fp::CtFp,
 };
 use constantine_core::Threadpool as CttThreadpool;
 use constantine_ethereum_kzg::EthKzgContext as CttEthKzgContext;
@@ -35,7 +35,7 @@ fn get_thr_count() -> usize {
     return 1;
 }
 
-// Constantine requires loading from path, but for UT not always possible
+// Constantine requires loading from path + doesn't expose underlying secrets, but sometimes required for tests
 pub enum MixedKzgSettings {
     Constantine(CttContext),
     Generic(GenericContext),
@@ -80,15 +80,10 @@ impl MixedKzgSettings {
     pub fn new_from_path(path: &Path) -> Result<Self, String> {
         let res = CttEthKzgContext::load_trusted_setup(path);
         match res {
-            // #[cfg(feature = "parallel")]
             Ok(constantine_context) => Ok(Self::Constantine(CttContext {
                 ctx: constantine_context,
                 pool: CttThreadpool::new(get_thr_count()),
             })),
-            // #[cfg(not(feature = "parallel"))]
-            // Ok(constantine_context) => Ok(Self::Constantine(CttContext {
-            //     ctx: constantine_context,
-            // })),
             Err(x) => Err(x.to_string()),
         }
     }
@@ -110,7 +105,7 @@ impl Clone for MixedKzgSettings {
 }
 
 // Allow using MixedKzgSettings as KZGSettings stand-in
-impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly> for MixedKzgSettings {
+impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for MixedKzgSettings {
     fn new(
         secret_g1: &[CtG1],
         secret_g2: &[CtG2],
@@ -230,6 +225,15 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly> for MixedKzgSettings {
                 panic!("Context not in generic format")
             }
             MixedKzgSettings::Generic(generic_context) => generic_context.get_g2_secret(),
+        }
+    }
+
+    fn get_precomputation(&self) -> Option<&kzg::msm::precompute::PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
+        match self {
+            MixedKzgSettings::Constantine(constantine_context) => {
+                panic!("Context not in generic format")
+            }
+            MixedKzgSettings::Generic(generic_context) => generic_context.get_precomputation(),
         }
     }
 }

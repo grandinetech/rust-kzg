@@ -94,6 +94,7 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<CtKZGSettings, Stri
                 .map(|r| CtG2::from_blst_p2(*r))
                 .collect::<Vec<CtG2>>()
         },
+        precomputation: None
     })
 }
 

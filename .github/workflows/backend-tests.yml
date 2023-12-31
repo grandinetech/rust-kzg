@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-11]
         # Excluding mcl for now due to they have different project layout
-        backend: [blst, zkcrypto, arkworks]
+        backend: [blst, zkcrypto, arkworks, constantine]
         include:
           # Set default clippy flag to all-features
           - clippy-flag: --all-features
@@ -35,6 +35,10 @@ jobs:
             clippy-flag: --features=default,std,rand,parallel
           - backend: arkworks
             support_wasm: true
+            support_ckzg: true
+          - backend: constantine
+            # FIXME: Check for wasm support
+            support_wasm: false
             support_ckzg: true
 
     steps:

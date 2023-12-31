@@ -24,7 +24,7 @@ index bdd5385..155fc81 100644
 +// #endif
 +// #include <stdlib.h>
 +// #include "c_kzg_4844.h"
-+// #cgo LDFLAGS: -L${SRCDIR}/../../../../target/release -l:rust_kzg_blst.a -lm
++// #cgo LDFLAGS: -L${SRCDIR}/../../../../target/release -l:rust_kzg_constantine.a -lm
  import "C"
  
  import (

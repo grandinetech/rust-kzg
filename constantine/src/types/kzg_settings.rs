@@ -3,6 +3,7 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use kzg::msm::precompute::{PrecomputationTable, precompute};
 use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
@@ -13,14 +14,18 @@ use crate::types::g1::CtG1;
 use crate::types::g2::CtG2;
 use crate::types::poly::CtPoly;
 
+use super::fp::CtFp;
+use super::g1::CtG1Affine;
+
 #[derive(Debug, Clone, Default)]
 pub struct CtKZGSettings {
     pub fs: CtFFTSettings,
     pub secret_g1: Vec<CtG1>,
     pub secret_g2: Vec<CtG2>,
+    pub precomputation: Option<PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>>,
 }
 
-impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly> for CtKZGSettings {
+impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for CtKZGSettings {
     fn new(
         secret_g1: &[CtG1],
         secret_g2: &[CtG2],
@@ -31,6 +36,7 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly> for CtKZGSettings {
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
+            precomputation: precompute(secret_g1).ok().flatten()
         })
     }
 
@@ -40,7 +46,7 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly> for CtKZGSettings {
         }
 
         let mut out = CtG1::default();
-        g1_linear_combination(&mut out, &self.secret_g1, &poly.coeffs, poly.coeffs.len());
+        g1_linear_combination(&mut out, &self.secret_g1, &poly.coeffs, poly.coeffs.len(), self.get_precomputation());
 
         Ok(out)
     }
@@ -187,5 +193,9 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly> for CtKZGSettings {
 
     fn get_g2_secret(&self) -> &[CtG2] {
         &self.secret_g2
+    }
+
+    fn get_precomputation(&self) -> Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
+        self.precomputation.as_ref()
     }
 }

@@ -4,8 +4,9 @@ mod tests {
     use rust_kzg_constantine::types::fft_settings::CtFFTSettings;
     use rust_kzg_constantine::types::fk20_multi_settings::CtFK20MultiSettings;
     use rust_kzg_constantine::types::fk20_single_settings::CtFK20SingleSettings;
+    use rust_kzg_constantine::types::fp::CtFp;
     use rust_kzg_constantine::types::fr::CtFr;
-    use rust_kzg_constantine::types::g1::CtG1;
+    use rust_kzg_constantine::types::g1::{CtG1, CtG1Affine};
     use rust_kzg_constantine::types::g2::CtG2;
     use rust_kzg_constantine::types::kzg_settings::CtKZGSettings;
     use rust_kzg_constantine::types::poly::CtPoly;
@@ -13,7 +14,7 @@ mod tests {
 
     #[test]
     fn test_fk_single() {
-        fk_single::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFK20SingleSettings>(
+        fk_single::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFK20SingleSettings, CtFp, CtG1Affine>(
             &generate_trusted_setup,
         );
     }
@@ -28,6 +29,7 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20SingleSettings,
+            CtFp, CtG1Affine
         >(&generate_trusted_setup);
     }
 
@@ -41,6 +43,7 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
+            CtFp, CtG1Affine
         >(&generate_trusted_setup);
     }
 
@@ -54,6 +57,7 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
+            CtFp, CtG1Affine
         >(&generate_trusted_setup);
     }
 
@@ -67,6 +71,7 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
+            CtFp, CtG1Affine
         >(&generate_trusted_setup);
     }
 
@@ -80,6 +85,7 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
+            CtFp, CtG1Affine
         >(&generate_trusted_setup);
     }
 }

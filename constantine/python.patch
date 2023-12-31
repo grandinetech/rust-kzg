@@ -39,7 +39,7 @@ index b072833..db37db4 100644
 -                library_dirs=["../../lib"],
 -                libraries=["blst"])])
 +                library_dirs=["../../lib", "../../../../target/release"],
-+                libraries=[":rust_kzg_blst.a"])])
++                libraries=[":rust_kzg_constantine.a"])])
  
  if __name__ == "__main__":
      main()

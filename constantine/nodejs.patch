@@ -65,7 +65,7 @@ index 5ac368e..6cde37f 100644
 -          }
 -        }]
 +      "libraries": [
-+        "<(module_root_dir)/../../../../target/release/rust_kzg_blst.a"
++        "<(module_root_dir)/../../../../target/release/rust_kzg_constantine.a"
        ]
      }
    ]

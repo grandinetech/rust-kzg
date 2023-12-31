@@ -10,7 +10,7 @@ mod tests {
         fp::CtFp,
         g1::{CtG1, CtG1Affine},
     };
-    // use rust_kzg_blst::types::
+    // use rust_kzg_constantine::types::
 
     #[test]
     fn test_phase_one_zero_or_neg_() {

@@ -13,13 +13,16 @@ use crate::types::g2::CtG2;
 use crate::types::kzg_settings::CtKZGSettings;
 use crate::types::poly::CtPoly;
 
+use super::fp::CtFp;
+use super::g1::CtG1Affine;
+
 #[derive(Debug, Clone, Default)]
 pub struct CtFK20SingleSettings {
     pub kzg_settings: CtKZGSettings,
     pub x_ext_fft: Vec<CtG1>,
 }
 
-impl FK20SingleSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtKZGSettings>
+impl FK20SingleSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtKZGSettings, CtFp, CtG1Affine>
     for CtFK20SingleSettings
 {
     fn new(kzg_settings: &CtKZGSettings, n2: usize) -> Result<Self, String> {

@@ -12,6 +12,7 @@ use constantine_sys as constantine;
 use kzg::G1Affine;
 
 use kzg::msm::msm_impls::msm;
+use kzg::msm::precompute::PrecomputationTable;
 
 use crate::types::g2::CtG2;
 use blst::{
@@ -27,7 +28,7 @@ impl PairingVerify<CtG1, CtG2> for CtG1 {
     }
 }
 
-pub fn g1_linear_combination(out: &mut CtG1, points: &[CtG1], scalars: &[CtFr], len: usize) {
+pub fn g1_linear_combination(out: &mut CtG1, points: &[CtG1], scalars: &[CtFr], len: usize, precomputation: Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>>) {
     #[cfg(feature = "constantine_msm")]
     {
         #[cfg(feature = "parallel")]
@@ -58,7 +59,9 @@ pub fn g1_linear_combination(out: &mut CtG1, points: &[CtG1], scalars: &[CtFr], 
     }
 
     #[cfg(not(feature = "constantine_msm"))]
-    *out = msm::<CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine, CtFr>(points, scalars, len);
+    {
+        *out = msm::<CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine, CtFr>(points, scalars, len, precomputation);
+    }
 }
 
 pub fn pairings_verify(a1: &CtG1, a2: &CtG2, b1: &CtG1, b2: &CtG2) -> bool {
