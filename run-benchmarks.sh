@@ -131,6 +131,14 @@ do
   print_msg "rust-kzg with mcl backend (parallel)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path mcl/kzg-bench/Cargo.toml --features rust-kzg-mcl/parallel >> ../"$paste_file"
 
+  # 3.11. rust-kzg with constantine backend (sequential)
+  print_msg "rust-kzg with constantine backend (sequential)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path constantine/kzg-bench/Cargo.toml >> ../"$paste_file"
+
+  # 3.12. rust-kzg with constantine backend (parallel)
+  print_msg "rust-kzg with constantine backend (parallel)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path constantine/kzg-bench/Cargo.toml --features rust-kzg-constantine/parallel >> ../"$paste_file"
+
   # 3.11. rust binding (rust-kzg with blst backend)
   print_msg "rust binding (rust-kzg with blst backend)" ../"$paste_file"
   cd blst/c-kzg-4844/bindings/rust/ || exit

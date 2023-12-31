@@ -33,6 +33,20 @@ jobs:
           distribution: "temurin"
           java-version: "11"
 
+      - if: matrix.backend == 'constantine'
+        uses: jiro4989/setup-nim-action@v1
+        with:
+          nim-version: '1.6.14'
+
+      # Install constantine backend deps
+      - name: "constantine - install deps"
+        if: matrix.backend == 'constantine' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo DEBIAN_FRONTEND='noninteractive' apt-fast install \
+            --no-install-recommends -yq \
+            libgmp-dev \
+            llvm
+
       - uses: actions/setup-go@v2
         with:
           go-version: ^1.19

@@ -30,6 +30,20 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - if: matrix.backend == 'constantine'
+        uses: jiro4989/setup-nim-action@v1
+        with:
+          nim-version: '1.6.14'
+
+      # Install constantine backend deps
+      - name: "constantine - install deps"
+        if: matrix.backend == 'constantine' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo DEBIAN_FRONTEND='noninteractive' apt-fast install \
+            --no-install-recommends -yq \
+            libgmp-dev \
+            llvm
+
       - if: matrix.target == 'windows'
         name: Install MinGW
         run: |
