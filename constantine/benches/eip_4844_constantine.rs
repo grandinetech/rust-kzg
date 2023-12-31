@@ -1,16 +1,11 @@
 // Same as eip_4844.rs, but using constantine implementations of verification functions
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use kzg::eip_4844::{
-    blob_to_kzg_commitment_rust, bytes_to_blob, compute_blob_kzg_proof_rust,
-    compute_kzg_proof_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
-    verify_kzg_proof_rust,
-};
+use kzg::eip_4844::bytes_to_blob;
 use kzg_bench::benches::eip_4844::bench_eip_4844;
 use rust_kzg_constantine::{
-    eip_4844::load_trusted_setup_filename_rust,
-    mixed_kzg_settings::mixed_eip_4844::load_trusted_setup_filename_mixed,
-    mixed_kzg_settings::{
+    mixed_kzg::mixed_eip_4844::load_trusted_setup_filename_mixed,
+    mixed_kzg::{
         mixed_eip_4844::{
             blob_to_kzg_commitment_mixed, compute_blob_kzg_proof_mixed, compute_kzg_proof_mixed,
             verify_blob_kzg_proof_batch_mixed, verify_blob_kzg_proof_mixed, verify_kzg_proof_mixed,
@@ -18,8 +13,12 @@ use rust_kzg_constantine::{
         mixed_kzg_settings::MixedKzgSettings,
     },
     types::{
-        fft_settings::CtFFTSettings, fr::CtFr, g1::{CtG1, CtG1Affine}, g2::CtG2, kzg_settings::CtKZGSettings,
-        poly::CtPoly, fp::CtFp,
+        fft_settings::CtFFTSettings,
+        fp::CtFp,
+        fr::CtFr,
+        g1::{CtG1, CtG1Affine},
+        g2::CtG2,
+        poly::CtPoly,
     },
 };
 

@@ -3,7 +3,7 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use kzg::msm::precompute::{PrecomputationTable, precompute};
+use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
@@ -36,7 +36,7 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
-            precomputation: precompute(secret_g1).ok().flatten()
+            precomputation: precompute(secret_g1).ok().flatten(),
         })
     }
 
@@ -46,7 +46,13 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         }
 
         let mut out = CtG1::default();
-        g1_linear_combination(&mut out, &self.secret_g1, &poly.coeffs, poly.coeffs.len(), self.get_precomputation());
+        g1_linear_combination(
+            &mut out,
+            &self.secret_g1,
+            &poly.coeffs,
+            poly.coeffs.len(),
+            self.get_precomputation(),
+        );
 
         Ok(out)
     }

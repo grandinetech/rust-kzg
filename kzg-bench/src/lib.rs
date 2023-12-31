@@ -1,6 +1,4 @@
-use std::{env::set_current_dir, path::Path};
-
-use kzg::eip_4844::TRUSTED_SETUP_PATH;
+use std::env::set_current_dir;
 
 pub mod benches;
 pub mod test_vectors;

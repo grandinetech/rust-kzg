@@ -4,6 +4,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 
+use constantine::ctt_codec_ecc_status;
 use kzg::eip_4844::BYTES_PER_G2;
 #[cfg(feature = "rand")]
 use kzg::Fr;
@@ -11,16 +12,17 @@ use kzg::{G2Mul, G2};
 
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::types::fr::CtFr;
+use crate::utils::ptr_transmute;
+use crate::utils::ptr_transmute_mut;
 
 use constantine_sys::{
     bls12_381_fp, bls12_381_fp2, bls12_381_g2_aff, bls12_381_g2_jac,
-    ctt_bls12_381_fp2_double_in_place, ctt_bls12_381_g1_jac_is_eq,
-    ctt_bls12_381_g2_jac_cneg_in_place, ctt_bls12_381_g2_jac_from_affine,
+    ctt_bls12_381_g2_jac_from_affine,
 };
 
 use constantine_sys as constantine;
 
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct CtG2(pub bls12_381_g2_jac);
 
 impl CtG2 {
@@ -100,10 +102,10 @@ impl G2Mul<CtFr> for CtG2 {
         let mut result = bls12_381_g2_jac::default();
         let mut scalar = blst::blst_scalar::default();
         unsafe {
-            blst::blst_scalar_from_fr(&mut scalar, core::mem::transmute(&b.0));
+            blst::blst_scalar_from_fr(&mut scalar, ptr_transmute(&b.0));
             blst::blst_p2_mult(
-                core::mem::transmute(&mut result),
-                core::mem::transmute(&self.0),
+                ptr_transmute_mut(&mut result),
+                ptr_transmute(&self.0),
                 scalar.b.as_ptr(),
                 8 * core::mem::size_of::<blst::blst_scalar>(),
             );
@@ -135,10 +137,9 @@ impl G2 for CtG2 {
                 let mut tmp = bls12_381_g2_aff::default();
                 let mut g2 = bls12_381_g2_jac::default();
                 unsafe {
-                    let tmp_ref: &mut blst::blst_p2_affine = core::mem::transmute(&mut tmp);
                     // The uncompress routine also checks that the point is on the curve
-                    if blst::blst_p2_uncompress(tmp_ref, bytes.as_ptr())
-                        != blst::BLST_ERROR::BLST_SUCCESS
+                    let res = constantine::ctt_bls12_381_deserialize_g2_compressed(&mut tmp, bytes.as_ptr());
+                    if res != ctt_codec_ecc_status::cttCodecEcc_Success && res != ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity
                     {
                         return Err("Failed to uncompress".to_string());
                     }
@@ -150,9 +151,10 @@ impl G2 for CtG2 {
 
     fn to_bytes(&self) -> [u8; 96] {
         let mut out = [0u8; BYTES_PER_G2];
+        let mut tmp = bls12_381_g2_aff::default();
         unsafe {
-            let inp_ref: &blst::blst_p2 = core::mem::transmute(&self.0);
-            blst::blst_p2_compress(out.as_mut_ptr(), inp_ref);
+            constantine::ctt_bls12_381_g2_jac_affine(&mut tmp, &self.0);
+            constantine::ctt_bls12_381_serialize_g2_compressed(out.as_mut_ptr(), &tmp);
         }
         out
     }

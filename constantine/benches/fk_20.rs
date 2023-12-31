@@ -13,17 +13,31 @@ use rust_kzg_constantine::types::poly::CtPoly;
 use rust_kzg_constantine::utils::generate_trusted_setup;
 
 fn bench_fk_single_da_(c: &mut Criterion) {
-    bench_fk_single_da::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFK20SingleSettings, CtFp, CtG1Affine>(
-        c,
-        &generate_trusted_setup,
-    )
+    bench_fk_single_da::<
+        CtFr,
+        CtG1,
+        CtG2,
+        CtPoly,
+        CtFFTSettings,
+        CtKZGSettings,
+        CtFK20SingleSettings,
+        CtFp,
+        CtG1Affine,
+    >(c, &generate_trusted_setup)
 }
 
 fn bench_fk_multi_da_(c: &mut Criterion) {
-    bench_fk_multi_da::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFK20MultiSettings, CtFp, CtG1Affine>(
-        c,
-        &generate_trusted_setup,
-    )
+    bench_fk_multi_da::<
+        CtFr,
+        CtG1,
+        CtG2,
+        CtPoly,
+        CtFFTSettings,
+        CtKZGSettings,
+        CtFK20MultiSettings,
+        CtFp,
+        CtG1Affine,
+    >(c, &generate_trusted_setup)
 }
 
 criterion_group! {

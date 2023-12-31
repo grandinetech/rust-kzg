@@ -17,10 +17,16 @@ fn bench_commit_to_poly_(c: &mut Criterion) {
 }
 
 fn bench_compute_proof_single_(c: &mut Criterion) {
-    bench_compute_proof_single::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
-        c,
-        &generate_trusted_setup,
-    )
+    bench_compute_proof_single::<
+        CtFr,
+        CtG1,
+        CtG2,
+        CtPoly,
+        CtFFTSettings,
+        CtKZGSettings,
+        CtFp,
+        CtG1Affine,
+    >(c, &generate_trusted_setup)
 }
 
 criterion_group! {

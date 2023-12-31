@@ -25,3 +25,15 @@ pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<CtG1>, Ve
 
     (s1, s2)
 }
+
+pub fn ptr_transmute<T, U>(t: &T) -> *const U {
+    assert_eq!(core::mem::size_of::<T>(), core::mem::size_of::<U>());
+
+    t as *const T as *const U
+}
+
+pub fn ptr_transmute_mut<T, U>(t: &mut T) -> *mut U {
+    assert_eq!(core::mem::size_of::<T>(), core::mem::size_of::<U>());
+
+    t as *mut T as *mut U
+}

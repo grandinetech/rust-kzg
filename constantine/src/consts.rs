@@ -1,7 +1,5 @@
 //blst_fp = bls12_381_fp, CtG1 = CtG1, blst_p1 = bls12_381_g1_jac, blst_fr = bls12_381_fr
-use constantine_sys::{
-    bls12_381_fp, bls12_381_fp2, bls12_381_g1_aff, bls12_381_g1_jac, bls12_381_g2_jac,
-};
+use constantine_sys::{bls12_381_fp, bls12_381_fp2, bls12_381_g1_jac, bls12_381_g2_jac};
 
 use crate::types::g1::CtG1;
 use crate::types::g2::CtG2;

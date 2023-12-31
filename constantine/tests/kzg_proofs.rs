@@ -1,10 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use blst::{
-        blst_final_exp, blst_fp12, blst_fp12_mul, blst_miller_loop, blst_p1_affine, blst_p1_cneg,
-        blst_p1_to_affine, blst_p2_affine, blst_p2_to_affine, Pairing,
-    };
-    use kzg::G1;
+
     use kzg_bench::tests::kzg_proofs::{
         commit_to_nil_poly, commit_to_too_long_poly_returns_err, proof_multi, proof_single,
     };
@@ -27,16 +23,30 @@ mod tests {
 
     #[test]
     pub fn test_commit_to_nil_poly() {
-        commit_to_nil_poly::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
-            &generate_trusted_setup,
-        );
+        commit_to_nil_poly::<
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFp,
+            CtG1Affine,
+        >(&generate_trusted_setup);
     }
 
     #[test]
     pub fn test_commit_to_too_long_poly() {
-        commit_to_too_long_poly_returns_err::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
-            &generate_trusted_setup,
-        );
+        commit_to_too_long_poly_returns_err::<
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFp,
+            CtG1Affine,
+        >(&generate_trusted_setup);
     }
 
     #[test]

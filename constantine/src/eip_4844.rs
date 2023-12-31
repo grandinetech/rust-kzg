@@ -34,8 +34,6 @@ use crate::types::g1::CtG1;
 use crate::types::g2::CtG2;
 use crate::types::kzg_settings::CtKZGSettings;
 
-use constantine_sys::{bls12_381_fr, bls12_381_g1_jac, bls12_381_g2_jac};
-
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
@@ -94,7 +92,7 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<CtKZGSettings, Stri
                 .map(|r| CtG2::from_blst_p2(*r))
                 .collect::<Vec<CtG2>>()
         },
-        precomputation: None
+        precomputation: None,
     })
 }
 

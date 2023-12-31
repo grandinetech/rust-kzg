@@ -14,9 +14,17 @@ mod tests {
 
     #[test]
     fn test_fk_single() {
-        fk_single::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFK20SingleSettings, CtFp, CtG1Affine>(
-            &generate_trusted_setup,
-        );
+        fk_single::<
+            CtFr,
+            CtG1,
+            CtG2,
+            CtPoly,
+            CtFFTSettings,
+            CtKZGSettings,
+            CtFK20SingleSettings,
+            CtFp,
+            CtG1Affine,
+        >(&generate_trusted_setup);
     }
 
     #[test]
@@ -29,7 +37,8 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20SingleSettings,
-            CtFp, CtG1Affine
+            CtFp,
+            CtG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -43,7 +52,8 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
-            CtFp, CtG1Affine
+            CtFp,
+            CtG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -57,7 +67,8 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
-            CtFp, CtG1Affine
+            CtFp,
+            CtG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -71,7 +82,8 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
-            CtFp, CtG1Affine
+            CtFp,
+            CtG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -85,7 +97,8 @@ mod tests {
             CtFFTSettings,
             CtKZGSettings,
             CtFK20MultiSettings,
-            CtFp, CtG1Affine
+            CtFp,
+            CtG1Affine,
         >(&generate_trusted_setup);
     }
 }

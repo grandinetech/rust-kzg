@@ -3,12 +3,15 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
-use kzg::G1LinComb;
+use constantine::ctt_codec_ecc_status;
 use kzg::msm::precompute::PrecomputationTable;
+use kzg::G1LinComb;
 
 use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
+use crate::utils::ptr_transmute;
+use crate::utils::ptr_transmute_mut;
 use kzg::common_utils::log_2_byte;
 use kzg::eip_4844::BYTES_PER_G1;
 use kzg::G1Affine;
@@ -22,13 +25,11 @@ use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use constantine_sys as constantine;
 
 use constantine_sys::{
-    bls12_381_fp, bls12_381_g1_aff, bls12_381_g1_jac, ctt_bls12_381_g1_jac_cneg_in_place,
-    ctt_bls12_381_g1_jac_double, ctt_bls12_381_g1_jac_from_affine, ctt_bls12_381_g1_jac_is_eq,
-    ctt_bls12_381_g1_jac_is_inf, ctt_bls12_381_g1_jac_sum,
+    bls12_381_fp, bls12_381_g1_aff, bls12_381_g1_jac, ctt_bls12_381_g1_jac_from_affine,
 };
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Default, Eq)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct CtG1(pub bls12_381_g1_jac);
 
 impl PartialEq for CtG1 {
@@ -92,10 +93,9 @@ impl G1 for CtG1 {
                 let mut tmp = bls12_381_g1_aff::default();
                 let mut g1 = bls12_381_g1_jac::default();
                 unsafe {
-                    let tmp_ref: &mut blst::blst_p1_affine = core::mem::transmute(&mut tmp);
                     // The uncompress routine also checks that the point is on the curve
-                    if blst::blst_p1_uncompress(tmp_ref, bytes.as_ptr())
-                        != blst::BLST_ERROR::BLST_SUCCESS
+                    let res = constantine::ctt_bls12_381_deserialize_g1_compressed(&mut tmp, bytes.as_ptr());
+                    if res != ctt_codec_ecc_status::cttCodecEcc_Success && res != ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity
                     {
                         return Err("Failed to uncompress".to_string());
                     }
@@ -113,8 +113,7 @@ impl G1 for CtG1 {
     fn to_bytes(&self) -> [u8; 48] {
         let mut out = [0u8; BYTES_PER_G1];
         unsafe {
-            let inp_ref: &blst::blst_p1 = core::mem::transmute(&self.0);
-            blst::blst_p1_compress(out.as_mut_ptr(), inp_ref);
+            let _ = constantine::ctt_bls12_381_serialize_g1_compressed(out.as_mut_ptr(), &CtG1Affine::into_affine(&self).0);
         }
         out
     }
@@ -133,8 +132,7 @@ impl G1 for CtG1 {
 
     fn is_valid(&self) -> bool {
         unsafe {
-            // FIXME: Constantine equivalent
-            blst::blst_p1_in_g1(core::mem::transmute(&self.0))
+            constantine::ctt_bls12_381_validate_g1(&CtG1Affine::into_affine(&self).0) == ctt_codec_ecc_status::cttCodecEcc_Success
         }
     }
 
@@ -166,10 +164,27 @@ impl G1 for CtG1 {
         unsafe { constantine::ctt_bls12_381_g1_jac_is_eq(&self.0, &b.0) != 0 }
     }
 
-    // FIXME: Wrong here
     const ZERO: Self = CtG1::from_xyz(
-        bls12_381_fp { limbs: [0; 6] },
-        bls12_381_fp { limbs: [0; 6] },
+        bls12_381_fp {
+            limbs: [
+                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,
+            ],
+        },
+        bls12_381_fp {
+            limbs: [
+                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,
+            ],
+        },
         bls12_381_fp { limbs: [0; 6] },
     );
 
@@ -197,7 +212,7 @@ impl G1Mul<CtFr> for CtG1 {
         // FIXME: No transmute here, use constantine
         let mut scalar = blst::blst_scalar::default();
         unsafe {
-            blst::blst_scalar_from_fr(&mut scalar, core::mem::transmute(&b.0));
+            blst::blst_scalar_from_fr(&mut scalar, ptr_transmute(&b.0));
         }
 
         // Count the number of bytes to be multiplied.
@@ -215,8 +230,8 @@ impl G1Mul<CtFr> for CtG1 {
             // Count the number of bits to be multiplied.
             unsafe {
                 blst::blst_p1_mult(
-                    core::mem::transmute(&mut result.0),
-                    core::mem::transmute(&self.0),
+                    ptr_transmute_mut(&mut result.0),
+                    ptr_transmute(&self.0),
                     &(scalar.b[0]),
                     8 * i - 7 + log_2_byte(scalar.b[i - 1]),
                 );
@@ -228,7 +243,10 @@ impl G1Mul<CtFr> for CtG1 {
 
 impl G1LinComb<CtFr, CtFp, CtG1Affine> for CtG1 {
     fn g1_lincomb(
-        points: &[Self], scalars: &[CtFr], len: usize, precomputation: Option<&PrecomputationTable<CtFr, Self, CtFp, CtG1Affine>>,
+        points: &[Self],
+        scalars: &[CtFr],
+        len: usize,
+        precomputation: Option<&PrecomputationTable<CtFr, Self, CtFp, CtG1Affine>>,
     ) -> Self {
         let mut out = CtG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);

@@ -8,8 +8,13 @@ use kzg_bench::benches::eip_4844::bench_eip_4844;
 use rust_kzg_constantine::{
     eip_4844::load_trusted_setup_filename_rust,
     types::{
-        fft_settings::CtFFTSettings, fr::CtFr, g1::{CtG1, CtG1Affine}, g2::CtG2, kzg_settings::CtKZGSettings,
-        poly::CtPoly, fp::CtFp,
+        fft_settings::CtFFTSettings,
+        fp::CtFp,
+        fr::CtFr,
+        g1::{CtG1, CtG1Affine},
+        g2::CtG2,
+        kzg_settings::CtKZGSettings,
+        poly::CtPoly,
     },
 };
 
