@@ -221,6 +221,23 @@ fn poly_to_kzg_commitment<
     )
 }
 
+pub fn blob_to_kzg_commitment_raw<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1LinComb<TFr, TG1Fp, TG1Affine> + G1GetFp<TG1Fp>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob_bytes: [u8; BYTES_PER_BLOB],
+    settings: &TKZGSettings,
+) -> Result<TG1, String> {
+    let deserialized_blob = deserialize_blob(blob_bytes)?;
+    blob_to_kzg_commitment_rust(&deserialized_blob, settings)
+}
+
 pub fn blob_to_kzg_commitment_rust<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1LinComb<TFr, TG1Fp, TG1Affine> + G1GetFp<TG1Fp>,
@@ -303,6 +320,17 @@ fn compute_r_powers<TG1: G1, TFr: Fr>(
     Ok(compute_powers(&r, n))
 }
 
+fn deserialize_blob<TFr: Fr>(blob_bytes: [u8; BYTES_PER_BLOB]) -> Result<Vec<TFr>, String> {
+    blob_bytes
+        .chunks(BYTES_PER_FIELD_ELEMENT)
+        .map(|chunk| {
+            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
+            bytes.copy_from_slice(chunk);
+            TFr::from_bytes(&bytes)
+        })
+        .collect::<Result<Vec<TFr>, String>>()
+}
+
 fn verify_kzg_proof_batch<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + PairingVerify<TG1, TG2> + G1LinComb<TFr, TG1Fp, TG1Affine>,
@@ -353,6 +381,26 @@ fn verify_kzg_proof_batch<
         &rhs_g1,
         &TG2::generator(),
     ))
+}
+
+pub fn compute_kzg_proof_raw<
+    TFr: Fr + Copy,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob_bytes: [u8; BYTES_PER_BLOB],
+    z_bytes: [u8; 32],
+    settings: &TKZGSettings,
+) -> Result<(TG1, TFr), String> {
+    let deserialized_blob = deserialize_blob(blob_bytes)?;
+    let frz = TFr::from_bytes(&z_bytes)?;
+
+    compute_kzg_proof_rust(&deserialized_blob, &frz, settings)
 }
 
 pub fn compute_kzg_proof_rust<
@@ -438,6 +486,26 @@ pub fn compute_kzg_proof_rust<
     Ok((proof, y))
 }
 
+pub fn compute_blob_kzg_proof_raw<
+    TFr: Fr + Copy,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob_bytes: [u8; BYTES_PER_BLOB],
+    commitment_g1_bytes: [u8; 48],
+    settings: &TKZGSettings,
+) -> Result<TG1, String> {
+    let deserialized_blob = deserialize_blob(blob_bytes)?;
+    let commitment_g1 = TG1::from_bytes(&commitment_g1_bytes)?;
+
+    compute_blob_kzg_proof_rust(&deserialized_blob, &commitment_g1, settings)
+}
+
 pub fn compute_blob_kzg_proof_rust<
     TFr: Fr + Copy,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
@@ -459,6 +527,30 @@ pub fn compute_blob_kzg_proof_rust<
     let evaluation_challenge_fr = compute_challenge(blob, commitment);
     let (proof, _) = compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts)?;
     Ok(proof)
+}
+
+pub fn verify_kzg_proof_raw<
+    TFr: Fr,
+    TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    commitment_bytes: [u8; 48],
+    z_bytes: [u8; 32],
+    y_bytes: [u8; 32],
+    proof_bytes: [u8; 48],
+    settings: &TKZGSettings,
+) -> Result<bool, String> {
+    let frz = TFr::from_bytes(&z_bytes)?;
+    let fry = TFr::from_bytes(&y_bytes)?;
+    let g1commitment = TG1::from_bytes(&commitment_bytes)?;
+    let g1proof = TG1::from_bytes(&proof_bytes)?;
+
+    verify_kzg_proof_rust(&g1commitment, &frz, &fry, &g1proof, settings)
 }
 
 pub fn verify_kzg_proof_rust<
@@ -485,6 +577,28 @@ pub fn verify_kzg_proof_rust<
     }
 
     s.check_proof_single(commitment, proof, z, y)
+}
+
+pub fn verify_blob_kzg_proof_raw<
+    TFr: Fr + Copy,
+    TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob_bytes: [u8; BYTES_PER_BLOB],
+    commitment_g1_bytes: [u8; 48],
+    proof_g1_bytes: [u8; 48],
+    settings: &TKZGSettings,
+) -> Result<bool, String> {
+    let deserialized_blob = deserialize_blob(blob_bytes)?;
+    let commitment_g1 = TG1::from_bytes(&commitment_g1_bytes)?;
+    let proof_g1 = TG1::from_bytes(&proof_g1_bytes)?;
+
+    verify_blob_kzg_proof_rust(&deserialized_blob, &commitment_g1, &proof_g1, settings)
 }
 
 pub fn verify_blob_kzg_proof_rust<
@@ -558,6 +672,37 @@ fn validate_batched_input<TG1: G1>(commitments: &[TG1], proofs: &[TG1]) -> Resul
     }
 
     Ok(())
+}
+
+pub fn verify_blob_kzg_proof_batch_raw<
+    TFr: Fr + Copy + Send,
+    TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine> + Sync,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    raw_blobs: &[[u8; BYTES_PER_BLOB]],
+    raw_commitments: &[[u8; 48]],
+    raw_proofs: &[[u8; 48]],
+    settings: &TKZGSettings,
+) -> Result<bool, String> {
+    let deserialized_blobs = cfg_into_iter!(raw_blobs)
+        .copied()
+        .map(deserialize_blob)
+        .collect::<Result<Vec<Vec<TFr>>, String>>()?;
+
+    let commitments_g1 = cfg_into_iter!(raw_commitments)
+        .map(|commitment_bytes| TG1::from_bytes(commitment_bytes))
+        .collect::<Result<Vec<TG1>, String>>()?;
+
+    let proofs_g1 = cfg_into_iter!(raw_proofs)
+        .map(|proof_bytes| TG1::from_bytes(proof_bytes))
+        .collect::<Result<Vec<TG1>, String>>()?;
+
+    verify_blob_kzg_proof_batch_rust(&deserialized_blobs, &commitments_g1, &proofs_g1, settings)
 }
 
 pub fn verify_blob_kzg_proof_batch_rust<
