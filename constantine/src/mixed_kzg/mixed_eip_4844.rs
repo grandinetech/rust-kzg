@@ -80,9 +80,17 @@ pub fn compute_kzg_proof_mixed(
     match s {
         MixedKzgSettings::Constantine(ctt_context) => {
             let blob_bytes = blob_fr_to_byte(blob)?;
+
+            #[cfg(feature = "parallel")]
+            let res = ctt_context
+                .ctx
+                .compute_kzg_proof_parallel(&ctt_context.pool, &blob_bytes, &z.to_bytes());
+
+            #[cfg(not(feature = "parallel"))]
             let res = ctt_context
                 .ctx
                 .compute_kzg_proof(&blob_bytes, &z.to_bytes());
+
             match res {
                 Ok((proof, y)) => Ok((CtG1::from_bytes(&proof)?, CtFr::from_bytes(&y)?)),
                 Err(x) => Err(x.to_string()),
