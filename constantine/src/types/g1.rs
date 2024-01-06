@@ -357,23 +357,9 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     }
 
     fn into_affines_loc(out: &mut [Self], g1: &[CtG1]) {
-        g1.iter()
-            .zip(out.iter_mut())
-            .for_each(|(g, out_slot)| unsafe {
-                constantine::ctt_bls12_381_g1_jac_affine(&mut out_slot.0, &g.0);
-            });
-    }
-
-    fn into_affines(g1: &[CtG1]) -> Vec<Self> {
-        g1.iter()
-            .map(|g| {
-                let mut ret = Self::default();
-                unsafe {
-                    constantine::ctt_bls12_381_g1_jac_affine(&mut ret.0, &g.0);
-                }
-                ret
-            })
-            .collect::<Vec<_>>()
+        unsafe{
+            constantine::ctt_bls12_381_g1_jac_batch_affine(core::mem::transmute(out.as_mut_ptr()), core::mem::transmute(g1.as_ptr()), g1.len());
+        }
     }
 
     fn to_proj(&self) -> CtG1 {
