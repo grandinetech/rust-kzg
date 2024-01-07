@@ -27,72 +27,76 @@ pub struct CtG2(pub bls12_381_g2_jac);
 
 impl CtG2 {
     pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
-        Self(bls12_381_g2_jac {
-            x: bls12_381_fp2 {
-                c: [
-                    bls12_381_fp {
-                        limbs: p2.x.fp[0].l,
-                    },
-                    bls12_381_fp {
-                        limbs: p2.x.fp[1].l,
-                    },
-                ],
-            },
-            y: bls12_381_fp2 {
-                c: [
-                    bls12_381_fp {
-                        limbs: p2.y.fp[0].l,
-                    },
-                    bls12_381_fp {
-                        limbs: p2.y.fp[1].l,
-                    },
-                ],
-            },
-            z: bls12_381_fp2 {
-                c: [
-                    bls12_381_fp {
-                        limbs: p2.z.fp[0].l,
-                    },
-                    bls12_381_fp {
-                        limbs: p2.z.fp[1].l,
-                    },
-                ],
-            },
-        })
+        unsafe {
+            Self(bls12_381_g2_jac {
+                x: bls12_381_fp2 {
+                    c: [
+                        bls12_381_fp {
+                            limbs: core::mem::transmute(p2.x.fp[0].l),
+                        },
+                        bls12_381_fp {
+                            limbs: core::mem::transmute(p2.x.fp[1].l),
+                        },
+                    ],
+                },
+                y: bls12_381_fp2 {
+                    c: [
+                        bls12_381_fp {
+                            limbs: core::mem::transmute(p2.y.fp[0].l),
+                        },
+                        bls12_381_fp {
+                            limbs: core::mem::transmute(p2.y.fp[1].l),
+                        },
+                    ],
+                },
+                z: bls12_381_fp2 {
+                    c: [
+                        bls12_381_fp {
+                            limbs: core::mem::transmute(p2.z.fp[0].l),
+                        },
+                        bls12_381_fp {
+                            limbs: core::mem::transmute(p2.z.fp[1].l),
+                        },
+                    ],
+                },
+            })
+        }
     }
 
     pub const fn to_blst_p2(&self) -> blst::blst_p2 {
-        blst::blst_p2 {
-            x: blst::blst_fp2 {
-                fp: [
-                    blst::blst_fp {
-                        l: self.0.x.c[0].limbs,
-                    },
-                    blst::blst_fp {
-                        l: self.0.x.c[1].limbs,
-                    },
-                ],
-            },
-            y: blst::blst_fp2 {
-                fp: [
-                    blst::blst_fp {
-                        l: self.0.y.c[0].limbs,
-                    },
-                    blst::blst_fp {
-                        l: self.0.y.c[1].limbs,
-                    },
-                ],
-            },
-            z: blst::blst_fp2 {
-                fp: [
-                    blst::blst_fp {
-                        l: self.0.z.c[0].limbs,
-                    },
-                    blst::blst_fp {
-                        l: self.0.z.c[1].limbs,
-                    },
-                ],
-            },
+        unsafe {
+            blst::blst_p2 {
+                x: blst::blst_fp2 {
+                    fp: [
+                        blst::blst_fp {
+                            l: core::mem::transmute(self.0.x.c[0].limbs),
+                        },
+                        blst::blst_fp {
+                            l: core::mem::transmute(self.0.x.c[1].limbs),
+                        },
+                    ],
+                },
+                y: blst::blst_fp2 {
+                    fp: [
+                        blst::blst_fp {
+                            l: core::mem::transmute(self.0.y.c[0].limbs),
+                        },
+                        blst::blst_fp {
+                            l: core::mem::transmute(self.0.y.c[1].limbs),
+                        },
+                    ],
+                },
+                z: blst::blst_fp2 {
+                    fp: [
+                        blst::blst_fp {
+                            l: core::mem::transmute(self.0.z.c[0].limbs),
+                        },
+                        blst::blst_fp {
+                            l: core::mem::transmute(self.0.z.c[1].limbs),
+                        },
+                    ],
+                },
+            }
         }
     }
 }

@@ -56,18 +56,34 @@ impl CtG1 {
     }
 
     pub const fn from_blst_p1(p1: blst::blst_p1) -> Self {
-        Self(bls12_381_g1_jac {
-            x: bls12_381_fp { limbs: p1.x.l },
-            y: bls12_381_fp { limbs: p1.y.l },
-            z: bls12_381_fp { limbs: p1.z.l },
-        })
+        unsafe {
+            Self(bls12_381_g1_jac {
+                x: bls12_381_fp {
+                    limbs: core::mem::transmute(p1.x.l),
+                },
+                y: bls12_381_fp {
+                    limbs: core::mem::transmute(p1.y.l),
+                },
+                z: bls12_381_fp {
+                    limbs: core::mem::transmute(p1.z.l),
+                },
+            })
+        }
     }
 
     pub const fn to_blst_p1(&self) -> blst::blst_p1 {
-        blst::blst_p1 {
-            x: blst::blst_fp { l: self.0.x.limbs },
-            y: blst::blst_fp { l: self.0.y.limbs },
-            z: blst::blst_fp { l: self.0.z.limbs },
+        unsafe {
+            blst::blst_p1 {
+                x: blst::blst_fp {
+                    l: core::mem::transmute(self.0.x.limbs),
+                },
+                y: blst::blst_fp {
+                    l: core::mem::transmute(self.0.y.limbs),
+                },
+                z: blst::blst_fp {
+                    l: core::mem::transmute(self.0.z.limbs),
+                },
+            }
         }
     }
 }
@@ -357,8 +373,12 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     }
 
     fn into_affines_loc(out: &mut [Self], g1: &[CtG1]) {
-        unsafe{
-            constantine::ctt_bls12_381_g1_jac_batch_affine(core::mem::transmute(out.as_mut_ptr()), core::mem::transmute(g1.as_ptr()), g1.len());
+        unsafe {
+            constantine::ctt_bls12_381_g1_jac_batch_affine(
+                core::mem::transmute(out.as_mut_ptr()),
+                core::mem::transmute(g1.as_ptr()),
+                g1.len(),
+            );
         }
     }
 

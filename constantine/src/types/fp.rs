@@ -69,7 +69,11 @@ impl G1Fp for CtFp {
     }
 
     fn from_underlying_arr(arr: &[u64; 6]) -> Self {
-        Self(bls12_381_fp { limbs: *arr })
+        unsafe {
+            Self(bls12_381_fp {
+                limbs: core::mem::transmute(*arr),
+            })
+        }
     }
 
     fn neg_assign(&mut self) {

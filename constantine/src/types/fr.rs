@@ -38,11 +38,19 @@ impl Eq for CtFr {}
 
 impl CtFr {
     pub fn from_blst_fr(fr: blst::blst_fr) -> Self {
-        Self(bls12_381_fr { limbs: fr.l })
+        unsafe {
+            Self(bls12_381_fr {
+                limbs: core::mem::transmute(fr.l),
+            })
+        }
     }
 
     pub fn to_blst_fr(&self) -> blst_fr {
-        blst_fr { l: self.0.limbs }
+        unsafe {
+            blst_fr {
+                l: core::mem::transmute(self.0.limbs),
+            }
+        }
     }
 }
 

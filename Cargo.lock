@@ -397,7 +397,7 @@ checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 [[package]]
 name = "constantine-core"
 version = "0.1.0"
-source = "git+https://github.com/lynxcs/constantine.git?branch=rust-kzg-changes#d00c6f9b1ed1c3e0d8b68340d05bd861aa69cd35"
+source = "git+https://github.com/mratsim/constantine.git?branch=constantine-public-sys#6bdb0897ff5f22d4a4f05425b426e85336eb0712"
 dependencies = [
  "constantine-sys",
 ]
@@ -405,7 +405,7 @@ dependencies = [
 [[package]]
 name = "constantine-ethereum-kzg"
 version = "0.1.0"
-source = "git+https://github.com/lynxcs/constantine.git?branch=rust-kzg-changes#d00c6f9b1ed1c3e0d8b68340d05bd861aa69cd35"
+source = "git+https://github.com/mratsim/constantine.git?branch=constantine-public-sys#6bdb0897ff5f22d4a4f05425b426e85336eb0712"
 dependencies = [
  "constantine-core",
  "constantine-sys",
@@ -414,7 +414,7 @@ dependencies = [
 [[package]]
 name = "constantine-sys"
 version = "0.1.0"
-source = "git+https://github.com/lynxcs/constantine.git?branch=rust-kzg-changes#d00c6f9b1ed1c3e0d8b68340d05bd861aa69cd35"
+source = "git+https://github.com/mratsim/constantine.git?branch=constantine-public-sys#6bdb0897ff5f22d4a4f05425b426e85336eb0712"
 
 [[package]]
 name = "cpufeatures"
