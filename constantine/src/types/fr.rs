@@ -68,16 +68,17 @@ impl Fr for CtFr {
     }
 
     #[cfg(feature = "rand")]
-    fn rand() -> Self {
-        let val: [u64; 4] = [
-            rand::random(),
-            rand::random(),
-            rand::random(),
-            rand::random(),
-        ];
+    fn rand() -> Self { 
+        let val =
+            constantine_sys::big255 { limbs:[
+                rand::random(),
+                rand::random(),
+                rand::random(),
+                rand::random(), 
+                ]};
         let mut ret = Self::default();
         unsafe {
-            blst::blst_fr_from_uint64(ptr_transmute_mut(&mut ret.0), val.as_ptr());
+            constantine::ctt_bls12_381_fr_from_big255(&mut ret.0, &val);
         }
 
         ret
@@ -95,18 +96,17 @@ impl Fr for CtFr {
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let mut ret: Self = Self::default();
-                let mut bls_scalar = blst::blst_scalar::default();
+                let mut scalar = constantine::big255::default();
                 unsafe {
                     let status = constantine::ctt_bls12_381_deserialize_scalar(
-                        ptr_transmute_mut(&mut bls_scalar),
+                        &mut scalar,
                         bytes.as_ptr(),
                     );
                     if status == ctt_codec_scalar_status::cttCodecScalar_ScalarLargerThanCurveOrder
                     {
                         return Err("Invalid scalar".to_string());
                     }
-                    // FIXME: Change when big255->Fr conversion is available
-                    blst::blst_fr_from_scalar(ptr_transmute_mut(&mut ret.0), &bls_scalar);
+                    constantine::ctt_bls12_381_fr_from_big255(&mut ret.0, &scalar);
                 }
                 Ok(ret)
             })
@@ -124,11 +124,11 @@ impl Fr for CtFr {
             })
             .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let mut ret = Self::default();
-                let mut bls_scalar = blst::blst_scalar::default();
+                let mut scalar = constantine::big255::default();
                 unsafe {
                     // FIXME: Seems like no 'non-validating' variant exists in constantine
-                    blst::blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
-                    blst::blst_fr_from_scalar(ptr_transmute_mut(&mut ret.0), &bls_scalar);
+                    blst::blst_scalar_from_bendian(ptr_transmute_mut(&mut scalar), bytes.as_ptr());
+                    constantine::ctt_bls12_381_fr_from_big255(&mut ret.0, &scalar);
                 }
                 ret
             })
@@ -142,8 +142,7 @@ impl Fr for CtFr {
     fn from_u64_arr(u: &[u64; 4]) -> Self {
         let mut ret = Self::default();
         unsafe {
-            // FIXME: Change when big255->Fr conversion is available
-            blst::blst_fr_from_uint64(ptr_transmute_mut(&mut ret.0), u.as_ptr());
+            constantine::ctt_bls12_381_fr_from_big255(&mut ret.0, ptr_transmute(u));
         }
 
         ret
@@ -157,8 +156,7 @@ impl Fr for CtFr {
         let mut scalar = constantine::big255::default();
         let mut bytes = [0u8; 32];
         unsafe {
-            // FIXME: Change when Fr->Big255 conversion is available
-            blst::blst_scalar_from_fr(ptr_transmute_mut(&mut scalar), ptr_transmute(&self.0));
+            constantine::ctt_big255_from_bls12_381_fr(&mut scalar, &self.0);
             let _ = constantine::ctt_bls12_381_serialize_scalar(bytes.as_mut_ptr(), &scalar);
         }
 
@@ -168,8 +166,7 @@ impl Fr for CtFr {
     fn to_u64_arr(&self) -> [u64; 4] {
         let mut val: [u64; 4] = [0; 4];
         unsafe {
-            // FIXME: Change when Fr->Big255 conversion is available
-            blst::blst_uint64_from_fr(val.as_mut_ptr(), ptr_transmute(&self.0));
+            constantine::ctt_big255_from_bls12_381_fr(ptr_transmute_mut(&mut val), &self.0);
         }
 
         val
@@ -280,11 +277,10 @@ impl Fr for CtFr {
     }
 
     fn to_scalar(&self) -> kzg::Scalar256 {
-        // FIXME: Change to constantine version when available
-        let mut blst_scalar = blst::blst_scalar::default();
+        let mut scalar = constantine::big255::default();
         unsafe {
-            blst::blst_scalar_from_fr(&mut blst_scalar, ptr_transmute(&self.0));
+            constantine::ctt_big255_from_bls12_381_fr(&mut scalar, &self.0);
+            Scalar256::from_u64(core::mem::transmute(scalar.limbs))
         }
-        Scalar256::from_u8(&blst_scalar.b)
     }
 }
