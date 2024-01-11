@@ -68,14 +68,15 @@ impl Fr for CtFr {
     }
 
     #[cfg(feature = "rand")]
-    fn rand() -> Self { 
-        let val =
-            constantine_sys::big255 { limbs:[
+    fn rand() -> Self {
+        let val = constantine_sys::big255 {
+            limbs: [
                 rand::random(),
                 rand::random(),
                 rand::random(),
-                rand::random(), 
-                ]};
+                rand::random(),
+            ],
+        };
         let mut ret = Self::default();
         unsafe {
             constantine::ctt_bls12_381_fr_from_big255(&mut ret.0, &val);
@@ -98,10 +99,8 @@ impl Fr for CtFr {
                 let mut ret: Self = Self::default();
                 let mut scalar = constantine::big255::default();
                 unsafe {
-                    let status = constantine::ctt_bls12_381_deserialize_scalar(
-                        &mut scalar,
-                        bytes.as_ptr(),
-                    );
+                    let status =
+                        constantine::ctt_bls12_381_deserialize_scalar(&mut scalar, bytes.as_ptr());
                     if status == ctt_codec_scalar_status::cttCodecScalar_ScalarLargerThanCurveOrder
                     {
                         return Err("Invalid scalar".to_string());

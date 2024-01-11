@@ -12,8 +12,6 @@ use kzg::{G2Mul, G2};
 
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::types::fr::CtFr;
-use crate::utils::ptr_transmute;
-use crate::utils::ptr_transmute_mut;
 
 use constantine_sys::{
     bls12_381_fp, bls12_381_fp2, bls12_381_g2_aff, bls12_381_g2_jac,

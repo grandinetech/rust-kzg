@@ -12,9 +12,7 @@ use core::fmt::{Debug, Formatter};
 use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
-use crate::utils::ptr_transmute;
-use crate::utils::ptr_transmute_mut;
-use kzg::common_utils::log_2_byte;
+
 use kzg::eip_4844::BYTES_PER_G1;
 use kzg::G1Affine;
 use kzg::G1GetFp;
