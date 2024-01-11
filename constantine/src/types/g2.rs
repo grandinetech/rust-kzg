@@ -103,18 +103,11 @@ impl CtG2 {
 
 impl G2Mul<CtFr> for CtG2 {
     fn mul(&self, b: &CtFr) -> Self {
-        let mut result = bls12_381_g2_jac::default();
-        let mut scalar = blst::blst_scalar::default();
+        let mut result = *self;
         unsafe {
-            blst::blst_scalar_from_fr(&mut scalar, ptr_transmute(&b.0));
-            blst::blst_p2_mult(
-                ptr_transmute_mut(&mut result),
-                ptr_transmute(&self.0),
-                scalar.b.as_ptr(),
-                8 * core::mem::size_of::<blst::blst_scalar>(),
-            );
+            constantine::ctt_bls12_381_g2_jac_scalar_mul_fr_coef(&mut result.0, &b.0);
         }
-        Self(result)
+        result
     }
 }
 

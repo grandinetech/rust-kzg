@@ -245,33 +245,9 @@ impl G1 for CtG1 {
 
 impl G1Mul<CtFr> for CtG1 {
     fn mul(&self, b: &CtFr) -> Self {
-        // FIXME: No transmute here, use constantine
-        let mut scalar = blst::blst_scalar::default();
+        let mut result = *self;
         unsafe {
-            blst::blst_scalar_from_fr(&mut scalar, ptr_transmute(&b.0));
-        }
-
-        // Count the number of bytes to be multiplied.
-        let mut i = scalar.b.len();
-        while i != 0 && scalar.b[i - 1] == 0 {
-            i -= 1;
-        }
-
-        let mut result = Self::default();
-        if i == 0 {
-            return G1_IDENTITY;
-        } else if i == 1 && scalar.b[0] == 1 {
-            return *self;
-        } else {
-            // Count the number of bits to be multiplied.
-            unsafe {
-                blst::blst_p1_mult(
-                    ptr_transmute_mut(&mut result.0),
-                    ptr_transmute(&self.0),
-                    &(scalar.b[0]),
-                    8 * i - 7 + log_2_byte(scalar.b[i - 1]),
-                );
-            }
+            constantine::ctt_bls12_381_g1_jac_scalar_mul_fr_coef(&mut result.0, &b.0);
         }
         result
     }
