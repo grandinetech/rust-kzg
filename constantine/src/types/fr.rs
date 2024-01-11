@@ -125,8 +125,11 @@ impl Fr for CtFr {
                 let mut ret = Self::default();
                 let mut scalar = constantine::big255::default();
                 unsafe {
-                    // FIXME: Seems like no 'non-validating' variant exists in constantine
-                    blst::blst_scalar_from_bendian(ptr_transmute_mut(&mut scalar), bytes.as_ptr());
+                    let _ = constantine::ctt_big255_unmarshalBE(
+                        &mut scalar,
+                        bytes.as_ptr(),
+                        BYTES_PER_FIELD_ELEMENT as isize,
+                    );
                     constantine::ctt_bls12_381_fr_from_big255(&mut ret.0, &scalar);
                 }
                 ret
