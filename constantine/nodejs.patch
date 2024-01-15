@@ -1,0 +1,74 @@
+From 954c55533e265f32eabe0dc863b1add2478bb570 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 26 Oct 2023 14:02:51 +0300
+Subject: [PATCH] Patch nodejs binding
+
+---
+ bindings/node.js/Makefile    |  1 -
+ bindings/node.js/binding.gyp | 31 +++----------------------------
+ 2 files changed, 3 insertions(+), 29 deletions(-)
+
+diff --git a/bindings/node.js/Makefile b/bindings/node.js/Makefile
+index 17850ec..efc9961 100644
+--- a/bindings/node.js/Makefile
++++ b/bindings/node.js/Makefile
+@@ -31,7 +31,6 @@ build: install clean
+ 	@# Prepare the dependencies directory
+ 	@mkdir -p deps/c-kzg
+ 	@cp -r ../../blst deps
+-	@cp ../../src/c_kzg_4844.c deps/c-kzg
+ 	@cp ../../src/c_kzg_4844.h deps/c-kzg
+ 	@# Build the bindings
+ 	@$(YARN) node-gyp --loglevel=warn configure
+diff --git a/bindings/node.js/binding.gyp b/bindings/node.js/binding.gyp
+index 5ac368e..6cde37f 100644
+--- a/bindings/node.js/binding.gyp
++++ b/bindings/node.js/binding.gyp
+@@ -3,9 +3,7 @@
+     {
+       "target_name": "kzg",
+       "sources": [
+-        "src/kzg.cxx",
+-        "deps/blst/src/server.c",
+-        "deps/c-kzg/c_kzg_4844.c"
++        "src/kzg.cxx"
+       ],
+       "include_dirs": [
+         "<(module_root_dir)/deps/blst/bindings",
+@@ -16,31 +14,8 @@
+         "__BLST_PORTABLE__",
+         "NAPI_DISABLE_CPP_EXCEPTIONS"
+       ],
+-      "conditions": [
+-        ["OS!='win'", {
+-          "sources": ["deps/blst/build/assembly.S"],
+-          "cflags_cc": [
+-            "-std=c++17",
+-            "-fPIC"
+-          ]
+-        }],
+-        ["OS=='win'", {
+-          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
+-          "defines": [
+-            "_CRT_SECURE_NO_WARNINGS",
+-          ],
+-          "msbuild_settings": {
+-            "ClCompile": {
+-              "AdditionalOptions": ["/std:c++17"]
+-            }
+-          }
+-        }],
+-        ["OS=='mac'", {
+-          "xcode_settings": {
+-            "CLANG_CXX_LIBRARY": "libc++",
+-            "MACOSX_DEPLOYMENT_TARGET": "13.0"
+-          }
+-        }]
++      "libraries": [
++        "<(module_root_dir)/../../../../target/release/rust_kzg_constantine.a"
+       ]
+     }
+   ]
+-- 
+2.34.1
+
