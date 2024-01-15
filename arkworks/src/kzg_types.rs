@@ -954,13 +954,15 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
         self.aff.is_zero()
     }
 
-    const ZERO: Self = Self {
-        aff: G1Affine {
-            x: ArkFp::ZERO.0,
-            y: ArkFp::ZERO.0,
-            infinity: true,
-        },
-    };
+    fn zero() -> Self {
+        Self {
+            aff: G1Affine {
+                x: ArkFp::ZERO.0,
+                y: ArkFp::ZERO.0,
+                infinity: true,
+            },
+        }
+    }
 
     fn x_mut(&mut self) -> &mut ArkFp {
         unsafe { core::mem::transmute(&mut self.aff.x) }

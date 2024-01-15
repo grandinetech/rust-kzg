@@ -64,12 +64,12 @@ impl<
             bucket_bits,
             max_batch_cnt,
             max_collision_cnt,
-            buckets: vec![TG1Affine::ZERO; bucket_size as usize],
+            buckets: vec![TG1Affine::zero(); bucket_size as usize],
 
             bitmap: Bitmap::new(bucket_size as usize / 32),
             batch_buckets_and_points: Vec::with_capacity(batch_size as usize),
             collision_buckets_and_points: Vec::with_capacity(max_collision_cnt as usize),
-            cur_points: vec![TG1Affine::ZERO; batch_size as usize],
+            cur_points: vec![TG1Affine::zero(); batch_size as usize],
 
             batch_adder: BatchAdder::new(batch_adder_size as usize),
             _p: PhantomData,
@@ -257,8 +257,8 @@ impl<
         let window_starts: Vec<_> = (0..self.num_windows as usize).collect();
         let num_groups =
             (self.num_windows as usize) << (self.bucket_bits as usize - GROUP_SIZE_IN_BITS);
-        let mut running_sums: Vec<_> = vec![TG1Affine::ZERO; num_groups];
-        let mut sum_of_sums: Vec<_> = vec![TG1Affine::ZERO; num_groups];
+        let mut running_sums: Vec<_> = vec![TG1Affine::zero(); num_groups];
+        let mut sum_of_sums: Vec<_> = vec![TG1Affine::zero(); num_groups];
 
         // calculate running sum and sum of sum for each group
         for i in (0..GROUP_SIZE).rev() {

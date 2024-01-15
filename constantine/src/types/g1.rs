@@ -325,18 +325,20 @@ impl Debug for CtG1Affine {
 }
 
 impl G1Affine<CtG1, CtFp> for CtG1Affine {
-    const ZERO: Self = Self(bls12_381_g1_aff {
-        x: {
-            bls12_381_fp {
-                limbs: [0, 0, 0, 0, 0, 0],
-            }
-        },
-        y: {
-            bls12_381_fp {
-                limbs: [0, 0, 0, 0, 0, 0],
-            }
-        },
-    });
+    fn zero() -> Self {
+        Self(bls12_381_g1_aff {
+            x: {
+                bls12_381_fp {
+                    limbs: [0, 0, 0, 0, 0, 0],
+                }
+            },
+            y: {
+                bls12_381_fp {
+                    limbs: [0, 0, 0, 0, 0, 0],
+                }
+            },
+        })
+    }
 
     fn into_affine(g1: &CtG1) -> Self {
         let mut ret: Self = Default::default();
