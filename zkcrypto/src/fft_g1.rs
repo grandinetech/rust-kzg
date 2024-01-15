@@ -1,13 +1,20 @@
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ZFr, ZG1};
+use crate::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1};
 use crate::multiscalar_mul::msm_variable_base;
+use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
 #[warn(unused_variables)]
-pub fn g1_linear_combination(out: &mut ZG1, points: &[ZG1], scalars: &[ZFr], _len: usize) {
+pub fn g1_linear_combination(
+    out: &mut ZG1,
+    points: &[ZG1],
+    scalars: &[ZFr],
+    _len: usize,
+    _precomputation: Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>>,
+) {
     let g1 = msm_variable_base(points, scalars);
     out.proj = g1
 }
