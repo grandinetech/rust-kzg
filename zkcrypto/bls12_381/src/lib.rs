@@ -85,9 +85,9 @@ pub use pairings::{pairing, Bls12, Gt, MillerLoopResult};
 pub use pairings::{multi_miller_loop, G2Prepared};
 
 pub use fp::Fp;
+pub use fp12::Fp12;
 pub use fp2::Fp2;
 pub use fp6::Fp6;
-pub use fp12::Fp12;
 
 /// Use the generic_array re-exported by digest to avoid a version mismatch
 #[cfg(feature = "experimental")]

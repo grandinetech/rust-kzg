@@ -2,7 +2,7 @@ use kzg::{msm::arkmsm::batch_adder::BatchAdder, G1Affine, G1Fp, G1};
 
 pub fn test_phase_one_zero_or_neg<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TGFp>>() {
     let mut batch_adder = BatchAdder::<TG1, TGFp, TG1Affine>::new(4);
-    batch_adder.batch_add_phase_one(&TG1Affine::ZERO, &TG1Affine::ZERO, 0);
+    batch_adder.batch_add_phase_one(&TG1Affine::zero(), &TG1Affine::zero(), 0);
 
     let p_rand = TG1::rand();
     let p_affine = TG1Affine::into_affine(&p_rand);
@@ -49,7 +49,7 @@ pub fn test_phase_one_p_add_q_twice<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1
 pub fn test_phase_two_zero_add_p<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TGFp>>() {
     let mut batch_adder = BatchAdder::<TG1, TGFp, TG1Affine>::new(4);
     let p = TG1Affine::into_affine(&TG1::rand());
-    let mut acc = G1Affine::ZERO;
+    let mut acc = G1Affine::zero();
     batch_adder.batch_add_phase_two(&mut acc, &p, 0);
     assert_eq!(acc, p);
 }
@@ -61,7 +61,7 @@ pub fn test_phase_two_p_add_neg<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TG
     p.y_mut().neg_assign();
 
     batch_adder.batch_add_phase_two(&mut acc, &p, 0);
-    assert_eq!(acc, G1Affine::ZERO);
+    assert_eq!(acc, G1Affine::zero());
 }
 
 pub fn test_phase_two_p_add_q<TG1: G1, TGFp: G1Fp, TG1Affine: G1Affine<TG1, TGFp>>() {

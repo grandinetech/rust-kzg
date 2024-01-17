@@ -1,12 +1,13 @@
 #![allow(non_camel_case_types)]
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-use crate::kzg_types::ZFr;
+use crate::kzg_types::{ZFp, ZFr, ZG1Affine};
 use crate::kzg_types::{ZFr as BlstFr, ZG1, ZG2};
 use crate::poly::PolyData;
 use bls12_381::{
     multi_miller_loop, Fp12 as ZFp12, G1Affine, G2Affine, G2Prepared, MillerLoopResult,
 };
 use kzg::eip_4844::hash_to_bls_field;
+use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as FrTrait, G1Mul, G2Mul};
 use std::ops::{Add, Neg};
 
@@ -42,6 +43,7 @@ pub struct KZGSettings {
     pub fs: FFTSettings,
     pub secret_g1: Vec<ZG1>,
     pub secret_g2: Vec<ZG2>,
+    pub precomputation: Option<PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>>,
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ZG1>, Vec<ZG2>) {
