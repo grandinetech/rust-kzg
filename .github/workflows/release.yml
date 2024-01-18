@@ -37,7 +37,7 @@ jobs:
 
       # Install constantine backend deps
       - name: "constantine - install deps"
-        if: matrix.backend == 'constantine' && matrix.os == 'ubuntu-latest'
+        if: matrix.backend == 'constantine'
         run: |
           sudo DEBIAN_FRONTEND='noninteractive' apt-fast install \
             --no-install-recommends -yq \
