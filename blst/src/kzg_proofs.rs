@@ -1,28 +1,20 @@
 extern crate alloc;
 
-#[cfg(not(feature = "parallel"))]
-use alloc::vec;
-use alloc::vec::Vec;
-#[cfg(not(feature = "parallel"))]
-use core::ptr;
-
-#[cfg(feature = "parallel")]
-use blst::p1_affines;
-#[cfg(not(feature = "parallel"))]
-use blst::{
-    blst_p1s_mult_pippenger, blst_p1s_mult_pippenger_scratch_sizeof, blst_p1s_to_affine, limb_t,
-};
-
-use blst::{
-    blst_fp12_is_one, blst_p1, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
-    blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing,
-};
-
-use kzg::{G1Mul, PairingVerify, G1};
-
-use crate::types::fr::FsFr;
+use crate::types::fp::FsFp;
 use crate::types::g1::FsG1;
+use crate::types::{fr::FsFr, g1::FsG1Affine};
+
+use crate::types::g1::FsG1ProjAddAffine;
+
+use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
+
 use crate::types::g2::FsG2;
+use blst::{
+    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
+    blst_p2_to_affine, Pairing,
+};
+
+use kzg::PairingVerify;
 
 impl PairingVerify<FsG1, FsG2> for FsG1 {
     fn verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
@@ -30,68 +22,19 @@ impl PairingVerify<FsG1, FsG2> for FsG1 {
     }
 }
 
-pub fn g1_linear_combination(out: &mut FsG1, points: &[FsG1], scalars: &[FsFr], len: usize) {
-    if len < 8 {
-        *out = FsG1::default();
-        for i in 0..len {
-            let tmp = points[i].mul(&scalars[i]);
-            *out = out.add_or_dbl(&tmp);
-        }
-        return;
-    }
-
-    #[cfg(feature = "parallel")]
-    {
-        let points = unsafe { core::slice::from_raw_parts(points.as_ptr() as *const blst_p1, len) };
-        let points = p1_affines::from(points);
-
-        let mut scalar_bytes: Vec<u8> = Vec::with_capacity(len * 32);
-        for bytes in scalars.iter().map(|b| {
-            let mut scalar = blst_scalar::default();
-
-            unsafe { blst_scalar_from_fr(&mut scalar, &b.0) }
-
-            scalar.b
-        }) {
-            scalar_bytes.extend_from_slice(&bytes);
-        }
-
-        let res = points.mult(scalar_bytes.as_slice(), 255);
-        *out = FsG1(res)
-    }
-
-    #[cfg(not(feature = "parallel"))]
-    {
-        let mut scratch: Vec<u8>;
-        unsafe {
-            scratch = vec![0u8; blst_p1s_mult_pippenger_scratch_sizeof(len)];
-        }
-
-        let mut p_affine = vec![blst_p1_affine::default(); len];
-        let mut p_scalars = vec![blst_scalar::default(); len];
-
-        let p_arg: [*const blst_p1; 2] = [&points[0].0, ptr::null()];
-        unsafe {
-            blst_p1s_to_affine(p_affine.as_mut_ptr(), p_arg.as_ptr(), len);
-        }
-
-        for i in 0..len {
-            unsafe { blst_scalar_from_fr(&mut p_scalars[i], &scalars[i].0) };
-        }
-
-        let scalars_arg: [*const blst_scalar; 2] = [p_scalars.as_ptr(), ptr::null()];
-        let points_arg: [*const blst_p1_affine; 2] = [p_affine.as_ptr(), ptr::null()];
-        unsafe {
-            blst_p1s_mult_pippenger(
-                &mut out.0,
-                points_arg.as_ptr(),
-                len,
-                scalars_arg.as_ptr() as *const *const u8,
-                255,
-                scratch.as_mut_ptr() as *mut limb_t,
-            );
-        }
-    }
+pub fn g1_linear_combination(
+    out: &mut FsG1,
+    points: &[FsG1],
+    scalars: &[FsFr],
+    len: usize,
+    precomputation: Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>,
+) {
+    *out = msm::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine, FsFr>(
+        points,
+        scalars,
+        len,
+        precomputation,
+    );
 }
 
 pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {

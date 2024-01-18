@@ -4,15 +4,23 @@ mod tests {
 
     use rust_kzg_arkworks::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings};
     use rust_kzg_arkworks::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-    use rust_kzg_arkworks::kzg_types::ArkFr as BlstFr;
+    use rust_kzg_arkworks::kzg_types::{ArkFp, ArkFr as BlstFr, ArkG1Affine};
     use rust_kzg_arkworks::kzg_types::{ArkG1, ArkG2};
     use rust_kzg_arkworks::utils::PolyData;
 
     #[test]
     fn test_fk_single() {
-        fk_single::<BlstFr, ArkG1, ArkG2, PolyData, FFTSettings, KZGSettings, KzgFK20SingleSettings>(
-            &generate_trusted_setup,
-        );
+        fk_single::<
+            BlstFr,
+            ArkG1,
+            ArkG2,
+            PolyData,
+            FFTSettings,
+            KZGSettings,
+            KzgFK20SingleSettings,
+            ArkFp,
+            ArkG1Affine,
+        >(&generate_trusted_setup);
     }
 
     #[test]
@@ -25,6 +33,8 @@ mod tests {
             FFTSettings,
             KZGSettings,
             KzgFK20SingleSettings,
+            ArkFp,
+            ArkG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -38,6 +48,8 @@ mod tests {
             FFTSettings,
             KZGSettings,
             KzgFK20MultiSettings,
+            ArkFp,
+            ArkG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -51,6 +63,8 @@ mod tests {
             FFTSettings,
             KZGSettings,
             KzgFK20MultiSettings,
+            ArkFp,
+            ArkG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -64,6 +78,8 @@ mod tests {
             FFTSettings,
             KZGSettings,
             KzgFK20MultiSettings,
+            ArkFp,
+            ArkG1Affine,
         >(&generate_trusted_setup);
     }
 
@@ -77,6 +93,8 @@ mod tests {
             FFTSettings,
             KZGSettings,
             KzgFK20MultiSettings,
+            ArkFp,
+            ArkG1Affine,
         >(&generate_trusted_setup);
     }
 }

@@ -8,6 +8,7 @@ pub mod fft_g1;
 pub mod finite;
 pub mod fk20_proofs;
 pub mod kzg_proofs;
+pub mod msm;
 pub mod poly;
 pub mod recover;
 pub mod utils;

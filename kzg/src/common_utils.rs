@@ -62,7 +62,7 @@ pub fn log2_u64(n: usize) -> usize {
     r
 }
 
-pub const fn num_bits<T>() -> usize {
+const fn num_bits<T>() -> usize {
     mem::size_of::<T>() * 8
 }
 

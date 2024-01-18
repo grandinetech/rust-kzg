@@ -7,11 +7,11 @@ use kzg::eip_4844::{
 use kzg_bench::benches::eip_4844::bench_eip_4844;
 use rust_kzg_zkcrypto::eip_4844::load_trusted_setup_filename_rust;
 use rust_kzg_zkcrypto::kzg_proofs::{FFTSettings, KZGSettings};
-use rust_kzg_zkcrypto::kzg_types::{ZFr, ZG1, ZG2};
+use rust_kzg_zkcrypto::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2};
 use rust_kzg_zkcrypto::poly::PolyData;
 
 fn bench_eip_4844_(c: &mut Criterion) {
-    bench_eip_4844::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings>(
+    bench_eip_4844::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings, ZFp, ZG1Affine>(
         c,
         &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,

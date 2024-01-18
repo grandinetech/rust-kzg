@@ -83,6 +83,7 @@ fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<KZGSettings, String
         fs: fft_settings_to_rust(c_settings)?,
         secret_g1,
         secret_g2,
+        precomputation: None,
     })
 }
 

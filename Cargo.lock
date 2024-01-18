@@ -271,7 +271,8 @@ dependencies = [
 [[package]]
 name = "blst"
 version = "0.3.11"
-source = "git+https://github.com/supranational/blst.git#badb7f9ab4b8f14ee491b30ce33ab3867154ec89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c94087b935a822949d3291a9989ad2b2051ea141eda0fd4e478a75f6aa3e604b"
 dependencies = [
  "cc",
  "glob",
@@ -392,6 +393,28 @@ name = "clap_lex"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
+
+[[package]]
+name = "constantine-core"
+version = "0.1.0"
+source = "git+https://github.com/mratsim/constantine.git?branch=constantine-public-sys#9f85b8395456e726afc2633f8d8d1ed5e5877a3e"
+dependencies = [
+ "constantine-sys",
+]
+
+[[package]]
+name = "constantine-ethereum-kzg"
+version = "0.1.0"
+source = "git+https://github.com/mratsim/constantine.git?branch=constantine-public-sys#9f85b8395456e726afc2633f8d8d1ed5e5877a3e"
+dependencies = [
+ "constantine-core",
+ "constantine-sys",
+]
+
+[[package]]
+name = "constantine-sys"
+version = "0.1.0"
+source = "git+https://github.com/mratsim/constantine.git?branch=constantine-public-sys#9f85b8395456e726afc2633f8d8d1ed5e5877a3e"
 
 [[package]]
 name = "cpufeatures"
@@ -818,6 +841,7 @@ dependencies = [
  "num_cpus",
  "rayon",
  "sha2 0.10.8",
+ "threadpool",
 ]
 
 [[package]]
@@ -1200,6 +1224,26 @@ dependencies = [
  "once_cell",
  "rand",
  "rayon",
+ "siphasher",
+ "smallvec",
+]
+
+[[package]]
+name = "rust-kzg-constantine"
+version = "0.1.0"
+dependencies = [
+ "blst",
+ "constantine-core",
+ "constantine-ethereum-kzg",
+ "constantine-sys",
+ "criterion 0.5.1",
+ "hex",
+ "kzg",
+ "kzg-bench",
+ "libc",
+ "once_cell",
+ "rand",
+ "rayon",
  "smallvec",
 ]
 
@@ -1392,6 +1436,12 @@ dependencies = [
  "keccak",
  "opaque-debug",
 ]
+
+[[package]]
+name = "siphasher"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54ac45299ccbd390721be55b412d41931911f654fa99e2cb8bfb57184b2061fe"
 
 [[package]]
 name = "smallvec"

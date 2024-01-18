@@ -1,41 +1,29 @@
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ArkFr as BlstFr, ArkG1};
-use ark_bls12_381::G1Projective;
-use ark_ec::{CurveGroup, VariableBaseMSM};
-use ark_ff::BigInteger256;
-use kzg::{cfg_into_iter, Fr as KzgFr, G1Mul};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
+
+use crate::kzg_types::ArkG1ProjAddAffine;
+
+use kzg::msm::msm_impls::msm;
+
+use kzg::msm::precompute::PrecomputationTable;
+use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
-
-pub fn g1_linear_combination(out: &mut ArkG1, points: &[ArkG1], scalars: &[BlstFr], len: usize) {
-    if len < 8 {
-        *out = ArkG1::default();
-        for i in 0..len {
-            let tmp = points[i].mul(&scalars[i]);
-            *out = out.add_or_dbl(&tmp);
-        }
-        return;
-    }
-
-    let ark_points: Vec<G1Projective> = {
-        cfg_into_iter!(points)
-            .take(len)
-            .map(|point| point.proj)
-            .collect()
-    };
-    let ark_points = CurveGroup::normalize_batch(&ark_points);
-    let ark_scalars: Vec<BigInteger256> = {
-        cfg_into_iter!(scalars)
-            .take(len)
-            .map(|scalar| BigInteger256::from(scalar.fr))
-            .collect()
-    };
-
-    out.proj = VariableBaseMSM::msm_bigint(&ark_points, &ark_scalars);
+pub fn g1_linear_combination(
+    out: &mut ArkG1,
+    points: &[ArkG1],
+    scalars: &[ArkFr],
+    len: usize,
+    precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
+) {
+    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+        points,
+        scalars,
+        len,
+        precomputation,
+    );
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
@@ -71,10 +59,10 @@ impl FFTG1<ArkG1> for FFTSettings {
         fft_g1_fast(&mut ret, data, 1, roots, stride, 1);
 
         if inverse {
-            let inv_fr_len = BlstFr::from_u64(data.len() as u64).inverse();
+            let inv_fr_len = ArkFr::from_u64(data.len() as u64).inverse();
             ret[..data.len()]
                 .iter_mut()
-                .for_each(|f| f.proj.mul_assign(&inv_fr_len.fr));
+                .for_each(|f| f.0.mul_assign(&inv_fr_len.fr));
         }
         Ok(ret)
     }
@@ -84,7 +72,7 @@ pub fn fft_g1_slow(
     ret: &mut [ArkG1],
     data: &[ArkG1],
     stride: usize,
-    roots: &[BlstFr],
+    roots: &[ArkFr],
     roots_stride: usize,
     _width: usize,
 ) {
@@ -103,7 +91,7 @@ pub fn fft_g1_fast(
     ret: &mut [ArkG1],
     data: &[ArkG1],
     stride: usize,
-    roots: &[BlstFr],
+    roots: &[ArkFr],
     roots_stride: usize,
     _width: usize,
 ) {

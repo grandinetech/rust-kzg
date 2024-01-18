@@ -1,4 +1,6 @@
-use kzg::{Fr, G1Mul, G2Mul, G1, G2};
+use kzg::{
+    msm::precompute::PrecomputationTable, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G2Mul, G1, G2,
+};
 use std::convert::TryInto;
 
 pub fn log_2_byte_works(log_2_byte: &dyn Fn(u8) -> usize) {
@@ -55,7 +57,7 @@ pub fn fr_equal_works<TFr: Fr>() {
     assert!(!a.equals(&b));
 }
 
-pub fn fr_negate_works<TFr: Fr>() {
+pub fn fr_negate_works<TFr: Fr + std::fmt::Debug>() {
     let m1: [u64; 4] = [
         0xffffffff00000000,
         0x53bda402fffe5bfe,
@@ -164,8 +166,19 @@ pub fn g1_identity_is_identity<TG1: G1>() {
 }
 
 #[allow(clippy::type_complexity)]
-pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
-    g1_linear_combination: &dyn Fn(&mut TG1, &[TG1], &[TFr], usize),
+pub fn g1_make_linear_combination<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Copy,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    g1_linear_combination: &dyn Fn(
+        &mut TG1,
+        &[TG1],
+        &[TFr],
+        usize,
+        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+    ),
 ) {
     let len: usize = 255;
     let mut coeffs = vec![TFr::default(); len];
@@ -181,14 +194,25 @@ pub fn g1_make_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
 
     let mut res = TG1::default();
 
-    g1_linear_combination(&mut res, &p, &coeffs, len);
+    g1_linear_combination(&mut res, &p, &coeffs, len, None);
 
-    assert!(exp.equals(&res));
+    assert_eq!(exp, res);
 }
 
 #[allow(clippy::type_complexity)]
-pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
-    g1_linear_combination: &dyn Fn(&mut TG1, &[TG1], &[TFr], usize),
+pub fn g1_random_linear_combination<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Copy,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    g1_linear_combination: &dyn Fn(
+        &mut TG1,
+        &[TG1],
+        &[TFr],
+        usize,
+        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+    ),
 ) {
     let len: usize = 8192;
     let mut coeffs = vec![TFr::default(); len];
@@ -208,7 +232,7 @@ pub fn g1_random_linear_combination<TFr: Fr, TG1: G1 + G1Mul<TFr> + Copy>(
     }
 
     let mut res = TG1::default();
-    g1_linear_combination(&mut res, &p, &coeffs, len);
+    g1_linear_combination(&mut res, &p, &coeffs, len, None);
 
     assert!(exp.equals(&res));
 }

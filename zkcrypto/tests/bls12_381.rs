@@ -4,7 +4,7 @@ mod tests {
     use kzg_bench::tests::bls12_381::*;
     use rust_kzg_zkcrypto::fft_g1::g1_linear_combination;
     use rust_kzg_zkcrypto::kzg_proofs::pairings_verify;
-    use rust_kzg_zkcrypto::kzg_types::{ZFr, ZG1, ZG2};
+    use rust_kzg_zkcrypto::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2};
 
     #[test]
     pub fn log_2_byte_works_() {
@@ -94,12 +94,12 @@ mod tests {
 
     #[test]
     pub fn g1_make_linear_combination_() {
-        g1_make_linear_combination::<ZFr, ZG1>(&g1_linear_combination);
+        g1_make_linear_combination::<ZFr, ZG1, ZFp, ZG1Affine>(&g1_linear_combination);
     }
 
     #[test]
     pub fn g1_random_linear_combination_() {
-        g1_random_linear_combination::<ZFr, ZG1>(&g1_linear_combination);
+        g1_random_linear_combination::<ZFr, ZG1, ZFp, ZG1Affine>(&g1_linear_combination);
     }
 
     #[test]

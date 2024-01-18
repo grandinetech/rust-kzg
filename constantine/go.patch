@@ -1,0 +1,43 @@
+From 90e9a518ca03716ef1d9d77e263db25b56030867 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 26 Oct 2023 14:09:11 +0300
+Subject: [PATCH] Patch go binding
+
+---
+ bindings/go/main.go | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/bindings/go/main.go b/bindings/go/main.go
+index bdd5385..155fc81 100644
+--- a/bindings/go/main.go
++++ b/bindings/go/main.go
+@@ -2,7 +2,15 @@ package ckzg4844
+ 
+ // #cgo CFLAGS: -I${SRCDIR}/../../src
+ // #cgo CFLAGS: -I${SRCDIR}/blst_headers
+-// #include "c_kzg_4844.c"
++// #ifndef BYTES_PER_G1
++// #define BYTES_PER_G1 48
++// #endif
++// #ifndef BYTES_PER_G2
++// #define BYTES_PER_G2 96
++// #endif
++// #include <stdlib.h>
++// #include "c_kzg_4844.h"
++// #cgo LDFLAGS: -L${SRCDIR}/../../../../target/release -l:rust_kzg_constantine.a -lm
+ import "C"
+ 
+ import (
+@@ -11,9 +19,6 @@ import (
+ 	"fmt"
+ 	"strings"
+ 	"unsafe"
+-
+-	// So its functions are available during compilation.
+-	_ "github.com/supranational/blst/bindings/go"
+ )
+ 
+ const (
+-- 
+2.34.1
+

@@ -11,18 +11,21 @@ use crate::utils::{
     blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
     pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2,
 };
-use bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective, Scalar, MODULUS, R2};
+use bls12_381::{Fp, G1Affine, G1Projective, G2Affine, G2Projective, Scalar, MODULUS, R2};
 use blst::{blst_fr, blst_p1};
 use ff::Field;
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
+use kzg::msm::precompute::{precompute, PrecomputationTable};
+use kzg::G1Affine as G1AffineTrait;
 use kzg::{
-    FFTFr, FFTSettings, Fr as KzgFr, G1Mul, G2Mul, KZGSettings, PairingVerify, Poly, G1, G2,
+    FFTFr, FFTSettings, Fr as KzgFr, G1Fp, G1GetFp, G1LinComb, G1Mul, G1ProjAddAffine, G2Mul,
+    KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
 };
-use std::ops::{Mul, Sub};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 use ff::derive::sbb;
-use subtle::{ConstantTimeEq, CtOption};
+use subtle::{Choice, ConstantTimeEq, CtOption};
 
 fn to_scalar(zfr: &ZFr) -> Scalar {
     zfr.fr
@@ -283,6 +286,70 @@ impl KzgFr for ZFr {
     fn equals(&self, b: &Self) -> bool {
         self.fr == b.fr
     }
+
+    fn to_scalar(&self) -> Scalar256 {
+        let tmp = Scalar::montgomery_reduce(
+            self.fr.0[0],
+            self.fr.0[1],
+            self.fr.0[2],
+            self.fr.0[3],
+            0,
+            0,
+            0,
+            0,
+        );
+        Scalar256::from_u64(tmp.0)
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+pub struct ZFp(pub Fp);
+impl G1Fp for ZFp {
+    const ZERO: Self = Self(Fp::zero());
+
+    const ONE: Self = Self(Fp::one());
+
+    const BLS12_381_RX_P: Self = Self(Fp([
+        8505329371266088957,
+        17002214543764226050,
+        6865905132761471162,
+        8632934651105793861,
+        6631298214892334189,
+        1582556514881692819,
+    ]));
+
+    fn inverse(&self) -> Option<Self> {
+        self.0.invert().map(Self).into()
+    }
+
+    fn square(&self) -> Self {
+        Self(self.0.square())
+    }
+
+    fn double(&self) -> Self {
+        Self(self.0.add(&self.0))
+    }
+
+    fn from_underlying_arr(arr: &[u64; 6]) -> Self {
+        Self(Fp(*arr))
+    }
+
+    fn neg_assign(&mut self) {
+        self.0 = self.0.neg();
+    }
+
+    fn mul_assign_fp(&mut self, b: &Self) {
+        self.0.mul_assign(b.0);
+    }
+
+    fn sub_assign_fp(&mut self, b: &Self) {
+        self.0.sub_assign(b.0);
+    }
+
+    fn add_assign_fp(&mut self, b: &Self) {
+        self.0.add_assign(b.0);
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
@@ -376,8 +443,8 @@ impl G1 for ZG1 {
         let g1_affine = G1Affine::from(self.proj);
         g1_affine.to_compressed()
     }
-    //zyme
-    fn add_or_dbl(&mut self, b: &Self) -> Self {
+
+    fn add_or_dbl(&self, b: &Self) -> Self {
         Self {
             proj: self.proj + b.proj,
         }
@@ -409,6 +476,40 @@ impl G1 for ZG1 {
     fn equals(&self, b: &Self) -> bool {
         self.proj.eq(&b.proj)
     }
+
+    fn add_or_dbl_assign(&mut self, b: &Self) {
+        self.proj.add_assign(b.proj);
+    }
+
+    fn add_assign(&mut self, b: &Self) {
+        self.proj.add_assign(b.proj);
+    }
+
+    fn dbl_assign(&mut self) {
+        self.proj = self.proj.double();
+    }
+
+    const ZERO: Self = Self {
+        proj: G1Projective {
+            x: Fp([
+                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,
+            ]),
+            y: Fp([
+                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,
+            ]),
+            z: Fp([0, 0, 0, 0, 0, 0]),
+        },
+    };
 }
 
 impl G1Mul<ZFr> for ZG1 {
@@ -417,10 +518,140 @@ impl G1Mul<ZFr> for ZG1 {
             proj: self.proj.mul(b.fr),
         }
     }
+}
 
-    fn g1_lincomb(points: &[Self], scalars: &[ZFr], len: usize) -> Self {
-        let mut out = Self::default();
-        g1_linear_combination(&mut out, points, scalars, len);
+#[repr(C)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+pub struct ZG1Affine(pub G1Affine);
+impl G1AffineTrait<ZG1, ZFp> for ZG1Affine {
+    fn into_affine(g1: &ZG1) -> Self {
+        Self(g1.proj.into())
+    }
+
+    fn into_affines(g1: &[ZG1]) -> Vec<Self> {
+        let points =
+            unsafe { core::slice::from_raw_parts(g1.as_ptr() as *const G1Projective, g1.len()) };
+        let mut g1_affine_batch: Vec<G1Affine> = vec![G1Affine::default(); points.len()];
+        G1Projective::batch_normalize(points, &mut g1_affine_batch);
+        unsafe { core::mem::transmute(g1_affine_batch) }
+    }
+
+    fn into_affines_loc(out: &mut [Self], g1: &[ZG1]) {
+        out.copy_from_slice(&Self::into_affines(g1));
+    }
+
+    fn to_proj(&self) -> ZG1 {
+        ZG1 {
+            proj: self.0.into(),
+        }
+    }
+
+    fn x(&self) -> &ZFp {
+        unsafe { core::mem::transmute(&self.0.x) }
+    }
+
+    fn y(&self) -> &ZFp {
+        unsafe { core::mem::transmute(&self.0.y) }
+    }
+
+    fn is_infinity(&self) -> bool {
+        bool::from(self.0.infinity)
+    }
+
+    fn is_zero(&self) -> bool {
+        bool::from(self.0.infinity)
+        // FIXME: definetly wrong
+    }
+
+    fn zero() -> Self {
+        Self(G1Affine {
+            x: ZFp::ZERO.0,
+            y: ZFp::ZERO.0,
+            infinity: Choice::from(1),
+        })
+    }
+
+    fn x_mut(&mut self) -> &mut ZFp {
+        unsafe { core::mem::transmute(&mut self.0.x) }
+    }
+
+    fn y_mut(&mut self) -> &mut ZFp {
+        unsafe { core::mem::transmute(&mut self.0.y) }
+    }
+
+    // fn double(&mut self) {
+    //     self.0.add(&self.0);
+    // }
+
+    // fn add(&mut self, b: &Self) {
+    //     self.0 += b.0;
+    // }
+}
+
+pub struct ZG1ProjAddAffine;
+impl G1ProjAddAffine<ZG1, ZFp, ZG1Affine> for ZG1ProjAddAffine {
+    fn add_assign_affine(proj: &mut ZG1, aff: &ZG1Affine) {
+        proj.proj += aff.0;
+    }
+
+    fn add_or_double_assign_affine(proj: &mut ZG1, aff: &ZG1Affine) {
+        proj.proj += aff.0;
+    }
+}
+
+impl G1GetFp<ZFp> for ZG1 {
+    fn x(&self) -> &ZFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.proj.x)
+        }
+    }
+
+    fn y(&self) -> &ZFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.proj.y)
+        }
+    }
+
+    fn z(&self) -> &ZFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&self.proj.z)
+        }
+    }
+
+    fn x_mut(&mut self) -> &mut ZFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.proj.x)
+        }
+    }
+
+    fn y_mut(&mut self) -> &mut ZFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.proj.y)
+        }
+    }
+
+    fn z_mut(&mut self) -> &mut ZFp {
+        unsafe {
+            // Transmute safe due to repr(C) on FsFp
+            core::mem::transmute(&mut self.proj.z)
+        }
+    }
+}
+
+impl G1LinComb<ZFr, ZFp, ZG1Affine> for ZG1 {
+    fn g1_lincomb(
+        points: &[Self],
+        scalars: &[ZFr],
+        len: usize,
+        precomputation: Option<&PrecomputationTable<ZFr, Self, ZFp, ZG1Affine>>,
+    ) -> Self {
+        let mut out = ZG1::default();
+        g1_linear_combination(&mut out, points, scalars, len, precomputation);
         out
     }
 }
@@ -585,7 +816,7 @@ impl FFTSettings<ZFr> for ZFFTSettings {
     }
 }
 
-impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData> for ZKZGSettings {
+impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZGSettings {
     fn new(
         secret_g1: &[ZG1],
         secret_g2: &[ZG2],
@@ -596,6 +827,7 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData> for ZKZGSettings {
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
+            precomputation: precompute(secret_g1).ok().flatten(),
         })
     }
 
@@ -605,7 +837,7 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData> for ZKZGSettings {
         }
 
         let mut out = ZG1::default();
-        g1_linear_combination(&mut out, &self.secret_g1, &p.coeffs, p.coeffs.len());
+        g1_linear_combination(&mut out, &self.secret_g1, &p.coeffs, p.coeffs.len(), None);
 
         Ok(out)
     }
@@ -741,5 +973,9 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData> for ZKZGSettings {
 
     fn get_g2_secret(&self) -> &[ZG2] {
         &self.secret_g2
+    }
+
+    fn get_precomputation(&self) -> Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>> {
+        self.precomputation.as_ref()
     }
 }

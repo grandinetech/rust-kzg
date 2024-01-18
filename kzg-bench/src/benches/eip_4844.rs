@@ -3,17 +3,19 @@ use std::env::set_current_dir;
 use crate::tests::eip_4844::{generate_random_blob_bytes, generate_random_field_element_bytes};
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput};
 use kzg::eip_4844::TRUSTED_SETUP_PATH;
-use kzg::{FFTSettings, Fr, KZGSettings, Poly, G1, G2};
+use kzg::{FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2};
 
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
 pub fn bench_eip_4844<
     TFr: Fr,
-    TG1: G1,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     c: &mut Criterion,
     load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
