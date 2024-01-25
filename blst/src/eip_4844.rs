@@ -1,23 +1,18 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
-use alloc::collections::BTreeMap;
 use alloc::string::String;
-use alloc::sync::Arc;
 use alloc::vec::Vec;
-use core::hash::{Hash, Hasher};
 use core::ptr::null_mut;
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
-    verify_kzg_proof_rust,
+    verify_kzg_proof_rust, PrecomputationTableManager,
 };
-use kzg::msm::precompute::PrecomputationTable;
 use kzg::{cfg_into_iter, Fr, G1};
 #[cfg(feature = "std")]
 use libc::FILE;
-use siphasher::sip::SipHasher;
 #[cfg(feature = "std")]
 use std::fs::File;
 #[cfg(feature = "std")]
@@ -45,43 +40,8 @@ use crate::types::kzg_settings::FsKZGSettings;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-struct PrecomputationTableManager {
-    tables: BTreeMap<u64, Arc<PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>>,
-}
-
-impl PrecomputationTableManager {
-    pub const fn new() -> Self {
-        Self {
-            tables: BTreeMap::new(),
-        }
-    }
-
-    pub fn save_precomputation(&mut self, settings: &mut FsKZGSettings, c_settings: &CKZGSettings) {
-        if let Some(precomputation) = settings.precomputation.take() {
-            self.tables
-                .insert(Self::get_key(c_settings), precomputation);
-        }
-    }
-
-    pub fn remove_precomputation(&mut self, c_settings: &CKZGSettings) {
-        self.tables.remove(&Self::get_key(c_settings));
-    }
-
-    pub fn get_precomputation(
-        &self,
-        c_settings: &CKZGSettings,
-    ) -> Option<Arc<PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>> {
-        self.tables.get(&Self::get_key(c_settings)).cloned()
-    }
-
-    fn get_key(settings: &CKZGSettings) -> u64 {
-        let mut hasher = SipHasher::new();
-        settings.g1_values.hash(&mut hasher);
-        hasher.finish()
-    }
-}
-
-static mut PRECOMPUTATION_TABLES: PrecomputationTableManager = PrecomputationTableManager::new();
+static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<FsFr, FsG1, FsFp, FsG1Affine> =
+    PrecomputationTableManager::new();
 
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings, String> {
@@ -236,7 +196,7 @@ pub unsafe extern "C" fn load_trusted_setup(
 
     let c_settings = kzg_settings_to_c(&settings);
 
-    PRECOMPUTATION_TABLES.save_precomputation(&mut settings, &c_settings);
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
 
     *out = c_settings;
     C_KZG_RET_OK
@@ -267,7 +227,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 
     let c_settings = kzg_settings_to_c(&settings);
 
-    PRECOMPUTATION_TABLES.save_precomputation(&mut settings, &c_settings);
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
 
     *out = c_settings;
 

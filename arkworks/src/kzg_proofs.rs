@@ -1,8 +1,11 @@
 #![allow(non_camel_case_types)]
+
+extern crate alloc;
 use super::utils::{blst_poly_into_pc_poly, PolyData};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
+use alloc::sync::Arc;
 use ark_bls12_381::Bls12_381;
 use ark_ec::pairing::Pairing;
 use ark_ec::CurveGroup;
@@ -46,7 +49,7 @@ pub struct KZGSettings {
     pub fs: FFTSettings,
     pub secret_g1: Vec<ArkG1>,
     pub secret_g2: Vec<ArkG2>,
-    pub precomputation: Option<PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
+    pub precomputation: Option<Arc<PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>>,
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
