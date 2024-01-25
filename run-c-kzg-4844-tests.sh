@@ -158,7 +158,7 @@ print_msg "Patching nim binding"
 git apply < ../nim.patch
 
 print_msg "Installing nim dependencies"
-nimble install --depsOnly
+nimble install --depsOnly -y
 
 print_msg "Running nim tests"
 nimble test -y
