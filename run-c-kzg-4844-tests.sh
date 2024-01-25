@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/bash
+#!/bin/bash
 
 set -e
 
@@ -43,6 +43,7 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
+rm -f ../target/release/rust_kzg_$backend.a
 mv ../target/release/librust_kzg_$backend.a ../target/release/rust_kzg_$backend.a
 
 ###################### cloning c-kzg-4844 ######################
@@ -149,6 +150,14 @@ cd bindings/go || exit
 
 print_msg "Running go tests"
 CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
+cd ../..
+
+###################### nim tests ######################
+
+print_msg "Patching nim binding"
+git apply < ../nim.patch
+cd bindings/nim || exit
+nim test
 cd ../../..
 
 ###################### cleaning up ######################
