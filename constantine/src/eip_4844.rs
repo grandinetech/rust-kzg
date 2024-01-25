@@ -22,14 +22,16 @@ use std::io::Read;
 use kzg::eip_4844::load_trusted_setup_string;
 
 use kzg::eip_4844::{
-    Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT,
-    BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
-    FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
+    Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof, PrecomputationTableManager,
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS,
+    C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS,
 };
 
 use crate::types::fft_settings::CtFFTSettings;
+use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
-use crate::types::g1::CtG1;
+use crate::types::g1::{CtG1, CtG1Affine};
 
 use crate::types::g2::CtG2;
 use crate::types::kzg_settings::CtKZGSettings;
