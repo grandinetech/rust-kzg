@@ -156,9 +156,8 @@ cd ../..
 
 print_msg "Patching nim binding"
 git apply < ../nim.patch
-cd bindings/nim || exit
-nim test
-cd ../../..
+nimble test -y
+cd ..
 
 ###################### cleaning up ######################
 
