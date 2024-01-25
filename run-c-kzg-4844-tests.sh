@@ -161,6 +161,7 @@ print_msg "Installing nim dependencies"
 nimble install -y stew
 nimble install -y unittest2
 nimble install -y yaml
+nimble install -y nim
 
 print_msg "Running nim tests"
 cd bindings/nim || exit
