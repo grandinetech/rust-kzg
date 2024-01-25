@@ -33,7 +33,8 @@ jobs:
           distribution: "temurin"
           java-version: "11"
 
-      - uses: jiro4989/setup-nim-action@v1
+      - if: matrix.backend == 'constantine'
+        uses: jiro4989/setup-nim-action@v1
         with:
           nim-version: '1.6.14'
 
