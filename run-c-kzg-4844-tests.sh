@@ -154,18 +154,22 @@ cd ../..
 
 ###################### nim tests ######################
 
-print_msg "Patching nim binding"
-git apply < ../nim.patch
+if [ "$backend" != "constantine" ]; then
+  print_msg "Patching nim binding"
+  git apply < ../nim.patch
 
-print_msg "Installing nim dependencies"
-nimble install -y stew
-nimble install -y unittest2
-nimble install -y yaml
+  print_msg "Installing nim dependencies"
+  nimble install -y stew
+  nimble install -y unittest2
+  nimble install -y yaml
 
-print_msg "Running nim tests"
-cd bindings/nim || exit
-nim test
-cd ../../..
+  print_msg "Running nim tests"
+  cd bindings/nim || exit
+  nim test
+  cd ../../..
+else
+  print_msg "Currently, nim bindings are not supported for constantine backend"
+fi
 
 ###################### cleaning up ######################
 
