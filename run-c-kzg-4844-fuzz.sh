@@ -116,7 +116,12 @@ cd bindings/go || exit
 git clone https://github.com/jtraglia/kzg-fuzz.git
 cd kzg-fuzz || exit
 
+go clean -modcache
+
 echo 'replace "github.com/ethereum/c-kzg-4844" v0.3.1 => "../../../"' >> go.mod
+
+go install
+
 bash fuzz.sh
 
 # ###################### cleaning up ######################
