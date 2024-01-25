@@ -158,11 +158,14 @@ print_msg "Patching nim binding"
 git apply < ../nim.patch
 
 print_msg "Installing nim dependencies"
-nimble install --depsOnly -y
+nimble install -y stew
+nimble install -y unittest2
+nimble install -y yaml
 
 print_msg "Running nim tests"
-nimble test -y
-cd ..
+cd bindings/nim || exit
+nim test
+cd ../../..
 
 ###################### cleaning up ######################
 
