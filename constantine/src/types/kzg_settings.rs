@@ -203,6 +203,6 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
     }
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
-        self.precomputation.as_ref()
+        self.precomputation.as_ref().map(|v| v.as_ref())
     }
 }
