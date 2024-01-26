@@ -1,17 +1,23 @@
 #![allow(non_camel_case_types)]
 extern crate alloc;
 
+use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
+use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
 pub use blst::{blst_fr, blst_p1, blst_p2};
 use core::ffi::c_uint;
+use core::hash::Hash;
+use core::hash::Hasher;
 use sha2::{Digest, Sha256};
+use siphasher::sip::SipHasher;
 
 use crate::common_utils::reverse_bit_order;
+use crate::msm::precompute::PrecomputationTable;
 use crate::G1Affine;
 use crate::G1Fp;
 use crate::G1GetFp;
@@ -96,6 +102,59 @@ pub struct CKZGSettings {
     pub roots_of_unity: *mut blst_fr,
     pub g1_values: *mut blst_p1,
     pub g2_values: *mut blst_p2,
+}
+
+pub struct PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
+where
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+{
+    tables: BTreeMap<u64, Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>>,
+}
+
+impl<TFr, TG1, TG1Fp, TG1Affine> PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
+where
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+{
+    pub const fn new() -> Self {
+        Self {
+            tables: BTreeMap::new(),
+        }
+    }
+
+    pub fn save_precomputation(
+        &mut self,
+        precomputation: Option<Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>>,
+        c_settings: &CKZGSettings,
+    ) {
+        if let Some(precomputation) = precomputation {
+            self.tables
+                .insert(Self::get_key(c_settings), precomputation);
+        }
+    }
+
+    pub fn remove_precomputation(&mut self, c_settings: &CKZGSettings) {
+        self.tables.remove(&Self::get_key(c_settings));
+    }
+
+    pub fn get_precomputation(
+        &self,
+        c_settings: &CKZGSettings,
+    ) -> Option<Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>> {
+        self.tables.get(&Self::get_key(c_settings)).cloned()
+    }
+
+    fn get_key(settings: &CKZGSettings) -> u64 {
+        let mut hasher = SipHasher::new();
+
+        settings.g1_values.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
 ////////////////////////////// Utility functions for EIP-4844 //////////////////////////////

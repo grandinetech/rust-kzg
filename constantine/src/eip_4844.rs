@@ -22,20 +22,25 @@ use std::io::Read;
 use kzg::eip_4844::load_trusted_setup_string;
 
 use kzg::eip_4844::{
-    Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT,
-    BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
-    FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
+    Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof, PrecomputationTableManager,
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS,
+    C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS,
 };
 
 use crate::types::fft_settings::CtFFTSettings;
+use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
-use crate::types::g1::CtG1;
+use crate::types::g1::{CtG1, CtG1Affine};
 
 use crate::types::g2::CtG2;
 use crate::types::kzg_settings::CtKZGSettings;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
+
+static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<CtFr, CtG1, CtFp, CtG1Affine> =
+    PrecomputationTableManager::new();
 
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<CtKZGSettings, String> {
@@ -186,9 +191,14 @@ pub unsafe extern "C" fn load_trusted_setup(
     let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * BYTES_PER_G1);
     let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
-    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(g1_bytes, g2_bytes));
+    let mut settings = handle_ckzg_badargs!(load_trusted_setup_rust(g1_bytes, g2_bytes));
 
-    *out = kzg_settings_to_c(&settings);
+    let c_settings = kzg_settings_to_c(&settings);
+
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
+
+    *out = c_settings;
+
     C_KZG_RET_OK
 }
 
@@ -210,12 +220,17 @@ pub unsafe extern "C" fn load_trusted_setup_file(
         // deallocate its KZGSettings pointer when no exception is thrown).
         return C_KZG_RET_BADARGS;
     }
-    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(
+    let mut settings = handle_ckzg_badargs!(load_trusted_setup_rust(
         g1_bytes.as_slice(),
         g2_bytes.as_slice()
     ));
 
-    *out = kzg_settings_to_c(&settings);
+    let c_settings = kzg_settings_to_c(&settings);
+
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
+
+    *out = c_settings;
+
     C_KZG_RET_OK
 }
 
@@ -250,6 +265,8 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     if s.is_null() {
         return;
     }
+
+    PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
     let max_width = (*s).max_width as usize;
     let roots = Box::from_raw(core::slice::from_raw_parts_mut(

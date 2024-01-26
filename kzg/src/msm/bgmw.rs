@@ -298,7 +298,15 @@ impl<
         }
 
         #[cfg(not(feature = "parallel"))]
-        pippenger_window_size(npoints)
+        {
+            let n_exponent = npoints.trailing_zeros();
+
+            // TODO: experiment with different q exponents, to find optimal
+            match n_exponent {
+                12 => 13, // this value is picked from https://github.com/LuoGuiwen/MSM_blst/blob/2e098f09f07969ac3191406976be6d1c197100f2/ches_config_files/config_file_n_exp_12.h#L17
+                _ => pippenger_window_size(npoints), // default to pippenger window size. This is not optimal window size, but still better than simple pippenger
+            }
+        }
     }
 }
 

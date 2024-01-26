@@ -1,6 +1,7 @@
 extern crate alloc;
 
 use alloc::string::String;
+use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 use kzg::msm::precompute::{precompute, PrecomputationTable};
@@ -22,7 +23,7 @@ pub struct CtKZGSettings {
     pub fs: CtFFTSettings,
     pub secret_g1: Vec<CtG1>,
     pub secret_g2: Vec<CtG2>,
-    pub precomputation: Option<PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>>,
+    pub precomputation: Option<Arc<PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>>>,
 }
 
 impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for CtKZGSettings {
@@ -36,7 +37,7 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
-            precomputation: precompute(secret_g1).ok().flatten(),
+            precomputation: precompute(secret_g1).ok().flatten().map(Arc::new),
         })
     }
 
@@ -202,6 +203,6 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
     }
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
-        self.precomputation.as_ref()
+        self.precomputation.as_ref().map(|v| v.as_ref())
     }
 }

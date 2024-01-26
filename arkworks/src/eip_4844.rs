@@ -1,15 +1,15 @@
 extern crate alloc;
 
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
-use crate::kzg_types::{ArkFr, ArkG1, ArkG2};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
 use blst::{blst_fr, blst_p1, blst_p2};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
     verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
-    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS,
-    C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET,
+    C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
     TRUSTED_SETUP_NUM_G2_POINTS,
 };
 use kzg::{cfg_into_iter, Fr, G1};
@@ -27,6 +27,9 @@ use rayon::prelude::*;
 
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
+
+static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<ArkFr, ArkG1, ArkFp, ArkG1Affine> =
+    PrecomputationTableManager::new();
 
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, String> {
@@ -178,9 +181,14 @@ pub unsafe extern "C" fn load_trusted_setup(
     let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * BYTES_PER_G1);
     let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
     TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
-    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(g1_bytes, g2_bytes));
+    let mut settings = handle_ckzg_badargs!(load_trusted_setup_rust(g1_bytes, g2_bytes));
 
-    *out = kzg_settings_to_c(&settings);
+    let c_settings = kzg_settings_to_c(&settings);
+
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
+
+    *out = c_settings;
+
     C_KZG_RET_OK
 }
 
@@ -202,12 +210,17 @@ pub unsafe extern "C" fn load_trusted_setup_file(
         // deallocate its KZGSettings pointer when no exception is thrown).
         return C_KZG_RET_BADARGS;
     }
-    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(
+    let mut settings = handle_ckzg_badargs!(load_trusted_setup_rust(
         g1_bytes.as_slice(),
         g2_bytes.as_slice()
     ));
 
-    *out = kzg_settings_to_c(&settings);
+    let c_settings = kzg_settings_to_c(&settings);
+
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
+
+    *out = c_settings;
+
     C_KZG_RET_OK
 }
 
@@ -217,6 +230,8 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     if s.is_null() {
         return;
     }
+
+    PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
     let max_width = (*s).max_width as usize;
     let roots = Box::from_raw(core::slice::from_raw_parts_mut(

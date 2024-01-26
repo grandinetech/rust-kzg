@@ -25,7 +25,8 @@ rand = { version = "0.8.5" }
 [features]
 default = [
     "std",
-    "rand"
+    "rand",
+    "bgmw"
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 

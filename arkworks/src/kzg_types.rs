@@ -34,6 +34,9 @@ use kzg::{
 };
 use std::ops::{AddAssign, Mul, Neg, Sub};
 
+extern crate alloc;
+use alloc::sync::Arc;
+
 fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
     u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
 }
@@ -630,7 +633,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
-            precomputation: precompute(secret_g1).ok().flatten(),
+            precomputation: precompute(secret_g1).ok().flatten().map(Arc::new),
         })
     }
 
@@ -793,7 +796,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
     }
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>> {
-        self.precomputation.as_ref()
+        self.precomputation.as_ref().map(|v| v.as_ref())
     }
 }
 
