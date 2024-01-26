@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/bash
+#!/bin/bash
 
 set -e
 
@@ -43,6 +43,7 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
+rm -f ../target/release/rust_kzg_$backend.a
 mv ../target/release/librust_kzg_$backend.a ../target/release/rust_kzg_$backend.a
 
 ###################### cloning c-kzg-4844 ######################
@@ -149,7 +150,26 @@ cd bindings/go || exit
 
 print_msg "Running go tests"
 CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
-cd ../../..
+cd ../..
+
+###################### nim tests ######################
+
+if [ "$backend" != "constantine" ]; then
+  print_msg "Patching nim binding"
+  git apply < ../nim.patch
+
+  print_msg "Installing nim dependencies"
+  nimble install -y stew
+  nimble install -y unittest2
+  nimble install -y yaml
+
+  print_msg "Running nim tests"
+  cd bindings/nim || exit
+  nim test
+  cd ../../..
+else
+  print_msg "Currently, nim bindings are not supported for constantine backend"
+fi
 
 ###################### cleaning up ######################
 
