@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-blst = "0.3.11"
+blst = { git="https://github.com/supranational/blst", rev="0d46eefa45fc1e57aceb42bba0e84eab3a7a9725" }
 sha2 = { version = "0.10.6", default-features = false }
 num_cpus = { version = "1.16.0", optional = true }
 rayon = { version = "1.8.0", optional = true } 

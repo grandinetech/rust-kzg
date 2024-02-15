@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 cc = "1.0"
-blst = "0.3.11"
+blst = { git="https://github.com/supranational/blst", rev="0d46eefa45fc1e57aceb42bba0e84eab3a7a9725" }
 kzg = { path = "../../kzg" }
 primitive-types = "0.12.0"
 rayon = { version = "1.5.1", optional = true }
