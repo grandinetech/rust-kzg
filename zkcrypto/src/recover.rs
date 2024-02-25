@@ -87,7 +87,7 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
         fs: &FFTSettings,
     ) -> Result<Self, String> {
         if !samples.len().is_power_of_two() {
-            return Err(String::from("samples lenght has to be power of 2"));
+            return Err(String::from("samples length has to be power of 2"));
         }
 
         let mut missing = Vec::new();

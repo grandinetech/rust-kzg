@@ -62,11 +62,11 @@ impl DAS<BlstFr> for FFTSettings {
             return Err(String::from("vals can not be empty"));
         }
         if !vals.len().is_power_of_two() {
-            return Err(String::from("vals lenght has to be power of 2"));
+            return Err(String::from("vals length has to be power of 2"));
         }
         if vals.len() * 2 > self.max_width {
             return Err(String::from(
-                "vals lenght * 2 has to equal or less than FFTSetings max width",
+                "vals length * 2 has to equal or less than FFTSettings max width",
             ));
         }
 

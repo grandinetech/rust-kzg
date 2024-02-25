@@ -2,7 +2,7 @@ Task III - Join MSM optimisations
 
 * The codebase needs to be updated to the latest [c-kzg-4844](https://github.com/ethereum/c-kzg-4844), dependencies also needs to be upgraded;
 * The goal is to join all previous optimisations into one optimised MSM implementation. The teams need to collaborate in order to make the optimisations compatible between each other.
-* Joints MSM optimisations needs to be genereric (compatible with multiple ECC backend). If not possible - consult with supervisor.
+* Joints MSM optimisations needs to be generic (compatible with multiple ECC backend). If not possible - consult with supervisor.
 * Optimisations needs to be fuzzed against `go-kzg-4844` and `c-kzg-4844` with the [fuzzer](https://github.com/jtraglia/kzg-fuzz).
 * The build must pass on Github CI.
  

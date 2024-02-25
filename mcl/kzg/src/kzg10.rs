@@ -361,7 +361,7 @@ impl Polynomial {
         let divisor = Polynomial::normalise_coeffs(_divisor);
 
         if divisor.len() >= dividend.order() || divisor.len() < 128 {
-            // Tunable paramter
+            // Tunable parameter
             self.long_division(&divisor)
         } else {
             self.fast_div(&divisor)
@@ -547,10 +547,10 @@ impl Polynomial {
         let mut d = 0;
 
         // Max space for multiplications is (2 * length - 1)
-        //use a more efficent log_2?
+        //use a more efficient log_2?
         let scale = log_2(next_pow_of_2(2 * new_length - 1));
         //check if scale actually always fits in u8
-        //fftsettings to be used, if multiplacation is done with fft
+        //fftsettings to be used, if multiplication is done with fft
         let fs = FFTSettings::new(scale as u8);
         let coeffs = vec![self.coeffs[0].inverse()];
         let mut out = Polynomial::from_fr(coeffs);

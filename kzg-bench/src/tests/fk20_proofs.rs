@@ -217,7 +217,7 @@ fn fk_multi_case<
         let domain_pos = reverse_bits_limited(chunk_count, pos);
         let x = fs.get_expanded_roots_of_unity_at(domain_pos * domain_stride);
 
-        // The ys from the extended coeffients
+        // The ys from the extended coefficients
         for i in 0..chunk_len {
             ys[i] = extended_coeffs_fft[chunk_len * pos + i].clone();
         }

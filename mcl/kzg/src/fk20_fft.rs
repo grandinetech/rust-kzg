@@ -585,7 +585,7 @@ impl FFTSettings {
         roots_stride: usize,
         out: &mut [G1],
     ) {
-        //TODO: fine tune for opt, maybe resolve number dinamically based on experiments
+        //TODO: fine tune for opt, maybe resolve number dynamically based on experiments
         if out.len() <= 4 {
             return FFTSettings::_fft_g1_simple(
                 values,

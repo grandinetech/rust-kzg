@@ -81,8 +81,8 @@ impl KzgFr for ZFr {
     #[cfg(feature = "rand")]
     fn rand() -> Self {
         let rng = rand::thread_rng();
-        let rusult = ff::Field::random(rng);
-        Self { fr: rusult }
+        let result = ff::Field::random(rng);
+        Self { fr: result }
     }
     #[allow(clippy::bind_instead_of_map)]
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
