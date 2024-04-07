@@ -91,21 +91,31 @@ impl<
     #[cfg(feature = "parallel")]
     pub fn multiply_parallel(&self, scalars: &[Scalar256]) -> TG1 {
         use icicle_bls12_381::curve::ScalarField;
+        use icicle_core::curve::Projective;
+        use icicle_cuda_runtime::stream::CudaStream;
 
-        let scalars = HostOrDeviceSlice::on_host(scalars.iter().map(|it| ScalarField::from_bytes_le(it.as_u8())).collect::<Vec<_>>());
-
-        let mut results = HostOrDeviceSlice::on_host(vec![icicle_bls12_381::curve::G1Projective::zero()]);
-
+        let mut results = HostOrDeviceSlice::cuda_malloc(1).unwrap();
+        let mut scalars_d = HostOrDeviceSlice::cuda_malloc(scalars.len()).unwrap();
+        let stream = CudaStream::create().unwrap();
+        scalars_d.copy_from_host_async(&scalars.iter().map(|it| ScalarField::from_bytes_le(it.as_u8())).collect::<Vec<_>>(), &stream).unwrap();
         let mut config = MSMConfig::default_for_device(DEFAULT_DEVICE_ID);
         config.precompute_factor = PRECOMPUTE_FACTOR as i32;
+        config.ctx.stream = &stream;
+        config.is_async = true;
+        
+        icicle_core::msm::msm(&scalars_d, &self.affines, &config, &mut results).unwrap();
 
-        icicle_core::msm::msm(&scalars, &self.affines, &config, &mut results).unwrap();
+        let mut results_h = vec![Projective::<CurveCfg>::zero(); 1];
+        results.copy_to_host_async(&mut results_h, &stream);
+
+        stream.synchronize().unwrap();
+        stream.destroy().unwrap();
 
         let mut output = TG1::default();
 
-        *output.x_mut() = TG1Fp::from_bytes_le(&results.as_slice()[0].x.to_bytes_le().try_into().unwrap());
-        *output.y_mut() = TG1Fp::from_bytes_le(&results.as_slice()[0].y.to_bytes_le().try_into().unwrap());
-        *output.z_mut() = TG1Fp::from_bytes_le(&results.as_slice()[0].z.to_bytes_le().try_into().unwrap());
+        *output.x_mut() = TG1Fp::from_bytes_le(&results_h.as_slice()[0].x.to_bytes_le().try_into().unwrap());
+        *output.y_mut() = TG1Fp::from_bytes_le(&results_h.as_slice()[0].y.to_bytes_le().try_into().unwrap());
+        *output.z_mut() = TG1Fp::from_bytes_le(&results_h.as_slice()[0].z.to_bytes_le().try_into().unwrap());
 
         output
     }
