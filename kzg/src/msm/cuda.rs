@@ -1,8 +1,8 @@
 use core::marker::PhantomData;
 
 use icicle_bls12_381::curve::CurveCfg;
-use icicle_core::{curve::Affine, msm::MSMConfig, traits::FieldImpl};
-use icicle_cuda_runtime::memory::HostOrDeviceSlice;
+use icicle_core::{curve::Affine, msm::{precompute_bases, MSMConfig}, traits::FieldImpl};
+use icicle_cuda_runtime::{memory::HostOrDeviceSlice, device_context::{DeviceContext, DEFAULT_DEVICE_ID}};
 use core::fmt::Debug;
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, Scalar256, G1};
 
@@ -47,6 +47,8 @@ TG1Affine: G1Affine<TG1, TG1Fp>,
     }
 }
 
+const PRECOMPUTE_FACTOR: usize = 8;
+
 impl<
         TFr: Fr,
         TG1Fp: G1Fp,
@@ -56,10 +58,19 @@ impl<
 {
     pub fn new(points: &[TG1]) -> Result<Option<Self>, String> {
         let affines_raw = batch_convert::<TG1, TG1Fp, TG1Affine>(points).iter().map(|it| icicle_bls12_381::curve::G1Affine::from_limbs(it.x().to_limbs(), it.y().to_limbs())).collect::<Vec<_>>();
-        let Ok(mut affines) = HostOrDeviceSlice::<'static, Affine<CurveCfg>>::cuda_malloc(affines_raw.len()) else {
+        // let Ok(mut affines) = HostOrDeviceSlice::<'static, Affine<CurveCfg>>::cuda_malloc(affines_raw.len()) else {
+        //     return Ok(None);
+        // };
+        // if affines.copy_from_host(&affines_raw).is_err() {
+        //     return Ok(None);
+        // }
+        let device_affines = HostOrDeviceSlice::on_host(affines_raw);
+
+        let Ok(mut affines) = HostOrDeviceSlice::<'static, Affine<CurveCfg>>::cuda_malloc(points.len() * PRECOMPUTE_FACTOR) else {
             return Ok(None);
         };
-        if affines.copy_from_host(&affines_raw).is_err() {
+
+        if precompute_bases(&device_affines, PRECOMPUTE_FACTOR as i32, 0, &DeviceContext::default_for_device(DEFAULT_DEVICE_ID), &mut affines).is_err() {
             return Ok(None);
         }
 
@@ -85,7 +96,10 @@ impl<
 
         let mut results = HostOrDeviceSlice::on_host(vec![icicle_bls12_381::curve::G1Projective::zero()]);
 
-        icicle_core::msm::msm(&scalars, &self.affines, &MSMConfig::default_for_device(0), &mut results).unwrap();
+        let mut config = MSMConfig::default_for_device(DEFAULT_DEVICE_ID);
+        config.precompute_factor = PRECOMPUTE_FACTOR as i32;
+
+        icicle_core::msm::msm(&scalars, &self.affines, &config, &mut results).unwrap();
 
         let mut output = TG1::default();
 
