@@ -15,3 +15,11 @@ mod pippenger_utils;
 
 #[cfg(all(feature = "bgmw", any(not(feature = "arkmsm"), feature = "parallel")))]
 mod bgmw;
+
+#[cfg(feature = "cuda")]
+mod cuda;
+
+#[cfg(all(feature = "cuda", feature = "bgmw"))]
+compile_error!{"features `cuda` and `bgmw` are mutally exclusive"}
+#[cfg(all(feature = "cuda", not(feature = "parallel")))]
+compile_error!{"feature `cuda` requires feature `parallel`"}

@@ -17,6 +17,7 @@ use crate::utils::{
 use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
 use ark_ec::{models::short_weierstrass::Projective, AffineRepr, Group};
 use ark_ec::{CurveConfig, CurveGroup};
+use ark_ff::BigInt;
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{One, Zero};
@@ -838,6 +839,16 @@ impl G1Fp for ArkFp {
         let mut default = ArkFpInt::default();
         default.0 .0 = *arr;
         Self(default)
+    }
+
+    fn to_limbs(&self) -> [u64; 6] {
+        self.0.0.0
+    }
+
+    fn from_bytes_le(bytes: &[u8; 48]) -> Self {
+        let storage: [u64; 6] = bytes.chunks(8).map(|it| u64::from_le_bytes(it.try_into().unwrap())).collect::<Vec<_>>().try_into().unwrap();
+        let big_int = BigInt::new(storage);
+        Self(ArkFpInt::from(big_int))
     }
 
     fn neg_assign(&mut self) {

@@ -4,12 +4,10 @@ use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
 
 use crate::kzg_types::ArkG1ProjAddAffine;
 
-use ark_std::iterable::Iterable;
-use icicle_core::traits::ArkConvertible;
-use kzg::msm::msm_impls::{batch_convert, msm};
+use kzg::msm::msm_impls::msm;
 
 use kzg::msm::precompute::PrecomputationTable;
-use kzg::{Fr as KzgFr, G1Affine, G1Mul};
+use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
@@ -20,16 +18,12 @@ pub fn g1_linear_combination(
     len: usize,
     precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
 ) {
-    let affines = icicle_cuda_runtime::memory::HostOrDeviceSlice::on_host(batch_convert(points).iter().map(|v: &ArkG1Affine| {
-        icicle_bls12_381::curve::G1Affine::from_ark(v.aff)
-    }).collect::<Vec<_>>());
-
-    let scalars = icicle_cuda_runtime::memory::HostOrDeviceSlice::on_host(scalars.iter().map(|v| icicle_bls12_381::curve::ScalarField::from_ark(v.fr)).collect::<Vec<_>>());
-    let mut results = icicle_cuda_runtime::memory::HostOrDeviceSlice::on_host(vec![icicle_bls12_381::curve::G1Projective::zero()]);
-
-    icicle_core::msm::msm::<icicle_bls12_381::curve::CurveCfg>(&scalars, &affines, &icicle_core::msm::MSMConfig::default_for_device(1), &mut results).unwrap();
-
-    *out = ArkG1(results.as_slice()[0].to_ark());
+    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+        points,
+        scalars,
+        len,
+        precomputation,
+    );
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {

@@ -9,7 +9,7 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
     super::bgmw::BgmwTable<TFr, TG1, TG1Fp, TG1Affine>;
 
 #[cfg(any(
-    not(feature = "bgmw"),
+    all(not(feature = "bgmw"), not(feature = "cuda")),
     all(feature = "arkmsm", not(feature = "parallel"))
 ))]
 #[derive(Debug, Clone)]
@@ -27,7 +27,7 @@ where
 }
 
 #[cfg(any(
-    not(feature = "bgmw"),
+    all(not(feature = "bgmw"), not(feature = "cuda")),
     all(feature = "arkmsm", not(feature = "parallel"))
 ))]
 impl<TFr, TG1, TG1Fp, TG1Affine> EmptyTable<TFr, TG1, TG1Fp, TG1Affine>
@@ -52,10 +52,13 @@ where
 }
 
 #[cfg(any(
-    not(feature = "bgmw"),
+    all(not(feature = "bgmw"), not(feature = "cuda")),
     all(feature = "arkmsm", not(feature = "parallel"))
 ))]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> = EmptyTable<TFr, TG1, TG1Fp, TG1Affine>;
+
+#[cfg(feature = "cuda")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> = super::cuda::IcicleConfig<TFr, TG1, TG1Fp, TG1Affine>;
 
 pub fn precompute<TFr, TG1, TG1Fp, TG1Affine>(
     points: &[TG1],

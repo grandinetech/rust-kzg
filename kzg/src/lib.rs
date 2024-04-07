@@ -201,6 +201,10 @@ pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
     fn set_one(&mut self) {
         *self = Self::ONE;
     }
+
+    fn to_limbs(&self) -> [u64; 6];
+
+    fn from_bytes_le(bytes: &[u8; 48]) -> Self;
 }
 
 pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:

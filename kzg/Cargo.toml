@@ -10,6 +10,9 @@ num_cpus = { version = "1.16.0", optional = true }
 rayon = { version = "1.8.0", optional = true } 
 threadpool = { version = "^1.8.1", optional = true }
 siphasher = { version = "1.0.0", default-features = false }
+icicle-bls12-381 = { git = "https://github.com/ArtiomTr/icicle.git", rev = "17327c36ac78f0f9135aa30e4ab037d2c98646e9", version = "1.8.0", optional = true }
+icicle-core = { git = "https://github.com/ArtiomTr/icicle.git", rev = "17327c36ac78f0f9135aa30e4ab037d2c98646e9", version = "1.8.0", optional = true }
+icicle-cuda-runtime = { git = "https://github.com/ArtiomTr/icicle.git", rev = "17327c36ac78f0f9135aa30e4ab037d2c98646e9", version = "1.8.0", optional = true }
 
 [features]
 default = [
@@ -29,3 +32,9 @@ std = [
 rand = []
 arkmsm = []
 bgmw = []
+cuda = [
+    "parallel",
+    "dep:icicle-bls12-381",
+    "dep:icicle-core",
+    "dep:icicle-cuda-runtime"
+]
