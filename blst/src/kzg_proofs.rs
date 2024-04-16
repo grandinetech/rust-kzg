@@ -41,7 +41,7 @@ pub fn g1_linear_combination(
 
         let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const blst_p1_affine, affines.len()) };
 
-        let point = msm_cuda::multi_scalar_mult(&affines, &scalars);
+        let point = rust_kzg_blst_cuda::multi_scalar_mult(&affines, &scalars);
 
         *out = FsG1(point);
     }

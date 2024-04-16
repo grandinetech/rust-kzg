@@ -1,0 +1,22 @@
+[package]
+name = "rust-kzg-blst-cuda"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+blst = "0.3.11"
+sppark = "0.1.6"
+
+[build-dependencies]
+cc = "^1.0.70"
+which = "^4.0"
+
+[[bench]]
+name = "lincomb"
+harness = false
+
+[dev-dependencies]
+criterion = "0.5.1"
+kzg = { path = "../kzg" }
+rand = "0.8.5"
+rust-kzg-blst = { path = "../blst" }
