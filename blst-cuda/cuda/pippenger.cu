@@ -17,6 +17,19 @@ typedef fr_t scalar_t;
 #include <msm/pippenger.cuh>
 
 #ifndef __CUDA_ARCH__
+
+msm_t<bucket_t, point_t, affine_t, scalar_t> *pr_msm = nullptr;
+
+extern "C"
+void prepare_msm(const affine_t points[], size_t npoints) {
+    pr_msm = new msm_t<bucket_t, point_t, affine_t, scalar_t>{points, npoints};
+}
+
+extern "C"
+RustError mult_prepared_pippenger(point_t* out, size_t npoints, const scalar_t scalars[]) {
+    return pr_msm->invoke(*out, slice_t<scalar_t>{scalars, npoints}, false);
+}
+
 extern "C"
 RustError mult_pippenger(point_t* out, const affine_t points[], size_t npoints,
                                        const scalar_t scalars[])

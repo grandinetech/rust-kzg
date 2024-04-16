@@ -31,6 +31,14 @@ fn bench_g1_lincomb(c: &mut Criterion) {
             rust_kzg_blst_cuda::multi_scalar_mult(&affines, &scalars);
         })
     });
+
+    rust_kzg_blst_cuda::prepare_multi_scalar_mult(&affines);
+    let id = format!("bench_g1_lincomb points (prepared): '{}'", NUM_POINTS);
+    c.bench_function(&id, |b| {
+        b.iter(|| {
+            rust_kzg_blst_cuda::run_prepared_multi_scalar_mult(&scalars);
+        })
+    });
 }
 
 criterion_group! {
