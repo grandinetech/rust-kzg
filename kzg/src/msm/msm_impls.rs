@@ -59,7 +59,7 @@ fn msm_sequential<
     }
 }
 
-fn batch_convert<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + Sized>(
+pub fn batch_convert<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + Sized>(
     points: &[TG1],
 ) -> Vec<TG1Affine> {
     #[cfg(feature = "parallel")]

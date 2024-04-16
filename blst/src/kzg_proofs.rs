@@ -10,8 +10,7 @@ use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
 
 use crate::types::g2::FsG2;
 use blst::{
-    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
-    blst_p2_to_affine, Pairing,
+    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine, blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing
 };
 
 use kzg::PairingVerify;
@@ -29,12 +28,33 @@ pub fn g1_linear_combination(
     len: usize,
     precomputation: Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>,
 ) {
-    *out = msm::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine, FsFr>(
-        points,
-        scalars,
-        len,
-        precomputation,
-    );
+    #[cfg(feature = "cuda")]
+    {
+        let affines = kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(&points);
+        let scalars = scalars.iter().map(|it| {
+            let mut scalar = blst_scalar::default();
+
+            unsafe { blst_scalar_from_fr(&mut scalar, &it.0) };
+
+            scalar
+        }).collect::<Vec<_>>();
+
+        let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const blst_p1_affine, affines.len()) };
+
+        let point = msm_cuda::multi_scalar_mult(&affines, &scalars);
+
+        *out = FsG1(point);
+    }
+
+    #[cfg(not(feature = "cuda"))]
+    {
+        *out = msm::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine, FsFr>(
+            points,
+            scalars,
+            len,
+            precomputation,
+        );
+    }
 }
 
 pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
