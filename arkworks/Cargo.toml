@@ -16,6 +16,7 @@ hex = "0.4.3"
 rand = { version = "0.8.5", optional = true }
 libc = { version = "0.2.148", default-features = false }
 rayon = { version = "1.8.0", optional = true }
+rust-kzg-arkworks-cuda = { version = "0.1.0", path = "../arkworks-cuda", optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -46,6 +47,9 @@ bgmw = [
 ]
 arkmsm = [
     "kzg/arkmsm"
+]
+cuda = [
+    "dep:rust-kzg-arkworks-cuda"
 ]
 
 [[bench]]

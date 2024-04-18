@@ -11,6 +11,10 @@ use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
+use ark_bls12_381::G1Affine;
+use ark_ff::BigInteger256;
+extern crate alloc;
+
 pub fn g1_linear_combination(
     out: &mut ArkG1,
     points: &[ArkG1],
@@ -18,12 +22,28 @@ pub fn g1_linear_combination(
     len: usize,
     precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
 ) {
-    *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
-        points,
-        scalars,
-        len,
-        precomputation,
-    );
+    #[cfg(feature = "cuda")]
+    {
+        let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(points);
+        
+        let affines = <G1Affine::Projective as ProjectiveCurve>::batch_normalization_into_affine(points.iter().map(|it| it.0).collect::<Vec<_>>());// unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, affines.len()) };
+
+        let scalars = scalars.iter().map(|it| {
+            BigInteger256::from(it.fr)
+        }).collect::<Vec<_>>();
+
+        *out = ArkG1(rust_kzg_arkworks_cuda::multi_scalar_mult::<G1Affine>(affines, scalars))
+    }
+
+    #[cfg(not(feature = "cuda"))]
+    {
+        *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+            points,
+            scalars,
+            len,
+            precomputation,
+        );
+    }
 }
 
 pub fn make_data(data: usize) -> Vec<ArkG1> {
