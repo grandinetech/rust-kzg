@@ -4,7 +4,7 @@ members = [
     "arkworks",
     "arkworks-cuda",
     "blst",
-    "blst-cuda",
+    "blst-sppark",
     "kzg",
     "kzg-bench",
     "mcl/kzg",

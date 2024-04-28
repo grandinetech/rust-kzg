@@ -28,25 +28,21 @@ pub fn g1_linear_combination(
     len: usize,
     precomputation: Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>,
 ) {
-    #[cfg(feature = "cuda")]
+    #[cfg(feature = "sppark")]
     {
+        use blst::blst_fr;
+
         let affines = kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(&points);
-        let scalars = scalars.iter().map(|it| {
-            let mut scalar = blst_scalar::default();
-
-            unsafe { blst_scalar_from_fr(&mut scalar, &it.0) };
-
-            scalar
-        }).collect::<Vec<_>>();
+        let scalars = unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const blst_fr, scalars.len()) };
 
         let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const blst_p1_affine, affines.len()) };
 
-        let point = rust_kzg_blst_cuda::multi_scalar_mult(&affines, &scalars);
+        let point = rust_kzg_blst_sppark::multi_scalar_mult(&affines[0..scalars.len()], &scalars);
 
         *out = FsG1(point);
     }
 
-    #[cfg(not(feature = "cuda"))]
+    #[cfg(not(feature = "sppark"))]
     {
         *out = msm::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine, FsFr>(
             points,

@@ -1350,12 +1350,12 @@ dependencies = [
  "once_cell",
  "rand",
  "rayon",
- "rust-kzg-blst-cuda",
+ "rust-kzg-blst-sppark",
  "smallvec",
 ]
 
 [[package]]
-name = "rust-kzg-blst-cuda"
+name = "rust-kzg-blst-sppark"
 version = "0.1.0"
 dependencies = [
  "blst",

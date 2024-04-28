@@ -26,8 +26,15 @@ void prepare_msm(const affine_t points[], size_t npoints) {
 }
 
 extern "C"
-RustError mult_prepared_pippenger(point_t* out, size_t npoints, const scalar_t scalars[]) {
-    return pr_msm->invoke(*out, slice_t<scalar_t>{scalars, npoints}, false);
+RustError mult_prepared_pippenger(point_t* out, size_t npoints, const scalar_t scalars[], bool mont) {
+    return pr_msm->invoke(*out, slice_t<scalar_t>{scalars, npoints}, mont);
+}
+
+extern "C"
+RustError mult_pippenger_mont(point_t* out, const affine_t points[], size_t npoints,
+                                       const scalar_t scalars[])
+{
+    return mult_pippenger<bucket_t>(out, points, npoints, scalars, true);
 }
 
 extern "C"

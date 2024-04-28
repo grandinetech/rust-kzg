@@ -32,6 +32,34 @@ pub fn multi_scalar_mult(
     ret
 }
 
+pub fn multi_scalar_mult_mont(
+    points: &[blst_p1_affine],
+    scalars: &[blst_fr],
+) -> blst_p1 {
+    #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
+    extern "C" {
+        fn mult_pippenger_mont(
+            out: *mut blst_p1,
+            points: *const blst_p1_affine,
+            npoints: usize,
+            scalars: *const blst_fr,
+        ) -> sppark::Error;
+    }
+
+    let npoints = points.len();
+    if npoints != scalars.len() {
+        panic!("length mismatch")
+    }
+
+    let mut ret = blst_p1::default();
+    let err =
+        unsafe { mult_pippenger_mont(&mut ret, &points[0], npoints, &scalars[0]) };
+    if err.code != 0 {
+        panic!("{}", String::from(err));
+    }
+    ret
+}
+
 pub fn prepare_multi_scalar_mult(
     points: &[blst_p1_affine],
 ) {
@@ -57,11 +85,31 @@ pub fn run_prepared_multi_scalar_mult(
             out: *mut blst_p1,
             npoints: usize,
             scalars: *const blst_scalar,
+            mont: bool,
         ) -> sppark::Error;
     }
 
     let npoints = scalars.len();
     let mut ret = blst_p1::default();
 
-    unsafe { mult_prepared_pippenger(&mut ret, npoints, &scalars[0]) };  
+    unsafe { mult_prepared_pippenger(&mut ret, npoints, &scalars[0], false) };  
+}
+
+pub fn run_prepared_multi_scalar_mult_mont(
+    scalars: &[blst_fr],
+) {
+    #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
+    extern "C" {
+        fn mult_prepared_pippenger(
+            out: *mut blst_p1,
+            npoints: usize,
+            scalars: *const blst_fr,
+            mont: bool,
+        ) -> sppark::Error;
+    }
+
+    let npoints = scalars.len();
+    let mut ret = blst_p1::default();
+
+    unsafe { mult_prepared_pippenger(&mut ret, npoints, &scalars[0], true) };  
 }
