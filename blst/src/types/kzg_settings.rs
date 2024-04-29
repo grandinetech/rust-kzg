@@ -37,7 +37,26 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
-            precomputation: precompute(secret_g1).ok().flatten().map(Arc::new),
+            precomputation: {
+                #[cfg(feature = "sppark")]
+                {
+                    use blst::blst_p1_affine;
+                    let points = kzg::msm::msm_impls::batch_convert(secret_g1);
+                    let points = unsafe {
+                        alloc::slice::from_raw_parts(
+                            points.as_ptr() as *const blst_p1_affine,
+                            points.len(),
+                        )
+                    };
+                    let prepared = rust_kzg_blst_sppark::prepare_msm(points);
+                    Some(Arc::new(PrecomputationTable::from_ptr(prepared)))
+                }
+
+                #[cfg(not(feature = "sppark"))]
+                {
+                    precompute(secret_g1).ok().flatten().map(Arc::new)
+                }
+            },
         })
     }
 

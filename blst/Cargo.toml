@@ -22,8 +22,7 @@ rand = "0.8.5"
 [features]
 default = [
     "std",
-    "rand",
-    "bgmw"
+    "rand"
 ]
 std = [
     "hex/std",
@@ -46,7 +45,8 @@ arkmsm = [
     "kzg/arkmsm"
 ]
 sppark = [
-    "dep:rust-kzg-blst-sppark"
+    "dep:rust-kzg-blst-sppark",
+    "kzg/sppark"
 ]
 
 [[bench]]

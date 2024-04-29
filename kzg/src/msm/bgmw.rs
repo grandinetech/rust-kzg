@@ -120,7 +120,9 @@ impl<
         }))
     }
 
-    pub fn multiply_sequential(&self, scalars: &[Scalar256]) -> TG1 {
+    pub fn multiply_sequential(&self, scalars: &[TFr]) -> TG1 {
+        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+        let scalars = &scalars[..];
         let window = get_sequential_window_size(self.window);
         let mut buckets = vec![P1XYZZ::<TG1Fp>::default(); 1 << (window - 1)];
 
@@ -165,7 +167,7 @@ impl<
     }
 
     #[cfg(feature = "parallel")]
-    pub fn multiply_parallel(&self, scalars: &[Scalar256]) -> TG1 {
+    pub fn multiply_parallel(&self, scalars: &[TFr]) -> TG1 {
         use super::{
             cell::Cell,
             thread_pool::{da_pool, ThreadPoolExt},
@@ -188,6 +190,9 @@ impl<
             BgmwWindow::Sync(_) => return self.multiply_sequential(scalars),
             BgmwWindow::Parallel(values) => values,
         };
+
+        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+        let scalars = &scalars[..];
 
         // |grid[]| holds "coordinates" and place for result
         let mut grid: Vec<(Tile, Cell<TG1>)> = Vec::with_capacity(nx * ny);
