@@ -11,12 +11,12 @@ sppark = "0.1.6"
 cc = "^1.0.70"
 which = "^4.0"
 
-[[bench]]
-name = "lincomb"
-harness = false
-
 [dev-dependencies]
 criterion = "0.5.1"
 kzg = { path = "../kzg" }
 rand = "0.8.5"
 rust-kzg-blst = { path = "../blst" }
+
+[[bench]]
+name = "lincomb"
+harness = false

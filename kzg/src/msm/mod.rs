@@ -15,3 +15,6 @@ mod pippenger_utils;
 
 #[cfg(all(feature = "bgmw", any(not(feature = "arkmsm"), feature = "parallel")))]
 mod bgmw;
+
+#[cfg(feature = "sppark")]
+mod sppark;
