@@ -22,8 +22,8 @@ pub fn bench_g1_lincomb<
 ) {
     const NUM_POINTS: usize = 4096;
 
-    let points = [TG1::rand(); NUM_POINTS];
-    let scalars = [TFr::rand(); NUM_POINTS];
+    let points = (0..NUM_POINTS).map(|_| TG1::rand()).collect::<Vec<_>>();
+    let scalars = (0..NUM_POINTS).map(|_| TFr::rand()).collect::<Vec<_>>();
 
     let id = format!("bench_g1_lincomb points: '{}'", NUM_POINTS);
     c.bench_function(&id, |b| {

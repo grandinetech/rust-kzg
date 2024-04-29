@@ -5,7 +5,7 @@
 use blst::*;
 use std::ffi::c_void;
 
-pub fn prepare_msm(points: &[blst_p1_affine]) -> *mut c_void {
+pub fn prepare_multi_scalar_mult(points: &[blst_p1_affine]) -> *mut c_void {
     #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
     extern "C" {
         fn prepare_msm(points: *const blst_p1_affine, npoints: usize) -> *mut c_void;
@@ -16,24 +16,28 @@ pub fn prepare_msm(points: &[blst_p1_affine]) -> *mut c_void {
     unsafe { prepare_msm(&points[0], npoints) }
 }
 
-pub fn mult_pippenger_prepared(msm: *mut c_void, scalars: &[blst_fr]) -> blst_p1 {
+pub fn multi_scalar_mult_prepared(msm: *mut c_void, scalars: &[blst_fr]) -> blst_p1 {
     #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
     extern "C" {
-        fn mult_prepared_pippenger(
+        fn mult_pippenger_prepared(
             msm: *mut c_void,
             out: *mut blst_p1,
             npoints: usize,
-            scalars: *const blst_scalar,
+            scalars: *const blst_fr,
         ) -> sppark::Error;
     }
 
     let npoints = scalars.len();
     let mut ret = blst_p1::default();
 
-    unsafe { mult_prepared_pippenger(msm, &mut ret, npoints, &scalars[0]) }
+    let err = unsafe { mult_pippenger_prepared(msm, &mut ret, npoints, &scalars[0]) };
+    if err.code != 0 {
+        panic!("{}", String::from(err));
+    }
+    ret
 }
 
-pub fn mult_pippenger(points: &[blst_p1_affine], scalars: &[blst_fr]) -> blst_p1 {
+pub fn multi_scalar_mult(points: &[blst_p1_affine], scalars: &[blst_fr]) -> blst_p1 {
     #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
     extern "C" {
         fn mult_pippenger(
