@@ -1,0 +1,35 @@
+From f34d21606bb5bc3dee4e7a643d7ab89a2c994fef Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 25 Jan 2024 11:26:35 +0200
+Subject: [PATCH] Patch nim bindings
+
+---
+ bindings/nim/kzg_abi.nim | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/bindings/nim/kzg_abi.nim b/bindings/nim/kzg_abi.nim
+index 36e4ba1..74d0ebc 100644
+--- a/bindings/nim/kzg_abi.nim
++++ b/bindings/nim/kzg_abi.nim
+@@ -10,6 +10,7 @@ from os import DirSep, AltSep
+ const
+   # kzgPath: c-kzg-4844 project path, removing 3 last elem
+   kzgPath  = currentSourcePath.rsplit({DirSep, AltSep}, 3)[0] & "/"
++  rustKzgPath = currentSourcePath.rsplit({DirSep, AltSep}, 5)[0] & "/"
+   blstPath = kzgPath & "blst/"
+   srcPath  = kzgPath & "src/"
+   bindingsPath = blstPath & "bindings"
+@@ -20,7 +21,9 @@ when not defined(kzgExternalBlst):
+   {.compile: blstPath & "src/server.c"}
+   {.passc: "-D__BLST_PORTABLE__"}
+ 
+-{.compile: srcPath & "c_kzg_4844.c"}
++{.passl: "-L" & rustKzgPath & "target/release" .}
++{.passl: "-l:rust_kzg_arkworks3.a" .}
++{.passl: "-lm" .}
+ 
+ {.passc: "-I" & bindingsPath .}
+ {.passc: "-I" & srcPath .}
+-- 
+2.34.1
+

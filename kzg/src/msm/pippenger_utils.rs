@@ -101,12 +101,12 @@ fn p1_dadd_affine<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp>>(
             2 * size_of::<TFp>(),
         );
 
-        out.zzz = TFp::BLS12_381_RX_P;
+        out.zzz = TFp::bls12_381_rx_p();
         if subtract {
             out.zzz.neg_assign();
         }
 
-        out.zz = TFp::BLS12_381_RX_P;
+        out.zz = TFp::bls12_381_rx_p();
         return;
     }
 

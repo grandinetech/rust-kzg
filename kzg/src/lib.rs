@@ -71,7 +71,7 @@ pub trait Fr: Default + Clone + PartialEq + Sync {
 }
 
 pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {
-    const ZERO: Self;
+    fn zero() -> Self;
 
     fn identity() -> Self;
 
@@ -147,13 +147,16 @@ pub trait G1LinComb<TFr: Fr, TG1Fp: G1Fp, TG1Affine: G1Affine<Self, TG1Fp>>:
 }
 
 pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
-    const ZERO: Self;
-    const ONE: Self;
-    const BLS12_381_RX_P: Self;
+    fn zero() -> Self;
+
+    fn one() -> Self;
+
+    fn bls12_381_rx_p() -> Self;
 
     fn inverse(&self) -> Option<Self>;
 
     fn square(&self) -> Self;
+
     fn double(&self) -> Self;
 
     fn from_underlying_arr(arr: &[u64; 6]) -> Self;
@@ -187,19 +190,19 @@ pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
     }
 
     fn is_zero(&self) -> bool {
-        *self == Self::ZERO
+        *self == Self::zero()
     }
 
     fn set_zero(&mut self) {
-        *self = Self::ZERO;
+        *self = Self::zero();
     }
 
     fn is_one(&self) -> bool {
-        *self == Self::ONE
+        *self == Self::one()
     }
 
     fn set_one(&mut self) {
-        *self = Self::ONE;
+        *self = Self::one();
     }
 }
 
