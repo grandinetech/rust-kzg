@@ -54,7 +54,7 @@ sppark = [
     "kzg/sppark"
 ]
 sppark_wlc = [
-    "dep:wlc-msm-bal",
+    "dep:rust-kzg-arkworks3-sppark-wlc",
     "kzg/sppark"
 ]
 

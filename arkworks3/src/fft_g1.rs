@@ -5,7 +5,9 @@ use ark_bls12_381::{Fr, G1Affine};
 use ark_ec::msm::VariableBaseMSM;
 use ark_ec::ProjectiveCurve;
 use ark_ff::{BigInteger256, PrimeField};
-use ark_std::cfg_into_iter;
+use kzg::cfg_into_iter;
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
 
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as KzgFr, G1Mul};
@@ -63,12 +65,16 @@ pub fn g1_linear_combination(
             return;
         }
 
-        let scalars = unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const BigInteger256, len) };
+        let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&points);
+        let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len) };
+        let ark_scalars = cfg_into_iter!(&scalars[0..len]).map(|scalar| scalar.fr.into_repr()).collect::<Vec<_>>();
 
-        let mut context = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult_init(points);
-        let points = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, points, scalars);
-    
-        *out = ArkG1(points[0]);
+        let mut context = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult_init(affines);
+        let msm_results = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, affines, unsafe {
+            std::mem::transmute::<&[_], &[BigInteger256]>(&ark_scalars)
+        });
+
+        *out = ArkG1(msm_results[0]);
     }
 
     #[cfg(not(any(feature = "sppark", feature = "sppark_wlc")))]
