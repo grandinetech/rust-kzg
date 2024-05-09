@@ -20,12 +20,14 @@ pub fn bench_g1_lincomb<
         Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
     ),
 ) {
-    const NUM_POINTS: usize = 4096;
+    let npoints_npow = i32::from_str_radix(&std::env::var("BENCH_NPOW").unwrap_or("12".to_string()), 10).unwrap();
+    let num_points = 1usize << npoints_npow;
 
-    let points = (0..NUM_POINTS).map(|_| TG1::rand()).collect::<Vec<_>>();
-    let scalars = (0..NUM_POINTS).map(|_| TFr::rand()).collect::<Vec<_>>();
+    let points = (0..num_points).map(|_| TG1::rand()).collect::<Vec<_>>();
+    let scalars = (0..num_points).map(|_| TFr::rand()).collect::<Vec<_>>();
 
-    let id = format!("bench_g1_lincomb points: '{}'", NUM_POINTS);
+    let id = format!("bench_g1_lincomb points: '{}'", num_points);
+
     c.bench_function(&id, |b| {
         b.iter(|| {
             let mut out = TG1::default();
@@ -33,7 +35,7 @@ pub fn bench_g1_lincomb<
                 &mut out,
                 points.as_slice(),
                 scalars.as_slice(),
-                NUM_POINTS,
+                num_points,
                 None,
             )
         })
@@ -44,7 +46,7 @@ pub fn bench_g1_lincomb<
     if precomputation.is_some() {
         let id = format!(
             "bench_g1_lincomb with precomputation points: '{}'",
-            NUM_POINTS
+            num_points
         );
         c.bench_function(&id, |b| {
             b.iter(|| {
@@ -53,7 +55,7 @@ pub fn bench_g1_lincomb<
                     &mut out,
                     points.as_slice(),
                     scalars.as_slice(),
-                    NUM_POINTS,
+                    num_points,
                     precomputation.as_ref(),
                 )
             })
