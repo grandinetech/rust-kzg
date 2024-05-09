@@ -346,31 +346,33 @@ impl G1 for ArkG1 {
         self.0.eq(&b.0)
     }
 
-    const ZERO: ArkG1 = ArkG1::from_blst_p1(blst_p1 {
-        x: blst_fp {
-            l: [
-                8505329371266088957,
-                17002214543764226050,
-                6865905132761471162,
-                8632934651105793861,
-                6631298214892334189,
-                1582556514881692819,
-            ],
-        },
-        y: blst_fp {
-            l: [
-                8505329371266088957,
-                17002214543764226050,
-                6865905132761471162,
-                8632934651105793861,
-                6631298214892334189,
-                1582556514881692819,
-            ],
-        },
-        z: blst_fp {
-            l: [0, 0, 0, 0, 0, 0],
-        },
-    });
+    fn zero() -> ArkG1 {
+        ArkG1::from_blst_p1(blst_p1 {
+            x: blst_fp {
+                l: [
+                    8505329371266088957,
+                    17002214543764226050,
+                    6865905132761471162,
+                    8632934651105793861,
+                    6631298214892334189,
+                    1582556514881692819,
+                ],
+            },
+            y: blst_fp {
+                l: [
+                    8505329371266088957,
+                    17002214543764226050,
+                    6865905132761471162,
+                    8632934651105793861,
+                    6631298214892334189,
+                    1582556514881692819,
+                ],
+            },
+            z: blst_fp {
+                l: [0, 0, 0, 0, 0, 0],
+            },
+        })
+    }
 
     fn add_or_dbl_assign(&mut self, b: &Self) {
         self.0 += b.0;
@@ -856,18 +858,24 @@ impl G1Fp for ArkFp {
         self.0 += b.0;
     }
 
-    const ZERO: Self = Self(ArkFpInt::ZERO);
-    const ONE: Self = Self(ArkFpInt::ONE);
-    const BLS12_381_RX_P: Self = Self(blst_fp_into_pc_fq(&blst_fp {
-        l: [
-            8505329371266088957,
-            17002214543764226050,
-            6865905132761471162,
-            8632934651105793861,
-            6631298214892334189,
-            1582556514881692819,
-        ],
-    }));
+    fn zero() -> Self {
+        Self(ArkFpInt::ZERO)
+    }
+    fn one() -> Self {
+        Self(ArkFpInt::ONE)
+    }
+    fn bls12_381_rx_p() -> Self {
+        Self(blst_fp_into_pc_fq(&blst_fp {
+            l: [
+                8505329371266088957,
+                17002214543764226050,
+                6865905132761471162,
+                8632934651105793861,
+                6631298214892334189,
+                1582556514881692819,
+            ],
+        }))
+    }
 }
 
 impl G1GetFp<ArkFp> for ArkG1 {
@@ -960,8 +968,8 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
     fn zero() -> Self {
         Self {
             aff: G1Affine {
-                x: ArkFp::ZERO.0,
-                y: ArkFp::ZERO.0,
+                x: ArkFp::zero().0,
+                y: ArkFp::zero().0,
                 infinity: true,
             },
         }

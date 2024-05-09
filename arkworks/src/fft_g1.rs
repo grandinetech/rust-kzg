@@ -11,8 +11,6 @@ use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
-use ark_bls12_381::G1Affine;
-use ark_ff::BigInteger256;
 extern crate alloc;
 
 pub fn g1_linear_combination(

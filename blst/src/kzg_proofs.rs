@@ -10,7 +10,7 @@ use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
 
 use crate::types::g2::FsG2;
 use blst::{
-    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine, blst_p2_to_affine, blst_scalar, blst_scalar_from_fr, Pairing
+    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine, blst_p2_to_affine, Pairing
 };
 
 use kzg::PairingVerify;
@@ -31,7 +31,7 @@ pub fn g1_linear_combination(
     #[cfg(feature = "sppark")]
     {
         use kzg::{G1, G1Mul};
-        use blst::blst_fr;
+        use blst::{blst_fr, blst_scalar, blst_scalar_from_fr};
 
         if len < 8 {
             *out = FsG1::default();
