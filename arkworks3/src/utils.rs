@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use super::{Fp, P1};
 use crate::kzg_types::ArkFr;
 use crate::P2;
@@ -54,12 +52,8 @@ pub const fn blst_fp_into_pc_fq(fp: &Fp) -> Fq {
     Fq::new(big_int)
 }
 
-pub const fn blst_fp2_into_pc_fq2(fp: &blst_fp2) -> Fq2 {
-    Fp2 {
-        c0: blst_fp_into_pc_fq(&fp.fp[0]),
-        c1: blst_fp_into_pc_fq(&fp.fp[1]),
-        _parameters: PhantomData,
-    }
+pub fn blst_fp2_into_pc_fq2(fp: &blst_fp2) -> Fq2 {
+    Fp2::new(blst_fp_into_pc_fq(&fp.fp[0]), blst_fp_into_pc_fq(&fp.fp[1]))
 }
 
 pub fn blst_p1_into_pc_g1projective(p1: &P1) -> GroupProjective<g1::Parameters> {

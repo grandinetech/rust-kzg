@@ -1,9 +1,10 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
 
-use crate::kzg_types::ArkG1ProjAddAffine;
-
-use kzg::msm::msm_impls::msm;
+use ark_ec::msm::VariableBaseMSM;
+use ark_ec::ProjectiveCurve;
+use ark_ff::PrimeField;
+use ark_std::cfg_into_iter;
 
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as KzgFr, G1Mul};
@@ -17,7 +18,7 @@ pub fn g1_linear_combination(
     points: &[ArkG1],
     scalars: &[ArkFr],
     len: usize,
-    precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
+    _precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
 ) {
     #[cfg(feature = "cuda")]
     {
@@ -39,12 +40,18 @@ pub fn g1_linear_combination(
 
     #[cfg(not(feature = "cuda"))]
     {
-        *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
-            points,
-            scalars,
-            len,
-            precomputation,
-        );
+        let ark_points = cfg_into_iter!(&points[0..len]).map(|point| {
+            point.0.into_affine()
+        }).collect::<Vec<_>>();
+        let ark_scalars = cfg_into_iter!(&scalars[0..len]).map(|scalar| scalar.fr.into_repr()).collect::<Vec<_>>();
+        *out = ArkG1(VariableBaseMSM::multi_scalar_mul(ark_points.as_slice(), ark_scalars.as_slice()));
+
+        // *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+        //     points,
+        //     scalars,
+        //     len,
+        //     precomputation,
+        // );
     }
 }
 

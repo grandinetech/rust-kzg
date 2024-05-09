@@ -12,17 +12,17 @@ use crate::utils::{
     pc_g2projective_into_blst_p2, PolyData,
 };
 use crate::P2;
-use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
+use ark_bls12_381::{g1, g2, Fr, G1Affine};
 use ark_ec::ModelParameters;
 use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, AffineCurve, ProjectiveCurve};
+use ark_ff::PrimeField;
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{One, Zero};
 
 #[cfg(feature = "rand")]
 use ark_std::UniformRand;
 
-use blst::{blst_fp, blst_fp2, blst_fr, blst_p1};
+use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
@@ -84,10 +84,10 @@ impl KzgFr for ArkFr {
     }
 
     fn one() -> Self {
-        let one = Fr::one();
-        // assert_eq!(one.0.0, [0, 1, 1, 1], "must be eq");
-        Self { fr: one }
-        // Self::from_u64(1)
+        // let one = Fr::one();
+        // // assert_eq!(one.0.0, [0, 1, 1, 1], "must be eq");
+        // Self { fr: one }
+        Self::from_u64(1)
     }
 
     #[cfg(feature = "rand")]
@@ -120,7 +120,7 @@ impl KzgFr for ArkFr {
                     return Err("Invalid scalar".to_string());
                 }
                 Ok(Self {
-                    fr: Fr::new(big_int),
+                    fr: Fr::from(big_int),
                 })
             })
     }
@@ -136,15 +136,8 @@ impl KzgFr for ArkFr {
                 )
             })
             .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let storage: [u64; 4] = [
-                    bytes_be_to_uint64(&bytes[24..32]),
-                    bytes_be_to_uint64(&bytes[16..24]),
-                    bytes_be_to_uint64(&bytes[8..16]),
-                    bytes_be_to_uint64(&bytes[0..8]),
-                ];
-                let big_int = BigInteger256::new(storage);
                 Self {
-                    fr: Fr::new(big_int),
+                    fr: Fr::from_be_bytes_mod_order(bytes),
                 }
             })
     }
@@ -155,13 +148,13 @@ impl KzgFr for ArkFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        Self {
-            fr: Fr::new(BigInteger256::new(*u)),
-        }
+        Self { fr: Fr::from(BigInteger256::new(*u)) }
     }
 
     fn from_u64(val: u64) -> Self {
-        Self::from_u64_arr(&[val, 0, 0, 0])
+        Self {
+            fr: Fr::from(val)
+        }
     }
 
     fn to_bytes(&self) -> [u8; 32] {
@@ -368,11 +361,17 @@ impl G1 for ArkG1 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G1]| {
-                let affine = G1Affine::deserialize(bytes.as_slice());
-                match affine {
-                    Err(x) => Err("Failed to deserialize G1: ".to_owned() + &(x.to_string())),
-                    Ok(x) => Ok(Self(x.into_projective())),
+                let mut blst_affine = blst_p1_affine::default();
+                let result = unsafe { blst_p1_uncompress(&mut blst_affine, bytes.as_ptr()) };
+
+                if result != BLST_ERROR::BLST_SUCCESS {
+                    return Err("Failed to deserialize G1".to_owned())
                 }
+
+                let mut blst_point = blst_p1::default();
+                unsafe { blst_p1_from_affine(&mut blst_point, &blst_affine) };
+
+                Ok(ArkG1::from_blst_p1(blst_point))
             })
     }
 
@@ -382,9 +381,11 @@ impl G1 for ArkG1 {
     }
 
     fn to_bytes(&self) -> [u8; 48] {
-        let mut buff = [0u8; BYTES_PER_G1];
-        self.0.serialize(&mut &mut buff[..]).unwrap();
-        buff
+        let mut out = [0u8; BYTES_PER_G1];
+        unsafe {
+            blst_p1_compress(out.as_mut_ptr(), &self.to_blst_p1());
+        }
+        out
     }
 
     fn add_or_dbl(&self, b: &Self) -> Self {
@@ -397,7 +398,9 @@ impl G1 for ArkG1 {
     }
 
     fn is_valid(&self) -> bool {
-        true
+        unsafe {
+            blst_p1_in_g1(&self.to_blst_p1())
+        }
     }
 
     fn dbl(&self) -> Self {
@@ -459,7 +462,7 @@ impl G1 for ArkG1 {
 
 impl G1Mul<ArkFr> for ArkG1 {
     fn mul(&self, b: &ArkFr) -> Self {
-        Self(self.0.mul(b.fr.0))
+        Self(self.0.mul(b.to_u64_arr()))
     }
 }
 
@@ -663,18 +666,22 @@ impl G2 for ArkG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let affine = G2Affine::deserialize(bytes.as_slice());
-                match affine {
-                    Err(x) => Err("Failed to deserialize G2: ".to_owned() + &(x.to_string())),
-                    Ok(x) => Ok(Self(x.into_projective())),
+                let mut blst_affine = blst_p2_affine::default();
+                let result = unsafe { blst_p2_uncompress(&mut blst_affine, bytes.as_ptr()) };
+
+                if result != BLST_ERROR::BLST_SUCCESS {
+                    return Err("Failed to deserialize G1".to_owned())
                 }
+
+                let mut blst_point = blst_p2::default();
+                unsafe { blst_p2_from_affine(&mut blst_point, &blst_affine) };
+
+                Ok(ArkG2::from_blst_p2(blst_point))
             })
     }
 
     fn to_bytes(&self) -> [u8; 96] {
-        let mut buff = [0u8; BYTES_PER_G2];
-        self.0.serialize(&mut &mut buff[..]).unwrap();
-        buff
+        <[u8; 96]>::try_from(self.0.x.c0.0.to_bytes_le()).unwrap()
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
@@ -696,7 +703,7 @@ impl G2 for ArkG2 {
 
 impl G2Mul<ArkFr> for ArkG2 {
     fn mul(&self, b: &ArkFr) -> Self {
-        Self(self.0.mul(&b.fr.0))
+        Self(self.0.mul(b.to_u64_arr()))
     }
 }
 
