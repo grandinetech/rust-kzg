@@ -49,7 +49,29 @@ pub fn g1_linear_combination(
         *out = ArkG1(point);
     }
 
-    #[cfg(not(feature = "sppark"))]
+    #[cfg(feature = "sppark_wlc")]
+    {
+        use kzg::{G1, G1Mul};
+
+        if len < 8 {
+            *out = ArkG1::default();
+            for i in 0..len {
+                let tmp = points[i].mul(&scalars[i]);
+                out.add_or_dbl_assign(&tmp);
+            }
+
+            return;
+        }
+
+        let scalars = unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const BigInteger256, len) };
+
+        let mut context = wlc_msm_bal::multi_scalar_mult_init(points);
+        let points = wlc_msm_bal::multi_scalar_mult(&mut context, points, scalars);
+    
+        *out = ArkG1(points[0]);
+    }
+
+    #[cfg(not(any(feature = "sppark", feature = "sppark_wlc")))]
     {
         let ark_points = cfg_into_iter!(&points[0..len]).map(|point| {
             point.0.into_affine()
