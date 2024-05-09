@@ -65,7 +65,7 @@ static const vec384 BLS12_381_ONE = {   /* (1<<384)%P */
     TO_LIMB_T(0x5f48985753c758ba), TO_LIMB_T(0x77ce585370525745),
     TO_LIMB_T(0x5c071a97a256ec6d), TO_LIMB_T(0x15f65ec3fa80e493)
 };
-typedef blst_384_t<BLS12_381_P, 0x89f3fffcfffcfffd,
+typedef blst_384_t<381, BLS12_381_P, 0x89f3fffcfffcfffd,
                    BLS12_381_RR, BLS12_381_ONE> fp_t;
 
 static const vec256 BLS12_381_r = { 
@@ -80,6 +80,6 @@ static const vec256 BLS12_381_rONE = {  /* (1<<256)%r */
     TO_LIMB_T(0x00000001fffffffe), TO_LIMB_T(0x5884b7fa00034802),
     TO_LIMB_T(0x998c4fefecbc4ff5), TO_LIMB_T(0x1824b159acc5056f)
 };
-typedef blst_256_t<BLS12_381_r, 0xfffffffeffffffff,
+typedef blst_256_t<255, BLS12_381_r, 0xfffffffeffffffff,
                    BLS12_381_rRR, BLS12_381_rONE> fr_t;
 #endif
