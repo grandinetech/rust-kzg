@@ -1,9 +1,10 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
 
+use ark_bls12_381::{Fr, G1Affine};
 use ark_ec::msm::VariableBaseMSM;
 use ark_ec::ProjectiveCurve;
-use ark_ff::PrimeField;
+use ark_ff::{BigInteger256, PrimeField};
 use ark_std::cfg_into_iter;
 
 use kzg::msm::precompute::PrecomputationTable;
@@ -18,27 +19,37 @@ pub fn g1_linear_combination(
     points: &[ArkG1],
     scalars: &[ArkFr],
     len: usize,
-    _precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
+    precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
 ) {
-    #[cfg(feature = "cuda")]
+
+    #[cfg(feature = "sppark")]
     {
-        let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(points);
+        use kzg::{G1, G1Mul};
 
-        let affines = <G1Affine::Projective as ProjectiveCurve>::batch_normalization_into_affine(
-            points.iter().map(|it| it.0).collect::<Vec<_>>(),
-        ); // unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, affines.len()) };
+        if len < 8 {
+            *out = ArkG1::default();
+            for i in 0..len {
+                let tmp = points[i].mul(&scalars[i]);
+                out.add_or_dbl_assign(&tmp);
+            }
 
-        let scalars = scalars
-            .iter()
-            .map(|it| BigInteger256::from(it.fr))
-            .collect::<Vec<_>>();
+            return;
+        }
 
-        *out = ArkG1(rust_kzg_arkworks_cuda::multi_scalar_mult::<G1Affine>(
-            affines, scalars,
-        ))
+        let scalars = unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const BigInteger256, len) };
+
+        let point = if let Some(precomputation) = precomputation {
+            rust_kzg_arkworks3_sppark::multi_scalar_mult_prepared::<G1Affine>(precomputation.table, scalars) 
+        } else {
+            let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&points);
+            let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len) };
+            rust_kzg_arkworks3_sppark::multi_scalar_mult::<G1Affine>(&affines[0..len], scalars)
+        };
+
+        *out = ArkG1(point);
     }
 
-    #[cfg(not(feature = "cuda"))]
+    #[cfg(not(feature = "sppark"))]
     {
         let ark_points = cfg_into_iter!(&points[0..len]).map(|point| {
             point.0.into_affine()

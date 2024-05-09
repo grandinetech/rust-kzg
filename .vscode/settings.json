@@ -1,0 +1,4 @@
+{
+    "rust-analyzer.cargo.features": ["sppark", "std", "rand"],
+    "rust-analyzer.cargo.noDefaultFeatures": true
+}

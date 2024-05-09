@@ -858,7 +858,26 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
             secret_g1: secret_g1.to_vec(),
             secret_g2: secret_g2.to_vec(),
             fs: fft_settings.clone(),
-            precomputation: precompute(secret_g1).ok().flatten().map(Arc::new),
+            precomputation: {
+                #[cfg(feature = "sppark")]
+                {
+                    use ark_bls12_381::G1Affine;
+                    let points = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(secret_g1);
+                    let points = unsafe {
+                        alloc::slice::from_raw_parts(
+                            points.as_ptr() as *const G1Affine,
+                            points.len(),
+                        )
+                    };
+                    let prepared = rust_kzg_arkworks3_sppark::prepare_multi_scalar_mult(points);
+                    Some(Arc::new(PrecomputationTable::from_ptr(prepared)))
+                }
+
+                #[cfg(not(feature = "sppark"))]
+                {
+                    precompute(secret_g1).ok().flatten().map(Arc::new)
+                }
+            },
         })
     }
 
