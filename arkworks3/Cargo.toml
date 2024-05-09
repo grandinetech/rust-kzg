@@ -17,7 +17,7 @@ rand = { version = "0.8.5", optional = true }
 libc = { version = "0.2.148", default-features = false }
 rayon = { version = "1.8.0", optional = true }
 rust-kzg-arkworks3-sppark = { path = "../arkworks3-sppark", version = "0.1.0", optional = true }
-wlc-msm-bal = { version = "0.1.0", git = "https://github.com/ArtiomTr/wlc_msm.git", optional = true }
+rust-kzg-arkworks3-sppark-wlc = { path = "../arkworks3-sppark-wlc", version = "0.1.0", optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

@@ -65,8 +65,8 @@ pub fn g1_linear_combination(
 
         let scalars = unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const BigInteger256, len) };
 
-        let mut context = wlc_msm_bal::multi_scalar_mult_init(points);
-        let points = wlc_msm_bal::multi_scalar_mult(&mut context, points, scalars);
+        let mut context = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult_init(points);
+        let points = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, points, scalars);
     
         *out = ArkG1(points[0]);
     }

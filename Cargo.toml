@@ -4,6 +4,7 @@ members = [
     "arkworks",
     "arkworks3",
     "arkworks3-sppark",
+    "arkworks3-sppark-wlc",
     "blst",
     "blst-sppark",
     "kzg",
