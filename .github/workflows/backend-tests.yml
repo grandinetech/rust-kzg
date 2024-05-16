@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v2
       
       # Check kzg clippy for default msm backend
-      - name: "kzg clippy (bgmw)"
+      - name: "kzg clippy"
         uses: actions-rs/cargo@v1
         with:
           command: clippy
@@ -24,14 +24,14 @@ jobs:
           args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,bgmw -- -D warnings
 
       # Check kzg clippy for arkmsm backend
-      - name: "kzg clippy (bgmw)"
+      - name: "kzg clippy (arkmsm)"
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,arkmsm -- -D warnings
         
       # Check kzg clippy for sppark backend
-      - name: "kzg clippy (bgmw)"
+      - name: "kzg clippy (sppark)"
         uses: actions-rs/cargo@v1
         with:
           command: clippy

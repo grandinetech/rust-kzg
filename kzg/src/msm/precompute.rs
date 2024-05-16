@@ -20,7 +20,6 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
     super::sppark::SpparkPrecomputation<TFr, TG1, TG1Fp, TG1Affine>;
 
 #[cfg(all(
-    not(feature = "arkmsm"),
     not(feature = "bgmw"),
     not(feature = "sppark")
 ))]
@@ -39,7 +38,6 @@ where
 }
 
 #[cfg(all(
-    not(feature = "arkmsm"),
     not(feature = "bgmw"),
     not(feature = "sppark")
 ))]
@@ -65,7 +63,6 @@ where
 }
 
 #[cfg(all(
-    not(feature = "arkmsm"),
     not(feature = "bgmw"),
     not(feature = "sppark")
 ))]
