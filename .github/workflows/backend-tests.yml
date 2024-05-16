@@ -4,7 +4,54 @@ env:
   C_KZG_4844_GIT_HASH: '5b35b6147bf269b16c1bffd268fd03bac0c00b64'
 
 jobs:
-  tests:
+  kzg_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Check kzg clippy for BGMW msm backend
+      - name: "kzg clippy (bgmw)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,bgmw -- -D warnings
+
+      # Check kzg clippy for arkmsm backend
+      - name: "kzg clippy (bgmw)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,arkmsm -- -D warnings
+        
+      # Check kzg clippy for sppark backend
+      - name: "kzg clippy (bgmw)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,sppark -- -D warnings
+
+      # Check kzg formatting
+      - name: "kzg format"
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path kzg/Cargo.toml -- --check
+
+      # Check kzg-bench clippy
+      - name: "kzg-bench clippy"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
+
+      # Check kzg-bench formatting
+      - name: "kzg-bench format"
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path kzg-bench/Cargo.toml -- --check
+
+  backend_ci:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -18,10 +65,6 @@ jobs:
           # Setup exec_once_per_backend flag
           - os: ubuntu-latest
             exec_once_per_backend: true
-          # Setup exec_once_overall flag
-          - os: ubuntu-latest
-            backend: blst
-            exec_once_overall: true
           # Select backends which support wasm & which support ckzg drop-in
           - backend: blst
             support_wasm: true
@@ -75,38 +118,6 @@ jobs:
             --no-install-recommends -yq \
             libgmp-dev \
             llvm
-
-      # Check kzg clippy
-      - name: "kzg clippy"
-        if: matrix.exec_once_overall
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path kzg/Cargo.toml --all-targets --all-features -- -D warnings
-
-      # Check kzg formatting
-      - name: "kzg format"
-        uses: actions-rs/cargo@v1
-        if: matrix.exec_once_overall
-        with:
-          command: fmt
-          args: --manifest-path kzg/Cargo.toml -- --check
-
-      # Check kzg-bench clippy
-      - name: "kzg-bench clippy"
-        if: matrix.exec_once_overall
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
-
-      # Check kzg-bench formatting
-      - name: "kzg-bench format"
-        uses: actions-rs/cargo@v1
-        if: matrix.exec_once_overall
-        with:
-          command: fmt
-          args: --manifest-path kzg-bench/Cargo.toml -- --check
 
       # Check backend clippy
       - name: "${{ matrix.backend }} clippy"
