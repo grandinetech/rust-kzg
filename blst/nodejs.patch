@@ -1,27 +1,14 @@
-From 3c133fd8424ea10cc19153c228284db1c7938cb2 Mon Sep 17 00:00:00 2001
+From cb0c44c9df8a7a6a92ed5b4f1acb771532812257 Mon Sep 17 00:00:00 2001
 From: sirse <artiom.tretjakovas2@gmail.com>
-Date: Thu, 16 May 2024 13:16:36 +0300
+Date: Thu, 16 May 2024 14:19:08 +0300
 Subject: [PATCH] Patch nodejs bindings
 
 ---
- bindings/node.js/Makefile    |  1 -
- bindings/node.js/binding.gyp | 35 +++--------------------------------
- 2 files changed, 3 insertions(+), 33 deletions(-)
+ bindings/node.js/binding.gyp | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/bindings/node.js/Makefile b/bindings/node.js/Makefile
-index adcd700..42415ea 100644
---- a/bindings/node.js/Makefile
-+++ b/bindings/node.js/Makefile
-@@ -31,7 +31,6 @@ build: install clean
- 	@# Prepare the dependencies directory
- 	@mkdir -p deps/c-kzg
- 	@cp -r ../../blst deps
--	@cp ../../src/c_kzg_4844.c deps/c-kzg
- 	@cp ../../src/c_kzg_4844.h deps/c-kzg
- 	@cp ../../src/trusted_setup.txt deps/c-kzg
- 	@# Build the bindings
 diff --git a/bindings/node.js/binding.gyp b/bindings/node.js/binding.gyp
-index c42bb8f..294d49a 100644
+index c42bb8f..e781e61 100644
 --- a/bindings/node.js/binding.gyp
 +++ b/bindings/node.js/binding.gyp
 @@ -3,9 +3,7 @@
@@ -35,44 +22,27 @@ index c42bb8f..294d49a 100644
        ],
        "include_dirs": [
          "<(module_root_dir)/deps/blst/bindings",
-@@ -16,35 +14,8 @@
+@@ -16,9 +14,11 @@
          "__BLST_PORTABLE__",
          "NAPI_CPP_EXCEPTIONS"
        ],
--      "conditions": [
--        ["OS!='win'", {
--          "sources": ["deps/blst/build/assembly.S"],
--          "cflags_cc": [
--            "-fexceptions",
--            "-std=c++17",
--            "-fPIC"
--          ]
--        }],
--        ["OS=='win'", {
--          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
--          "defines": [
--            "_CRT_SECURE_NO_WARNINGS",
--            "_HAS_EXCEPTIONS=1"
--          ],
--          "msbuild_settings": {
--            "ClCompile": {
--              "ExceptionHandling": "Sync",
--              "AdditionalOptions": ["/std:c++17"]
--            }
--          }
--        }],
--        ["OS=='mac'", {
--          "xcode_settings": {
--            "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
--            "CLANG_CXX_LIBRARY": "libc++",
--            "MACOSX_DEPLOYMENT_TARGET": "13.0"
--          }
--        }]
 +      "libraries": [
 +        "<(module_root_dir)/../../../../target/release/rust_kzg_blst.a"
-       ]
-     }
-   ]
++      ],
+       "conditions": [
+         ["OS!='win'", {
+-          "sources": ["deps/blst/build/assembly.S"],
+           "cflags_cc": [
+             "-fexceptions",
+             "-std=c++17",
+@@ -26,7 +26,6 @@
+           ]
+         }],
+         ["OS=='win'", {
+-          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
+           "defines": [
+             "_CRT_SECURE_NO_WARNINGS",
+             "_HAS_EXCEPTIONS=1"
 -- 
 2.36.2.windows.1
 
