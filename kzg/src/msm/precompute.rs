@@ -19,10 +19,7 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
     super::sppark::SpparkPrecomputation<TFr, TG1, TG1Fp, TG1Affine>;
 
-#[cfg(all(
-    not(feature = "bgmw"),
-    not(feature = "sppark")
-))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark")))]
 #[derive(Debug, Clone)]
 pub struct EmptyTable<TFr, TG1, TG1Fp, TG1Affine>
 where
@@ -37,10 +34,7 @@ where
     g1_affine_marker: core::marker::PhantomData<TG1Affine>,
 }
 
-#[cfg(all(
-    not(feature = "bgmw"),
-    not(feature = "sppark")
-))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark")))]
 impl<TFr, TG1, TG1Fp, TG1Affine> EmptyTable<TFr, TG1, TG1Fp, TG1Affine>
 where
     TFr: Fr,
@@ -62,10 +56,7 @@ where
     }
 }
 
-#[cfg(all(
-    not(feature = "bgmw"),
-    not(feature = "sppark")
-))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark")))]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> = EmptyTable<TFr, TG1, TG1Fp, TG1Affine>;
 
 pub fn precompute<TFr, TG1, TG1Fp, TG1Affine>(
