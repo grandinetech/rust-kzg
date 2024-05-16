@@ -102,13 +102,6 @@ pub fn g1_linear_combination(
             ark_points.as_slice(),
             ark_scalars.as_slice(),
         ));
-
-        // *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
-        //     points,
-        //     scalars,
-        //     len,
-        //     precomputation,
-        // );
     }
 }
 

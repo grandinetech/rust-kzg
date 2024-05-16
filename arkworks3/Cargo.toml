@@ -27,8 +27,7 @@ rand = { version = "0.8.5" }
 [features]
 default = [
     "std",
-    "rand",
-    "bgmw"
+    "rand"
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 
@@ -42,12 +41,6 @@ parallel = [
 rand = [
     "dep:rand",
     "kzg/rand",
-]
-bgmw = [
-    "kzg/bgmw"
-]
-arkmsm = [
-    "kzg/arkmsm"
 ]
 sppark = [
     "dep:rust-kzg-arkworks3-sppark",
