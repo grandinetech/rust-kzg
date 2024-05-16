@@ -25,7 +25,7 @@ fn msm_parallel<
     if let Some(precomputation) = precomputation {
         precomputation.multiply_parallel(scalars)
     } else {
-        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
+        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
         let scalars = scalars
             .iter()
             .map(TFr::to_scalar)
