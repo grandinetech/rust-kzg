@@ -8,6 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      
+      # Check kzg clippy for default msm backend
+      - name: "kzg clippy (bgmw)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --no-default-features --features=parallel,std,rand -- -D warnings
 
       # Check kzg clippy for BGMW msm backend
       - name: "kzg clippy (bgmw)"
@@ -60,8 +67,8 @@ jobs:
         # Excluding mcl for now due to they have different project layout
         backend: [blst, zkcrypto, arkworks, arkworks3, constantine]
         include:
-          # Set default clippy flag to all-features
-          - clippy-flag: --all-features
+          # Set default clippy flag
+          - clippy-flag: --features=default,std,rand,parallel
           # Setup exec_once_per_backend flag
           - os: ubuntu-latest
             exec_once_per_backend: true
@@ -69,13 +76,10 @@ jobs:
           - backend: blst
             support_wasm: true
             support_ckzg: true
-            # Override all-features flag for blst, due to incompatibility between portable & force-adx
-            clippy-flag: --features=default,std,rand,parallel
           - backend: zkcrypto
             support_wasm: true
             support_ckzg: true
-
-            clippy-flag: --features=default,std,rand,parallel
+            clippy-flag: --all-features
           - backend: arkworks
             support_wasm: true
             support_ckzg: true
