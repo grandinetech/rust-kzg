@@ -1,14 +1,14 @@
-From 90e9a518ca03716ef1d9d77e263db25b56030867 Mon Sep 17 00:00:00 2001
+From d0e5b619807c0b9e936ce178b2a8e019da020a14 Mon Sep 17 00:00:00 2001
 From: sirse <artiom.tretjakovas2@gmail.com>
-Date: Thu, 26 Oct 2023 14:09:11 +0300
-Subject: [PATCH] Patch go binding
+Date: Thu, 16 May 2024 13:26:25 +0300
+Subject: [PATCH] Patch go bindings
 
 ---
  bindings/go/main.go | 13 +++++++++----
  1 file changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/bindings/go/main.go b/bindings/go/main.go
-index bdd5385..155fc81 100644
+index bf344a1..4f1c0f4 100644
 --- a/bindings/go/main.go
 +++ b/bindings/go/main.go
 @@ -2,7 +2,15 @@ package ckzg4844
@@ -29,8 +29,8 @@ index bdd5385..155fc81 100644
  
  import (
 @@ -11,9 +19,6 @@ import (
+ 	"errors"
  	"fmt"
- 	"strings"
  	"unsafe"
 -
 -	// So its functions are available during compilation.
@@ -39,5 +39,5 @@ index bdd5385..155fc81 100644
  
  const (
 -- 
-2.34.1
+2.36.2.windows.1
 

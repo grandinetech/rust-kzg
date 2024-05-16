@@ -1,27 +1,27 @@
-From e7d529a9ba017de920555ae9b4ab05a18174cdcf Mon Sep 17 00:00:00 2001
+From fd9fa9700d975053dcc237ec9913e3e519b10dff Mon Sep 17 00:00:00 2001
 From: sirse <artiom.tretjakovas2@gmail.com>
-Date: Thu, 25 Jan 2024 11:42:12 +0200
+Date: Thu, 16 May 2024 12:46:48 +0300
 Subject: [PATCH] Patch rust bindings
 
 ---
- bindings/rust/Cargo.toml |  1 +
- bindings/rust/build.rs   | 22 +++-------------------
+ Cargo.toml             |  1 +
+ bindings/rust/build.rs | 22 +++-------------------
  2 files changed, 4 insertions(+), 19 deletions(-)
 
-diff --git a/bindings/rust/Cargo.toml b/bindings/rust/Cargo.toml
-index 98bd814..9391f27 100644
---- a/bindings/rust/Cargo.toml
-+++ b/bindings/rust/Cargo.toml
+diff --git a/Cargo.toml b/Cargo.toml
+index fb39739..37e262d 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
 @@ -1,3 +1,4 @@
 +[workspace]
  [package]
  name = "c-kzg"
- version = "0.1.0"
+ version = "1.0.2"
 diff --git a/bindings/rust/build.rs b/bindings/rust/build.rs
-index 5148333..ec42e21 100644
+index 1b19f71..911bbc9 100644
 --- a/bindings/rust/build.rs
 +++ b/bindings/rust/build.rs
-@@ -15,24 +15,7 @@ fn main() {
+@@ -9,24 +9,7 @@ fn main() {
  
      let c_src_dir = root_dir.join("src");
  
@@ -45,10 +45,10 @@ index 5148333..ec42e21 100644
 -    cc.try_compile("ckzg").expect("Failed to compile ckzg");
 +    let rust_kzg_target_dir = root_dir.join("../../target/release/");
  
-     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-     let bindings_out_path = out_dir.join("generated.rs");
-@@ -46,7 +29,8 @@ fn main() {
-     );
+     #[cfg(feature = "generate-bindings")]
+     {
+@@ -43,7 +26,8 @@ fn main() {
+     }
  
      // Finally, tell cargo this provides ckzg/ckzg_min
 -    println!("cargo:rustc-link-lib=ckzg");
@@ -56,7 +56,7 @@ index 5148333..ec42e21 100644
 +    println!("cargo:rustc-link-arg=-l:rust_kzg_arkworks3.a");
  }
  
- fn make_bindings<P>(header_path: &str, blst_headers_dir: &str, bindings_out_path: P)
+ #[cfg(feature = "generate-bindings")]
 -- 
 2.34.1
 
