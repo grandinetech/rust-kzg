@@ -1,4 +1,4 @@
-use blst::{blst_fr, blst_p1_affine, blst_scalar, blst_scalar_from_fr};
+use blst::{blst_fr, blst_p1_affine};
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg::Fr;
 use kzg::G1;
