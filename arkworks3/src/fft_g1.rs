@@ -1,10 +1,6 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
 
-use ark_bls12_381::{Fr, G1Affine};
-use ark_ec::msm::VariableBaseMSM;
-use ark_ec::ProjectiveCurve;
-use ark_ff::{BigInteger256, PrimeField};
 use kzg::cfg_into_iter;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -13,9 +9,12 @@ use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
+use ark_ec::ProjectiveCurve;
+use ark_ff::PrimeField;
 
 extern crate alloc;
 
+#[allow(unused_variables)]
 pub fn g1_linear_combination(
     out: &mut ArkG1,
     points: &[ArkG1],
@@ -26,6 +25,9 @@ pub fn g1_linear_combination(
 
     #[cfg(feature = "sppark")]
     {
+        use ark_bls12_381::{Fr, G1Affine};
+        use ark_ec::msm::VariableBaseMSM;
+        use ark_ff::BigInteger256;
         use kzg::{G1, G1Mul};
 
         if len < 8 {
@@ -53,6 +55,8 @@ pub fn g1_linear_combination(
 
     #[cfg(feature = "sppark_wlc")]
     {
+        use ark_bls12_381::{Fr, G1Affine};
+        use ark_ff::BigInteger256;
         use kzg::{G1, G1Mul};
 
         if len < 8 {
@@ -79,6 +83,7 @@ pub fn g1_linear_combination(
 
     #[cfg(not(any(feature = "sppark", feature = "sppark_wlc")))]
     {
+        use ark_ec::msm::VariableBaseMSM;
         let ark_points = cfg_into_iter!(&points[0..len]).map(|point| {
             point.0.into_affine()
         }).collect::<Vec<_>>();
