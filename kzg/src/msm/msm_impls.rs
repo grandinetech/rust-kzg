@@ -51,7 +51,7 @@ fn msm_sequential<
         if let Some(precomputation) = precomputation {
             precomputation.multiply_sequential(scalars)
         } else {
-            let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
+            let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
             let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
             tiling_pippenger(&points, &scalars)
         }
@@ -59,7 +59,7 @@ fn msm_sequential<
 
     #[cfg(feature = "arkmsm")]
     {
-        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
+        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
         let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
         VariableBaseMSM::multi_scalar_mul::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars)
     }
