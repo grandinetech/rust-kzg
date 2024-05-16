@@ -20,7 +20,10 @@ pub fn bench_g1_lincomb<
         Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
     ),
 ) {
-    let npoints_npow = &std::env::var("BENCH_NPOW").unwrap_or("12".to_string()).parse::<i32>().unwrap();
+    let npoints_npow = &std::env::var("BENCH_NPOW")
+        .unwrap_or("12".to_string())
+        .parse::<i32>()
+        .unwrap();
     let num_points = 1usize << npoints_npow;
 
     let points = (0..num_points).map(|_| TG1::rand()).collect::<Vec<_>>();

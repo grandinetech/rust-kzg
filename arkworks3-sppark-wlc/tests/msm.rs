@@ -4,8 +4,8 @@
 
 use ark_bls12_381::G1Affine;
 use ark_ec::msm::VariableBaseMSM;
-use ark_ff::BigInteger256;
 use ark_ec::ProjectiveCurve;
+use ark_ff::BigInteger256;
 
 use std::str::FromStr;
 
@@ -25,18 +25,15 @@ fn msm_correctness() {
         std::mem::transmute::<&[_], &[BigInteger256]>(scalars.as_slice())
     });
 
-    
     for b in 0..batches {
         let start = b * points.len();
         let end = (b + 1) * points.len();
 
-        
-        let arkworks_result =
-            VariableBaseMSM::multi_scalar_mul(points.as_slice(), unsafe {
-                std::mem::transmute::<&[_], &[BigInteger256]>(&scalars[start..end])
+        let arkworks_result = VariableBaseMSM::multi_scalar_mul(points.as_slice(), unsafe {
+            std::mem::transmute::<&[_], &[BigInteger256]>(&scalars[start..end])
         })
         .into_affine();
-        
+
         assert_eq!(msm_results[b].into_affine(), arkworks_result);
     }
 }

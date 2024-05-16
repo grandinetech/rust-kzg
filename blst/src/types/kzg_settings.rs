@@ -41,7 +41,8 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
                 #[cfg(feature = "sppark")]
                 {
                     use blst::blst_p1_affine;
-                    let points = kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(secret_g1);
+                    let points =
+                        kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(secret_g1);
                     let points = unsafe {
                         alloc::slice::from_raw_parts(
                             points.as_ptr() as *const blst_p1_affine,

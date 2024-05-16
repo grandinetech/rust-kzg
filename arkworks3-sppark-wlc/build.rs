@@ -33,17 +33,15 @@ fn main() {
                 println!("`force-adx` is ignored for non-x86_64 targets");
             }
         }
-        (false, false) => {
+        (false, false) =>
+        {
             #[cfg(target_arch = "x86_64")]
-            if target_arch.eq("x86_64") && std::is_x86_feature_detected!("adx")
-            {
+            if target_arch.eq("x86_64") && std::is_x86_feature_detected!("adx") {
                 println!("Enabling ADX because it was detected on the host");
                 cc_opt = Some("__ADX__");
             }
         }
-        (true, true) => panic!(
-            "Cannot compile with both `portable` and `force-adx` features"
-        ),
+        (true, true) => panic!("Cannot compile with both `portable` and `force-adx` features"),
     }
 
     cc.flag_if_supported("-mno-avx") // avoid costly transitions

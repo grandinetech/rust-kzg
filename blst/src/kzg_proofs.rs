@@ -10,7 +10,8 @@ use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
 
 use crate::types::g2::FsG2;
 use blst::{
-    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine, blst_p2_to_affine, Pairing
+    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
+    blst_p2_to_affine, Pairing,
 };
 
 use kzg::PairingVerify;
@@ -30,8 +31,8 @@ pub fn g1_linear_combination(
 ) {
     #[cfg(feature = "sppark")]
     {
-        use kzg::{G1, G1Mul};
         use blst::{blst_fr, blst_scalar, blst_scalar_from_fr};
+        use kzg::{G1Mul, G1};
 
         if len < 8 {
             *out = FsG1::default();
@@ -43,13 +44,16 @@ pub fn g1_linear_combination(
             return;
         }
 
-        let scalars = unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const blst_fr, len) };
+        let scalars =
+            unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const blst_fr, len) };
 
         let point = if let Some(precomputation) = precomputation {
-            rust_kzg_blst_sppark::multi_scalar_mult_prepared(precomputation.table, scalars) 
+            rust_kzg_blst_sppark::multi_scalar_mult_prepared(precomputation.table, scalars)
         } else {
             let affines = kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(&points);
-            let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const blst_p1_affine, len) };
+            let affines = unsafe {
+                alloc::slice::from_raw_parts(affines.as_ptr() as *const blst_p1_affine, len)
+            };
             rust_kzg_blst_sppark::multi_scalar_mult(&affines[0..len], &scalars)
         };
 

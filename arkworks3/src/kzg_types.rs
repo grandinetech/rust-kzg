@@ -22,7 +22,11 @@ use ark_std::{One, Zero};
 #[cfg(feature = "rand")]
 use ark_std::UniformRand;
 
-use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, BLST_ERROR};
+use blst::{
+    blst_fp, blst_fp2, blst_fr, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
+    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
+    blst_p2_uncompress, BLST_ERROR,
+};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
@@ -135,10 +139,8 @@ impl KzgFr for ArkFr {
                     bytes.len()
                 )
             })
-            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                Self {
-                    fr: Fr::from_be_bytes_mod_order(bytes),
-                }
+            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| Self {
+                fr: Fr::from_be_bytes_mod_order(bytes),
             })
     }
 
@@ -148,13 +150,13 @@ impl KzgFr for ArkFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        Self { fr: Fr::from(BigInteger256::new(*u)) }
+        Self {
+            fr: Fr::from(BigInteger256::new(*u)),
+        }
     }
 
     fn from_u64(val: u64) -> Self {
-        Self {
-            fr: Fr::from(val)
-        }
+        Self { fr: Fr::from(val) }
     }
 
     fn to_bytes(&self) -> [u8; 32] {
@@ -365,7 +367,7 @@ impl G1 for ArkG1 {
                 let result = unsafe { blst_p1_uncompress(&mut blst_affine, bytes.as_ptr()) };
 
                 if result != BLST_ERROR::BLST_SUCCESS {
-                    return Err("Failed to deserialize G1".to_owned())
+                    return Err("Failed to deserialize G1".to_owned());
                 }
 
                 let mut blst_point = blst_p1::default();
@@ -398,9 +400,7 @@ impl G1 for ArkG1 {
     }
 
     fn is_valid(&self) -> bool {
-        unsafe {
-            blst_p1_in_g1(&self.to_blst_p1())
-        }
+        unsafe { blst_p1_in_g1(&self.to_blst_p1()) }
     }
 
     fn dbl(&self) -> Self {
@@ -670,7 +670,7 @@ impl G2 for ArkG2 {
                 let result = unsafe { blst_p2_uncompress(&mut blst_affine, bytes.as_ptr()) };
 
                 if result != BLST_ERROR::BLST_SUCCESS {
-                    return Err("Failed to deserialize G1".to_owned())
+                    return Err("Failed to deserialize G1".to_owned());
                 }
 
                 let mut blst_point = blst_p2::default();
@@ -862,7 +862,8 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
                 #[cfg(feature = "sppark")]
                 {
                     use ark_bls12_381::G1Affine;
-                    let points = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(secret_g1);
+                    let points =
+                        kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(secret_g1);
                     let points = unsafe {
                         alloc::slice::from_raw_parts(
                             points.as_ptr() as *const G1Affine,

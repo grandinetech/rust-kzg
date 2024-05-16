@@ -12,15 +12,28 @@ use std::ffi::c_void;
 pub fn prepare_multi_scalar_mult<G: AffineCurve>(points: &[G]) -> *mut c_void {
     #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
     extern "C" {
-        fn prepare_msm(points: *const G1Affine, npoints: usize, ffi_affine_sz: usize) -> *mut c_void;
+        fn prepare_msm(
+            points: *const G1Affine,
+            npoints: usize,
+            ffi_affine_sz: usize,
+        ) -> *mut c_void;
     }
 
     let npoints = points.len();
 
-    unsafe { prepare_msm(points.as_ptr() as *const _, npoints, std::mem::size_of::<G>()) }
+    unsafe {
+        prepare_msm(
+            points.as_ptr() as *const _,
+            npoints,
+            std::mem::size_of::<G>(),
+        )
+    }
 }
 
-pub fn multi_scalar_mult_prepared<G: AffineCurve>(msm: *mut c_void, scalars: &[<G::ScalarField as PrimeField>::BigInt]) -> G::Projective {
+pub fn multi_scalar_mult_prepared<G: AffineCurve>(
+    msm: *mut c_void,
+    scalars: &[<G::ScalarField as PrimeField>::BigInt],
+) -> G::Projective {
     #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
     extern "C" {
         fn mult_pippenger_prepared(
@@ -34,14 +47,24 @@ pub fn multi_scalar_mult_prepared<G: AffineCurve>(msm: *mut c_void, scalars: &[<
     let npoints = scalars.len();
     let mut ret = G::Projective::zero();
 
-    let err = unsafe { mult_pippenger_prepared(msm, &mut ret as *mut _ as *mut _, npoints, scalars.as_ptr() as *const _) };
+    let err = unsafe {
+        mult_pippenger_prepared(
+            msm,
+            &mut ret as *mut _ as *mut _,
+            npoints,
+            scalars.as_ptr() as *const _,
+        )
+    };
     if err.code != 0 {
         panic!("{}", String::from(err));
     }
     ret
 }
 
-pub fn multi_scalar_mult<G: AffineCurve>(points: &[G], scalars: &[<G::ScalarField as PrimeField>::BigInt]) -> G::Projective {
+pub fn multi_scalar_mult<G: AffineCurve>(
+    points: &[G],
+    scalars: &[<G::ScalarField as PrimeField>::BigInt],
+) -> G::Projective {
     #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
     extern "C" {
         fn mult_pippenger(
@@ -59,7 +82,15 @@ pub fn multi_scalar_mult<G: AffineCurve>(points: &[G], scalars: &[<G::ScalarFiel
     }
 
     let mut ret = G::Projective::zero();
-    let err = unsafe { mult_pippenger(&mut ret as *mut _ as *mut _, points.as_ptr() as *const _, npoints, scalars.as_ptr() as *const _, std::mem::size_of::<G>()) };
+    let err = unsafe {
+        mult_pippenger(
+            &mut ret as *mut _ as *mut _,
+            points.as_ptr() as *const _,
+            npoints,
+            scalars.as_ptr() as *const _,
+            std::mem::size_of::<G>(),
+        )
+    };
     if err.code != 0 {
         panic!("{}", String::from(err));
     }

@@ -1,8 +1,8 @@
 use crate::data_types::fr::Fr;
 use crate::fk20_fft::FFTSettings;
 use crate::kzg10::Polynomial;
-use std::cmp::min;
 use kzg::common_utils::{is_power_of_2, next_pow_of_2};
+use std::cmp::min;
 
 ///  Copy all of the coefficients of polynomial @p p to @p out, padding to length @p p_len with zeros.
 pub fn pad_poly(new_length: usize, poly: &Polynomial) -> Result<Vec<Fr>, String> {

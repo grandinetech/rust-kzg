@@ -26,10 +26,7 @@ fn msm_parallel<
         precomputation.multiply_parallel(scalars)
     } else {
         let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
-        let scalars = scalars
-            .iter()
-            .map(TFr::to_scalar)
-            .collect::<Vec<_>>();
+        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
         tiling_parallel_pippenger(&points, &scalars)
     }
 }
@@ -55,10 +52,7 @@ fn msm_sequential<
             precomputation.multiply_sequential(scalars)
         } else {
             let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
-            let scalars = scalars
-                .iter()
-                .map(TFr::to_scalar)
-                .collect::<Vec<_>>();
+            let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
             tiling_pippenger(&points, &scalars)
         }
     }
@@ -66,10 +60,7 @@ fn msm_sequential<
     #[cfg(feature = "arkmsm")]
     {
         let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
-        let scalars = scalars
-            .iter()
-            .map(TFr::to_scalar)
-            .collect::<Vec<_>>();
+        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
         VariableBaseMSM::multi_scalar_mul::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars)
     }
 }
@@ -107,7 +98,11 @@ pub fn msm<
     }
 
     #[cfg(feature = "parallel")]
-    return msm_parallel::<TFr, TG1, TG1Fp, TG1Affine>(&points[0..len], &scalars[0..len], precomputation);
+    return msm_parallel::<TFr, TG1, TG1Fp, TG1Affine>(
+        &points[0..len],
+        &scalars[0..len],
+        precomputation,
+    );
 
     #[cfg(not(feature = "parallel"))]
     return msm_sequential::<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>(

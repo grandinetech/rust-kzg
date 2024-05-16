@@ -16,7 +16,8 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
     super::bgmw::BgmwTable<TFr, TG1, TG1Fp, TG1Affine>;
 
 #[cfg(feature = "sppark")]
-pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> = super::sppark::SpparkPrecomputation<TFr, TG1, TG1Fp, TG1Affine>;
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
+    super::sppark::SpparkPrecomputation<TFr, TG1, TG1Fp, TG1Affine>;
 
 #[cfg(all(
     not(feature = "arkmsm"),

@@ -32,7 +32,7 @@ impl G1Fp for CtFp {
             ],
         })
     }
-    
+
     fn zero() -> Self {
         Self(bls12_381_fp {
             limbs: [0, 0, 0, 0, 0, 0],

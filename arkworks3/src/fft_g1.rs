@@ -5,12 +5,12 @@ use kzg::cfg_into_iter;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
+use ark_ec::ProjectiveCurve;
+use ark_ff::PrimeField;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
-use ark_ec::ProjectiveCurve;
-use ark_ff::PrimeField;
 
 extern crate alloc;
 
@@ -22,13 +22,12 @@ pub fn g1_linear_combination(
     len: usize,
     precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
 ) {
-
     #[cfg(feature = "sppark")]
     {
         use ark_bls12_381::{Fr, G1Affine};
         use ark_ec::msm::VariableBaseMSM;
         use ark_ff::BigInteger256;
-        use kzg::{G1, G1Mul};
+        use kzg::{G1Mul, G1};
 
         if len < 8 {
             *out = ArkG1::default();
@@ -40,13 +39,18 @@ pub fn g1_linear_combination(
             return;
         }
 
-        let scalars = unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const BigInteger256, len) };
+        let scalars =
+            unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const BigInteger256, len) };
 
         let point = if let Some(precomputation) = precomputation {
-            rust_kzg_arkworks3_sppark::multi_scalar_mult_prepared::<G1Affine>(precomputation.table, scalars) 
+            rust_kzg_arkworks3_sppark::multi_scalar_mult_prepared::<G1Affine>(
+                precomputation.table,
+                scalars,
+            )
         } else {
             let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&points);
-            let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len) };
+            let affines =
+                unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len) };
             rust_kzg_arkworks3_sppark::multi_scalar_mult::<G1Affine>(&affines[0..len], scalars)
         };
 
@@ -57,7 +61,7 @@ pub fn g1_linear_combination(
     {
         use ark_bls12_381::{Fr, G1Affine};
         use ark_ff::BigInteger256;
-        use kzg::{G1, G1Mul};
+        use kzg::{G1Mul, G1};
 
         if len < 8 {
             *out = ArkG1::default();
@@ -70,13 +74,17 @@ pub fn g1_linear_combination(
         }
 
         let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&points);
-        let affines = unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len) };
-        let ark_scalars = cfg_into_iter!(&scalars[0..len]).map(|scalar| scalar.fr.into_repr()).collect::<Vec<_>>();
+        let affines =
+            unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len) };
+        let ark_scalars = cfg_into_iter!(&scalars[0..len])
+            .map(|scalar| scalar.fr.into_repr())
+            .collect::<Vec<_>>();
 
         let mut context = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult_init(affines);
-        let msm_results = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, affines, unsafe {
-            std::mem::transmute::<&[_], &[BigInteger256]>(&ark_scalars)
-        });
+        let msm_results =
+            rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, affines, unsafe {
+                std::mem::transmute::<&[_], &[BigInteger256]>(&ark_scalars)
+            });
 
         *out = ArkG1(msm_results[0]);
     }
@@ -84,11 +92,16 @@ pub fn g1_linear_combination(
     #[cfg(not(any(feature = "sppark", feature = "sppark_wlc")))]
     {
         use ark_ec::msm::VariableBaseMSM;
-        let ark_points = cfg_into_iter!(&points[0..len]).map(|point| {
-            point.0.into_affine()
-        }).collect::<Vec<_>>();
-        let ark_scalars = cfg_into_iter!(&scalars[0..len]).map(|scalar| scalar.fr.into_repr()).collect::<Vec<_>>();
-        *out = ArkG1(VariableBaseMSM::multi_scalar_mul(ark_points.as_slice(), ark_scalars.as_slice()));
+        let ark_points = cfg_into_iter!(&points[0..len])
+            .map(|point| point.0.into_affine())
+            .collect::<Vec<_>>();
+        let ark_scalars = cfg_into_iter!(&scalars[0..len])
+            .map(|scalar| scalar.fr.into_repr())
+            .collect::<Vec<_>>();
+        *out = ArkG1(VariableBaseMSM::multi_scalar_mul(
+            ark_points.as_slice(),
+            ark_scalars.as_slice(),
+        ));
 
         // *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
         //     points,

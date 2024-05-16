@@ -2,11 +2,11 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::os::raw::c_void;
 use ark_bls12_381::{Fr, G1Affine};
 use ark_ec::AffineCurve;
 use ark_ff::PrimeField;
 use ark_std::Zero;
+use std::os::raw::c_void;
 
 #[allow(unused_imports)]
 use blst::*;
@@ -47,7 +47,7 @@ extern "C" {
         scalars: *const Fr,
         ffi_affine_sz: usize,
     ) -> cuda::Error;
-    
+
     // fn mult_pippenger_inf(
     //     context: *mut MultiScalarMultContext,
     //     out: *mut u64,
@@ -59,13 +59,11 @@ extern "C" {
     // ) -> cuda::Error;
 }
 
-pub fn multi_scalar_mult_init<G: AffineCurve>(
-    points: &[G],
-) -> MultiScalarMultContext {
+pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultContext {
     let mut ret = MultiScalarMultContext {
         context: std::ptr::null_mut(),
     };
-        
+
     let err = unsafe {
         mult_pippenger_faster_init(
             &mut ret,
@@ -80,7 +78,7 @@ pub fn multi_scalar_mult_init<G: AffineCurve>(
 
     ret
 }
-    
+
 pub fn multi_scalar_mult<G: AffineCurve>(
     context: &mut MultiScalarMultContext,
     points: &[G],
@@ -96,17 +94,16 @@ pub fn multi_scalar_mult<G: AffineCurve>(
     let batch_size = scalars.len() / npoints;
     let mut ret = vec![G::Projective::zero(); batch_size];
     let err = unsafe {
-        let result_ptr = 
-            &mut *(&mut ret as *mut Vec<G::Projective>
-                   as *mut Vec<u64>);
-        
+        let result_ptr = &mut *(&mut ret as *mut Vec<G::Projective> as *mut Vec<u64>);
+
         // mult_pippenger_faster_inf2();
 
         mult_pippenger_faster_inf(
             context,
             result_ptr.as_mut_ptr(),
             points as *const _ as *const G1Affine,
-            npoints, batch_size,
+            npoints,
+            batch_size,
             scalars as *const _ as *const Fr,
             std::mem::size_of::<G1Affine>(),
         )

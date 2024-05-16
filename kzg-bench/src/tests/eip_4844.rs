@@ -702,7 +702,10 @@ pub fn test_vectors_compute_blob_kzg_proof<
                     .get_output_bytes()
                     .and_then(|commitment_bytes| TG1::from_bytes(&commitment_bytes).ok());
 
-                assert!(expected_commitment.is_some(), "Expected that `compute_blob_kzg_proof` would throw an error, but it succeeded");
+                assert!(
+                    expected_commitment.is_some(),
+                    "Expected that `compute_blob_kzg_proof` would throw an error, but it succeeded"
+                );
                 assert_eq!(proof, expected_commitment.unwrap());
             }
             Err(_) => {
