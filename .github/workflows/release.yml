@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  C_KZG_4844_GIT_HASH: '5115420ba3f919f5501155ba18633667001b6a07'
+  C_KZG_4844_GIT_HASH: '5b35b6147bf269b16c1bffd268fd03bac0c00b64'
 
 jobs:
   release-build:
@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [blst, zkcrypto, arkworks, constantine]
+        backend: [blst, zkcrypto, arkworks, arkworks3, constantine]
         target: [windows, linux]
         include:
           # Set target-name for target builds
