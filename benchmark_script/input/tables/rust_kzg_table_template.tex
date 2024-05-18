@@ -1,0 +1,50 @@
+\documentclass{article}
+\usepackage{array,multirow}
+\usepackage{xcolor,colortbl}
+\usepackage{caption}
+
+\makeatletter
+\def\thickhline{%
+  \noalign{\ifnum0=`}\fi\hrule \@height \thickarrayrulewidth \futurelet
+   \reserved@a\@xthickhline}
+\def\@xthickhline{\ifx\reserved@a\thickhline
+               \vskip\doublerulesep
+               \vskip-\thickarrayrulewidth
+             \fi
+      \ifnum0=`{\fi}}
+\makeatother
+
+\newlength{\thickarrayrulewidth}
+\setlength{\thickarrayrulewidth}{4\arrayrulewidth}
+
+\begin{document}
+
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+    \textbf{Implementation} & \textbf{Cores} & \textbf{Sequential TIME_UNIT} & \textbf{Parallel TIME_UNIT} & \textbf{Delta} \\ \hline
+%%% rust-kzg with zkcrypto backend
+\rowcolor{red!20}
+    & 1  & ZKCRYPTO_ORIGINAL_1_CORES & ZKCRYPTO_PARALLELIZED_1_CORES & ZKCRYPTO_DELTA_1_CORES\% \\ \rowcolor{red!20}
+    & 2  & ZKCRYPTO_ORIGINAL_2_CORES & ZKCRYPTO_PARALLELIZED_2_CORES & ZKCRYPTO_DELTA_2_CORES\% \\ \rowcolor{red!20}
+    & 4  & ZKCRYPTO_ORIGINAL_4_CORES & ZKCRYPTO_PARALLELIZED_4_CORES & ZKCRYPTO_DELTA_4_CORES\% \\ \rowcolor{red!20}
+    & 8  & ZKCRYPTO_ORIGINAL_8_CORES & ZKCRYPTO_PARALLELIZED_8_CORES & ZKCRYPTO_DELTA_8_CORES\% \\ \rowcolor{red!20}
+    \multirow{-5}{*}{\cellcolor{red!20} rust-kzg with zkcrypto backend} & 16 & ZKCRYPTO_ORIGINAL_16_CORES & ZKCRYPTO_PARALLELIZED_16_CORES & ZKCRYPTO_DELTA_16_CORES\% \\ \hline
+%%% rust-kzg with blst backend
+\rowcolor{green!20}
+    & 1  & BLST_ORIGINAL_1_CORES & BLST_PARALLELIZED_1_CORES & BLST_DELTA_1_CORES\% \\ \rowcolor{green!20}
+    & 2  & BLST_ORIGINAL_2_CORES & BLST_PARALLELIZED_2_CORES & BLST_DELTA_2_CORES\% \\ \rowcolor{green!20}
+    & 4  & BLST_ORIGINAL_4_CORES & BLST_PARALLELIZED_4_CORES & BLST_DELTA_4_CORES\% \\ \rowcolor{green!20}
+    & 8  & BLST_ORIGINAL_8_CORES & BLST_PARALLELIZED_8_CORES & BLST_DELTA_8_CORES\% \\ \rowcolor{green!20}
+    \multirow{-5}{*}{\cellcolor{green!20} rust-kzg with blst backend} & 16 & BLST_ORIGINAL_16_CORES & BLST_PARALLELIZED_16_CORES & BLST_DELTA_16_CORES\% \\ \hline
+%%% rust-kzg with mcl backend
+\rowcolor{black!20}
+    & 1  & MCL_ORIGINAL_1_CORES & MCL_PARALLELIZED_1_CORES & MCL_DELTA_1_CORES\% \\ \rowcolor{black!20}
+    & 2  & MCL_ORIGINAL_2_CORES & MCL_PARALLELIZED_2_CORES & MCL_DELTA_2_CORES\% \\ \rowcolor{black!20}
+    & 4  & MCL_ORIGINAL_4_CORES & MCL_PARALLELIZED_4_CORES & MCL_DELTA_4_CORES\% \\ \rowcolor{black!20}
+    & 8  & MCL_ORIGINAL_8_CORES & MCL_PARALLELIZED_8_CORES & MCL_DELTA_8_CORES\% \\ \rowcolor{black!20}
+    \multirow{-5}{*}{\cellcolor{black!20} rust-kzg with mcl backend} & 16 & MCL_ORIGINAL_16_CORES & MCL_PARALLELIZED_16_CORES & MCL_DELTA_16_CORES\% \\ \hline
+\end{tabular}
+\captionof{table}{TITLE}
+\label{tab:table_TITLE}
+
+\end{document}
