@@ -14,8 +14,10 @@
 # This script is designed to be run once and forgotten about.
 #
 # 1.2. setup system
-# apt -y install htop gcc g++ clang make git mosh golang
+# apt -y install htop gcc g++ clang make git mosh golang libgmp-dev llvm
 # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# curl https://nim-lang.org/choosenim/init.sh -sSf | sh
+# choosenim 1.6.14
 #
 # 1.3. setup mosh-server
 # locale-gen en_US.UTF-8
@@ -61,8 +63,8 @@ export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 make blst
 unset CFLAGS
 cd ..
-git apply < ../rust.patch
-git apply < ../go.patch
+git apply < ../rust.patch || exit
+git apply < ../go.patch || exit
 cd ../..
 
 # 2.3. prepare rust-kzg with mcl backend
