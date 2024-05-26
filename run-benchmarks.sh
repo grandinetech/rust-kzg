@@ -14,7 +14,8 @@
 # This script is designed to be run once and forgotten about.
 #
 # 1.2. setup system
-# apt -y install htop gcc g++ clang make git mosh golang libgmp-dev llvm
+# apt -y install htop gcc g++ clang make git mosh golang libgmp-dev llvm python3 python3-pip
+# pip install aiogram
 # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 # curl https://nim-lang.org/choosenim/init.sh -sSf | sh
 # choosenim 1.6.14
