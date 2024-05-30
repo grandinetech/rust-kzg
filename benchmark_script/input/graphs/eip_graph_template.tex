@@ -1,0 +1,133 @@
+\documentclass[border=2pt]{standalone}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\usepackage{subfig}
+\usepackage{pdflscape}
+\usepackage[export]{adjustbox}
+\begin{document}
+\hbox{
+    \adjustbox{valign=t}{
+        \begin{tikzpicture}
+            \begin{axis}[
+                legend style={at={(0.5, -0.3)}, anchor=north, legend cell align=left},
+                symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
+                xtick=data,
+                x tick label style={rotate=45, anchor=east},
+                ymin=0, ymax=${max_time}, %%% change this
+                ylabel near ticks,
+                yticklabel pos=right,
+                ylabel={time (${time_unit})}, %%% change this
+                grid = major,
+                grid style=dashed,
+            ]
+            %%% rust-kzg with zkcrypto backend
+            \addlegendentry{rust-kzg with zkcrypto backend}
+            \addplot[mark=*, mark options={scale=1.5}, thick, black] coordinates {
+                (1 core,   ${1>rust-kzg with zkcrypto backend (parallel)})
+                (2 cores,  ${2>rust-kzg with zkcrypto backend (parallel)})
+                (4 cores,  ${4>rust-kzg with zkcrypto backend (parallel)})
+                (8 cores,  ${8>rust-kzg with zkcrypto backend (parallel)})
+                (16 cores, ${16>rust-kzg with zkcrypto backend (parallel)}) };
+            %%% rust-kzg with blst backend
+            \addlegendentry{rust-kzg with blst backend (BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+                (1 core,   ${1>rust-kzg with blst backend (parallel, bgmw)})
+                (2 cores,  ${2>rust-kzg with blst backend (parallel, bgmw)})
+                (4 cores,  ${4>rust-kzg with blst backend (parallel, bgmw)})
+                (8 cores,  ${8>rust-kzg with blst backend (parallel, bgmw)})
+                (16 cores, ${16>rust-kzg with blst backend (parallel, bgmw)}) };
+
+            \addlegendentry{rust-kzg with constantine backend (BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, orange] coordinates {
+                (1 core,   ${1>rust-kzg with constantine backend (parallel)})
+                (2 cores,  ${2>rust-kzg with constantine backend (parallel)})
+                (4 cores,  ${4>rust-kzg with constantine backend (parallel)})
+                (8 cores,  ${8>rust-kzg with constantine backend (parallel)})
+                (16 cores, ${16>rust-kzg with constantine backend (parallel)}) };
+            
+            \addlegendentry{rust-kzg with arkworks backend (BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, red] coordinates {
+                (1 core,   ${1>rust-kzg with arkworks backend (parallel, bgmw)})
+                (2 cores,  ${2>rust-kzg with arkworks backend (parallel, bgmw)})
+                (4 cores,  ${4>rust-kzg with arkworks backend (parallel, bgmw)})
+                (8 cores,  ${8>rust-kzg with arkworks backend (parallel, bgmw)})
+                (16 cores, ${16>rust-kzg with arkworks backend (parallel, bgmw)}) };
+            %%% rust-kzg with mcl backend
+            %\addlegendentry{rust-kzg with mcl backend}
+            %\addplot[mark=*, mark options={scale=1.5}, thick, black] coordinates {
+            %    (1 core,   236.06)
+            %    (2 cores,  113.92)
+            %    (4 cores,  65.031)
+            %    (8 cores,  48.163)
+            %    (16 cores, 33.903) };
+
+            \end{axis}
+        \end{tikzpicture}
+    }% 
+    \adjustbox{valign=t}{
+        \begin{tikzpicture}
+        \begin{axis}[
+            legend style={at={(0.5, -0.3)}, anchor=north, legend cell align=left},
+            symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
+            xtick=data,
+            x tick label style={rotate=45, anchor=east},
+            ymin=0, ymax=${max_time_2},
+            ylabel near ticks,
+            yticklabel pos=right,
+            ylabel={time (${time_unit})},
+            grid = major,
+            grid style=dashed,
+        ]
+        %%% rust-kzg with blst backend
+        \addlegendentry{rust-kzg with blst backend (BGMW)}
+        \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+            (1 core,   ${1>rust-kzg with blst backend (parallel, bgmw)})
+            (2 cores,  ${2>rust-kzg with blst backend (parallel, bgmw)})
+            (4 cores,  ${4>rust-kzg with blst backend (parallel, bgmw)})
+            (8 cores,  ${8>rust-kzg with blst backend (parallel, bgmw)})
+            (16 cores, ${16>rust-kzg with blst backend (parallel, bgmw)}) };
+        \addlegendentry{rust-kzg with constantine backend (BGMW)}
+        \addplot[mark=*, mark options={scale=1.5}, thick, orange] coordinates {
+            (1 core,   ${1>rust-kzg with constantine backend (parallel, bgmw)})
+            (2 cores,  ${2>rust-kzg with constantine backend (parallel, bgmw)})
+            (4 cores,  ${4>rust-kzg with constantine backend (parallel, bgmw)})
+            (8 cores,  ${8>rust-kzg with constantine backend (parallel, bgmw)})
+            (16 cores, ${16>rust-kzg with constantine backend (parallel, bgmw)}) };
+        %%% go-kzg-4844 (VerifyBlobKZGProofBatch)
+        \addlegendentry{go-kzg-4844}  % TODO: pick new name
+        \addplot[mark=*, mark options={scale=1.5}, thick, cyan] coordinates {
+            (1 core,   ${1>go-kzg-4844})
+            (2 cores,  ${2>go-kzg-4844})
+            (4 cores,  ${4>go-kzg-4844})
+            (8 cores,  ${8>go-kzg-4844})
+            (16 cores, ${16>go-kzg-4844}) };
+        %%% rust binding (c-kzg-4844)
+        \addlegendentry{rust binding (c-kzg-4844)}
+        \addplot[mark=*, mark options={scale=1.5}, thick, purple] coordinates {
+            (1 core,   ${1>rust binding (c-kzg-4844)})
+            (2 cores,  ${2>rust binding (c-kzg-4844)})
+            (4 cores,  ${4>rust binding (c-kzg-4844)})
+            (8 cores,  ${8>rust binding (c-kzg-4844)})
+            (16 cores, ${16>rust binding (c-kzg-4844)}) };
+        %%% rust binding (rust-kzg with blst backend)
+        \addlegendentry{rust binding (rust-kzg with blst backend)}
+        \addplot[mark=*, mark options={scale=1.5}, thick, pink] coordinates {
+            (1 core,   ${1>rust binding (rust-kzg with blst backend)})
+            (2 cores,  ${2>rust binding (rust-kzg with blst backend)})
+            (4 cores,  ${4>rust binding (rust-kzg with blst backend)})
+            (8 cores,  ${8>rust binding (rust-kzg with blst backend)})
+            (16 cores, ${16>rust binding (rust-kzg with blst backend)}) };
+        %%% go binding (rust-kzg with blst backend)
+        \addlegendentry{go binding (rust-kzg with blst backend)}
+        \addplot[mark=*, mark options={scale=1.5}, thick, blue] coordinates {
+            (1 core,   ${1>go binding (rust-kzg with blst backend)})
+            (2 cores,  ${2>go binding (rust-kzg with blst backend)})
+            (4 cores,  ${4>go binding (rust-kzg with blst backend)})
+            (8 cores,  ${8>go binding (rust-kzg with blst backend)})
+            (16 cores, ${16>go binding (rust-kzg with blst backend)}) };
+
+        \end{axis}
+        \end{tikzpicture}
+    }
+}
+\end{document}

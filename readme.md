@@ -38,37 +38,37 @@ Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/b
 
 ## Blob to KZG commitment
 
-![blob to kzg commitment](images/blob_to_kzg_commitment.png)
+![blob to kzg commitment](images/blob_to_kzg_commitment.jpg)
 
 ## Compute KZG proof
 
-![compute kzg proof](images/compute_kzg_proof.png)
+![compute kzg proof](images/compute_kzg_proof.jpg)
 
 ## Verify KZG proof
 
-![verify kzg proof](images/verify_kzg_proof.png)
+![verify kzg proof](images/verify_kzg_proof.jpg)
 
 ## Compute blob KZG proof
 
-![compute blob kzg proof](images/compute_blob_kzg_proof.png)
+![compute blob kzg proof](images/compute_blob_kzg_proof.jpg)
 
 ## Verify blob KZG proof
 
-![verify blob kzg proof](images/verify_blob_kzg_proof.png)
+![verify blob kzg proof](images/verify_blob_kzg_proof.jpg)
 
 ## Verify blob KZG proof batch
 
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_64.png)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_64.jpg)
 
 <details>
 <summary>Click to expand (blobs count 32 to 1)</summary>
 
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_32.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_16.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_8.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_4.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_2.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_1.png)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_32.jpg)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_16.jpg)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_8.jpg)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_4.jpg)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_2.jpg)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_1.jpg)
 
 </details>
 
