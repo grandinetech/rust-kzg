@@ -34,6 +34,7 @@ print_msg () {
   printf "\n\n\n~~~~~~~~~~ %s ~~~~~~~~~~\n\n\n" "$1" >> "$2"
 }
 
+lscpu >> "$paste_file"
 nvidia-smi >> "$paste_file"
 
 # 2. prepare benchmarks
