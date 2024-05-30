@@ -40,8 +40,9 @@ nvidia-smi >> "$paste_file"
 # 2. prepare benchmarks
 
 # 2.1. prepare rust-kzg
-git clone https://github.com/sifraitech/rust-kzg
+git clone https://github.com/ArtiomTr/rust-kzg.git
 cd rust-kzg || exit
+git checkout Integrate_sppark_msm || exit
 
 # 3. run benchmarks
 print_msg "rust-kzg with blst backend (parallel, bgmw)" ../"$paste_file"
