@@ -74,11 +74,11 @@ Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/b
 
 ## Fast Fourier transform (FFT)
 
-![fft fr g1](images/fft.png)
+![fft fr g1](images/fft.jpg)
 
 ## Multi-scalar multiplication (MSM)
 
-![commit to polynomial](images/multi_scalar_multiplication.png)
+![commit to polynomial](images/multi_scalar_multiplication.jpg)
 
 # Authors
 

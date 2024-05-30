@@ -1,0 +1,156 @@
+\documentclass[border=2pt]{standalone}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\usepackage{subfig}
+\usepackage{pdflscape}
+\usepackage[export]{adjustbox}
+\begin{document}
+\hbox{
+    \adjustbox{valign=t}{
+        \begin{tikzpicture}
+            \begin{axis}[
+                legend style={at={(0.5, -0.3)}, anchor=north, legend cell align=left},
+                symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
+                xtick=data,
+                x tick label style={rotate=45, anchor=east},
+                ymin=0, ymax=${max_time}, %%% change this
+                ylabel near ticks,
+                yticklabel pos=right,
+                ylabel={time (${time_unit})}, %%% change this
+                grid = major,
+                grid style=dashed,
+            ]
+
+            \addlegendentry{rust-kzg with zkcrypto backend (parallel)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, black] coordinates {
+                (1 core,   ${1>rust-kzg with zkcrypto backend (parallel)})
+                (2 cores,  ${2>rust-kzg with zkcrypto backend (parallel)})
+                (4 cores,  ${4>rust-kzg with zkcrypto backend (parallel)})
+                (8 cores,  ${8>rust-kzg with zkcrypto backend (parallel)})
+                (16 cores, ${16>rust-kzg with zkcrypto backend (parallel)}) };
+
+            \addlegendentry{rust-kzg with blst backend (parallel)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+                (1 core,   ${1>rust-kzg with blst backend (parallel)})
+                (2 cores,  ${2>rust-kzg with blst backend (parallel)})
+                (4 cores,  ${4>rust-kzg with blst backend (parallel)})
+                (8 cores,  ${8>rust-kzg with blst backend (parallel)})
+                (16 cores, ${16>rust-kzg with blst backend (parallel)}) };
+
+            \addlegendentry{rust-kzg with blst backend (parallel, bgmw)}
+            \addplot[mark=square*, mark options={scale=1.5}, thick, dashed, green!70!black] coordinates {
+                (1 core,   ${1>rust-kzg with blst backend (parallel, bgmw)})
+                (2 cores,  ${2>rust-kzg with blst backend (parallel, bgmw)})
+                (4 cores,  ${4>rust-kzg with blst backend (parallel, bgmw)})
+                (8 cores,  ${8>rust-kzg with blst backend (parallel, bgmw)})
+                (16 cores, ${16>rust-kzg with blst backend (parallel, bgmw)}) };
+
+            \addlegendentry{rust-kzg with arkworks backend (parallel)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, red] coordinates {
+                (1 core,   ${1>rust-kzg with arkworks backend (parallel)})
+                (2 cores,  ${2>rust-kzg with arkworks backend (parallel)})
+                (4 cores,  ${4>rust-kzg with arkworks backend (parallel)})
+                (8 cores,  ${8>rust-kzg with arkworks backend (parallel)})
+                (16 cores, ${16>rust-kzg with arkworks backend (parallel)}) };
+            
+            \addlegendentry{rust-kzg with arkworks backend (parallel, bgmw)}
+            \addplot[mark=square*, mark options={scale=1.5}, thick, dashed, red!70!black] coordinates {
+                (1 core,   ${1>rust-kzg with arkworks backend (parallel, bgmw)})
+                (2 cores,  ${2>rust-kzg with arkworks backend (parallel, bgmw)})
+                (4 cores,  ${4>rust-kzg with arkworks backend (parallel, bgmw)})
+                (8 cores,  ${8>rust-kzg with arkworks backend (parallel, bgmw)})
+                (16 cores, ${16>rust-kzg with arkworks backend (parallel, bgmw)}) };
+
+            \addlegendentry{rust-kzg with constantine backend (parallel)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, orange] coordinates {
+                (1 core,   ${1>rust-kzg with constantine backend (parallel)})
+                (2 cores,  ${2>rust-kzg with constantine backend (parallel)})
+                (4 cores,  ${4>rust-kzg with constantine backend (parallel)})
+                (8 cores,  ${8>rust-kzg with constantine backend (parallel)})
+                (16 cores, ${16>rust-kzg with constantine backend (parallel)}) };
+            
+            \addlegendentry{rust-kzg with constantine backend (parallel, bgmw)}
+            \addplot[mark=square*, mark options={scale=1.5}, thick, dashed, orange!70!black] coordinates {
+                (1 core,   ${1>rust-kzg with constantine backend (parallel, bgmw)})
+                (2 cores,  ${2>rust-kzg with constantine backend (parallel, bgmw)})
+                (4 cores,  ${4>rust-kzg with constantine backend (parallel, bgmw)})
+                (8 cores,  ${8>rust-kzg with constantine backend (parallel, bgmw)})
+                (16 cores, ${16>rust-kzg with constantine backend (parallel, bgmw)}) };
+            \end{axis}
+        \end{tikzpicture}
+    }% 
+    \adjustbox{valign=t}{
+        \begin{tikzpicture}
+            \begin{axis}[
+                legend style={at={(0.5, -0.3)}, anchor=north, legend cell align=left},
+                symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
+                xtick=data,
+                x tick label style={rotate=45, anchor=east},
+                ymin=0, ymax=${max_time_2}, %%% change this
+                ylabel near ticks,
+                yticklabel pos=right,
+                ylabel={time (${time_unit})}, %%% change this
+                grid = major,
+                grid style=dashed,
+            ]
+
+            \addlegendentry{rust-kzg with zkcrypto backend (sequential)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, black] coordinates {
+                (1 core,   ${1>rust-kzg with zkcrypto backend (sequential)})
+                (2 cores,  ${2>rust-kzg with zkcrypto backend (sequential)})
+                (4 cores,  ${4>rust-kzg with zkcrypto backend (sequential)})
+                (8 cores,  ${8>rust-kzg with zkcrypto backend (sequential)})
+                (16 cores, ${16>rust-kzg with zkcrypto backend (sequential)}) };
+
+            \addlegendentry{rust-kzg with blst backend (sequential)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+                (1 core,   ${1>rust-kzg with blst backend (sequential)})
+                (2 cores,  ${2>rust-kzg with blst backend (sequential)})
+                (4 cores,  ${4>rust-kzg with blst backend (sequential)})
+                (8 cores,  ${8>rust-kzg with blst backend (sequential)})
+                (16 cores, ${16>rust-kzg with blst backend (sequential)}) };
+
+            \addlegendentry{rust-kzg with blst backend (sequential, bgmw)}
+            \addplot[mark=square*, mark options={scale=1.5}, thick, dashed, green!70!black] coordinates {
+                (1 core,   ${1>rust-kzg with blst backend (sequential, bgmw)})
+                (2 cores,  ${2>rust-kzg with blst backend (sequential, bgmw)})
+                (4 cores,  ${4>rust-kzg with blst backend (sequential, bgmw)})
+                (8 cores,  ${8>rust-kzg with blst backend (sequential, bgmw)})
+                (16 cores, ${16>rust-kzg with blst backend (sequential, bgmw)}) };
+
+            \addlegendentry{rust-kzg with arkworks backend (sequential)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, red] coordinates {
+                (1 core,   ${1>rust-kzg with arkworks backend (sequential)})
+                (2 cores,  ${2>rust-kzg with arkworks backend (sequential)})
+                (4 cores,  ${4>rust-kzg with arkworks backend (sequential)})
+                (8 cores,  ${8>rust-kzg with arkworks backend (sequential)})
+                (16 cores, ${16>rust-kzg with arkworks backend (sequential)}) };
+            
+            \addlegendentry{rust-kzg with arkworks backend (sequential, bgmw)}
+            \addplot[mark=square*, mark options={scale=1.5}, thick, dashed, red!70!black] coordinates {
+                (1 core,   ${1>rust-kzg with arkworks backend (sequential, bgmw)})
+                (2 cores,  ${2>rust-kzg with arkworks backend (sequential, bgmw)})
+                (4 cores,  ${4>rust-kzg with arkworks backend (sequential, bgmw)})
+                (8 cores,  ${8>rust-kzg with arkworks backend (sequential, bgmw)})
+                (16 cores, ${16>rust-kzg with arkworks backend (sequential, bgmw)}) };
+
+            \addlegendentry{rust-kzg with constantine backend (sequential)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, orange] coordinates {
+                (1 core,   ${1>rust-kzg with constantine backend (sequential)})
+                (2 cores,  ${2>rust-kzg with constantine backend (sequential)})
+                (4 cores,  ${4>rust-kzg with constantine backend (sequential)})
+                (8 cores,  ${8>rust-kzg with constantine backend (sequential)})
+                (16 cores, ${16>rust-kzg with constantine backend (sequential)}) };
+            
+            \addlegendentry{rust-kzg with constantine backend (sequential, bgmw)}
+            \addplot[mark=square*, mark options={scale=1.5}, thick, dashed, orange!70!black] coordinates {
+                (1 core,   ${1>rust-kzg with constantine backend (sequential, bgmw)})
+                (2 cores,  ${2>rust-kzg with constantine backend (sequential, bgmw)})
+                (4 cores,  ${4>rust-kzg with constantine backend (sequential, bgmw)})
+                (8 cores,  ${8>rust-kzg with constantine backend (sequential, bgmw)})
+                (16 cores, ${16>rust-kzg with constantine backend (sequential, bgmw)}) };
+            \end{axis}
+        \end{tikzpicture}
+    }
+}
+\end{document}
