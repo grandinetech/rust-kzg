@@ -295,7 +295,7 @@ impl<
 
             let pool = da_pool();
             let ncpus = pool.max_count();
-            if npoints > 32 && ncpus > 2 {
+            if npoints >= 32 && ncpus >= 2 {
                 BgmwWindow::Parallel(breakdown(default_window, ncpus))
             } else {
                 BgmwWindow::Sync(default_window)
