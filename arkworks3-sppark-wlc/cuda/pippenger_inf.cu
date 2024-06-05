@@ -545,4 +545,11 @@ RustError mult_pippenger_faster_inf(RustContext<bucket_t, affine_t, scalar_t> *c
     return RustError{cudaSuccess};
 }
 
+// Initialization function
+// Allocate device storage, transfer bases
+extern "C" 
+void mult_pippenger_faster_free(RustContext<bucket_t, affine_t, scalar_t> *context) {
+    free(context->context);
+}
+
 #endif  //  __CUDA_ARCH__

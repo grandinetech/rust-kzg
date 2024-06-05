@@ -87,6 +87,8 @@ pub fn g1_linear_combination(
             });
 
         *out = ArkG1(msm_results[0]);
+
+        rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult_free(&mut context);
     }
 
     #[cfg(not(any(feature = "sppark", feature = "sppark_wlc")))]

@@ -29,15 +29,6 @@ extern "C" {
         ffi_affine_sz: usize,
     ) -> cuda::Error;
 
-    // fn mult_pippenger_init(
-    //     context: *mut MultiScalarMultContext,
-    //     points_with_infinity: *const G1Affine,
-    //     npoints: usize,
-    //     ffi_affine_sz: usize,
-    // ) -> cuda::Error;
-
-    // fn mult_pippenger_faster_inf2();
-
     fn mult_pippenger_faster_inf(
         context: *mut MultiScalarMultContext,
         out: *mut u64,
@@ -48,20 +39,12 @@ extern "C" {
         ffi_affine_sz: usize,
     ) -> cuda::Error;
 
-    // fn mult_pippenger_inf(
-    //     context: *mut MultiScalarMultContext,
-    //     out: *mut u64,
-    //     points_with_infinity: *const G1Affine,
-    //     npoints: usize,
-    //     batch_size: usize,
-    //     scalars: *const Fr,
-    //     ffi_affine_sz: usize,
-    // ) -> cuda::Error;
+    fn mult_pippenger_faster_free(
+        context: *mut MultiScalarMultContext,
+    );
 }
 
 pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultContext {
-    println!("INIT PIPPENGER!");
-
     let mut ret = MultiScalarMultContext {
         context: std::ptr::null_mut(),
     };
@@ -79,6 +62,12 @@ pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultCo
     }
 
     ret
+}
+
+pub fn multi_scalar_mult_free(context: &mut MultiScalarMultContext) -> MultiScalarMultContext {
+    unsafe {
+        mult_pippenger_faster_free(&mut context);
+    }
 }
 
 pub fn multi_scalar_mult<G: AffineCurve>(
