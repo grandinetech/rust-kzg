@@ -45,8 +45,6 @@ extern "C" {
 }
 
 pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultContext {
-    println!("INIT!");
-
     let mut ret = MultiScalarMultContext {
         context: std::ptr::null_mut(),
     };
@@ -67,8 +65,6 @@ pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultCo
 }
 
 pub fn multi_scalar_mult_free(context: &mut MultiScalarMultContext) {
-    println!("FREE!");
-
     unsafe {
         mult_pippenger_faster_free(context);
     }
