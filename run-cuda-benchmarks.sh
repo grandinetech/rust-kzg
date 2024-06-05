@@ -48,7 +48,7 @@ git clone https://github.com/ArtiomTr/rust-kzg.git
 cd rust-kzg || exit
 git checkout Integrate_sppark_msm || exit
 
-print_cores_msg "BENCH EIP"
+print_cores_msg "BENCH EIP" "../$paste_file"
 
 # 3. run benchmarks
 print_msg "rust-kzg with blst backend (parallel, bgmw)" ../"$paste_file"
@@ -74,9 +74,9 @@ jobs_count=${#point_count[@]}
 
 for (( i=0; i<jobs_count; i++ ));
 do
-  print_cores_msg "BENCHMARKING 2^${point_count[$i]} POINTS" "$paste_file"
+  print_cores_msg "BENCHMARKING 2^${point_count[$i]} POINTS" "../$paste_file"
   
-  export BENCH_NPOW=point_count[$i]
+  export BENCH_NPOW="${point_count[$i]}"
 
   print_msg "rust-kzg with blst backend (parallel, bgmw)" ../"$paste_file"
   cargo bench --manifest-path blst/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
