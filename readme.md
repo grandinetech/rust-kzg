@@ -63,12 +63,29 @@ Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/b
 <details>
 <summary>Click to expand (blobs count 32 to 1)</summary>
 
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_32.jpg)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_16.jpg)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_8.jpg)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_4.jpg)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_2.jpg)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_1.jpg)
+## Verify blob KZG proof batch (count 32)
+
+![verify blob kzg proof batch count 32](images/verify_blob_kzg_proof_batch_32.jpg)
+
+## Verify blob KZG proof batch (count 16)
+
+![verify blob kzg proof batch count 16](images/verify_blob_kzg_proof_batch_16.jpg)
+
+## Verify blob KZG proof batch (count 8)
+
+![verify blob kzg proof batch count 8](images/verify_blob_kzg_proof_batch_8.jpg)
+
+## Verify blob KZG proof batch (count 4)
+
+![verify blob kzg proof batch count 4](images/verify_blob_kzg_proof_batch_4.jpg)
+
+## Verify blob KZG proof batch (count 2)
+
+![verify blob kzg proof batch count 2](images/verify_blob_kzg_proof_batch_2.jpg)
+
+## Verify blob KZG proof batch (count 1)
+
+![verify blob kzg proof batch count 1](images/verify_blob_kzg_proof_batch_1.jpg)
 
 </details>
 
@@ -79,6 +96,22 @@ Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/b
 ## Multi-scalar multiplication (MSM)
 
 ![commit to polynomial](images/multi_scalar_multiplication.jpg)
+
+# GPU acceleration
+
+GPU-accelerated multi-scalar multiplication is available for `arkworks3` and `blst` backends.
+
+## Blob to KZG commitment
+
+![blob to KZG commitment](images/cuda_blob_to_kzg_commitment.jpg)
+
+## Compute KZG proof
+
+![compute blob KZG proof](images/cuda_compute_kzg_proof.jpg)
+
+## Compute blob KZG proof
+
+![compute blob KZG proof](images/cuda_compute_blob_kzg_proof.jpg)
 
 # Authors
 

@@ -183,6 +183,17 @@ def expand_template(in_filename, out_filename, resolve_var):
             out_line = re.sub(r'\$\{([^}]+)\}', lambda match: replace_path(match, resolve_var), line)
             out_file.write(out_line)
 
+def generate_from_template(template_name, out_filename, resolve_var):
+    expand_template(template_name, f"./output/{out_filename}.tex", resolve_var)
+    status = subprocess.call(f"wsl xelatex -halt-on-error -output-directory=./output ./output/{out_filename}.tex", shell=True)
+    if status != 0:
+        print("Failed to generate graph pdf")
+        return
+    status = subprocess.call(f"wsl convert -verbose -density 300 -trim ./output/{out_filename}.pdf -quality 100 -flatten ./output/{out_filename}.jpg")
+    if status != 0:
+        print("Failed to convert graph pdf to image")
+        return
+
 def generate_eip_graph(out_filename, data, criteria, time_unit):
     max_time = None
     max_time_2 = None
@@ -239,15 +250,7 @@ def generate_eip_graph(out_filename, data, criteria, time_unit):
                 break
         return result * time_scale
 
-    expand_template("./input/graphs/eip_graph_template.tex", f"./output/{out_filename}.tex", resolve_var)
-    status = subprocess.call(f"wsl xelatex -output-directory=./output ./output/{out_filename}.tex", shell=True)
-    if status != 0:
-        print("Failed to generate graph pdf")
-        return
-    status = subprocess.call(f"wsl convert -verbose -density 300 -trim ./output/{out_filename}.pdf -quality 100 -flatten ./output/{out_filename}.jpg")
-    if status != 0:
-        print("Failed to convert graph pdf to image")
-        return
+    generate_from_template("./input/graphs/eip_graph_template.tex", out_filename, resolve_var)
 
 def generate_fft_graph(out_filename, data):
     max_time = None
@@ -295,15 +298,7 @@ def generate_fft_graph(out_filename, data):
 
         return result * time_scale
 
-    expand_template("./input/graphs/fft_graph_template.tex", f"./output/{out_filename}.tex", resolve_var)
-    status = subprocess.call(f"wsl xelatex -output-directory=./output ./output/{out_filename}.tex", shell=True)
-    if status != 0:
-        print("Failed to generate graph pdf")
-        return
-    status = subprocess.call(f"wsl convert -verbose -density 300 -trim ./output/{out_filename}.pdf -quality 100 -flatten ./output/{out_filename}.jpg")
-    if status != 0:
-        print("Failed to convert graph pdf to image")
-        return
+        generate_from_template("./input/graphs/fft_graph_template.tex", out_filename, resolve_var)
 
 def generate_msm_graph(out_filename, data):
     max_time = None
@@ -349,15 +344,57 @@ def generate_msm_graph(out_filename, data):
                 break
         return result * time_scale
 
-    expand_template("./input/graphs/msm_graph_template.tex", f"./output/{out_filename}.tex", resolve_var)
-    status = subprocess.call(f"wsl xelatex -output-directory=./output ./output/{out_filename}.tex", shell=True)
-    if status != 0:
-        print("Failed to generate graph pdf")
-        return
-    status = subprocess.call(f"wsl convert -verbose -density 300 -trim ./output/{out_filename}.pdf -quality 100 -flatten ./output/{out_filename}.jpg")
-    if status != 0:
-        print("Failed to convert graph pdf to image")
-        return
+    generate_from_template("./input/graphs/msm_graph_template.tex", out_filename, resolve_var)
+
+def parse_cuda_benches(input):
+    with open(f"./input/{input}") as bench_results:
+        line = bench_results.readline()
+
+        groups = {}
+        name = ''
+
+        while len(line) > 0:
+            result = re.match(r"^~+([^~]+)~+$", line)
+
+            if not (result is None):
+                group = parse_benchmark_group(bench_results, result.group(1).strip())
+                groups[result.group(1).strip()] = group
+
+            result = re.match(r"^\|\s+0\s+(.+)Off \|.+\|.+\|$", line)
+            if not (result is None):
+                name = result.group(1).strip()
+
+            line = bench_results.readline()
+
+        return (name, groups)
+
+def generate_cuda_eip_graph(out_filename, data, criteria, time_unit):
+    time_scale = None
+    if time_unit == 'ms':
+        time_scale = 1 / 1000000
+    elif time_unit == 's':
+        time_scale = 1 / 1000000000
+
+    def resolve_var(path):
+        if len(path) == 1:
+            if path[0] == 'time_unit':
+                return time_unit
+
+        obj = data
+        for segment in path:
+            obj = obj[segment]
+
+        result = None
+        for i in criteria:
+            if i in obj:
+                result = obj[i]
+                break
+
+        if result is None:
+            return '0'
+        return result * time_scale
+
+    generate_from_template("./input/graphs/cuda_eip_graph_template.tex", out_filename, resolve_var)
 
 def main():
     if not os.path.exists("./output"):
@@ -445,6 +482,19 @@ def main():
             generate_eip_graph(graph_name, groups, criteria, 'ms')
         generate_fft_graph('fft', groups)
         generate_msm_graph('multi_scalar_multiplication', groups)
+
+        (name, benches) = parse_cuda_benches('rust-kzg-benchmarks-T4.txt')
+        df = pd.DataFrame(data=benches)
+        df.to_excel(output_writer, sheet_name=f"GPU {name}")
+        groups[name] = benches
+
+        (name, benches) = parse_cuda_benches('rust-kzg-benchmarks-L4.txt')
+        df = pd.DataFrame(data=benches)
+        df.to_excel(output_writer, sheet_name=f"GPU {name}")
+        groups[name] = benches
+
+        for (graph_name, criteria) in eip_graphs:
+            generate_cuda_eip_graph('cuda_' + graph_name, groups, criteria, 'ms')
 
 if __name__ == '__main__':
     main()
