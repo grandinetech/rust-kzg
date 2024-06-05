@@ -58,8 +58,8 @@ cargo bench --manifest-path arkworks/Cargo.toml --bench eip_4844 --no-default-fe
 cargo bench --manifest-path arkworks/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel,bgmw 
 
 print_msg "rust-kzg with arkworks3 backend (parallel, bgmw)" ../"$paste_file"
-cargo bench --manifest-path arkworks3/Cargo.toml --bench eip_4844 --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
-cargo bench --manifest-path arkworks3/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
+cargo bench --manifest-path arkworks3/Cargo.toml --bench eip_4844 --no-default-features --features std,rand,parallel >> ../"$paste_file"
+cargo bench --manifest-path arkworks3/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel >> ../"$paste_file"
 
 print_msg "rust-kzg with arkworks3 backend (sppark)" ../"$paste_file"
 cargo bench --manifest-path arkworks3/Cargo.toml --bench eip_4844 --no-default-features --features std,rand,parallel,sppark >> ../"$paste_file"
