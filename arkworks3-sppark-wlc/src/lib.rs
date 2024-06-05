@@ -60,6 +60,8 @@ extern "C" {
 }
 
 pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultContext {
+    println!("INIT PIPPENGER!");
+
     let mut ret = MultiScalarMultContext {
         context: std::ptr::null_mut(),
     };
