@@ -61,7 +61,9 @@ fn msm_sequential<
     {
         let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
         let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
-        VariableBaseMSM::multi_scalar_mul::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(&points, &scalars)
+        VariableBaseMSM::multi_scalar_mul::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(
+            &points, &scalars,
+        )
     }
 }
 
