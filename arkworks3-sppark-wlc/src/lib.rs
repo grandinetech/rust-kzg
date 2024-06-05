@@ -66,7 +66,7 @@ pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultCo
 
 pub fn multi_scalar_mult_free(context: &mut MultiScalarMultContext) -> MultiScalarMultContext {
     unsafe {
-        mult_pippenger_faster_free(&mut context);
+        mult_pippenger_faster_free(context);
     }
 }
 
