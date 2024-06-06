@@ -101,6 +101,10 @@ Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/b
 
 GPU-accelerated multi-scalar multiplication is available for `arkworks3` and `blst` backends.
 
+## Multi-scalar multiplication
+
+![multi-scalar multiplication](images/cuda_msm.jpg)
+
 ## Blob to KZG commitment
 
 ![blob to KZG commitment](images/cuda_blob_to_kzg_commitment.jpg)

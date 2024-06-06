@@ -1,0 +1,64 @@
+\documentclass[border=2pt]{standalone}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\usepackage{subfig}
+\usepackage{pdflscape}
+\usepackage[export]{adjustbox}
+\begin{document}
+\hbox{
+    \adjustbox{valign=t}{
+        \begin{tikzpicture}
+            \begin{axis}[
+                legend style={at={(0.5, -0.3)}, anchor=north, legend cell align=left},
+                symbolic x coords={$2^{12}$, $2^{14}$, $2^{16}$, $2^{18}$},
+                xtick=data,
+                % x tick label style={rotate=45, anchor=east},
+                ymin=0,
+                ylabel near ticks,
+                yticklabel pos=right,
+                ylabel={time (${time_unit})},
+                xlabel={MSM size},
+                grid = major,
+                grid style=dashed,
+            ]
+
+            \addlegendentry{rust-kzg with blst backend (parallel, BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, red] coordinates {
+                ($2^{12}$,  ${Tesla T4>rust-kzg with blst backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '4096'})
+                ($2^{14}$,  ${Tesla T4>rust-kzg with blst backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '16384'})
+                ($2^{16}$,  ${Tesla T4>rust-kzg with blst backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '65536'})
+                ($2^{18}$,  ${Tesla T4>rust-kzg with blst backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '262144'}) };
+            
+            \addlegendentry{rust-kzg with blst backend (sppark)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+                ($2^{12}$,  ${Tesla T4>rust-kzg with blst backend (sppark)>bench_g1_lincomb points: '4096'})
+                ($2^{14}$,  ${Tesla T4>rust-kzg with blst backend (sppark)>bench_g1_lincomb points: '16384'})
+                ($2^{16}$,  ${Tesla T4>rust-kzg with blst backend (sppark)>bench_g1_lincomb points: '65536'})
+                ($2^{18}$,  ${Tesla T4>rust-kzg with blst backend (sppark)>bench_g1_lincomb points: '262144'}) };
+                
+            \addlegendentry{rust-kzg with arkworks 0.4.0 backend (parallel, BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, purple] coordinates {
+                ($2^{12}$,  ${Tesla T4>rust-kzg with arkworks backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '4096'})
+                ($2^{14}$,  ${Tesla T4>rust-kzg with arkworks backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '16384'})
+                ($2^{16}$,  ${Tesla T4>rust-kzg with arkworks backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '65536'})
+                ($2^{18}$,  ${Tesla T4>rust-kzg with arkworks backend (parallel, bgmw)>bench_g1_lincomb with precomputation points: '262144'}) };
+                    
+            \addlegendentry{rust-kzg with arkworks 0.3.0 backend (parallel)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, blue] coordinates {
+                ($2^{12}$,  ${Tesla T4>rust-kzg with arkworks3 backend (parallel)>bench_g1_lincomb points: '4096'})
+                ($2^{14}$,  ${Tesla T4>rust-kzg with arkworks3 backend (parallel)>bench_g1_lincomb points: '16384'})
+                ($2^{16}$,  ${Tesla T4>rust-kzg with arkworks3 backend (parallel)>bench_g1_lincomb points: '65536'})
+                ($2^{18}$,  ${Tesla T4>rust-kzg with arkworks3 backend (parallel)>bench_g1_lincomb points: '262144'}) };
+
+            \addlegendentry{rust-kzg with arkworks3 backend (sppark)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, black] coordinates {
+                ($2^{12}$,  ${Tesla T4>rust-kzg with arkworks3 backend (sppark)>bench_g1_lincomb points: '4096'})
+                ($2^{14}$,  ${Tesla T4>rust-kzg with arkworks3 backend (sppark)>bench_g1_lincomb points: '16384'})
+                ($2^{16}$,  ${Tesla T4>rust-kzg with arkworks3 backend (sppark)>bench_g1_lincomb points: '65536'})
+                ($2^{18}$,  ${Tesla T4>rust-kzg with arkworks3 backend (sppark)>bench_g1_lincomb points: '262144'}) };
+                    
+            \end{axis}
+        \end{tikzpicture}
+    }
+}
+\end{document}

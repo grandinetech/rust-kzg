@@ -62,6 +62,18 @@ normalize_benchmark_name = {
     "bench_recover scale: '15'": "bench_recover scale: '15'",
     "bench_zero_poly scale: '15'": "bench_zero_poly scale: '15'",
     "bench_g1_lincomb with precomputation points: '4096'": "bench_g1_lincomb with precomputation points: '4096'",
+    
+    "bench_g1_lincomb points: '16384'": "bench_g1_lincomb points: '16384'",
+    "bench_g1_lincomb with precomputation points: '16384'": "bench_g1_lincomb with precomputation points: '16384'",
+
+    "bench_g1_lincomb points: '65536'": "bench_g1_lincomb points: '65536'",
+    "bench_g1_lincomb with precomputation points: '65536'": "bench_g1_lincomb with precomputation points: '65536'",
+
+    "bench_g1_lincomb points: '262144'": "bench_g1_lincomb points: '262144'",
+    "bench_g1_lincomb with precomputation points: '262144'": "bench_g1_lincomb with precomputation points: '262144'",
+
+    "bench_g1_lincomb points: '1048576'": "bench_g1_lincomb points: '1048576'",
+    "bench_g1_lincomb with precomputation points: '1048576'": "bench_g1_lincomb with precomputation points: '1048576'",
 }
 
 benchmark_name_to_sheet_name = {
@@ -102,7 +114,7 @@ def parse_benchmark_group(file, name):
         if not (res is None):
             file.seek(pos)
             break
-        res = re.match(r"^\*+ BENCHMARKING ON (\d+) CORES \*+$", line)
+        res = re.match(r"^\*+ BENCHMARKING ([^\*]+) \*+$", line)
         if not (res is None):
             file.seek(pos)
             break
@@ -357,8 +369,14 @@ def parse_cuda_benches(input):
             result = re.match(r"^~+([^~]+)~+$", line)
 
             if not (result is None):
-                group = parse_benchmark_group(bench_results, result.group(1).strip())
-                groups[result.group(1).strip()] = group
+                group_name = result.group(1).strip()
+
+                group = parse_benchmark_group(bench_results, group_name)
+
+                if group_name in groups:
+                    groups[group_name] = groups[group_name] | group
+                else:
+                    groups[group_name] = group
 
             result = re.match(r"^\|\s+0\s+(.+)Off \|.+\|.+\|$", line)
             if not (result is None):
@@ -395,6 +413,28 @@ def generate_cuda_eip_graph(out_filename, data, criteria, time_unit):
         return result * time_scale
 
     generate_from_template("./input/graphs/cuda_eip_graph_template.tex", out_filename, resolve_var)
+
+def generate_cuda_msm_graph(data, time_unit):
+    time_scale = None
+    if time_unit == 'ms':
+        time_scale = 1 / 1000000
+    elif time_unit == 's':
+        time_scale = 1 / 1000000000
+
+    def resolve_var(path):
+        if len(path) == 1:
+            if path[0] == 'time_unit':
+                return time_unit
+
+        obj = data
+        for segment in path:
+            obj = obj[segment]
+
+        if obj is None:
+            return '0'
+        return obj * time_scale
+
+    generate_from_template("./input/graphs/cuda_msm_graph_template.tex", "cuda_msm", resolve_var)
 
 def main():
     if not os.path.exists("./output"):
@@ -478,10 +518,10 @@ def main():
             ('verify_blob_kzg_proof_batch_64', ['verify_blob_kzg_proof_batch/64', 'verify_blob_kzg_proof_batch/64 (sequential)']),
         ]
 
-        for (graph_name, criteria) in eip_graphs:
-            generate_eip_graph(graph_name, groups, criteria, 'ms')
-        generate_fft_graph('fft', groups)
-        generate_msm_graph('multi_scalar_multiplication', groups)
+        # for (graph_name, criteria) in eip_graphs:
+        #     generate_eip_graph(graph_name, groups, criteria, 'ms')
+        # generate_fft_graph('fft', groups)
+        # generate_msm_graph('multi_scalar_multiplication', groups)
 
         (name, benches) = parse_cuda_benches('rust-kzg-benchmarks-T4.txt')
         df = pd.DataFrame(data=benches)
@@ -493,8 +533,9 @@ def main():
         df.to_excel(output_writer, sheet_name=f"GPU {name}")
         groups[name] = benches
 
-        for (graph_name, criteria) in eip_graphs:
-            generate_cuda_eip_graph('cuda_' + graph_name, groups, criteria, 'ms')
+        # for (graph_name, criteria) in eip_graphs:
+        #     generate_cuda_eip_graph('cuda_' + graph_name, groups, criteria, 'ms')
+        generate_cuda_msm_graph(groups, 's')
 
 if __name__ == '__main__':
     main()
