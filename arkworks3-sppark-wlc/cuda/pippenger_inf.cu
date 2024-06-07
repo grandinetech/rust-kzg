@@ -421,13 +421,14 @@ RustError mult_pippenger_faster_init(RustContext<bucket_t, affine_t, scalar_t> *
 // Peform MSM on a batch of scalars over fixed bases
 extern "C"
 RustError mult_pippenger_faster_inf(RustContext<bucket_t, affine_t, scalar_t> *context,
-                             point_t* out, const affine_t points[],
+                             point_t* out,
                              size_t npoints, size_t batches,
                              const scalar_t scalars[],
                              size_t ffi_affine_sz)
 {
     Context<bucket_t, affine_t, scalar_t> *ctx = context->context;
-    assert(ctx->config.npoints == npoints);
+
+    assert(ctx->config.npoints >= npoints);
     assert(ctx->ffi_affine_sz == ffi_affine_sz);
     assert(batches > 0);
 
