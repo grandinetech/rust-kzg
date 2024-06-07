@@ -89,10 +89,11 @@ pub fn g1_linear_combination(
             rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult_init(affines)
         };
 
-        let msm_results =
-            rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, len, unsafe {
-                std::mem::transmute::<&[_], &[BigInteger256]>(&ark_scalars)
-            });
+        let msm_results = rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult::<G1Affine>(
+            &mut context,
+            len,
+            unsafe { std::mem::transmute::<&[_], &[BigInteger256]>(&ark_scalars) },
+        );
 
         *out = ArkG1(msm_results[0]);
 
