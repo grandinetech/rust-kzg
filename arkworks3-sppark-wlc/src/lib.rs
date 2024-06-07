@@ -17,7 +17,7 @@ pub mod util;
 
 #[repr(C)]
 pub struct MultiScalarMultContext {
-    context: *mut c_void,
+    pub context: *mut c_void,
 }
 
 #[cfg_attr(feature = "quiet", allow(improper_ctypes))]
