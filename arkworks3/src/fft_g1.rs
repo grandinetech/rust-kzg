@@ -85,7 +85,7 @@ pub fn g1_linear_combination(
             let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&points);
             let affines =
                 unsafe { alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len) };
-            
+
             rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult_init(affines)
         };
 
