@@ -32,7 +32,6 @@ extern "C" {
     fn mult_pippenger_faster_inf(
         context: *mut MultiScalarMultContext,
         out: *mut u64,
-        points_with_infinity: *const G1Affine,
         npoints: usize,
         batch_size: usize,
         scalars: *const Fr,
@@ -72,28 +71,22 @@ pub fn multi_scalar_mult_free(context: &mut MultiScalarMultContext) {
 
 pub fn multi_scalar_mult<G: AffineCurve>(
     context: &mut MultiScalarMultContext,
-    points: &[G],
+    npoints: usize,
     scalars: &[<G::ScalarField as PrimeField>::BigInt],
 ) -> Vec<G::Projective> {
-    let npoints = points.len();
     if scalars.len() % npoints != 0 {
         panic!("length mismatch")
     }
-
-    //let mut context = multi_scalar_mult_init(points);
 
     let batch_size = scalars.len() / npoints;
     let mut ret = vec![G::Projective::zero(); batch_size];
     let err = unsafe {
         let result_ptr = &mut *(&mut ret as *mut Vec<G::Projective> as *mut Vec<u64>);
 
-        // mult_pippenger_faster_inf2();
-
         mult_pippenger_faster_inf(
             context,
             result_ptr.as_mut_ptr(),
             points as *const _ as *const G1Affine,
-            npoints,
             batch_size,
             scalars as *const _ as *const Fr,
             std::mem::size_of::<G1Affine>(),

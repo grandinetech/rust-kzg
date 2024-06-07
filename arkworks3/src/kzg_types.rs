@@ -877,9 +877,12 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
                 #[cfg(feature = "sppark_wlc")]
                 {
                     let affines =
-                        kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&points);
+                        kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&secret_g1);
                     let affines = unsafe {
-                        alloc::slice::from_raw_parts(affines.as_ptr() as *const G1Affine, len)
+                        alloc::slice::from_raw_parts(
+                            affines.as_ptr() as *const G1Affine,
+                            secret_g1.len(),
+                        )
                     };
 
                     Some(Arc::new(PrecomputationTable::from_ptr(

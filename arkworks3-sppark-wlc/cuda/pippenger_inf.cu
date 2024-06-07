@@ -426,8 +426,6 @@ RustError mult_pippenger_faster_inf(RustContext<bucket_t, affine_t, scalar_t> *c
                              const scalar_t scalars[],
                              size_t ffi_affine_sz)
 {
-    (void)points; // Silence unused param warning
-    
     Context<bucket_t, affine_t, scalar_t> *ctx = context->context;
     assert(ctx->config.npoints == npoints);
     assert(ctx->ffi_affine_sz == ffi_affine_sz);

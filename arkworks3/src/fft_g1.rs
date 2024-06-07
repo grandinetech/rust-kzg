@@ -90,7 +90,7 @@ pub fn g1_linear_combination(
         };
 
         let msm_results =
-            rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, affines, unsafe {
+            rust_kzg_arkworks3_sppark_wlc::multi_scalar_mult(&mut context, len, unsafe {
                 std::mem::transmute::<&[_], &[BigInteger256]>(&ark_scalars)
             });
 
