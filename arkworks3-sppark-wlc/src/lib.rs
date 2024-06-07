@@ -86,7 +86,7 @@ pub fn multi_scalar_mult<G: AffineCurve>(
         mult_pippenger_faster_inf(
             context,
             result_ptr.as_mut_ptr(),
-            points as *const _ as *const G1Affine,
+            npoints,
             batch_size,
             scalars as *const _ as *const Fr,
             std::mem::size_of::<G1Affine>(),
