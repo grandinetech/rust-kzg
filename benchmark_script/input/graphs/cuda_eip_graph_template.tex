@@ -32,12 +32,6 @@
                 (Tesla T4, ${Tesla T4>rust-kzg with blst backend (parallel, bgmw)})
                 (NVIDIA L4, ${NVIDIA L4>rust-kzg with blst backend (parallel, bgmw)})
             };
-            
-            \addlegendentry{blst (sppark)}
-            \addplot coordinates {
-                (Tesla T4, ${Tesla T4>rust-kzg with blst backend (sppark)})
-                (NVIDIA L4, ${NVIDIA L4>rust-kzg with blst backend (sppark)})
-            };
 
             \addlegendentry{arkworks 0.4.0 (parallel, BGMW)}
             \addplot coordinates {
@@ -48,7 +42,14 @@
     
             \addlegendentry{arkworks 0.3.0 (parallel)}
             \addplot coordinates {
-                (NVIDIA L4, ${NVIDIA L4>rust-kzg with arkworks3 backend (parallel, bgmw)})
+                (Tesla T4, ${Tesla T4>rust-kzg with arkworks3 backend (parallel)})
+                (NVIDIA L4, ${NVIDIA L4>rust-kzg with arkworks3 backend (parallel)})
+            };
+            
+            \addlegendentry{blst (sppark)}
+            \addplot coordinates {
+                (Tesla T4, ${Tesla T4>rust-kzg with blst backend (sppark)})
+                (NVIDIA L4, ${NVIDIA L4>rust-kzg with blst backend (sppark)})
             };
 
             \addlegendentry{arkworks 0.3.0 (sppark)}
