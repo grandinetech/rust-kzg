@@ -3,8 +3,7 @@ use core::marker::PhantomData;
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, Scalar256, G1};
 
 use super::pippenger_utils::{
-    booth_decode, booth_encode, get_wval_limb, is_zero, p1_dadd, p1_to_jacobian,
-    pippenger_window_size, type_is_zero, P1XYZZ,
+    booth_decode, booth_encode, get_wval_limb, is_zero, num_bits, p1_dadd, p1_to_jacobian, type_is_zero, P1XYZZ
 };
 
 #[derive(Debug, Clone)]
@@ -76,6 +75,41 @@ const fn get_sequential_window_size(window: BgmwWindow) -> usize {
             }
         }
     }
+}
+
+/// Function, which approximates minimum of this function:
+/// y = ceil(255/w) * (npoints) + 2^w - 2
+/// This function is number of additions and doublings required to compute msm using Pippenger algorithm, with BGMW 
+/// precomputation table.
+/// Parts of this function:
+///   ceil(255/w) - how many parts will be in decomposed scalar. Scalar width is 255 bits, so converting it into q-ary 
+///                 representation, will produce 255/w parts. q-ary representation, where q = 2^w, for scalar a is: 
+///                 a = a_1 + a_2 * q + ... + a_n * q^(ceil(255/w)).
+///   npoints     - each scalar must be assigned to a bucket (bucket accumulation). Assigning point to bucket means 
+///                 adding it to existing point in bucket - hence, the addition.
+///   2^w - 2     - computing total bucket sum (bucket aggregation). Total number of buckets (scratch size) is 2^(w-1).
+///                 Adding each point to total bucket sum requires 2 point addition operations, so 2 * 2^(w-1) = 2^w.
+#[allow(unused)]
+const fn bgmw_window_size(npoints: usize) -> usize {
+    let wbits = num_bits(npoints);
+    
+    if wbits > 20 {
+        return wbits - ((wbits & 1usize)^1) - 1;
+    }
+    
+    if wbits > 15 {
+        return wbits - 1;
+    }
+    
+    if wbits > 9 {
+        return wbits;
+    }
+    
+    if wbits > 6 {
+        return wbits + 1;
+    }
+    
+    wbits + 2
 }
 
 impl<
@@ -289,9 +323,9 @@ impl<
     fn window(npoints: usize) -> BgmwWindow {
         #[cfg(feature = "parallel")]
         {
-            let default_window = pippenger_window_size(npoints);
+            use super::{parallel_pippenger_utils::breakdown, pippenger_utils::pippenger_window_size, thread_pool::da_pool};
 
-            use super::{parallel_pippenger_utils::breakdown, thread_pool::da_pool};
+            let default_window = pippenger_window_size(npoints);
 
             let pool = da_pool();
             let ncpus = pool.max_count();
@@ -304,13 +338,7 @@ impl<
 
         #[cfg(not(feature = "parallel"))]
         {
-            let n_exponent = npoints.trailing_zeros();
-
-            // TODO: experiment with different q exponents, to find optimal
-            match n_exponent {
-                12 => 13, // this value is picked from https://github.com/LuoGuiwen/MSM_blst/blob/2e098f09f07969ac3191406976be6d1c197100f2/ches_config_files/config_file_n_exp_12.h#L17
-                _ => pippenger_window_size(npoints), // default to pippenger window size. This is not optimal window size, but still better than simple pippenger
-            }
+            bgmw_window_size(npoints)
         }
     }
 }
