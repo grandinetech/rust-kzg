@@ -112,6 +112,32 @@ const fn bgmw_window_size(npoints: usize) -> usize {
     wbits + 2
 }
 
+#[cfg(feature = "parallel")]
+const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usize, usize) {
+    use super::{parallel_pippenger_utils::breakdown, pippenger_utils::pippenger_window_size};
+
+    let pippenger_window = pippenger_window_size(npoints);
+
+    if NBITS > pippenger_window * ncpus {
+        breakdown(pippenger_window, ncpus)
+    } else {
+        let mut min_ops = usize::MAX;
+        let mut opt = 0;
+
+        let mut win = 2;
+        while win <= 40 {
+            let ops = (1<<win) + ((((255 + win - 1) / win) + ncpus - 1) / ncpus * npoints) - 2;
+            if min_ops > ops {
+                min_ops = ops;
+                opt = win;
+            }
+            win += 1;
+        }
+
+        (1, (255 + opt - 1) / opt, opt)
+    }
+}
+
 impl<
         TFr: Fr,
         TG1Fp: G1Fp,
@@ -323,16 +349,15 @@ impl<
     fn window(npoints: usize) -> BgmwWindow {
         #[cfg(feature = "parallel")]
         {
-            use super::{parallel_pippenger_utils::breakdown, pippenger_utils::pippenger_window_size, thread_pool::da_pool};
-
-            let default_window = pippenger_window_size(npoints);
+            use super::thread_pool::da_pool;
 
             let pool = da_pool();
             let ncpus = pool.max_count();
+
             if npoints >= 32 && ncpus >= 2 {
-                BgmwWindow::Parallel(breakdown(default_window, ncpus))
+                BgmwWindow::Parallel(bgmw_parallel_window_size(npoints, ncpus))
             } else {
-                BgmwWindow::Sync(default_window)
+                BgmwWindow::Sync(bgmw_window_size(npoints))
             }
         }
 
