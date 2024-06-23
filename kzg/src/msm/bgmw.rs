@@ -119,8 +119,6 @@ const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usiz
     let pippenger_window = pippenger_window_size(npoints);
 
     if NBITS > pippenger_window * ncpus {
-        breakdown(pippenger_window, ncpus)
-    } else {
         let mut min_ops = usize::MAX;
         let mut opt = 0;
 
@@ -135,6 +133,8 @@ const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usiz
         }
 
         (1, (255 + opt - 1) / opt, opt)
+    } else {
+        breakdown(pippenger_window, ncpus)
     }
 }
 
