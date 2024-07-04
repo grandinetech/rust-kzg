@@ -38,9 +38,7 @@ extern "C" {
         ffi_affine_sz: usize,
     ) -> cuda::Error;
 
-    fn mult_pippenger_faster_free(
-        context: *mut MultiScalarMultContext,
-    );
+    fn mult_pippenger_faster_free(context: *mut MultiScalarMultContext);
 }
 
 pub fn multi_scalar_mult_init<G: AffineCurve>(points: &[G]) -> MultiScalarMultContext {

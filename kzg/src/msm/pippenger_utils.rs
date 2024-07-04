@@ -288,14 +288,14 @@ pub const fn num_bits(l: usize) -> usize {
 /// y = ceil(255/w) * (npoints + 2^w + w + 1)
 /// This function is number of additions and doublings required to compute msm using Pippenger algorithm.
 /// Parts of this function:
-///   ceil(255/w) - how many parts will be in decomposed scalar. Scalar width is 255 bits, so converting it into q-ary 
-///                 representation, will produce 255/w parts. q-ary representation, where q = 2^w, for scalar a is: 
+///   ceil(255/w) - how many parts will be in decomposed scalar. Scalar width is 255 bits, so converting it into q-ary
+///                 representation, will produce 255/w parts. q-ary representation, where q = 2^w, for scalar a is:
 ///                 a = a_1 + a_2 * q + ... + a_n * q^(ceil(255/w)).
-///   npoints     - each scalar must be assigned to a bucket (bucket accumulation). Assigning point to bucket means 
+///   npoints     - each scalar must be assigned to a bucket (bucket accumulation). Assigning point to bucket means
 ///                 adding it to existing point in bucket - hence, the addition.
 ///   2^w         - computing total bucket sum (bucket aggregation). Total number of buckets (scratch size) is 2^(w-1).
 ///                 Adding each point to total bucket sum requires 2 point addition operations, so 2 * 2^(w-1) = 2^w.
-///   w + 1       - each bucket sum must be multiplied by 2^w. To do this, we need w doublings. Adding this sum to the 
+///   w + 1       - each bucket sum must be multiplied by 2^w. To do this, we need w doublings. Adding this sum to the
 ///                 total requires one more point addition, hence +1.
 pub const fn pippenger_window_size(npoints: usize) -> usize {
     let wbits = num_bits(npoints);

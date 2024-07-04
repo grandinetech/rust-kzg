@@ -3,7 +3,8 @@ use core::marker::PhantomData;
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, Scalar256, G1};
 
 use super::pippenger_utils::{
-    booth_decode, booth_encode, get_wval_limb, is_zero, num_bits, p1_dadd, p1_to_jacobian, type_is_zero, P1XYZZ
+    booth_decode, booth_encode, get_wval_limb, is_zero, num_bits, p1_dadd, p1_to_jacobian,
+    type_is_zero, P1XYZZ,
 };
 
 #[derive(Debug, Clone)]
@@ -79,63 +80,80 @@ const fn get_sequential_window_size(window: BgmwWindow) -> usize {
 
 /// Function, which approximates minimum of this function:
 /// y = ceil(255/w) * (npoints) + 2^w - 2
-/// This function is number of additions and doublings required to compute msm using Pippenger algorithm, with BGMW 
+/// This function is number of additions and doublings required to compute msm using Pippenger algorithm, with BGMW
 /// precomputation table.
 /// Parts of this function:
-///   ceil(255/w) - how many parts will be in decomposed scalar. Scalar width is 255 bits, so converting it into q-ary 
-///                 representation, will produce 255/w parts. q-ary representation, where q = 2^w, for scalar a is: 
+///   ceil(255/w) - how many parts will be in decomposed scalar. Scalar width is 255 bits, so converting it into q-ary
+///                 representation, will produce 255/w parts. q-ary representation, where q = 2^w, for scalar a is:
 ///                 a = a_1 + a_2 * q + ... + a_n * q^(ceil(255/w)).
-///   npoints     - each scalar must be assigned to a bucket (bucket accumulation). Assigning point to bucket means 
+///   npoints     - each scalar must be assigned to a bucket (bucket accumulation). Assigning point to bucket means
 ///                 adding it to existing point in bucket - hence, the addition.
 ///   2^w - 2     - computing total bucket sum (bucket aggregation). Total number of buckets (scratch size) is 2^(w-1).
 ///                 Adding each point to total bucket sum requires 2 point addition operations, so 2 * 2^(w-1) = 2^w.
 #[allow(unused)]
 const fn bgmw_window_size(npoints: usize) -> usize {
     let wbits = num_bits(npoints);
-    
-    if wbits > 20 {
-        return wbits - ((wbits & 1usize)^1) - 1;
+
+    match (wbits) {
+        1 => 4,
+        2..=3 => 5,
+        4 => 6,
+        5 => 7,
+        6..=7 => 8,
+        8 => 9,
+        9..=10 => 10,
+        11 => 11,
+        12 => 12,
+        13..=14 => 13,
+        15..=16 => 15,
+        17 => 16,
+        18..=19 => 17,
+        20 => 19,
+        21..=22 => 20,
+        23..=24 => 22,
+        25..=26 => 24,
+        27..=29 => 26,
+        30..=32 => 29,
+        33..=37 => 32,
+        _ => 37,
     }
-    
-    if wbits > 15 {
-        return wbits - 1;
-    }
-    
-    if wbits > 9 {
-        return wbits;
-    }
-    
-    if wbits > 6 {
-        return wbits + 1;
-    }
-    
-    wbits + 2
 }
 
 #[cfg(feature = "parallel")]
 const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usize, usize) {
-    use super::{parallel_pippenger_utils::breakdown, pippenger_utils::pippenger_window_size};
+    let mut min_ops = usize::MAX;
+    let mut opt = 0;
 
-    let pippenger_window = pippenger_window_size(npoints);
+    let mut win = 2;
+    while win <= 40 {
+        let ops = (1 << win) + ((((255 + win - 1) / win) + ncpus - 1) / ncpus * npoints) - 2;
+        if min_ops >= ops {
+            min_ops = ops;
+            opt = win;
+        }
+        win += 1;
+    }
 
-    if NBITS > pippenger_window * ncpus {
-        let mut min_ops = usize::MAX;
-        let mut opt = 0;
+    let mut mult = 1;
 
-        let mut win = 2;
-        while win <= 40 {
-            let ops = (1<<win) + ((((255 + win - 1) / win) + ncpus - 1) / ncpus * npoints) - 2;
-            if min_ops > ops {
-                min_ops = ops;
-                opt = win;
-            }
-            win += 1;
+    let mut opt_x = 1;
+
+    while mult <= 8 {
+        let nx = ncpus * mult;
+        let wnd = bgmw_window_size(npoints / nx);
+
+        let ops = mult * ((255 + wnd - 1) / wnd) * ((npoints + nx - 1) / nx) + (1 << wnd) - 2;
+
+        if min_ops > ops {
+            min_ops = ops;
+            opt = wnd;
+            opt_x = nx;
         }
 
-        (1, (255 + opt - 1) / opt, opt)
-    } else {
-        breakdown(pippenger_window, ncpus)
+        mult += 1;
     }
+
+    (opt_x, (255 + opt - 1) / opt, opt)
 }
 
 impl<
@@ -332,7 +350,7 @@ impl<
                         (window, window)
                     };
 
-                    p1_tile_bgmw(points, &scalars[x..], &mut buckets, y, wbits, cbits);
+                    p1_tile_bgmw(points, &scalars[x..(x + dx)], &mut buckets, y, wbits, cbits);
                 }
             });
         }
