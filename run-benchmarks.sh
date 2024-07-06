@@ -106,7 +106,7 @@ do
   # 3.3. constantine
   cd constantine || exit
   print_msg "constantine" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" CC=clang nimble bench_eth_eip4844_kzg >> ../"$paste_file"
+  CC=clang taskset --cpu-list "${taskset_cpu_list[$i]}" nimble bench_eth_eip4844_kzg >> ../"$paste_file"
   cd ..
 
   # rust crates
