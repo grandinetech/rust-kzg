@@ -98,9 +98,9 @@ jobs:
           distribution: "temurin"
           java-version: "11"
 
-      - uses: jiro4989/setup-nim-action@v1
+      - uses: jiro4989/setup-nim-action@v2
         with:
-          nim-version: '2.0.2'
+          nim-version: '1.6.14'
 
       - uses: actions/setup-python@v4
         with:
