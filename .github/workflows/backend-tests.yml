@@ -63,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-11]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         # Excluding mcl for now due to they have different project layout
         backend: [blst, zkcrypto, arkworks, arkworks3, constantine]
         include:
