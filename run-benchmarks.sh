@@ -82,6 +82,9 @@ cd ../..
 # 2.5. prepare go-kzg-4844
 git clone https://github.com/crate-crypto/go-kzg-4844
 
+# 2.6. prepare constantine
+git clone https://github.com/mratsim/constantine
+
 for (( i=0; i<jobs_count; i++ ));
 do
   # 3. run benchmarks
@@ -95,10 +98,16 @@ do
   cd ..
 
   # 3.2. rust binding (c-kzg-4844)
-  cd c-kzg-4844/bindings/rust || exit
-  print_msg "rust binding (c-kzg-4844)" ../../../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench >> ../../../"$paste_file"
-  cd ../../..
+  cd c-kzg-4844 || exit
+  print_msg "rust binding (c-kzg-4844)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench >> ../"$paste_file"
+  cd ..
+  
+  # 3.3. constantine
+  cd constantine || exit
+  print_msg "constantine" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" CC=clang nimble bench_eth_eip4844_kzg >> ../"$paste_file"
+  cd ..
 
   # rust crates
   cd rust-kzg || exit
