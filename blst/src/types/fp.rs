@@ -29,6 +29,18 @@ impl G1Fp for FsFp {
         ],
     });
 
+    fn to_limbs(&self) -> [u64; 6] {
+        self.0.l
+    }
+
+    fn from_bytes_le(bytes: &[u8; 48]) -> Self {
+        let mut limbs = [0u64; 6];
+        for i in 0..6 {
+            limbs[i] = u64::from_le_bytes(bytes[i*8..(i+1)*8].try_into().unwrap());
+        }
+        Self(blst_fp { l: limbs})
+    }
+
     fn inverse(&self) -> Option<Self> {
         let mut out: Self = *self;
         unsafe {
