@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # current checkout hash
-C_KZG_4844_GIT_HASH=624aa60d01da524827123506975431aa5454c80d
+C_KZG_4844_GIT_HASH=1bccee0878ffc80efe8741afdb5793ef9105aa35
 
 set -e
 

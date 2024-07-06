@@ -58,7 +58,7 @@ cargo rustc --release --crate-type=staticlib --features=parallel
 mv ../target/release/librust_kzg_blst.a ../target/release/rust_kzg_blst.a
 git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit
-git -c advice.detachedHead=false checkout 5b35b6147bf269b16c1bffd268fd03bac0c00b64 # TODO: keep this updated
+git -c advice.detachedHead=false checkout 1bccee0878ffc80efe8741afdb5793ef9105aa35 # TODO: keep this updated
 git submodule update --init
 cd src || exit
 export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
