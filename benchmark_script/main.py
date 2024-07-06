@@ -310,7 +310,7 @@ def generate_fft_graph(out_filename, data):
 
         return result * time_scale
 
-        generate_from_template("./input/graphs/fft_graph_template.tex", out_filename, resolve_var)
+    generate_from_template("./input/graphs/fft_graph_template.tex", out_filename, resolve_var)
 
 def generate_msm_graph(out_filename, data):
     max_time = None
@@ -518,10 +518,10 @@ def main():
             ('verify_blob_kzg_proof_batch_64', ['verify_blob_kzg_proof_batch/64', 'verify_blob_kzg_proof_batch/64 (sequential)']),
         ]
 
-        # for (graph_name, criteria) in eip_graphs:
-        #     generate_eip_graph(graph_name, groups, criteria, 'ms')
-        # generate_fft_graph('fft', groups)
-        # generate_msm_graph('multi_scalar_multiplication', groups)
+        for (graph_name, criteria) in eip_graphs:
+            generate_eip_graph(graph_name, groups, criteria, 'ms')
+        generate_fft_graph('fft', groups)
+        generate_msm_graph('multi_scalar_multiplication', groups)
 
         (name, benches) = parse_cuda_benches('rust-kzg-benchmarks-T4.txt')
         df = pd.DataFrame(data=benches)
@@ -533,8 +533,8 @@ def main():
         df.to_excel(output_writer, sheet_name=f"GPU {name}")
         groups[name] = benches
 
-        # for (graph_name, criteria) in eip_graphs:
-        #     generate_cuda_eip_graph('cuda_' + graph_name, groups, criteria, 'ms')
+        for (graph_name, criteria) in eip_graphs:
+            generate_cuda_eip_graph('cuda_' + graph_name, groups, criteria, 'ms')
         generate_cuda_msm_graph(groups, 's')
 
 if __name__ == '__main__':

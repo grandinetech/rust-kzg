@@ -13,10 +13,10 @@
                 symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
                 xtick=data,
                 x tick label style={rotate=45, anchor=east},
-                ymin=0, ymax=${max_time}, %%% change this
+                ymin=0,
                 ylabel near ticks,
                 yticklabel pos=right,
-                ylabel={time (${time_unit})}, %%% change this
+                ylabel={time (${time_unit})},
                 grid = major,
                 grid style=dashed,
             ]
@@ -94,7 +94,7 @@
             (8 cores,  ${8>rust-kzg with constantine backend (parallel, bgmw)})
             (16 cores, ${16>rust-kzg with constantine backend (parallel, bgmw)}) };
         %%% go-kzg-4844 (VerifyBlobKZGProofBatch)
-        \addlegendentry{go-kzg-4844}  % TODO: pick new name
+        \addlegendentry{go-kzg-4844}
         \addplot[mark=*, mark options={scale=1.5}, thick, cyan] coordinates {
             (1 core,   ${1>go-kzg-4844})
             (2 cores,  ${2>go-kzg-4844})
