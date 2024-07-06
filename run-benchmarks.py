@@ -30,7 +30,7 @@ async def main():
         ),
     ) as bot:
         await bot.send_message(chat_id=chat_id, text="Script started")
-    output = subprocess.run("./run-benchmarks.sh > logs.txt", shell=True)
+    output = subprocess.run("./run-benchmarks.sh > logs.txt 2>&1", shell=True)
     async with Bot(
         token=token,
         default=DefaultBotProperties(
