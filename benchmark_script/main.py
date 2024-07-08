@@ -21,24 +21,32 @@ normalize_benchmark_name = {
 
     'verify_blob_kzg_proof_batch/1': 'verify_blob_kzg_proof_batch/1',
     'Benchmark/VerifyBlobKZGProofBatchPar(count=1)': 'verify_blob_kzg_proof_batch/1',
+    'verify_blob_kzg_proof (batch 1)': 'verify_blob_kzg_proof_batch/1',
 
     'verify_blob_kzg_proof_batch/2': 'verify_blob_kzg_proof_batch/2',
     'Benchmark/VerifyBlobKZGProofBatchPar(count=2)': 'verify_blob_kzg_proof_batch/2',
+    'verify_blob_kzg_proof (batch 2)': 'verify_blob_kzg_proof_batch/2',
 
     'verify_blob_kzg_proof_batch/4': 'verify_blob_kzg_proof_batch/4',
     'Benchmark/VerifyBlobKZGProofBatchPar(count=4)': 'verify_blob_kzg_proof_batch/4',
+    'verify_blob_kzg_proof (batch 4)': 'verify_blob_kzg_proof_batch/4',
 
     'verify_blob_kzg_proof_batch/8': 'verify_blob_kzg_proof_batch/8',
     'Benchmark/VerifyBlobKZGProofBatchPar(count=8)': 'verify_blob_kzg_proof_batch/8',
+    'verify_blob_kzg_proof (batch 8)': 'verify_blob_kzg_proof_batch/8',
 
     'verify_blob_kzg_proof_batch/16': 'verify_blob_kzg_proof_batch/16',
     'Benchmark/VerifyBlobKZGProofBatchPar(count=16)': 'verify_blob_kzg_proof_batch/16',
+    'verify_blob_kzg_proof (batch 16)': 'verify_blob_kzg_proof_batch/16',
 
     'verify_blob_kzg_proof_batch/32': 'verify_blob_kzg_proof_batch/32',
     'Benchmark/VerifyBlobKZGProofBatchPar(count=32)': 'verify_blob_kzg_proof_batch/32',
+    'verify_blob_kzg_proof (batch 32)': 'verify_blob_kzg_proof_batch/32',
+
     
     'verify_blob_kzg_proof_batch/64': 'verify_blob_kzg_proof_batch/64',
     'Benchmark/VerifyBlobKZGProofBatchPar(count=64)': 'verify_blob_kzg_proof_batch/64',
+    'verify_blob_kzg_proof (batch 64)': 'verify_blob_kzg_proof_batch/64',
     
     'Benchmark/VerifyBlobKZGProofBatch(count=1)': 'verify_blob_kzg_proof_batch/1 (sequential)',
     'Benchmark/VerifyBlobKZGProofBatch(count=2)': 'verify_blob_kzg_proof_batch/2 (sequential)',
@@ -123,6 +131,7 @@ def parse_benchmark_group(file, name):
 
     go_matches = re.findall(r"^(.+)\t *\d+\t *(\d+) ns\/op(?:\t *\d+ B\/op\t *\d+ allocs\/op)?$", data, flags=re.M)
     rust_matches = re.findall(r"^(\S.+)\s+time:\s*\[\d+.\d*\sm?s\s(\d+.\d*\sm?s)\s\d+.\d*\sm?s\]", data, flags=re.M)
+    nim_matches = re.findall(r"(\w+(?:\s\(batch\s\d+\))?\s+\d+ threads|verify_kzg_proof\s+serial)\s+\d+\.\d+\sops\/s\s+(\d+)\sns\/op", data, flags=re.M)
     
     output = {}
 
@@ -156,6 +165,15 @@ def parse_benchmark_group(file, name):
                 normalized_name = name
 
             output[normalized_name] = int(float(time.group(1)) * scale)
+    elif len(nim_matches) > 0:
+        for (name, time) in nim_matches:
+            res = re.match("^(\w+(?:\s\(batch\s\d+\))?)", name)
+            name = res.group(1)
+
+            normalized_name = normalize_benchmark_name.get(name)
+            if normalized_name is None:
+                print("Warning! Unrecognized benchmark name - ", name)
+            output[normalized_name] = int(time)
     else:
         print("Unrecognized! ", name)
 
@@ -440,7 +458,7 @@ def main():
     if not os.path.exists("./output"):
         os.makedirs("./output")
     
-    with open("./input/rust-kzg-benchmarks.txt", "r") as bench_results, pd.ExcelWriter("./output/results.ods", mode="w", engine="odf") as output_writer:
+    with open("./input/rust-kzg-benchmarks.txt", "r", encoding="utf8") as bench_results, pd.ExcelWriter("./output/results.ods", mode="w", engine="odf") as output_writer:
         groups = {}
         
         line = bench_results.readline()

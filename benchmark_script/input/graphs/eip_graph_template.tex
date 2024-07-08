@@ -126,6 +126,13 @@
             (8 cores,  ${8>go binding (rust-kzg with blst backend)})
             (16 cores, ${16>go binding (rust-kzg with blst backend)}) };
 
+        \addlegendentry{constantine}
+        \addplot[mark=*, mark options={scale=1.5}, thick, yellow] coordinates {
+            (1 core,   ${1>constantine})
+            (2 cores,  ${2>constantine})
+            (4 cores,  ${4>constantine})
+            (8 cores,  ${8>constantine})
+            (16 cores, ${16>constantine}) };
         \end{axis}
         \end{tikzpicture}
     }
