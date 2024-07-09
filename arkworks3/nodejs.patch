@@ -1,0 +1,48 @@
+From cb0c44c9df8a7a6a92ed5b4f1acb771532812257 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 16 May 2024 14:19:08 +0300
+Subject: [PATCH] Patch nodejs bindings
+
+---
+ bindings/node.js/binding.gyp | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/bindings/node.js/binding.gyp b/bindings/node.js/binding.gyp
+index c42bb8f..e781e61 100644
+--- a/bindings/node.js/binding.gyp
++++ b/bindings/node.js/binding.gyp
+@@ -3,9 +3,7 @@
+     {
+       "target_name": "kzg",
+       "sources": [
+-        "src/kzg.cxx",
+-        "deps/blst/src/server.c",
+-        "deps/c-kzg/c_kzg_4844.c"
++        "src/kzg.cxx"
+       ],
+       "include_dirs": [
+         "<(module_root_dir)/deps/blst/bindings",
+@@ -16,9 +14,11 @@
+         "__BLST_PORTABLE__",
+         "NAPI_CPP_EXCEPTIONS"
+       ],
++      "libraries": [
++        "<(module_root_dir)/../../../../target/release/rust_kzg_arkworks3.a"
++      ],
+       "conditions": [
+         ["OS!='win'", {
+-          "sources": ["deps/blst/build/assembly.S"],
+           "cflags_cc": [
+             "-fexceptions",
+             "-std=c++17",
+@@ -26,7 +26,6 @@
+           ]
+         }],
+         ["OS=='win'", {
+-          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
+           "defines": [
+             "_CRT_SECURE_NO_WARNINGS",
+             "_HAS_EXCEPTIONS=1"
+-- 
+2.36.2.windows.1
+

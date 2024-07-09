@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  C_KZG_4844_GIT_HASH: '5115420ba3f919f5501155ba18633667001b6a07'
+  C_KZG_4844_GIT_HASH: '1bccee0878ffc80efe8741afdb5793ef9105aa35'
 
 jobs:
   release-build:
@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [blst, zkcrypto, arkworks, constantine]
+        backend: [blst, zkcrypto, arkworks, arkworks3, constantine]
         target: [windows, linux]
         include:
           # Set target-name for target builds
@@ -31,9 +31,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - if: matrix.backend == 'constantine'
-        uses: jiro4989/setup-nim-action@v1
+        uses: jiro4989/setup-nim-action@v2
         with:
-          nim-version: '1.6.14'
+          nim-version: '2.0.2'
 
       # Install constantine backend deps
       - name: "constantine - install deps"

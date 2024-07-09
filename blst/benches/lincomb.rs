@@ -11,7 +11,7 @@ fn bench_g1_lincomb_(c: &mut Criterion) {
 
 criterion_group! {
     name = benches;
-    config = Criterion::default().sample_size(10);
+    config = Criterion::default().sample_size(100);
     targets = bench_g1_lincomb_
 }
 

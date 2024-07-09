@@ -6,13 +6,14 @@ The goal is to create a parallelized KZG library for Ethereum Data Sharding (aka
 
 Support for multiple backend ECC libraries is implemented via [Traits](https://github.com/sifraitech/kzg/blob/main/kzg/src/lib.rs). Such an approach allows to easy change backend ECC libraries as all the crates shared the same interface (see [benchmarks](https://github.com/sifraitech/kzg/tree/main/kzg-bench/src/benches) and [tests](https://github.com/sifraitech/kzg/tree/main/kzg-bench/src/tests)). The current state of supported backend ECC libraries:
 
-| Backend ECC | FFT/DAS | EIP-4844 (non-parallel) | EIP-4844 (parallel) | [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) drop-in replacement |
-| :---: | :---: | :---: | :---: | :---: |
-| [blst](https://github.com/supranational/blst) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| [constantine](https://github.com/mratsim/constantine) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| [mcl](https://github.com/herumi/mcl) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
-| [arkworks](https://github.com/arkworks-rs/algebra) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| [zkcrypto](https://github.com/zkcrypto/bls12_381) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Backend ECC | FFT/DAS | EIP-4844 (non-parallel) | EIP-4844 (parallel) | [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) drop-in replacement | GPU acceleration |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| [blst](https://github.com/supranational/blst) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: via [sppark](https://github.com/supranational/sppark) |
+| [constantine](https://github.com/mratsim/constantine) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
+| [mcl](https://github.com/herumi/mcl) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: | :x: |
+| [arkworks](https://github.com/arkworks-rs/algebra) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
+| [arkworks3](https://github.com/arkworks-rs/algebra/tree/v0.3.0) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: via [sppark](https://github.com/supranational/sppark) and [wlc_msm](https://github.com/dunkirkturbo/wlc_msm/tree/master) | 
+| [zkcrypto](https://github.com/zkcrypto/bls12_381) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
 
 
 # Drop-in replacement for c-kzg-4844
@@ -37,47 +38,84 @@ Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/b
 
 ## Blob to KZG commitment
 
-![blob to kzg commitment](images/blob_to_kzg_commitment.png)
+![blob to kzg commitment](images/blob_to_kzg_commitment.jpg)
 
 ## Compute KZG proof
 
-![compute kzg proof](images/compute_kzg_proof.png)
+![compute kzg proof](images/compute_kzg_proof.jpg)
 
 ## Verify KZG proof
 
-![verify kzg proof](images/verify_kzg_proof.png)
+![verify kzg proof](images/verify_kzg_proof.jpg)
 
 ## Compute blob KZG proof
 
-![compute blob kzg proof](images/compute_blob_kzg_proof.png)
+![compute blob kzg proof](images/compute_blob_kzg_proof.jpg)
 
 ## Verify blob KZG proof
 
-![verify blob kzg proof](images/verify_blob_kzg_proof.png)
+![verify blob kzg proof](images/verify_blob_kzg_proof.jpg)
 
 ## Verify blob KZG proof batch
 
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_64.png)
+![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_64.jpg)
 
 <details>
 <summary>Click to expand (blobs count 32 to 1)</summary>
 
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_32.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_16.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_8.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_4.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_2.png)
-![verify blob kzg proof batch count 64](images/verify_blob_kzg_proof_batch_1.png)
+## Verify blob KZG proof batch (count 32)
+
+![verify blob kzg proof batch count 32](images/verify_blob_kzg_proof_batch_32.jpg)
+
+## Verify blob KZG proof batch (count 16)
+
+![verify blob kzg proof batch count 16](images/verify_blob_kzg_proof_batch_16.jpg)
+
+## Verify blob KZG proof batch (count 8)
+
+![verify blob kzg proof batch count 8](images/verify_blob_kzg_proof_batch_8.jpg)
+
+## Verify blob KZG proof batch (count 4)
+
+![verify blob kzg proof batch count 4](images/verify_blob_kzg_proof_batch_4.jpg)
+
+## Verify blob KZG proof batch (count 2)
+
+![verify blob kzg proof batch count 2](images/verify_blob_kzg_proof_batch_2.jpg)
+
+## Verify blob KZG proof batch (count 1)
+
+![verify blob kzg proof batch count 1](images/verify_blob_kzg_proof_batch_1.jpg)
 
 </details>
 
 ## Fast Fourier transform (FFT)
 
-![fft fr g1](images/fft.png)
+![fft fr g1](images/fft.jpg)
 
 ## Multi-scalar multiplication (MSM)
 
-![commit to polynomial](images/multi_scalar_multiplication.png)
+![commit to polynomial](images/multi_scalar_multiplication.jpg)
+
+# GPU acceleration
+
+GPU-accelerated multi-scalar multiplication is available for `arkworks3` and `blst` backends.
+
+## Multi-scalar multiplication
+
+![multi-scalar multiplication](images/cuda_msm.jpg)
+
+## Blob to KZG commitment
+
+![blob to KZG commitment](images/cuda_blob_to_kzg_commitment.jpg)
+
+## Compute KZG proof
+
+![compute blob KZG proof](images/cuda_compute_kzg_proof.jpg)
+
+## Compute blob KZG proof
+
+![compute blob KZG proof](images/cuda_compute_blob_kzg_proof.jpg)
 
 # Authors
 

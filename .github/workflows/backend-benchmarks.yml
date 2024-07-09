@@ -1,7 +1,7 @@
 name: benchmarks
 on: [push, pull_request, workflow_dispatch]
 env:
-  C_KZG_4844_GIT_HASH: '5115420ba3f919f5501155ba18633667001b6a07'
+  C_KZG_4844_GIT_HASH: '1bccee0878ffc80efe8741afdb5793ef9105aa35'
 
 jobs:
   benchmarks:
@@ -9,9 +9,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-11]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         # Excluding mcl for now due to they have different project layout
-        backend: [blst, zkcrypto, arkworks, constantine]
+        backend: [blst, zkcrypto, arkworks, arkworks3, constantine]
         include:
           # Setup exec_once_per_backend flag
           - os: ubuntu-latest
@@ -22,6 +22,8 @@ jobs:
           - backend: zkcrypto
             support_ckzg: true
           - backend: arkworks
+            support_ckzg: true
+          - backend: arkworks3
             support_ckzg: true
           - backend: constantine
             support_ckzg: true
@@ -34,9 +36,9 @@ jobs:
           java-version: "11"
 
       - if: matrix.backend == 'constantine'
-        uses: jiro4989/setup-nim-action@v1
+        uses: jiro4989/setup-nim-action@v2
         with:
-          nim-version: '1.6.14'
+          nim-version: '2.0.2'
 
       # Install constantine backend deps
       - name: "constantine - install deps"

@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use kzg::common_utils::log_2_byte;
     use kzg_bench::tests::bls12_381::*;
     use rust_kzg_mcl::data_types::fr::Fr;
     use rust_kzg_mcl::data_types::g1::g1_linear_combination;
@@ -7,7 +8,6 @@ mod tests {
     use rust_kzg_mcl::data_types::g2::G2;
     use rust_kzg_mcl::kzg10::Curve;
     use rust_kzg_mcl::mcl_methods::init;
-    use kzg::common_utils::log_2_byte;
     use rust_kzg_mcl::CurveType;
 
     #[test]

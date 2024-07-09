@@ -13,5 +13,8 @@ pub mod types;
 mod parallel_pippenger_utils;
 mod pippenger_utils;
 
-#[cfg(all(feature = "bgmw", any(not(feature = "arkmsm"), feature = "parallel")))]
+#[cfg(feature = "bgmw")]
 mod bgmw;
+
+#[cfg(feature = "sppark")]
+mod sppark;

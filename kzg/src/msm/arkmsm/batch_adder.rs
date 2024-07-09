@@ -19,8 +19,8 @@ where
 {
     pub fn new(max_batch_cnt: usize) -> Self {
         BatchAdder {
-            inverse_state: TFp::ONE,
-            inverses: vec![TFp::ONE; max_batch_cnt],
+            inverse_state: TFp::one(),
+            inverses: vec![TFp::one(); max_batch_cnt],
             phantom_g1: PhantomData,
             phantom_affine: PhantomData,
         }

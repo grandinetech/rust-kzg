@@ -1,0 +1,108 @@
+\documentclass[border=2pt]{standalone}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\usepackage{subfig}
+\usepackage{pdflscape}
+\usepackage[export]{adjustbox}
+\begin{document}
+\hbox{
+    \adjustbox{valign=t}{
+        \begin{tikzpicture}
+            \begin{axis}[
+                legend style={at={(0.5, -0.3)}, anchor=north, legend cell align=left},
+                symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
+                xtick=data,
+                x tick label style={rotate=45, anchor=east},
+                ymin=0, ymax=${max_time}, %%% change this
+                ylabel near ticks,
+                yticklabel pos=right,
+                ylabel={time (${time_unit})}, %%% change this
+                grid = major,
+                grid style=dashed,
+            ]
+            %%% rust-kzg with zkcrypto backend
+            \addlegendentry{rust-kzg with zkcrypto backend}
+            \addplot[mark=*, mark options={scale=1.5}, thick, black] coordinates {
+                (1 core,   ${1>rust-kzg with zkcrypto backend (parallel)>bench_fft_fr scale: '15'})
+                (2 cores,  ${2>rust-kzg with zkcrypto backend (parallel)>bench_fft_fr scale: '15'})
+                (4 cores,  ${4>rust-kzg with zkcrypto backend (parallel)>bench_fft_fr scale: '15'})
+                (8 cores,  ${8>rust-kzg with zkcrypto backend (parallel)>bench_fft_fr scale: '15'})
+                (16 cores, ${16>rust-kzg with zkcrypto backend (parallel)>bench_fft_fr scale: '15'}) };
+            %%% rust-kzg with blst backend
+            \addlegendentry{rust-kzg with blst backend (BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+                (1 core,   ${1>rust-kzg with blst backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+                (2 cores,  ${2>rust-kzg with blst backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+                (4 cores,  ${4>rust-kzg with blst backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+                (8 cores,  ${8>rust-kzg with blst backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+                (16 cores, ${16>rust-kzg with blst backend (parallel, bgmw)>bench_fft_fr scale: '15'}) };
+
+            \addlegendentry{rust-kzg with constantine backend (BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, orange] coordinates {
+                (1 core,   ${1>rust-kzg with constantine backend (parallel)>bench_fft_fr scale: '15'})
+                (2 cores,  ${2>rust-kzg with constantine backend (parallel)>bench_fft_fr scale: '15'})
+                (4 cores,  ${4>rust-kzg with constantine backend (parallel)>bench_fft_fr scale: '15'})
+                (8 cores,  ${8>rust-kzg with constantine backend (parallel)>bench_fft_fr scale: '15'})
+                (16 cores, ${16>rust-kzg with constantine backend (parallel)>bench_fft_fr scale: '15'}) };
+            
+            % \addlegendentry{rust-kzg with arkworks backend (BGMW)}
+            % \addplot[mark=*, mark options={scale=1.5}, thick, red] coordinates {
+            %     (1 core,   ${1>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+            %     (2 cores,  ${2>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+            %     (4 cores,  ${4>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+            %     (8 cores,  ${8>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_fr scale: '15'})
+            %     (16 cores, ${16>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_fr scale: '15'}) };
+            \end{axis}
+        \end{tikzpicture}
+    }% 
+    \adjustbox{valign=t}{
+        \begin{tikzpicture}
+            \begin{axis}[
+                legend style={at={(0.5, -0.3)}, anchor=north, legend cell align=left},
+                symbolic x coords={1 core, 2 cores, 4 cores, 8 cores, 16 cores},
+                xtick=data,
+                x tick label style={rotate=45, anchor=east},
+                ymin=0, ymax=${max_time_2}, %%% change this
+                ylabel near ticks,
+                yticklabel pos=right,
+                ylabel={time (${time_unit_2})}, %%% change this
+                grid = major,
+                grid style=dashed,
+            ]
+            %%% rust-kzg with zkcrypto backend
+            \addlegendentry{rust-kzg with zkcrypto backend}
+            \addplot[mark=*, mark options={scale=1.5}, thick, black] coordinates {
+                (1 core,   ${1>rust-kzg with zkcrypto backend (parallel)>bench_fft_g1 scale: '15'})
+                (2 cores,  ${2>rust-kzg with zkcrypto backend (parallel)>bench_fft_g1 scale: '15'})
+                (4 cores,  ${4>rust-kzg with zkcrypto backend (parallel)>bench_fft_g1 scale: '15'})
+                (8 cores,  ${8>rust-kzg with zkcrypto backend (parallel)>bench_fft_g1 scale: '15'})
+                (16 cores, ${16>rust-kzg with zkcrypto backend (parallel)>bench_fft_g1 scale: '15'}) };
+            %%% rust-kzg with blst backend
+            \addlegendentry{rust-kzg with blst backend (BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, green] coordinates {
+                (1 core,   ${1>rust-kzg with blst backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+                (2 cores,  ${2>rust-kzg with blst backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+                (4 cores,  ${4>rust-kzg with blst backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+                (8 cores,  ${8>rust-kzg with blst backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+                (16 cores, ${16>rust-kzg with blst backend (parallel, bgmw)>bench_fft_g1 scale: '15'}) };
+
+            \addlegendentry{rust-kzg with constantine backend (BGMW)}
+            \addplot[mark=*, mark options={scale=1.5}, thick, orange] coordinates {
+                (1 core,   ${1>rust-kzg with constantine backend (parallel)>bench_fft_g1 scale: '15'})
+                (2 cores,  ${2>rust-kzg with constantine backend (parallel)>bench_fft_g1 scale: '15'})
+                (4 cores,  ${4>rust-kzg with constantine backend (parallel)>bench_fft_g1 scale: '15'})
+                (8 cores,  ${8>rust-kzg with constantine backend (parallel)>bench_fft_g1 scale: '15'})
+                (16 cores, ${16>rust-kzg with constantine backend (parallel)>bench_fft_g1 scale: '15'}) };
+            
+            % \addlegendentry{rust-kzg with arkworks backend (BGMW)}
+            % \addplot[mark=*, mark options={scale=1.5}, thick, red] coordinates {
+            %     (1 core,   ${1>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+            %     (2 cores,  ${2>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+            %     (4 cores,  ${4>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+            %     (8 cores,  ${8>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_g1 scale: '15'})
+            %     (16 cores, ${16>rust-kzg with arkworks backend (parallel, bgmw)>bench_fft_g1 scale: '15'}) };
+            \end{axis}
+        \end{tikzpicture}
+    }
+}
+\end{document}

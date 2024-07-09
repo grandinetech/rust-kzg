@@ -1,4 +1,4 @@
-use kzg::common_utils::{next_pow_of_2, is_power_of_2, reverse_bit_order};
+use kzg::common_utils::{is_power_of_2, next_pow_of_2, reverse_bit_order};
 
 use crate::data_types::{fp::*, fr::*, g1::*};
 use std::iter;

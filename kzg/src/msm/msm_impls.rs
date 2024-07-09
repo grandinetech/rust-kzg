@@ -1,4 +1,4 @@
-use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, Scalar256, G1};
+use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
 use alloc::vec::Vec;
 
 #[cfg(all(feature = "arkmsm", not(feature = "parallel")))]
@@ -18,14 +18,16 @@ fn msm_parallel<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    points: &[TG1Affine],
-    scalars: &[Scalar256],
+    points: &[TG1],
+    scalars: &[TFr],
     precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
 ) -> TG1 {
     if let Some(precomputation) = precomputation {
         precomputation.multiply_parallel(scalars)
     } else {
-        tiling_parallel_pippenger(points, scalars)
+        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
+        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+        tiling_parallel_pippenger(&points, &scalars)
     }
 }
 
@@ -39,8 +41,8 @@ fn msm_sequential<
     TG1Affine: G1Affine<TG1, TG1Fp>,
     TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
-    points: &[TG1Affine],
-    scalars: &[Scalar256],
+    points: &[TG1],
+    scalars: &[TFr],
     precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
 ) -> TG1 {
     #[cfg(not(feature = "arkmsm"))]
@@ -49,17 +51,23 @@ fn msm_sequential<
         if let Some(precomputation) = precomputation {
             precomputation.multiply_sequential(scalars)
         } else {
-            tiling_pippenger(points, scalars)
+            let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
+            let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+            tiling_pippenger(&points, &scalars)
         }
     }
 
     #[cfg(feature = "arkmsm")]
     {
-        VariableBaseMSM::multi_scalar_mul::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars)
+        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
+        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+        VariableBaseMSM::multi_scalar_mul::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(
+            &points, &scalars,
+        )
     }
 }
 
-fn batch_convert<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + Sized>(
+pub fn batch_convert<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + Sized>(
     points: &[TG1],
 ) -> Vec<TG1Affine> {
     #[cfg(feature = "parallel")]
@@ -91,19 +99,17 @@ pub fn msm<
         return out;
     }
 
-    let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points[0..len]);
-    let scalars = scalars[0..len]
-        .iter()
-        .map(TFr::to_scalar)
-        .collect::<Vec<_>>();
-
     #[cfg(feature = "parallel")]
-    return msm_parallel::<TFr, TG1, TG1Fp, TG1Affine>(&points, &scalars, precomputation);
+    return msm_parallel::<TFr, TG1, TG1Fp, TG1Affine>(
+        &points[0..len],
+        &scalars[0..len],
+        precomputation,
+    );
 
     #[cfg(not(feature = "parallel"))]
     return msm_sequential::<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>(
-        &points,
-        &scalars,
+        &points[0..len],
+        &scalars[0..len],
         precomputation,
     );
 }

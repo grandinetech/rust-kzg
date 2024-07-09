@@ -1,39 +1,89 @@
 name: tests
 on: [push, pull_request, workflow_dispatch]
 env:
-  C_KZG_4844_GIT_HASH: '5115420ba3f919f5501155ba18633667001b6a07'
+  C_KZG_4844_GIT_HASH: '1bccee0878ffc80efe8741afdb5793ef9105aa35'
 
 jobs:
-  tests:
+  kzg_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      # Check kzg clippy for default msm backend
+      - name: "kzg clippy"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --no-default-features --features=parallel,std,rand -- -D warnings
+
+      # Check kzg clippy for BGMW msm backend
+      - name: "kzg clippy (bgmw)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,bgmw -- -D warnings
+
+      # Check kzg clippy for arkmsm backend
+      - name: "kzg clippy (arkmsm)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,arkmsm -- -D warnings
+        
+      # Check kzg clippy for sppark backend
+      - name: "kzg clippy (sppark)"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg/Cargo.toml --all-targets --features=parallel,std,rand,sppark -- -D warnings
+
+      # Check kzg formatting
+      - name: "kzg format"
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path kzg/Cargo.toml -- --check
+
+      # Check kzg-bench clippy
+      - name: "kzg-bench clippy"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
+
+      # Check kzg-bench formatting
+      - name: "kzg-bench format"
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path kzg-bench/Cargo.toml -- --check
+
+  backend_ci:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-11]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         # Excluding mcl for now due to they have different project layout
-        backend: [blst, zkcrypto, arkworks, constantine]
+        backend: [blst, zkcrypto, arkworks, arkworks3, constantine]
         include:
-          # Set default clippy flag to all-features
-          - clippy-flag: --all-features
+          # Set default clippy flag
+          - clippy-flag: --features=default,std,rand,parallel
           # Setup exec_once_per_backend flag
           - os: ubuntu-latest
             exec_once_per_backend: true
-          # Setup exec_once_overall flag
-          - os: ubuntu-latest
-            backend: blst
-            exec_once_overall: true
           # Select backends which support wasm & which support ckzg drop-in
           - backend: blst
             support_wasm: true
             support_ckzg: true
-            # Override all-features flag for blst, due to incompatibility between portable & force-adx
-            clippy-flag: --features=default,std,rand,parallel
           - backend: zkcrypto
             support_wasm: true
             support_ckzg: true
-
-            clippy-flag: --features=default,std,rand,parallel
+            clippy-flag: --all-features
           - backend: arkworks
+            support_wasm: true
+            support_ckzg: true
+          - backend: arkworks3
             support_wasm: true
             support_ckzg: true
           - backend: constantine
@@ -48,7 +98,7 @@ jobs:
           distribution: "temurin"
           java-version: "11"
 
-      - uses: jiro4989/setup-nim-action@v1
+      - uses: jiro4989/setup-nim-action@v2
         with:
           nim-version: '2.0.2'
 
@@ -72,38 +122,6 @@ jobs:
             --no-install-recommends -yq \
             libgmp-dev \
             llvm
-
-      # Check kzg clippy
-      - name: "kzg clippy"
-        if: matrix.exec_once_overall
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path kzg/Cargo.toml --all-targets --all-features -- -D warnings
-
-      # Check kzg formatting
-      - name: "kzg format"
-        uses: actions-rs/cargo@v1
-        if: matrix.exec_once_overall
-        with:
-          command: fmt
-          args: --manifest-path kzg/Cargo.toml -- --check
-
-      # Check kzg-bench clippy
-      - name: "kzg-bench clippy"
-        if: matrix.exec_once_overall
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --manifest-path kzg-bench/Cargo.toml --all-targets --all-features -- -D warnings
-
-      # Check kzg-bench formatting
-      - name: "kzg-bench format"
-        uses: actions-rs/cargo@v1
-        if: matrix.exec_once_overall
-        with:
-          command: fmt
-          args: --manifest-path kzg-bench/Cargo.toml -- --check
 
       # Check backend clippy
       - name: "${{ matrix.backend }} clippy"

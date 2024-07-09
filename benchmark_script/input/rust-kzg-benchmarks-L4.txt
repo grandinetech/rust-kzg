@@ -1,0 +1,1036 @@
+Architecture:                         x86_64
+CPU op-mode(s):                       32-bit, 64-bit
+Address sizes:                        46 bits physical, 48 bits virtual
+Byte Order:                           Little Endian
+CPU(s):                               12
+On-line CPU(s) list:                  0-11
+Vendor ID:                            GenuineIntel
+Model name:                           Intel(R) Xeon(R) CPU @ 2.20GHz
+CPU family:                           6
+Model:                                85
+Thread(s) per core:                   2
+Core(s) per socket:                   6
+Socket(s):                            1
+Stepping:                             7
+BogoMIPS:                             4400.46
+Flags:                                fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves arat avx512_vnni md_clear arch_capabilities
+Hypervisor vendor:                    KVM
+Virtualization type:                  full
+L1d cache:                            192 KiB (6 instances)
+L1i cache:                            192 KiB (6 instances)
+L2 cache:                             6 MiB (6 instances)
+L3 cache:                             38.5 MiB (1 instance)
+NUMA node(s):                         1
+NUMA node0 CPU(s):                    0-11
+Vulnerability Gather data sampling:   Not affected
+Vulnerability Itlb multihit:          Not affected
+Vulnerability L1tf:                   Not affected
+Vulnerability Mds:                    Vulnerable; SMT Host state unknown
+Vulnerability Meltdown:               Not affected
+Vulnerability Mmio stale data:        Vulnerable
+Vulnerability Reg file data sampling: Not affected
+Vulnerability Retbleed:               Vulnerable
+Vulnerability Spec rstack overflow:   Not affected
+Vulnerability Spec store bypass:      Vulnerable
+Vulnerability Spectre v1:             Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
+Vulnerability Spectre v2:             Vulnerable; IBPB: disabled; STIBP: disabled; PBRSB-eIBRS: Vulnerable; BHI: Vulnerable (Syscall hardening enabled)
+Vulnerability Srbds:                  Not affected
+Vulnerability Tsx async abort:        Vulnerable
+Mon Jun 10 18:25:57 2024       
++---------------------------------------------------------------------------------------+
+| NVIDIA-SMI 535.104.05             Driver Version: 535.104.05   CUDA Version: 12.2     |
+|-----------------------------------------+----------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |         Memory-Usage | GPU-Util  Compute M. |
+|                                         |                      |               MIG M. |
+|=========================================+======================+======================|
+|   0  NVIDIA L4                      Off | 00000000:00:03.0 Off |                    0 |
+| N/A   42C    P8              12W /  72W |      1MiB / 23034MiB |      0%      Default |
+|                                         |                      |                  N/A |
++-----------------------------------------+----------------------+----------------------+
+                                                                                         
++---------------------------------------------------------------------------------------+
+| Processes:                                                                            |
+|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |
+|        ID   ID                                                             Usage      |
+|=======================================================================================|
+|  No running processes found                                                           |
++---------------------------------------------------------------------------------------+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (parallel, bgmw) ~~~~~~~~~~
+
+
+blob_to_kzg_commitment  time:   [11.752 ms 11.961 ms 12.169 ms]
+
+compute_kzg_proof       time:   [12.829 ms 13.070 ms 13.320 ms]
+
+verify_kzg_proof        time:   [1.5567 ms 1.5581 ms 1.5596 ms]
+Found 6 outliers among 100 measurements (6.00%)
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+compute_blob_kzg_proof  time:   [13.247 ms 13.289 ms 13.338 ms]
+Found 12 outliers among 100 measurements (12.00%)
+  6 (6.00%) high mild
+  6 (6.00%) high severe
+
+verify_blob_kzg_proof   time:   [3.5466 ms 3.5498 ms 3.5533 ms]
+Found 11 outliers among 100 measurements (11.00%)
+  7 (7.00%) high mild
+  4 (4.00%) high severe
+
+verify_blob_kzg_proof_batch/1
+                        time:   [3.5756 ms 3.5803 ms 3.5854 ms]
+                        thrpt:  [278.91  elem/s 279.31  elem/s 279.68  elem/s]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+verify_blob_kzg_proof_batch/2
+                        time:   [3.9452 ms 3.9915 ms 4.0490 ms]
+                        thrpt:  [493.95  elem/s 501.06  elem/s 506.94  elem/s]
+Found 19 outliers among 100 measurements (19.00%)
+  3 (3.00%) high mild
+  16 (16.00%) high severe
+verify_blob_kzg_proof_batch/4
+                        time:   [4.2287 ms 4.3562 ms 4.4994 ms]
+                        thrpt:  [889.01  elem/s 918.23  elem/s 945.92  elem/s]
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) high mild
+  8 (8.00%) high severe
+verify_blob_kzg_proof_batch/8
+                        time:   [6.7314 ms 6.7440 ms 6.7603 ms]
+                        thrpt:  [1.1834 Kelem/s 1.1862 Kelem/s 1.1885 Kelem/s]
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+verify_blob_kzg_proof_batch/16
+                        time:   [11.158 ms 11.189 ms 11.241 ms]
+                        thrpt:  [1.4233 Kelem/s 1.4300 Kelem/s 1.4339 Kelem/s]
+Found 4 outliers among 100 measurements (4.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+verify_blob_kzg_proof_batch/32
+                        time:   [23.522 ms 23.677 ms 23.816 ms]
+                        thrpt:  [1.3436 Kelem/s 1.3515 Kelem/s 1.3604 Kelem/s]
+Found 15 outliers among 100 measurements (15.00%)
+  14 (14.00%) low severe
+  1 (1.00%) high severe
+verify_blob_kzg_proof_batch/64
+                        time:   [41.682 ms 42.096 ms 42.483 ms]
+                        thrpt:  [1.5065 Kelem/s 1.5203 Kelem/s 1.5355 Kelem/s]
+Found 4 outliers among 100 measurements (4.00%)
+  1 (1.00%) low severe
+  3 (3.00%) low mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (sppark) ~~~~~~~~~~
+
+
+blob_to_kzg_commitment  time:   [5.1959 ms 5.2109 ms 5.2269 ms]
+                        change: [-57.185% -56.434% -55.631%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 9 outliers among 100 measurements (9.00%)
+  8 (8.00%) high mild
+  1 (1.00%) high severe
+
+compute_kzg_proof       time:   [6.8758 ms 6.8969 ms 6.9262 ms]
+                        change: [-48.240% -47.232% -46.207%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 9 outliers among 100 measurements (9.00%)
+  3 (3.00%) high mild
+  6 (6.00%) high severe
+
+verify_kzg_proof        time:   [1.5550 ms 1.5559 ms 1.5568 ms]
+                        change: [-0.1487% +0.0893% +0.2690%] (p = 0.47 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+
+compute_blob_kzg_proof  time:   [8.1572 ms 8.2033 ms 8.2539 ms]
+                        change: [-38.696% -38.270% -37.846%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 10 outliers among 100 measurements (10.00%)
+  9 (9.00%) high mild
+  1 (1.00%) high severe
+
+verify_blob_kzg_proof   time:   [3.5250 ms 3.5298 ms 3.5369 ms]
+                        change: [-0.7250% -0.5629% -0.3600%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 9 outliers among 100 measurements (9.00%)
+  6 (6.00%) high mild
+  3 (3.00%) high severe
+
+verify_blob_kzg_proof_batch/1
+                        time:   [3.5554 ms 3.5589 ms 3.5631 ms]
+                        thrpt:  [280.66  elem/s 280.98  elem/s 281.26  elem/s]
+                 change:
+                        time:   [-0.7769% -0.5973% -0.4208%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.4226% +0.6008% +0.7830%]
+                        Change within noise threshold.
+Found 7 outliers among 100 measurements (7.00%)
+  4 (4.00%) high mild
+  3 (3.00%) high severe
+verify_blob_kzg_proof_batch/2
+                        time:   [3.8845 ms 3.8966 ms 3.9164 ms]
+                        thrpt:  [510.68  elem/s 513.26  elem/s 514.87  elem/s]
+                 change:
+                        time:   [-3.8006% -2.3776% -1.1278%] (p = 0.00 < 0.05)
+                        thrpt:  [+1.1407% +2.4355% +3.9508%]
+                        Performance has improved.
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) high mild
+  5 (5.00%) high severe
+verify_blob_kzg_proof_batch/4
+                        time:   [3.9888 ms 4.0345 ms 4.0918 ms]
+                        thrpt:  [977.57  elem/s 991.46  elem/s 1.0028 Kelem/s]
+                 change:
+                        time:   [-10.515% -7.3857% -4.3880%] (p = 0.00 < 0.05)
+                        thrpt:  [+4.5894% +7.9747% +11.750%]
+                        Performance has improved.
+Found 14 outliers among 100 measurements (14.00%)
+  14 (14.00%) high severe
+verify_blob_kzg_proof_batch/8
+                        time:   [6.6477 ms 6.6656 ms 6.6962 ms]
+                        thrpt:  [1.1947 Kelem/s 1.2002 Kelem/s 1.2034 Kelem/s]
+                 change:
+                        time:   [-1.5382% -1.1620% -0.6442%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.6483% +1.1757% +1.5623%]
+                        Change within noise threshold.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+verify_blob_kzg_proof_batch/16
+                        time:   [11.023 ms 11.050 ms 11.096 ms]
+                        thrpt:  [1.4420 Kelem/s 1.4480 Kelem/s 1.4515 Kelem/s]
+                 change:
+                        time:   [-1.8041% -1.2417% -0.7083%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.7133% +1.2573% +1.8373%]
+                        Change within noise threshold.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+verify_blob_kzg_proof_batch/32
+                        time:   [23.156 ms 23.326 ms 23.482 ms]
+                        thrpt:  [1.3627 Kelem/s 1.3719 Kelem/s 1.3819 Kelem/s]
+                 change:
+                        time:   [-2.3861% -1.4812% -0.5538%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.5569% +1.5035% +2.4445%]
+                        Change within noise threshold.
+Found 22 outliers among 100 measurements (22.00%)
+  18 (18.00%) low severe
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+verify_blob_kzg_proof_batch/64
+                        time:   [65.016 ms 65.655 ms 66.326 ms]
+                        thrpt:  [964.92  elem/s 974.80  elem/s 984.38  elem/s]
+                 change:
+                        time:   [+53.780% +55.964% +58.097%] (p = 0.00 < 0.05)
+                        thrpt:  [-36.748% -35.883% -34.972%]
+                        Performance has regressed.
+Found 8 outliers among 100 measurements (8.00%)
+  2 (2.00%) low mild
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks backend (parallel, bgmw) ~~~~~~~~~~
+
+
+blob_to_kzg_commitment  time:   [15.936 ms 16.120 ms 16.322 ms]
+                        change: [+206.24% +209.34% +213.27%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  7 (7.00%) high mild
+  2 (2.00%) high severe
+
+compute_kzg_proof       time:   [17.080 ms 17.194 ms 17.322 ms]
+                        change: [+147.41% +149.30% +151.73%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 18 outliers among 100 measurements (18.00%)
+  6 (6.00%) high mild
+  12 (12.00%) high severe
+
+verify_kzg_proof        time:   [3.3236 ms 3.3266 ms 3.3300 ms]
+                        change: [+113.07% +113.37% +113.67%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 10 outliers among 100 measurements (10.00%)
+  6 (6.00%) high mild
+  4 (4.00%) high severe
+
+compute_blob_kzg_proof  time:   [18.558 ms 18.849 ms 19.158 ms]
+                        change: [+125.70% +129.78% +133.79%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 10 outliers among 100 measurements (10.00%)
+  10 (10.00%) high mild
+
+verify_blob_kzg_proof   time:   [5.0678 ms 5.0717 ms 5.0767 ms]
+                        change: [+43.367% +43.682% +43.918%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+
+verify_blob_kzg_proof_batch/1
+                        time:   [5.1921 ms 5.2046 ms 5.2221 ms]
+                        thrpt:  [191.49  elem/s 192.14  elem/s 192.60  elem/s]
+                 change:
+                        time:   [+45.853% +46.241% +46.727%] (p = 0.00 < 0.05)
+                        thrpt:  [-31.846% -31.620% -31.438%]
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+verify_blob_kzg_proof_batch/2
+                        time:   [5.5156 ms 5.5837 ms 5.6725 ms]
+                        thrpt:  [352.58  elem/s 358.19  elem/s 362.61  elem/s]
+                 change:
+                        time:   [+41.464% +43.295% +45.608%] (p = 0.00 < 0.05)
+                        thrpt:  [-31.322% -30.214% -29.311%]
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  3 (3.00%) high mild
+  6 (6.00%) high severe
+verify_blob_kzg_proof_batch/4
+                        time:   [5.9289 ms 6.1147 ms 6.3239 ms]
+                        thrpt:  [632.52  elem/s 654.17  elem/s 674.66  elem/s]
+                 change:
+                        time:   [+46.600% +51.561% +57.103%] (p = 0.00 < 0.05)
+                        thrpt:  [-36.347% -34.020% -31.787%]
+                        Performance has regressed.
+Found 20 outliers among 100 measurements (20.00%)
+  7 (7.00%) high mild
+  13 (13.00%) high severe
+verify_blob_kzg_proof_batch/8
+                        time:   [8.9311 ms 8.9403 ms 8.9497 ms]
+                        thrpt:  [893.89  elem/s 894.82  elem/s 895.75  elem/s]
+                 change:
+                        time:   [+33.482% +34.125% +34.534%] (p = 0.00 < 0.05)
+                        thrpt:  [-25.669% -25.443% -25.083%]
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+verify_blob_kzg_proof_batch/16
+                        time:   [14.486 ms 14.524 ms 14.589 ms]
+                        thrpt:  [1.0967 Kelem/s 1.1016 Kelem/s 1.1045 Kelem/s]
+                 change:
+                        time:   [+30.722% +31.439% +32.197%] (p = 0.00 < 0.05)
+                        thrpt:  [-24.356% -23.919% -23.502%]
+                        Performance has regressed.
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+verify_blob_kzg_proof_batch/32
+                        time:   [29.477 ms 29.824 ms 30.157 ms]
+                        thrpt:  [1.0611 Kelem/s 1.0730 Kelem/s 1.0856 Kelem/s]
+                 change:
+                        time:   [+26.268% +27.856% +29.577%] (p = 0.00 < 0.05)
+                        thrpt:  [-22.826% -21.787% -20.803%]
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+verify_blob_kzg_proof_batch/64
+                        time:   [46.096 ms 46.871 ms 47.607 ms]
+                        thrpt:  [1.3443 Kelem/s 1.3654 Kelem/s 1.3884 Kelem/s]
+                 change:
+                        time:   [-29.996% -28.609% -27.158%] (p = 0.00 < 0.05)
+                        thrpt:  [+37.284% +40.074% +42.848%]
+                        Performance has improved.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (parallel) ~~~~~~~~~~
+
+
+blob_to_kzg_commitment  time:   [23.827 ms 23.911 ms 24.014 ms]
+                        change: [+46.450% +48.338% +50.179%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 18 outliers among 100 measurements (18.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  5 (5.00%) high mild
+  10 (10.00%) high severe
+
+compute_kzg_proof       time:   [27.680 ms 27.957 ms 28.237 ms]
+                        change: [+60.603% +62.595% +64.576%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+verify_kzg_proof        time:   [3.3989 ms 3.4275 ms 3.4642 ms]
+                        change: [+2.0930% +3.0330% +4.2613%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) high mild
+  5 (5.00%) high severe
+
+compute_blob_kzg_proof  time:   [27.789 ms 27.981 ms 28.184 ms]
+                        change: [+45.869% +48.442% +50.990%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+verify_blob_kzg_proof   time:   [5.2806 ms 5.2911 ms 5.3035 ms]
+                        change: [+4.0967% +4.3259% +4.5573%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high severe
+
+verify_blob_kzg_proof_batch/1
+                        time:   [5.3911 ms 5.4017 ms 5.4159 ms]
+                        thrpt:  [184.64  elem/s 185.13  elem/s 185.49  elem/s]
+                 change:
+                        time:   [+3.3822% +3.7868% +4.1750%] (p = 0.00 < 0.05)
+                        thrpt:  [-4.0077% -3.6487% -3.2715%]
+                        Performance has regressed.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+verify_blob_kzg_proof_batch/2
+                        time:   [5.6630 ms 5.6966 ms 5.7391 ms]
+                        thrpt:  [348.48  elem/s 351.08  elem/s 353.17  elem/s]
+                 change:
+                        time:   [+0.3381% +2.0228% +3.4960%] (p = 0.01 < 0.05)
+                        thrpt:  [-3.3779% -1.9827% -0.3370%]
+                        Change within noise threshold.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high severe
+verify_blob_kzg_proof_batch/4
+                        time:   [6.1624 ms 6.2253 ms 6.3087 ms]
+                        thrpt:  [634.04  elem/s 642.54  elem/s 649.10  elem/s]
+                 change:
+                        time:   [-1.7089% +1.8093% +5.2637%] (p = 0.31 > 0.05)
+                        thrpt:  [-5.0005% -1.7772% +1.7386%]
+                        No change in performance detected.
+Found 9 outliers among 100 measurements (9.00%)
+  2 (2.00%) high mild
+  7 (7.00%) high severe
+verify_blob_kzg_proof_batch/8
+                        time:   [9.6425 ms 9.6956 ms 9.7493 ms]
+                        thrpt:  [820.57  elem/s 825.11  elem/s 829.66  elem/s]
+                 change:
+                        time:   [+7.8208% +8.4483% +9.0134%] (p = 0.00 < 0.05)
+                        thrpt:  [-8.2682% -7.7902% -7.2535%]
+                        Performance has regressed.
+verify_blob_kzg_proof_batch/16
+                        time:   [15.113 ms 15.176 ms 15.240 ms]
+                        thrpt:  [1.0499 Kelem/s 1.0543 Kelem/s 1.0587 Kelem/s]
+                 change:
+                        time:   [+3.8505% +4.4863% +5.0403%] (p = 0.00 < 0.05)
+                        thrpt:  [-4.7985% -4.2936% -3.7077%]
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+verify_blob_kzg_proof_batch/32
+                        time:   [25.858 ms 26.039 ms 26.206 ms]
+                        thrpt:  [1.2211 Kelem/s 1.2289 Kelem/s 1.2375 Kelem/s]
+                 change:
+                        time:   [-13.816% -12.692% -11.503%] (p = 0.00 < 0.05)
+                        thrpt:  [+12.999% +14.536% +16.031%]
+                        Performance has improved.
+Found 14 outliers among 100 measurements (14.00%)
+  8 (8.00%) low severe
+  5 (5.00%) low mild
+  1 (1.00%) high severe
+verify_blob_kzg_proof_batch/64
+                        time:   [44.586 ms 44.930 ms 45.256 ms]
+                        thrpt:  [1.4142 Kelem/s 1.4244 Kelem/s 1.4354 Kelem/s]
+                 change:
+                        time:   [-5.7800% -4.1423% -2.3974%] (p = 0.00 < 0.05)
+                        thrpt:  [+2.4563% +4.3213% +6.1346%]
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  7 (7.00%) low mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark) ~~~~~~~~~~
+
+
+blob_to_kzg_commitment  time:   [5.2478 ms 5.2999 ms 5.3564 ms]
+                        change: [-78.046% -77.835% -77.563%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 19 outliers among 100 measurements (19.00%)
+  6 (6.00%) high mild
+  13 (13.00%) high severe
+
+compute_kzg_proof       time:   [6.8637 ms 6.8745 ms 6.8868 ms]
+                        change: [-75.655% -75.410% -75.164%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+verify_kzg_proof        time:   [3.4663 ms 3.4755 ms 3.4896 ms]
+                        change: [+0.2661% +1.4016% +2.3511%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+compute_blob_kzg_proof  time:   [8.0066 ms 8.0584 ms 8.1150 ms]
+                        change: [-71.467% -71.200% -70.913%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+verify_blob_kzg_proof   time:   [5.2214 ms 5.2333 ms 5.2532 ms]
+                        change: [-1.4281% -1.0923% -0.6482%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+verify_blob_kzg_proof_batch/1
+                        time:   [5.2557 ms 5.3015 ms 5.3565 ms]
+                        thrpt:  [186.69  elem/s 188.63  elem/s 190.27  elem/s]
+                 change:
+                        time:   [-2.7441% -1.8550% -0.8523%] (p = 0.00 < 0.05)
+                        thrpt:  [+0.8596% +1.8900% +2.8215%]
+                        Change within noise threshold.
+Found 17 outliers among 100 measurements (17.00%)
+  9 (9.00%) high mild
+  8 (8.00%) high severe
+verify_blob_kzg_proof_batch/2
+                        time:   [5.7771 ms 5.8240 ms 5.8727 ms]
+                        thrpt:  [340.56  elem/s 343.40  elem/s 346.19  elem/s]
+                 change:
+                        time:   [+1.1779% +2.2367% +3.2867%] (p = 0.00 < 0.05)
+                        thrpt:  [-3.1822% -2.1877% -1.1642%]
+                        Performance has regressed.
+verify_blob_kzg_proof_batch/4
+                        time:   [6.3540 ms 6.4897 ms 6.6428 ms]
+                        thrpt:  [602.15  elem/s 616.36  elem/s 629.52  elem/s]
+                 change:
+                        time:   [+1.9097% +4.2468% +6.9037%] (p = 0.00 < 0.05)
+                        thrpt:  [-6.4579% -4.0738% -1.8739%]
+                        Performance has regressed.
+Found 19 outliers among 100 measurements (19.00%)
+  2 (2.00%) high mild
+  17 (17.00%) high severe
+verify_blob_kzg_proof_batch/8
+                        time:   [8.8801 ms 8.9202 ms 8.9639 ms]
+                        thrpt:  [892.47  elem/s 896.84  elem/s 900.89  elem/s]
+                 change:
+                        time:   [-8.6155% -7.9976% -7.2933%] (p = 0.00 < 0.05)
+                        thrpt:  [+7.8671% +8.6928% +9.4278%]
+                        Performance has improved.
+Found 15 outliers among 100 measurements (15.00%)
+  10 (10.00%) high mild
+  5 (5.00%) high severe
+verify_blob_kzg_proof_batch/16
+                        time:   [14.437 ms 14.457 ms 14.480 ms]
+                        thrpt:  [1.1050 Kelem/s 1.1067 Kelem/s 1.1082 Kelem/s]
+                 change:
+                        time:   [-5.1572% -4.7341% -4.3153%] (p = 0.00 < 0.05)
+                        thrpt:  [+4.5099% +4.9694% +5.4376%]
+                        Performance has improved.
+Found 9 outliers among 100 measurements (9.00%)
+  2 (2.00%) high mild
+  7 (7.00%) high severe
+verify_blob_kzg_proof_batch/32
+                        time:   [29.444 ms 29.762 ms 30.071 ms]
+                        thrpt:  [1.0641 Kelem/s 1.0752 Kelem/s 1.0868 Kelem/s]
+                 change:
+                        time:   [+12.859% +14.299% +15.707%] (p = 0.00 < 0.05)
+                        thrpt:  [-13.575% -12.510% -11.394%]
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+verify_blob_kzg_proof_batch/64
+                        time:   [69.251 ms 69.825 ms 70.434 ms]
+                        thrpt:  [908.66  elem/s 916.57  elem/s 924.17  elem/s]
+                 change:
+                        time:   [+53.662% +55.409% +57.209%] (p = 0.00 < 0.05)
+                        thrpt:  [-36.390% -35.654% -34.922%]
+                        Performance has regressed.
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark_wlc) ~~~~~~~~~~
+
+
+blob_to_kzg_commitment  time:   [5.6612 ms 5.6776 ms 5.6966 ms]
+                        change: [+5.9514% +7.1269% +8.2407%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+
+compute_kzg_proof       time:   [6.6625 ms 6.6815 ms 6.7031 ms]
+                        change: [-3.1375% -2.8069% -2.4501%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) low mild
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+
+verify_kzg_proof        time:   [3.3504 ms 3.3813 ms 3.4242 ms]
+                        change: [-3.6946% -2.7118% -1.5300%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  3 (3.00%) high mild
+  4 (4.00%) high severe
+
+compute_blob_kzg_proof  time:   [7.4730 ms 7.5178 ms 7.5723 ms]
+                        change: [-7.6097% -6.7085% -5.8332%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) high mild
+  8 (8.00%) high severe
+
+verify_blob_kzg_proof   time:   [5.2412 ms 5.2568 ms 5.2803 ms]
+                        change: [-0.0506% +0.4475% +0.9699%] (p = 0.07 > 0.05)
+                        No change in performance detected.
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+verify_blob_kzg_proof_batch/1
+                        time:   [5.2542 ms 5.2665 ms 5.2806 ms]
+                        thrpt:  [189.37  elem/s 189.88  elem/s 190.32  elem/s]
+                 change:
+                        time:   [-1.7130% -0.6604% +0.2512%] (p = 0.21 > 0.05)
+                        thrpt:  [-0.2506% +0.6648% +1.7428%]
+                        No change in performance detected.
+Found 6 outliers among 100 measurements (6.00%)
+  1 (1.00%) high mild
+  5 (5.00%) high severe
+verify_blob_kzg_proof_batch/2
+                        time:   [5.8247 ms 5.8712 ms 5.9195 ms]
+                        thrpt:  [337.87  elem/s 340.65  elem/s 343.37  elem/s]
+                 change:
+                        time:   [-0.3397% +0.8089% +2.0245%] (p = 0.18 > 0.05)
+                        thrpt:  [-1.9843% -0.8024% +0.3408%]
+                        No change in performance detected.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+verify_blob_kzg_proof_batch/4
+                        time:   [6.3363 ms 6.4853 ms 6.6575 ms]
+                        thrpt:  [600.83  elem/s 616.78  elem/s 631.28  elem/s]
+                 change:
+                        time:   [-3.4280% -0.0677% +3.3238%] (p = 0.97 > 0.05)
+                        thrpt:  [-3.2169% +0.0677% +3.5496%]
+                        No change in performance detected.
+Found 24 outliers among 100 measurements (24.00%)
+  9 (9.00%) high mild
+  15 (15.00%) high severe
+verify_blob_kzg_proof_batch/8
+                        time:   [9.0158 ms 9.0619 ms 9.1105 ms]
+                        thrpt:  [878.11  elem/s 882.82  elem/s 887.33  elem/s]
+                 change:
+                        time:   [+0.8988% +1.5884% +2.2878%] (p = 0.00 < 0.05)
+                        thrpt:  [-2.2366% -1.5635% -0.8908%]
+                        Change within noise threshold.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+verify_blob_kzg_proof_batch/16
+                        time:   [14.562 ms 14.619 ms 14.688 ms]
+                        thrpt:  [1.0893 Kelem/s 1.0944 Kelem/s 1.0987 Kelem/s]
+                 change:
+                        time:   [+0.6781% +1.1210% +1.6918%] (p = 0.00 < 0.05)
+                        thrpt:  [-1.6637% -1.1086% -0.6736%]
+                        Change within noise threshold.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high severe
+verify_blob_kzg_proof_batch/32
+                        time:   [29.967 ms 30.223 ms 30.464 ms]
+                        thrpt:  [1.0504 Kelem/s 1.0588 Kelem/s 1.0678 Kelem/s]
+                 change:
+                        time:   [+0.2408% +1.5493% +2.9495%] (p = 0.03 < 0.05)
+                        thrpt:  [-2.8650% -1.5256% -0.2403%]
+                        Change within noise threshold.
+Found 21 outliers among 100 measurements (21.00%)
+  1 (1.00%) low severe
+  19 (19.00%) low mild
+  1 (1.00%) high mild
+verify_blob_kzg_proof_batch/64
+                        time:   [193.50 ms 195.20 ms 196.90 ms]
+                        thrpt:  [325.03  elem/s 327.87  elem/s 330.76  elem/s]
+                 change:
+                        time:   [+176.00% +179.55% +182.89%] (p = 0.00 < 0.05)
+                        thrpt:  [-64.651% -64.228% -63.769%]
+                        Performance has regressed.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '4096'
+                        time:   [13.227 ms 13.309 ms 13.395 ms]
+
+bench_g1_lincomb with precomputation points: '4096'
+                        time:   [10.819 ms 10.912 ms 11.015 ms]
+Found 7 outliers among 100 measurements (7.00%)
+  4 (4.00%) high mild
+  3 (3.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '4096'
+                        time:   [6.4552 ms 6.4964 ms 6.5382 ms]
+                        change: [-51.638% -51.189% -50.746%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '4096'
+                        time:   [20.062 ms 20.964 ms 22.095 ms]
+                        change: [+208.20% +216.09% +225.85%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high severe
+
+bench_g1_lincomb with precomputation points: '4096'
+                        time:   [15.774 ms 16.143 ms 16.603 ms]
+                        change: [+43.845% +46.483% +49.675%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (parallel) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '4096'
+                        time:   [33.247 ms 33.398 ms 33.706 ms]
+                        change: [+58.490% +63.718% +67.751%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '4096'
+                        time:   [6.9563 ms 7.1491 ms 7.2557 ms]
+                        change: [-79.625% -79.205% -78.704%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark_wlc) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '4096'
+                        time:   [15.826 ms 15.858 ms 15.892 ms]
+                        change: [+121.66% +126.41% +130.92%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '16384'
+                        time:   [42.620 ms 43.376 ms 44.174 ms]
+
+bench_g1_lincomb with precomputation points: '16384'
+                        time:   [37.455 ms 37.947 ms 38.498 ms]
+Found 11 outliers among 100 measurements (11.00%)
+  7 (7.00%) high mild
+  4 (4.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '16384'
+                        time:   [7.6064 ms 7.6365 ms 7.6734 ms]
+                        change: [-82.723% -82.395% -82.069%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 8 outliers among 100 measurements (8.00%)
+  1 (1.00%) high mild
+  7 (7.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '16384'
+                        time:   [59.046 ms 59.293 ms 59.571 ms]
+                        change: [+673.01% +679.04% +685.91%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+bench_g1_lincomb with precomputation points: '16384'
+                        time:   [55.764 ms 60.354 ms 66.266 ms]
+                        change: [+45.109% +55.375% +66.753%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (parallel) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '16384'
+                        time:   [102.56 ms 108.48 ms 115.40 ms]
+                        change: [+70.666% +80.025% +88.882%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '16384'
+                        time:   [10.512 ms 10.618 ms 10.867 ms]
+                        change: [-90.313% -89.733% -89.121%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark_wlc) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '16384'
+                        time:   [25.794 ms 25.869 ms 25.968 ms]
+                        change: [+128.88% +136.19% +143.50%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '65536'
+                        time:   [156.21 ms 156.68 ms 157.14 ms]
+Found 13 outliers among 100 measurements (13.00%)
+  5 (5.00%) low severe
+  2 (2.00%) high mild
+  6 (6.00%) high severe
+
+bench_g1_lincomb with precomputation points: '65536'
+                        time:   [145.15 ms 145.89 ms 146.57 ms]
+Found 31 outliers among 100 measurements (31.00%)
+  14 (14.00%) low severe
+  8 (8.00%) high mild
+  9 (9.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '65536'
+                        time:   [13.907 ms 14.104 ms 14.305 ms]
+                        change: [-91.124% -90.998% -90.862%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '65536'
+                        time:   [227.35 ms 229.40 ms 231.39 ms]
+                        change: [+1499.3% +1526.4% +1553.1%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+bench_g1_lincomb with precomputation points: '65536'
+                        time:   [210.07 ms 212.42 ms 214.19 ms]
+                        change: [+43.782% +45.602% +46.977%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) low mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (parallel) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '65536'
+                        time:   [388.27 ms 395.30 ms 402.68 ms]
+                        change: [+68.932% +72.318% +75.887%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '65536'
+                        time:   [23.744 ms 24.531 ms 25.115 ms]
+                        change: [-94.061% -93.913% -93.761%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark_wlc) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '65536'
+                        time:   [57.978 ms 58.217 ms 58.427 ms]
+                        change: [+137.52% +142.52% +147.43%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '262144'
+                        time:   [545.98 ms 551.53 ms 557.46 ms]
+Found 12 outliers among 100 measurements (12.00%)
+  8 (8.00%) high mild
+  4 (4.00%) high severe
+
+bench_g1_lincomb with precomputation points: '262144'
+                        time:   [511.67 ms 516.60 ms 521.86 ms]
+Found 8 outliers among 100 measurements (8.00%)
+  7 (7.00%) high mild
+  1 (1.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '262144'
+                        time:   [41.162 ms 41.890 ms 42.661 ms]
+                        change: [-92.544% -92.405% -92.230%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '262144'
+                        time:   [760.96 ms 782.72 ms 807.48 ms]
+                        change: [+1705.9% +1768.5% +1834.8%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+bench_g1_lincomb with precomputation points: '262144'
+                        time:   [713.04 ms 742.53 ms 774.25 ms]
+                        change: [+38.127% +43.734% +50.204%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (parallel) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '262144'
+                        time:   [1.3948 s 1.4180 s 1.4453 s]
+                        change: [+74.766% +81.160% +87.541%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 2 outliers among 10 measurements (20.00%)
+  2 (20.00%) high mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '262144'
+                        time:   [77.837 ms 78.031 ms 78.483 ms]
+                        change: [-94.542% -94.387% -94.228%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high mild
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks3 backend (sppark_wlc) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '262144'
+                        time:   [193.00 ms 194.19 ms 195.44 ms]
+                        change: [+138.06% +144.00% +149.15%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '1048576'
+                        time:   [2.0083 s 2.0276 s 2.0480 s]
+Found 8 outliers among 100 measurements (8.00%)
+  8 (8.00%) high mild
+
+bench_g1_lincomb with precomputation points: '1048576'
+                        time:   [1.9299 s 1.9484 s 1.9679 s]
+
+
+
+
+~~~~~~~~~~ rust-kzg with blst backend (sppark) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '1048576'
+                        time:   [115.45 ms 116.75 ms 118.25 ms]
+                        change: [-94.329% -94.242% -94.156%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 14 outliers among 100 measurements (14.00%)
+  5 (5.00%) high mild
+  9 (9.00%) high severe
+
+
+
+
+~~~~~~~~~~ rust-kzg with arkworks backend (parallel, bgmw) ~~~~~~~~~~
+
+
+bench_g1_lincomb points: '1048576'
+                        time:   [2.7898 s 2.8637 s 2.9577 s]
+                        change: [+2280.0% +2352.8% +2437.0%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 2 outliers among 10 measurements (20.00%)
+  2 (20.00%) high severe
+

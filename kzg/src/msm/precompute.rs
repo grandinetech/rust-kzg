@@ -4,14 +4,22 @@ use alloc::string::String;
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1};
 
-#[cfg(all(feature = "bgmw", any(not(feature = "arkmsm"), feature = "parallel")))]
+#[cfg(any(
+    all(feature = "arkmsm", feature = "bgmw"),
+    all(feature = "arkmsm", feature = "sppark"),
+    all(feature = "bgmw", feature = "sppark")
+))]
+compile_error!("incompatible features, please select only one: `arkmsm`, `bgmw` or `sppark`");
+
+#[cfg(feature = "bgmw")]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
     super::bgmw::BgmwTable<TFr, TG1, TG1Fp, TG1Affine>;
 
-#[cfg(any(
-    not(feature = "bgmw"),
-    all(feature = "arkmsm", not(feature = "parallel"))
-))]
+#[cfg(feature = "sppark")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> =
+    super::sppark::SpparkPrecomputation<TFr, TG1, TG1Fp, TG1Affine>;
+
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark")))]
 #[derive(Debug, Clone)]
 pub struct EmptyTable<TFr, TG1, TG1Fp, TG1Affine>
 where
@@ -26,10 +34,7 @@ where
     g1_affine_marker: core::marker::PhantomData<TG1Affine>,
 }
 
-#[cfg(any(
-    not(feature = "bgmw"),
-    all(feature = "arkmsm", not(feature = "parallel"))
-))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark")))]
 impl<TFr, TG1, TG1Fp, TG1Affine> EmptyTable<TFr, TG1, TG1Fp, TG1Affine>
 where
     TFr: Fr,
@@ -41,20 +46,17 @@ where
         Ok(None)
     }
 
-    pub fn multiply_sequential(&self, _: &[crate::Scalar256]) -> TG1 {
+    pub fn multiply_sequential(&self, _: &[TFr]) -> TG1 {
         panic!("This function must not be called")
     }
 
     #[cfg(feature = "parallel")]
-    pub fn multiply_parallel(&self, _: &[crate::Scalar256]) -> TG1 {
+    pub fn multiply_parallel(&self, _: &[TFr]) -> TG1 {
         panic!("This function must not be called")
     }
 }
 
-#[cfg(any(
-    not(feature = "bgmw"),
-    all(feature = "arkmsm", not(feature = "parallel"))
-))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark")))]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> = EmptyTable<TFr, TG1, TG1Fp, TG1Affine>;
 
 pub fn precompute<TFr, TG1, TG1Fp, TG1Affine>(

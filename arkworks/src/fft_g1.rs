@@ -11,6 +11,8 @@ use kzg::{Fr as KzgFr, G1Mul};
 use kzg::{FFTG1, G1};
 use std::ops::MulAssign;
 
+extern crate alloc;
+
 pub fn g1_linear_combination(
     out: &mut ArkG1,
     points: &[ArkG1],
