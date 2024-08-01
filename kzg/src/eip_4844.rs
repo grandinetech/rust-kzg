@@ -10,9 +10,11 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 pub use blst::{blst_fr, blst_p1, blst_p2};
+use core::cell;
 use core::ffi::c_uint;
 use core::hash::Hash;
 use core::hash::Hasher;
+use core::primitive;
 use sha2::{Digest, Sha256};
 use siphasher::sip::SipHasher;
 
@@ -56,6 +58,14 @@ pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16] = [
 pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
     82, 67, 75, 90, 71, 66, 65, 84, 67, 72, 95, 95, 95, 86, 49, 95,
 ]; // "RCKZGBATCH___V1_"
+
+////////////////////////////// Constant values for EIP-7594 //////////////////////////////
+pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 2 * FIELD_ELEMENTS_PER_BLOB;
+pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
+pub const BYTES_PER_CELL: usize = FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT;
+pub const CELLS_PER_EXT_BLOB: usize = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
+pub const RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN: [u8; 32] = [82, 67, 95, 86, 69, 82, 73, 70, 89, 95, 67, 69, 76, 76, 95, 75,
+90, 71, 95, 80, 82, 79, 79, 70, 95, 66, 65, 84, 67, 72, 95, 86,]; // "b'RCKZGCBATCH__V1_'"
 
 ////////////////////////////// C API for EIP-4844 //////////////////////////////
 
@@ -102,6 +112,10 @@ pub struct CKZGSettings {
     pub roots_of_unity: *mut blst_fr,
     pub g1_values: *mut blst_p1,
     pub g2_values: *mut blst_p2,
+}
+
+pub struct Cell {
+    bytes: [u8; BYTES_PER_CELL],
 }
 
 pub struct PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
@@ -308,6 +322,27 @@ pub fn compute_powers<TFr: Fr>(base: &TFr, num_powers: usize) -> Vec<TFr> {
         powers[i] = powers[i - 1].mul(base);
     }
     powers
+}
+
+pub fn compute_roots_of_unity<TFr: Fr>(order: usize) -> Vec<TFr> {
+    let bls_modulus: [u8; BYTES_PER_FIELD_ELEMENT] = [
+        0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
+        0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
+        0x00, 0x01,
+    ];
+    // Convert the BLS modulus to a field element type TFr
+    let bls_modulus_elem = TFr::from_bytes(&bls_modulus).unwrap();
+
+    // Ensure order divides (MODULUS - 1)
+    assert_eq!((bls_modulus_elem - TFr::one()) % TFr::from(order as u64), TFr::zero(), "Order must divide MODULUS - 1");
+
+    // Compute the primitive root of unity
+    let primitive_root: TFr = TFr::from(7u64);
+    let exponent = (bls_modulus_elem - TFr::one()) / TFr::from(order as u64);
+    let root_of_unity = primitive_root.pow(exponent);
+
+    // Compute powers
+    compute_powers(&root_of_unity, order)
 }
 
 fn compute_r_powers<TG1: G1, TFr: Fr>(
@@ -711,6 +746,47 @@ pub fn verify_blob_kzg_proof_batch_rust<
         )
     }
 }
+
+// pub fn compute_cells_and_kzg_proofs_rust< 
+//     TFr: Fr + Copy,
+//     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+//     TG2: G2,
+//     TFFTSettings: FFTSettings<TFr>,
+//     TPoly: Poly<TFr>,
+//     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+//     TG1Fp: G1Fp,
+//     TG1Affine: G1Affine<TG1, TG1Fp,>
+// >( 
+//         blob: &[TFr],
+//         kzg_settings: &TKZGSettings,
+// ) -> Result<(Vec<Cell>, Vec<KZGProof>), String> {
+//         let mut cells = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+//         let mut proofs = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+
+//         let polynomial = blob_to_polynomial(blob)?;
+
+//         for i in 0..CELLS_PER_EXT_BLOB {
+//             let z = compute_cell_evaulation_point(i)?;
+//             let (proof, y) = compute_kzg_proof_for_cell(&polynomial, &z, kzg_settings)?;
+
+//             let cell = Cell::new(y);
+//             let kzg_proof = KZGProof::new(proof);
+
+//             cells.push(cell);
+//             proofs.push(kzg_proof);
+//         }
+
+//     Ok((cells, proofs))
+// }
+
+fn compute_cell_evaulation_point<TFr: Fr>(cell_index: usize) -> Result<TFr, String> {
+    if cell_index >= CELLS_PER_EXT_BLOB {
+        return Err("Cell index out of range".to_string());
+        let primitive_root = TFr::from_u64(5);
+        Ok(primitive_root.pow(cell_index + 1))
+    }
+}
+
 
 #[allow(clippy::useless_conversion)]
 pub fn bytes_to_blob<TFr: Fr>(bytes: &[u8]) -> Result<Vec<TFr>, String> {
