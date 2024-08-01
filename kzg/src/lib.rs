@@ -8,8 +8,12 @@ use core::fmt::Debug;
 use msm::precompute::PrecomputationTable;
 
 pub mod common_utils;
+mod das;
 pub mod eip_4844;
+pub mod eth;
 pub mod msm;
+
+pub use das::{EcBackend, DAS};
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
@@ -382,7 +386,7 @@ pub trait FFTG1<Coeff: G1> {
     fn fft_g1(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
-pub trait DAS<Coeff: Fr> {
+pub trait DASExtension<Coeff: Fr> {
     fn das_fft_extension(&self, evens: &[Coeff]) -> Result<Vec<Coeff>, String>;
 }
 
@@ -423,10 +427,6 @@ pub trait FFTSettings<Coeff: Fr>: Default + Clone {
 
     fn get_max_width(&self) -> usize;
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff;
-
-    fn get_expanded_roots_of_unity(&self) -> &[Coeff];
-
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
@@ -434,6 +434,10 @@ pub trait FFTSettings<Coeff: Fr>: Default + Clone {
     fn get_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_roots_of_unity(&self) -> &[Coeff];
+
+    fn get_brp_roots_of_unity(&self) -> &[Coeff];
+
+    fn get_brp_roots_of_unity_at(&self, i: usize) -> Coeff;
 }
 
 pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
@@ -511,10 +515,11 @@ pub trait KZGSettings<
 >: Default + Clone
 {
     fn new(
-        secret_g1: &[Coeff2],
-        secret_g2: &[Coeff3],
-        length: usize,
+        g1_monomial: &[Coeff2],
+        g1_lagrange_brp: &[Coeff2],
+        g2_monomial: &[Coeff3],
         fs: &Fs,
+        cell_size: usize,
     ) -> Result<Self, String>;
 
     fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
@@ -540,17 +545,21 @@ pub trait KZGSettings<
         n: usize,
     ) -> Result<bool, String>;
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
-
     fn get_roots_of_unity_at(&self, i: usize) -> Coeff1;
 
     fn get_fft_settings(&self) -> &Fs;
 
-    fn get_g1_secret(&self) -> &[Coeff2];
+    fn get_g1_monomial(&self) -> &[Coeff2];
 
-    fn get_g2_secret(&self) -> &[Coeff3];
+    fn get_g1_lagrange_brp(&self) -> &[Coeff2];
+
+    fn get_g2_monomial(&self) -> &[Coeff3];
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<Coeff1, Coeff2, TG1Fp, TG1Affine>>;
+
+    fn get_x_ext_fft_column(&self, index: usize) -> &[Coeff2];
+
+    fn get_cell_size(&self) -> usize;
 }
 
 pub trait FK20SingleSettings<

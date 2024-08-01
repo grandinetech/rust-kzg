@@ -16,20 +16,8 @@ pub fn compare_ft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<T
     let mut fast = vec![TG1::default(); data.len()];
     let mut slow = vec![TG1::default(); data.len()];
 
-    fft_g1_fast(
-        &mut fast,
-        &data,
-        1,
-        fs.get_expanded_roots_of_unity(),
-        stride,
-    );
-    fft_g1_slow(
-        &mut slow,
-        &data,
-        1,
-        fs.get_expanded_roots_of_unity(),
-        stride,
-    );
+    fft_g1_fast(&mut fast, &data, 1, fs.get_roots_of_unity(), stride);
+    fft_g1_slow(&mut slow, &data, 1, fs.get_roots_of_unity(), stride);
 
     for i in 0..fs.get_max_width() {
         assert!(fast[i].equals(&slow[i]));
@@ -89,8 +77,8 @@ pub fn stride_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<TG1>>
 
 #[allow(clippy::type_complexity)]
 pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
-    fft_g1_slow: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize, usize),
-    fft_g1_fast: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize, usize),
+    fft_g1_slow: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize),
+    fft_g1_fast: &dyn Fn(&mut [TG1], &[TG1], usize, &[TFr], usize),
     make_data: &dyn Fn(usize) -> Vec<TG1>,
 ) {
     let size: usize = 6;
@@ -99,22 +87,8 @@ pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<
     let mut fast = vec![TG1::default(); fft_settings.get_max_width()];
     let data = make_data(fft_settings.get_max_width());
 
-    fft_g1_slow(
-        &mut slow,
-        &data,
-        1,
-        fft_settings.get_expanded_roots_of_unity(),
-        1,
-        fft_settings.get_max_width(),
-    );
-    fft_g1_fast(
-        &mut fast,
-        &data,
-        1,
-        fft_settings.get_expanded_roots_of_unity(),
-        1,
-        fft_settings.get_max_width(),
-    );
+    fft_g1_slow(&mut slow, &data, 1, fft_settings.get_roots_of_unity(), 1);
+    fft_g1_fast(&mut fast, &data, 1, fft_settings.get_roots_of_unity(), 1);
 
     for i in 0..fft_settings.get_max_width() {
         assert!(slow[i].equals(&fast[i]));
