@@ -1,7 +1,7 @@
-use kzg::{FFTFr, FFTSettings, Fr, DAS};
+use kzg::{DASExtension, FFTFr, FFTSettings, Fr};
 
 /// Check if DAS FFT creates odds that match precomputed values
-pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TFr>>() {
+pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DASExtension<TFr>>() {
     #[rustfmt::skip]
     let expected_u: [[u64; 4]; 8] = [
         [0xa0c43757db972d7d, 0x79d15a1e0677962c, 0xf678865c0c95fa6a, 0x4e85fd4814f96825, ],
@@ -35,7 +35,7 @@ pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DAS<TF
 
 pub fn das_extension_test_random<
     TFr: Fr,
-    TFFTSettings: FFTSettings<TFr> + DAS<TFr> + FFTFr<TFr>,
+    TFFTSettings: FFTSettings<TFr> + DASExtension<TFr> + FFTFr<TFr>,
 >() {
     let max_scale: usize = 15;
 
