@@ -40,7 +40,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, 
 
         let mut x = Vec::with_capacity(n);
         for i in 0..n - 1 {
-            x.push(kzg_settings.secret_g1[n - 2 - i]);
+            x.push(kzg_settings.g1_values_lagrange_brp[n - 2 - i]);
         }
         x.push(FsG1::identity());
 
