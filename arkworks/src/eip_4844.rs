@@ -10,7 +10,7 @@ use kzg::eip_4844::{
     verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
     PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET,
     C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
-    TRUSTED_SETUP_NUM_G2_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS, BYTES_PER_BLOB,
 };
 use kzg::{cfg_into_iter, Fr, G1};
 use std::ptr::null_mut;
@@ -422,4 +422,19 @@ pub unsafe extern "C" fn compute_kzg_proof(
     (*proof_out).bytes = proof_out_tmp.to_bytes();
     (*y_out).bytes = fry_tmp.to_bytes();
     C_KZG_RET_OK
+}
+
+
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn compute_cells_and_kzg_proofs(
+    cells: *mut Cell,
+    proofs: *mut KZGProof,
+    blob: *const Blob,
+    s: &CKZGSettings,
+) -> CKZGSettings {
+    // Check for null pointers
+    if cells.is_null() || proofs.is_null() || blob.is_null() || s.is_null() {
+        return C_KZG_RET_BADARGS;
+    }
 }

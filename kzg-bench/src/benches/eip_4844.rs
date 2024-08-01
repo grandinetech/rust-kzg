@@ -24,6 +24,7 @@ pub fn bench_eip_4844<
     compute_kzg_proof: &dyn Fn(&[TFr], &TFr, &TKZGSettings) -> Result<(TG1, TFr), String>,
     verify_kzg_proof: &dyn Fn(&TG1, &TFr, &TFr, &TG1, &TKZGSettings) -> Result<bool, String>,
     compute_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TKZGSettings) -> Result<TG1, String>,
+    compute_cells_and_kzg_proofs: &dyn Fn(&[u8], &TKZGSettings) -> Result<(Vec<Vec<TFr>>, Vec<TG1>), String>,
     verify_blob_kzg_proof: &dyn Fn(&[TFr], &TG1, &TG1, &TKZGSettings) -> Result<bool, String>,
     verify_blob_kzg_proof_batch: &dyn Fn(
         &[Vec<TFr>],
@@ -98,6 +99,11 @@ pub fn bench_eip_4844<
             )
             .unwrap()
         })
+    });
+
+    c.bench_function("compute_cells_and_kzg_proofs", |b| {
+        let blob_bytes = generate_random_blob_bytes(&mut rng);
+        b.iter(|| compute_cells_and_kzg_proofs(&blob_bytes, &ts))
     });
 
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
