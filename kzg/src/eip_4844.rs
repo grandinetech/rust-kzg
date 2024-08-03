@@ -8,13 +8,14 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
-
+use std::ops::{Sub, Rem, Div};
+use std::fmt::Debug;
 pub use blst::{blst_fr, blst_p1, blst_p2};
-use core::cell;
+// use core::cell;
 use core::ffi::c_uint;
 use core::hash::Hash;
 use core::hash::Hasher;
-use core::primitive;
+// use core::primitive;
 use sha2::{Digest, Sha256};
 use siphasher::sip::SipHasher;
 
@@ -324,7 +325,7 @@ pub fn compute_powers<TFr: Fr>(base: &TFr, num_powers: usize) -> Vec<TFr> {
     powers
 }
 
-pub fn compute_roots_of_unity<TFr: Fr>(order: usize) -> Vec<TFr> {
+pub fn compute_roots_of_unity<TFr: Fr + Sub<Output = TFr> + Rem<Output = TFr> + Debug + Div<Output = usize>>(order: usize) -> Vec<TFr> {
     let bls_modulus: [u8; BYTES_PER_FIELD_ELEMENT] = [
         0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
         0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
@@ -334,11 +335,11 @@ pub fn compute_roots_of_unity<TFr: Fr>(order: usize) -> Vec<TFr> {
     let bls_modulus_elem = TFr::from_bytes(&bls_modulus).unwrap();
 
     // Ensure order divides (MODULUS - 1)
-    assert_eq!((bls_modulus_elem - TFr::one()) % TFr::from(order as u64), TFr::zero(), "Order must divide MODULUS - 1");
+    assert_eq!((bls_modulus_elem - TFr::one()) % TFr::from_u64(order as u64), TFr::zero(), "Order must divide MODULUS - 1");
 
     // Compute the primitive root of unity
-    let primitive_root: TFr = TFr::from(7u64);
-    let exponent = (bls_modulus_elem - TFr::one()) / TFr::from(order as u64);
+    let primitive_root: TFr = TFr::from_u64(7u64);
+    let exponent = (bls_modulus_elem - TFr::one()) / TFr::from_u64(order.try_into().unwrap());
     let root_of_unity = primitive_root.pow(exponent);
 
     // Compute powers
