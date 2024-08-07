@@ -40,6 +40,11 @@ pub const BYTES_PER_BLOB: usize = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_B
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_COMMITMENT: usize = 48;
+pub const BLS_MODULUS: [u8; BYTES_PER_FIELD_ELEMENT] = [
+    0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
+    0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
+    0x00, 0x01,
+];
 
 pub const TRUSTED_SETUP_PATH: &str = "src/trusted_setup.txt";
 
@@ -335,27 +340,6 @@ pub fn compute_powers<TFr: Fr>(base: &TFr, num_powers: usize) -> Vec<TFr> {
         powers[i] = powers[i - 1].mul(base);
     }
     powers
-}
-
-pub fn compute_roots_of_unity<TFr: Fr + Sub<Output = TFr> + Rem<Output = TFr> + Debug + Div<Output = usize>>(order: usize) -> Vec<TFr> {
-    let bls_modulus: [u8; BYTES_PER_FIELD_ELEMENT] = [
-        0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
-        0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
-        0x00, 0x01,
-    ];
-    // Convert the BLS modulus to a field element type TFr
-    let bls_modulus_elem = TFr::from_bytes(&bls_modulus).unwrap();
-
-    // Ensure order divides (MODULUS - 1)
-    assert_eq!((bls_modulus_elem - TFr::one()) % TFr::from_u64(order as u64), TFr::zero(), "Order must divide MODULUS - 1");
-
-    // Compute the primitive root of unity
-    let primitive_root: TFr = TFr::from_u64(7u64);
-    let exponent = (bls_modulus_elem - TFr::one()) / TFr::from_u64(order.try_into().unwrap());
-    let root_of_unity = primitive_root.pow(exponent);
-
-    // Compute powers
-    compute_powers(&root_of_unity, order)
 }
 
 fn compute_r_powers<TG1: G1, TFr: Fr>(
@@ -1002,4 +986,53 @@ pub fn load_trusted_setup_rust<
     let fs = TFFTSettings::new(max_scale)?;
     reverse_bit_order(&mut g1_values)?;
     TKZGSettings::new(g1_values.as_slice(), g2_values.as_slice(), max_scale, &fs)
+}
+
+////////////////////////////// Trait based implementations of functions for EIP-7594 //////////////////////////////
+
+pub fn compute_roots_of_unity<TFr: Fr + Sub<Output = TFr> + Rem<Output = TFr> + Debug + Div<Output = usize>>(order: usize) -> Vec<TFr> {
+    let bls_modulus: [u8; BYTES_PER_FIELD_ELEMENT] = [
+        0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
+        0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
+        0x00, 0x01,
+    ];
+    // Convert the BLS modulus to a field element type TFr
+    let bls_modulus_elem = TFr::from_bytes(&bls_modulus).unwrap();
+
+    // Ensure order divides (MODULUS - 1)
+    assert_eq!((bls_modulus_elem - TFr::one()) % TFr::from_u64(order as u64), TFr::zero(), "Order must divide MODULUS - 1");
+
+    // Compute the primitive root of unity
+    let primitive_root: TFr = TFr::from_u64(7u64);
+    let exponent = (bls_modulus_elem - TFr::one()) / TFr::from_u64(order.try_into().unwrap());
+    let root_of_unity = primitive_root.pow(exponent);
+
+    // Compute powers
+    compute_powers(&root_of_unity, order)
+}
+
+fn _fft_field<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + PairingVerify<TG1, TG2>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(vals: &[TFr], roots_of_unity: &[TFr]) -> Vec<TFr> {
+    if vals.len() == 1 {
+        return vals.to_vec();
+    }
+    let l = _fft_field(&vals.iter().step_by(2).cloned().collect::<Vec<_>>(), &roots_of_unity.iter().step_by(2).cloned().collect::<Vec<_>>());
+    let r = _fft_field(&vals.iter().skip(1).step_by(2).cloned().collect::<Vec<_>>(), &roots_of_unity.iter().step_by(2).cloned().collect::<Vec<_>>());
+    let mut o = vec![TFr::zero(); vals.len()];
+
+    for i in 0..l.len() {
+        let modulus_as_tfr = TFr::from_bytes(&BLS_MODULUS).expect("Invalid modulus bytes");
+        let y_times_root = (r[i].mul(&roots_of_unity[i])).modulo(BLS_MODULUS);
+        o[i] = (l[i].add(&y_times_root)).modulo(BLS_MODULUS);
+        o[i.add(l.len())] = (l[i].sub(&y_times_root).add(&modulus_as_tfr)).modulo(BLS_MODULUS);
+    }
+    o
 }
