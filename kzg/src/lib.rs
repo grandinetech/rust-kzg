@@ -68,6 +68,8 @@ pub trait Fr: Default + Clone + PartialEq + Sync {
     }
 
     fn to_scalar(&self) -> Scalar256;
+
+    fn modulo(&self, modulus: [u8; 32]) -> Self;
 }
 
 pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {
