@@ -744,38 +744,6 @@ pub fn verify_blob_kzg_proof_batch_rust<
     }
 }
 
-// pub fn compute_cells_and_kzg_proofs_rust< 
-//     TFr: Fr + Copy,
-//     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
-//     TG2: G2,
-//     TFFTSettings: FFTSettings<TFr>,
-//     TPoly: Poly<TFr>,
-//     TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-//     TG1Fp: G1Fp,
-//     TG1Affine: G1Affine<TG1, TG1Fp,>
-// >( 
-//         blob: &[TFr],
-//         kzg_settings: &TKZGSettings,
-// ) -> Result<(Vec<Cell>, Vec<KZGProof>), String> {
-//         let mut cells = Vec::with_capacity(CELLS_PER_EXT_BLOB);
-//         let mut proofs = Vec::with_capacity(CELLS_PER_EXT_BLOB);
-
-//         let polynomial = blob_to_polynomial(blob)?;
-
-//         for i in 0..CELLS_PER_EXT_BLOB {
-//             let z = compute_cell_evaulation_point(i)?;
-//             let (proof, y) = compute_kzg_proof_for_cell(&polynomial, &z, kzg_settings)?;
-
-//             let cell = Cell::new(y);
-//             let kzg_proof = KZGProof::new(proof);
-
-//             cells.push(cell);
-//             proofs.push(kzg_proof);
-//         }
-
-//     Ok((cells, proofs))
-// }
-
 fn compute_cell_evaulation_point<TFr: Fr>(cell_index: usize) -> Result<TFr, String> {
     if cell_index >= CELLS_PER_EXT_BLOB {
         return Err("Cell index out of range".to_string());
@@ -990,21 +958,16 @@ pub fn load_trusted_setup_rust<
 
 ////////////////////////////// Trait based implementations of functions for EIP-7594 //////////////////////////////
 
-pub fn compute_roots_of_unity<TFr: Fr + Sub<Output = TFr> + Rem<Output = TFr> + Debug + Div<Output = usize>>(order: usize) -> Vec<TFr> {
-    let bls_modulus: [u8; BYTES_PER_FIELD_ELEMENT] = [
-        0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
-        0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
-        0x00, 0x01,
-    ];
+pub fn compute_roots_of_unity<TFr: Fr>(order: usize) -> Vec<TFr> {
     // Convert the BLS modulus to a field element type TFr
-    let bls_modulus_elem = TFr::from_bytes(&bls_modulus).unwrap();
+    let bls_modulus_elem = TFr::from_bytes(&BLS_MODULUS).unwrap();
 
     // Ensure order divides (MODULUS - 1)
-    assert_eq!((bls_modulus_elem - TFr::one()) % TFr::from_u64(order as u64), TFr::zero(), "Order must divide MODULUS - 1");
+    assert_eq!((bls_modulus_elem).sub(&TFr::one()).modulo(&TFr::from_u64(order as u64)), TFr::zero(), "Order must divide MODULUS - 1");
 
     // Compute the primitive root of unity
     let primitive_root: TFr = TFr::from_u64(7u64);
-    let exponent = (bls_modulus_elem - TFr::one()) / TFr::from_u64(order.try_into().unwrap());
+    let exponent = bls_modulus_elem.sub(TFr::one().div(&TFr::from_u64(order.try_into().unwrap())));
     let root_of_unity = primitive_root.pow(exponent);
 
     // Compute powers
