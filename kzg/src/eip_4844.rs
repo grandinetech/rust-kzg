@@ -8,24 +8,25 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
-use std::ops::{Sub, Rem, Div};
-use std::fmt::Debug;
+use sha2::digest::generic_array::sequence;
+use core::cell;
+use core::result;
 pub use blst::{blst_fr, blst_p1, blst_p2};
-// use core::cell;
 use core::ffi::c_uint;
 use core::hash::Hash;
 use core::hash::Hasher;
-// use core::primitive;
 use sha2::{Digest, Sha256};
 use siphasher::sip::SipHasher;
-
+use kzg::{FFTFr, Fr};
 use crate::common_utils::reverse_bit_order;
 use crate::msm::precompute::PrecomputationTable;
+use crate::FFTFr;
 use crate::G1Affine;
 use crate::G1Fp;
 use crate::G1GetFp;
 use crate::G1LinComb;
 use crate::{FFTSettings, Fr, G1Mul, KZGSettings, PairingVerify, Poly, G1, G2};
+use crate::fk20_proof::{KzgFK20SingleSettings, KzgFK20MultiSettings, FK20SingleSettings, FK20MultiSettings, fk20_single_da_opt, fk20_multi_da_opt};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -40,11 +41,6 @@ pub const BYTES_PER_BLOB: usize = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_B
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_COMMITMENT: usize = 48;
-pub const BLS_MODULUS: [u8; BYTES_PER_FIELD_ELEMENT] = [
-    0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
-    0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
-    0x00, 0x01,
-];
 
 pub const TRUSTED_SETUP_PATH: &str = "src/trusted_setup.txt";
 
@@ -120,9 +116,13 @@ pub struct CKZGSettings {
     pub g2_values: *mut blst_p2,
 }
 
+#[repr(C)]
 pub struct Cell {
     bytes: [u8; BYTES_PER_CELL],
 }
+
+#[repr(C)]
+pub struct CellIndex(u64);
 
 pub struct PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
 where
@@ -744,14 +744,6 @@ pub fn verify_blob_kzg_proof_batch_rust<
     }
 }
 
-fn compute_cell_evaulation_point<TFr: Fr>(cell_index: usize) -> Result<TFr, String> {
-    if cell_index >= CELLS_PER_EXT_BLOB {
-        return Err("Cell index out of range".to_string());
-        let primitive_root = TFr::from_u64(5);
-        Ok(primitive_root.pow(cell_index + 1))
-    }
-}
-
 
 #[allow(clippy::useless_conversion)]
 pub fn bytes_to_blob<TFr: Fr>(bytes: &[u8]) -> Result<Vec<TFr>, String> {
@@ -958,44 +950,105 @@ pub fn load_trusted_setup_rust<
 
 ////////////////////////////// Trait based implementations of functions for EIP-7594 //////////////////////////////
 
-pub fn compute_roots_of_unity<TFr: Fr>(order: usize) -> Vec<TFr> {
-    // Convert the BLS modulus to a field element type TFr
-    let bls_modulus_elem = TFr::from_bytes(&BLS_MODULUS).unwrap();
 
-    // Ensure order divides (MODULUS - 1)
-    assert_eq!((bls_modulus_elem).sub(&TFr::one()).modulo(&TFr::from_u64(order as u64)), TFr::zero(), "Order must divide MODULUS - 1");
+// This code is a function that processes a "blob" of data to produce two main outputs: cells and proofs. Here's a simplified explanation:
 
-    // Compute the primitive root of unity
-    let primitive_root: TFr = TFr::from_u64(7u64);
-    let exponent = bls_modulus_elem.sub(TFr::one().div(&TFr::from_u64(order.try_into().unwrap())));
-    let root_of_unity = primitive_root.pow(exponent);
+// Purpose: It takes a large piece of data (blob) and breaks it down into smaller pieces (cells) and creates mathematical proofs for each cell.
+// Inputs:
 
-    // Compute powers
-    compute_powers(&root_of_unity, order)
-}
+// A blob of data
+// Some pre-computed settings (KZGSettings)
 
-fn _fft_field<
-    TFr: Fr,
+
+// Outputs:
+
+// An array of cells (smaller pieces of the original data)
+// An array of proofs (one for each cell)
+
+
+// Main steps:
+
+// Convert the blob into a mathematical representation (polynomial)
+// If cells are requested:
+
+// Transform the polynomial to get data points
+// Rearrange these points
+// Convert the points into the cell format
+
+
+// If proofs are requested:
+
+// Compute proofs using the polynomial
+// Rearrange the proofs
+// Convert the proofs into the desired format
+
+
+
+// **********************
+// Key features:
+
+// It can compute cells, proofs, or both
+// It uses several mathematical operations (FFT, polynomial transformations)
+// It includes error checking and memory management
+
+
+// Usage: This function is likely part of a larger system dealing with data integrity or cryptographic operations, possibly related to blockchain or distributed systems.
+
+// The code is complex and uses advanced mathematical concepts, but its core purpose is to process a large piece of data into smaller, verifiable pieces with associated proofs.
+
+pub fn compute_cells_and_kzg_proofs_rust<
+    TFr: Fr, 
+    TPoly: Poly<TFr>,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + PairingVerify<TG1, TG2>,
     TG2: G2,
-    TFFTSettings: FFTSettings<TFr>,
-    TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
->(vals: &[TFr], roots_of_unity: &[TFr]) -> Vec<TFr> {
-    if vals.len() == 1 {
-        return vals.to_vec();
+    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+>(
+    blob: &[TFr],
+    s: &TKZGSettings,
+) -> Result<
+(
+    Vec<Cell>, 
+    Vec<KZGProof>
+), String>{
+    // Ensure blob length is equal to Bytes per blob
+    if blob.len() != BYTES_PER_BLOB {
+        return Err(String::from("Blob length must be BYTES_PER_BLOB"));
     }
-    let l = _fft_field(&vals.iter().step_by(2).cloned().collect::<Vec<_>>(), &roots_of_unity.iter().step_by(2).cloned().collect::<Vec<_>>());
-    let r = _fft_field(&vals.iter().skip(1).step_by(2).cloned().collect::<Vec<_>>(), &roots_of_unity.iter().step_by(2).cloned().collect::<Vec<_>>());
-    let mut o = vec![TFr::zero(); vals.len()];
+    // Convert the blob to a polynomial.
+    polynomial = blob_to_polynomial(blob)?;
 
-    for i in 0..l.len() {
-        let modulus_as_tfr = TFr::from_bytes(&BLS_MODULUS).expect("Invalid modulus bytes");
-        let y_times_root = (r[i].mul(&roots_of_unity[i])).modulo(BLS_MODULUS);
-        o[i] = (l[i].add(&y_times_root)).modulo(BLS_MODULUS);
-        o[i.add(l.len())] = (l[i].sub(&y_times_root).add(&modulus_as_tfr)).modulo(BLS_MODULUS);
+    // Allocate arrays to hold cells and proofs
+    let mut cells = vec![TFr::default(); CELLS_PER_EXT_BLOB];
+    let mut proofs = vec![TFr::default(); CELLS_PER_EXT_BLOB];
+
+    // Compute cells
+    let mut data_fr = vec![TFr::zero(); FIELD_ELEMENTS_PER_EXT_BLOB];
+
+    // Perform FFT on the polynomial
+    data_fr = s.get_fft_settings().fft_fr(&polynomial.get_coeffs(), false)?;
+
+    // Perform bit reversal permutation
+    bit_reversal_permutation(&mut data_fr)?;
+    
+    // Covert field elements to cell bytes
+    for (i, cell) in cells.iter_mut().enumerate() {
+        for j in 0..FIELD_ELEMENTS_PER_CELL {
+            let index = i * FIELD_ELEMENTS_PER_CELL + j;
+            let fr_bytes = data_fr[index].to_bytes();
+            cell.bytes[j * BYTES_PER_FIELD_ELEMENT..(j+1) * BYTES_PER_FIELD_ELEMENT].copy_from_slice(&fr_bytes);
+        }
     }
-    o
+
+    // Compute proofs
+    let mut proofs_g1 = vec![TG1::identity(); CELLS_PER_EXT_BLOB];
+    compute_fk20_proofs(&mut proofs_g1, &polynomial, FIELD_ELEMENTS_PER_BLOB, s);
+    bit_reversal_permutation(&mut proofs_g1)?;
+
+    Ok((cells, proofs))
+
 }
+
+
