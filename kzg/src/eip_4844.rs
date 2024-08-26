@@ -950,52 +950,6 @@ pub fn load_trusted_setup_rust<
 
 ////////////////////////////// Trait based implementations of functions for EIP-7594 //////////////////////////////
 
-
-// This code is a function that processes a "blob" of data to produce two main outputs: cells and proofs. Here's a simplified explanation:
-
-// Purpose: It takes a large piece of data (blob) and breaks it down into smaller pieces (cells) and creates mathematical proofs for each cell.
-// Inputs:
-
-// A blob of data
-// Some pre-computed settings (KZGSettings)
-
-
-// Outputs:
-
-// An array of cells (smaller pieces of the original data)
-// An array of proofs (one for each cell)
-
-
-// Main steps:
-
-// Convert the blob into a mathematical representation (polynomial)
-// If cells are requested:
-
-// Transform the polynomial to get data points
-// Rearrange these points
-// Convert the points into the cell format
-
-
-// If proofs are requested:
-
-// Compute proofs using the polynomial
-// Rearrange the proofs
-// Convert the proofs into the desired format
-
-
-
-// **********************
-// Key features:
-
-// It can compute cells, proofs, or both
-// It uses several mathematical operations (FFT, polynomial transformations)
-// It includes error checking and memory management
-
-
-// Usage: This function is likely part of a larger system dealing with data integrity or cryptographic operations, possibly related to blockchain or distributed systems.
-
-// The code is complex and uses advanced mathematical concepts, but its core purpose is to process a large piece of data into smaller, verifiable pieces with associated proofs.
-
 pub fn compute_cells_and_kzg_proofs_rust<
     TFr: Fr, 
     TPoly: Poly<TFr>,
@@ -1031,7 +985,7 @@ pub fn compute_cells_and_kzg_proofs_rust<
     data_fr = s.get_fft_settings().fft_fr(&polynomial.get_coeffs(), false)?;
 
     // Perform bit reversal permutation
-    bit_reversal_permutation(&mut data_fr)?;
+    reverse_bit_order(&mut data_fr)?;
     
     // Covert field elements to cell bytes
     for (i, cell) in cells.iter_mut().enumerate() {
@@ -1045,7 +999,7 @@ pub fn compute_cells_and_kzg_proofs_rust<
     // Compute proofs
     let mut proofs_g1 = vec![TG1::identity(); CELLS_PER_EXT_BLOB];
     compute_fk20_proofs(&mut proofs_g1, &polynomial, FIELD_ELEMENTS_PER_BLOB, s);
-    bit_reversal_permutation(&mut proofs_g1)?;
+    reverse_bit_order(&mut proofs_g1)?;
 
     Ok((cells, proofs))
 
