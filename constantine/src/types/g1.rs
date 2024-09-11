@@ -57,13 +57,13 @@ impl CtG1 {
         unsafe {
             Self(bls12_381_g1_jac {
                 x: bls12_381_fp {
-                    limbs: core::mem::transmute(p1.x.l),
+                    limbs: core::mem::transmute::<[u64; 6], [usize; 6]>(p1.x.l),
                 },
                 y: bls12_381_fp {
-                    limbs: core::mem::transmute(p1.y.l),
+                    limbs: core::mem::transmute::<[u64; 6], [usize; 6]>(p1.y.l),
                 },
                 z: bls12_381_fp {
-                    limbs: core::mem::transmute(p1.z.l),
+                    limbs: core::mem::transmute::<[u64; 6], [usize; 6]>(p1.z.l),
                 },
             })
         }
@@ -73,13 +73,13 @@ impl CtG1 {
         unsafe {
             blst::blst_p1 {
                 x: blst::blst_fp {
-                    l: core::mem::transmute(self.0.x.limbs),
+                    l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.x.limbs),
                 },
                 y: blst::blst_fp {
-                    l: core::mem::transmute(self.0.y.limbs),
+                    l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.y.limbs),
                 },
                 z: blst::blst_fp {
-                    l: core::mem::transmute(self.0.z.limbs),
+                    l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.z.limbs),
                 },
             }
         }
@@ -353,8 +353,12 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     fn into_affines_loc(out: &mut [Self], g1: &[CtG1]) {
         unsafe {
             constantine::ctt_bls12_381_g1_jac_batch_affine(
-                core::mem::transmute(out.as_mut_ptr()),
-                core::mem::transmute(g1.as_ptr()),
+                core::mem::transmute::<*mut CtG1Affine, *const constantine_sys::bls12_381_g1_aff>(
+                    out.as_mut_ptr(),
+                ),
+                core::mem::transmute::<*const CtG1, *const constantine_sys::bls12_381_g1_jac>(
+                    g1.as_ptr(),
+                ),
                 g1.len(),
             );
         }
