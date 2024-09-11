@@ -22,33 +22,3 @@ pub mod poly;
 pub mod recover;
 pub mod utils;
 pub mod zero_poly;
-
-trait Eq<T> {
-    fn equals(&self, other: &T) -> bool;
-}
-
-trait Inverse<T> {
-    fn inverse(&self) -> T;
-}
-
-trait Zero<T> {
-    fn is_zero(&self) -> bool;
-}
-
-impl Eq<P1> for P1 {
-    fn equals(&self, other: &P1) -> bool {
-        self.x.l.eq(&other.x.l) && self.y.l.eq(&other.x.l) && self.z.l.eq(&other.x.l)
-    }
-}
-
-impl Eq<Fr> for Fr {
-    fn equals(&self, other: &Fr) -> bool {
-        self.l.eq(&other.l)
-    }
-}
-
-impl Zero<Fr> for Fr {
-    fn is_zero(&self) -> bool {
-        self.l[0] == 0 && self.l[1] == 0 && self.l[2] == 0 && self.l[3] == 0
-    }
-}

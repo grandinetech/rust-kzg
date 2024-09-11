@@ -268,27 +268,34 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
 
     PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
-    let max_width = (*s).max_width as usize;
-    let roots = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*s).roots_of_unity,
-        max_width,
-    ));
-    drop(roots);
-    (*s).roots_of_unity = null_mut();
+    if !(*s).roots_of_unity.is_null() {
+        let max_width = (*s).max_width as usize;
+        let roots = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).roots_of_unity,
+            max_width,
+        ));
+        drop(roots);
+        (*s).roots_of_unity = null_mut();
+    }
 
-    let g1 = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*s).g1_values,
-        TRUSTED_SETUP_NUM_G1_POINTS,
-    ));
-    drop(g1);
-    (*s).g1_values = null_mut();
+    if !(*s).g1_values.is_null() {
+        let g1 = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g1_values,
+            TRUSTED_SETUP_NUM_G1_POINTS,
+        ));
+        drop(g1);
+        (*s).g1_values = null_mut();
+    }
 
-    let g2 = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*s).g2_values,
-        TRUSTED_SETUP_NUM_G2_POINTS,
-    ));
-    drop(g2);
-    (*s).g2_values = null_mut();
+    if !(*s).g2_values.is_null() {
+        let g2 = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g2_values,
+            TRUSTED_SETUP_NUM_G2_POINTS,
+        ));
+        drop(g2);
+        (*s).g2_values = null_mut();
+    }
+
     (*s).max_width = 0;
 }
 

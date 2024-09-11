@@ -12,15 +12,13 @@ mod tests {
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test,
         compute_and_verify_blob_kzg_proof_test,
         compute_and_verify_kzg_proof_fails_with_incorrect_proof_test,
-        compute_and_verify_kzg_proof_round_trip_test, compute_kzg_proof_test, compute_powers_test,
-        verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
-    };
-    #[cfg(not(feature = "minimal-spec"))]
-    use kzg_bench::tests::eip_4844::{
-        compute_and_verify_kzg_proof_within_domain_test, test_vectors_blob_to_kzg_commitment,
+        compute_and_verify_kzg_proof_round_trip_test,
+        compute_and_verify_kzg_proof_within_domain_test, compute_kzg_proof_test,
+        compute_powers_test, test_vectors_blob_to_kzg_commitment,
         test_vectors_compute_blob_kzg_proof, test_vectors_compute_kzg_proof,
         test_vectors_verify_blob_kzg_proof, test_vectors_verify_blob_kzg_proof_batch,
-        test_vectors_verify_kzg_proof,
+        test_vectors_verify_kzg_proof, verify_kzg_proof_batch_fails_with_incorrect_proof_test,
+        verify_kzg_proof_batch_test,
     };
     use rust_kzg_arkworks::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_arkworks::eip_4844::load_trusted_setup_filename_rust;
@@ -96,7 +94,6 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn compute_and_verify_kzg_proof_within_domain_test_() {
         compute_and_verify_kzg_proof_within_domain_test::<
@@ -221,7 +218,6 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_blob_to_kzg_commitment_() {
         test_vectors_blob_to_kzg_commitment::<
@@ -240,7 +236,6 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_compute_kzg_proof_() {
         test_vectors_compute_kzg_proof::<
@@ -259,7 +254,6 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_compute_blob_kzg_proof_() {
         test_vectors_compute_blob_kzg_proof::<
@@ -278,7 +272,6 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_verify_kzg_proof_() {
         test_vectors_verify_kzg_proof::<
@@ -293,7 +286,6 @@ mod tests {
         >(&load_trusted_setup_filename_rust, &verify_kzg_proof_rust);
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_verify_blob_kzg_proof_() {
         test_vectors_verify_blob_kzg_proof::<
@@ -312,7 +304,6 @@ mod tests {
         );
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     pub fn test_vectors_verify_blob_kzg_proof_batch_() {
         test_vectors_verify_blob_kzg_proof_batch::<

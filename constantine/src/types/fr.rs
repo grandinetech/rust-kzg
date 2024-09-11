@@ -40,7 +40,7 @@ impl CtFr {
     pub fn from_blst_fr(fr: blst::blst_fr) -> Self {
         unsafe {
             Self(bls12_381_fr {
-                limbs: core::mem::transmute(fr.l),
+                limbs: core::mem::transmute::<[u64; 4], [usize; 4]>(fr.l),
             })
         }
     }
@@ -48,7 +48,7 @@ impl CtFr {
     pub fn to_blst_fr(&self) -> blst_fr {
         unsafe {
             blst_fr {
-                l: core::mem::transmute(self.0.limbs),
+                l: core::mem::transmute::<[usize; 4], [u64; 4]>(self.0.limbs),
             }
         }
     }
@@ -282,7 +282,7 @@ impl Fr for CtFr {
         let mut scalar = constantine::big255::default();
         unsafe {
             constantine::ctt_big255_from_bls12_381_fr(&mut scalar, &self.0);
-            Scalar256::from_u64(core::mem::transmute(scalar.limbs))
+            Scalar256::from_u64(core::mem::transmute::<[usize; 4], [u64; 4]>(scalar.limbs))
         }
     }
 }

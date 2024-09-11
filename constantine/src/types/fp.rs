@@ -79,7 +79,7 @@ impl G1Fp for CtFp {
     fn from_underlying_arr(arr: &[u64; 6]) -> Self {
         unsafe {
             Self(bls12_381_fp {
-                limbs: core::mem::transmute(*arr),
+                limbs: core::mem::transmute::<[u64; 6], [usize; 6]>(*arr),
             })
         }
     }
