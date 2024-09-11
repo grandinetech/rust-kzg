@@ -134,6 +134,18 @@ where
     tables: BTreeMap<u64, Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>>,
 }
 
+impl<TFr, TG1, TG1Fp, TG1Affine> Default for PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
+where
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<TFr, TG1, TG1Fp, TG1Affine> PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
 where
     TFr: Fr,
@@ -875,8 +887,8 @@ pub fn evaluate_polynomial_in_evaluation_form<
 }
 
 fn is_trusted_setup_in_lagrange_form<TG1: G1 + PairingVerify<TG1, TG2>, TG2: G2>(
-    g1_values: &Vec<TG1>,
-    g2_values: &Vec<TG2>,
+    g1_values: &[TG1],
+    g2_values: &[TG2],
 ) -> bool {
     if g1_values.len() < 2 || g2_values.len() < 2 {
         return false;

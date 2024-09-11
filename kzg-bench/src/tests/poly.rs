@@ -121,7 +121,7 @@ fn test_data(a: usize, b: usize) -> Vec<i32> {
     test_data[a][b].clone()
 }
 
-fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &Vec<i32>) -> TPoly {
+fn new_test_poly<TFr: Fr, TPoly: Poly<TFr>>(coeffs: &[i32]) -> TPoly {
     let mut p = TPoly::new(coeffs.len());
     for (i, &coeff) in coeffs.iter().enumerate() {
         if coeff >= 0 {
