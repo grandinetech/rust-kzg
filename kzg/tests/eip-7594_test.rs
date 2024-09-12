@@ -1,7 +1,7 @@
-use kzg::eip_4844::{compute_cells_and_kzg_proofs_rust, CELLS_PER_EXT_BLOB};
-use rand::Rng;
 use crate::compute_cells_and_kzg_proofs;
-use crate::types::{Blob, Cell, KZGProof, S}; // Adjust imports as necessary
+use crate::types::{Blob, Cell, KZGProof, S};
+use kzg::eip_4844::{compute_cells_and_kzg_proofs_rust, CELLS_PER_EXT_BLOB};
+use rand::Rng; // Adjust imports as necessary
 
 #[test]
 
@@ -18,6 +18,6 @@ fn test_compute_cells_and_kzg_proofs() {
     }
     for _ in 0..5 {
         let ret = compute_cells_and_kzg_proofs_rust(blob, s);
-        assert_eq!(ret, C_KZG_RET_OK);  // Replace `C_KZG_OK` with the appropriate success constant or value in Rust
+        assert_eq!(ret, C_KZG_RET_OK); // Replace `C_KZG_OK` with the appropriate success constant or value in Rust
     }
 }
