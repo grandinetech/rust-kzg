@@ -1,20 +1,31 @@
-use crate::consts::G1_IDENTITY;
-use crate::eip_4844::FIELD_ELEMENTS_PER_CELL;
-use crate::kzg_types::{ArkG1, ArkFr as BlstFr};
-use crate::utils::PolyData;
-use crate::{FFTFr, G1Mul, KZGSettings, G1};
-use crate::utils::PolyData;
-use kzg::{G1, G1Mul, FFTSetings, FFTFr};
+// use crate::consts::G1_IDENTITY;
+// use crate::eip_4844::FIELD_ELEMENTS_PER_CELL;
+// use crate::kzg_types::{ArkFr as BlstFr, ArkG1};
+// use crate::utils::PolyData;
+// use crate::utils::PolyData;
+// use crate::{FFTFr, G1Mul, KZGSettings, G1};
+// use kzg::{FFTFr, FFTSetings, G1Mul, G1};
 
+use crate::{
+    eip_4844::FIELD_ELEMENTS_PER_CELL, FFTFr, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul,
+    KZGSettings, Poly, G1, G2,
+};
 
 fn compute_fk20_proofs<
-    TFr: FFTFr, 
-    TG1: G1 + G1Mul
+    TFr: Fr,
+    TFFTFr: FFTFr<TFr>,
+    TG1Fp: G1Fp,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
+    TG2: G2,
+    TPoly: Poly<TFr>,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TFFTSettings: FFTSettings<TFr>,
 >(
-    p: &PolyData,
+    p: &TPoly,
     n: usize,
-    s: &KZGSettings
-) -> Result<Vec<TG1>, String>{
+    s: &TKZGSettings,
+) -> Result<Vec<TG1>, String> {
     let k = n / FIELD_ELEMENTS_PER_CELL;
     let k2 = k * 2;
 
@@ -23,10 +34,10 @@ fn compute_fk20_proofs<
     let mut h_ext_fft = vec![TG1::identity(); k2];
 
     for i in 0..FIELD_ELEMENTS_PER_CELL {
-        toeplitz_coeffs_stride(p, &mut toeplitz_coeffs, n, FIELD_ELEMENTS_PER_CELL)?;
-        s.get_fft_settings().fft_fr(&toeplitz_coeffs, false)?;
+        toeplitz_coeffs_stride(p, &mut toeplitz_coeff, n, FIELD_ELEMENTS_PER_CELL)?;
+        s.get_fft_settings().fft_fr(&toeplitz_coeff, false)?;
         for j in 0..k2 {
-            h_ext_fft[j] = h_ext_fft[j].add_or_dbl(&s.x_ext_fft[j].mul(&toeplitz_coeffs[j]));
+            h_ext_fft[j] = h_ext_fft[j].add_or_dbl(&s.x_ext_fft[j].mul(&toeplitz_coeff[j]));
         }
     }
 
@@ -36,13 +47,12 @@ fn compute_fk20_proofs<
         *i = h_ext_fft[i.len() - 1];
     }
     for i in h.iter_mut().take(k2).skip(k) {
-        *i = G1_IDENTITY;
+        *i = TG1::identity();
     }
 
     s.get_fft_settings().fft_g1(h.as_mut_slice(), false)?;
 
     Ok(h)
-
 }
 
 fn toeplitz_coeffs_stride(
