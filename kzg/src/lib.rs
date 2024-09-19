@@ -9,8 +9,8 @@ use msm::precompute::PrecomputationTable;
 
 pub mod common_utils;
 pub mod eip_4844;
-pub mod eip_7694;
-pub mod fk20_proof;
+// pub mod eip_7694;
+// pub mod fk20_proof;
 pub mod msm;
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
@@ -70,8 +70,6 @@ pub trait Fr: Default + Clone + PartialEq + Sync {
     }
 
     fn to_scalar(&self) -> Scalar256;
-
-    fn modulo(&self, modulus: [u8; 32]) -> Self;
 }
 
 pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {
@@ -427,10 +425,6 @@ pub trait FFTSettings<Coeff: Fr>: Default + Clone {
 
     fn get_max_width(&self) -> usize;
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff;
-
-    fn get_expanded_roots_of_unity(&self) -> &[Coeff];
-
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_reversed_roots_of_unity(&self) -> &[Coeff];
@@ -438,6 +432,10 @@ pub trait FFTSettings<Coeff: Fr>: Default + Clone {
     fn get_roots_of_unity_at(&self, i: usize) -> Coeff;
 
     fn get_roots_of_unity(&self) -> &[Coeff];
+
+    fn get_brp_roots_of_unity(&self) -> &[Coeff];
+
+    fn get_brp_roots_of_unity_at(&self, i: usize) -> Coeff;
 }
 
 pub trait FFTSettingsPoly<Coeff: Fr, Polynomial: Poly<Coeff>, FSettings: FFTSettings<Coeff>> {
@@ -515,9 +513,9 @@ pub trait KZGSettings<
 >: Default + Clone
 {
     fn new(
-        secret_g1: &[Coeff2],
-        secret_g2: &[Coeff3],
-        length: usize,
+        g1_monomial: &[Coeff2],
+        g1_lagrange_brp: &[Coeff2],
+        g2_monomial: &[Coeff3],
         fs: &Fs,
     ) -> Result<Self, String>;
 
@@ -543,8 +541,6 @@ pub trait KZGSettings<
         values: &[Coeff1],
         n: usize,
     ) -> Result<bool, String>;
-
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> Coeff1;
 
     fn get_roots_of_unity_at(&self, i: usize) -> Coeff1;
 

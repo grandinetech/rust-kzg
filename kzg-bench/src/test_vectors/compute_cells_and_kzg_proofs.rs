@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+extern crate alloc;
+
 use alloc::string::String;
 use alloc::vec::Vec;
 use serde::Deserialize;
@@ -11,7 +13,7 @@ pub struct Input<'a> {
 
 impl Input<'_> {
     pub fn get_blob_bytes(&self) -> Result<Vec<u8>, String> {
-        hex::decode(self.blob[2..]).map_err(|_| "Invalid blob".to_string())
+        hex::decode(&self.blob[2..]).map_err(|_| "Invalid blob".to_string())
     }
 }
 
@@ -28,12 +30,12 @@ impl Test<'_> {
             (
                 cells
                     .iter()
-                    .map(|s| hex::decode(s[2..]).unwrap())
+                    .map(|s| hex::decode(&s[2..]).unwrap())
                     .collect::<Vec<_>>(),
                 proofs
                     .iter()
-                    .map(|s| hex::decode(s[2..]).unwrap())
-                    .collect::<Vec<Bytes48>>(),
+                    .map(|s| hex::decode(&s[2..]).unwrap())
+                    .collect::<Vec<Vec<u8>>>(),
             )
         })
     }

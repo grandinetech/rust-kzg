@@ -20,7 +20,7 @@ pub fn fk_single<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
@@ -35,9 +35,9 @@ pub fn fk_single<
     }
 
     // Initialise the secrets and data structures
-    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = TFFTSettings::new(n).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -50,7 +50,7 @@ pub fn fk_single<
 
     // Verify the proof at each root of unity
     for i in 0..(2 * poly_len) {
-        let x = fs.get_expanded_roots_of_unity_at(i);
+        let x = fs.get_roots_of_unity_at(i);
         let y = p.eval(&x);
         let proof = &all_proofs[reverse_bits_limited(2 * poly_len - 1, i)];
         assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
@@ -63,7 +63,7 @@ pub fn fk_single<
 
     // Verify the proof at each root of unity
     for (i, proof) in all_proofs.iter().enumerate().take(2 * poly_len) {
-        let x = fs.get_expanded_roots_of_unity_at(i);
+        let x = fs.get_roots_of_unity_at(i);
         let y = p.eval(&x);
         assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
     }
@@ -80,7 +80,7 @@ pub fn fk_single_strided<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
@@ -96,9 +96,9 @@ pub fn fk_single_strided<
     }
 
     // Initialise the secrets and data structures
-    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = TFFTSettings::new(n).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -109,7 +109,7 @@ pub fn fk_single_strided<
 
     // Verify the proof at each root of unity
     for i in 0..(2 * poly_len) {
-        let x = fs.get_expanded_roots_of_unity_at(i * stride);
+        let x = fs.get_roots_of_unity_at(i * stride);
         let y = p.eval(&x);
         let proof = &all_proofs[reverse_bits_limited(2 * poly_len - 1, i)];
         assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
@@ -127,15 +127,15 @@ pub fn fk_multi_settings<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     let n: usize = 5;
     let secrets_len: usize = 33;
 
     // Initialise the secrets and data structures
-    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = TFFTSettings::new(n).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
     let _fk = TFK20MultiSettings::new(&ks, 32, 4).unwrap();
 }
 
@@ -152,7 +152,7 @@ fn fk_multi_case<
 >(
     chunk_len: usize,
     n: usize,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
@@ -166,9 +166,9 @@ fn fk_multi_case<
     let width: usize = log2_pow2(secrets_len);
 
     // Initialise the secrets and data structures
-    let (s1, s2) = generate_trusted_setup(secrets_len, SECRET);
+    let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = TFFTSettings::new(width).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, secrets_len, &fs).unwrap();
+    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20MultiSettings::new(&ks, n * 2, chunk_len).unwrap();
 
     // Create a test polynomial of size n that's independent of chunk_len
@@ -215,7 +215,7 @@ fn fk_multi_case<
     let domain_stride = fs.get_max_width() / (2 * n);
     for pos in 0..(2 * chunk_count) {
         let domain_pos = reverse_bits_limited(chunk_count, pos);
-        let x = fs.get_expanded_roots_of_unity_at(domain_pos * domain_stride);
+        let x = fs.get_roots_of_unity_at(domain_pos * domain_stride);
 
         // The ys from the extended coeffients
         for i in 0..chunk_len {
@@ -226,7 +226,7 @@ fn fk_multi_case<
         // Now recreate the ys by evaluating the polynomial in the sub-domain range
         let stride = fs.get_max_width() / chunk_len;
         for (i, ys2) in ys2.iter_mut().enumerate() {
-            let z = x.mul(&fs.get_expanded_roots_of_unity_at(i * stride));
+            let z = x.mul(&fs.get_roots_of_unity_at(i * stride));
             *ys2 = p.eval(&z);
         }
 
@@ -254,7 +254,7 @@ pub fn fk_multi_chunk_len_1_512<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     fk_multi_case::<
         TFr,
@@ -280,7 +280,7 @@ pub fn fk_multi_chunk_len_16_512<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     fk_multi_case::<
         TFr,
@@ -306,7 +306,7 @@ pub fn fk_multi_chunk_len_16_16<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     fk_multi_case::<
         TFr,

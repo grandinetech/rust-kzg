@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use kzg::eip_4844::{bytes_to_blob, compute_cells_and_kzg_proofs_rust};
+    use kzg::eip_4844::{bytes_to_blob, load_trusted_setup_rust};
     use kzg_bench::tests::eip_7594::test_vectors_compute_cells_and_kzg_proofs;
     use rust_kzg_blst::{
-        eip_4844::load_trusted_setup,
+        eip_4844::{load_trusted_setup, load_trusted_setup_file, load_trusted_setup_filename_rust},
+        eip_7594::compute_cells_and_kzg_proofs,
         types::{
             fft_settings::FsFFTSettings,
             fp::FsFp,
@@ -16,7 +17,7 @@ mod tests {
     };
 
     #[test]
-    pub fn bytes_to_bls_field_test_() {
+    pub fn test_vectors_compute_cells_and_kzg_proofs_() {
         test_vectors_compute_cells_and_kzg_proofs::<
             FsFr,
             FsG1,
@@ -27,8 +28,8 @@ mod tests {
             FsFp,
             FsG1Affine,
         >(
-            &load_trusted_setup,
-            &compute_cells_and_kzg_proofs_rust,
+            &load_trusted_setup_filename_rust,
+            &compute_cells_and_kzg_proofs,
             &bytes_to_blob,
         );
     }

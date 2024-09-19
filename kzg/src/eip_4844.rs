@@ -2,12 +2,7 @@
 extern crate alloc;
 
 use crate::common_utils::reverse_bit_order;
-use crate::fk20_proof::{
-    fk20_multi_da_opt, fk20_single_da_opt, FK20MultiSettings, FK20SingleSettings,
-    KzgFK20MultiSettings, KzgFK20SingleSettings,
-};
 use crate::msm::precompute::PrecomputationTable;
-use crate::FFTFr;
 use crate::G1Affine;
 use crate::G1Fp;
 use crate::G1GetFp;
@@ -20,14 +15,11 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use blst::blst_p1_affine;
 pub use blst::{blst_fr, blst_p1, blst_p2};
-use core::cell;
 use core::ffi::c_uint;
 use core::hash::Hash;
 use core::hash::Hasher;
-use core::result;
-use kzg::{FFTFr, Fr};
-use sha2::digest::generic_array::sequence;
 use sha2::{Digest, Sha256};
 use siphasher::sip::SipHasher;
 
@@ -115,10 +107,57 @@ pub struct KZGProof {
 
 #[repr(C)]
 pub struct CKZGSettings {
-    pub max_width: u64,
+    /**
+     * Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB`.
+     *
+     * The array contains `FIELD_ELEMENTS_PER_EXT_BLOB + 1` elements.
+     * The array starts and ends with Fr::one().
+     */
     pub roots_of_unity: *mut blst_fr,
-    pub g1_values: *mut blst_p1,
-    pub g2_values: *mut blst_p2,
+    /**
+     * Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB` in bit-reversed order.
+     *
+     * This array is derived by applying a bit-reversal permutation to `roots_of_unity`
+     * excluding the last element. Essentially:
+     *   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`
+     *
+     * The array contains `FIELD_ELEMENTS_PER_EXT_BLOB` elements.
+     */
+    pub brp_roots_of_unity: *mut blst_fr,
+    /**
+     * Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB` in reversed order.
+     *
+     * It is the reversed version of `roots_of_unity`. Essentially:
+     *    `reverse_roots_of_unity = reverse(roots_of_unity)`
+     *
+     * This array is primarily used in FFTs.
+     * The array contains `FIELD_ELEMENTS_PER_EXT_BLOB + 1` elements.
+     * The array starts and ends with Fr::one().
+     */
+    pub reverse_roots_of_unity: *mut blst_fr,
+    /**
+     * G1 group elements from the trusted setup in monomial form.
+     * The array contains `NUM_G1_POINTS = FIELD_ELEMENTS_PER_BLOB` elements.
+     */
+    pub g1_values_monomial: *mut blst_p1,
+    /**
+     * G1 group elements from the trusted setup in Lagrange form and bit-reversed order.
+     * The array contains `NUM_G1_POINTS = FIELD_ELEMENTS_PER_BLOB` elements.
+     */
+    pub g1_values_lagrange_brp: *mut blst_p1,
+    /**
+     * G2 group elements from the trusted setup in monomial form.
+     * The array contains `NUM_G2_POINTS` elements.
+     */
+    pub g2_values_monomial: *mut blst_p2,
+    /** Data used during FK20 proof generation. */
+    pub x_ext_fft_columns: *mut *mut blst_p1,
+    /** The precomputed tables for fixed-base MSM. */
+    pub tables: *mut *mut blst_p1_affine,
+    /** The window size for the fixed-base MSM. */
+    pub wbits: usize,
+    /** The scratch size for the fixed-base MSM. */
+    pub scratch_size: usize,
 }
 
 #[repr(C)]
@@ -189,14 +228,14 @@ where
     fn get_key(settings: &CKZGSettings) -> u64 {
         let mut hasher = SipHasher::new();
 
-        settings.g1_values.hash(&mut hasher);
+        settings.g1_values_lagrange_brp.hash(&mut hasher);
         hasher.finish()
     }
 }
 
 ////////////////////////////// Utility functions for EIP-4844 //////////////////////////////
 
-pub fn load_trusted_setup_string(contents: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
+pub fn load_trusted_setup_string(contents: &str) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>), String> {
     let mut offset = 0;
 
     const TRUSTED_SETUP_ERROR: &str = "Incorrect trusted setup format";
@@ -229,8 +268,9 @@ pub fn load_trusted_setup_string(contents: &str) -> Result<(Vec<u8>, Vec<u8>), S
         return Err(String::from(TRUSTED_SETUP_ERROR));
     }
 
-    let mut g1_bytes = vec![0u8; g1_point_count * BYTES_PER_G1];
-    let mut g2_bytes = vec![0u8; g2_point_count * BYTES_PER_G2];
+    let mut g1_monomial_bytes = vec![0u8; g1_point_count * BYTES_PER_G1];
+    let mut g1_lagrange_bytes = vec![0u8; g1_point_count * BYTES_PER_G1];
+    let mut g2_monomial_bytes = vec![0u8; g2_point_count * BYTES_PER_G2];
 
     #[inline(always)]
     fn scan_hex_byte(offset: &mut usize, contents: &str) -> Result<u8, String> {
@@ -259,15 +299,19 @@ pub fn load_trusted_setup_string(contents: &str) -> Result<(Vec<u8>, Vec<u8>), S
         u8::from_str_radix(&contents[start..end], 16).map_err(|_| String::from(TRUSTED_SETUP_ERROR))
     }
 
-    for byte in &mut g1_bytes {
+    for byte in &mut g1_lagrange_bytes {
         *byte = scan_hex_byte(&mut offset, contents)?
     }
 
-    for byte in &mut g2_bytes {
+    for byte in &mut g2_monomial_bytes {
         *byte = scan_hex_byte(&mut offset, contents)?
     }
 
-    Ok((g1_bytes, g2_bytes))
+    for byte in &mut g1_monomial_bytes {
+        *byte = scan_hex_byte(&mut offset, contents)?
+    }
+
+    Ok((g1_monomial_bytes, g1_lagrange_bytes, g2_monomial_bytes))
 }
 
 pub fn bytes_of_uint64(out: &mut [u8], mut n: u64) {
@@ -476,7 +520,7 @@ pub fn compute_kzg_proof_rust<
     let mut inverses_in: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
 
-    let roots_of_unity = s.get_fft_settings().get_roots_of_unity();
+    let roots_of_unity = s.get_fft_settings().get_brp_roots_of_unity();
     let poly_coeffs = polynomial.get_coeffs();
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
@@ -858,7 +902,7 @@ pub fn evaluate_polynomial_in_evaluation_form<
     let mut inverses_in: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
     let mut inverses: Vec<TFr> = vec![TFr::default(); FIELD_ELEMENTS_PER_BLOB];
 
-    let roots_of_unity = s.get_fft_settings().get_roots_of_unity();
+    let roots_of_unity = s.get_fft_settings().get_brp_roots_of_unity();
     let poly_coeffs = p.get_coeffs();
 
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
@@ -891,15 +935,15 @@ pub fn evaluate_polynomial_in_evaluation_form<
 }
 
 fn is_trusted_setup_in_lagrange_form<TG1: G1 + PairingVerify<TG1, TG2>, TG2: G2>(
-    g1_values: &[TG1],
-    g2_values: &[TG2],
+    g1_lagrange_values: &[TG1],
+    g2_monomial_values: &[TG2],
 ) -> bool {
-    if g1_values.len() < 2 || g2_values.len() < 2 {
+    if g1_lagrange_values.len() < 2 || g2_monomial_values.len() < 2 {
         return false;
     }
 
     let is_monotomial_form =
-        TG1::verify(&g1_values[1], &g2_values[0], &g1_values[0], &g2_values[1]);
+        TG1::verify(&g1_lagrange_values[1], &g2_monomial_values[0], &g1_lagrange_values[0], &g2_monomial_values[1]);
     !is_monotomial_form
 }
 
@@ -914,40 +958,52 @@ pub fn load_trusted_setup_rust<
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
-    g1_bytes: &[u8],
-    g2_bytes: &[u8],
+    g1_monomial_bytes: &[u8],
+    g1_lagrange_bytes: &[u8],
+    g2_monomial_bytes: &[u8],
 ) -> Result<TKZGSettings, String> {
-    let num_g1_points = g1_bytes.len() / BYTES_PER_G1;
+    let num_g1_points = g1_monomial_bytes.len() / BYTES_PER_G1;
     if num_g1_points != FIELD_ELEMENTS_PER_BLOB {
         return Err(String::from("Invalid number of G1 points"));
     }
 
-    let num_g2_points = g2_bytes.len() / BYTES_PER_G2;
+    if g1_lagrange_bytes.len() / BYTES_PER_G1 != FIELD_ELEMENTS_PER_BLOB {
+        return Err(String::from("Invalid number of G1 points"));
+    }
+
+    let num_g2_points = g2_monomial_bytes.len() / BYTES_PER_G2;
     if num_g2_points != TRUSTED_SETUP_NUM_G2_POINTS {
         return Err(String::from("Invalid number of G2 points"));
     }
 
-    let mut g1_values = g1_bytes
+    let g1_monomial_values = g1_monomial_bytes
         .chunks(BYTES_PER_G1)
         .map(TG1::from_bytes)
         .collect::<Result<Vec<TG1>, String>>()?;
 
-    let g2_values = g2_bytes
+    let mut g1_lagrange_values = g1_lagrange_bytes
+        .chunks(BYTES_PER_G1)
+        .map(TG1::from_bytes)
+        .collect::<Result<Vec<TG1>, String>>()?;
+
+    let g2_monomial_values = g2_monomial_bytes
         .chunks(BYTES_PER_G2)
         .map(TG2::from_bytes)
         .collect::<Result<Vec<TG2>, String>>()?;
 
     // Sanity check, that user is not trying to load old trusted setup file
-    if !is_trusted_setup_in_lagrange_form::<TG1, TG2>(&g1_values, &g2_values) {
+    if !is_trusted_setup_in_lagrange_form::<TG1, TG2>(&g1_lagrange_values, &g2_monomial_values) {
         return Err(String::from("Trusted setup is not in Lagrange form"));
     }
 
+    reverse_bit_order(&mut g1_lagrange_values)?;
+
     let mut max_scale: usize = 0;
-    while (1 << max_scale) < num_g1_points {
+    while (1 << max_scale) < FIELD_ELEMENTS_PER_EXT_BLOB {
         max_scale += 1;
     }
 
     let fs = TFFTSettings::new(max_scale)?;
-    reverse_bit_order(&mut g1_values)?;
-    TKZGSettings::new(g1_values.as_slice(), g2_values.as_slice(), max_scale, &fs)
+
+    TKZGSettings::new(&g1_monomial_values, &g1_lagrange_values, &g2_monomial_values, &fs)
 }
