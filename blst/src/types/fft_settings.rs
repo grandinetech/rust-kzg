@@ -14,9 +14,9 @@ use crate::types::fr::FsFr;
 pub struct FsFFTSettings {
     pub max_width: usize,
     pub root_of_unity: FsFr,
-    pub expanded_roots_of_unity: Vec<FsFr>,
-    pub reverse_roots_of_unity: Vec<FsFr>,
     pub roots_of_unity: Vec<FsFr>,
+    pub brp_roots_of_unity: Vec<FsFr>,
+    pub reverse_roots_of_unity: Vec<FsFr>,
 }
 
 impl Default for FsFFTSettings {
@@ -39,34 +39,26 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         let root_of_unity = FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
         // create max_width of roots & store them reversed as well
-        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
-        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
-        reverse_roots_of_unity.reverse();
+        let roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
 
-        // Permute the roots of unity
-        let mut roots_of_unity = expanded_roots_of_unity.clone();
-        roots_of_unity.pop();
-        reverse_bit_order(&mut roots_of_unity)?;
+        let mut brp_roots_of_unity = roots_of_unity.clone();
+        brp_roots_of_unity.pop();
+        reverse_bit_order(&mut brp_roots_of_unity)?;
+
+        let mut reverse_roots_of_unity = roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
 
         Ok(FsFFTSettings {
             max_width,
             root_of_unity,
-            expanded_roots_of_unity,
             reverse_roots_of_unity,
             roots_of_unity,
+            brp_roots_of_unity,
         })
     }
 
     fn get_max_width(&self) -> usize {
         self.max_width
-    }
-
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> FsFr {
-        self.expanded_roots_of_unity[i]
-    }
-
-    fn get_expanded_roots_of_unity(&self) -> &[FsFr] {
-        &self.expanded_roots_of_unity
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr {
@@ -83,6 +75,14 @@ impl FFTSettings<FsFr> for FsFFTSettings {
 
     fn get_roots_of_unity(&self) -> &[FsFr] {
         &self.roots_of_unity
+    }
+    
+    fn get_brp_roots_of_unity(&self) -> &[FsFr] {
+        &self.brp_roots_of_unity
+    }
+    
+    fn get_brp_roots_of_unity_at(&self, i: usize) -> FsFr {
+        self.brp_roots_of_unity[i]
     }
 }
 

@@ -22,14 +22,14 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
         &mut out0,
         &data,
         1,
-        fft_settings.get_expanded_roots_of_unity(),
+        fft_settings.get_roots_of_unity(),
         1,
     );
     fft_fr_fast(
         &mut out1,
         &data,
         1,
-        fft_settings.get_expanded_roots_of_unity(),
+        fft_settings.get_roots_of_unity(),
         1,
     );
 

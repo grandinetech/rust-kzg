@@ -1,11 +1,11 @@
-
 ////////////////////////////// Trait based implementations of functions for EIP-7594 //////////////////////////////
 
-use crate::{common_utils::reverse_bit_order, eip_4844::{blob_to_polynomial, FIELD_ELEMENTS_PER_BLOB}, FFTFr, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, PairingVerify, Poly, G1, G2};
-
-pub fn poly_lagrange_to_monomial<TFr: Fr, TPoly: Poly<TFr>>(polynomial: TPoly) {
-    reverse_bit_order(vals);
-}
+use crate::{
+    common_utils::reverse_bit_order,
+    eip_4844::{blob_to_polynomial, FIELD_ELEMENTS_PER_BLOB},
+    FFTFr, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, PairingVerify, Poly, G1,
+    G2,
+};
 
 pub fn compute_cells_and_kzg_proofs_rust<
     TFr: Fr,

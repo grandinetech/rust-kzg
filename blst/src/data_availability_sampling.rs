@@ -19,7 +19,7 @@ impl FsFFTSettings {
             Ordering::Equal => {
                 let x = evens[0].add(&evens[1]);
                 let y = evens[0].sub(&evens[1]);
-                let y_times_root = y.mul(&self.expanded_roots_of_unity[stride]);
+                let y_times_root = y.mul(&self.roots_of_unity[stride]);
 
                 evens[0] = x.add(&y_times_root);
                 evens[1] = x.sub(&y_times_root);
@@ -63,7 +63,7 @@ impl FsFFTSettings {
         for i in 0..half {
             let x = evens[i];
             let y = evens[half + i];
-            let y_times_root: FsFr = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
+            let y_times_root: FsFr = y.mul(&self.roots_of_unity[(1 + 2 * i) * stride]);
 
             evens[i] = x.add(&y_times_root);
             evens[half + i] = x.sub(&y_times_root);
