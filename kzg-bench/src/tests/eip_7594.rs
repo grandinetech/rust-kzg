@@ -177,9 +177,11 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<
             CELLS_PER_EXT_BLOB
         ];
 
+        let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
+
         match recover_cells_and_kzg_proofs(
             &mut recv_cells,
-            None,
+            Some(&mut recv_proofs),
             &test.input.get_cell_indices().unwrap().iter().map(|it| (*it).into()).collect::<Vec<_>>(),
             &cells,
             &settings,
@@ -197,9 +199,19 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<
                     .map(|it| it.iter().flat_map(|it| it.to_bytes()).collect::<Vec<_>>())
                     .collect::<Vec<Vec<u8>>>();
 
+                let recv_proofs = recv_proofs
+                    .into_iter()
+                    .map(|it| it.to_bytes().to_vec())
+                    .collect::<Vec<Vec<u8>>>();
+
                 assert!(
                     recv_cells == exp_cells,
                     "Cells do not match, for test vector {test_file:?}",
+                );
+                assert_eq!(
+                    recv_proofs, exp_proofs,
+                    "Proofs do not match, for test vector {:?}",
+                    test_file
                 );
             }
         }

@@ -432,9 +432,13 @@ pub fn recover_cells_and_kzg_proofs(
     }
 
     if let Some(recovered_proofs) = recovered_proofs {
-        let mut result = vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
+        let mut poly = vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
 
-        poly_lagrange_to_monomial(&mut result, recovered_cells.as_flattened(), &s.fs)?;
+        poly_lagrange_to_monomial(&mut poly, recovered_cells.as_flattened(), &s.fs)?;
+
+        compute_fk20_proofs(recovered_proofs, &poly, FIELD_ELEMENTS_PER_BLOB, s)?;
+
+        reverse_bit_order(recovered_cells)?;
     }
 
     Ok(())
