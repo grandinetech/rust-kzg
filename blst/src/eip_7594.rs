@@ -1,7 +1,20 @@
-use kzg::{common_utils::{reverse_bit_order, reverse_bits_limited}, eip_4844::{blob_to_polynomial, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB}, Fr, G1Mul, KZGSettings, G1};
-use crate::{fft_fr::fft_fr_fast, fft_g1::fft_g1_fast, fk20_proofs, kzg_proofs::g1_linear_combination, types::g1::FsG1};
+use crate::{
+    fft_fr::fft_fr_fast, fft_g1::fft_g1_fast, fk20_proofs, kzg_proofs::g1_linear_combination,
+    types::g1::FsG1,
+};
+use blst::blst_fr;
+use kzg::{
+    common_utils::{reverse_bit_order, reverse_bits_limited},
+    eip_4844::{
+        blob_to_polynomial, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        FIELD_ELEMENTS_PER_EXT_BLOB,
+    },
+    Fr, G1Mul, KZGSettings, G1,
+};
 
-use crate::types::{fft_settings::FsFFTSettings, fr::FsFr, kzg_settings::FsKZGSettings, poly::FsPoly};
+use crate::types::{
+    fft_settings::FsFFTSettings, fr::FsFr, kzg_settings::FsKZGSettings, poly::FsPoly,
+};
 
 fn fr_ifft(output: &mut [FsFr], input: &[FsFr], s: &FsFFTSettings) -> Result<(), String> {
     let stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
@@ -23,15 +36,27 @@ fn fr_fft(output: &mut [FsFr], input: &[FsFr], s: &FsFFTSettings) -> Result<(), 
     Ok(())
 }
 
-fn poly_lagrange_to_monomial(output: &mut [FsFr], mut largrange_poly: &[FsFr], s: &FsFFTSettings) -> Result<(), String> {
-    reverse_bit_order(&mut largrange_poly.coeffs)?;
+fn poly_lagrange_to_monomial(
+    output: &mut [FsFr],
+    largrange_poly: &[FsFr],
+    s: &FsFFTSettings,
+) -> Result<(), String> {
+    let mut poly = largrange_poly.to_vec();
 
-    fr_ifft(output, &largrange_poly.coeffs, s)?;
+    reverse_bit_order(&mut poly)?;
+
+    fr_ifft(output, &poly, s)?;
 
     Ok(())
 }
 
-fn toeplitz_coeffs_stride(out: &mut [FsFr], input: &[FsFr], n: usize, offset: usize, stride: usize) -> Result<(), String> {
+fn toeplitz_coeffs_stride(
+    out: &mut [FsFr],
+    input: &[FsFr],
+    n: usize,
+    offset: usize,
+    stride: usize,
+) -> Result<(), String> {
     if stride == 0 {
         return Err("Stride cannot be zero".to_string());
     }
@@ -104,16 +129,20 @@ fn g1_fft(out: &mut [FsG1], input: &[FsG1], s: &FsKZGSettings) -> Result<(), Str
     Ok(())
 }
 
-fn compute_fk20_proofs(proofs: &mut [FsG1], poly: &[FsFr], n: usize, s: &FsKZGSettings) -> Result<(), String> {
+fn compute_fk20_proofs(
+    proofs: &mut [FsG1],
+    poly: &[FsFr],
+    n: usize,
+    s: &FsKZGSettings,
+) -> Result<(), String> {
     let k = n / FIELD_ELEMENTS_PER_CELL;
     let k2 = k * 2;
 
     let mut coeffs = vec![vec![FsFr::default(); k]; k2];
     let mut h_ext_fft = vec![FsG1::identity(); k2];
-    let mut h = vec![FsG1::identity(); k2];
     let mut toeplitz_coeffs = vec![FsFr::default(); k2];
     let mut toeplitz_coeffs_fft = vec![FsFr::default(); k2];
-    
+
     for i in 0..FIELD_ELEMENTS_PER_CELL {
         toeplitz_coeffs_stride(&mut toeplitz_coeffs, poly, n, i, FIELD_ELEMENTS_PER_CELL)?;
         fr_fft(&mut toeplitz_coeffs_fft, &toeplitz_coeffs, &s.fs)?;
@@ -123,26 +152,46 @@ fn compute_fk20_proofs(proofs: &mut [FsG1], poly: &[FsFr], n: usize, s: &FsKZGSe
     }
 
     for i in 0..k2 {
-        g1_linear_combination(&mut h_ext_fft[i], &s.x_ext_fft_columns[i], &coeffs[i], FIELD_ELEMENTS_PER_CELL, None);
+        g1_linear_combination(
+            &mut h_ext_fft[i],
+            &s.x_ext_fft_columns[i],
+            &coeffs[i],
+            FIELD_ELEMENTS_PER_CELL,
+            None,
+        );
     }
 
+    let mut h = vec![FsG1::identity(); k2];
     g1_ifft(&mut h, &h_ext_fft, s)?;
+
+    for i in k..k2 {
+        h[i] = FsG1::identity();
+    }
 
     g1_fft(proofs, &h, s)?;
 
     Ok(())
 }
 
-pub fn compute_cells_and_kzg_proofs(cells: Option<&mut [[FsFr; FIELD_ELEMENTS_PER_CELL]]>, proofs: Option<&mut [FsG1]>, blob: &[FsFr], s: &FsKZGSettings) -> Result<(), String> {
+pub fn compute_cells_and_kzg_proofs(
+    cells: Option<&mut [[FsFr; FIELD_ELEMENTS_PER_CELL]]>,
+    proofs: Option<&mut [FsG1]>,
+    blob: &[FsFr],
+    s: &FsKZGSettings,
+) -> Result<(), String> {
     if cells.is_none() && proofs.is_none() {
         return Err("Both cells & proofs cannot be none".to_string());
     }
-    
+
     let poly = blob_to_polynomial::<FsFr, FsPoly>(blob)?;
 
     let mut poly_monomial = vec![FsFr::zero(); FIELD_ELEMENTS_PER_EXT_BLOB];
 
-    poly_lagrange_to_monomial(&mut poly_monomial[..FIELD_ELEMENTS_PER_BLOB], poly, &s.fs)?;
+    poly_lagrange_to_monomial(
+        &mut poly_monomial[..FIELD_ELEMENTS_PER_BLOB],
+        &poly.coeffs,
+        &s.fs,
+    )?;
 
     // compute cells
     if let Some(cells) = cells {
@@ -155,7 +204,7 @@ pub fn compute_cells_and_kzg_proofs(cells: Option<&mut [[FsFr; FIELD_ELEMENTS_PE
         for i in 0..CELLS_PER_EXT_BLOB {
             for j in 0..FIELD_ELEMENTS_PER_CELL {
                 let index = i * FIELD_ELEMENTS_PER_CELL + j;
-                
+
                 cells[i][j] = data_fr[index];
             }
         }
@@ -170,11 +219,9 @@ pub fn compute_cells_and_kzg_proofs(cells: Option<&mut [[FsFr; FIELD_ELEMENTS_PE
     Ok(())
 }
 
-fn compute_vanishing_polynomial_from_roots(
-    roots: &[FsFr]
-) -> Result<Vec<FsFr>, String> {
+fn compute_vanishing_polynomial_from_roots(roots: &[FsFr]) -> Result<Vec<FsFr>, String> {
     if roots.len() == 0 {
-        return Err("Roots cannot be empty".to_string())
+        return Err("Roots cannot be empty".to_string());
     }
 
     let mut poly = Vec::new();
@@ -188,6 +235,7 @@ fn compute_vanishing_polynomial_from_roots(
         for j in (1..i).rev() {
             poly[j] = poly[j].mul(&neg_root).add(&poly[j - 1]);
         }
+        poly[0] = poly[0].mul(&neg_root);
     }
 
     poly.push(FsFr::one());
@@ -197,18 +245,22 @@ fn compute_vanishing_polynomial_from_roots(
 
 fn vanishing_polynomial_for_missing_cells(
     missing_cell_indicies: &[usize],
-    s: &FsKZGSettings
+    s: &FsKZGSettings,
 ) -> Result<Vec<FsFr>, String> {
     if missing_cell_indicies.len() == 0 || missing_cell_indicies.len() >= CELLS_PER_EXT_BLOB {
-        return Err("Invalid missing cell indicies count".to_string())
+        return Err("Invalid missing cell indicies count".to_string());
     }
 
     const STRIDE: usize = FIELD_ELEMENTS_PER_EXT_BLOB / CELLS_PER_EXT_BLOB;
 
-    let roots = missing_cell_indicies.iter().map(|i| s.get_roots_of_unity_at(*i * STRIDE)).collect::<Vec<_>>();
+    let roots = missing_cell_indicies
+        .iter()
+        .map(|i| s.get_roots_of_unity_at(*i * STRIDE))
+        .collect::<Vec<_>>();
+
     let short_vanishing_poly = compute_vanishing_polynomial_from_roots(&roots)?;
 
-    let mut vanishing_poly = (0..FIELD_ELEMENTS_PER_EXT_BLOB).map(|_| FsFr::zero()).collect::<Vec<_>>();
+    let mut vanishing_poly = vec![FsFr::zero(); FIELD_ELEMENTS_PER_EXT_BLOB];
 
     for i in 0..short_vanishing_poly.len() {
         vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
@@ -235,7 +287,7 @@ fn coset_fft(input: &[FsFr], s: &FsKZGSettings) -> Result<Vec<FsFr>, String> {
     shift_poly(&mut in_shifted, &FsFr::from_u64(7));
 
     let mut output = vec![FsFr::default(); input.len()];
-    fr_fft(&mut output, input, &s.fs)?;
+    fr_fft(&mut output, &in_shifted, &s.fs)?;
 
     Ok(output)
 }
@@ -256,33 +308,29 @@ fn coset_ifft(input: &[FsFr], s: &FsKZGSettings) -> Result<Vec<FsFr>, String> {
 fn recover_cells(
     output: &mut [FsFr],
     cell_indicies: &[usize],
-    s: &FsKZGSettings
+    s: &FsKZGSettings,
 ) -> Result<(), String> {
     let mut missing_cell_indicies = Vec::new();
 
     let mut cells_brp = output.to_vec();
-    reverse_bit_order(&mut cells_brp);
+    reverse_bit_order(&mut cells_brp)?;
 
     for i in 0..CELLS_PER_EXT_BLOB {
-        if cell_indicies.contains(&i) {
+        if !cell_indicies.contains(&i) {
             missing_cell_indicies.push(reverse_bits_limited(CELLS_PER_EXT_BLOB, i));
         }
     }
 
     let missing_cell_indicies = &missing_cell_indicies[..];
 
-    if missing_cell_indicies.len() <= CELLS_PER_EXT_BLOB  / 2 {
+    if missing_cell_indicies.len() > CELLS_PER_EXT_BLOB / 2 {
         return Err("Not enough cells".to_string());
     }
 
-    let vanishing_poly_coeff = vanishing_polynomial_for_missing_cells(
-        missing_cell_indicies,
-        s
-    )?;
-
+    let vanishing_poly_coeff = vanishing_polynomial_for_missing_cells(missing_cell_indicies, s)?;
     let mut vanishing_poly_eval = vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
 
-    fr_fft(&mut vanishing_poly_eval, &vanishing_poly_coeff, &s.fs);
+    fr_fft(&mut vanishing_poly_eval, &vanishing_poly_coeff, &s.fs)?;
 
     let mut extended_evaluation_times_zero = Vec::with_capacity(FIELD_ELEMENTS_PER_EXT_BLOB);
 
@@ -294,15 +342,21 @@ fn recover_cells(
         }
     }
 
-    let mut extended_evaluation_times_zero_coeffs = vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
-    fr_ifft(&mut extended_evaluation_times_zero_coeffs, &extended_evaluation_times_zero, &s.fs);
+    let mut extended_evaluation_times_zero_coeffs =
+        vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
+    fr_ifft(
+        &mut extended_evaluation_times_zero_coeffs,
+        &extended_evaluation_times_zero,
+        &s.fs,
+    )?;
 
     let mut extended_evaluations_over_coset = coset_fft(&extended_evaluation_times_zero_coeffs, s)?;
 
     let vanishing_poly_over_coset = coset_fft(&vanishing_poly_coeff, s)?;
 
     for i in 0..FIELD_ELEMENTS_PER_EXT_BLOB {
-        extended_evaluations_over_coset[i] = extended_evaluations_over_coset[i].div(&vanishing_poly_over_coset[i])?;
+        extended_evaluations_over_coset[i] =
+            extended_evaluations_over_coset[i].div(&vanishing_poly_over_coset[i])?;
     }
 
     let reconstructed_poly_coeff = coset_ifft(&extended_evaluations_over_coset, s)?;
@@ -319,14 +373,21 @@ pub fn recover_cells_and_kzg_proofs(
     recovered_proofs: Option<&mut [FsG1]>,
     cell_indicies: &[usize],
     cells: &[[FsFr; FIELD_ELEMENTS_PER_CELL]],
-    s: &FsKZGSettings
+    s: &FsKZGSettings,
 ) -> Result<(), String> {
-    if recovered_cells.len() != CELLS_PER_EXT_BLOB || recovered_proofs.is_some_and(|it| it.len() != CELLS_PER_EXT_BLOB) {
+    if recovered_cells.len() != CELLS_PER_EXT_BLOB
+        || recovered_proofs
+            .as_ref()
+            .is_some_and(|it| it.len() != CELLS_PER_EXT_BLOB)
+    {
         return Err("Invalid output array length".to_string());
     }
 
     if cells.len() != cell_indicies.len() {
-        return Err("Cell indicies mismatch - cells length must be equal to cell indicies length".to_string());
+        return Err(
+            "Cell indicies mismatch - cells length must be equal to cell indicies length"
+                .to_string(),
+        );
     }
 
     if cells.len() > CELLS_PER_EXT_BLOB {
@@ -334,12 +395,23 @@ pub fn recover_cells_and_kzg_proofs(
     }
 
     if cells.len() < CELLS_PER_EXT_BLOB / 2 {
-        return Err("Impossible to recover - cells length cannot be less than CELLS_PER_EXT_BLOB / 2".to_string());
+        return Err(
+            "Impossible to recover - cells length cannot be less than CELLS_PER_EXT_BLOB / 2"
+                .to_string(),
+        );
     }
 
     for i in 0..cells.len() {
         if cell_indicies[i] >= CELLS_PER_EXT_BLOB {
-            return Err(format!("Cell index {i} cannot be larger than CELLS_PER_EXT_BLOB"));
+            return Err(format!(
+                "Cell index {i} cannot be larger than CELLS_PER_EXT_BLOB"
+            ));
+        }
+    }
+
+    for cell in recovered_cells.iter_mut() {
+        for fr in cell {
+            *fr = FsFr::null();
         }
     }
 
@@ -348,7 +420,7 @@ pub fn recover_cells_and_kzg_proofs(
 
         for j in 0..FIELD_ELEMENTS_PER_CELL {
             if !recovered_cells[index][j].is_null() {
-                return Err("Invalid cell".to_string());
+                return Err("Invalid output cell".to_string());
             }
         }
 
@@ -360,7 +432,9 @@ pub fn recover_cells_and_kzg_proofs(
     }
 
     if let Some(recovered_proofs) = recovered_proofs {
-        poly_lagrange_to_monomial(recovered_cells.as_flattened_mut(), recovered_cells.as_flattened(), &s.fs);
+        let mut result = vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
+
+        poly_lagrange_to_monomial(&mut result, recovered_cells.as_flattened(), &s.fs)?;
     }
 
     Ok(())

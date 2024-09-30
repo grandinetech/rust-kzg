@@ -119,7 +119,8 @@ pub fn load_trusted_setup_invalid_g1_byte_length_test(
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (mut g1_bytes_monomial, g1_bytes_lagrange,  g2_bytes_monomial) = load_trusted_setup_string(&contents).unwrap();
+    let (mut g1_bytes_monomial, g1_bytes_lagrange, g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Add one more point
     let additional = [0; BYTES_PER_G1];
     g1_bytes_monomial.extend_from_slice(&additional);
@@ -168,7 +169,8 @@ pub fn load_trusted_setup_invalid_g1_point_test(
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (mut g1_bytes_monomial, g1_bytes_lagrange,  g2_bytes_monomial) = load_trusted_setup_string(&contents).unwrap();
+    let (mut g1_bytes_monomial, g1_bytes_lagrange, g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Break first G1 point
     g1_bytes_monomial[0] = 0;
 
@@ -216,7 +218,8 @@ pub fn load_trusted_setup_invalid_g2_byte_length_test(
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (g1_bytes_monomial, g1_bytes_lagrange, mut g2_bytes_monomial) = load_trusted_setup_string(&contents).unwrap();
+    let (g1_bytes_monomial, g1_bytes_lagrange, mut g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Add one more point
     let additional = [0; BYTES_PER_G2];
     g2_bytes_monomial.extend_from_slice(&additional);
@@ -265,7 +268,8 @@ pub fn load_trusted_setup_invalid_g2_point_test(
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (g1_bytes_monomial, g1_bytes_lagrange, mut g2_bytes_monomial) = load_trusted_setup_string(&contents).unwrap();
+    let (g1_bytes_monomial, g1_bytes_lagrange, mut g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Break first G2 point
     g2_bytes_monomial[0] = 0;
 
@@ -313,7 +317,8 @@ pub fn load_trusted_setup_invalid_form_test(
     let mut file = File::open(get_trusted_setup_fixture_path("old")).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (g1_bytes_monomial, g1_bytes_lagrange, g2_bytes_monomial) = load_trusted_setup_string(&contents).unwrap();
+    let (g1_bytes_monomial, g1_bytes_lagrange, g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
 
     let mut loaded_settings = CKZGSettings {
         g1_values_lagrange_brp: null_mut(),

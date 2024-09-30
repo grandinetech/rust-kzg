@@ -9,7 +9,10 @@ use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 
-pub fn generate_trusted_setup(n: usize, secret: [u8; 32usize]) -> (Vec<FsG1>, Vec<FsG1>, Vec<FsG2>) {
+pub fn generate_trusted_setup(
+    n: usize,
+    secret: [u8; 32usize],
+) -> (Vec<FsG1>, Vec<FsG1>, Vec<FsG2>) {
     let s = hash_to_bls_field(&secret);
     let mut s_pow = Fr::one();
 

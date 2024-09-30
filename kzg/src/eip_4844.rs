@@ -942,8 +942,12 @@ fn is_trusted_setup_in_lagrange_form<TG1: G1 + PairingVerify<TG1, TG2>, TG2: G2>
         return false;
     }
 
-    let is_monotomial_form =
-        TG1::verify(&g1_lagrange_values[1], &g2_monomial_values[0], &g1_lagrange_values[0], &g2_monomial_values[1]);
+    let is_monotomial_form = TG1::verify(
+        &g1_lagrange_values[1],
+        &g2_monomial_values[0],
+        &g1_lagrange_values[0],
+        &g2_monomial_values[1],
+    );
     !is_monotomial_form
 }
 
@@ -1005,5 +1009,10 @@ pub fn load_trusted_setup_rust<
 
     let fs = TFFTSettings::new(max_scale)?;
 
-    TKZGSettings::new(&g1_monomial_values, &g1_lagrange_values, &g2_monomial_values, &fs)
+    TKZGSettings::new(
+        &g1_monomial_values,
+        &g1_lagrange_values,
+        &g2_monomial_values,
+        &fs,
+    )
 }

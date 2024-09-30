@@ -76,11 +76,11 @@ impl FFTSettings<FsFr> for FsFFTSettings {
     fn get_roots_of_unity(&self) -> &[FsFr] {
         &self.roots_of_unity
     }
-    
+
     fn get_brp_roots_of_unity(&self) -> &[FsFr] {
         &self.brp_roots_of_unity
     }
-    
+
     fn get_brp_roots_of_unity_at(&self, i: usize) -> FsFr {
         self.brp_roots_of_unity[i]
     }
