@@ -3,6 +3,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::ptr;
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
@@ -12,7 +13,6 @@ use kzg::eip_4844::{
 use kzg::{cfg_into_iter, Fr, G1};
 #[cfg(feature = "std")]
 use libc::FILE;
-use core::ptr;
 #[cfg(feature = "std")]
 use std::fs::File;
 #[cfg(feature = "std")]
@@ -23,8 +23,8 @@ use kzg::eip_4844::load_trusted_setup_string;
 
 use kzg::eip_4844::{
     Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT,
-    BYTES_PER_G1, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
-    FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
+    BYTES_PER_G1, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB,
+    TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
 };
 
 use crate::types::fft_settings::FsFFTSettings;
@@ -71,10 +71,13 @@ fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FsFFTSettings
     };
 
     let reverse_roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.reverse_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
-            .iter()
-            .map(|r| FsFr(*r))
-            .collect::<Vec<FsFr>>()
+        core::slice::from_raw_parts(
+            settings.reverse_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        )
+        .iter()
+        .map(|r| FsFr(*r))
+        .collect::<Vec<FsFr>>()
     };
 
     Ok(FsFFTSettings {
@@ -82,7 +85,7 @@ fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FsFFTSettings
         root_of_unity: roots_of_unity[0],
         roots_of_unity: roots_of_unity,
         brp_roots_of_unity: brp_roots_of_unity,
-        reverse_roots_of_unity: reverse_roots_of_unity
+        reverse_roots_of_unity: reverse_roots_of_unity,
     })
 }
 
@@ -352,78 +355,64 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     }
 
     if !(*s).g1_values_monomial.is_null() {
-        let v = Box::from_raw(
-            core::slice::from_raw_parts_mut(
-                (*s).g1_values_monomial,
-                FIELD_ELEMENTS_PER_BLOB,
-            )
-        );
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g1_values_monomial,
+            FIELD_ELEMENTS_PER_BLOB,
+        ));
         drop(v);
         (*s).g1_values_monomial = ptr::null_mut();
     }
 
     if !(*s).g1_values_lagrange_brp.is_null() {
-        let v = Box::from_raw(
-            core::slice::from_raw_parts_mut(
-                (*s).g1_values_lagrange_brp,
-                FIELD_ELEMENTS_PER_BLOB,
-            )
-        );
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g1_values_lagrange_brp,
+            FIELD_ELEMENTS_PER_BLOB,
+        ));
         drop(v);
         (*s).g1_values_lagrange_brp = ptr::null_mut();
     }
 
     if !(*s).g2_values_monomial.is_null() {
-        let v = Box::from_raw(
-            core::slice::from_raw_parts_mut(
-                (*s).g2_values_monomial,
-                TRUSTED_SETUP_NUM_G2_POINTS,
-            )
-        );
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g2_values_monomial,
+            TRUSTED_SETUP_NUM_G2_POINTS,
+        ));
         drop(v);
         (*s).g2_values_monomial = ptr::null_mut();
     }
 
     if !(*s).x_ext_fft_columns.is_null() {
-        let v = Box::from_raw(
-            core::slice::from_raw_parts_mut(
-                (*s).x_ext_fft_columns,
-                2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
-            )
-        );
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).x_ext_fft_columns,
+            2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
+        ));
         drop(v);
         (*s).x_ext_fft_columns = ptr::null_mut();
     }
 
     if !(*s).roots_of_unity.is_null() {
-        let v = Box::from_raw(
-            core::slice::from_raw_parts_mut(
-                (*s).roots_of_unity,
-                FIELD_ELEMENTS_PER_EXT_BLOB + 1,
-            )
-        );
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        ));
         drop(v);
         (*s).roots_of_unity = ptr::null_mut();
     }
 
     if !(*s).reverse_roots_of_unity.is_null() {
-        let v = Box::from_raw(
-            core::slice::from_raw_parts_mut(
-                (*s).reverse_roots_of_unity,
-                FIELD_ELEMENTS_PER_EXT_BLOB + 1,
-            )
-        );
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).reverse_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        ));
         drop(v);
         (*s).reverse_roots_of_unity = ptr::null_mut();
     }
 
     if !(*s).brp_roots_of_unity.is_null() {
-        let v = Box::from_raw(
-            core::slice::from_raw_parts_mut(
-                (*s).brp_roots_of_unity,
-                FIELD_ELEMENTS_PER_EXT_BLOB,
-            )
-        );
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).brp_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+        ));
         drop(v);
         (*s).brp_roots_of_unity = ptr::null_mut();
     }
