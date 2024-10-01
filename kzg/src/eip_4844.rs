@@ -8,16 +8,16 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
-use sha2::digest::generic_array::sequence;
-use core::cell;
-use core::result;
+// use sha2::digest::generic_array::sequence;
+// use core::cell;
+// use core::result;
 pub use blst::{blst_fr, blst_p1, blst_p2};
 use core::ffi::c_uint;
 use core::hash::Hash;
 use core::hash::Hasher;
 use sha2::{Digest, Sha256};
 use siphasher::sip::SipHasher;
-use kzg::{FFTFr, Fr};
+// use crate::kzg::{FFTFr, Fr};
 use crate::common_utils::reverse_bit_order;
 use crate::msm::precompute::PrecomputationTable;
 use crate::FFTFr;
@@ -26,7 +26,7 @@ use crate::G1Fp;
 use crate::G1GetFp;
 use crate::G1LinComb;
 use crate::{FFTSettings, Fr, G1Mul, KZGSettings, PairingVerify, Poly, G1, G2};
-use crate::fk20_proof::{KzgFK20SingleSettings, KzgFK20MultiSettings, FK20SingleSettings, FK20MultiSettings, fk20_single_da_opt, fk20_multi_da_opt};
+use crate::fk20_proofs::compute_fk20_proofs;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -104,8 +104,17 @@ pub struct KZGCommitment {
 }
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct KZGProof {
     pub bytes: [u8; BYTES_PER_PROOF],
+}
+
+impl Default for KZGProof {
+    fn default() -> Self {
+        KZGProof {
+            bytes: [0; BYTES_PER_PROOF],
+        }
+    }
 }
 
 #[repr(C)]
@@ -117,8 +126,23 @@ pub struct CKZGSettings {
 }
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct Cell {
     bytes: [u8; BYTES_PER_CELL],
+}
+
+impl Default for Cell {
+    fn default() -> Self {
+        Cell {
+            bytes: [0; BYTES_PER_CELL],
+        }
+    }
+}
+
+impl Cell {
+    pub fn to_bytes(&self) -> &[u8; BYTES_PER_CELL] {
+        &self.bytes
+    }
 }
 
 #[repr(C)]
@@ -937,11 +961,11 @@ pub fn load_trusted_setup_rust<
 }
 
 ////////////////////////////// Trait based implementations of functions for EIP-7594 //////////////////////////////
-
-pub fn compute_cells_and_kzg_proofs_rust<
+#[no_mangle]
+pub extern "C" fn compute_cells_and_kzg_proofs_rust<
     TFr: Fr, 
     TPoly: Poly<TFr>,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + PairingVerify<TG1, TG2>,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + PairingVerify<TG1, TG2> + Default,
     TG2: G2,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
@@ -960,11 +984,11 @@ pub fn compute_cells_and_kzg_proofs_rust<
         return Err(String::from("Blob length must be BYTES_PER_BLOB"));
     }
     // Convert the blob to a polynomial.
-    polynomial = blob_to_polynomial(blob)?;
+    let polynomial: TPoly = blob_to_polynomial(blob)?;
 
     // Allocate arrays to hold cells and proofs
-    let mut cells = vec![TFr::default(); CELLS_PER_EXT_BLOB];
-    let mut proofs = vec![TFr::default(); CELLS_PER_EXT_BLOB];
+    let mut cells = vec![Cell::default(); CELLS_PER_EXT_BLOB];
+    let mut proofs = vec![KZGProof::default(); CELLS_PER_EXT_BLOB];
 
     // Compute cells
     let mut data_fr = vec![TFr::zero(); FIELD_ELEMENTS_PER_EXT_BLOB];
@@ -977,20 +1001,21 @@ pub fn compute_cells_and_kzg_proofs_rust<
     
     // Covert field elements to cell bytes
     for (i, cell) in cells.iter_mut().enumerate() {
+        let mut cell_data = Vec::new();
         for j in 0..FIELD_ELEMENTS_PER_CELL {
             let index = i * FIELD_ELEMENTS_PER_CELL + j;
             let fr_bytes = data_fr[index].to_bytes();
-            cell.bytes[j * BYTES_PER_FIELD_ELEMENT..(j+1) * BYTES_PER_FIELD_ELEMENT].copy_from_slice(&fr_bytes);
+            cell_data.extend_from_slice(&fr_bytes);
         }
+        let cell_bytes = cell.to_bytes();
     }
 
     // Compute proofs
-    let mut proofs_g1 = vec![TG1::identity(); CELLS_PER_EXT_BLOB];
-    compute_fk20_proofs(&mut proofs_g1, &polynomial, FIELD_ELEMENTS_PER_BLOB, s);
+    // let mut proofs_g1 = vec![TG1::identity(); CELLS_PER_EXT_BLOB];
+    let mut proofs_g1 = compute_fk20_proofs::<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TKZGSettings, TG1>(&polynomial.get_coeffs(), FIELD_ELEMENTS_PER_BLOB, s)?;
     reverse_bit_order(&mut proofs_g1)?;
 
     Ok((cells, proofs))
-
 }
 
 

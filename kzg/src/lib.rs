@@ -7,10 +7,24 @@ use alloc::vec::Vec;
 use core::fmt::Debug;
 use msm::precompute::PrecomputationTable;
 
+// pub type P1 = blst::blst_p1;
+// pub type P2 = blst::blst_p2;
+// pub type Fp = blst::blst_fp;
+
 pub mod common_utils;
 pub mod eip_4844;
 pub mod msm;
-pub mod fk20_proof;
+pub mod fk20_proofs;
+//pub mod fk20_proof;
+//pub mod consts;
+//pub mod kzg_types;
+//pub mod utils;
+//pub mod fft_g1;
+// pub mod kzg_proofs;
+// pub mod poly;
+// pub mod recover;
+// pub mod zero_poly;
+
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
@@ -70,7 +84,6 @@ pub trait Fr: Default + Clone + PartialEq + Sync {
 
     fn to_scalar(&self) -> Scalar256;
 
-    fn modulo(&self, modulus: [u8; 32]) -> Self;
 }
 
 pub trait G1: Clone + Default + PartialEq + Sync + Debug + Send {

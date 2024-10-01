@@ -926,7 +926,14 @@ dependencies = [
 name = "kzg"
 version = "0.1.0"
 dependencies = [
+ "ark-bls12-381",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
  "blst",
+ "hex",
  "icicle-bls12-381",
  "icicle-core",
  "icicle-cuda-runtime",
