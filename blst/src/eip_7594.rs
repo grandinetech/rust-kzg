@@ -434,6 +434,8 @@ pub fn recover_cells_and_kzg_proofs(
         recover_cells(recovered_cells.as_flattened_mut(), cell_indicies, s)?;
     }
 
+    let recovered_cells = &recovered_cells[..];
+
     if let Some(recovered_proofs) = recovered_proofs {
         let mut poly = vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
 
@@ -441,7 +443,7 @@ pub fn recover_cells_and_kzg_proofs(
 
         compute_fk20_proofs(recovered_proofs, &poly, FIELD_ELEMENTS_PER_BLOB, s)?;
 
-        reverse_bit_order(recovered_cells)?;
+        reverse_bit_order(recovered_proofs)?;
     }
 
     Ok(())
