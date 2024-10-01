@@ -752,6 +752,14 @@ pub fn verify_cell_kzg_proof_batch(
         return Err("Cell count mismatch".to_string());
     }
 
+    if commitments.len() != cells.len() {
+        return Err("Commitment count mismatch".to_string());
+    }
+
+    if proofs.len() != cells.len() {
+        return Err("Proof count mismatch".to_string());
+    }
+
     if cells.len() == 0 {
         return Ok(true);
     }
@@ -759,6 +767,12 @@ pub fn verify_cell_kzg_proof_batch(
     for cell_index in cell_indices {
         if *cell_index >= CELLS_PER_EXT_BLOB {
             return Err("Invalid cell index".to_string());
+        }
+    }
+
+    for proof in proofs {
+        if !proof.is_valid() {
+            return Err("Proof is not valid".to_string());
         }
     }
 
@@ -770,6 +784,12 @@ pub fn verify_cell_kzg_proof_batch(
         &mut commitment_indices,
         &mut new_count,
     );
+
+    for commitment in unique_commitments.iter() {
+        if !commitment.is_valid() {
+            return Err("Commitment is not valid".to_string());
+        }
+    }
 
     let unique_commitments = &unique_commitments[0..new_count];
 
