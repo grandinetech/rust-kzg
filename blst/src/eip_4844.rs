@@ -7,8 +7,7 @@ use core::ptr;
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
-    verify_kzg_proof_rust, PrecomputationTableManager, FIELD_ELEMENTS_PER_CELL,
-    FIELD_ELEMENTS_PER_EXT_BLOB,
+    verify_kzg_proof_rust, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
 };
 use kzg::{cfg_into_iter, Fr, G1};
 #[cfg(feature = "std")]
@@ -22,24 +21,22 @@ use std::io::Read;
 use kzg::eip_4844::load_trusted_setup_string;
 
 use kzg::eip_4844::{
-    Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT,
-    BYTES_PER_G1, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB,
-    TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
+    Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof, BYTES_PER_G1, C_KZG_RET,
+    C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS,
 };
 
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fp::FsFp;
 use crate::types::fr::FsFr;
-use crate::types::g1::{FsG1, FsG1Affine};
 
-use crate::types::g2::FsG2;
+use crate::types::g1::FsG1;
 use crate::types::kzg_settings::FsKZGSettings;
+use crate::utils::{
+    deserialize_blob, handle_ckzg_badargs, kzg_settings_to_c, kzg_settings_to_rust,
+    PRECOMPUTATION_TABLES,
+};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
-
-static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<FsFr, FsG1, FsFp, FsG1Affine> =
-    PrecomputationTableManager::new();
 
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings, String> {
@@ -51,188 +48,6 @@ pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings,
     let (g1_monomial_bytes, g1_lagrange_bytes, g2_monomial_bytes) =
         load_trusted_setup_string(&contents)?;
     load_trusted_setup_rust(&g1_monomial_bytes, &g1_lagrange_bytes, &g2_monomial_bytes)
-}
-
-fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FsFFTSettings, String> {
-    let settings = unsafe { &*c_settings };
-
-    let roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
-            .iter()
-            .map(|r| FsFr(*r))
-            .collect::<Vec<FsFr>>()
-    };
-
-    let brp_roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
-            .iter()
-            .map(|r| FsFr(*r))
-            .collect::<Vec<FsFr>>()
-    };
-
-    let reverse_roots_of_unity = unsafe {
-        core::slice::from_raw_parts(
-            settings.reverse_roots_of_unity,
-            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
-        )
-        .iter()
-        .map(|r| FsFr(*r))
-        .collect::<Vec<FsFr>>()
-    };
-
-    Ok(FsFFTSettings {
-        max_width: FIELD_ELEMENTS_PER_EXT_BLOB,
-        root_of_unity: roots_of_unity[0],
-        roots_of_unity: roots_of_unity,
-        brp_roots_of_unity: brp_roots_of_unity,
-        reverse_roots_of_unity: reverse_roots_of_unity,
-    })
-}
-
-fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<FsKZGSettings, String> {
-    Ok(FsKZGSettings {
-        fs: fft_settings_to_rust(c_settings)?,
-        g1_values_monomial: unsafe {
-            core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
-        }
-        .iter()
-        .map(|r| FsG1(*r))
-        .collect::<Vec<_>>(),
-        g1_values_lagrange_brp: unsafe {
-            core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, FIELD_ELEMENTS_PER_BLOB)
-        }
-        .iter()
-        .map(|r| FsG1(*r))
-        .collect::<Vec<_>>(),
-        g2_values_monomial: unsafe {
-            core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
-        }
-        .iter()
-        .map(|r| FsG2(*r))
-        .collect::<Vec<_>>(),
-        x_ext_fft_columns: unsafe {
-            core::slice::from_raw_parts(
-                c_settings.x_ext_fft_columns,
-                2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
-            )
-        }
-        .iter()
-        .map(|it| {
-            unsafe { core::slice::from_raw_parts(*it, FIELD_ELEMENTS_PER_CELL) }
-                .iter()
-                .map(|it| FsG1(*it))
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>(),
-        precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
-    })
-}
-
-fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
-    CKZGSettings {
-        roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .roots_of_unity
-                .iter()
-                .map(|r| r.0)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        brp_roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .brp_roots_of_unity
-                .iter()
-                .map(|r| r.0)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        reverse_roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .reverse_roots_of_unity
-                .iter()
-                .map(|r| r.0)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g1_values_monomial: Box::leak(
-            rust_settings
-                .g1_values_monomial
-                .iter()
-                .map(|r| r.0)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g1_values_lagrange_brp: Box::leak(
-            rust_settings
-                .g1_values_lagrange_brp
-                .iter()
-                .map(|r| r.0)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g2_values_monomial: Box::leak(
-            rust_settings
-                .g2_values_monomial
-                .iter()
-                .map(|r| r.0)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        x_ext_fft_columns: Box::leak(
-            rust_settings
-                .x_ext_fft_columns
-                .iter()
-                .map(|r| {
-                    Box::leak(
-                        r.iter()
-                            .map(|it| it.0)
-                            .collect::<Vec<_>>()
-                            .into_boxed_slice(),
-                    )
-                    .as_mut_ptr()
-                })
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        tables: core::ptr::null_mut(),
-        wbits: 0,
-        scratch_size: 0,
-    }
-}
-
-unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, C_KZG_RET> {
-    (*blob)
-        .bytes
-        .chunks(BYTES_PER_FIELD_ELEMENT)
-        .map(|chunk| {
-            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
-            bytes.copy_from_slice(chunk);
-            if let Ok(result) = FsFr::from_bytes(&bytes) {
-                Ok(result)
-            } else {
-                Err(C_KZG_RET_BADARGS)
-            }
-        })
-        .collect::<Result<Vec<FsFr>, C_KZG_RET>>()
-}
-
-macro_rules! handle_ckzg_badargs {
-    ($x: expr) => {
-        match $x {
-            Ok(value) => value,
-            Err(_) => return C_KZG_RET_BADARGS,
-        }
-    };
 }
 
 /// # Safety
