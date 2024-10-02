@@ -159,7 +159,7 @@ pub struct CKZGSettings {
 
 #[repr(C)]
 pub struct Cell {
-    bytes: [u8; BYTES_PER_CELL],
+    pub bytes: [u8; BYTES_PER_CELL],
 }
 
 #[repr(C)]

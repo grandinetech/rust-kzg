@@ -8,7 +8,8 @@ mod tests {
     use rust_kzg_blst::{
         eip_4844::load_trusted_setup_filename_rust,
         eip_7594::{
-            compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs, verify_cell_kzg_proof_batch,
+            compute_cells_and_kzg_proofs_rust, recover_cells_and_kzg_proofs_rust,
+            verify_cell_kzg_proof_batch_rust,
         },
         types::{
             fft_settings::FsFFTSettings,
@@ -34,7 +35,7 @@ mod tests {
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
-            &compute_cells_and_kzg_proofs,
+            &compute_cells_and_kzg_proofs_rust,
             &bytes_to_blob,
         );
     }
@@ -43,7 +44,7 @@ mod tests {
     pub fn test_vectors_recover_cells_and_kzg_proofs_() {
         test_vectors_recover_cells_and_kzg_proofs(
             &load_trusted_setup_filename_rust,
-            &recover_cells_and_kzg_proofs,
+            &recover_cells_and_kzg_proofs_rust,
         );
     }
 
@@ -51,7 +52,7 @@ mod tests {
     pub fn test_vectors_verify_cell_kzg_proof_batch_() {
         test_vectors_verify_cell_kzg_proof_batch(
             &load_trusted_setup_filename_rust,
-            &verify_cell_kzg_proof_batch,
+            &verify_cell_kzg_proof_batch_rust,
         );
     }
 }
