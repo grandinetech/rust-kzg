@@ -1,7 +1,6 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
-use alloc::string::String;
 use alloc::vec::Vec;
 use core::ptr;
 use kzg::eip_4844::{
@@ -29,7 +28,6 @@ use kzg::eip_4844::{
 use crate::types::fr::FsFr;
 
 use crate::types::g1::FsG1;
-use crate::types::kzg_settings::FsKZGSettings;
 use crate::utils::{
     deserialize_blob, handle_ckzg_badargs, kzg_settings_to_c, kzg_settings_to_rust,
     PRECOMPUTATION_TABLES,
@@ -39,7 +37,9 @@ use crate::utils::{
 use rayon::prelude::*;
 
 #[cfg(feature = "std")]
-pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings, String> {
+pub fn load_trusted_setup_filename_rust(
+    filepath: &str,
+) -> Result<crate::types::kzg_settings::FsKZGSettings, alloc::string::String> {
     let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)
