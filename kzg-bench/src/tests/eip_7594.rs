@@ -15,6 +15,7 @@ const RECOVER_CELLS_AND_KZG_PROOFS_TEST_VECTORS: &str =
 const VERIFY_CELL_KZG_PROOF_BATCH_TEST_VECTORS: &str =
     "src/test_vectors/verify_cell_kzg_proof_batch/*/*/*";
 
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_compute_cells_and_kzg_proofs<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -98,6 +99,7 @@ pub fn test_vectors_compute_cells_and_kzg_proofs<
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_recover_cells_and_kzg_proofs<
     TFr: Fr + Debug,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -216,6 +218,7 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn test_vectors_verify_cell_kzg_proof_batch<
     TFr: Fr + Debug,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -291,7 +294,7 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<
             .get_commitment_bytes()
             .unwrap()
             .iter()
-            .map(|bytes| TG1::from_bytes(&bytes))
+            .map(|bytes| TG1::from_bytes(bytes))
             .collect::<Result<Vec<_>, _>>()
         {
             Ok(v) => v,
@@ -316,7 +319,7 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<
             .get_proof_bytes()
             .unwrap()
             .iter()
-            .map(|bytes| TG1::from_bytes(&bytes))
+            .map(|bytes| TG1::from_bytes(bytes))
             .collect::<Result<Vec<_>, _>>()
         {
             Ok(v) => v,

@@ -9,6 +9,7 @@ pub const SECRET: [u8; 32usize] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
+#[allow(clippy::type_complexity)]
 pub fn fk_single<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -69,6 +70,7 @@ pub fn fk_single<
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn fk_single_strided<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -116,6 +118,7 @@ pub fn fk_single_strided<
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn fk_multi_settings<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -139,6 +142,7 @@ pub fn fk_multi_settings<
     let _fk = TFK20MultiSettings::new(&ks, 32, 4).unwrap();
 }
 
+#[allow(clippy::type_complexity)]
 fn fk_multi_case<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -243,6 +247,7 @@ fn fk_multi_case<
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn fk_multi_chunk_len_1_512<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -269,6 +274,7 @@ pub fn fk_multi_chunk_len_1_512<
     >(1, 512, &generate_trusted_setup);
 }
 
+#[allow(clippy::type_complexity)]
 pub fn fk_multi_chunk_len_16_512<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -295,6 +301,7 @@ pub fn fk_multi_chunk_len_16_512<
     >(16, 512, &generate_trusted_setup);
 }
 
+#[allow(clippy::type_complexity)]
 pub fn fk_multi_chunk_len_16_16<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,

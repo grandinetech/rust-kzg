@@ -6,6 +6,7 @@ pub const SECRET: [u8; 32usize] = [
 ];
 
 /// Check that both FFT implementations produce the same results
+#[allow(clippy::type_complexity)]
 pub fn proof_single<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -52,6 +53,7 @@ pub fn proof_single<
         .unwrap());
 }
 
+#[allow(clippy::type_complexity)]
 pub fn commit_to_nil_poly<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -80,6 +82,7 @@ pub fn commit_to_nil_poly<
 
 //Test is made to panic so put this under #[test]
 //#[should_panic(expected = "Poly given is too long")]
+#[allow(clippy::type_complexity)]
 pub fn commit_to_too_long_poly<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -107,6 +110,7 @@ pub fn commit_to_too_long_poly<
 }
 
 // Instead of panicking, commit should return an err
+#[allow(clippy::type_complexity)]
 pub fn commit_to_too_long_poly_returns_err<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -133,6 +137,7 @@ pub fn commit_to_too_long_poly_returns_err<
 }
 
 //It was not verified that this test works, use with caution
+#[allow(clippy::type_complexity)]
 pub fn proof_multi<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,

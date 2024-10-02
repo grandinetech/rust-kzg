@@ -232,6 +232,7 @@ where
 
 ////////////////////////////// Utility functions for EIP-4844 //////////////////////////////
 
+#[allow(clippy::type_complexity)]
 pub fn load_trusted_setup_string(contents: &str) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>), String> {
     let mut offset = 0;
 

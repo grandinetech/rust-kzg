@@ -13,6 +13,7 @@ pub const SECRET: [u8; 32usize] = [
 
 const BENCH_SCALE: usize = 14;
 
+#[allow(clippy::type_complexity)]
 pub fn bench_fk_single_da<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -53,6 +54,7 @@ pub fn bench_fk_single_da<
     c.bench_function(&id, |b| b.iter(|| fk.data_availability(&p).unwrap()));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn bench_fk_multi_da<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
