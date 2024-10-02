@@ -25,6 +25,7 @@ pub struct Test<'a> {
 }
 
 impl Test<'_> {
+    #[allow(clippy::type_complexity)]
     pub fn get_output(&self) -> Option<(Vec<Vec<u8>>, Vec<Vec<u8>>)> {
         self.output.clone().map(|(cells, proofs)| {
             (

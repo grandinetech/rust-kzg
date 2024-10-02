@@ -24,7 +24,7 @@ use crate::types::{
 fn fr_ifft(output: &mut [FsFr], input: &[FsFr], s: &FsFFTSettings) -> Result<(), String> {
     let stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
 
-    fft_fr_fast(output, &input, 1, &s.reverse_roots_of_unity, stride);
+    fft_fr_fast(output, input, 1, &s.reverse_roots_of_unity, stride);
 
     let inv_len = FsFr::from_u64(input.len().try_into().unwrap()).inverse();
     for el in output {
@@ -36,7 +36,7 @@ fn fr_ifft(output: &mut [FsFr], input: &[FsFr], s: &FsFFTSettings) -> Result<(),
 
 fn fr_fft(output: &mut [FsFr], input: &[FsFr], s: &FsFFTSettings) -> Result<(), String> {
     let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
-    fft_fr_fast(output, &input, 1, &s.roots_of_unity, roots_stride);
+    fft_fr_fast(output, input, 1, &s.roots_of_unity, roots_stride);
 
     Ok(())
 }
@@ -113,11 +113,11 @@ fn g1_ifft(out: &mut [FsG1], input: &[FsG1], s: &FsKZGSettings) -> Result<(), St
     }
 
     let stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
-    fft_g1_fast(out, &input, 1, &s.fs.reverse_roots_of_unity, stride);
+    fft_g1_fast(out, input, 1, &s.fs.reverse_roots_of_unity, stride);
 
     let inv_len = FsFr::from_u64(input.len() as u64).eucl_inverse();
-    for i in 0..input.len() {
-        out[i] = out[i].mul(&inv_len);
+    for out in out.iter_mut().take(input.len()) {
+        *out = out.mul(&inv_len);
     }
 
     Ok(())
@@ -169,8 +169,8 @@ fn compute_fk20_proofs(
     let mut h = vec![FsG1::identity(); k2];
     g1_ifft(&mut h, &h_ext_fft, s)?;
 
-    for i in k..k2 {
-        h[i] = FsG1::identity();
+    for h in h.iter_mut().take(k2).skip(k) {
+        *h = FsG1::identity();
     }
 
     g1_fft(proofs, &h, s)?;
@@ -200,19 +200,9 @@ pub fn compute_cells_and_kzg_proofs_rust(
 
     // compute cells
     if let Some(cells) = cells {
-        let mut data_fr = vec![FsFr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
+        fr_fft(cells.as_flattened_mut(), &poly_monomial, &s.fs)?;
 
-        fr_fft(&mut data_fr, &poly_monomial, &s.fs)?;
-
-        reverse_bit_order(&mut data_fr)?;
-
-        for i in 0..CELLS_PER_EXT_BLOB {
-            for j in 0..FIELD_ELEMENTS_PER_CELL {
-                let index = i * FIELD_ELEMENTS_PER_CELL + j;
-
-                cells[i][j] = data_fr[index];
-            }
-        }
+        reverse_bit_order(cells.as_flattened_mut())?;
     };
 
     // compute proofs
@@ -225,7 +215,7 @@ pub fn compute_cells_and_kzg_proofs_rust(
 }
 
 fn compute_vanishing_polynomial_from_roots(roots: &[FsFr]) -> Result<Vec<FsFr>, String> {
-    if roots.len() == 0 {
+    if roots.is_empty() {
         return Err("Roots cannot be empty".to_string());
     }
 
@@ -252,7 +242,7 @@ fn vanishing_polynomial_for_missing_cells(
     missing_cell_indicies: &[usize],
     s: &FsKZGSettings,
 ) -> Result<Vec<FsFr>, String> {
-    if missing_cell_indicies.len() == 0 || missing_cell_indicies.len() >= CELLS_PER_EXT_BLOB {
+    if missing_cell_indicies.is_empty() || missing_cell_indicies.len() >= CELLS_PER_EXT_BLOB {
         return Err("Invalid missing cell indicies count".to_string());
     }
 
@@ -276,14 +266,14 @@ fn vanishing_polynomial_for_missing_cells(
 
 fn shift_poly(poly: &mut [FsFr], shift_factor: &FsFr) {
     let mut factor_power = FsFr::one();
-    for i in 1..poly.len() {
+    for coeff in poly.iter_mut().skip(1) {
         factor_power = factor_power.mul(shift_factor);
-        poly[i] = poly[i].mul(&factor_power);
+        *coeff = coeff.mul(&factor_power);
     }
 }
 
 fn coset_fft(input: &[FsFr], s: &FsKZGSettings) -> Result<Vec<FsFr>, String> {
-    if input.len() == 0 {
+    if input.is_empty() {
         return Err("Invalid input length".to_string());
     }
 
@@ -298,7 +288,7 @@ fn coset_fft(input: &[FsFr], s: &FsKZGSettings) -> Result<Vec<FsFr>, String> {
 }
 
 fn coset_ifft(input: &[FsFr], s: &FsKZGSettings) -> Result<Vec<FsFr>, String> {
-    if input.len() == 0 {
+    if input.is_empty() {
         return Err("Invalid input length".to_string());
     }
 
@@ -406,11 +396,9 @@ pub fn recover_cells_and_kzg_proofs_rust(
         );
     }
 
-    for i in 0..cells.len() {
-        if cell_indicies[i] >= CELLS_PER_EXT_BLOB {
-            return Err(format!(
-                "Cell index {i} cannot be larger than CELLS_PER_EXT_BLOB"
-            ));
+    for cell_index in cell_indicies {
+        if *cell_index >= CELLS_PER_EXT_BLOB {
+            return Err("Cell index cannot be larger than CELLS_PER_EXT_BLOB".to_string());
         }
     }
 
@@ -436,6 +424,7 @@ pub fn recover_cells_and_kzg_proofs_rust(
         recover_cells(recovered_cells.as_flattened_mut(), cell_indicies, s)?;
     }
 
+    #[allow(clippy::redundant_slicing)]
     let recovered_cells = &recovered_cells[..];
 
     if let Some(recovered_proofs) = recovered_proofs {
@@ -538,7 +527,7 @@ fn compute_r_powers_for_verify_cell_kzg_proof_batch(
         return Err("Failed to create challenge - invalid length".to_string());
     }
 
-    let eval_challenge = hash(&bytes);
+    let eval_challenge = hash(bytes);
     let r = hash_to_bls_field(&eval_challenge);
 
     Ok(compute_powers(&r, cells.len()))
@@ -559,7 +548,7 @@ fn compute_weighted_sum_of_commitments(
     let mut sum_of_commitments = FsG1::default();
     g1_linear_combination(
         &mut sum_of_commitments,
-        &commitments,
+        commitments,
         &commitment_weights,
         commitments.len(),
         None,
@@ -607,7 +596,7 @@ fn get_coset_shift_pow_for_cell(
      */
     let h_k_pow_idx = cell_idx_rbl * FIELD_ELEMENTS_PER_CELL;
 
-    if h_k_pow_idx >= FIELD_ELEMENTS_PER_EXT_BLOB + 1 {
+    if h_k_pow_idx > FIELD_ELEMENTS_PER_EXT_BLOB {
         return Err("Invalid cell index".to_string());
     }
 
@@ -639,11 +628,11 @@ fn get_inv_coset_shift_for_cell(
     let inv_coset_factor_idx = FIELD_ELEMENTS_PER_EXT_BLOB - cell_index_rbl;
 
     /* Get h_k^{-1} using the index */
-    if inv_coset_factor_idx >= FIELD_ELEMENTS_PER_EXT_BLOB + 1 {
+    if inv_coset_factor_idx > FIELD_ELEMENTS_PER_EXT_BLOB {
         return Err("Invalid cell index".to_string());
     }
 
-    return Ok(settings.get_roots_of_unity_at(inv_coset_factor_idx));
+    Ok(settings.get_roots_of_unity_at(inv_coset_factor_idx))
 }
 
 fn compute_commitment_to_aggregated_interpolation_poly(
@@ -667,7 +656,7 @@ fn compute_commitment_to_aggregated_interpolation_poly(
         }
     }
 
-    let mut is_cell_used = vec![false; CELLS_PER_EXT_BLOB];
+    let mut is_cell_used = [false; CELLS_PER_EXT_BLOB];
 
     for cell_index in cell_indices {
         is_cell_used[*cell_index] = true;
@@ -675,8 +664,8 @@ fn compute_commitment_to_aggregated_interpolation_poly(
 
     let mut aggregated_interpolation_poly = vec![FsFr::zero(); FIELD_ELEMENTS_PER_CELL];
     let mut column_interpolation_poly = vec![FsFr::default(); FIELD_ELEMENTS_PER_CELL];
-    for i in 0..CELLS_PER_EXT_BLOB {
-        if !is_cell_used[i] {
+    for (i, is_cell_used) in is_cell_used.iter().enumerate() {
+        if !is_cell_used {
             continue;
         }
 
@@ -762,7 +751,7 @@ pub fn verify_cell_kzg_proof_batch_rust(
         return Err("Proof count mismatch".to_string());
     }
 
-    if cells.len() == 0 {
+    if cells.is_empty() {
         return Ok(true);
     }
 
@@ -796,7 +785,7 @@ pub fn verify_cell_kzg_proof_batch_rust(
     let unique_commitments = &unique_commitments[0..new_count];
 
     let r_powers = compute_r_powers_for_verify_cell_kzg_proof_batch(
-        &unique_commitments,
+        unique_commitments,
         &commitment_indices,
         cell_indices,
         cells,
@@ -804,13 +793,13 @@ pub fn verify_cell_kzg_proof_batch_rust(
     )?;
 
     let mut proof_lincomb = FsG1::default();
-    g1_linear_combination(&mut proof_lincomb, &proofs, &r_powers, cells.len(), None);
+    g1_linear_combination(&mut proof_lincomb, proofs, &r_powers, cells.len(), None);
 
     let final_g1_sum =
-        compute_weighted_sum_of_commitments(&unique_commitments, &commitment_indices, &r_powers);
+        compute_weighted_sum_of_commitments(unique_commitments, &commitment_indices, &r_powers);
 
     let interpolation_poly_commit =
-        compute_commitment_to_aggregated_interpolation_poly(&r_powers, &cell_indices, &cells, s)?;
+        compute_commitment_to_aggregated_interpolation_poly(&r_powers, cell_indices, cells, s)?;
 
     let final_g1_sum = final_g1_sum.sub(&interpolation_poly_commit);
 
@@ -910,7 +899,7 @@ pub unsafe extern "C" fn recover_cells_and_kzg_proofs(
         .map(|it| -> Result<[FsFr; FIELD_ELEMENTS_PER_CELL], String> {
             it.bytes
                 .chunks(BYTES_PER_FIELD_ELEMENT)
-                .map(|bytes| FsFr::from_bytes(&bytes))
+                .map(FsFr::from_bytes)
                 .collect::<Result<Vec<_>, String>>()
                 .and_then(|frs| {
                     frs.try_into()
@@ -979,7 +968,7 @@ pub unsafe extern "C" fn verify_cell_kzg_proof_batch(
         .map(|it| -> Result<[FsFr; FIELD_ELEMENTS_PER_CELL], String> {
             it.bytes
                 .chunks(BYTES_PER_FIELD_ELEMENT)
-                .map(|bytes| FsFr::from_bytes(&bytes))
+                .map(FsFr::from_bytes)
                 .collect::<Result<Vec<_>, String>>()
                 .and_then(|frs| {
                     frs.try_into()

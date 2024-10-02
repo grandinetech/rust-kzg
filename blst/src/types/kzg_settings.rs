@@ -44,44 +44,18 @@ fn g1_fft(output: &mut [FsG1], input: &[FsG1], s: &FsFFTSettings) -> Result<(), 
     let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
     fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride);
 
-    return Ok(());
+    Ok(())
 }
 
 fn toeplitz_part_1(output: &mut [FsG1], x: &[FsG1], s: &FsFFTSettings) -> Result<(), String> {
-    // g1_t *out, const g1_t *x, size_t n, const KZGSettings *s
-
-    //     C_KZG_RET ret;
-    //     size_t n2 = n * 2;
     let n = x.len();
     let n2 = n * 2;
-    //     g1_t *x_ext;
-
-    //     /* Create extended array of points */
-    //     ret = new_g1_array(&x_ext, n2);
     let mut x_ext = vec![FsG1::identity(); n2];
-    //     if (ret != C_KZG_OK) goto out;
 
-    //     /* Copy x & extend with zero */
-    //     for (size_t i = 0; i < n; i++) {
-    //         x_ext[i] = x[i];
-    //     }
+    x_ext[..n].copy_from_slice(x);
 
-    for i in 0..n {
-        x_ext[i] = x[i];
-    }
-
-    //     for (size_t i = n; i < n2; i++) {
-    //         x_ext[i] = G1_IDENTITY;
-    //     }
-
-    //     /* Peform forward transformation */
     g1_fft(output, &x_ext, s)?;
-    //     ret = g1_fft(out, x_ext, n2, s);
-    //     if (ret != C_KZG_OK) goto out;
 
-    // out:
-    //     c_kzg_free(x_ext);
-    //     return ret;
     Ok(())
 }
 
@@ -109,13 +83,13 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
 
         for offset in 0..FIELD_ELEMENTS_PER_CELL {
             let start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
-            for i in 0..(k - 1) {
+            for (i, p) in x.iter_mut().enumerate().take(k - 1) {
                 let j = start - i * FIELD_ELEMENTS_PER_CELL;
-                x[i] = g1_monomial[j];
+                *p = g1_monomial[j];
             }
             x[k - 1] = FsG1::identity();
 
-            toeplitz_part_1(&mut points, &x, &fft_settings)?;
+            toeplitz_part_1(&mut points, &x, fft_settings)?;
 
             for row in 0..k2 {
                 x_ext_fft_columns[row][offset] = points[row];

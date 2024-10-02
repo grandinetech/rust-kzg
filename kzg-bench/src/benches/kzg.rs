@@ -8,6 +8,7 @@ pub const SECRET: [u8; 32usize] = [
 
 const BENCH_SCALE: usize = 15;
 
+#[allow(clippy::type_complexity)]
 pub fn bench_commit_to_poly<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -32,6 +33,7 @@ pub fn bench_commit_to_poly<
     c.bench_function(&id, |b| b.iter(|| ks.commit_to_poly(&poly).unwrap()));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn bench_compute_proof_single<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,

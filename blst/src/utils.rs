@@ -98,9 +98,9 @@ pub(crate) fn fft_settings_to_rust(
     Ok(FsFFTSettings {
         max_width: FIELD_ELEMENTS_PER_EXT_BLOB,
         root_of_unity: roots_of_unity[0],
-        roots_of_unity: roots_of_unity,
-        brp_roots_of_unity: brp_roots_of_unity,
-        reverse_roots_of_unity: reverse_roots_of_unity,
+        roots_of_unity,
+        brp_roots_of_unity,
+        reverse_roots_of_unity,
     })
 }
 
