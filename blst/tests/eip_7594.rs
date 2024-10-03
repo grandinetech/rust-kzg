@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use kzg::eip_4844::{bytes_to_blob, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL};
+    use kzg::eip_4844::{blob_to_kzg_commitment_rust, bytes_to_blob, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL};
     use kzg_bench::tests::{eip_4844::generate_random_blob_bytes, eip_7594::{
         test_vectors_compute_cells_and_kzg_proofs, test_vectors_recover_cells_and_kzg_proofs,
         test_vectors_verify_cell_kzg_proof_batch,
@@ -58,7 +58,7 @@ mod tests {
 
     #[test]
     pub fn test_recover_cells_and_kzg_proofs_succeeds_random_blob() {
-        let s = load_trusted_setup_filename_rust(get_trusted_setup_path().as_str()).unwrap();
+        let settings = load_trusted_setup_filename_rust(get_trusted_setup_path().as_str()).unwrap();
         let mut rng = rand::thread_rng();
         
         /* Get a random blob */
@@ -69,7 +69,7 @@ mod tests {
         let mut proofs = vec![FsG1::default(); CELLS_PER_EXT_BLOB];
         
         /* Get the cells and proofs */
-        let mut result = compute_cells_and_kzg_proofs_rust(Some(&mut cells), Some(&mut proofs), &blob, &s);
+        let mut result = compute_cells_and_kzg_proofs_rust(Some(&mut cells), Some(&mut proofs), &blob, &settings);
         assert!(result.is_ok());
 
         let cell_indices: Vec<usize>= (0..).step_by(2).take(CELLS_PER_EXT_BLOB / 2).collect();
@@ -84,11 +84,43 @@ mod tests {
         let mut recovered_proofs = vec![FsG1::default(); CELLS_PER_EXT_BLOB];
 
         /* Reconstruct with half of the cells */
-        result = recover_cells_and_kzg_proofs_rust(&mut recovered_cells, Some(&mut recovered_proofs), &cell_indices, &mut partial_cells, &s);
+        result = recover_cells_and_kzg_proofs_rust(&mut recovered_cells, Some(&mut recovered_proofs), &cell_indices, &mut partial_cells, &settings);
         assert!(result.is_ok());
 
         /* Check that all of the cells match */
         assert!(recovered_cells == cells, "Cells do not match");
         assert!(recovered_proofs == proofs, "Proofs do not match");
+    }
+
+
+    #[test]
+    pub fn test_verify_cell_kzg_proof_batch_succeeds_random_blob() {
+        let settings = load_trusted_setup_filename_rust(get_trusted_setup_path().as_str()).unwrap();
+        let mut rng = rand::thread_rng();
+        
+        /* Get a random blob */
+        let blob_bytes = generate_random_blob_bytes(&mut rng);
+        let blob = bytes_to_blob(&blob_bytes).unwrap();
+
+        /* Get the commitment to the blob */
+        let commitment_result = blob_to_kzg_commitment_rust(&blob, &settings);
+        assert!(commitment_result.is_ok());
+        let commitment = commitment_result.unwrap();
+
+        let mut cells = vec![ core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| FsFr::default()); CELLS_PER_EXT_BLOB ];
+        let mut proofs = vec![FsG1::default(); CELLS_PER_EXT_BLOB];
+        
+        /* Compute cells and proofs */
+        let result = compute_cells_and_kzg_proofs_rust(Some(&mut cells), Some(&mut proofs), &blob, &settings);
+        assert!(result.is_ok());
+
+        /* Initialize list of commitments & cell indices */
+        let commitments = vec![ commitment; CELLS_PER_EXT_BLOB];
+
+        let cell_indices: Vec<usize>= (0..).step_by(1).take(CELLS_PER_EXT_BLOB).collect();
+
+        /* Verify all the proofs */
+        let verify_result = verify_cell_kzg_proof_batch_rust(&commitments, &cell_indices, &cells, &proofs, &settings);
+        assert!(verify_result.is_ok());
     }
 }
