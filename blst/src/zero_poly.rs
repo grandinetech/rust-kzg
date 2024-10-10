@@ -66,11 +66,11 @@ impl FsFFTSettings {
         let mut coeffs = SmallVec::<[FsFr; DEGREE_OF_PARTIAL]>::new();
 
         // For the first member, store -w_0 as constant term
-        coeffs.push(self.expanded_roots_of_unity[idxs[0] * stride].negate());
+        coeffs.push(self.roots_of_unity[idxs[0] * stride].negate());
 
         for (i, idx) in idxs.iter().copied().enumerate().skip(1) {
             // For member (x - w_i) take coefficient as -(w_i + w_{i-1} + ...)
-            let neg_di = self.expanded_roots_of_unity[idx * stride].negate();
+            let neg_di = self.roots_of_unity[idx * stride].negate();
             coeffs.push(neg_di.add(&coeffs[i - 1]));
 
             // Multiply all previous members by (x - w_i)

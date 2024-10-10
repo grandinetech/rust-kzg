@@ -92,6 +92,6 @@ pub fn is_power_of_two(n: usize) -> bool {
 }
 
 pub fn reverse_bits_limited(length: usize, value: usize) -> usize {
-    let unused_bits = length.leading_zeros();
+    let unused_bits = length.leading_zeros() + 1;
     value.reverse_bits() >> unused_bits
 }

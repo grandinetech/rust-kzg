@@ -16,20 +16,8 @@ pub fn compare_ft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTG1<T
     let mut fast = vec![TG1::default(); data.len()];
     let mut slow = vec![TG1::default(); data.len()];
 
-    fft_g1_fast(
-        &mut fast,
-        &data,
-        1,
-        fs.get_expanded_roots_of_unity(),
-        stride,
-    );
-    fft_g1_slow(
-        &mut slow,
-        &data,
-        1,
-        fs.get_expanded_roots_of_unity(),
-        stride,
-    );
+    fft_g1_fast(&mut fast, &data, 1, fs.get_roots_of_unity(), stride);
+    fft_g1_slow(&mut slow, &data, 1, fs.get_roots_of_unity(), stride);
 
     for i in 0..fs.get_max_width() {
         assert!(fast[i].equals(&slow[i]));
@@ -103,7 +91,7 @@ pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<
         &mut slow,
         &data,
         1,
-        fft_settings.get_expanded_roots_of_unity(),
+        fft_settings.get_roots_of_unity(),
         1,
         fft_settings.get_max_width(),
     );
@@ -111,7 +99,7 @@ pub fn compare_sft_fft<TFr: Fr, TG1: G1, TFFTSettings: FFTSettings<TFr> + FFTFr<
         &mut fast,
         &data,
         1,
-        fft_settings.get_expanded_roots_of_unity(),
+        fft_settings.get_roots_of_unity(),
         1,
         fft_settings.get_max_width(),
     );

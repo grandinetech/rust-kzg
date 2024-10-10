@@ -8,6 +8,7 @@ pub const SECRET: [u8; 32usize] = [
 
 const BENCH_SCALE: usize = 15;
 
+#[allow(clippy::type_complexity)]
 pub fn bench_commit_to_poly<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -19,11 +20,11 @@ pub fn bench_commit_to_poly<
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     let fs = TFFTSettings::new(BENCH_SCALE).unwrap();
-    let (s1, s2) = generate_trusted_setup(fs.get_max_width(), SECRET);
-    let ks = TKZGSettings::new(&s1, &s2, fs.get_max_width(), &fs).unwrap();
+    let (s1, s2, s3) = generate_trusted_setup(fs.get_max_width(), SECRET);
+    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
     let mut poly = TPoly::new(fs.get_max_width());
     for i in 0..fs.get_max_width() {
         poly.set_coeff_at(i, &TFr::rand());
@@ -32,6 +33,7 @@ pub fn bench_commit_to_poly<
     c.bench_function(&id, |b| b.iter(|| ks.commit_to_poly(&poly).unwrap()));
 }
 
+#[allow(clippy::type_complexity)]
 pub fn bench_compute_proof_single<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
@@ -43,11 +45,11 @@ pub fn bench_compute_proof_single<
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
     c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
 ) {
     let fs = TFFTSettings::new(BENCH_SCALE).unwrap();
-    let (s1, s2) = generate_trusted_setup(fs.get_max_width(), SECRET);
-    let ks = TKZGSettings::new(&s1, &s2, fs.get_max_width(), &fs).unwrap();
+    let (s1, s2, s3) = generate_trusted_setup(fs.get_max_width(), SECRET);
+    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
     let mut poly = TPoly::new(fs.get_max_width());
     for i in 0..fs.get_max_width() {
         poly.set_coeff_at(i, &TFr::rand());

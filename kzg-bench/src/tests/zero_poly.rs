@@ -158,13 +158,13 @@ pub fn check_test_data<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>, TPo
 
     for (i, &exists) in EXISTS.iter().enumerate() {
         if !exists {
-            let tmp = expected_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(i));
+            let tmp = expected_poly.eval(&fft_settings.get_roots_of_unity_at(i));
             assert!(tmp.is_zero());
         }
     }
 
     for i in 1..8 {
-        let tmp = expected_eval.eval(&fft_settings.get_expanded_roots_of_unity_at(i));
+        let tmp = expected_eval.eval(&fft_settings.get_roots_of_unity_at(i));
         assert!(tmp.is_zero());
     }
 
@@ -239,7 +239,7 @@ pub fn zero_poly_random<
                 .unwrap();
 
             for missing_idx in missing_idxs {
-                let out = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
+                let out = zero_poly.eval(&fft_settings.get_roots_of_unity_at(missing_idx));
                 assert!(out.is_zero());
             }
 
@@ -277,7 +277,7 @@ pub fn zero_poly_all_but_one<
         .unwrap();
 
     for missing_idx in missing_idxs {
-        let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
+        let ret = zero_poly.eval(&fft_settings.get_roots_of_unity_at(missing_idx));
         assert!(ret.is_zero());
     }
 
@@ -309,7 +309,7 @@ pub fn zero_poly_252<
         .unwrap();
 
     for missing_idx in missing_idxs {
-        let ret = zero_poly.eval(&fft_settings.get_expanded_roots_of_unity_at(missing_idx));
+        let ret = zero_poly.eval(&fft_settings.get_roots_of_unity_at(missing_idx));
         assert!(ret.is_zero());
     }
 

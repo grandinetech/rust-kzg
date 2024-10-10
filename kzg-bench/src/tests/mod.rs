@@ -3,6 +3,7 @@ pub mod c_bindings;
 pub mod consts;
 pub mod das;
 pub mod eip_4844;
+pub mod eip_7594;
 pub mod fft_fr;
 pub mod fft_g1;
 pub mod finite;

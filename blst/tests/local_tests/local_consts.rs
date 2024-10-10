@@ -7,10 +7,10 @@ pub fn roots_of_unity_repeat_at_stride<TFr: Fr, TFFTSettings: FFTSettings<TFr>>(
 
     for i in 0..fs1.get_max_width() {
         assert!(fs1
-            .get_expanded_roots_of_unity_at(i)
-            .equals(&fs2.get_expanded_roots_of_unity_at(i * 2)));
+            .get_roots_of_unity_at(i)
+            .equals(&fs2.get_roots_of_unity_at(i * 2)));
         assert!(fs1
-            .get_expanded_roots_of_unity_at(i)
-            .equals(&fs3.get_expanded_roots_of_unity_at(i * 4)));
+            .get_roots_of_unity_at(i)
+            .equals(&fs3.get_roots_of_unity_at(i * 4)));
     }
 }
