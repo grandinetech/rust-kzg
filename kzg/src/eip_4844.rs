@@ -352,7 +352,7 @@ fn poly_to_kzg_commitment<
     s: &TKZGSettings,
 ) -> TG1 {
     TG1::g1_lincomb(
-        s.get_g1_secret(),
+        s.get_g1_lagrange_brp(),
         p.get_coeffs(),
         FIELD_ELEMENTS_PER_BLOB,
         s.get_precomputation(),
@@ -487,7 +487,7 @@ fn verify_kzg_proof_batch<
     // Do the pairing check!
     Ok(TG1::verify(
         &proof_lincomb,
-        &ts.get_g2_secret()[1],
+        &ts.get_g2_monomial()[1],
         &rhs_g1,
         &TG2::generator(),
     ))
@@ -568,7 +568,7 @@ pub fn compute_kzg_proof_rust<
     }
 
     let proof = TG1::g1_lincomb(
-        s.get_g1_secret(),
+        s.get_g1_lagrange_brp(),
         q.get_coeffs(),
         FIELD_ELEMENTS_PER_BLOB,
         s.get_precomputation(),

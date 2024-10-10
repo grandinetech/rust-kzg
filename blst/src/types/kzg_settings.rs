@@ -294,15 +294,23 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         &self.fs
     }
 
-    fn get_g1_secret(&self) -> &[FsG1] {
+    fn get_g1_lagrange_brp(&self) -> &[FsG1] {
         &self.g1_values_lagrange_brp
     }
 
-    fn get_g2_secret(&self) -> &[FsG2] {
+    fn get_g1_monomial(&self) -> &[FsG1] {
+        &self.g1_values_monomial
+    }
+
+    fn get_g2_monomial(&self) -> &[FsG2] {
         &self.g2_values_monomial
     }
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
+    }
+
+    fn get_x_ext_fft_column(&self, index: usize) -> &[FsG1] {
+        &self.x_ext_fft_columns[index]
     }
 }

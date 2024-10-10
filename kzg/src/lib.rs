@@ -9,7 +9,7 @@ use msm::precompute::PrecomputationTable;
 
 pub mod common_utils;
 pub mod eip_4844;
-// pub mod eip_7694;
+pub mod eip_7594;
 // pub mod fk20_proof;
 pub mod msm;
 
@@ -546,11 +546,15 @@ pub trait KZGSettings<
 
     fn get_fft_settings(&self) -> &Fs;
 
-    fn get_g1_secret(&self) -> &[Coeff2];
+    fn get_g1_monomial(&self) -> &[Coeff2];
 
-    fn get_g2_secret(&self) -> &[Coeff3];
+    fn get_g1_lagrange_brp(&self) -> &[Coeff2];
+
+    fn get_g2_monomial(&self) -> &[Coeff3];
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<Coeff1, Coeff2, TG1Fp, TG1Affine>>;
+
+    fn get_x_ext_fft_column(&self, index: usize) -> &[Coeff2];
 }
 
 pub trait FK20SingleSettings<
