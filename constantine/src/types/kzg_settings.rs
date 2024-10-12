@@ -4,16 +4,20 @@ use alloc::string::String;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+use kzg::eip_4844::{FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G2_POINTS};
+use kzg::eth::c_bindings::CKZGSettings;
 use kzg::msm::precompute::{precompute, PrecomputationTable};
-use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
+use kzg::{eth, FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
+use crate::fft_g1::fft_g1_fast;
 use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
 use crate::types::fft_settings::CtFFTSettings;
 use crate::types::fr::CtFr;
 use crate::types::g1::CtG1;
 use crate::types::g2::CtG2;
 use crate::types::poly::CtPoly;
+use crate::utils::{fft_settings_to_rust, PRECOMPUTATION_TABLES};
 
 use super::fp::CtFp;
 use super::g1::CtG1Affine;
@@ -21,35 +25,97 @@ use super::g1::CtG1Affine;
 #[derive(Clone, Default)]
 pub struct CtKZGSettings {
     pub fs: CtFFTSettings,
-    pub secret_g1: Vec<CtG1>,
-    pub secret_g2: Vec<CtG2>,
+    pub g1_values_monomial: Vec<CtG1>,
+    pub g1_values_lagrange_brp: Vec<CtG1>,
+    pub g2_values_monomial: Vec<CtG2>,
     pub precomputation: Option<Arc<PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>>>,
+    pub x_ext_fft_columns: Vec<Vec<CtG1>>,
+    pub cell_size: usize,
+}
+
+fn toeplitz_part_1(
+    field_elements_per_ext_blob: usize,
+    output: &mut [CtG1],
+    x: &[CtG1],
+    s: &CtFFTSettings,
+) -> Result<(), String> {
+    let n = x.len();
+    let n2 = n * 2;
+    let mut x_ext = vec![CtG1::identity(); n2];
+
+    x_ext[..n].copy_from_slice(x);
+
+    let x_ext = &x_ext[..];
+
+    /* Ensure the length is valid */
+    if x_ext.len() > field_elements_per_ext_blob || !x_ext.len().is_power_of_two() {
+        return Err("Invalid input size".to_string());
+    }
+
+    let roots_stride = field_elements_per_ext_blob / x_ext.len();
+    fft_g1_fast(output, x_ext, 1, &s.roots_of_unity, roots_stride);
+
+    Ok(())
 }
 
 impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for CtKZGSettings {
     fn new(
-        secret_g1: &[CtG1],
-        secret_g2: &[CtG2],
-        _length: usize,
+        g1_monomial: &[CtG1],
+        g1_lagrange_brp: &[CtG1],
+        g2_monomial: &[CtG2],
         fft_settings: &CtFFTSettings,
+        cell_size: usize,
     ) -> Result<Self, String> {
+        if g1_monomial.len() != g1_lagrange_brp.len() {
+            return Err("G1 point length mismatch".to_string());
+        }
+
+        let field_elements_per_blob = g1_monomial.len();
+        let field_elements_per_ext_blob = field_elements_per_blob * 2;
+
+        let n = field_elements_per_ext_blob / 2;
+        let k = n / cell_size;
+        let k2 = 2 * k;
+
+        let mut points = vec![CtG1::default(); k2];
+        let mut x = vec![CtG1::default(); k];
+        let mut x_ext_fft_columns = vec![vec![CtG1::default(); cell_size]; k2];
+
+        for offset in 0..cell_size {
+            let start = n - cell_size - 1 - offset;
+            for (i, p) in x.iter_mut().enumerate().take(k - 1) {
+                let j = start - i * cell_size;
+                *p = g1_monomial[j];
+            }
+            x[k - 1] = CtG1::identity();
+
+            toeplitz_part_1(field_elements_per_ext_blob, &mut points, &x, fft_settings)?;
+
+            for row in 0..k2 {
+                x_ext_fft_columns[row][offset] = points[row];
+            }
+        }
+
         Ok(Self {
-            secret_g1: secret_g1.to_vec(),
-            secret_g2: secret_g2.to_vec(),
+            g1_values_monomial: g1_monomial.to_vec(),
+            g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
+            g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
-            precomputation: precompute(secret_g1).ok().flatten().map(Arc::new),
+            x_ext_fft_columns,
+            precomputation: precompute(g1_lagrange_brp).ok().flatten().map(Arc::new),
+            cell_size,
         })
     }
 
     fn commit_to_poly(&self, poly: &CtPoly) -> Result<CtG1, String> {
-        if poly.coeffs.len() > self.secret_g1.len() {
+        if poly.coeffs.len() > self.g1_values_lagrange_brp.len() {
             return Err(String::from("Polynomial is longer than secret g1"));
         }
 
         let mut out = CtG1::default();
         g1_linear_combination(
             &mut out,
-            &self.secret_g1,
+            &self.g1_values_lagrange_brp,
             &poly.coeffs,
             poly.coeffs.len(),
             self.get_precomputation(),
@@ -89,7 +155,7 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         y: &CtFr,
     ) -> Result<bool, String> {
         let x_g2: CtG2 = G2_GENERATOR.mul(x);
-        let s_minus_x: CtG2 = self.secret_g2[1].sub(&x_g2);
+        let s_minus_x: CtG2 = self.g2_values_monomial[1].sub(&x_g2);
         let y_g1 = G1_GENERATOR.mul(y);
         let commitment_minus_y: CtG1 = com.sub(&y_g1);
 
@@ -100,7 +166,6 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
             &s_minus_x,
         ))
     }
-
     fn compute_proof_multi(&self, p: &CtPoly, x0: &CtFr, n: usize) -> Result<CtG1, String> {
         if p.coeffs.is_empty() {
             return Err(String::from("Polynomial must not be empty"));
@@ -169,7 +234,7 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         let xn2 = G2_GENERATOR.mul(&x_pow);
 
         // [s^n - x^n]_2
-        let xn_minus_yn = self.secret_g2[n].sub(&xn2);
+        let xn_minus_yn = self.g2_values_monomial[n].sub(&xn2);
 
         // [interpolation_polynomial(s)]_1
         let is1 = self.commit_to_poly(&interp).unwrap();
@@ -182,10 +247,6 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         Ok(ret)
     }
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> CtFr {
-        self.fs.get_expanded_roots_of_unity_at(i)
-    }
-
     fn get_roots_of_unity_at(&self, i: usize) -> CtFr {
         self.fs.get_roots_of_unity_at(i)
     }
@@ -194,15 +255,77 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         &self.fs
     }
 
-    fn get_g1_secret(&self) -> &[CtG1] {
-        &self.secret_g1
+    fn get_g1_lagrange_brp(&self) -> &[CtG1] {
+        &self.g1_values_lagrange_brp
     }
 
-    fn get_g2_secret(&self) -> &[CtG2] {
-        &self.secret_g2
+    fn get_g1_monomial(&self) -> &[CtG1] {
+        &self.g1_values_monomial
+    }
+
+    fn get_g2_monomial(&self) -> &[CtG2] {
+        &self.g2_values_monomial
     }
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
+    }
+
+    fn get_x_ext_fft_column(&self, index: usize) -> &[CtG1] {
+        &self.x_ext_fft_columns[index]
+    }
+
+    fn get_cell_size(&self) -> usize {
+        self.cell_size
+    }
+}
+
+impl<'a> TryFrom<&'a CKZGSettings> for CtKZGSettings {
+    type Error = String;
+
+    fn try_from(c_settings: &'a CKZGSettings) -> Result<Self, Self::Error> {
+        Ok(CtKZGSettings {
+            fs: fft_settings_to_rust(c_settings)?,
+            g1_values_monomial: unsafe {
+                core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
+            }
+            .iter()
+            .map(|r| CtG1::from_blst_p1(*r))
+            .collect::<Vec<_>>(),
+            g1_values_lagrange_brp: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g1_values_lagrange_brp,
+                    FIELD_ELEMENTS_PER_BLOB,
+                )
+            }
+            .iter()
+            .map(|r| CtG1::from_blst_p1(*r))
+            .collect::<Vec<_>>(),
+            g2_values_monomial: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g2_values_monomial,
+                    TRUSTED_SETUP_NUM_G2_POINTS,
+                )
+            }
+            .iter()
+            .map(|r| CtG2::from_blst_p2(*r))
+            .collect::<Vec<_>>(),
+            x_ext_fft_columns: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.x_ext_fft_columns,
+                    2 * ((eth::FIELD_ELEMENTS_PER_EXT_BLOB / 2) / eth::FIELD_ELEMENTS_PER_CELL),
+                )
+            }
+            .iter()
+            .map(|it| {
+                unsafe { core::slice::from_raw_parts(*it, eth::FIELD_ELEMENTS_PER_CELL) }
+                    .iter()
+                    .map(|it| CtG1::from_blst_p1(*it))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>(),
+            precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
+            cell_size: eth::FIELD_ELEMENTS_PER_CELL,
+        })
     }
 }
