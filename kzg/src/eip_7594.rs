@@ -770,7 +770,7 @@ fn compute_commitment_to_aggregated_interpolation_poly<
 
     // TODO: maybe pass precomputation here?
     Ok(TG1::g1_lincomb(
-        &s.get_g1_monomial(),
+        s.get_g1_monomial(),
         &aggregated_interpolation_poly,
         FIELD_ELEMENTS_PER_CELL,
         None,
