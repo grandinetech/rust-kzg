@@ -348,7 +348,7 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<
             &proofs,
             &settings,
         ) {
-            Err(err) => assert!(test.get_output().is_none(), "Should correctly recover cells, but failed with error {err:?}, for test vector {test_file:?}"),
+            Err(err) => assert!(test.get_output().is_none(), "Should correctly verify cells, but failed with error {err:?}, for test vector {test_file:?}"),
             Ok(value) => {
                 let test_output = test.get_output();
 

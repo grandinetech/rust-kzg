@@ -968,7 +968,6 @@ pub fn load_trusted_setup_rust<
     if num_g1_points != FIELD_ELEMENTS_PER_BLOB {
         return Err(String::from("Invalid number of G1 points"));
     }
-
     if g1_lagrange_bytes.len() / BYTES_PER_G1 != FIELD_ELEMENTS_PER_BLOB {
         return Err(String::from("Invalid number of G1 points"));
     }
