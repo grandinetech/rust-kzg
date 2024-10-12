@@ -16,7 +16,7 @@ index df1730c..6b5bc2f 100644
  
  INCLUDE_DIRS = ../../src ../../blst/bindings
 -TARGETS = ckzg_wrap.c ../../src/ckzg.c ../../blst/$(BLST_OBJ)
-+TARGETS = ckzg_wrap.c ../../../../target/release/rust_kzg_blst.a
++TARGETS = ckzg_wrap.c ../../lib/librust_kzg_blst.a
  
  CFLAGS += -O2 -Wall -Wextra -shared
  CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}

@@ -28,7 +28,7 @@ index 45eb72d..994c83f 100644
 -    // Obtain the header files of blst
 -    let blst_base_dir = root_dir.join("blst");
 -    let blst_headers_dir = blst_base_dir.join("bindings");
-+    let rust_kzg_target_dir = root_dir.join("../../target/release/");
++    let rust_kzg_target_dir = root_dir.join("lib");
  
 -    let c_src_dir = root_dir.join("src");
 -
@@ -69,7 +69,7 @@ index 45eb72d..994c83f 100644
 -    // Finally, tell cargo this provides ckzg/ckzg_min
 -    println!("cargo:rustc-link-lib=ckzg");
 +    println!("cargo:rustc-link-search={}", rust_kzg_target_dir.display());
-+    println!("cargo:rustc-link-arg=-l:rust_kzg_blst.a");
++    println!("cargo:rustc-link-arg=-lrust_kzg_blst");
  }
  
  #[cfg(feature = "generate-bindings")]

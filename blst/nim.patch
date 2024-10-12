@@ -11,21 +11,13 @@ diff --git a/bindings/nim/kzg_abi.nim b/bindings/nim/kzg_abi.nim
 index 0570efd..59e678e 100644
 --- a/bindings/nim/kzg_abi.nim
 +++ b/bindings/nim/kzg_abi.nim
-@@ -10,6 +10,7 @@ from os import DirSep, AltSep
- const
-   # kzgPath: c-kzg-4844 project path, removing 3 last elem
-   kzgPath  = currentSourcePath.rsplit({DirSep, AltSep}, 3)[0] & "/"
-+  rustKzgPath = currentSourcePath.rsplit({DirSep, AltSep}, 5)[0] & "/"
-   blstPath = kzgPath & "blst/"
-   srcPath  = kzgPath & "src/"
-   bindingsPath = blstPath & "bindings"
 @@ -20,7 +21,9 @@ when not defined(kzgExternalBlst):
    {.compile: blstPath & "src/server.c"}
    {.passc: "-D__BLST_PORTABLE__"}
  
 -{.compile: srcPath & "ckzg.c"}
-++{.passl: "-L" & rustKzgPath & "target/release" .}
-++{.passl: "-l:rust_kzg_blst.a" .}
+++{.passl: "-L" & kzgPath & "lib" .}
+++{.passl: "-lrust_kzg_blst" .}
 ++{.passl: "-lm" .}
  
  {.passc: "-I" & escape(bindingsPath) .}
