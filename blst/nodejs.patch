@@ -26,7 +26,7 @@ index d01e38b..1591b8e 100644
          "<!@(node -p \"require('node-addon-api').include\")"
        ],
 +      "libraries": [
-+        "<(module_root_dir)/../../../../target/release/rust_kzg_blst.a"
++        "<(module_root_dir)/../../lib/librust_kzg_blst.a"
 +      ],
        "defines": [
          "__BLST_PORTABLE__",
