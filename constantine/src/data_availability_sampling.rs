@@ -5,7 +5,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
-use kzg::{Fr, DAS};
+use kzg::{DASExtension, Fr};
 
 use crate::types::fft_settings::CtFFTSettings;
 use crate::types::fr::CtFr;
@@ -20,7 +20,7 @@ impl CtFFTSettings {
             Ordering::Equal => {
                 let x = evens[0].add(&evens[1]);
                 let y = evens[0].sub(&evens[1]);
-                let y_times_root = y.mul(&self.expanded_roots_of_unity[stride]);
+                let y_times_root = y.mul(&self.roots_of_unity[stride]);
 
                 evens[0] = x.add(&y_times_root);
                 evens[1] = x.sub(&y_times_root);
@@ -64,7 +64,7 @@ impl CtFFTSettings {
         for i in 0..half {
             let x = evens[i];
             let y = evens[half + i];
-            let y_times_root: CtFr = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
+            let y_times_root: CtFr = y.mul(&self.roots_of_unity[(1 + 2 * i) * stride]);
 
             evens[i] = x.add(&y_times_root);
             evens[half + i] = x.sub(&y_times_root);
@@ -72,7 +72,7 @@ impl CtFFTSettings {
     }
 }
 
-impl DAS<CtFr> for CtFFTSettings {
+impl DASExtension<CtFr> for CtFFTSettings {
     /// Polynomial extension for data availability sampling. Given values of even indices, produce values of odd indices.
     /// FFTSettings must hold at least 2 times the roots of provided evens.
     /// The resulting odd indices make the right half of the coefficients of the inverse FFT of the combined indices zero.

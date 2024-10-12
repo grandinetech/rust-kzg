@@ -165,8 +165,11 @@ impl G1 for CtG1 {
 
     fn is_valid(&self) -> bool {
         unsafe {
-            constantine::ctt_bls12_381_validate_g1(&CtG1Affine::into_affine(self).0)
-                == ctt_codec_ecc_status::cttCodecEcc_Success
+            matches!(
+                constantine::ctt_bls12_381_validate_g1(&CtG1Affine::into_affine(self).0),
+                ctt_codec_ecc_status::cttCodecEcc_Success
+                    | ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity
+            )
         }
     }
 
