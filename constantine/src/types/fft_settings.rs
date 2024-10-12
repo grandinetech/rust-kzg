@@ -14,9 +14,9 @@ use crate::types::fr::CtFr;
 pub struct CtFFTSettings {
     pub max_width: usize,
     pub root_of_unity: CtFr,
-    pub expanded_roots_of_unity: Vec<CtFr>,
-    pub reverse_roots_of_unity: Vec<CtFr>,
     pub roots_of_unity: Vec<CtFr>,
+    pub brp_roots_of_unity: Vec<CtFr>,
+    pub reverse_roots_of_unity: Vec<CtFr>,
 }
 
 impl Default for CtFFTSettings {
@@ -39,34 +39,26 @@ impl FFTSettings<CtFr> for CtFFTSettings {
         let root_of_unity = CtFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
         // create max_width of roots & store them reversed as well
-        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
-        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
-        reverse_roots_of_unity.reverse();
+        let roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
 
-        // Permute the roots of unity
-        let mut roots_of_unity = expanded_roots_of_unity.clone();
-        roots_of_unity.pop();
-        reverse_bit_order(&mut roots_of_unity)?;
+        let mut brp_roots_of_unity = roots_of_unity.clone();
+        brp_roots_of_unity.pop();
+        reverse_bit_order(&mut brp_roots_of_unity)?;
+
+        let mut reverse_roots_of_unity = roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
 
         Ok(CtFFTSettings {
             max_width,
             root_of_unity,
-            expanded_roots_of_unity,
             reverse_roots_of_unity,
             roots_of_unity,
+            brp_roots_of_unity,
         })
     }
 
     fn get_max_width(&self) -> usize {
         self.max_width
-    }
-
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> CtFr {
-        self.expanded_roots_of_unity[i]
-    }
-
-    fn get_expanded_roots_of_unity(&self) -> &[CtFr] {
-        &self.expanded_roots_of_unity
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> CtFr {
@@ -83,6 +75,14 @@ impl FFTSettings<CtFr> for CtFFTSettings {
 
     fn get_roots_of_unity(&self) -> &[CtFr] {
         &self.roots_of_unity
+    }
+
+    fn get_brp_roots_of_unity(&self) -> &[CtFr] {
+        &self.brp_roots_of_unity
+    }
+
+    fn get_brp_roots_of_unity_at(&self, i: usize) -> CtFr {
+        self.brp_roots_of_unity[i]
     }
 }
 
