@@ -45,7 +45,7 @@ impl
 
         let mut x = Vec::new();
         for i in 0..(n - 1) {
-            x.push(ks.secret_g1[n - 2 - i])
+            x.push(ks.g1_values_monomial[n - 2 - i])
         }
         x.push(ArkG1::identity());
 
@@ -123,7 +123,7 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings,
             };
             let mut j = start;
             for i in x.iter_mut().take(k - 1) {
-                i.0 = ks.secret_g1[j].0;
+                i.0 = ks.g1_values_monomial[j].0;
                 if j >= chunk_len {
                     j -= chunk_len;
                 } else {
