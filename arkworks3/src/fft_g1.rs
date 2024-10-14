@@ -145,7 +145,7 @@ impl FFTG1<ArkG1> for FFTSettings {
         let roots = if inverse {
             &self.reverse_roots_of_unity
         } else {
-            &self.expanded_roots_of_unity
+            &self.brp_roots_of_unity
         };
 
         fft_g1_fast(&mut ret, data, 1, roots, stride, 1);

@@ -15,11 +15,13 @@ use kzg::{Fr as FrTrait, G1, G2};
 use kzg::{G1Mul, G2Mul};
 use std::ops::Neg;
 
+// use kzg::{FFTSettings, Fr, };
+
 #[derive(Debug, Clone)]
 pub struct FFTSettings {
     pub max_width: usize,
     pub root_of_unity: BlstFr,
-    pub expanded_roots_of_unity: Vec<BlstFr>,
+    pub brp_roots_of_unity: Vec<BlstFr>,
     pub reverse_roots_of_unity: Vec<BlstFr>,
     pub roots_of_unity: Vec<BlstFr>,
 }
@@ -45,9 +47,11 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
 #[derive(Debug, Clone, Default)]
 pub struct KZGSettings {
     pub fs: FFTSettings,
-    pub secret_g1: Vec<ArkG1>,
-    pub secret_g2: Vec<ArkG2>,
+    pub g1_values_monomial: Vec<ArkG1>,
+    pub g1_values_lagrange_brp: Vec<ArkG1>,
+    pub g2_values_monomial: Vec<ArkG2>,
     pub precomputation: Option<Arc<PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>>,
+    pub x_ext_fft_columns: Vec<Vec<ArkG1>>
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
