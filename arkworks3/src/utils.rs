@@ -1,7 +1,17 @@
+use kzg::{
+    eip_4844::{
+        Blob, CKZGSettings, PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT,
+        C_KZG_RET, C_KZG_RET_BADARGS, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
+    },
+    Fr, 
+};
+
+use crate::kzg_types::{ArkFr, ArkG1, ArkG2, ArkFp, ArkG1Affine, LKZGSettings, LFFTSettings};
+
 use super::{Fp, P1};
-use crate::kzg_types::ArkFr;
 use crate::P2;
-use ark_bls12_381::{g1, g2, Fq, Fq2, Fr};
+use ark_bls12_381::{g1, g2, Fq, Fq2, Fr as _Fr};
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ff::{BigInteger256, BigInteger384, Fp2};
 use ark_poly::univariate::DensePolynomial as DensePoly;
@@ -16,8 +26,108 @@ pub struct PolyData {
     pub coeffs: Vec<ArkFr>,
 }
 // FIXME: Store just dense poly here
+ 
+pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C_KZG_RET> {
+    (*blob)
+        .bytes
+        .chunks(BYTES_PER_FIELD_ELEMENT)
+        .map(|chunk| {
+            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
+            bytes.copy_from_slice(chunk);
+            if let Ok(result) = ArkFr::from_bytes(&bytes) {
+                Ok(result)
+            } else {
+                Err(C_KZG_RET_BADARGS)
+            }
+        })
+        .collect::<Result<Vec<ArkFr>, C_KZG_RET>>()
+}
 
-pub fn pc_poly_into_blst_poly(poly: DensePoly<Fr>) -> PolyData {
+pub(crate) fn fft_settings_to_rust(
+    c_settings: *const CKZGSettings,
+) -> Result<LFFTSettings, String> {
+    let settings = unsafe { &*c_settings };
+
+    let roots_of_unity = unsafe {
+        core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
+            .iter()
+            .map(|r| ArkFr::from_blst_fr(*r))
+            .collect::<Vec<ArkFr>>()
+    };
+
+    let brp_roots_of_unity = unsafe {
+        core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
+            .iter()
+            .map(|r| ArkFr::from_blst_fr(*r))
+            .collect::<Vec<ArkFr>>()
+    };
+
+    let reverse_roots_of_unity = unsafe {
+        core::slice::from_raw_parts(
+            settings.reverse_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        )
+        .iter()
+        .map(|r| ArkFr::from_blst_fr(*r))
+        .collect::<Vec<ArkFr>>()
+    };
+
+    Ok(LFFTSettings {
+        max_width: FIELD_ELEMENTS_PER_EXT_BLOB,
+        root_of_unity: roots_of_unity[1],
+        roots_of_unity,
+        brp_roots_of_unity,
+        reverse_roots_of_unity,
+    })
+}
+
+pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
+    ArkFr,
+    ArkG1,
+    ArkFp,
+    ArkG1Affine,
+> = PrecomputationTableManager::new();
+
+pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSettings, String> {
+    Ok(LKZGSettings {
+        fs: fft_settings_to_rust(c_settings)?,
+        g1_values_monomial: unsafe {
+            core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
+        }
+        .iter()
+        .map(|r| ArkG1::from_blst_p1(*r))
+        .collect::<Vec<_>>(),
+        g1_values_lagrange_brp: unsafe {
+            core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, FIELD_ELEMENTS_PER_BLOB)
+        }
+        .iter()
+        .map(|r| ArkG1::from_blst_p1(*r))
+        .collect::<Vec<_>>(),
+        g2_values_monomial: unsafe {
+            core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
+        }
+        .iter()
+        .map(|r| ArkG2::from_blst_p2(*r))
+        .collect::<Vec<_>>(),
+        x_ext_fft_columns: unsafe {
+            core::slice::from_raw_parts(
+                c_settings.x_ext_fft_columns,
+                2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
+            )
+        }
+        .iter()
+        .map(|it| {
+            unsafe { core::slice::from_raw_parts(*it, FIELD_ELEMENTS_PER_CELL) }
+                .iter()
+                .map(|it| ArkG1::from_blst_p1(*it))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>(),
+        precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
+    })
+}
+
+pub fn pc_poly_into_blst_poly(poly: DensePoly<_Fr>) -> PolyData {
     let mut bls_pol: Vec<ArkFr> = { Vec::new() };
     for x in poly.coeffs {
         bls_pol.push(ArkFr { fr: x });
@@ -25,8 +135,8 @@ pub fn pc_poly_into_blst_poly(poly: DensePoly<Fr>) -> PolyData {
     PolyData { coeffs: bls_pol }
 }
 
-pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<Fr> {
-    let mut poly: Vec<Fr> = vec![Fr::default(); pd.len()];
+pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<_Fr> {
+    let mut poly: Vec<_Fr> = vec![_Fr::default(); pd.len()];
     for i in 0..pd.len() {
         poly[i] = pd[i].fr;
     }
@@ -37,13 +147,13 @@ pub const fn pc_fq_into_blst_fp(fq: Fq) -> Fp {
     Fp { l: fq.0 .0 }
 }
 
-pub const fn blst_fr_into_pc_fr(fr: blst_fr) -> Fr {
+pub const fn blst_fr_into_pc_fr(fr: blst_fr) -> _Fr {
     let big_int = BigInteger256::new(fr.l);
 
-    Fr::new(big_int)
+    _Fr::new(big_int)
 }
 
-pub const fn pc_fr_into_blst_fr(fr: Fr) -> blst_fr {
+pub const fn pc_fr_into_blst_fr(fr: _Fr) -> blst_fr {
     blst::blst_fr { l: fr.0 .0 }
 }
 
