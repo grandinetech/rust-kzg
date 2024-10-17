@@ -3,13 +3,14 @@ use kzg::{
         Blob, Bytes48, CKZGSettings, Cell, KZGProof, BYTES_PER_FIELD_ELEMENT, CELLS_PER_EXT_BLOB,
         C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_CELL,
     },
-    // Fr, G1,
+    Fr, G1,
 };
 
 use crate::{
-    types::{fr::ArkFr, g1::ArkG1, kzg_settings::LKZGSettings},
+    kzg_types::{ArkFr, ArkG1, LKZGSettings},
     utils::{deserialize_blob, kzg_settings_to_rust},
 };
+
 
 pub fn compute_cells_and_kzg_proofs_rust(
     cells: Option<&mut [[ArkFr; FIELD_ELEMENTS_PER_CELL]]>,
