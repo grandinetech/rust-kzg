@@ -44,7 +44,7 @@ impl FK20SingleSettings<BlstFr, ZG1, ZG2, FFTSettings, PolyData, KZGSettings, ZF
 
         let mut x = Vec::new();
         for i in 0..(n - 1) {
-            x.push(ks.secret_g1[n - 2 - i])
+            x.push(ks.g1_values_lagrange_brp[n - 2 - i])
         }
         x.push(G1_IDENTITY);
 
@@ -122,7 +122,7 @@ impl FK20MultiSettings<BlstFr, ZG1, ZG2, FFTSettings, PolyData, KZGSettings, ZFp
             };
             let mut j = start;
             for i in x.iter_mut().take(k - 1) {
-                i.proj = ks.secret_g1[j].proj;
+                i.proj = ks.g1_values_lagrange_brp[j].proj;
                 if j >= chunk_len {
                     j -= chunk_len;
                 } else {
