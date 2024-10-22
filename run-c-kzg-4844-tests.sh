@@ -43,9 +43,6 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
-rm -f ../target/release/rust_kzg_$backend.a
-mv ../target/release/librust_kzg_$backend.a ../target/release/rust_kzg_$backend.a
-
 ###################### cloning c-kzg-4844 ######################
 
 print_msg "Removing existing c-kzg-4844"
@@ -56,6 +53,8 @@ git clone https://github.com/ethereum/c-kzg-4844.git
 cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
+
+mv ../../target/release/librust_kzg_$backend.a ./lib
 
 print_msg "Applying patches and building blst"
 cd src

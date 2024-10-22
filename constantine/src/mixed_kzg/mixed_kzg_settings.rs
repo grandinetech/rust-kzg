@@ -73,12 +73,12 @@ impl LocalToStr for ctt_eth_kzg_status {
 
 impl MixedKzgSettings {
     pub fn new(
-        secret_g1: &[CtG1],
-        secret_g2: &[CtG2],
-        length: usize,
+        g1_monomial: &[CtG1],
+        g1_lagrange_brp: &[CtG1],
+        g2_monomial: &[CtG2],
         fft_settings: &CtFFTSettings,
     ) -> Result<Self, String> {
-        let res = GenericContext::new(secret_g1, secret_g2, length, fft_settings);
+        let res = GenericContext::new(g1_monomial, g1_lagrange_brp, g2_monomial, fft_settings);
         match res {
             Ok(generic_context) => Ok(Self::Generic(generic_context)),
             Err(x) => Err(x),
@@ -115,12 +115,12 @@ impl Clone for MixedKzgSettings {
 // Allow using MixedKzgSettings as KZGSettings stand-in
 impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for MixedKzgSettings {
     fn new(
-        secret_g1: &[CtG1],
-        secret_g2: &[CtG2],
-        length: usize,
-        fs: &CtFFTSettings,
+        g1_monomial: &[CtG1],
+        g1_lagrange_brp: &[CtG1],
+        g2_monomial: &[CtG2],
+        fft_settings: &CtFFTSettings,
     ) -> Result<Self, String> {
-        MixedKzgSettings::new(secret_g1, secret_g2, length, fs)
+        MixedKzgSettings::new(g1_monomial, g1_lagrange_brp, g2_monomial, fft_settings)
     }
 
     fn commit_to_poly(&self, p: &CtPoly) -> Result<CtG1, String> {
@@ -174,17 +174,6 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         }
     }
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> CtFr {
-        match self {
-            MixedKzgSettings::Constantine(_) => {
-                panic!("Context not in generic format")
-            }
-            MixedKzgSettings::Generic(generic_context) => {
-                generic_context.get_expanded_roots_of_unity_at(i)
-            }
-        }
-    }
-
     fn get_roots_of_unity_at(&self, i: usize) -> CtFr {
         match self {
             MixedKzgSettings::Constantine(_) => {
@@ -203,24 +192,6 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         }
     }
 
-    fn get_g1_secret(&self) -> &[CtG1] {
-        match self {
-            MixedKzgSettings::Constantine(_) => {
-                panic!("Context not in generic format")
-            }
-            MixedKzgSettings::Generic(generic_context) => generic_context.get_g1_secret(),
-        }
-    }
-
-    fn get_g2_secret(&self) -> &[CtG2] {
-        match self {
-            MixedKzgSettings::Constantine(_) => {
-                panic!("Context not in generic format")
-            }
-            MixedKzgSettings::Generic(generic_context) => generic_context.get_g2_secret(),
-        }
-    }
-
     fn get_precomputation(
         &self,
     ) -> Option<&kzg::msm::precompute::PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
@@ -229,6 +200,44 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
                 panic!("Context not in generic format")
             }
             MixedKzgSettings::Generic(generic_context) => generic_context.get_precomputation(),
+        }
+    }
+
+    fn get_g1_monomial(&self) -> &[CtG1] {
+        match self {
+            MixedKzgSettings::Constantine(_) => {
+                panic!("Context not in generic format")
+            }
+            MixedKzgSettings::Generic(generic_context) => generic_context.get_g1_monomial(),
+        }
+    }
+
+    fn get_g1_lagrange_brp(&self) -> &[CtG1] {
+        match self {
+            MixedKzgSettings::Constantine(_) => {
+                panic!("Context not in generic format")
+            }
+            MixedKzgSettings::Generic(generic_context) => generic_context.get_g1_lagrange_brp(),
+        }
+    }
+
+    fn get_g2_monomial(&self) -> &[CtG2] {
+        match self {
+            MixedKzgSettings::Constantine(_) => {
+                panic!("Context not in generic format")
+            }
+            MixedKzgSettings::Generic(generic_context) => generic_context.get_g2_monomial(),
+        }
+    }
+
+    fn get_x_ext_fft_column(&self, index: usize) -> &[CtG1] {
+        match self {
+            MixedKzgSettings::Constantine(_) => {
+                panic!("Context not in generic format")
+            }
+            MixedKzgSettings::Generic(generic_context) => {
+                generic_context.get_x_ext_fft_column(index)
+            }
         }
     }
 }
