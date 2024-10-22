@@ -1,19 +1,17 @@
 extern crate alloc;
 
-use crate::kzg_proofs::{FFTSettings, KZGSettings};
-use crate::kzg_types::{ZFr, ZG1, ZG2};
-use blst::{blst_fr, blst_p1, blst_p2};
-use kzg::common_utils::reverse_bit_order;
+use crate::kzg_types::{ZFr, ZG1};
+use crate::utils::{handle_ckzg_badargs, deserialize_blob, kzg_settings_to_rust, PRECOMPUTATION_TABLES, kzg_settings_to_c};
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
     verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
-    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET, C_KZG_RET_BADARGS,
+    BYTES_PER_G1, C_KZG_RET, C_KZG_RET_BADARGS,
     C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
-    TRUSTED_SETUP_NUM_G2_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS, FIELD_ELEMENTS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL,
 };
 use kzg::{cfg_into_iter, Fr, G1};
-use std::ptr::null_mut;
+use std::ptr::{self};
 
 #[cfg(feature = "std")]
 use libc::FILE;
@@ -27,122 +25,87 @@ use rayon::prelude::*;
 
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
+/// # Safety
+#[no_mangle]
+pub unsafe extern "C" fn load_trusted_setup(
+    out: *mut CKZGSettings,
+    g1_monomial_bytes: *const u8,
+    num_g1_monomial_bytes: u64,
+    g1_lagrange_bytes: *const u8,
+    num_g1_lagrange_bytes: u64,
+    g2_monomial_bytes: *const u8,
+    num_g2_monomial_bytes: u64,
+    _precompute: u64,
+) -> C_KZG_RET {
+    let g1_monomial_bytes =
+        core::slice::from_raw_parts(g1_monomial_bytes, num_g1_monomial_bytes as usize);
+    let g1_lagrange_bytes =
+        core::slice::from_raw_parts(g1_lagrange_bytes, num_g1_lagrange_bytes as usize);
+    let g2_monomial_bytes =
+        core::slice::from_raw_parts(g2_monomial_bytes, num_g2_monomial_bytes as usize);
+    TRUSTED_SETUP_NUM_G1_POINTS = num_g1_monomial_bytes as usize / BYTES_PER_G1;
+    let mut settings = handle_ckzg_badargs!(load_trusted_setup_rust(
+        g1_monomial_bytes,
+        g1_lagrange_bytes,
+        g2_monomial_bytes
+    ));
+
+    let c_settings = kzg_settings_to_c(&settings);
+
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
+
+    *out = c_settings;
+    C_KZG_RET_OK
+}
+
+/// # Safety
+#[cfg(feature = "std")]
+#[no_mangle]
+pub unsafe extern "C" fn load_trusted_setup_file(
+    out: *mut CKZGSettings,
+    in_: *mut FILE,
+) -> C_KZG_RET {
+    use crate::utils::{kzg_settings_to_c, PRECOMPUTATION_TABLES};
+
+    let mut buf = vec![0u8; 1024 * 1024];
+    let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
+    let s = handle_ckzg_badargs!(String::from_utf8(buf[..len].to_vec()));
+    let (g1_monomial_bytes, g1_lagrange_bytes, g2_monomial_bytes) =
+        handle_ckzg_badargs!(load_trusted_setup_string(&s));
+    TRUSTED_SETUP_NUM_G1_POINTS = g1_monomial_bytes.len() / BYTES_PER_G1;
+    if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
+        // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
+        // as well as 5 others that pass only if this one passes (likely because Java doesn't
+        // deallocate its KZGSettings pointer when no exception is thrown).
+        return C_KZG_RET_BADARGS;
+    }
+    let mut settings = handle_ckzg_badargs!(load_trusted_setup_rust(
+        &g1_monomial_bytes,
+        &g1_lagrange_bytes,
+        &g2_monomial_bytes
+    ));
+
+    let c_settings = kzg_settings_to_c(&settings);
+
+    PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
+
+    *out = c_settings;
+
+    C_KZG_RET_OK
+}
 
 #[cfg(feature = "std")]
-pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<KZGSettings, String> {
+pub fn load_trusted_setup_filename_rust(
+    filepath: &str,
+) -> Result<crate::kzg_proofs::KZGSettings, alloc::string::String> {
     let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .map_err(|_| "Unable to read file".to_string())?;
 
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents)?;
-    load_trusted_setup_rust(g1_bytes.as_slice(), g2_bytes.as_slice())
-}
-
-fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {
-    let settings = unsafe { &*c_settings };
-    let roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.roots_of_unity, settings.max_width as usize)
-            .iter()
-            .map(|r| ZFr::from_blst_fr(*r))
-            .collect::<Vec<ZFr>>()
-    };
-    let mut expanded_roots_of_unity = roots_of_unity.clone();
-    reverse_bit_order(&mut expanded_roots_of_unity)?;
-    expanded_roots_of_unity.push(ZFr::one());
-    let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
-    reverse_roots_of_unity.reverse();
-
-    let mut first_root = expanded_roots_of_unity[1];
-    let first_root_arr = [first_root; 1];
-    first_root = first_root_arr[0];
-
-    Ok(FFTSettings {
-        max_width: settings.max_width as usize,
-        root_of_unity: first_root,
-        expanded_roots_of_unity,
-        reverse_roots_of_unity,
-        roots_of_unity,
-    })
-}
-
-fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<KZGSettings, String> {
-    let secret_g1 = unsafe {
-        core::slice::from_raw_parts(c_settings.g1_values, TRUSTED_SETUP_NUM_G1_POINTS)
-            .iter()
-            .map(|r| ZG1::from_blst_p1(*r))
-            .collect::<Vec<ZG1>>()
-    };
-    let secret_g2 = unsafe {
-        core::slice::from_raw_parts(c_settings.g2_values, TRUSTED_SETUP_NUM_G2_POINTS)
-            .iter()
-            .map(|r| ZG2::from_blst_p2(*r))
-            .collect::<Vec<ZG2>>()
-    };
-    Ok(KZGSettings {
-        fs: fft_settings_to_rust(c_settings)?,
-        secret_g1,
-        secret_g2,
-        precomputation: None,
-    })
-}
-
-fn kzg_settings_to_c(rust_settings: &KZGSettings) -> CKZGSettings {
-    let g1_val = rust_settings
-        .secret_g1
-        .iter()
-        .map(|r| r.to_blst_p1())
-        .collect::<Vec<blst_p1>>();
-    let g1_val = Box::new(g1_val);
-    let g2_val = rust_settings
-        .secret_g2
-        .iter()
-        .map(|r| r.to_blst_p2())
-        .collect::<Vec<blst_p2>>();
-    let x = g2_val.into_boxed_slice();
-    let stat_ref = Box::leak(x);
-    let v = Box::into_raw(g1_val);
-
-    let roots_of_unity = Box::new(
-        rust_settings
-            .fs
-            .roots_of_unity
-            .iter()
-            .map(|r| r.to_blst_fr())
-            .collect::<Vec<blst_fr>>(),
-    );
-
-    CKZGSettings {
-        max_width: rust_settings.fs.max_width as u64,
-        roots_of_unity: unsafe { (*Box::into_raw(roots_of_unity)).as_mut_ptr() },
-        g1_values: unsafe { (*v).as_mut_ptr() },
-        g2_values: stat_ref.as_mut_ptr(),
-    }
-}
-
-unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ZFr>, C_KZG_RET> {
-    (*blob)
-        .bytes
-        .chunks(BYTES_PER_FIELD_ELEMENT)
-        .map(|chunk| {
-            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
-            bytes.copy_from_slice(chunk);
-            if let Ok(result) = ZFr::from_bytes(&bytes) {
-                Ok(result)
-            } else {
-                Err(C_KZG_RET_BADARGS)
-            }
-        })
-        .collect::<Result<Vec<ZFr>, C_KZG_RET>>()
-}
-
-macro_rules! handle_ckzg_badargs {
-    ($x: expr) => {
-        match $x {
-            Ok(value) => value,
-            Err(_) => return C_KZG_RET_BADARGS,
-        }
-    };
+    let (g1_monomial_bytes, g1_lagrange_bytes, g2_monomial_bytes) =
+        load_trusted_setup_string(&contents)?;
+    load_trusted_setup_rust(&g1_monomial_bytes, &g1_lagrange_bytes, &g2_monomial_bytes)
 }
 
 /// # Safety
@@ -167,78 +130,75 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
 
 /// # Safety
 #[no_mangle]
-pub unsafe extern "C" fn load_trusted_setup(
-    out: *mut CKZGSettings,
-    g1_bytes: *const u8,
-    n1: usize,
-    g2_bytes: *const u8,
-    n2: usize,
-) -> C_KZG_RET {
-    let g1_bytes = core::slice::from_raw_parts(g1_bytes, n1 * BYTES_PER_G1);
-    let g2_bytes = core::slice::from_raw_parts(g2_bytes, n2 * BYTES_PER_G2);
-    TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
-    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(g1_bytes, g2_bytes));
-
-    *out = kzg_settings_to_c(&settings);
-    C_KZG_RET_OK
-}
-
-/// # Safety
-#[cfg(feature = "std")]
-#[no_mangle]
-pub unsafe extern "C" fn load_trusted_setup_file(
-    out: *mut CKZGSettings,
-    in_: *mut FILE,
-) -> C_KZG_RET {
-    let mut buf = vec![0u8; 1024 * 1024];
-    let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
-    let s = handle_ckzg_badargs!(String::from_utf8(buf[..len].to_vec()));
-    let (g1_bytes, g2_bytes) = handle_ckzg_badargs!(load_trusted_setup_string(&s));
-    TRUSTED_SETUP_NUM_G1_POINTS = g1_bytes.len() / BYTES_PER_G1;
-    if TRUSTED_SETUP_NUM_G1_POINTS != FIELD_ELEMENTS_PER_BLOB {
-        // Helps pass the Java test "shouldThrowExceptionOnIncorrectTrustedSetupFromFile",
-        // as well as 5 others that pass only if this one passes (likely because Java doesn't
-        // deallocate its KZGSettings pointer when no exception is thrown).
-        return C_KZG_RET_BADARGS;
-    }
-    let settings = handle_ckzg_badargs!(load_trusted_setup_rust(
-        g1_bytes.as_slice(),
-        g2_bytes.as_slice()
-    ));
-
-    *out = kzg_settings_to_c(&settings);
-    C_KZG_RET_OK
-}
-
-/// # Safety
-#[no_mangle]
 pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     if s.is_null() {
         return;
     }
 
-    let max_width = (*s).max_width as usize;
-    let roots = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*s).roots_of_unity,
-        max_width,
-    ));
-    drop(roots);
-    (*s).roots_of_unity = null_mut();
+    if !(*s).g1_values_monomial.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g1_values_monomial,
+            FIELD_ELEMENTS_PER_BLOB,
+        ));
+        drop(v);
+        (*s).g1_values_monomial = ptr::null_mut();
+    }
 
-    let g1 = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*s).g1_values,
-        TRUSTED_SETUP_NUM_G1_POINTS,
-    ));
-    drop(g1);
-    (*s).g1_values = null_mut();
+    if !(*s).g1_values_lagrange_brp.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g1_values_lagrange_brp,
+            FIELD_ELEMENTS_PER_BLOB,
+        ));
+        drop(v);
+        (*s).g1_values_lagrange_brp = ptr::null_mut();
+    }
 
-    let g2 = Box::from_raw(core::slice::from_raw_parts_mut(
-        (*s).g2_values,
-        TRUSTED_SETUP_NUM_G2_POINTS,
-    ));
-    drop(g2);
-    (*s).g2_values = null_mut();
-    (*s).max_width = 0;
+    if !(*s).g2_values_monomial.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).g2_values_monomial,
+            TRUSTED_SETUP_NUM_G2_POINTS,
+        ));
+        drop(v);
+        (*s).g2_values_monomial = ptr::null_mut();
+    }
+
+    if !(*s).x_ext_fft_columns.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).x_ext_fft_columns,
+            2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
+        ));
+        drop(v);
+        (*s).x_ext_fft_columns = ptr::null_mut();
+    }
+
+    if !(*s).roots_of_unity.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        ));
+        drop(v);
+        (*s).roots_of_unity = ptr::null_mut();
+    }
+
+    if !(*s).reverse_roots_of_unity.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).reverse_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        ));
+        drop(v);
+        (*s).reverse_roots_of_unity = ptr::null_mut();
+    }
+
+    if !(*s).brp_roots_of_unity.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).brp_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+        ));
+        drop(v);
+        (*s).brp_roots_of_unity = ptr::null_mut();
+    }
+
+    PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 }
 
 /// # Safety
@@ -280,10 +240,8 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     s: &CKZGSettings,
 ) -> C_KZG_RET {
     let deserialized_blob = handle_ckzg_badargs!(deserialize_blob(blob));
-
     let commitment_g1 = handle_ckzg_badargs!(ZG1::from_bytes(&(*commitment_bytes).bytes));
     let proof_g1 = handle_ckzg_badargs!(ZG1::from_bytes(&(*proof_bytes).bytes));
-
     let settings = handle_ckzg_badargs!(kzg_settings_to_rust(s));
 
     let result = handle_ckzg_badargs!(verify_blob_kzg_proof_rust(
@@ -316,7 +274,9 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         .collect();
 
     let commitments_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_commitments)
-        .map(|raw_commitment| ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS))
+        .map(|raw_commitment| {
+            ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS)
+        })
         .collect();
 
     let proofs_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_proofs)
@@ -345,6 +305,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         C_KZG_RET_BADARGS
     }
 }
+
 
 /// # Safety
 #[no_mangle]

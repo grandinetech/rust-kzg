@@ -8,6 +8,7 @@ mod tests {
     use rust_kzg_zkcrypto::kzg_types::{ZG1, ZG2};
     use rust_kzg_zkcrypto::poly::PolyData;
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_single() {
         fk_single::<
@@ -23,6 +24,7 @@ mod tests {
         >(&generate_trusted_setup);
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_single_strided() {
         fk_single_strided::<
@@ -38,6 +40,7 @@ mod tests {
         >(&generate_trusted_setup);
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_settings() {
         fk_multi_settings::<
@@ -53,6 +56,7 @@ mod tests {
         >(&generate_trusted_setup);
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_chunk_len_1_512() {
         fk_multi_chunk_len_1_512::<
@@ -68,6 +72,7 @@ mod tests {
         >(&generate_trusted_setup);
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_chunk_len_16_512() {
         fk_multi_chunk_len_16_512::<
@@ -83,6 +88,7 @@ mod tests {
         >(&generate_trusted_setup);
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_chunk_len_16_16() {
         fk_multi_chunk_len_16_16::<

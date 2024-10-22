@@ -33,10 +33,10 @@ impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
         let mut poly = PolyData {
             coeffs: vec![BlstFr::one(); indices.len() + 1],
         };
-        poly.coeffs[0] = (self.expanded_roots_of_unity[indices[0] * stride]).negate();
+        poly.coeffs[0] = (self.roots_of_unity[indices[0] * stride]).negate();
 
         for i in 1..indices.len() {
-            let neg_di = (self.expanded_roots_of_unity[indices[i] * stride]).negate();
+            let neg_di = (self.roots_of_unity[indices[i] * stride]).negate();
             poly.coeffs[i] = neg_di;
 
             poly.coeffs[i] = poly.coeffs[i].add(&poly.coeffs[i - 1]);
