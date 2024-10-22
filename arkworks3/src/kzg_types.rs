@@ -1,5 +1,5 @@
 use crate::consts::SCALE2_ROOT_OF_UNITY;
-use crate::fft_g1::g1_linear_combination;
+use crate::fft_g1::{g1_linear_combination, fft_g1_fast};
 pub use crate::kzg_proofs::{
     eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
     KZGSettings as LKZGSettings,
@@ -854,6 +854,30 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 }
 
+fn g1_fft(output: &mut [ArkG1], input: &[ArkG1], s: &LFFTSettings) -> Result<(), String> {
+    /* Ensure the length is valid */
+    if input.len() > FIELD_ELEMENTS_PER_EXT_BLOB || !input.len().is_power_of_two() {
+        return Err("Invalid input size".to_string());
+    }
+
+    let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
+    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride, 1);
+
+    Ok(())
+}
+
+fn toeplitz_part_1(output: &mut [ArkG1], x: &[ArkG1], s: &LFFTSettings) -> Result<(), String> {
+    let n = x.len();
+    let n2 = n * 2;
+    let mut x_ext = vec![ArkG1::identity(); n2];
+
+    x_ext[..n].copy_from_slice(x);
+
+    g1_fft(output, &x_ext, s)?;
+
+    Ok(())
+}
+
 impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine> for LKZGSettings {
     fn new(
         g1_monomial: &[ArkG1],
@@ -884,7 +908,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
             }
             x[k - 1] = ArkG1::identity();
 
-            // toeplitz_part_1(&mut points, &x, fft_settings)?;
+            toeplitz_part_1(&mut points, &x, fft_settings)?;
 
             for row in 0..k2 {
                 x_ext_fft_columns[row][offset] = points[row];

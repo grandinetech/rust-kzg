@@ -4,6 +4,7 @@ extern crate alloc;
 use super::utils::{blst_poly_into_pc_poly, PolyData};
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
+//use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use alloc::sync::Arc;
 use ark_bls12_381::Bls12_381;
 use ark_ec::{PairingEngine, ProjectiveCurve};
@@ -11,8 +12,7 @@ use ark_poly::Polynomial;
 use ark_std::{vec, One};
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::msm::precompute::PrecomputationTable;
-use kzg::{Fr as FrTrait, G1, G2};
-use kzg::{G1Mul, G2Mul};
+use kzg::{Fr, G1Mul, G2Mul};
 use std::ops::Neg;
 
 // use kzg::{FFTSettings, Fr, };
@@ -54,21 +54,26 @@ pub struct KZGSettings {
     pub x_ext_fft_columns: Vec<Vec<ArkG1>>
 }
 
-pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ArkG1>, Vec<ArkG2>) {
-    let s = hash_to_bls_field::<ArkFr>(&secret);
-    let mut s_pow = ArkFr::one();
+pub fn generate_trusted_setup(
+    n: usize,
+    secret: [u8; 32usize],
+) -> (Vec<ArkG1>, Vec<ArkG1>, Vec<ArkG2>) {
+    let s = hash_to_bls_field(&secret);
+    let mut s_pow = Fr::one();
 
-    let mut s1 = Vec::with_capacity(len);
-    let mut s2 = Vec::with_capacity(len);
+    let mut s1: Vec<ArkG1> = Vec::with_capacity(n);
+    let mut s2: Vec<ArkG1> = Vec::with_capacity(n);
+    let mut s3: Vec<ArkG2> = Vec::with_capacity(n);
 
-    for _ in 0..len {
-        s1.push(ArkG1::generator().mul(&s_pow));
-        s2.push(ArkG2::generator().mul(&s_pow));
+    for _ in 0..n {
+        s1.push(s1[0].mul(&s_pow));
+        s2.push(s1[0]); // TODO: this should be lagrange form
+        s3.push(s3[0].mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
     }
 
-    (s1, s2)
+    (s1, s2, s3)
 }
 
 pub fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
