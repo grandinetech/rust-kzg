@@ -1,6 +1,6 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::ZFr as BlstFr;
-use kzg::{Fr, DAS};
+use kzg::{DASExtension, Fr};
 use std::cmp::Ordering;
 
 impl FFTSettings {
@@ -39,7 +39,7 @@ impl FFTSettings {
                 for i in 0..halfhalf {
                     let x = ab[i];
                     let y = ab[halfhalf + i];
-                    let y_times_root = y.mul(&self.expanded_roots_of_unity[(1 + 2 * i) * stride]);
+                    let y_times_root = y.mul(&self.roots_of_unity[(1 + 2 * i) * stride]);
                     ab[i] = x.add(&y_times_root);
                     ab[halfhalf + i] = x.sub(&y_times_root);
                 }
@@ -47,7 +47,7 @@ impl FFTSettings {
             Ordering::Equal => {
                 let x = ab[0].add(&ab[1]);
                 let y = ab[0].sub(&ab[1]);
-                let tmp = y.mul(&self.expanded_roots_of_unity[stride]);
+                let tmp = y.mul(&self.roots_of_unity[stride]);
 
                 ab[0] = x.add(&tmp);
                 ab[1] = x.sub(&tmp);
@@ -56,7 +56,7 @@ impl FFTSettings {
     }
 }
 
-impl DAS<BlstFr> for FFTSettings {
+impl DASExtension<BlstFr> for FFTSettings {
     fn das_fft_extension(&self, vals: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
         if vals.is_empty() {
             return Err(String::from("vals can not be empty"));
