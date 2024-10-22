@@ -869,7 +869,7 @@ fn g1_fft(output: &mut [ZG1], input: &[ZG1], s: &ZFFTSettings) -> Result<(), Str
     let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
     fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride);
 
-    return Ok(());
+    Ok(())
 }
 
 fn toeplitz_part_1(output: &mut [ZG1], x: &[ZG1], s: &ZFFTSettings) -> Result<(), String> {
