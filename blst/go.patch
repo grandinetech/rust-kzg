@@ -24,7 +24,7 @@ index c912d09..edcc96f 100644
 +// #endif
 +// #include <stdlib.h>
 +// #include "ckzg.h"
-+// #cgo LDFLAGS: -L${SRCDIR}/../../lib -lrust_kzg_blst -lm
++// #cgo LDFLAGS: -ldl -L${SRCDIR}/../../lib -lrust_kzg_blst -lm
  import "C"
  
  import (

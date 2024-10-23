@@ -205,6 +205,10 @@ where
         precomputation: Option<Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>>,
         c_settings: &CKZGSettings,
     ) {
+        if c_settings.g1_values_lagrange_brp.is_null() {
+            return;
+        }
+
         if let Some(precomputation) = precomputation {
             self.tables
                 .insert(Self::get_key(c_settings), precomputation);
@@ -212,6 +216,9 @@ where
     }
 
     pub fn remove_precomputation(&mut self, c_settings: &CKZGSettings) {
+        if c_settings.g1_values_lagrange_brp.is_null() {
+            return;
+        }
         self.tables.remove(&Self::get_key(c_settings));
     }
 
@@ -219,6 +226,9 @@ where
         &self,
         c_settings: &CKZGSettings,
     ) -> Option<Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>> {
+        if c_settings.g1_values_lagrange_brp.is_null() {
+            return None;
+        }
         self.tables.get(&Self::get_key(c_settings)).cloned()
     }
 
