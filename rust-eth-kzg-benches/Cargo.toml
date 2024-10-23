@@ -1,0 +1,17 @@
+[package]
+name = "rust-eth-kzg-benches"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rayon = "1.10.0"
+rust_eth_kzg = { version = "0.5.2", features = ["multithreaded"] }
+
+[dev-dependencies]
+criterion = "0.5.1"
+kzg-bench = { path = "../kzg-bench" }
+rand = "0.8.5"
+
+[[bench]]
+name = "eip_7594"
+harness = false
