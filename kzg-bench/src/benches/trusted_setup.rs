@@ -5,6 +5,7 @@ use kzg::{
 };
 use std::{fs::File, io::Read, path::PathBuf};
 
+#[allow(clippy::type_complexity)]
 pub fn bench_load_trusted_setup<
     TFr: Fr + std::fmt::Debug,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
