@@ -98,11 +98,9 @@ cd ../..
 
 print_msg "Patching rust binding"
 git apply < ../rust.patch
-cd bindings/rust || exit
 
 print_msg "Running rust tests"
 cargo test --release
-cd ../..
 
 print_msg "Rebuilding blst"
 cd src
