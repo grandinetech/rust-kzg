@@ -10,11 +10,15 @@ fn bench_eip_7594_(c: &mut Criterion) {
 
     let trusted_setup = TrustedSetup::default();
 
+    #[cfg(feature = "parallel")]
     let ctx = DASContext::with_threads(
         &trusted_setup,
         rust_eth_kzg::ThreadCount::Multi(std::thread::available_parallelism().unwrap().into()),
         UsePrecomp::Yes { width: 8 },
     );
+
+    #[cfg(not(feature = "parallel"))]
+    let ctx = DASContext::new(&trusted_setup, UsePrecomp::Yes { width: 8 });
 
     let mut rng = rand::thread_rng();
 

@@ -5,12 +5,15 @@ edition = "2021"
 
 [dependencies]
 rayon = "1.10.0"
-rust_eth_kzg = { version = "0.5.2", features = ["multithreaded"] }
+rust_eth_kzg = { version = "0.5.2" }
 
 [dev-dependencies]
 criterion = "0.5.1"
 kzg-bench = { path = "../kzg-bench" }
 rand = "0.8.5"
+
+[features]
+parallel = ["rust_eth_kzg/multithreaded"]
 
 [[bench]]
 name = "eip_7594"
