@@ -7,4 +7,5 @@ pub mod kzg;
 pub mod lincomb;
 pub mod poly;
 pub mod recover;
+pub mod trusted_setup;
 pub mod zero_poly;

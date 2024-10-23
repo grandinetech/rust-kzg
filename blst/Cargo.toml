@@ -89,3 +89,7 @@ harness = false
 [[bench]]
 name = "lincomb"
 harness = false
+
+[[bench]]
+name = "trusted_setup"
+harness = false
