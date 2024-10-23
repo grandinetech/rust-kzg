@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use crate::tests::eip_4844::generate_random_blob_bytes;
 use criterion::{BenchmarkId, Criterion};
-use kzg::eip_4844::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL, TRUSTED_SETUP_PATH};
+use kzg::eip_4844::{
+    BYTES_PER_BLOB, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL, TRUSTED_SETUP_PATH,
+};
 use kzg::{FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2};
 
 pub fn get_partial_cells<T: Clone>(cells: &[T], m: usize) -> (Vec<usize>, Vec<T>) {
@@ -57,16 +59,18 @@ pub fn bench_eip_7594<
     ) -> Result<bool, String>,
 ) {
     let ts = load_trusted_setup(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(TRUSTED_SETUP_PATH).to_str().unwrap()
-    ).unwrap();
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join(TRUSTED_SETUP_PATH)
+            .to_str()
+            .unwrap(),
+    )
+    .unwrap();
     let mut rng = rand::thread_rng();
 
     const MAX_COUNT: usize = 64;
 
     let blobs: Vec<[u8; BYTES_PER_BLOB]> = (0..MAX_COUNT)
-        .map(|_| {
-            generate_random_blob_bytes(&mut rng)
-        })
+        .map(|_| generate_random_blob_bytes(&mut rng))
         .collect();
 
     let mut blob_cells = Vec::with_capacity(MAX_COUNT);
@@ -74,9 +78,13 @@ pub fn bench_eip_7594<
     let mut blob_commitments = Vec::with_capacity(MAX_COUNT);
 
     for blob in blobs.iter() {
-        let mut cells = vec![core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| TFr::default()); CELLS_PER_EXT_BLOB];
+        let mut cells =
+            vec![
+                core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| TFr::default());
+                CELLS_PER_EXT_BLOB
+            ];
         let mut proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
-        
+
         let blob = bytes_to_blob(blob).unwrap();
         compute_cells_and_kzg_proofs(Some(&mut cells), Some(&mut proofs), &blob, &ts).unwrap();
         blob_cells.push(cells);
@@ -94,13 +102,14 @@ pub fn bench_eip_7594<
             let blob = bytes_to_blob(blob_bytes).unwrap();
 
             let mut recv_cells =
-            vec![
-                core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| TFr::default());
-                CELLS_PER_EXT_BLOB
-            ];
+                vec![
+                    core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| TFr::default());
+                    CELLS_PER_EXT_BLOB
+                ];
             let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
 
-            compute_cells_and_kzg_proofs(Some(&mut recv_cells), Some(&mut recv_proofs), &blob, &ts).unwrap();
+            compute_cells_and_kzg_proofs(Some(&mut recv_cells), Some(&mut recv_proofs), &blob, &ts)
+                .unwrap();
         });
     });
 
@@ -117,10 +126,17 @@ pub fn bench_eip_7594<
                         .unwrap();
                     CELLS_PER_EXT_BLOB
                 ];
-        
+
                 let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
 
-                recover_cells_and_kzg_proofs(&mut recv_cells, Some(&mut recv_proofs), &cell_indices, &partial_cells, &ts).unwrap();
+                recover_cells_and_kzg_proofs(
+                    &mut recv_cells,
+                    Some(&mut recv_proofs),
+                    &cell_indices,
+                    &partial_cells,
+                    &ts,
+                )
+                .unwrap();
             });
         });
     }
@@ -139,10 +155,17 @@ pub fn bench_eip_7594<
                         .unwrap();
                     CELLS_PER_EXT_BLOB
                 ];
-        
+
                 let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
 
-                recover_cells_and_kzg_proofs(&mut recv_cells, Some(&mut recv_proofs), &cell_indices, &partial_cells, &ts).unwrap();
+                recover_cells_and_kzg_proofs(
+                    &mut recv_cells,
+                    Some(&mut recv_proofs),
+                    &cell_indices,
+                    &partial_cells,
+                    &ts,
+                )
+                .unwrap();
             });
         });
     }
@@ -153,7 +176,7 @@ pub fn bench_eip_7594<
         let mut cell_indices = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
         let mut cells = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
         let mut cell_proofs = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
-        
+
         for (row_index, blob_cell) in blob_cells.iter().enumerate() {
             for (cell_index, cell) in blob_cell.iter().enumerate() {
                 cell_commitments.push(blob_commitments[row_index].clone());
@@ -162,9 +185,16 @@ pub fn bench_eip_7594<
                 cell_proofs.push(blob_cell_proofs[row_index][cell_index].clone());
             }
         }
-        
+
         b.iter(|| {
-            let result = verify_cell_kzg_proof_batch(&cell_commitments, &cell_indices, &cells, &cell_proofs, &ts).unwrap();
+            let result = verify_cell_kzg_proof_batch(
+                &cell_commitments,
+                &cell_indices,
+                &cells,
+                &cell_proofs,
+                &ts,
+            )
+            .unwrap();
             assert!(result);
         });
     });
@@ -176,7 +206,7 @@ pub fn bench_eip_7594<
             let mut cell_indices = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
             let mut cells = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
             let mut cell_proofs = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
-            
+
             for (row_index, blob_cell) in blob_cells.iter().take(i).enumerate() {
                 for (cell_index, cell) in blob_cell.iter().enumerate() {
                     cell_commitments.push(blob_commitments[row_index].clone());
@@ -187,7 +217,14 @@ pub fn bench_eip_7594<
             }
 
             b.iter(|| {
-                let result = verify_cell_kzg_proof_batch(&cell_commitments, &cell_indices, &cells, &cell_proofs, &ts).unwrap();
+                let result = verify_cell_kzg_proof_batch(
+                    &cell_commitments,
+                    &cell_indices,
+                    &cells,
+                    &cell_proofs,
+                    &ts,
+                )
+                .unwrap();
                 assert!(result);
             });
         });
@@ -201,7 +238,7 @@ pub fn bench_eip_7594<
             let mut cell_indices = Vec::with_capacity(MAX_COUNT * i);
             let mut cells = Vec::with_capacity(MAX_COUNT * i);
             let mut cell_proofs = Vec::with_capacity(MAX_COUNT * i);
-            
+
             for (row_index, blob_cell) in blob_cells.iter().enumerate() {
                 for (cell_index, cell) in blob_cell.iter().take(i).enumerate() {
                     cell_commitments.push(blob_commitments[row_index].clone());
@@ -212,7 +249,14 @@ pub fn bench_eip_7594<
             }
 
             b.iter(|| {
-                let result = verify_cell_kzg_proof_batch(&cell_commitments, &cell_indices, &cells, &cell_proofs, &ts).unwrap();
+                let result = verify_cell_kzg_proof_batch(
+                    &cell_commitments,
+                    &cell_indices,
+                    &cells,
+                    &cell_proofs,
+                    &ts,
+                )
+                .unwrap();
                 assert!(result);
             });
         });
