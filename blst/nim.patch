@@ -16,9 +16,9 @@ index 0570efd..59e678e 100644
    {.passc: "-D__BLST_PORTABLE__"}
  
 -{.compile: srcPath & "ckzg.c"}
-++{.passl: "-L" & kzgPath & "lib" .}
-++{.passl: "-lrust_kzg_blst" .}
-++{.passl: "-lm" .}
++{.passl: "-L" & kzgPath & "lib" .}
++{.passl: "-lrust_kzg_blst" .}
++{.passl: "-lm" .}
  
  {.passc: "-I" & escape(bindingsPath) .}
  {.passc: "-I" & escape(srcPath) .}
