@@ -1,5 +1,9 @@
 use super::P1;
-use crate::{P2, kzg_types::{ZFr, ZG1, ZG2, ZG1Affine, ZFp}, kzg_proofs::{KZGSettings, FFTSettings}};
+use crate::{
+    kzg_proofs::{FFTSettings, KZGSettings},
+    kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2},
+    P2,
+};
 use bls12_381::{G1Projective, G2Projective, Scalar};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 
@@ -67,11 +71,16 @@ macro_rules! handle_ckzg_badargs {
 }
 
 pub(crate) use handle_ckzg_badargs;
-use kzg::{eip_4844::{BYTES_PER_FIELD_ELEMENT, C_KZG_RET_BADARGS, C_KZG_RET, Blob, CKZGSettings, FIELD_ELEMENTS_PER_EXT_BLOB, PrecomputationTableManager, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G2_POINTS}, Fr};
+use kzg::{
+    eip_4844::{
+        Blob, CKZGSettings, PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT, C_KZG_RET,
+        C_KZG_RET_BADARGS, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
+    },
+    Fr,
+};
 
-pub(crate) fn fft_settings_to_rust(
-    c_settings: *const CKZGSettings,
-) -> Result<FFTSettings, String> {
+pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {
     let settings = unsafe { &*c_settings };
 
     let roots_of_unity = unsafe {
@@ -205,12 +214,8 @@ pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ZFr>, C_K
         .collect::<Result<Vec<ZFr>, C_KZG_RET>>()
 }
 
-pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
-    ZFr,
-    ZG1,
-    ZFp,
-    ZG1Affine
-> = PrecomputationTableManager::new();
+pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<ZFr, ZG1, ZFp, ZG1Affine> =
+    PrecomputationTableManager::new();
 
 pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<KZGSettings, String> {
     Ok(KZGSettings {

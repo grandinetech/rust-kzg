@@ -15,7 +15,10 @@ use bls12_381::{Fp, G1Affine, G1Projective, G2Affine, G2Projective, Scalar, MODU
 use blst::{blst_fr, blst_p1};
 use ff::Field;
 use kzg::common_utils::reverse_bit_order;
-use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G2_POINTS};
+use kzg::eip_4844::{
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
+    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
+};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::G1Affine as G1AffineTrait;
 use kzg::{
@@ -938,7 +941,13 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
         }
 
         let mut out = ZG1::default();
-        g1_linear_combination(&mut out, &self.g1_values_lagrange_brp, &p.coeffs, p.coeffs.len(), None);
+        g1_linear_combination(
+            &mut out,
+            &self.g1_values_lagrange_brp,
+            &p.coeffs,
+            p.coeffs.len(),
+            None,
+        );
 
         Ok(out)
     }
