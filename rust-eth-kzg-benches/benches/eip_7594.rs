@@ -2,8 +2,8 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use kzg_bench::benches::eip_7594::get_partial_cells;
 use kzg_bench::tests::eip_4844::generate_random_blob_bytes;
 use rust_eth_kzg::constants::CELLS_PER_EXT_BLOB;
-use rust_eth_kzg::{DASContext, TrustedSetup};
 use rust_eth_kzg::UsePrecomp;
+use rust_eth_kzg::{DASContext, TrustedSetup};
 
 fn bench_eip_7594_(c: &mut Criterion) {
     const MAX_COUNT: usize = 64;
@@ -19,11 +19,9 @@ fn bench_eip_7594_(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
 
     let blobs = (0..MAX_COUNT)
-        .map(|_| {
-            generate_random_blob_bytes(&mut rng)
-        })
+        .map(|_| generate_random_blob_bytes(&mut rng))
         .collect::<Vec<_>>();
-    
+
     let mut blob_cells = Vec::with_capacity(MAX_COUNT);
     let mut blob_cell_proofs = Vec::with_capacity(MAX_COUNT);
     let mut blob_commitments = Vec::with_capacity(MAX_COUNT);
@@ -51,12 +49,19 @@ fn bench_eip_7594_(c: &mut Criterion) {
         let percent_missing = 100.0 / (i as f64);
         let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], i);
 
-        let partial_cells = partial_cells.iter().map(|it| it.as_ref()).collect::<Vec<_>>();
-        let cell_indices = cell_indices.into_iter().map(|it| it as u64).collect::<Vec<_>>();
+        let partial_cells = partial_cells
+            .iter()
+            .map(|it| it.as_ref())
+            .collect::<Vec<_>>();
+        let cell_indices = cell_indices
+            .into_iter()
+            .map(|it| it as u64)
+            .collect::<Vec<_>>();
 
         group.bench_function(BenchmarkId::from_parameter(percent_missing), |b| {
             b.iter(|| {
-                ctx.recover_cells_and_kzg_proofs(cell_indices.clone(), partial_cells.clone()).unwrap();
+                ctx.recover_cells_and_kzg_proofs(cell_indices.clone(), partial_cells.clone())
+                    .unwrap();
             });
         });
     }
@@ -67,23 +72,30 @@ fn bench_eip_7594_(c: &mut Criterion) {
         let modulo = (CELLS_PER_EXT_BLOB + i - 1) / i;
         let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], modulo);
 
-        let partial_cells = partial_cells.iter().map(|it| it.as_ref()).collect::<Vec<_>>();
-        let cell_indices = cell_indices.into_iter().map(|it| it as u64).collect::<Vec<_>>();
+        let partial_cells = partial_cells
+            .iter()
+            .map(|it| it.as_ref())
+            .collect::<Vec<_>>();
+        let cell_indices = cell_indices
+            .into_iter()
+            .map(|it| it as u64)
+            .collect::<Vec<_>>();
 
         group.bench_function(BenchmarkId::from_parameter(i), |b| {
             b.iter(|| {
-                ctx.recover_cells_and_kzg_proofs(cell_indices.clone(), partial_cells.clone()).unwrap();
+                ctx.recover_cells_and_kzg_proofs(cell_indices.clone(), partial_cells.clone())
+                    .unwrap();
             });
         });
     }
     group.finish();
-    
+
     c.bench_function("verify_cell_kzg_proof_batch", |b| {
         let mut cell_commitments = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
         let mut cell_indices = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
         let mut cells = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
         let mut cell_proofs = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
-        
+
         for (row_index, blob_cell) in blob_cells.iter().enumerate() {
             for (cell_index, cell) in blob_cell.iter().enumerate() {
                 cell_commitments.push(&blob_commitments[row_index]);
@@ -92,9 +104,15 @@ fn bench_eip_7594_(c: &mut Criterion) {
                 cell_proofs.push(&blob_cell_proofs[row_index][cell_index]);
             }
         }
-        
+
         b.iter(|| {
-            ctx.verify_cell_kzg_proof_batch(cell_commitments.clone(), cell_indices.clone(), cells.clone(), cell_proofs.clone()).unwrap();
+            ctx.verify_cell_kzg_proof_batch(
+                cell_commitments.clone(),
+                cell_indices.clone(),
+                cells.clone(),
+                cell_proofs.clone(),
+            )
+            .unwrap();
         });
     });
 
@@ -105,7 +123,7 @@ fn bench_eip_7594_(c: &mut Criterion) {
             let mut cell_indices = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
             let mut cells = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
             let mut cell_proofs = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
-            
+
             for (row_index, blob_cell) in blob_cells.iter().take(i).enumerate() {
                 for (cell_index, cell) in blob_cell.iter().enumerate() {
                     cell_commitments.push(&blob_commitments[row_index]);
@@ -116,7 +134,13 @@ fn bench_eip_7594_(c: &mut Criterion) {
             }
 
             b.iter(|| {
-                ctx.verify_cell_kzg_proof_batch(cell_commitments.clone(), cell_indices.clone(), cells.clone(), cell_proofs.clone()).unwrap();
+                ctx.verify_cell_kzg_proof_batch(
+                    cell_commitments.clone(),
+                    cell_indices.clone(),
+                    cells.clone(),
+                    cell_proofs.clone(),
+                )
+                .unwrap();
             });
         });
     }
@@ -129,7 +153,7 @@ fn bench_eip_7594_(c: &mut Criterion) {
             let mut cell_indices = Vec::with_capacity(MAX_COUNT * i);
             let mut cells = Vec::with_capacity(MAX_COUNT * i);
             let mut cell_proofs = Vec::with_capacity(MAX_COUNT * i);
-            
+
             for (row_index, blob_cell) in blob_cells.iter().enumerate() {
                 for (cell_index, cell) in blob_cell.iter().take(i).enumerate() {
                     cell_commitments.push(&blob_commitments[row_index]);
@@ -140,15 +164,18 @@ fn bench_eip_7594_(c: &mut Criterion) {
             }
 
             b.iter(|| {
-                ctx.verify_cell_kzg_proof_batch(cell_commitments.clone(), cell_indices.clone(), cells.clone(), cell_proofs.clone()).unwrap();
+                ctx.verify_cell_kzg_proof_batch(
+                    cell_commitments.clone(),
+                    cell_indices.clone(),
+                    cells.clone(),
+                    cell_proofs.clone(),
+                )
+                .unwrap();
             });
         });
     }
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    bench_eip_7594_
-);
+criterion_group!(benches, bench_eip_7594_);
 criterion_main!(benches);

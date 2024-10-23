@@ -1,7 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use kzg::{eip_4844::{blob_to_kzg_commitment_rust, 
-    bytes_to_blob}
-, eip_7594::{compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs, verify_cell_kzg_proof_batch}};
+use kzg::{
+    eip_4844::{blob_to_kzg_commitment_rust, bytes_to_blob},
+    eip_7594::{
+        compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs, verify_cell_kzg_proof_batch,
+    },
+};
 use kzg_bench::benches::eip_7594::bench_eip_7594;
 use rust_kzg_blst::{
     eip_4844::load_trusted_setup_filename_rust,
@@ -24,7 +27,7 @@ fn bench_eip_7594_(c: &mut Criterion) {
         &blob_to_kzg_commitment_rust,
         &compute_cells_and_kzg_proofs,
         &recover_cells_and_kzg_proofs,
-        &verify_cell_kzg_proof_batch
+        &verify_cell_kzg_proof_batch,
     );
 }
 
