@@ -1,14 +1,17 @@
 extern crate alloc;
 
 use crate::kzg_types::{ZFr, ZG1};
-use crate::utils::{handle_ckzg_badargs, deserialize_blob, kzg_settings_to_rust, PRECOMPUTATION_TABLES, kzg_settings_to_c};
+use crate::utils::{
+    deserialize_blob, handle_ckzg_badargs, kzg_settings_to_c, kzg_settings_to_rust,
+    PRECOMPUTATION_TABLES,
+};
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
     verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
-    BYTES_PER_G1, C_KZG_RET, C_KZG_RET_BADARGS,
-    C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
-    TRUSTED_SETUP_NUM_G2_POINTS, FIELD_ELEMENTS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL,
+    BYTES_PER_G1, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB,
+    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS,
 };
 use kzg::{cfg_into_iter, Fr, G1};
 use std::ptr::{self};
@@ -274,9 +277,7 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         .collect();
 
     let commitments_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_commitments)
-        .map(|raw_commitment| {
-            ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS)
-        })
+        .map(|raw_commitment| ZG1::from_bytes(&raw_commitment.bytes).map_err(|_| C_KZG_RET_BADARGS))
         .collect();
 
     let proofs_g1: Result<Vec<ZG1>, C_KZG_RET> = cfg_into_iter!(raw_proofs)
@@ -305,7 +306,6 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
         C_KZG_RET_BADARGS
     }
 }
-
 
 /// # Safety
 #[no_mangle]

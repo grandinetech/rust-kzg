@@ -2,30 +2,17 @@
 mod tests {
     use kzg::eip_4844::bytes_to_blob;
     use kzg_bench::tests::eip_7594::{
-        test_vectors_compute_cells_and_kzg_proofs,
-        test_vectors_recover_cells_and_kzg_proofs,
+        test_vectors_compute_cells_and_kzg_proofs, test_vectors_recover_cells_and_kzg_proofs,
         test_vectors_verify_cell_kzg_proof_batch,
     };
     use rust_kzg_zkcrypto::{
-        eip_4844::{
-            load_trusted_setup_filename_rust
-        },
+        eip_4844::load_trusted_setup_filename_rust,
         eip_7594::{
-            compute_cells_and_kzg_proofs_rust,
-            recover_cells_and_kzg_proofs_rust,
+            compute_cells_and_kzg_proofs_rust, recover_cells_and_kzg_proofs_rust,
             verify_cell_kzg_proof_batch_rust,
         },
-        kzg_proofs::{
-            KZGSettings,
-            FFTSettings
-        },
-        kzg_types::{
-            ZFp,
-            ZFr,
-            ZG1,
-            ZG1Affine,
-            ZG2,
-        },
+        kzg_proofs::{FFTSettings, KZGSettings},
+        kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2},
         poly::PolyData,
     };
 

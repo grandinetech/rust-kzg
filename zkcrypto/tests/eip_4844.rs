@@ -21,7 +21,7 @@ mod tests {
         verify_kzg_proof_batch_test,
     };
     use rust_kzg_zkcrypto::consts::SCALE2_ROOT_OF_UNITY;
-    use rust_kzg_zkcrypto::eip_4844::{load_trusted_setup_filename_rust};
+    use rust_kzg_zkcrypto::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_zkcrypto::kzg_proofs::{expand_root_of_unity, FFTSettings, KZGSettings};
     use rust_kzg_zkcrypto::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2};
     use rust_kzg_zkcrypto::poly::PolyData;

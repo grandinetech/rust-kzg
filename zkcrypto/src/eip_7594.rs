@@ -1,6 +1,9 @@
-use kzg::{eip_4844::FIELD_ELEMENTS_PER_CELL};
+use kzg::eip_4844::FIELD_ELEMENTS_PER_CELL;
 
-use crate::{kzg_types::{ZFr, ZG1}, kzg_proofs::KZGSettings};
+use crate::{
+    kzg_proofs::KZGSettings,
+    kzg_types::{ZFr, ZG1},
+};
 
 extern crate alloc;
 
@@ -24,7 +27,7 @@ pub fn compute_cells_and_kzg_proofs_rust(
     cells: Option<&mut [[ZFr; FIELD_ELEMENTS_PER_CELL]]>,
     proofs: Option<&mut [ZG1]>,
     blob: &[ZFr],
-    s: &KZGSettings
+    s: &KZGSettings,
 ) -> Result<(), String> {
     kzg::eip_7594::compute_cells_and_kzg_proofs(cells, proofs, blob, s)
 }
