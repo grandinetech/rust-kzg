@@ -25,7 +25,7 @@ index df1730c..f115db1 100644
  .PHONY: ckzg
  ckzg: blst
 -	$(CLANG_EXECUTABLE) $(CFLAGS) -o $(CKZG_LIBRARY_PATH) $(TARGETS)
-+	$(CLANG_EXECUTABLE) $(CFLAGS) -o $(CKZG_LIBRARY_PATH) $(TARGETS) -L ../../lib -lrust_kzg_constantine -u verify_cell_kzg_proof_batch
++	$(CLANG_EXECUTABLE) $(CFLAGS) -o $(CKZG_LIBRARY_PATH) $(TARGETS) -L ../../lib -lrust_kzg_blst -u verify_cell_kzg_proof_batch
  
  .PHONY: ckzg-dotnet
  ckzg-dotnet: ckzg
