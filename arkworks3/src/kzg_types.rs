@@ -1,5 +1,5 @@
 use crate::consts::SCALE2_ROOT_OF_UNITY;
-use crate::fft_g1::{g1_linear_combination, fft_g1_fast};
+use crate::fft_g1::{fft_g1_fast, g1_linear_combination};
 pub use crate::kzg_proofs::{
     eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
     KZGSettings as LKZGSettings,
@@ -28,7 +28,10 @@ use blst::{
     blst_p2_uncompress, BLST_ERROR,
 };
 use kzg::common_utils::reverse_bit_order;
-use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS};
+use kzg::eip_4844::{
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
+    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
+};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,

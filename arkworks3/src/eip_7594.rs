@@ -11,7 +11,6 @@ use crate::{
     utils::{deserialize_blob, kzg_settings_to_rust},
 };
 
-
 pub fn compute_cells_and_kzg_proofs_rust(
     cells: Option<&mut [[ArkFr; FIELD_ELEMENTS_PER_CELL]]>,
     proofs: Option<&mut [ArkG1]>,
