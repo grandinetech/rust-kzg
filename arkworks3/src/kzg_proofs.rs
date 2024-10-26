@@ -48,7 +48,7 @@ pub struct KZGSettings {
     pub g1_values_lagrange_brp: Vec<ArkG1>,
     pub g2_values_monomial: Vec<ArkG2>,
     pub precomputation: Option<Arc<PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>>,
-    pub x_ext_fft_columns: Vec<Vec<ArkG1>>
+    pub x_ext_fft_columns: Vec<Vec<ArkG1>>,
 }
 
 pub fn generate_trusted_setup(

@@ -4,14 +4,14 @@ use alloc::boxed::Box;
 
 use kzg::{
     eip_4844::{
-        Blob, CKZGSettings, PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT,
-        C_KZG_RET, C_KZG_RET_BADARGS, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        Blob, CKZGSettings, PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT, C_KZG_RET,
+        C_KZG_RET_BADARGS, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
     },
-    Fr, 
+    Fr,
 };
 
-use crate::kzg_types::{ArkFr, ArkG1, ArkG2, ArkFp, ArkG1Affine, LKZGSettings, LFFTSettings};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2, LFFTSettings, LKZGSettings};
 
 use super::{Fp, P1};
 use crate::P2;
@@ -30,7 +30,7 @@ pub struct PolyData {
     pub coeffs: Vec<ArkFr>,
 }
 // FIXME: Store just dense poly here
- 
+
 pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C_KZG_RET> {
     (*blob)
         .bytes
