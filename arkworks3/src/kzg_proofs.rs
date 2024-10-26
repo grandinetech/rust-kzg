@@ -1,7 +1,7 @@
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
-use super::utils::{blst_poly_into_pc_poly, PolyData};
+use super::utils::PolyData;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
 use alloc::sync::Arc;
@@ -9,13 +9,17 @@ use ark_bls12_381::Bls12_381;
 use ark_ec::{PairingEngine, ProjectiveCurve};
 use ark_poly::Polynomial;
 use ark_std::{vec, One};
+use blst::{
+    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
+    blst_p2_to_affine,
+};
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr, G1Mul, G2Mul, G1, G2};
 use std::ops::Neg;
 
 #[derive(Debug, Clone)]
-pub struct FFTSettings {
+pub struct LFFTSettings {
     pub max_width: usize,
     pub root_of_unity: BlstFr,
     pub brp_roots_of_unity: Vec<BlstFr>,
@@ -42,8 +46,8 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct KZGSettings {
-    pub fs: FFTSettings,
+pub struct LKZGSettings {
+    pub fs: LFFTSettings,
     pub g1_values_monomial: Vec<ArkG1>,
     pub g1_values_lagrange_brp: Vec<ArkG1>,
     pub g2_values_monomial: Vec<ArkG2>,
@@ -73,22 +77,31 @@ pub fn generate_trusted_setup(
     (s1, s2, s3)
 }
 
-pub fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {
-    let poly = blst_poly_into_pc_poly(&p.coeffs);
-    BlstFr {
-        fr: poly.evaluate(&x.fr),
-    }
-}
-
 pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
-    let ark_a1_neg = a1.0.neg().into_affine();
-    let ark_b1 = b1.0.into_affine();
-    let ark_a2 = a2.0.into_affine();
-    let ark_b2 = b2.0.into_affine();
+    // TODO: Should look into rewriting this without blst methods. Not sure if it is possible though.
+    let mut aa1 = blst_p1_affine::default();
+    let mut bb1 = blst_p1_affine::default();
 
-    Bls12_381::product_of_pairings(&[
-        (ark_a1_neg.into(), ark_a2.into()),
-        (ark_b1.into(), ark_b2.into()),
-    ])
-    .is_one()
+    let mut aa2 = blst_p2_affine::default();
+    let mut bb2 = blst_p2_affine::default();
+
+    // As an optimisation, we want to invert one of the pairings,
+    // so we negate one of the points.
+    let mut a1neg: ArkG1 = *a1;
+    unsafe {
+        blst_p1_cneg(&mut a1neg.0, true);
+        blst_p1_to_affine(&mut aa1, &a1neg.0);
+
+        blst_p1_to_affine(&mut bb1, &b1.0);
+        blst_p2_to_affine(&mut aa2, &a2.0);
+        blst_p2_to_affine(&mut bb2, &b2.0);
+
+        let dst = [0u8; 3];
+        let mut pairing_blst = blst::Pairing::new(false, &dst);
+        pairing_blst.raw_aggregate(&aa2, &aa1);
+        pairing_blst.raw_aggregate(&bb2, &bb1);
+        let gt_point = pairing_blst.as_fp12().final_exp();
+
+        blst_fp12_is_one(&gt_point)
+    }
 }

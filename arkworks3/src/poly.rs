@@ -1,4 +1,4 @@
-use super::kzg_proofs::FFTSettings;
+use super::kzg_proofs::LFFTSettings;
 use super::utils::{blst_poly_into_pc_poly, PolyData};
 use crate::kzg_types::ArkFr as BlstFr;
 use crate::utils::pc_poly_into_blst_poly;
@@ -33,7 +33,7 @@ pub fn poly_inverse(b: &PolyData, output_len: usize) -> Result<PolyData, String>
 
     let maxd = output_len - 1;
     let scale = next_pow_of_2(log2_pow2(2 * output_len - 1));
-    let fs = FFTSettings::new(scale).unwrap();
+    let fs = LFFTSettings::new(scale).unwrap();
 
     let mut tmp0: PolyData;
     let mut tmp1: PolyData;
@@ -104,7 +104,7 @@ pub fn poly_long_div(p1: &PolyData, p2: &PolyData) -> Result<PolyData, String> {
 pub fn poly_mul(
     a: &PolyData,
     b: &PolyData,
-    fs: Option<&FFTSettings>,
+    fs: Option<&LFFTSettings>,
     len: usize,
 ) -> Result<PolyData, String> {
     if a.coeffs.len() < 64 || b.coeffs.len() < 64 || len < 128 {
@@ -117,7 +117,7 @@ pub fn poly_mul(
 pub fn poly_mul_fft(
     a: &PolyData,
     b: &PolyData,
-    fs: Option<&FFTSettings>,
+    fs: Option<&LFFTSettings>,
     len: usize,
 ) -> Result<PolyData, String> {
     // Truncate a and b so as not to do excess work for the number of coefficients required.
@@ -130,7 +130,7 @@ pub fn poly_mul_fft(
         x.clone()
     } else {
         let scale = log2_pow2(length);
-        FFTSettings::new(scale).unwrap()
+        LFFTSettings::new(scale).unwrap()
     };
 
     if length > fs_p.max_width {

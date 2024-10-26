@@ -1,9 +1,6 @@
 use crate::consts::SCALE2_ROOT_OF_UNITY;
 use crate::fft_g1::{fft_g1_fast, g1_linear_combination};
-pub use crate::kzg_proofs::{
-    eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
-    KZGSettings as LKZGSettings,
-};
+pub use crate::kzg_proofs::{expand_root_of_unity, pairings_verify, LFFTSettings, LKZGSettings};
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::{
@@ -734,7 +731,22 @@ impl Poly<ArkFr> for PolyData {
     }
 
     fn eval(&self, x: &ArkFr) -> ArkFr {
-        eval_poly(self, x)
+        if self.coeffs.is_empty() {
+            return ArkFr::zero();
+        } else if x.is_zero() {
+            return self.coeffs[0];
+        }
+        let mut ret = self.coeffs[self.coeffs.len() - 1];
+        let mut i = self.coeffs.len() - 2;
+        loop {
+            let temp = ret.mul(x);
+            ret = temp.add(&self.coeffs[i]);
+            if i == 0 {
+                break;
+            }
+            i -= 1;
+        }
+        ret
     }
 
     fn scale(&mut self) {
