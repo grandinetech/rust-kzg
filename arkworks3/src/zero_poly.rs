@@ -1,4 +1,4 @@
-use super::kzg_proofs::FFTSettings;
+use super::kzg_proofs::LFFTSettings;
 use super::utils::{blst_poly_into_pc_poly, pc_poly_into_blst_poly, PolyData};
 use crate::kzg_types::ArkFr as BlstFr;
 use kzg::common_utils::next_pow_of_2;
@@ -20,7 +20,7 @@ pub(crate) fn pad_poly(poly: &PolyData, new_length: usize) -> Result<Vec<BlstFr>
     Ok(out)
 }
 
-impl ZeroPoly<BlstFr, PolyData> for FFTSettings {
+impl ZeroPoly<BlstFr, PolyData> for LFFTSettings {
     fn do_zero_poly_mul_partial(
         &self,
         indices: &[usize],

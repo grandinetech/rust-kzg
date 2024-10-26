@@ -1,9 +1,9 @@
-use crate::kzg_proofs::FFTSettings;
+use crate::kzg_proofs::LFFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
 use kzg::{Fr, DAS};
 use std::cmp::Ordering;
 
-impl FFTSettings {
+impl LFFTSettings {
     fn das_fft_extension_stride(&self, ab: &mut [BlstFr], stride: usize) {
         match ab.len().cmp(&2_usize) {
             Ordering::Less => {}
@@ -56,7 +56,7 @@ impl FFTSettings {
     }
 }
 
-impl DAS<BlstFr> for FFTSettings {
+impl DAS<BlstFr> for LFFTSettings {
     fn das_fft_extension(&self, vals: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
         if vals.is_empty() {
             return Err(String::from("vals can not be empty"));

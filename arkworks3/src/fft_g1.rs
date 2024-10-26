@@ -1,4 +1,4 @@
-use crate::kzg_proofs::FFTSettings;
+use crate::kzg_proofs::LFFTSettings;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
 
 use kzg::cfg_into_iter;
@@ -130,7 +130,7 @@ pub fn make_data(data: usize) -> Vec<ArkG1> {
     vec
 }
 
-impl FFTG1<ArkG1> for FFTSettings {
+impl FFTG1<ArkG1> for LFFTSettings {
     fn fft_g1(&self, data: &[ArkG1], inverse: bool) -> Result<Vec<ArkG1>, String> {
         if data.len() > self.max_width {
             return Err(String::from("data length is longer than allowed max width"));

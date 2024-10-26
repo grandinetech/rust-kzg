@@ -1,8 +1,8 @@
-use crate::kzg_proofs::FFTSettings;
+use crate::kzg_proofs::LFFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
 use kzg::{FFTFr, Fr as FFr};
 
-impl FFTFr<BlstFr> for FFTSettings {
+impl FFTFr<BlstFr> for LFFTSettings {
     fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
         if data.len() > self.max_width {
             return Err(String::from("data length is longer than allowed max width"));
