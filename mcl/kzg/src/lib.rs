@@ -54,6 +54,7 @@ pub mod c_bindings;
 pub mod das;
 pub mod data_recovery;
 pub mod eip_4844;
+pub mod eip_7594;
 pub mod fk20_fft;
 pub mod fk20_matrix;
 pub mod kzg10;

@@ -591,23 +591,29 @@ impl Polynomial {
 #[derive(Debug, Clone)]
 pub struct Curve {
     pub g1_gen: G1,
+    pub g1_lagrange_gen: G1,
     pub g2_gen: G2,
-    pub g1_points: Vec<G1>,
-    pub g2_points: Vec<G2>,
+    pub g1_points_monomial: Vec<G1>,
+    pub g1_points_lagrange: Vec<G1>,
+    pub g2_points_monomial: Vec<G2>,
 }
 
 impl Default for Curve {
     fn default() -> Self {
         let g1_gen = G1::gen();
+        let g1_lagrange_gen= G1::gen();
         let g2_gen = G2::gen();
-        let g1_points: Vec<G1> = vec![];
-        let g2_points: Vec<G2> = vec![];
+        let g1_points_monomial: Vec<G1> = vec![];
+        let g1_points_lagrange: Vec<G1> = vec![];
+        let g2_points_monomial: Vec<G2> = vec![];
 
         Self {
             g1_gen,
+            g1_lagrange_gen,
             g2_gen,
-            g1_points,
-            g2_points,
+            g1_points_monomial,
+            g1_points_lagrange,
+            g2_points_monomial,
         }
     }
 }
@@ -615,43 +621,53 @@ impl Default for Curve {
 impl Curve {
     pub fn new(secret: &Fr, order: usize) -> Self {
         let g1_gen = G1::gen();
+        let g1_lagrange_gen = G1::gen();
         let g2_gen = G2::gen();
 
-        let mut g1_points = vec![G1::default(); order];
-        let mut g2_points = vec![G2::default(); order];
+        let mut g1_points_monomial = vec![G1::default(); order];
+        let mut g1_points_lagrange = vec![G1::default(); order];
+        let mut g2_points_monomial = vec![G2::default(); order];
 
         let mut secret_to_power = Fr::one();
         for i in 0..order {
-            G1::mul(&mut (g1_points[i]), &g1_gen, &secret_to_power);
-            G2::mul(&mut (g2_points[i]), &g2_gen, &secret_to_power);
+            G1::mul(&mut (g1_points_monomial[i]), &g1_gen, &secret_to_power);
+            G1::mul(&mut (g1_points_lagrange[i]), &g1_lagrange_gen, &secret_to_power);
+            G2::mul(&mut (g2_points_monomial[i]), &g2_gen, &secret_to_power);
 
             secret_to_power *= secret;
         }
 
         Self {
             g1_gen,
+            g1_lagrange_gen,
             g2_gen,
-            g1_points,
-            g2_points,
+            g1_points_monomial,
+            g1_points_lagrange,
+            g2_points_monomial,
         }
     }
 
-    pub fn new2(secret_g1: &[G1], secret_g2: &[G2], order: usize) -> Self {
+    pub fn new2(secret_g1: &[G1], secret_g1_lagrange: &[G1], secret_g2: &[G2], order: usize) -> Self {
         let g1_gen = G1::gen();
+        let g1_lagrange_gen = G1::gen();
         let g2_gen = G2::gen();
 
-        let mut g1_points: Vec<G1> = vec![];
-        let mut g2_points: Vec<G2> = vec![];
+        let mut g1_points_monomial: Vec<G1> = vec![];
+        let mut g1_points_lagrange: Vec<G1> = vec![];
+        let mut g2_points_monomial: Vec<G2> = vec![];
         for i in 0..order {
-            g1_points.push(secret_g1[i]);
-            g2_points.push(secret_g2[i]);
+            g1_points_monomial.push(secret_g1[i]);
+            g1_points_lagrange.push(secret_g1_lagrange[i]);
+            g2_points_monomial.push(secret_g2[i]);
         }
 
         Self {
             g1_gen,
+            g1_lagrange_gen,
             g2_gen,
-            g1_points,
-            g2_points,
+            g1_points_monomial,
+            g1_points_lagrange,
+            g2_points_monomial,
         }
     }
 

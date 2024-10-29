@@ -2,11 +2,20 @@ use crate::data_types::{fp::*, fr::*, g2::*};
 use crate::fk20_fft::FFTSettings as mFFTSettings;
 use crate::kzg_settings::KZGSettings as mKZGSettings;
 use kzg::cfg_into_iter;
+// use kzg::eip_4844::{
+//     blst_p1, load_trusted_setup_string, Blob, Bytes32, Bytes48, CFFTSettings, CKZGSettings,
+//     KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET,
+//     C_KZG_RET_BADARGS, C_KZG_RET_OK,
+// };
 use kzg::eip_4844::{
-    blst_p1, load_trusted_setup_string, Blob, Bytes32, Bytes48, CFFTSettings, CKZGSettings,
-    KZGCommitment, KZGProof, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, C_KZG_RET,
-    C_KZG_RET_BADARGS, C_KZG_RET_OK,
+    blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
+    load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
+    verify_kzg_proof_rust, Blob, Bytes32, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
+    BYTES_PER_G1, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_BLOB,
+    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+    TRUSTED_SETUP_NUM_G2_POINTS,
 };
+
 use std::boxed::Box;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
@@ -30,8 +39,8 @@ unsafe fn ks_to_cks(t: &mut mKZGSettings, out: *mut CKZGSettings) {
     (*out).g2_values = t.curve.g2_points.as_mut_ptr() as _;
     let fs = CFFTSettings {
         max_width: t.fft_settings.max_width as _,
-        roots_of_unity: t.fft_settings.expanded_roots_of_unity.as_mut_ptr() as _,
-        expanded_roots_of_unity: t.fft_settings.expanded_roots_of_unity.as_mut_ptr() as _,
+        roots_of_unity: t.fft_settings.roots_of_unity.as_mut_ptr() as _,
+        roots_of_unity: t.fft_settings.roots_of_unity.as_mut_ptr() as _,
         reverse_roots_of_unity: t.fft_settings.reverse_roots_of_unity.as_mut_ptr() as _,
     };
     let b = Box::new(fs);
@@ -52,8 +61,8 @@ unsafe fn cks_to_ks(t: *const CKZGSettings) -> mKZGSettings {
         fft_settings: mFFTSettings {
             max_width: mw,
             root_of_unity: Fr::default(),
-            expanded_roots_of_unity: Vec::from_raw_parts(
-                (*fs).expanded_roots_of_unity as _,
+            roots_of_unity: Vec::from_raw_parts(
+                (*fs).roots_of_unity as _,
                 mw + 1,
                 mw + 1,
             ),
@@ -65,7 +74,7 @@ unsafe fn cks_to_ks(t: *const CKZGSettings) -> mKZGSettings {
             roots_of_unity: Vec::from_raw_parts((*fs).roots_of_unity as _, mw + 1, mw + 1),
         },
     };
-    ks.fft_settings.root_of_unity = ks.fft_settings.expanded_roots_of_unity[1];
+    ks.fft_settings.root_of_unity = ks.fft_settings.roots_of_unity[1];
     ks
 }
 
@@ -91,6 +100,20 @@ unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<Fr>, C_KZG_RET> {
             //}
         })
         .collect::<Result<Vec<Fr>, C_KZG_RET>>()
+}
+
+
+pub fn load_trusted_setup_filename_rust(
+    filepath: &str,
+) -> Result<crate::kzg_proofs::KZGSettings, alloc::string::String> {
+    let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .map_err(|_| "Unable to read file".to_string())?;
+
+    let (g1_monomial_bytes, g1_lagrange_bytes, g2_monomial_bytes) =
+        load_trusted_setup_string(&contents)?;
+    load_trusted_setup_rust(&g1_monomial_bytes, &g1_lagrange_bytes, &g2_monomial_bytes)
 }
 
 /// # Safety

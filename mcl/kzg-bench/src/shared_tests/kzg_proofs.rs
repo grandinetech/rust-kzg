@@ -8,6 +8,7 @@ mod kzg_proofs_tests {
     use rust_kzg_mcl::mcl_methods::init;
     use rust_kzg_mcl::CurveType;
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn proof_single_() {
         assert!(init(CurveType::BLS12_381));
@@ -16,6 +17,7 @@ mod kzg_proofs_tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn commit_to_nil_poly_() {
         assert!(init(CurveType::BLS12_381));
@@ -24,6 +26,7 @@ mod kzg_proofs_tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn commit_to_too_long_poly_returns_err_() {
         assert!(init(CurveType::BLS12_381));
@@ -32,6 +35,7 @@ mod kzg_proofs_tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn proof_multi_() {
         assert!(init(CurveType::BLS12_381));

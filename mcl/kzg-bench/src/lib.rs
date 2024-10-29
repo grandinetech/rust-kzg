@@ -13,6 +13,7 @@ mod shared_tests {
     mod consts;
     mod das;
     mod eip_4844;
+    mod eip_7594;
     mod fft_fr;
     mod fft_g1;
     mod finite;

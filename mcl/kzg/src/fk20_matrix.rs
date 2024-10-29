@@ -81,7 +81,7 @@ impl FK20SingleMatrix {
 
         let mut x = Vec::new();
         for i in 0..n - 1 {
-            x.push(kzg_settings.curve.g1_points[n - 2 - i]);
+            x.push(kzg_settings.curve.g1_values_lagrange_brp[n - 2 - i]);
         }
         x.push(G1::G1_IDENTITY);
 
@@ -232,7 +232,7 @@ impl FK20Matrix {
             // could just move this to the bottom and define j as start, but then need to check for overflows
             // basically last j -= chunk_len overflows, but it's not used to access the array, as the i + 1 < k is false
             j -= chunk_len;
-            x[i] = curve.g1_points[j];
+            x[i] = curve.g1_values_lagrange_brp[j];
             i += 1;
         }
 

@@ -543,3 +543,5 @@ fn poly_to_kzg_commitment(p: &Polynomial, s: &KZGSettings) -> G1 {
     assert_eq!(p.coeffs.len(), FIELD_ELEMENTS_PER_BLOB);
     g1_lincomb(&s.curve.g1_points, &p.coeffs, FIELD_ELEMENTS_PER_BLOB)
 }
+
+

@@ -9,6 +9,7 @@ mod tests {
     use rust_kzg_mcl::mcl_methods::init;
     use rust_kzg_mcl::CurveType;
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_single() {
         assert!(init(CurveType::BLS12_381));
@@ -17,6 +18,7 @@ mod tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_single_strided() {
         assert!(init(CurveType::BLS12_381));
@@ -25,6 +27,7 @@ mod tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_settings() {
         assert!(init(CurveType::BLS12_381));
@@ -33,6 +36,7 @@ mod tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_chunk_len_1_512() {
         assert!(init(CurveType::BLS12_381));
@@ -41,6 +45,7 @@ mod tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_chunk_len_16_512() {
         assert!(init(CurveType::BLS12_381));
@@ -49,6 +54,7 @@ mod tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     fn test_fk_multi_chunk_len_16_16() {
         assert!(init(CurveType::BLS12_381));

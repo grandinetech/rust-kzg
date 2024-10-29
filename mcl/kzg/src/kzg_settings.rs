@@ -20,6 +20,7 @@ impl KZGSettings {
 
     pub fn new(
         secret_g1: &[G1],
+        secret_g1_lagrange: &[G1],
         secret_g2: &[G2],
         length: usize,
         fft_settings: &FFTSettings,
@@ -41,12 +42,14 @@ impl KZGSettings {
         }
 
         let mut secret1: Vec<G1> = vec![];
+        let mut secret1_lagrange: Vec<G1> = vec![];
         let mut secret2: Vec<G2> = vec![];
         for i in 0..length {
             secret1.push(secret_g1[i]);
+            secret1_lagrange.push(secret_g1_lagrange[i]);
             secret2.push(secret_g2[i]);
         }
-        let curve = Curve::new2(&secret1, &secret2, length);
+        let curve = Curve::new2(&secret1, &secret1_lagrange,&secret2, length);
 
         Ok(KZGSettings {
             fft_settings: fft_settings.clone(),
