@@ -1489,18 +1489,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-kzg-mcl-bench"
-version = "0.1.0"
-dependencies = [
- "blst",
- "criterion 0.5.1",
- "kzg",
- "kzg-bench",
- "rand",
- "rust-kzg-mcl",
-]
-
-[[package]]
 name = "rust-kzg-zkcrypto"
 version = "0.1.0"
 dependencies = [
