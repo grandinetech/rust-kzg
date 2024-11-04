@@ -23,8 +23,8 @@ index c912d09..edcc96f 100644
 +// #define BYTES_PER_G2 96
 +// #endif
 +// #include <stdlib.h>
-+// #include "c_kzg_4844.h"
-+// #cgo LDFLAGS: -L${SRCDIR}/../../target/release -lrust_kzg_blst -lm
++// #include "ckzg.h"
++// #cgo LDFLAGS: -ldl -L${SRCDIR}/../../lib -lrust_kzg_blst -lm
  import "C"
  
  import (

@@ -12,7 +12,8 @@ members = [
     "mcl/kzg",
     "mcl/kzg-bench",
     "zkcrypto",
-    "constantine"
+    "constantine",
+    "rust-eth-kzg-benches",
 ]
 
 
