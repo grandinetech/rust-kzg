@@ -9,9 +9,9 @@ mod tests {
         poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test,
         poly_mul_random, poly_test_div,
     };
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_mcl::types::fft_settings::FsFFTSettings;
+    use rust_kzg_mcl::types::fr::FsFr;
+    use rust_kzg_mcl::types::poly::FsPoly;
 
     // Local tests
     // #[test]

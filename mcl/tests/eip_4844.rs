@@ -24,12 +24,12 @@ mod tests {
         test_vectors_verify_kzg_proof, validate_batched_input_test,
         verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
     };
-    use rust_kzg_blst::consts::SCALE2_ROOT_OF_UNITY;
-    use rust_kzg_blst::eip_4844::load_trusted_setup_filename_rust;
-    use rust_kzg_blst::types::fft_settings::expand_root_of_unity;
-    use rust_kzg_blst::types::fp::FsFp;
-    use rust_kzg_blst::types::g1::FsG1Affine;
-    use rust_kzg_blst::types::{
+    use rust_kzg_mcl::consts::SCALE2_ROOT_OF_UNITY;
+    use rust_kzg_mcl::eip_4844::load_trusted_setup_filename_rust;
+    use rust_kzg_mcl::types::fft_settings::expand_root_of_unity;
+    use rust_kzg_mcl::types::fp::FsFp;
+    use rust_kzg_mcl::types::g1::FsG1Affine;
+    use rust_kzg_mcl::types::{
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
         poly::FsPoly,
     };

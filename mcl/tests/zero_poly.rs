@@ -4,9 +4,9 @@ mod tests {
         check_test_data, reduce_partials_random, test_reduce_partials, zero_poly_252,
         zero_poly_all_but_one, zero_poly_known, zero_poly_random,
     };
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_mcl::types::fft_settings::FsFFTSettings;
+    use rust_kzg_mcl::types::fr::FsFr;
+    use rust_kzg_mcl::types::poly::FsPoly;
 
     #[test]
     fn test_reduce_partials_() {

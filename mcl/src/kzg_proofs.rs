@@ -48,13 +48,13 @@ pub fn g1_linear_combination(
             unsafe { alloc::slice::from_raw_parts(scalars.as_ptr() as *const blst_fr, len) };
 
         let point = if let Some(precomputation) = precomputation {
-            rust_kzg_blst_sppark::multi_scalar_mult_prepared(precomputation.table, scalars)
+            rust_kzg_mcl_sppark::multi_scalar_mult_prepared(precomputation.table, scalars)
         } else {
             let affines = kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(&points);
             let affines = unsafe {
                 alloc::slice::from_raw_parts(affines.as_ptr() as *const blst_p1_affine, len)
             };
-            rust_kzg_blst_sppark::multi_scalar_mult(&affines[0..len], &scalars)
+            rust_kzg_mcl_sppark::multi_scalar_mult(&affines[0..len], &scalars)
         };
 
         *out = FsG1(point);

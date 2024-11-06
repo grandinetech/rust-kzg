@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg::eip_4844::load_trusted_setup_rust;
 use kzg_bench::benches::trusted_setup::bench_load_trusted_setup;
-use rust_kzg_blst::{
+use rust_kzg_mcl::{
     eip_4844::load_trusted_setup_filename_rust,
     types::{
         fft_settings::FsFFTSettings,

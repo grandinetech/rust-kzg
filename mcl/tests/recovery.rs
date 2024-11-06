@@ -7,9 +7,9 @@ mod tests {
     // uncomment to use the local tests
     //use crate::local_recovery::{recover_random, recover_simple};
 
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::poly::FsPoly;
+    use rust_kzg_mcl::types::fft_settings::FsFFTSettings;
+    use rust_kzg_mcl::types::fr::FsFr;
+    use rust_kzg_mcl::types::poly::FsPoly;
 
     // Shared tests
     #[test]

@@ -11,7 +11,7 @@ mod tests {
         },
         utils::get_trusted_setup_path,
     };
-    use rust_kzg_blst::{
+    use rust_kzg_mcl::{
         eip_4844::load_trusted_setup_filename_rust,
         eip_7594::{
             compute_cells_and_kzg_proofs_rust, recover_cells_and_kzg_proofs_rust,
