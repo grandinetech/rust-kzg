@@ -53,7 +53,7 @@ pub fn new_fft_settings_is_plausible<TFr: Fr, TFFTSettings: FFTSettings<TFr>>() 
 
     for i in 0..width {
         let prod = fft_settings
-            .get_expanded_roots_of_unity_at(i)
+            .get_roots_of_unity_at(i)
             .mul(&fft_settings.get_reverse_roots_of_unity_at(i));
         assert!(prod.is_one());
     }

@@ -38,9 +38,15 @@ fn get_ckzg_settings(
     ) -> C_KZG_RET,
 ) -> CKZGSettings {
     let mut c_settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
+        g1_values_lagrange_brp: null_mut(),
+        brp_roots_of_unity: null_mut(),
+        g1_values_monomial: null_mut(),
+        g2_values_monomial: null_mut(),
+        reverse_roots_of_unity: null_mut(),
+        scratch_size: 0,
+        tables: null_mut(),
+        wbits: 0,
+        x_ext_fft_columns: null_mut(),
         roots_of_unity: null_mut(),
     };
 
@@ -102,33 +108,46 @@ pub fn load_trusted_setup_invalid_g1_byte_length_test(
     load_trusted_setup: unsafe extern "C" fn(
         *mut CKZGSettings,
         *const u8,
-        usize,
+        u64,
         *const u8,
-        usize,
+        u64,
+        *const u8,
+        u64,
+        u64,
     ) -> C_KZG_RET,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (mut g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
+    let (mut g1_bytes_monomial, g1_bytes_lagrange, g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Add one more point
     let additional = [0; BYTES_PER_G1];
-    g1_bytes.extend_from_slice(&additional);
+    g1_bytes_monomial.extend_from_slice(&additional);
 
     let mut loaded_settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
+        g1_values_lagrange_brp: null_mut(),
+        brp_roots_of_unity: null_mut(),
+        g1_values_monomial: null_mut(),
+        g2_values_monomial: null_mut(),
+        reverse_roots_of_unity: null_mut(),
+        scratch_size: 0,
+        tables: null_mut(),
+        wbits: 0,
+        x_ext_fft_columns: null_mut(),
         roots_of_unity: null_mut(),
     };
 
     let status = unsafe {
         load_trusted_setup(
             &mut loaded_settings,
-            g1_bytes.as_ptr(),
-            g1_bytes.len() / BYTES_PER_G1,
-            g2_bytes.as_ptr(),
-            g2_bytes.len() / BYTES_PER_G2,
+            g1_bytes_monomial.as_ptr(),
+            g1_bytes_monomial.len() as u64,
+            g1_bytes_lagrange.as_ptr(),
+            g1_bytes_lagrange.len() as u64,
+            g2_bytes_monomial.as_ptr(),
+            g2_bytes_monomial.len() as u64,
+            0,
         )
     };
 
@@ -139,32 +158,45 @@ pub fn load_trusted_setup_invalid_g1_point_test(
     load_trusted_setup: unsafe extern "C" fn(
         *mut CKZGSettings,
         *const u8,
-        usize,
+        u64,
         *const u8,
-        usize,
+        u64,
+        *const u8,
+        u64,
+        u64,
     ) -> C_KZG_RET,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (mut g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
+    let (mut g1_bytes_monomial, g1_bytes_lagrange, g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Break first G1 point
-    g1_bytes[0] = 0;
+    g1_bytes_monomial[0] = 0;
 
     let mut loaded_settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
+        g1_values_lagrange_brp: null_mut(),
+        brp_roots_of_unity: null_mut(),
+        g1_values_monomial: null_mut(),
+        g2_values_monomial: null_mut(),
+        reverse_roots_of_unity: null_mut(),
+        scratch_size: 0,
+        tables: null_mut(),
+        wbits: 0,
+        x_ext_fft_columns: null_mut(),
         roots_of_unity: null_mut(),
     };
 
     let status = unsafe {
         load_trusted_setup(
             &mut loaded_settings,
-            g1_bytes.as_ptr(),
-            g1_bytes.len() / BYTES_PER_G1,
-            g2_bytes.as_ptr(),
-            g2_bytes.len() / BYTES_PER_G2,
+            g1_bytes_monomial.as_ptr(),
+            g1_bytes_monomial.len() as u64,
+            g1_bytes_lagrange.as_ptr(),
+            g1_bytes_lagrange.len() as u64,
+            g2_bytes_monomial.as_ptr(),
+            g2_bytes_monomial.len() as u64,
+            0,
         )
     };
 
@@ -175,33 +207,46 @@ pub fn load_trusted_setup_invalid_g2_byte_length_test(
     load_trusted_setup: unsafe extern "C" fn(
         *mut CKZGSettings,
         *const u8,
-        usize,
+        u64,
         *const u8,
-        usize,
+        u64,
+        *const u8,
+        u64,
+        u64,
     ) -> C_KZG_RET,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (g1_bytes, mut g2_bytes) = load_trusted_setup_string(&contents).unwrap();
+    let (g1_bytes_monomial, g1_bytes_lagrange, mut g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Add one more point
     let additional = [0; BYTES_PER_G2];
-    g2_bytes.extend_from_slice(&additional);
+    g2_bytes_monomial.extend_from_slice(&additional);
 
     let mut loaded_settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
+        g1_values_lagrange_brp: null_mut(),
+        brp_roots_of_unity: null_mut(),
+        g1_values_monomial: null_mut(),
+        g2_values_monomial: null_mut(),
+        reverse_roots_of_unity: null_mut(),
+        scratch_size: 0,
+        tables: null_mut(),
+        wbits: 0,
+        x_ext_fft_columns: null_mut(),
         roots_of_unity: null_mut(),
     };
 
     let status = unsafe {
         load_trusted_setup(
             &mut loaded_settings,
-            g1_bytes.as_ptr(),
-            g1_bytes.len() / BYTES_PER_G1,
-            g2_bytes.as_ptr(),
-            g2_bytes.len() / BYTES_PER_G2,
+            g1_bytes_monomial.as_ptr(),
+            g1_bytes_monomial.len() as u64,
+            g1_bytes_lagrange.as_ptr(),
+            g1_bytes_lagrange.len() as u64,
+            g2_bytes_monomial.as_ptr(),
+            g2_bytes_monomial.len() as u64,
+            0,
         )
     };
 
@@ -212,32 +257,45 @@ pub fn load_trusted_setup_invalid_g2_point_test(
     load_trusted_setup: unsafe extern "C" fn(
         *mut CKZGSettings,
         *const u8,
-        usize,
+        u64,
         *const u8,
-        usize,
+        u64,
+        *const u8,
+        u64,
+        u64,
     ) -> C_KZG_RET,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (g1_bytes, mut g2_bytes) = load_trusted_setup_string(&contents).unwrap();
+    let (g1_bytes_monomial, g1_bytes_lagrange, mut g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
     // Break first G2 point
-    g2_bytes[0] = 0;
+    g2_bytes_monomial[0] = 0;
 
     let mut loaded_settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
+        g1_values_lagrange_brp: null_mut(),
+        brp_roots_of_unity: null_mut(),
+        g1_values_monomial: null_mut(),
+        g2_values_monomial: null_mut(),
+        reverse_roots_of_unity: null_mut(),
+        scratch_size: 0,
+        tables: null_mut(),
+        wbits: 0,
+        x_ext_fft_columns: null_mut(),
         roots_of_unity: null_mut(),
     };
 
     let status = unsafe {
         load_trusted_setup(
             &mut loaded_settings,
-            g1_bytes.as_ptr(),
-            g1_bytes.len() / BYTES_PER_G1,
-            g2_bytes.as_ptr(),
-            g2_bytes.len() / BYTES_PER_G2,
+            g1_bytes_monomial.as_ptr(),
+            g1_bytes_monomial.len() as u64,
+            g1_bytes_lagrange.as_ptr(),
+            g1_bytes_lagrange.len() as u64,
+            g2_bytes_monomial.as_ptr(),
+            g2_bytes_monomial.len() as u64,
+            0,
         )
     };
 
@@ -248,30 +306,43 @@ pub fn load_trusted_setup_invalid_form_test(
     load_trusted_setup: unsafe extern "C" fn(
         *mut CKZGSettings,
         *const u8,
-        usize,
+        u64,
         *const u8,
-        usize,
+        u64,
+        *const u8,
+        u64,
+        u64,
     ) -> C_KZG_RET,
 ) {
     let mut file = File::open(get_trusted_setup_fixture_path("old")).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let (g1_bytes, g2_bytes) = load_trusted_setup_string(&contents).unwrap();
+    let (g1_bytes_monomial, g1_bytes_lagrange, g2_bytes_monomial) =
+        load_trusted_setup_string(&contents).unwrap();
 
     let mut loaded_settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
+        g1_values_lagrange_brp: null_mut(),
+        brp_roots_of_unity: null_mut(),
+        g1_values_monomial: null_mut(),
+        g2_values_monomial: null_mut(),
+        reverse_roots_of_unity: null_mut(),
+        scratch_size: 0,
+        tables: null_mut(),
+        wbits: 0,
+        x_ext_fft_columns: null_mut(),
         roots_of_unity: null_mut(),
     };
 
     let status = unsafe {
         load_trusted_setup(
             &mut loaded_settings,
-            g1_bytes.as_ptr(),
-            g1_bytes.len() / BYTES_PER_G1,
-            g2_bytes.as_ptr(),
-            g2_bytes.len() / BYTES_PER_G2,
+            g1_bytes_monomial.as_ptr(),
+            g1_bytes_monomial.len() as u64,
+            g1_bytes_lagrange.as_ptr(),
+            g1_bytes_lagrange.len() as u64,
+            g2_bytes_monomial.as_ptr(),
+            g2_bytes_monomial.len() as u64,
+            0,
         )
     };
 
@@ -343,9 +414,15 @@ pub fn load_trusted_setup_file_invalid_format_test(
         assert!(!file.is_null());
 
         let mut loaded_settings = CKZGSettings {
-            g1_values: null_mut(),
-            g2_values: null_mut(),
-            max_width: 0,
+            g1_values_lagrange_brp: null_mut(),
+            brp_roots_of_unity: null_mut(),
+            g1_values_monomial: null_mut(),
+            g2_values_monomial: null_mut(),
+            reverse_roots_of_unity: null_mut(),
+            scratch_size: 0,
+            tables: null_mut(),
+            wbits: 0,
+            x_ext_fft_columns: null_mut(),
             roots_of_unity: null_mut(),
         };
 
@@ -398,9 +475,15 @@ pub fn load_trusted_setup_file_valid_format_test(
         assert!(!file.is_null());
 
         let mut loaded_settings = CKZGSettings {
-            g1_values: null_mut(),
-            g2_values: null_mut(),
-            max_width: 0,
+            g1_values_lagrange_brp: null_mut(),
+            brp_roots_of_unity: null_mut(),
+            g1_values_monomial: null_mut(),
+            g2_values_monomial: null_mut(),
+            reverse_roots_of_unity: null_mut(),
+            scratch_size: 0,
+            tables: null_mut(),
+            wbits: 0,
+            x_ext_fft_columns: null_mut(),
             roots_of_unity: null_mut(),
         };
 
@@ -427,9 +510,15 @@ pub fn free_trusted_setup_null_ptr_test(
     }
 
     let mut settings = CKZGSettings {
-        g1_values: null_mut(),
-        g2_values: null_mut(),
-        max_width: 0,
+        g1_values_lagrange_brp: null_mut(),
+        brp_roots_of_unity: null_mut(),
+        g1_values_monomial: null_mut(),
+        g2_values_monomial: null_mut(),
+        reverse_roots_of_unity: null_mut(),
+        scratch_size: 0,
+        tables: null_mut(),
+        wbits: 0,
+        x_ext_fft_columns: null_mut(),
         roots_of_unity: null_mut(),
     };
 
@@ -448,19 +537,23 @@ pub fn free_trusted_setup_set_all_values_to_null_test(
 ) {
     let mut settings = get_ckzg_settings(load_trusted_setup_file);
 
-    assert!(!settings.g1_values.is_null());
-    assert!(!settings.g2_values.is_null());
+    assert!(!settings.g1_values_monomial.is_null());
+    assert!(!settings.g1_values_lagrange_brp.is_null());
+    assert!(!settings.g2_values_monomial.is_null());
+    assert!(!settings.reverse_roots_of_unity.is_null());
     assert!(!settings.roots_of_unity.is_null());
-    assert_ne!(settings.max_width, 0);
+    assert!(!settings.brp_roots_of_unity.is_null());
 
     unsafe {
         free_trusted_setup(&mut settings);
     };
 
-    assert!(settings.g1_values.is_null());
-    assert!(settings.g2_values.is_null());
+    assert!(settings.g1_values_monomial.is_null());
+    assert!(settings.g1_values_lagrange_brp.is_null());
+    assert!(settings.g2_values_monomial.is_null());
+    assert!(settings.reverse_roots_of_unity.is_null());
     assert!(settings.roots_of_unity.is_null());
-    assert_eq!(settings.max_width, 0);
+    assert!(settings.brp_roots_of_unity.is_null());
 }
 
 pub fn compute_blob_kzg_proof_invalid_blob_test(

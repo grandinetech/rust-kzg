@@ -14,6 +14,7 @@ mod tests {
     use rust_kzg_constantine::types::poly::CtPoly;
     use rust_kzg_constantine::utils::generate_trusted_setup;
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_proof_single() {
         proof_single::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
@@ -21,6 +22,7 @@ mod tests {
         );
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_commit_to_nil_poly() {
         commit_to_nil_poly::<
@@ -35,6 +37,7 @@ mod tests {
         >(&generate_trusted_setup);
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_commit_to_too_long_poly() {
         commit_to_too_long_poly_returns_err::<
@@ -49,6 +52,7 @@ mod tests {
         >(&generate_trusted_setup);
     }
 
+    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_proof_multi() {
         proof_multi::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(

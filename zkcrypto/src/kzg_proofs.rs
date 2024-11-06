@@ -10,14 +10,15 @@ use kzg::eip_4844::hash_to_bls_field;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as FrTrait, G1Mul, G2Mul};
 use std::ops::{Add, Neg};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct FFTSettings {
     pub max_width: usize,
-    pub root_of_unity: BlstFr,
-    pub expanded_roots_of_unity: Vec<BlstFr>,
-    pub reverse_roots_of_unity: Vec<BlstFr>,
-    pub roots_of_unity: Vec<BlstFr>,
+    pub root_of_unity: ZFr,
+    pub roots_of_unity: Vec<ZFr>,
+    pub brp_roots_of_unity: Vec<ZFr>,
+    pub reverse_roots_of_unity: Vec<ZFr>,
 }
 
 pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, String> {
@@ -41,26 +42,30 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
 #[derive(Debug, Clone, Default)]
 pub struct KZGSettings {
     pub fs: FFTSettings,
-    pub secret_g1: Vec<ZG1>,
-    pub secret_g2: Vec<ZG2>,
-    pub precomputation: Option<PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>>,
+    pub g1_values_monomial: Vec<ZG1>,
+    pub g1_values_lagrange_brp: Vec<ZG1>,
+    pub g2_values_monomial: Vec<ZG2>,
+    pub precomputation: Option<Arc<PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>>>,
+    pub x_ext_fft_columns: Vec<Vec<ZG1>>,
 }
 
-pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ZG1>, Vec<ZG2>) {
+pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ZG1>, Vec<ZG1>, Vec<ZG2>) {
     let s = hash_to_bls_field::<ZFr>(&secret);
     let mut s_pow = ZFr::one();
 
     let mut s1 = Vec::with_capacity(len);
     let mut s2 = Vec::with_capacity(len);
+    let mut s3 = Vec::with_capacity(len);
 
     for _ in 0..len {
         s1.push(G1_GENERATOR.mul(&s_pow));
-        s2.push(G2_GENERATOR.mul(&s_pow));
+        s2.push(G1_GENERATOR); // TODO: this should be lagrange form
+        s3.push(G2_GENERATOR.mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
     }
 
-    (s1, s2)
+    (s1, s2, s3)
 }
 
 pub fn eval_poly(p: &PolyData, x: &ZFr) -> ZFr {

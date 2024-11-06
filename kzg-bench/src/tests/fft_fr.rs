@@ -18,20 +18,8 @@ pub fn compare_sft_fft<TFr: Fr, TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>>(
     let mut out1 = vec![TFr::default(); fft_settings.get_max_width()];
 
     // Compare fast and slow FFT approach
-    fft_fr_slow(
-        &mut out0,
-        &data,
-        1,
-        fft_settings.get_expanded_roots_of_unity(),
-        1,
-    );
-    fft_fr_fast(
-        &mut out1,
-        &data,
-        1,
-        fft_settings.get_expanded_roots_of_unity(),
-        1,
-    );
+    fft_fr_slow(&mut out0, &data, 1, fft_settings.get_roots_of_unity(), 1);
+    fft_fr_fast(&mut out1, &data, 1, fft_settings.get_roots_of_unity(), 1);
 
     for i in 0..fft_settings.get_max_width() {
         assert!(out0[i].equals(&out1[i]));
