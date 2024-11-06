@@ -93,6 +93,19 @@ pub unsafe extern "C" fn load_trusted_setup(
     num_g2_monomial_bytes: u64,
     _precompute: u64,
 ) -> C_KZG_RET {
+    *out = CKZGSettings {
+        brp_roots_of_unity: ptr::null_mut(),
+        roots_of_unity: ptr::null_mut(),
+        reverse_roots_of_unity: ptr::null_mut(),
+        g1_values_monomial: ptr::null_mut(),
+        g1_values_lagrange_brp: ptr::null_mut(),
+        g2_values_monomial: ptr::null_mut(),
+        x_ext_fft_columns: ptr::null_mut(),
+        tables: ptr::null_mut(),
+        wbits: 0,
+        scratch_size: 0,
+    };
+
     let g1_monomial_bytes =
         core::slice::from_raw_parts(g1_monomial_bytes, num_g1_monomial_bytes as usize);
     let g1_lagrange_bytes =
@@ -121,6 +134,19 @@ pub unsafe extern "C" fn load_trusted_setup_file(
     out: *mut CKZGSettings,
     in_: *mut FILE,
 ) -> C_KZG_RET {
+    *out = CKZGSettings {
+        brp_roots_of_unity: ptr::null_mut(),
+        roots_of_unity: ptr::null_mut(),
+        reverse_roots_of_unity: ptr::null_mut(),
+        g1_values_monomial: ptr::null_mut(),
+        g1_values_lagrange_brp: ptr::null_mut(),
+        g2_values_monomial: ptr::null_mut(),
+        x_ext_fft_columns: ptr::null_mut(),
+        tables: ptr::null_mut(),
+        wbits: 0,
+        scratch_size: 0,
+    };
+
     let mut buf = vec![0u8; 1024 * 1024];
     let len: usize = libc::fread(buf.as_mut_ptr() as *mut libc::c_void, 1, buf.len(), in_);
     let s = handle_ckzg_badargs!(String::from_utf8(buf[..len].to_vec()));
@@ -179,6 +205,8 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     if s.is_null() {
         return;
     }
+
+    PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
     if !(*s).g1_values_monomial.is_null() {
         let v = Box::from_raw(core::slice::from_raw_parts_mut(
@@ -242,8 +270,6 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
         drop(v);
         (*s).brp_roots_of_unity = ptr::null_mut();
     }
-
-    PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 }
 
 /// # Safety
