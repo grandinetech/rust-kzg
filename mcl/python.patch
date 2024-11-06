@@ -1,49 +1,29 @@
-From ac8a609604adea4ffa36e3961a0a30b1c46188b9 Mon Sep 17 00:00:00 2001
-From: belijzajac <tautvydas749@gmail.com>
-Date: Thu, 23 Mar 2023 21:36:48 +0200
-Subject: [PATCH] Update linking
+From 3c414d6a692f258023f6f4630f447244a7185021 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Sat, 12 Oct 2024 16:57:40 +0000
+Subject: [PATCH] Patch python bindings
 
 ---
- bindings/python/Makefile | 5 +----
- bindings/python/setup.py | 6 +++---
- 2 files changed, 4 insertions(+), 7 deletions(-)
+ setup.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/bindings/python/Makefile b/bindings/python/Makefile
-index 7361590..635d1dd 100644
---- a/bindings/python/Makefile
-+++ b/bindings/python/Makefile
-@@ -1,11 +1,8 @@
- .PHONY: all
- all: install test ecc_test
- 
--../../src/c_kzg_4844.o:
--	make -C../../src c_kzg_4844.o
--
- .PHONY: install
--install: setup.py ckzg.c ../../src/c_kzg_4844.o
-+install: setup.py ckzg.c
- 	python3 setup.py install
- 
- .PHONY: test
-diff --git a/bindings/python/setup.py b/bindings/python/setup.py
-index bf969cb..9179129 100644
---- a/bindings/python/setup.py
-+++ b/bindings/python/setup.py
-@@ -8,11 +8,11 @@ def main():
+diff --git a/setup.py b/setup.py
+index d16c833..b604f1d 100644
+--- a/setup.py
++++ b/setup.py
+@@ -35,10 +35,10 @@ def main():
          ext_modules=[
              Extension(
                  "ckzg",
--                sources=["ckzg.c", "../../src/c_kzg_4844.c"],
-+                sources=["ckzg.c"],
-                 include_dirs=["../../inc", "../../src"],
-                 define_macros=[("FIELD_ELEMENTS_PER_BLOB", "4096")],
--                library_dirs=["../../lib"],
--                libraries=["blst"])])
-+                library_dirs=["../../lib", "../../../../../target/release"],
-+                libraries=[":rust_kzg_mcl.a", "stdc++"])])
- 
- if __name__ == "__main__":
-     main()
+-                sources=["bindings/python/ckzg_wrap.c", "src/ckzg.c"],
++                sources=["bindings/python/ckzg_wrap.c"],
+                 include_dirs=["inc", "src"],
+                 library_dirs=["lib"],
+-                libraries=["blst"]
++                libraries=["rust_kzg_blst"]
+             )
+         ],
+         cmdclass={
 -- 
-2.40.0
+2.46.1
 
