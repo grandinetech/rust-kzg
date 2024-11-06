@@ -2,6 +2,7 @@
 name = "rust-kzg-mcl"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 blst = "0.3.11"
