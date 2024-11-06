@@ -1031,7 +1031,7 @@ fn g1_fft(output: &mut [ArkG1], input: &[ArkG1], s: &LFFTSettings) -> Result<(),
     }
 
     let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
-    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride, 1);
+    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride);
 
     Ok(())
 }
