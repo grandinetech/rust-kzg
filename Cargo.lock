@@ -1057,10 +1057,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
-name = "mcl"
-version = "0.1.0"
-
-[[package]]
 name = "memchr"
 version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1467,6 +1463,23 @@ dependencies = [
  "once_cell",
  "rand",
  "rayon",
+ "smallvec",
+]
+
+[[package]]
+name = "rust-kzg-mcl"
+version = "0.1.0"
+dependencies = [
+ "blst",
+ "criterion 0.5.1",
+ "hex",
+ "kzg",
+ "kzg-bench",
+ "libc",
+ "once_cell",
+ "rand",
+ "rayon",
+ "rust-kzg-blst-sppark",
  "smallvec",
 ]
 

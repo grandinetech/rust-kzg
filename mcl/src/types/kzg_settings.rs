@@ -133,7 +133,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
                             points.len(),
                         )
                     };
-                    let prepared = rust_kzg_blst_sppark::prepare_multi_scalar_mult(points);
+                    let prepared = rust_kzg_mcl_sppark::prepare_multi_scalar_mult(points);
                     Some(Arc::new(PrecomputationTable::from_ptr(prepared)))
                 }
 

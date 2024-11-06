@@ -6,7 +6,7 @@ use kzg::{
     },
 };
 use kzg_bench::benches::eip_7594::bench_eip_7594;
-use rust_kzg_blst::{
+use rust_kzg_mcl::{
     eip_4844::load_trusted_setup_filename_rust,
     types::{
         fft_settings::FsFFTSettings,

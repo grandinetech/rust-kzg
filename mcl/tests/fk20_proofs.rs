@@ -1,16 +1,16 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::fk20_proofs::*;
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fk20_multi_settings::FsFK20MultiSettings;
-    use rust_kzg_blst::types::fk20_single_settings::FsFK20SingleSettings;
-    use rust_kzg_blst::types::fp::FsFp;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::g1::{FsG1, FsG1Affine};
-    use rust_kzg_blst::types::g2::FsG2;
-    use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
-    use rust_kzg_blst::types::poly::FsPoly;
-    use rust_kzg_blst::utils::generate_trusted_setup;
+    use rust_kzg_mcl::types::fft_settings::FsFFTSettings;
+    use rust_kzg_mcl::types::fk20_multi_settings::FsFK20MultiSettings;
+    use rust_kzg_mcl::types::fk20_single_settings::FsFK20SingleSettings;
+    use rust_kzg_mcl::types::fp::FsFp;
+    use rust_kzg_mcl::types::fr::FsFr;
+    use rust_kzg_mcl::types::g1::{FsG1, FsG1Affine};
+    use rust_kzg_mcl::types::g2::FsG2;
+    use rust_kzg_mcl::types::kzg_settings::FsKZGSettings;
+    use rust_kzg_mcl::types::poly::FsPoly;
+    use rust_kzg_mcl::utils::generate_trusted_setup;
 
     #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]

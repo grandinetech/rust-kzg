@@ -10,7 +10,7 @@ mod tests {
         load_trusted_setup_invalid_g1_point_test, load_trusted_setup_invalid_g2_byte_length_test,
         load_trusted_setup_invalid_g2_point_test,
     };
-    use rust_kzg_blst::eip_4844::{
+    use rust_kzg_mcl::eip_4844::{
         blob_to_kzg_commitment, compute_blob_kzg_proof, free_trusted_setup, load_trusted_setup,
         load_trusted_setup_file,
     };

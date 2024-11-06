@@ -6,11 +6,11 @@ mod tests {
         test_phase_one_p_add_q_twice, test_phase_one_zero_or_neg, test_phase_two_p_add_neg,
         test_phase_two_p_add_p, test_phase_two_p_add_q, test_phase_two_zero_add_p,
     };
-    use rust_kzg_blst::types::{
+    use rust_kzg_mcl::types::{
         fp::FsFp,
         g1::{FsG1, FsG1Affine},
     };
-    // use rust_kzg_blst::types::
+    // use rust_kzg_mcl::types::
 
     #[test]
     fn test_phase_one_zero_or_neg_() {

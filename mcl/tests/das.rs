@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use kzg_bench::tests::das::{das_extension_test_known, das_extension_test_random};
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fr::FsFr;
+    use rust_kzg_mcl::types::fft_settings::FsFFTSettings;
+    use rust_kzg_mcl::types::fr::FsFr;
 
     #[test]
     fn das_extension_test_known_() {
