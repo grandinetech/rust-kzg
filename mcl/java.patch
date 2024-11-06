@@ -1,24 +1,24 @@
-From 8dceb719c2ca01583bd403a59d441949e7f2a695 Mon Sep 17 00:00:00 2001
-From: belijzajac <tautvydas749@gmail.com>
-Date: Thu, 23 Feb 2023 13:25:15 +0200
-Subject: [PATCH] Update linking
+From fb604e554db3670493b1c1863022bbcd6634a9d2 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Wed, 2 Oct 2024 07:39:28 +0000
+Subject: [PATCH] Patch Java bindings
 
 ---
  bindings/java/Makefile | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/bindings/java/Makefile b/bindings/java/Makefile
-index 4eb21ce..184e501 100644
+index 3f646ef..4be49ba 100644
 --- a/bindings/java/Makefile
 +++ b/bindings/java/Makefile
 @@ -1,6 +1,6 @@
  INCLUDE_DIRS = ../../src ../../blst/bindings
-
--TARGETS=c_kzg_4844_jni.c ../../src/c_kzg_4844.c ../../lib/libblst.a
-+TARGETS=c_kzg_4844_jni.c ../../../../../target/release/rust_kzg_mcl.a
-
+ 
+-TARGETS=ckzg_jni.c ../../src/ckzg.c ../../lib/libblst.a
++TARGETS=ckzg_jni.c ../../lib/librust_kzg_blst.a
+ 
  CC_FLAGS=
  OPTIMIZATION_LEVEL=-O2
---
-2.39.2
+-- 
+2.46.1
 
