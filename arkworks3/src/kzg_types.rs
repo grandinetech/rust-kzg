@@ -1,7 +1,7 @@
 use crate::consts::SCALE2_ROOT_OF_UNITY;
 use crate::fft_g1::{fft_g1_fast, g1_linear_combination};
 pub use crate::kzg_proofs::{expand_root_of_unity, pairings_verify, LFFTSettings, LKZGSettings};
-use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
+// use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::{
     blst_fp_into_pc_fq, blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
@@ -912,41 +912,103 @@ impl Poly<ArkFr> for PolyData {
         unscale_poly(self);
     }
 
-    fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
-        poly_inverse(self, new_len)
+    fn inverse(&mut self, output_len: usize) -> Result<Self, String> {
+        if output_len == 0 {
+            return Err(String::from("Can't produce a zero-length result"));
+        } else if self.coeffs.is_empty() {
+            return Err(String::from("Can't inverse a zero-length poly"));
+        } else if self.coeffs[0].is_zero() {
+            return Err(String::from(
+                "First coefficient of polynomial mustn't be zero",
+            ));
+        }
+
+        let mut ret = PolyData {
+            coeffs: vec![ArkFr::zero(); output_len],
+        };
+        // If the input polynomial is constant, the remainder of the series is zero
+        if self.coeffs.len() == 1 {
+            ret.coeffs[0] = self.coeffs[0].eucl_inverse();
+
+            return Ok(ret);
+        }
+
+        let maxd = output_len - 1;
+
+        // Max space for multiplications is (2 * length - 1)
+        // Don't need the following as its recalculated inside
+        // let scale: usize = log2_pow2(next_pow_of_2(2 * output_len - 1));
+        // let fft_settings = FsFFTSettings::new(scale).unwrap();
+
+        // To store intermediate results
+
+        // Base case for d == 0
+        ret.coeffs[0] = self.coeffs[0].eucl_inverse();
+        let mut d: usize = 0;
+        let mut mask: usize = 1 << log2_u64(maxd);
+        while mask != 0 {
+            d = 2 * d + usize::from((maxd & mask) != 0);
+            mask >>= 1;
+
+            // b.c -> tmp0 (we're using out for c)
+            // tmp0.length = min_u64(d + 1, b->length + output->length - 1);
+            let len_temp = (d + 1).min(self.len() + output_len - 1);
+            let mut tmp0 = self.mul(&ret, len_temp).unwrap();
+
+            // 2 - b.c -> tmp0
+            for i in 0..tmp0.len() {
+                tmp0.coeffs[i] = tmp0.coeffs[i].negate();
+            }
+            let fr_two = kzg::Fr::from_u64(2);
+            tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
+
+            // c.(2 - b.c) -> tmp1;
+            let tmp1 = ret.mul(&tmp0, d + 1).unwrap();
+
+            for i in 0..tmp1.len() {
+                ret.coeffs[i] = tmp1.coeffs[i];
+            }
+        }
+
+        if d + 1 != output_len {
+            return Err(String::from("D + 1 must be equal to output_len"));
+        }
+
+        Ok(ret)
     }
 
     fn div(&mut self, x: &Self) -> Result<Self, String> {
         if x.len() >= self.len() || x.len() < 128 {
-            poly_long_div(self, x)
+            self.long_div(x)
         } else {
-            poly_fast_div(self, x)
+            self.fast_div(x)
         }
     }
 
     fn long_div(&mut self, x: &Self) -> Result<Self, String> {
-        poly_long_div(self, x)
+        self.long_div(x)
     }
 
     fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
-        poly_fast_div(self, x)
+        self.fast_div(x)
     }
 
     fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        poly_mul_direct(self, x, len)
+        self.mul_direct(x, len)
     }
 }
 
 impl FFTSettingsPoly<ArkFr, PolyData, LFFTSettings> for LFFTSettings {
     fn poly_mul_fft(
         a: &PolyData,
-        x: &PolyData,
+        b: &PolyData,
         len: usize,
-        fs: Option<&LFFTSettings>,
+        _fs: Option<&LFFTSettings>,
     ) -> Result<PolyData, String> {
-        poly_mul_fft(a, x, fs, len)
+        b.mul_fft(a, len)
     }
 }
+
 
 impl Default for LFFTSettings {
     fn default() -> Self {
