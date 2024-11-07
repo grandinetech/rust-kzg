@@ -57,31 +57,27 @@ impl LFFTSettings {
 }
 
 impl DAS<BlstFr> for LFFTSettings {
-    fn das_fft_extension(&self, vals: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
-        if vals.is_empty() {
-            return Err(String::from("vals can not be empty"));
-        }
-        if !vals.len().is_power_of_two() {
-            return Err(String::from("vals lenght has to be power of 2"));
-        }
-        if vals.len() * 2 > self.max_width {
+    fn das_fft_extension(&self, evens: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
+        if evens.is_empty() {
+            return Err(String::from("A non-zero list ab expected"));
+        } else if !evens.len().is_power_of_two() {
+            return Err(String::from("A list with power-of-two length expected"));
+        } else if evens.len() * 2 > self.max_width {
             return Err(String::from(
-                "vals lenght * 2 has to equal or less than FFTSetings max width",
+                "Supplied list is longer than the available max width",
             ));
         }
 
-        let mut vals = vals.to_vec();
-        let stride = self.max_width / (vals.len() * 2);
+        // In case more roots are provided with fft_settings, use a larger stride
+        let stride = self.max_width / (evens.len() * 2);
+        let mut odds = evens.to_vec();
+        self.das_fft_extension_stride(&mut odds, stride);
 
-        self.das_fft_extension_stride(&mut vals, stride);
+        // TODO: explain why each odd member is multiplied by euclidean inverse of length
+        let mut inv_len = BlstFr::from_u64(odds.len() as u64);
+        inv_len = inv_len.eucl_inverse();
+        let odds = odds.iter().map(|f| f.mul(&inv_len)).collect();
 
-        let invlen = BlstFr::from_u64(vals.len() as u64);
-        let invlen = invlen.inverse();
-
-        for val in &mut vals {
-            val.fr *= invlen.fr
-        }
-
-        Ok(vals)
+        Ok(odds)
     }
 }

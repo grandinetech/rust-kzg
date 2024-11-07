@@ -66,14 +66,14 @@ pub(crate) fn fft_settings_to_rust(
     let roots_of_unity = unsafe {
         core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
             .iter()
-            .map(|r| ArkFr::from_blst_fr(*r))
+            .map(|r| ArkFr(*r))
             .collect::<Vec<ArkFr>>()
     };
 
     let brp_roots_of_unity = unsafe {
         core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
             .iter()
-            .map(|r| ArkFr::from_blst_fr(*r))
+            .map(|r| ArkFr(*r))
             .collect::<Vec<ArkFr>>()
     };
 
@@ -83,7 +83,7 @@ pub(crate) fn fft_settings_to_rust(
             FIELD_ELEMENTS_PER_EXT_BLOB + 1,
         )
         .iter()
-        .map(|r| ArkFr::from_blst_fr(*r))
+        .map(|r| ArkFr(*r))
         .collect::<Vec<ArkFr>>()
     };
 
@@ -110,13 +110,13 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
             core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
         }
         .iter()
-        .map(|r| ArkG1::from_blst_p1(*r))
+        .map(|r| ArkG1(*r))
         .collect::<Vec<_>>(),
         g1_values_lagrange_brp: unsafe {
             core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, FIELD_ELEMENTS_PER_BLOB)
         }
         .iter()
-        .map(|r| ArkG1::from_blst_p1(*r))
+        .map(|r| ArkG1(*r))
         .collect::<Vec<_>>(),
         g2_values_monomial: unsafe {
             core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
@@ -134,7 +134,7 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
         .map(|it| {
             unsafe { core::slice::from_raw_parts(*it, FIELD_ELEMENTS_PER_CELL) }
                 .iter()
-                .map(|it| ArkG1::from_blst_p1(*it))
+                .map(|it| ArkG1(*it))
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>(),
@@ -149,7 +149,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
                 .fs
                 .roots_of_unity
                 .iter()
-                .map(|r| r.to_blst_fr())
+                .map(|r| r.0)
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -159,7 +159,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
                 .fs
                 .brp_roots_of_unity
                 .iter()
-                .map(|r| r.to_blst_fr())
+                .map(|r| r.0)
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -169,7 +169,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
                 .fs
                 .reverse_roots_of_unity
                 .iter()
-                .map(|r| r.to_blst_fr())
+                .map(|r| r.0)
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -178,7 +178,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
             rust_settings
                 .g1_values_monomial
                 .iter()
-                .map(|r| r.to_blst_p1())
+                .map(|r| r.0)
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -187,7 +187,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
             rust_settings
                 .g1_values_lagrange_brp
                 .iter()
-                .map(|r| r.to_blst_p1())
+                .map(|r| r.0)
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -208,7 +208,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
                 .map(|r| {
                     Box::leak(
                         r.iter()
-                            .map(|it| it.to_blst_p1())
+                            .map(|it| it.0)
                             .collect::<Vec<_>>()
                             .into_boxed_slice(),
                     )
@@ -227,18 +227,18 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
 pub fn pc_poly_into_blst_poly(poly: DensePoly<_Fr>) -> PolyData {
     let mut bls_pol: Vec<ArkFr> = { Vec::new() };
     for x in poly.coeffs {
-        bls_pol.push(ArkFr { fr: x });
+        bls_pol.push(ArkFr::default());
     }
     PolyData { coeffs: bls_pol }
 }
 
-pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<_Fr> {
-    let mut poly: Vec<_Fr> = vec![_Fr::default(); pd.len()];
-    for i in 0..pd.len() {
-        poly[i] = pd[i].fr;
-    }
-    DensePoly::from_coefficients_vec(poly)
-}
+// pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<_Fr> {
+//     let mut poly: Vec<_Fr> = vec![_Fr::default(); pd.len()];
+//     for i in 0..pd.len() {
+//         poly[i] = pd[i].0.;
+//     }
+//     DensePoly::from_coefficients_vec(poly)
+// }
 
 pub const fn pc_fq_into_blst_fp(fq: Fq) -> Fp {
     Fp { l: fq.0 .0 }
