@@ -1,37 +1,18 @@
 extern crate alloc;
 
-use crate::fft::fft_fr_fast;
-use crate::kzg_proofs::{FFTSettings as LFFTSettings, KZGSettings as LKZGSettings};
-use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
-use crate::utils::PolyData;
-use kzg::common_utils::{reverse_bit_order, reverse_bits_limited};
+use crate::kzg_proofs::KZGSettings as LKZGSettings;
+use crate::kzg_types::{ArkFr, ArkG1};
 use kzg::eip_4844::{
-    blob_to_kzg_commitment_rust, blob_to_polynomial, compute_blob_kzg_proof_rust,
-    compute_kzg_proof_rust, compute_powers, hash, hash_to_bls_field, load_trusted_setup_rust,
-    verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust, verify_kzg_proof_rust, Blob,
-    Bytes32, Bytes48, CKZGSettings, Cell, KZGCommitment, KZGProof, PrecomputationTableManager,
-    BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2,
-    BYTES_PER_PROOF, CELLS_PER_EXT_BLOB, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
-    FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL, RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN,
-    TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
+    Blob, Bytes48, CKZGSettings, Cell, KZGProof, BYTES_PER_FIELD_ELEMENT, CELLS_PER_EXT_BLOB,
+    C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_CELL,
 };
-use kzg::{cfg_into_iter, Fr, G1Mul, KZGSettings, G1, G2};
-use std::ptr::null_mut;
+use kzg::{Fr, G1};
 
 #[cfg(feature = "std")]
-use libc::FILE;
 #[cfg(feature = "std")]
-use std::fs::File;
 #[cfg(feature = "std")]
-use std::io::Read;
-
 #[cfg(feature = "parallel")]
-use rayon::prelude::*;
-
 #[cfg(feature = "std")]
-use kzg::eip_4844::load_trusted_setup_string;
-
-use crate::fft_g1::fft_g1_fast;
 use crate::utils::deserialize_blob;
 use crate::utils::kzg_settings_to_rust;
 
