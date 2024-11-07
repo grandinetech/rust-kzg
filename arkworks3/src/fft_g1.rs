@@ -51,12 +51,13 @@ pub fn g1_linear_combination(
 
     #[cfg(not(feature = "sppark"))]
     {
-        *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
-            points,
-            scalars,
-            len,
-            precomputation,
-        );
+        *out = ArkG1::default();
+            for i in 0..len {
+                let tmp = points[i].mul(&scalars[i]);
+                out.add_or_dbl_assign(&tmp);
+        }
+
+        return;
     }
 }
 
