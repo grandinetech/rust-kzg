@@ -1009,16 +1009,123 @@ impl Poly<ArkFr> for PolyData {
         }
     }
 
-    fn long_div(&mut self, x: &Self) -> Result<Self, String> {
-        self.long_div(x)
+    fn long_div(&mut self, divisor: &Self) -> Result<Self, String> {
+        if divisor.coeffs.is_empty() {
+            return Err(String::from("Can't divide by zero"));
+        } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
+            return Err(String::from("Highest coefficient must be non-zero"));
+        }
+
+        let out_length = self.poly_quotient_length(divisor);
+        if out_length == 0 {
+            return Ok(PolyData { coeffs: vec![] });
+        }
+
+        // Special case for divisor.len() == 2
+        if divisor.len() == 2 {
+            let divisor_0 = divisor.coeffs[0];
+            let divisor_1 = divisor.coeffs[1];
+
+            let mut out_coeffs = Vec::from(&self.coeffs[1..]);
+            for i in (1..out_length).rev() {
+                out_coeffs[i] = out_coeffs[i].div(&divisor_1).unwrap();
+
+                let tmp = out_coeffs[i].mul(&divisor_0);
+                out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
+            }
+
+            out_coeffs[0] = out_coeffs[0].div(&divisor_1).unwrap();
+
+            Ok(PolyData { coeffs: out_coeffs })
+        } else {
+            let mut out: PolyData = PolyData {
+                coeffs: vec![ArkFr::default(); out_length],
+            };
+
+            let mut a_pos = self.len() - 1;
+            let b_pos = divisor.len() - 1;
+            let mut diff = a_pos - b_pos;
+
+            let mut a = self.coeffs.clone();
+
+            while diff > 0 {
+                out.coeffs[diff] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
+
+                for i in 0..(b_pos + 1) {
+                    let tmp = out.coeffs[diff].mul(&divisor.coeffs[i]);
+                    a[diff + i] = a[diff + i].sub(&tmp);
+                }
+
+                diff -= 1;
+                a_pos -= 1;
+            }
+
+            out.coeffs[0] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
+            Ok(out)
+        }
     }
 
-    fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
-        self.fast_div(x)
+    fn fast_div(&mut self, divisor: &Self) -> Result<Self, String> {
+        if divisor.coeffs.is_empty() {
+            return Err(String::from("Cant divide by zero"));
+        } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
+            return Err(String::from("Highest coefficient must be non-zero"));
+        }
+
+        let m: usize = self.len() - 1;
+        let n: usize = divisor.len() - 1;
+
+        // If the divisor is larger than the dividend, the result is zero-length
+        if n > m {
+            return Ok(PolyData { coeffs: Vec::new() });
+        }
+
+        // Special case for divisor.length == 1 (it's a constant)
+        if divisor.len() == 1 {
+            let mut out = PolyData {
+                coeffs: vec![ArkFr::zero(); self.len()],
+            };
+            for i in 0..out.len() {
+                out.coeffs[i] = self.coeffs[i].div(&divisor.coeffs[0]).unwrap();
+            }
+            return Ok(out);
+        }
+
+        let mut a_flip = self.flip().unwrap();
+        let mut b_flip = divisor.flip().unwrap();
+
+        let inv_b_flip = b_flip.inverse(m - n + 1).unwrap();
+        let q_flip = a_flip.mul(&inv_b_flip, m - n + 1).unwrap();
+
+        let out = q_flip.flip().unwrap();
+        Ok(out)
     }
 
-    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
-        self.mul_direct(x, len)
+    fn mul_direct(&mut self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
+        if self.len() == 0 || multiplier.len() == 0 {
+            return Ok(PolyData::new(0));
+        }
+
+        let a_degree = self.len() - 1;
+        let b_degree = multiplier.len() - 1;
+
+        let mut ret = PolyData {
+            coeffs: vec![kzg::Fr::zero(); output_len],
+        };
+
+        // Truncate the output to the length of the output polynomial
+        for i in 0..(a_degree + 1) {
+            let mut j = 0;
+            while (j <= b_degree) && ((i + j) < output_len) {
+                let tmp = self.coeffs[i].mul(&multiplier.coeffs[j]);
+                let tmp = ret.coeffs[i + j].add(&tmp);
+                ret.coeffs[i + j] = tmp;
+
+                j += 1;
+            }
+        }
+
+        Ok(ret)
     }
 }
 

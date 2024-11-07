@@ -11,7 +11,6 @@ use kzg::{FFTG1, G1};
 
 extern crate alloc;
 
-#[allow(unused_variables)]
 pub fn g1_linear_combination(
     out: &mut ArkG1,
     points: &[ArkG1],
