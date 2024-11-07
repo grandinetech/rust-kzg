@@ -4,8 +4,7 @@ use crate::consts::{
 };
 use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{
-    eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
-    KZGSettings as LKZGSettings,
+    eval_poly, expand_root_of_unity, pairings_verify, KZGSettings as LKZGSettings,
 };
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
@@ -39,8 +38,6 @@ use kzg::eip_4844::{
     BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
     FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
 };
-
-use crate::eip_4844::fft_settings_to_rust;
 
 extern crate alloc;
 use alloc::sync::Arc;
