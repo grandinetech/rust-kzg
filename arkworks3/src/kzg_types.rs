@@ -4,22 +4,14 @@ pub use crate::kzg_proofs::{expand_root_of_unity, pairings_verify, LFFTSettings,
 // use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::{
-    blst_fp_into_pc_fq, blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
-    blst_p2_into_pc_g2projective, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
-    pc_g2projective_into_blst_p2, PolyData,
+    blst_fp_into_pc_fq, PolyData,
 };
-use crate::P2;
-use ark_bls12_381::{g1, g2, Fr, G1Affine};
+use ark_bls12_381::g1;
 use ark_ec::ModelParameters;
-use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, AffineCurve, ProjectiveCurve};
-use ark_ff::PrimeField;
-use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
+use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, ProjectiveCurve};
+use ark_ff::Field;
 use ark_std::{One, Zero};
 
-#[cfg(feature = "rand")]
-use ark_std::UniformRand;
-
-use blst::p1_affines;
 use blst::{
     blst_bendian_from_scalar, blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg,
     blst_fr_eucl_inverse, blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul,
@@ -41,21 +33,20 @@ use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
     G1LinComb, G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
 };
-use std::ops::{AddAssign, Neg, Sub};
 
 extern crate alloc;
 use alloc::sync::Arc;
 
-fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
-    u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
-}
+// fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
+//     u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
+// }
 
-const BLS12_381_MOD_256: [u64; 4] = [
-    0xffffffff00000001,
-    0x53bda402fffe5bfe,
-    0x3339d80809a1d805,
-    0x73eda753299d7d48,
-];
+// const BLS12_381_MOD_256: [u64; 4] = [
+//     0xffffffff00000001,
+//     0x53bda402fffe5bfe,
+//     0x3339d80809a1d805,
+//     0x73eda753299d7d48,
+// ];
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct ArkFr(pub blst_fr);
@@ -63,13 +54,13 @@ pub struct ArkFr(pub blst_fr);
 // impl Fr for ArkFr {
     
 
-fn bigint_check_mod_256(a: &[u64; 4]) -> bool {
-    let (_, overflow) = a[0].overflowing_sub(BLS12_381_MOD_256[0]);
-    let (_, overflow) = a[1].overflowing_sub(BLS12_381_MOD_256[1] + overflow as u64);
-    let (_, overflow) = a[2].overflowing_sub(BLS12_381_MOD_256[2] + overflow as u64);
-    let (_, overflow) = a[3].overflowing_sub(BLS12_381_MOD_256[3] + overflow as u64);
-    overflow
-}
+// fn bigint_check_mod_256(a: &[u64; 4]) -> bool {
+//     let (_, overflow) = a[0].overflowing_sub(BLS12_381_MOD_256[0]);
+//     let (_, overflow) = a[1].overflowing_sub(BLS12_381_MOD_256[1] + overflow as u64);
+//     let (_, overflow) = a[2].overflowing_sub(BLS12_381_MOD_256[2] + overflow as u64);
+//     let (_, overflow) = a[3].overflowing_sub(BLS12_381_MOD_256[3] + overflow as u64);
+//     overflow
+// }
 
 impl KzgFr for ArkFr {
     fn null() -> Self {

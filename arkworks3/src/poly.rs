@@ -1,15 +1,8 @@
 use super::kzg_proofs::LFFTSettings;
-use super::utils::{PolyData};
+use super::utils::PolyData;
 use crate::kzg_types::ArkFr as BlstFr;
-use crate::utils::pc_poly_into_blst_poly;
-use crate::zero_poly::pad_poly;
-use ark_bls12_381::Fr;
-use ark_poly::univariate::DensePolynomial;
-use ark_poly::UVPolynomial;
-use ark_std::{log2, Zero};
 use kzg::common_utils::{log2_pow2, next_pow_of_2};
 use kzg::{FFTFr, FFTSettings as FFTSettingsT, Fr as FrTrait, Poly};
-use std::cmp::min;
 
 pub fn poly_flip(input: &PolyData) -> Result<PolyData, String> {
     let mut output = PolyData::new(0);
