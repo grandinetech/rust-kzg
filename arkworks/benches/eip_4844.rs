@@ -21,7 +21,6 @@ fn bench_eip_4844_(c: &mut Criterion) {
         &compute_blob_kzg_proof_rust,
         &verify_blob_kzg_proof_rust,
         &verify_blob_kzg_proof_batch_rust,
-        &compute_cells_and_kzg_proofs_rust,
     );
 }
 

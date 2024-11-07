@@ -46,7 +46,7 @@ impl
 
         let mut x = Vec::new();
         for i in 0..(n - 1) {
-            x.push(ks.secret_g1[n - 2 - i])
+            x.push(ks.g1_values_lagrange_brp[n - 2 - i])
         }
         x.push(G1_IDENTITY);
 
