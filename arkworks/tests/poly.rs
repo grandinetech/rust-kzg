@@ -46,6 +46,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn poly_div_by_zero_() {
         poly_div_by_zero::<ArkFr, PolyData>();
     }
