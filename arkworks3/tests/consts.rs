@@ -6,12 +6,12 @@ mod tests {
     };
     use rust_kzg_arkworks3::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_arkworks3::kzg_proofs::expand_root_of_unity;
-    use rust_kzg_arkworks3::kzg_proofs::FFTSettings;
+    use rust_kzg_arkworks3::kzg_proofs::LFFTSettings;
     use rust_kzg_arkworks3::kzg_types::ArkFr;
 
     #[test]
     fn roots_of_unity_out_of_bounds_fails_() {
-        roots_of_unity_out_of_bounds_fails::<ArkFr, FFTSettings>();
+        roots_of_unity_out_of_bounds_fails::<ArkFr, LFFTSettings>();
     }
 
     #[test]
@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     fn new_fft_settings_is_plausible_() {
-        new_fft_settings_is_plausible::<ArkFr, FFTSettings>();
+        new_fft_settings_is_plausible::<ArkFr, LFFTSettings>();
     }
 
     #[test]

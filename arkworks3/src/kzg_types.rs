@@ -642,22 +642,18 @@ impl PairingVerify<ArkG1, ArkG2> for ArkG1 {
 
 #[repr(C)]
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
-pub struct ArkG2(pub GroupProjective<g2::Parameters>);
+pub struct ArkG2(pub blst_p2);
 
 impl ArkG2 {
-    pub fn from_blst_p2(p2: blst::blst_p2) -> Self {
-        Self(blst_p2_into_pc_g2projective(&p2))
-    }
-
-    pub fn to_blst_p2(&self) -> blst::blst_p2 {
-        pc_g2projective_into_blst_p2(self.0)
+    pub(crate) const fn from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
+        ArkG2(blst_p2 { x, y, z })
     }
 }
 
 impl G2 for ArkG2 {
     fn generator() -> Self {
-        ArkG2::from_blst_p2(P2 {
-            x: blst_fp2 {
+        ArkG2::from_xyz(
+            blst_fp2 {
                 fp: [
                     blst_fp {
                         l: [
@@ -681,7 +677,7 @@ impl G2 for ArkG2 {
                     },
                 ],
             },
-            y: blst_fp2 {
+            blst_fp2 {
                 fp: [
                     blst_fp {
                         l: [
@@ -705,7 +701,7 @@ impl G2 for ArkG2 {
                     },
                 ],
             },
-            z: blst_fp2 {
+            blst_fp2 {
                 fp: [
                     blst_fp {
                         l: [
@@ -729,12 +725,12 @@ impl G2 for ArkG2 {
                     },
                 ],
             },
-        })
+        )
     }
 
     fn negative_generator() -> Self {
-        ArkG2::from_blst_p2(P2 {
-            x: blst_fp2 {
+        ArkG2::from_xyz(
+        blst_fp2 {
                 fp: [
                     blst_fp {
                         l: [
@@ -758,7 +754,7 @@ impl G2 for ArkG2 {
                     },
                 ],
             },
-            y: blst_fp2 {
+            blst_fp2 {
                 fp: [
                     blst_fp {
                         l: [
@@ -782,7 +778,7 @@ impl G2 for ArkG2 {
                     },
                 ],
             },
-            z: blst_fp2 {
+            blst_fp2 {
                 fp: [
                     blst_fp {
                         l: [
@@ -806,7 +802,7 @@ impl G2 for ArkG2 {
                     },
                 ],
             },
-        })
+        )
     }
 
     #[allow(clippy::bind_instead_of_map)]
@@ -821,44 +817,72 @@ impl G2 for ArkG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let mut blst_affine = blst_p2_affine::default();
-                let result = unsafe { blst_p2_uncompress(&mut blst_affine, bytes.as_ptr()) };
-
-                if result != BLST_ERROR::BLST_SUCCESS {
-                    return Err("Failed to deserialize G1".to_owned());
+                let mut tmp = blst_p2_affine::default();
+                let mut g2 = blst_p2::default();
+                unsafe {
+                    // The uncompress routine also checks that the point is on the curve
+                    if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                        return Err("Failed to uncompress".to_string());
+                    }
+                    blst_p2_from_affine(&mut g2, &tmp);
                 }
-
-                let mut blst_point = blst_p2::default();
-                unsafe { blst_p2_from_affine(&mut blst_point, &blst_affine) };
-
-                Ok(ArkG2::from_blst_p2(blst_point))
+                Ok(ArkG2(g2))
             })
     }
 
     fn to_bytes(&self) -> [u8; 96] {
-        <[u8; 96]>::try_from(self.0.x.c0.0.to_bytes_le()).unwrap()
+        let mut out = [0u8; BYTES_PER_G2];
+        unsafe {
+            blst_p2_compress(out.as_mut_ptr(), &self.0);
+        }
+        out
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        Self(self.0 + b.0)
+        let mut result = blst_p2::default();
+        unsafe {
+            blst_p2_add_or_double(&mut result, &self.0, &b.0);
+        }
+        Self(result)
     }
 
     fn dbl(&self) -> Self {
-        Self(self.0.double())
+        let mut result = blst_p2::default();
+        unsafe {
+            blst_p2_double(&mut result, &self.0);
+        }
+        Self(result)
     }
 
     fn sub(&self, b: &Self) -> Self {
-        Self(self.0 - b.0)
+        let mut bneg: blst_p2 = b.0;
+        let mut result = blst_p2::default();
+        unsafe {
+            blst_p2_cneg(&mut bneg, true);
+            blst_p2_add_or_double(&mut result, &self.0, &bneg);
+        }
+        Self(result)
     }
 
     fn equals(&self, b: &Self) -> bool {
-        self.0.eq(&b.0)
+        unsafe { blst_p2_is_equal(&self.0, &b.0) }
     }
 }
 
 impl G2Mul<ArkFr> for ArkG2 {
     fn mul(&self, b: &ArkFr) -> Self {
-        Self(self.0.mul(b.to_u64_arr()))
+        let mut result = blst_p2::default();
+        let mut scalar = blst_scalar::default();
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &b.0);
+            blst_p2_mult(
+                &mut result,
+                &self.0,
+                scalar.b.as_ptr(),
+                8 * core::mem::size_of::<blst_scalar>(),
+            );
+        }
+        Self(result)
     }
 }
 
@@ -1093,7 +1117,7 @@ fn g1_fft(output: &mut [ArkG1], input: &[ArkG1], s: &LFFTSettings) -> Result<(),
     }
 
     let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
-    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride);
+    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride, 1);
 
     Ok(())
 }

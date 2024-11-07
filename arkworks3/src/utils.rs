@@ -122,7 +122,7 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
             core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
         }
         .iter()
-        .map(|r| ArkG2::from_blst_p2(*r))
+        .map(|r| ArkG2(*r))
         .collect::<Vec<_>>(),
         x_ext_fft_columns: unsafe {
             core::slice::from_raw_parts(
@@ -196,7 +196,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
             rust_settings
                 .g2_values_monomial
                 .iter()
-                .map(|r| r.to_blst_p2())
+                .map(|r| r.0)
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )

@@ -11,6 +11,7 @@ use kzg::{FFTG1, G1};
 
 extern crate alloc;
 
+#[allow(unused_variables)]
 pub fn g1_linear_combination(
     out: &mut ArkG1,
     points: &[ArkG1],
@@ -57,7 +58,7 @@ impl FFTG1<ArkG1> for LFFTSettings {
             &self.roots_of_unity
         };
 
-        fft_g1_fast(&mut ret, data, 1, roots, stride);
+        fft_g1_fast(&mut ret, data, 1, roots, stride, 1);
 
         if inverse {
             let inv_fr_len = ArkFr::from_u64(data.len() as u64).inverse();
@@ -76,13 +77,16 @@ pub fn fft_g1_slow(
     stride: usize,
     roots: &[ArkFr],
     roots_stride: usize,
+    _width: usize,
 ) {
     for i in 0..data.len() {
+        // Evaluate first member at 1
         ret[i] = data[0].mul(&roots[0]);
+
+        // Evaluate the rest of members using a step of (i * J) % data.len() over the roots
+        // This distributes the roots over correct x^n members and saves on multiplication
         for j in 1..data.len() {
-            let jv = data[j * stride];
-            let r = roots[((i * j) % data.len()) * roots_stride];
-            let v = jv.mul(&r);
+            let v = data[j * stride].mul(&roots[((i * j) % data.len()) * roots_stride]);
             ret[i] = ret[i].add_or_dbl(&v);
         }
     }
@@ -94,6 +98,7 @@ pub fn fft_g1_fast(
     stride: usize,
     roots: &[ArkFr],
     roots_stride: usize,
+    _width: usize,
 ) {
     let half = ret.len() / 2;
     if half > 0 {
@@ -101,26 +106,21 @@ pub fn fft_g1_fast(
         {
             let (lo, hi) = ret.split_at_mut(half);
             rayon::join(
-                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
                 || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
+                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
             );
         }
 
         #[cfg(not(feature = "parallel"))]
         {
-            fft_g1_fast(
-                &mut ret[..half],
-                data,
-                stride * 2,
-                roots,
-                roots_stride * 2,
-            );
+            fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
             fft_g1_fast(
                 &mut ret[half..],
                 &data[stride..],
                 stride * 2,
                 roots,
                 roots_stride * 2,
+                1
             );
         }
 
