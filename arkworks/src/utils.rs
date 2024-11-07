@@ -1,5 +1,5 @@
 use super::{Fp, P1};
-use crate::kzg_proofs::{FFTSettings as LFFTSettings, KZGSettings as LKZGSettings};
+use crate::kzg_proofs::KZGSettings as LKZGSettings;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
 use crate::P2;
 use ark_bls12_381::{g1, g2, Fq, Fq2, Fr as Bls12Fr};
