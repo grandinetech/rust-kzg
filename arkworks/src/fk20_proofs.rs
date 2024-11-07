@@ -124,7 +124,7 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings,
             };
             let mut j = start;
             for i in x.iter_mut().take(k - 1) {
-                i.0 = ks.secret_g1[j].0;
+                i.0 = ks.g1_values_lagrange_brp[j].0;
                 if j >= chunk_len {
                     j -= chunk_len;
                 } else {
