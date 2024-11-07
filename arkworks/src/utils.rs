@@ -172,3 +172,10 @@ pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C
         })
         .collect::<Result<Vec<ArkFr>, C_KZG_RET>>()
 }
+
+pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
+    CtFr,
+    CtG1,
+    CtFp,
+    CtG1Affine,
+> = PrecomputationTableManager::new();
