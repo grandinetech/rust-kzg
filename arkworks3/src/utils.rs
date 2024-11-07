@@ -19,7 +19,6 @@ use ark_bls12_381::{g1, g2, Fq, Fq2, Fr as _Fr};
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ff::{BigInteger256, BigInteger384, Fp2};
 use ark_poly::univariate::DensePolynomial as DensePoly;
-use ark_poly::UVPolynomial;
 use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -226,7 +225,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
 
 pub fn pc_poly_into_blst_poly(poly: DensePoly<_Fr>) -> PolyData {
     let mut bls_pol: Vec<ArkFr> = { Vec::new() };
-    for x in poly.coeffs {
+    for _x in poly.coeffs {
         bls_pol.push(ArkFr::default());
     }
     PolyData { coeffs: bls_pol }

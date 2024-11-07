@@ -1,15 +1,10 @@
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
-use super::utils::PolyData;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
 use crate::Pairing;
 use alloc::sync::Arc;
-use ark_bls12_381::Bls12_381;
-use ark_ec::{PairingEngine, ProjectiveCurve};
-use ark_poly::Polynomial;
-use ark_std::{vec, One};
 use blst::{
     blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
     blst_p2_to_affine,
@@ -17,7 +12,6 @@ use blst::{
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr, G1Mul, G2Mul, G1, G2};
-use std::ops::Neg;
 
 #[derive(Debug, Clone)]
 pub struct LFFTSettings {
