@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use crate::kzg_proofs::{LFFTSettings, LKZGSettings};
+use crate::kzg_proofs::{FFTSettings as LFFTSettings, KZGSettings as LKZGSettings};
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{
@@ -86,7 +86,6 @@ pub(crate) fn fft_settings_to_rust(
 pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSettings, String> {
     Ok(LKZGSettings {
         fs: fft_settings_to_rust(c_settings)?,
-        secret_g1: vec![],
         g1_values_monomial: unsafe {
             core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
         }
@@ -99,7 +98,6 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
         .iter()
         .map(|r| ArkG1(*r))
         .collect::<Vec<_>>(),
-        secret_g2: vec![],
         g2_values_monomial: unsafe {
             core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
         }
