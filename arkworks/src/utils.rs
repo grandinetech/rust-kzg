@@ -1,12 +1,15 @@
 use super::{Fp, P1};
 use crate::kzg_types::ArkFr;
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
 use crate::P2;
-use ark_bls12_381::{g1, g2, Fq, Fq2, Fr};
+use ark_bls12_381::{g1, g2, Fq, Fq2, Fr as Bls12Fr};
 use ark_ec::models::short_weierstrass::Projective;
 use ark_ff::Fp2;
 use ark_poly::univariate::DensePolynomial as DensePoly;
 use ark_poly::DenseUVPolynomial;
 use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
+
+use kzg::Fr;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error;
@@ -25,8 +28,8 @@ pub fn pc_poly_into_blst_poly(poly: DensePoly<Fr>) -> PolyData {
     PolyData { coeffs: bls_pol }
 }
 
-pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<Fr> {
-    let mut poly: Vec<Fr> = vec![Fr::default(); pd.len()];
+pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<Bls12Fr> {
+    let mut poly: Vec<Bls12Fr> = vec![Bls12Fr::default(); pd.len()];
     for i in 0..pd.len() {
         poly[i] = pd[i].fr;
     }
@@ -37,14 +40,14 @@ pub const fn pc_fq_into_blst_fp(fq: Fq) -> Fp {
     Fp { l: fq.0 .0 }
 }
 
-pub const fn blst_fr_into_pc_fr(fr: blst_fr) -> Fr {
-    Fr {
+pub const fn blst_fr_into_pc_fr(fr: blst_fr) -> Bls12Fr {
+    Bls12Fr {
         0: ark_ff::BigInt(fr.l),
         1: core::marker::PhantomData,
     }
 }
 
-pub const fn pc_fr_into_blst_fr(fr: Fr) -> blst_fr {
+pub const fn pc_fr_into_blst_fr(fr: Bls12Fr) -> blst_fr {
     blst::blst_fr { l: fr.0 .0 }
 }
 
@@ -107,4 +110,20 @@ pub const fn pc_g2projective_into_blst_p2(p2: Projective<g2::Config>) -> blst_p2
             ],
         },
     }
+}
+
+pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C_KZG_RET> {
+    (*blob)
+        .bytes
+        .chunks(BYTES_PER_FIELD_ELEMENT)
+        .map(|chunk| {
+            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
+            bytes.copy_from_slice(chunk);
+            if let Ok(result) = ArkFr::from_bytes(&bytes) {
+                Ok(result)
+            } else {
+                Err(C_KZG_RET_BADARGS)
+            }
+        })
+        .collect::<Result<Vec<ArkFr>, C_KZG_RET>>()
 }
