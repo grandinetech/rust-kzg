@@ -15,6 +15,8 @@ use kzg::eip_4844::{
     FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
 };
 
+use crate::eip_4844::fft_settings_to_rust;
+
 use kzg::Fr;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -174,8 +176,8 @@ pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C
 }
 
 pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
-    CtFr,
-    CtG1,
-    CtFp,
-    CtG1Affine,
+    ArkFr,
+    ArkG1,
+    ArkFp,
+    ArkG1Affine,
 > = PrecomputationTableManager::new();
