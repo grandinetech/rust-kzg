@@ -26,7 +26,7 @@ pub struct PolyData {
 }
 // FIXME: Store just dense poly here
 
-pub fn pc_poly_into_blst_poly(poly: DensePoly<Fr>) -> PolyData {
+pub fn pc_poly_into_blst_poly(poly: DensePoly<Bls12Fr>) -> PolyData {
     let mut bls_pol: Vec<ArkFr> = { Vec::new() };
     for x in poly.coeffs {
         bls_pol.push(ArkFr { fr: x });
@@ -125,19 +125,19 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
             core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
         }
         .iter()
-        .map(|r| ArkG1(*r))
+        .map(|r| ArkG1::from_blst_p1(*r))
         .collect::<Vec<_>>(),
         g1_values_lagrange_brp: unsafe {
             core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, FIELD_ELEMENTS_PER_BLOB)
         }
         .iter()
-        .map(|r| ArkG1(*r))
+        .map(|r| ArkG1::from_blst_p1(*r))
         .collect::<Vec<_>>(),
         g2_values_monomial: unsafe {
             core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
         }
         .iter()
-        .map(|r| ArkG2(*r))
+        .map(|r| ArkG2::from_blst_p2(*r))
         .collect::<Vec<_>>(),
         x_ext_fft_columns: unsafe {
             core::slice::from_raw_parts(
@@ -149,7 +149,7 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
         .map(|it| {
             unsafe { core::slice::from_raw_parts(*it, FIELD_ELEMENTS_PER_CELL) }
                 .iter()
-                .map(|it| ArkG1(*it))
+                .map(|it| ArkG1::from_blst_p1(*it))
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>(),
