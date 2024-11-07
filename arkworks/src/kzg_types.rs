@@ -36,6 +36,11 @@ use kzg::{
 };
 use std::ops::{AddAssign, Mul, Neg, Sub};
 
+use kzg::eip_4844::{
+    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
+    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
+};
+
 extern crate alloc;
 use alloc::sync::Arc;
 
@@ -627,7 +632,7 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 }
 
-fn g1_fft(output: &mut [ArkG1], input: &[ArkG1], s: &ArkFFTSettings) -> Result<(), String> {
+fn g1_fft(output: &mut [ArkG1], input: &[ArkG1], s: &LFFTSettings) -> Result<(), String> {
     /* Ensure the length is valid */
     if input.len() > FIELD_ELEMENTS_PER_EXT_BLOB || !input.len().is_power_of_two() {
         return Err("Invalid input size".to_string());
@@ -844,15 +849,15 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         &self.fs
     }
 
-    fn get_g1_lagrange_brp(&self) -> &[CtG1] {
+    fn get_g1_lagrange_brp(&self) -> &[ArkG1] {
         &self.g1_values_lagrange_brp
     }
 
-    fn get_g1_monomial(&self) -> &[CtG1] {
+    fn get_g1_monomial(&self) -> &[ArkG1] {
         &self.g1_values_monomial
     }
 
-    fn get_g2_monomial(&self) -> &[CtG2] {
+    fn get_g2_monomial(&self) -> &[ArkG2] {
         &self.g2_values_monomial
     }
 
@@ -860,7 +865,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[CtG1] {
+    fn get_x_ext_fft_column(&self, index: usize) -> &[ArkG1] {
         &self.x_ext_fft_columns[index]
     }
 }

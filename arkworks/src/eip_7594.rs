@@ -1,9 +1,7 @@
 extern crate alloc;
 
-use crate::consts::{CELL_INDICES_RBL, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB};
 use crate::fft::fft_fr_fast;
-use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
-use crate::kzg_proofs::{LFFTSettings, LKZGSettings};
+use crate::kzg_proofs::{FFTSettings as LFFTSettings, KZGSettings as LKZGSettings};
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
 use crate::utils::PolyData;
 use kzg::common_utils::{reverse_bit_order, reverse_bits_limited};
@@ -14,8 +12,8 @@ use kzg::eip_4844::{
     Bytes32, Bytes48, CKZGSettings, Cell, KZGCommitment, KZGProof, PrecomputationTableManager,
     BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2,
     BYTES_PER_PROOF, CELLS_PER_EXT_BLOB, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
-    FIELD_ELEMENTS_PER_BLOB, RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN, TRUSTED_SETUP_NUM_G1_POINTS,
-    TRUSTED_SETUP_NUM_G2_POINTS,
+    FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL, RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN,
+    TRUSTED_SETUP_NUM_G1_POINTS, TRUSTED_SETUP_NUM_G2_POINTS,
 };
 use kzg::{cfg_into_iter, Fr, G1Mul, KZGSettings, G1, G2};
 use std::ptr::null_mut;

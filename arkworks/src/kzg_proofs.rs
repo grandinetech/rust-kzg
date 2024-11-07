@@ -57,7 +57,7 @@ pub struct KZGSettings {
 pub fn generate_trusted_setup(
     len: usize,
     secret: [u8; 32usize],
-) -> (Vec<ArkG1>, Vec<ArkG1>, Vec<Arkg2>) {
+) -> (Vec<ArkG1>, Vec<ArkG1>, Vec<ArkG2>) {
     let s = hash_to_bls_field::<ArkFr>(&secret);
     let mut s_pow = ArkFr::one();
 
