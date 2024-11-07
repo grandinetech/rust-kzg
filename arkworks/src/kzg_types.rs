@@ -4,7 +4,8 @@ use crate::consts::{
 };
 use crate::fft_g1::g1_linear_combination;
 use crate::kzg_proofs::{
-    eval_poly, expand_root_of_unity, pairings_verify, KZGSettings as LKZGSettings,
+    eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
+    KZGSettings as LKZGSettings,
 };
 use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
