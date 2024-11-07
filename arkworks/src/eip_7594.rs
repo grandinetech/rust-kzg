@@ -8,11 +8,6 @@ use kzg::eip_4844::{
 };
 use kzg::{Fr, G1};
 
-#[cfg(feature = "std")]
-#[cfg(feature = "std")]
-#[cfg(feature = "std")]
-#[cfg(feature = "parallel")]
-#[cfg(feature = "std")]
 use crate::utils::deserialize_blob;
 use crate::utils::kzg_settings_to_rust;
 

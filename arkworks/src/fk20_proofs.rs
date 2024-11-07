@@ -22,7 +22,6 @@ pub struct KzgFK20MultiSettings {
     pub ks: KZGSettings,
     pub chunk_len: usize,
     pub x_ext_fft_files: Vec<Vec<ArkG1>>,
-    pub length: usize,
 }
 
 impl
@@ -144,7 +143,6 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings,
             ks: new_ks,
             x_ext_fft_files,
             chunk_len,
-            length: n, //unsure if this is right
         })
     }
 
