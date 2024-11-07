@@ -4,6 +4,7 @@ extern crate alloc;
 use super::utils::PolyData;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
+use crate::Pairing;
 use alloc::sync::Arc;
 use ark_bls12_381::Bls12_381;
 use ark_ec::{PairingEngine, ProjectiveCurve};
@@ -78,7 +79,6 @@ pub fn generate_trusted_setup(
 }
 
 pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
-    // TODO: Should look into rewriting this without blst methods. Not sure if it is possible though.
     let mut aa1 = blst_p1_affine::default();
     let mut bb1 = blst_p1_affine::default();
 
@@ -97,7 +97,7 @@ pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
         blst_p2_to_affine(&mut bb2, &b2.0);
 
         let dst = [0u8; 3];
-        let mut pairing_blst = blst::Pairing::new(false, &dst);
+        let mut pairing_blst = Pairing::new(false, &dst);
         pairing_blst.raw_aggregate(&aa2, &aa1);
         pairing_blst.raw_aggregate(&bb2, &bb1);
         let gt_point = pairing_blst.as_fp12().final_exp();
