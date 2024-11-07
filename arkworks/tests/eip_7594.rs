@@ -10,7 +10,7 @@ mod tests {
         compute_cells_and_kzg_proofs_rust, recover_cells_and_kzg_proofs_rust,
         verify_cell_kzg_proof_batch_rust,
     };
-    use rust_kzg_arkworks::kzg_proofs::{LFFTSettings, LKZGSettings};
+    use rust_kzg_arkworks::kzg_proofs::{FFTSettings as LFFTSettings, KZGSettings as LKZGSettings};
     use rust_kzg_arkworks::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
     use rust_kzg_arkworks::utils::PolyData;
 
