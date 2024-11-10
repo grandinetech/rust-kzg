@@ -163,7 +163,7 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     if s.is_null() {
         return;
     }
-    
+
     PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
     if !(*s).g1_values_monomial.is_null() {
