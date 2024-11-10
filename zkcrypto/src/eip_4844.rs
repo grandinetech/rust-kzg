@@ -163,6 +163,8 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     if s.is_null() {
         return;
     }
+    
+    PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
     if !(*s).g1_values_monomial.is_null() {
         let v = Box::from_raw(core::slice::from_raw_parts_mut(
@@ -226,8 +228,6 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
         drop(v);
         (*s).brp_roots_of_unity = ptr::null_mut();
     }
-
-    PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 }
 
 /// # Safety
