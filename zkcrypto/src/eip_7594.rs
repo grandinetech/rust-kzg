@@ -1,8 +1,12 @@
-use kzg::eip_4844::{Blob, Bytes48, CKZGSettings, Cell, KZGProof, BYTES_PER_FIELD_ELEMENT, CELLS_PER_EXT_BLOB, C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_CELL};
+use kzg::eip_4844::{
+    Blob, Bytes48, CKZGSettings, Cell, KZGProof, BYTES_PER_FIELD_ELEMENT, CELLS_PER_EXT_BLOB,
+    C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_CELL,
+};
 
 use crate::{
     kzg_proofs::KZGSettings,
-    kzg_types::{ZFr, ZG1}, utils::{deserialize_blob, kzg_settings_to_rust},
+    kzg_types::{ZFr, ZG1},
+    utils::{deserialize_blob, kzg_settings_to_rust},
 };
 
 use kzg::{Fr, G1};
@@ -273,4 +277,3 @@ pub unsafe extern "C" fn verify_cell_kzg_proof_batch(
         Err(_) => C_KZG_RET_BADARGS,
     }
 }
-
