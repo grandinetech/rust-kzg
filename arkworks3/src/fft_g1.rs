@@ -140,8 +140,8 @@ pub fn fft_g1_fast(
         {
             let (lo, hi) = ret.split_at_mut(half);
             rayon::join(
-                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
-                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2, 1),
+                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2, 1),
             );
         }
 
