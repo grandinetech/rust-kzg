@@ -1,6 +1,6 @@
 use crate::kzg_proofs::LFFTSettings;
-use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
-
+use crate::kzg_types::{ArkFr, ArkG1};
+use crate::kzg_types::{ArkFp, ArkG1Affine};
 use crate::kzg_types::ArkG1ProjAddAffine;
 
 use kzg::msm::msm_impls::msm;
@@ -51,13 +51,12 @@ pub fn g1_linear_combination(
 
     #[cfg(not(feature = "sppark"))]
     {
-        *out = ArkG1::default();
-            for i in 0..len {
-                let tmp = points[i].mul(&scalars[i]);
-                out.add_or_dbl_assign(&tmp);
-        }
-
-        return;
+        *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+            points,
+            scalars,
+            len,
+            precomputation
+        );
     }
 }
 

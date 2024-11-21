@@ -109,19 +109,19 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
             core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
         }
         .iter()
-        .map(|r| ArkG1(*r))
+        .map(|r| ArkG1::from_blst_p1(*r))
         .collect::<Vec<_>>(),
         g1_values_lagrange_brp: unsafe {
             core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, FIELD_ELEMENTS_PER_BLOB)
         }
         .iter()
-        .map(|r| ArkG1(*r))
+        .map(|r| ArkG1::from_blst_p1(*r))
         .collect::<Vec<_>>(),
         g2_values_monomial: unsafe {
             core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
         }
         .iter()
-        .map(|r| ArkG2(*r))
+        .map(|r| ArkG2::from_blst_p2(*r))
         .collect::<Vec<_>>(),
         x_ext_fft_columns: unsafe {
             core::slice::from_raw_parts(
@@ -133,7 +133,7 @@ pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSett
         .map(|it| {
             unsafe { core::slice::from_raw_parts(*it, FIELD_ELEMENTS_PER_CELL) }
                 .iter()
-                .map(|it| ArkG1(*it))
+                .map(|it| ArkG1::from_blst_p1(*it))
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>(),
@@ -177,7 +177,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
             rust_settings
                 .g1_values_monomial
                 .iter()
-                .map(|r| r.0)
+                .map(|r| r.to_blst_p1())
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -186,7 +186,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
             rust_settings
                 .g1_values_lagrange_brp
                 .iter()
-                .map(|r| r.0)
+                .map(|r| r.to_blst_p1())
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -195,7 +195,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
             rust_settings
                 .g2_values_monomial
                 .iter()
-                .map(|r| r.0)
+                .map(|r| r.to_blst_p2())
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -207,7 +207,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
                 .map(|r| {
                     Box::leak(
                         r.iter()
-                            .map(|it| it.0)
+                            .map(|it| it.to_blst_p1())
                             .collect::<Vec<_>>()
                             .into_boxed_slice(),
                     )
