@@ -7,10 +7,6 @@ use ark_bls12_381::Bls12_381;
 use ark_ec::PairingEngine;
 use alloc::sync::Arc;
 use ark_ec::ProjectiveCurve;
-use blst::{
-    blst_fp12_is_one, blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine,
-    blst_p2_to_affine,
-};
 use ark_std::One;
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::msm::precompute::PrecomputationTable;

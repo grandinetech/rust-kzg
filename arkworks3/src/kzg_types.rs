@@ -12,19 +12,11 @@ use ark_ec::{AffineCurve, ModelParameters};
 use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, ProjectiveCurve};
 use ark_ff::{BigInteger, Field};
 use ark_std::{One, Zero};
-use std::ops::{AddAssign, Neg, Sub};
+use std::ops::{AddAssign, Sub};
 use blst::{
-    blst_bendian_from_scalar, blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg,
-    blst_fr_eucl_inverse, blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul,
-    blst_fr_sqr, blst_fr_sub, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_affine,
-    blst_p1_cneg, blst_p1_compress, blst_p1_double, blst_p1_from_affine, blst_p1_in_g1,
-    blst_p1_is_equal, blst_p1_is_inf, blst_p1_mult, blst_p1_uncompress, blst_p2,
-    blst_p2_add_or_double, blst_p2_affine, blst_p2_cneg, blst_p2_compress, blst_p2_double,
-    blst_p2_from_affine, blst_p2_is_equal, blst_p2_mult, blst_p2_uncompress, blst_scalar,
-    blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr, blst_uint64_from_fr,
-    BLST_ERROR, 
+    blst_bendian_from_scalar, blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr, blst_uint64_from_fr, BLST_ERROR 
 };
-use kzg::common_utils::{log2_u64, log_2_byte, reverse_bit_order};
+use kzg::common_utils::{log2_u64, reverse_bit_order};
 use kzg::eip_4844::{
     BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
     FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS
