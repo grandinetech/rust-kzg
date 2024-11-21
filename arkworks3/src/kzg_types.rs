@@ -4,28 +4,34 @@ pub use crate::kzg_proofs::{expand_root_of_unity, pairings_verify, LFFTSettings,
 // use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::{
-    blst_fp_into_pc_fq, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData
+    blst_fp_into_pc_fq, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
+    pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData,
 };
 use crate::P2;
 use ark_bls12_381::{g1, g2, G1Affine};
-use ark_ec::{AffineCurve, ModelParameters};
 use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, ProjectiveCurve};
+use ark_ec::{AffineCurve, ModelParameters};
 use ark_ff::{BigInteger, Field};
 use ark_std::{One, Zero};
-use std::ops::{AddAssign, Sub};
 use blst::{
-    blst_bendian_from_scalar, blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse, blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr, blst_fr_sub, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine, blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine, blst_p2_uncompress, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr, blst_uint64_from_fr, BLST_ERROR 
+    blst_bendian_from_scalar, blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg,
+    blst_fr_eucl_inverse, blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul,
+    blst_fr_sqr, blst_fr_sub, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
+    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
+    blst_p2_uncompress, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian,
+    blst_scalar_from_fr, blst_uint64_from_fr, BLST_ERROR,
 };
 use kzg::common_utils::{log2_u64, reverse_bit_order};
 use kzg::eip_4844::{
     BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
-    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS
+    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
 };
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
     G1LinComb, G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
 };
+use std::ops::{AddAssign, Sub};
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -45,7 +51,6 @@ use alloc::sync::Arc;
 pub struct ArkFr(pub blst_fr);
 
 // impl Fr for ArkFr {
-    
 
 // fn bigint_check_mod_256(a: &[u64; 4]) -> bool {
 //     let (_, overflow) = a[0].overflowing_sub(BLS12_381_MOD_256[0]);
@@ -336,7 +341,6 @@ impl G1 for ArkG1 {
         })
     }
 
-
     fn generator() -> Self {
         ArkG1::from_blst_p1(blst_p1 {
             x: blst_fp {
@@ -371,7 +375,6 @@ impl G1 for ArkG1 {
             },
         })
     }
-
 
     fn negative_generator() -> Self {
         ArkG1::from_blst_p1(blst_p1 {
@@ -415,7 +418,6 @@ impl G1 for ArkG1 {
         let mut rng = rand::thread_rng();
         Self(GroupProjective::rand(&mut rng))
     }
-
 
     #[allow(clippy::bind_instead_of_map)]
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
@@ -552,7 +554,8 @@ impl PairingVerify<ArkG1, ArkG2> for ArkG1 {
 }
 
 #[repr(C)]
-#[derive(Debug, Default, PartialEq, Eq, Clone)]pub struct ArkG2(pub GroupProjective<g2::Parameters>);
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
+pub struct ArkG2(pub GroupProjective<g2::Parameters>);
 
 impl ArkG2 {
     pub fn from_blst_p2(p2: blst::blst_p2) -> Self {
@@ -719,7 +722,6 @@ impl G2 for ArkG2 {
         })
     }
 
-
     #[allow(clippy::bind_instead_of_map)]
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
         bytes
@@ -748,7 +750,6 @@ impl G2 for ArkG2 {
     fn to_bytes(&self) -> [u8; 96] {
         <[u8; 96]>::try_from(self.0.x.c0.0.to_bytes_le()).unwrap()
     }
-
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
         Self(self.0 + b.0)
@@ -1026,7 +1027,6 @@ impl FFTSettingsPoly<ArkFr, PolyData, LFFTSettings> for LFFTSettings {
         b.mul_fft(a, len)
     }
 }
-
 
 impl Default for LFFTSettings {
     fn default() -> Self {
@@ -1529,7 +1529,6 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
         ArkG1(self.aff.into_projective())
     }
 
-
     fn x(&self) -> &ArkFp {
         unsafe {
             // Transmute safe due to repr(C) on FsFp
@@ -1551,7 +1550,7 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
     fn is_zero(&self) -> bool {
         self.aff.is_zero()
     }
-    
+
     fn zero() -> Self {
         Self {
             aff: G1Affine::new(ArkFp::zero().0, ArkFp::zero().0, true),

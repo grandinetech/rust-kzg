@@ -22,7 +22,9 @@ mod tests {
     };
     use rust_kzg_arkworks3::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_arkworks3::eip_4844::load_trusted_setup_filename_rust;
-    use rust_kzg_arkworks3::kzg_proofs::{expand_root_of_unity, LFFTSettings, LKZGSettings as KZGSettings};
+    use rust_kzg_arkworks3::kzg_proofs::{
+        expand_root_of_unity, LFFTSettings, LKZGSettings as KZGSettings,
+    };
     use rust_kzg_arkworks3::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
     use rust_kzg_arkworks3::utils::PolyData;
 

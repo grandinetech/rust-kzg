@@ -1,7 +1,7 @@
 use crate::kzg_proofs::LFFTSettings;
-use crate::kzg_types::{ArkFr, ArkG1};
-use crate::kzg_types::{ArkFp, ArkG1Affine};
 use crate::kzg_types::ArkG1ProjAddAffine;
+use crate::kzg_types::{ArkFp, ArkG1Affine};
+use crate::kzg_types::{ArkFr, ArkG1};
 
 use kzg::msm::msm_impls::msm;
 
@@ -55,7 +55,7 @@ pub fn g1_linear_combination(
             points,
             scalars,
             len,
-            precomputation
+            precomputation,
         );
     }
 }
@@ -146,14 +146,21 @@ pub fn fft_g1_fast(
 
         #[cfg(not(feature = "parallel"))]
         {
-            fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2, 1);
+            fft_g1_fast(
+                &mut ret[..half],
+                data,
+                stride * 2,
+                roots,
+                roots_stride * 2,
+                1,
+            );
             fft_g1_fast(
                 &mut ret[half..],
                 &data[stride..],
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1
+                1,
             );
         }
 

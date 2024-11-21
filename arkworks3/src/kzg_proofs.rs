@@ -3,9 +3,9 @@
 extern crate alloc;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
+use alloc::sync::Arc;
 use ark_bls12_381::Bls12_381;
 use ark_ec::PairingEngine;
-use alloc::sync::Arc;
 use ark_ec::ProjectiveCurve;
 use ark_std::One;
 use kzg::eip_4844::hash_to_bls_field;
