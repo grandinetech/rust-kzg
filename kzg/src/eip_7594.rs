@@ -121,6 +121,21 @@ fn g1_fft<TG1: G1, TFFTSettings: FFTG1<TG1>>(
     Ok(())
 }
 
+macro_rules! cfg_iter_mut {
+    ($collection:expr) => {
+        {
+            #[cfg(feature = "parallel")]
+            {
+                $collection.par_iter_mut()
+            }
+            #[cfg(not(feature = "parallel"))]
+            {
+                $collection.iter_mut()
+            }
+        }
+    };
+}
+
 fn compute_fk20_proofs<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
@@ -156,46 +171,36 @@ fn compute_fk20_proofs<
         }
     }
 
-    #[cfg(feature = "parallel")]
-    {
-        h_ext_fft.par_iter_mut().enumerate().for_each(|(i, h_ext_fft_elem)| {
-            *h_ext_fft_elem = TG1::g1_lincomb(
-                s.get_x_ext_fft_column(i),
-                &coeffs[i],
-                FIELD_ELEMENTS_PER_CELL,
-                None,
-            );
-        });
+    for i in 0..k2 {
+        h_ext_fft[i] = TG1::g1_lincomb(
+            s.get_x_ext_fft_column(i),
+            &coeffs[i],
+            FIELD_ELEMENTS_PER_CELL,
+            None,
+        );
     }
-
-    #[cfg(not(feature = "parallel"))]
-    {
-        for i in 0..k2 {
-            h_ext_fft[i] = TG1::g1_lincomb(
-                s.get_x_ext_fft_column(i),
-                &coeffs[i],
-                FIELD_ELEMENTS_PER_CELL,
-                None,
-            );
-        }
-    }
-
+    
     let mut h = vec![TG1::identity(); k2];
     g1_ifft(&mut h, &h_ext_fft, s.get_fft_settings())?;
 
-    #[cfg(feature = "parallel")]
-    {
-        h.par_iter_mut().take(k2).skip(k).for_each(|h_elem| {
-            *h_elem = TG1::identity();
-        });
-    }
+    cfg_iter_mut!(h).take(k2).skip(k).for_each(|h_elem| {
+        *h_elem = TG1::identity();
+    });
 
-    #[cfg(not(feature = "parallel"))]
-    {
-        for h_elem in h.iter_mut().take(k2).skip(k) {
-            *h_elem = TG1::identity();
-        }
-    }
+    // #[cfg(feature = "parallel")]
+    // {
+    //     h.par_iter_mut().take(k2).skip(k).for_each(|h_elem| {
+    //         *h_elem = TG1::identity();
+    //     });
+    // }
+
+    // #[cfg(not(feature = "parallel"))]
+    // {
+    //     for h_elem in h.iter_mut().take(k2).skip(k) {
+    //         *h_elem = TG1::identity();
+    //     }
+    // }
+
 
     g1_fft(proofs, &h, s.get_fft_settings())?;
 
@@ -629,18 +634,13 @@ fn compute_weighted_sum_of_commitments<
 ) -> TG1 {
     // let mut commitment_weights = vec![TFr::zero(); commitments.len()];
 
-    // for i in 0..r_powers.len() {
-    //     commitment_weights[commitment_indices[i]] =
-    //         commitment_weights[commitment_indices[i]].add(&r_powers[i]);
-    // }
-
     let mut commitment_weights = vec![TFr::zero(); commitments.len()];
 
     #[cfg(feature = "parallel")]
     {
         let intermediate_weights: Vec<_> = r_powers
-            .par_chunks(64) 
-            .zip(commitment_indices.par_chunks(64))
+            .par_chunks(r_powers.len() / rayon::current_num_threads()) 
+            .zip(commitment_indices.par_chunks(r_powers.len() / rayon::current_num_threads()))
             .map(|(r_chunk, idx_chunk)| {
                 let mut local_weights = vec![TFr::zero(); commitments.len()];
                 for (r_power, &index) in r_chunk.iter().zip(idx_chunk.iter()) {
@@ -904,18 +904,6 @@ pub fn verify_cell_kzg_proof_batch<
         return Ok(true);
     }
 
-    // for cell_index in cell_indices {
-    //     if *cell_index >= CELLS_PER_EXT_BLOB {
-    //         return Err("Invalid cell index".to_string());
-    //     }
-    // }
-
-    // for proof in proofs {
-    //     if !proof.is_valid() {
-    //         return Err("Proof is not valid".to_string());
-    //     }
-    // }
-
     #[cfg(feature = "parallel")]
     {
         let cell_index_errors = cell_indices
@@ -956,11 +944,6 @@ pub fn verify_cell_kzg_proof_batch<
         &mut new_count,
     );
 
-    // for commitment in unique_commitments.iter() {
-    //     if !commitment.is_valid() {
-    //         return Err("Commitment is not valid".to_string());
-    //     }
-    // }
     #[cfg(feature = "parallel")]
     {
         let unique_commitment_errors = unique_commitments
