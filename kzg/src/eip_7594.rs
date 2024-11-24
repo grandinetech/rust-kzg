@@ -187,21 +187,6 @@ fn compute_fk20_proofs<
         *h_elem = TG1::identity();
     });
 
-    // #[cfg(feature = "parallel")]
-    // {
-    //     h.par_iter_mut().take(k2).skip(k).for_each(|h_elem| {
-    //         *h_elem = TG1::identity();
-    //     });
-    // }
-
-    // #[cfg(not(feature = "parallel"))]
-    // {
-    //     for h_elem in h.iter_mut().take(k2).skip(k) {
-    //         *h_elem = TG1::identity();
-    //     }
-    // }
-
-
     g1_fft(proofs, &h, s.get_fft_settings())?;
 
     Ok(())
@@ -632,15 +617,16 @@ fn compute_weighted_sum_of_commitments<
     commitment_indices: &[usize],
     r_powers: &[TFr],
 ) -> TG1 {
-    // let mut commitment_weights = vec![TFr::zero(); commitments.len()];
-
     let mut commitment_weights = vec![TFr::zero(); commitments.len()];
 
     #[cfg(feature = "parallel")]
     {
+        let num_threads = rayon::current_num_threads();
+        let chunk_size = (r_powers.len()+num_threads-1) / num_threads;
+
         let intermediate_weights: Vec<_> = r_powers
-            .par_chunks(r_powers.len() / rayon::current_num_threads()) 
-            .zip(commitment_indices.par_chunks(r_powers.len() / rayon::current_num_threads()))
+            .par_chunks(chunk_size) 
+            .zip(commitment_indices.par_chunks(chunk_size))
             .map(|(r_chunk, idx_chunk)| {
                 let mut local_weights = vec![TFr::zero(); commitments.len()];
                 for (r_power, &index) in r_chunk.iter().zip(idx_chunk.iter()) {
