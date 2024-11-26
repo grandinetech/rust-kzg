@@ -20,6 +20,9 @@ use crate::{
     FFTFr, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1LinComb, PairingVerify, Poly, FFTG1, G1,
 };
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 fn fr_ifft<TFr: Fr, TFFTSettings: FFTFr<TFr>>(
     output: &mut [TFr],
     input: &[TFr],
@@ -118,6 +121,21 @@ fn g1_fft<TG1: G1, TFFTSettings: FFTG1<TG1>>(
     Ok(())
 }
 
+macro_rules! cfg_iter_mut {
+    ($collection:expr) => {
+        {
+            #[cfg(feature = "parallel")]
+            {
+                $collection.par_iter_mut()
+            }
+            #[cfg(not(feature = "parallel"))]
+            {
+                $collection.iter_mut()
+            }
+        }
+    };
+}
+
 fn compute_fk20_proofs<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
@@ -126,7 +144,7 @@ fn compute_fk20_proofs<
     TPoly: Poly<TFr>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>+Sync,
 >(
     proofs: &mut [TG1],
     poly: &[TFr],
@@ -161,13 +179,13 @@ fn compute_fk20_proofs<
             None,
         );
     }
-
+    
     let mut h = vec![TG1::identity(); k2];
     g1_ifft(&mut h, &h_ext_fft, s.get_fft_settings())?;
 
-    for h in h.iter_mut().take(k2).skip(k) {
-        *h = TG1::identity();
-    }
+    cfg_iter_mut!(h).take(k2).skip(k).for_each(|h_elem| {
+        *h_elem = TG1::identity();
+    });
 
     g1_fft(proofs, &h, s.get_fft_settings())?;
 
@@ -182,7 +200,7 @@ pub fn compute_cells_and_kzg_proofs<
     TPoly: Poly<TFr>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>+Sync,
 >(
     cells: Option<&mut [[TFr; FIELD_ELEMENTS_PER_CELL]]>,
     proofs: Option<&mut [TG1]>,
@@ -410,7 +428,7 @@ pub fn recover_cells_and_kzg_proofs<
     TPoly: Poly<TFr>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>+Sync,
 >(
     recovered_cells: &mut [[TFr; FIELD_ELEMENTS_PER_CELL]],
     recovered_proofs: Option<&mut [TG1]>,
@@ -591,7 +609,7 @@ fn compute_r_powers_for_verify_cell_kzg_proof_batch<TG1: G1, TFr: Fr>(
 
 fn compute_weighted_sum_of_commitments<
     TG1: G1 + G1LinComb<TFr, TG1Fp, TG1Affine>,
-    TFr: Fr,
+    TFr: Fr + Send + Sync, //added + Send + Sync,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 >(
@@ -601,9 +619,36 @@ fn compute_weighted_sum_of_commitments<
 ) -> TG1 {
     let mut commitment_weights = vec![TFr::zero(); commitments.len()];
 
-    for i in 0..r_powers.len() {
-        commitment_weights[commitment_indices[i]] =
-            commitment_weights[commitment_indices[i]].add(&r_powers[i]);
+    #[cfg(feature = "parallel")]
+    {
+        let num_threads = rayon::current_num_threads();
+        let chunk_size = (r_powers.len()+num_threads-1) / num_threads;
+
+        let intermediate_weights: Vec<_> = r_powers
+            .par_chunks(chunk_size) 
+            .zip(commitment_indices.par_chunks(chunk_size))
+            .map(|(r_chunk, idx_chunk)| {
+                let mut local_weights = vec![TFr::zero(); commitments.len()];
+                for (r_power, &index) in r_chunk.iter().zip(idx_chunk.iter()) {
+                    local_weights[index] = local_weights[index].add(r_power);
+                }
+                local_weights
+            })
+            .collect();
+
+        for local_weights in intermediate_weights {
+            for (i, weight) in local_weights.into_iter().enumerate() {
+                commitment_weights[i] = commitment_weights[i].add(&weight);
+            }
+        }
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        for i in 0..r_powers.len() {
+            commitment_weights[commitment_indices[i]] =
+                commitment_weights[commitment_indices[i]].add(&r_powers[i]);
+        }
     }
 
     TG1::g1_lincomb(commitments, &commitment_weights, commitments.len(), None)
@@ -814,7 +859,7 @@ fn computed_weighted_sum_of_proofs<
 }
 
 pub fn verify_cell_kzg_proof_batch<
-    TFr: Fr,
+    TFr: Fr + Send + Sync,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine> + PairingVerify<TG1, TG2>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr> + FFTFr<TFr> + FFTG1<TG1>,
@@ -845,17 +890,36 @@ pub fn verify_cell_kzg_proof_batch<
         return Ok(true);
     }
 
-    for cell_index in cell_indices {
-        if *cell_index >= CELLS_PER_EXT_BLOB {
+    #[cfg(feature = "parallel")]
+    {
+        let cell_index_errors = cell_indices
+            .par_iter()
+            .any(|&cell_index| cell_index >= CELLS_PER_EXT_BLOB);
+        if cell_index_errors {
             return Err("Invalid cell index".to_string());
         }
-    }
 
-    for proof in proofs {
-        if !proof.is_valid() {
+        let proof_errors = proofs.par_iter().any(|proof| !proof.is_valid());
+        if proof_errors {
             return Err("Proof is not valid".to_string());
         }
     }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        for cell_index in cell_indices {
+            if *cell_index >= CELLS_PER_EXT_BLOB {
+                return Err("Invalid cell index".to_string());
+            }
+        }
+
+        for proof in proofs {
+            if !proof.is_valid() {
+                return Err("Proof is not valid".to_string());
+            }
+        }
+    }
+
 
     let mut new_count = commitments.len();
     let mut unique_commitments = commitments.to_vec();
@@ -866,9 +930,22 @@ pub fn verify_cell_kzg_proof_batch<
         &mut new_count,
     );
 
-    for commitment in unique_commitments.iter() {
-        if !commitment.is_valid() {
+    #[cfg(feature = "parallel")]
+    {
+        let unique_commitment_errors = unique_commitments
+            .par_iter()
+            .any(|commitment| !commitment.is_valid());
+        if unique_commitment_errors {
             return Err("Commitment is not valid".to_string());
+        }
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        for commitment in unique_commitments.iter() {
+            if !commitment.is_valid() {
+                return Err("Commitment is not valid".to_string());
+            }
         }
     }
 
