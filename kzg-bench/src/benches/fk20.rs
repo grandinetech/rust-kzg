@@ -1,8 +1,7 @@
 use criterion::Criterion;
 use kzg::{
     common_utils::{is_power_of_two, log2_pow2},
-    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul,
-    KZGSettings, Poly, G1, G2,
+    EcBackend, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, Preset,
 };
 use rand::{thread_rng, RngCore};
 
@@ -13,20 +12,30 @@ pub const SECRET: [u8; 32usize] = [
 
 const BENCH_SCALE: usize = 14;
 
+struct TestPreset1;
+
+impl Preset for TestPreset1 {
+    const FIELD_ELEMENTS_PER_BLOB: usize = 16385;
+    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 32770;
+    const CELLS_PER_EXT_BLOB: usize = 2048;
+}
+
 #[allow(clippy::type_complexity)]
 pub fn bench_fk_single_da<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20SingleSettings: FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20SingleSettings: FK20SingleSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
     c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
     let mut rng = thread_rng();
     let coeffs: Vec<u64> = vec![rng.next_u64(); 1 << (BENCH_SCALE - 1)];
@@ -35,15 +44,15 @@ pub fn bench_fk_single_da<
     let secrets_len = n_len + 1;
 
     assert!(n_len >= 2 * poly_len);
-    let mut p = TPoly::new(poly_len);
+    let mut p = B::Poly::new(poly_len);
     for (i, &coeff) in coeffs.iter().enumerate() {
-        p.set_coeff_at(i, &TFr::from_u64(coeff));
+        p.set_coeff_at(i, &B::Fr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
-    let fs = TFFTSettings::new(BENCH_SCALE).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
+    let fs = B::FFTSettings::new(BENCH_SCALE).unwrap();
+    let ks = B::KZGSettings::new_for_preset::<16, TestPreset1>(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -54,20 +63,30 @@ pub fn bench_fk_single_da<
     c.bench_function(&id, |b| b.iter(|| fk.data_availability(&p).unwrap()));
 }
 
+struct TestPreset2;
+
+impl Preset for TestPreset2 {
+    const FIELD_ELEMENTS_PER_BLOB: usize = 32768;
+    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 65536;
+    const CELLS_PER_EXT_BLOB: usize = 4096;
+}
+
 #[allow(clippy::type_complexity)]
 pub fn bench_fk_multi_da<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20MultiSettings: FK20MultiSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
     c: &mut Criterion,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
     let n = 1 << BENCH_SCALE;
     let chunk_len = 16;
@@ -84,12 +103,12 @@ pub fn bench_fk_multi_da<
 
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
-    let fs = TFFTSettings::new(width).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
+    let fs = B::FFTSettings::new(width).unwrap();
+    let ks = B::KZGSettings::new_for_preset::<16, TestPreset2>(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20MultiSettings::new(&ks, secrets_len, chunk_len).unwrap();
 
     // Create a test polynomial of size n that's independent of chunk_len
-    let mut p = TPoly::new(n);
+    let mut p = B::Poly::new(n);
     for i in 0..chunk_count {
         for j in 0..chunk_len {
             let p_index = i * chunk_len + j;
@@ -102,7 +121,7 @@ pub fn bench_fk_multi_da<
             if v_index == 5 {
                 v += tmp * tmp;
             }
-            p.set_coeff_at(p_index, &TFr::from_u64(v));
+            p.set_coeff_at(p_index, &B::Fr::from_u64(v));
             if v_index == 12 {
                 p.set_coeff_at(p_index, &p.get_coeff_at(p_index).negate());
             }

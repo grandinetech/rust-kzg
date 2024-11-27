@@ -2,6 +2,8 @@
 extern crate alloc;
 
 use crate::common_utils::reverse_bit_order;
+use crate::eth::c_bindings::CKZGSettings;
+use crate::eth::FIELD_ELEMENTS_PER_EXT_BLOB;
 use crate::msm::precompute::PrecomputationTable;
 use crate::G1Affine;
 use crate::G1Fp;
@@ -15,9 +17,7 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
-use blst::blst_p1_affine;
 pub use blst::{blst_fr, blst_p1, blst_p2};
-use core::ffi::c_uint;
 use core::hash::Hash;
 use core::hash::Hasher;
 use sha2::{Digest, Sha256};
@@ -57,113 +57,7 @@ pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
 ]; // "RCKZGBATCH___V1_"
 
 ////////////////////////////// Constant values for EIP-7594 //////////////////////////////
-pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 2 * FIELD_ELEMENTS_PER_BLOB;
-pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
-pub const BYTES_PER_CELL: usize = FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT;
-pub const CELLS_PER_EXT_BLOB: usize = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
-pub const RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN: [u8; 16] = *b"RCKZGCBATCH__V1_";
-
 ////////////////////////////// C API for EIP-4844 //////////////////////////////
-
-pub type C_KZG_RET = c_uint;
-
-pub const C_KZG_RET_OK: C_KZG_RET = 0;
-pub const C_KZG_RET_BADARGS: C_KZG_RET = 1;
-pub const C_KZG_RET_ERROR: C_KZG_RET = 2;
-pub const C_KZG_RET_MALLOC: C_KZG_RET = 3;
-
-#[repr(C)]
-pub struct Bytes32 {
-    pub bytes: [u8; 32],
-}
-
-#[repr(C)]
-pub struct Bytes48 {
-    pub bytes: [u8; 48],
-}
-
-#[repr(C)]
-pub struct BLSFieldElement {
-    pub bytes: [u8; BYTES_PER_FIELD_ELEMENT],
-}
-
-#[repr(C)]
-pub struct Blob {
-    pub bytes: [u8; BYTES_PER_BLOB],
-}
-
-#[repr(C)]
-pub struct KZGCommitment {
-    pub bytes: [u8; BYTES_PER_COMMITMENT],
-}
-
-#[repr(C)]
-pub struct KZGProof {
-    pub bytes: [u8; BYTES_PER_PROOF],
-}
-
-#[repr(C)]
-pub struct CKZGSettings {
-    /**
-     * Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB`.
-     *
-     * The array contains `FIELD_ELEMENTS_PER_EXT_BLOB + 1` elements.
-     * The array starts and ends with Fr::one().
-     */
-    pub roots_of_unity: *mut blst_fr,
-    /**
-     * Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB` in bit-reversed order.
-     *
-     * This array is derived by applying a bit-reversal permutation to `roots_of_unity`
-     * excluding the last element. Essentially:
-     *   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`
-     *
-     * The array contains `FIELD_ELEMENTS_PER_EXT_BLOB` elements.
-     */
-    pub brp_roots_of_unity: *mut blst_fr,
-    /**
-     * Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB` in reversed order.
-     *
-     * It is the reversed version of `roots_of_unity`. Essentially:
-     *    `reverse_roots_of_unity = reverse(roots_of_unity)`
-     *
-     * This array is primarily used in FFTs.
-     * The array contains `FIELD_ELEMENTS_PER_EXT_BLOB + 1` elements.
-     * The array starts and ends with Fr::one().
-     */
-    pub reverse_roots_of_unity: *mut blst_fr,
-    /**
-     * G1 group elements from the trusted setup in monomial form.
-     * The array contains `NUM_G1_POINTS = FIELD_ELEMENTS_PER_BLOB` elements.
-     */
-    pub g1_values_monomial: *mut blst_p1,
-    /**
-     * G1 group elements from the trusted setup in Lagrange form and bit-reversed order.
-     * The array contains `NUM_G1_POINTS = FIELD_ELEMENTS_PER_BLOB` elements.
-     */
-    pub g1_values_lagrange_brp: *mut blst_p1,
-    /**
-     * G2 group elements from the trusted setup in monomial form.
-     * The array contains `NUM_G2_POINTS` elements.
-     */
-    pub g2_values_monomial: *mut blst_p2,
-    /** Data used during FK20 proof generation. */
-    pub x_ext_fft_columns: *mut *mut blst_p1,
-    /** The precomputed tables for fixed-base MSM. */
-    pub tables: *mut *mut blst_p1_affine,
-    /** The window size for the fixed-base MSM. */
-    pub wbits: usize,
-    /** The scratch size for the fixed-base MSM. */
-    pub scratch_size: usize,
-}
-
-#[repr(C)]
-pub struct Cell {
-    pub bytes: [u8; BYTES_PER_CELL],
-}
-
-#[repr(C)]
-pub struct CellIndex(u64);
 
 pub struct PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
 where
