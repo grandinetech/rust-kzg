@@ -8,10 +8,12 @@ use core::fmt::Debug;
 use msm::precompute::PrecomputationTable;
 
 pub mod common_utils;
+mod das;
 pub mod eip_4844;
-pub mod eip_7594;
-// pub mod fk20_proof;
+pub mod eth;
 pub mod msm;
+
+pub use das::{EcBackend, Preset, DAS};
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
@@ -384,7 +386,7 @@ pub trait FFTG1<Coeff: G1> {
     fn fft_g1(&self, data: &[Coeff], inverse: bool) -> Result<Vec<Coeff>, String>;
 }
 
-pub trait DAS<Coeff: Fr> {
+pub trait DASExtension<Coeff: Fr> {
     fn das_fft_extension(&self, evens: &[Coeff]) -> Result<Vec<Coeff>, String>;
 }
 
@@ -513,6 +515,13 @@ pub trait KZGSettings<
 >: Default + Clone
 {
     fn new(
+        g1_monomial: &[Coeff2],
+        g1_lagrange_brp: &[Coeff2],
+        g2_monomial: &[Coeff3],
+        fs: &Fs,
+    ) -> Result<Self, String>;
+
+    fn new_for_preset<const FIELD_ELEMENTS_PER_CELL: usize, P: Preset>(
         g1_monomial: &[Coeff2],
         g1_lagrange_brp: &[Coeff2],
         g2_monomial: &[Coeff3],

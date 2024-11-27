@@ -1,7 +1,7 @@
 use kzg::{
     common_utils::{is_power_of_two, log2_pow2, reverse_bit_order, reverse_bits_limited},
-    FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul,
-    KZGSettings, Poly, G1, G2,
+    EcBackend, FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly,
+    Preset,
 };
 
 pub const SECRET: [u8; 32usize] = [
@@ -9,19 +9,29 @@ pub const SECRET: [u8; 32usize] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
+struct TestPreset1;
+
+impl Preset for TestPreset1 {
+    const FIELD_ELEMENTS_PER_BLOB: usize = 33;
+    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 66;
+    const CELLS_PER_EXT_BLOB: usize = 16;
+}
+
 #[allow(clippy::type_complexity)]
 pub fn fk_single<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20SingleSettings: FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20SingleSettings: FK20SingleSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
@@ -30,15 +40,15 @@ pub fn fk_single<
     let secrets_len = n_len + 1;
 
     assert!(n_len >= 2 * poly_len);
-    let mut p = TPoly::new(poly_len);
+    let mut p = B::Poly::new(poly_len);
     for (i, &coeff) in coeffs.iter().enumerate() {
-        p.set_coeff_at(i, &TFr::from_u64(coeff));
+        p.set_coeff_at(i, &B::Fr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
-    let fs = TFFTSettings::new(n).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
+    let fs = B::FFTSettings::new(n).unwrap();
+    let ks = B::KZGSettings::new_for_preset::<4, TestPreset1>(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -53,7 +63,7 @@ pub fn fk_single<
     for i in 0..(2 * poly_len) {
         let x = fs.get_roots_of_unity_at(i);
         let y = p.eval(&x);
-        let proof = &all_proofs[reverse_bits_limited(2 * poly_len - 1, i)];
+        let proof = &all_proofs[reverse_bits_limited(2 * poly_len, i)];
         assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
     }
 
@@ -70,19 +80,29 @@ pub fn fk_single<
     }
 }
 
+struct TestPreset2;
+
+impl Preset for TestPreset2 {
+    const FIELD_ELEMENTS_PER_BLOB: usize = 257;
+    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 514;
+    const CELLS_PER_EXT_BLOB: usize = 32;
+}
+
 #[allow(clippy::type_complexity)]
 pub fn fk_single_strided<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20SingleSettings: FK20SingleSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20SingleSettings: FK20SingleSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
     let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
@@ -92,15 +112,15 @@ pub fn fk_single_strided<
     let secrets_len = n_len + 1;
 
     assert!(n_len >= 2 * poly_len);
-    let mut p = TPoly::new(poly_len);
+    let mut p = B::Poly::new(poly_len);
     for (i, &coeff) in coeffs.iter().enumerate() {
-        p.set_coeff_at(i, &TFr::from_u64(coeff));
+        p.set_coeff_at(i, &B::Fr::from_u64(coeff));
     }
 
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
-    let fs = TFFTSettings::new(n).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
+    let fs = B::FFTSettings::new(n).unwrap();
+    let ks = B::KZGSettings::new_for_preset::<16, TestPreset2>(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -113,51 +133,59 @@ pub fn fk_single_strided<
     for i in 0..(2 * poly_len) {
         let x = fs.get_roots_of_unity_at(i * stride);
         let y = p.eval(&x);
-        let proof = &all_proofs[reverse_bits_limited(2 * poly_len - 1, i)];
+        let proof = &all_proofs[reverse_bits_limited(2 * poly_len, i)];
         assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
     }
 }
 
 #[allow(clippy::type_complexity)]
 pub fn fk_multi_settings<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20MultiSettings: FK20MultiSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
     let n: usize = 5;
     let secrets_len: usize = 33;
 
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
-    let fs = TFFTSettings::new(n).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
+    let fs = B::FFTSettings::new(n).unwrap();
+    let ks = B::KZGSettings::new_for_preset::<4, TestPreset1>(&s1, &s2, &s3, &fs).unwrap();
     let _fk = TFK20MultiSettings::new(&ks, 32, 4).unwrap();
 }
 
 #[allow(clippy::type_complexity)]
 fn fk_multi_case<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    const FIELD_ELEMENTS_PER_CELL: usize,
+    B: EcBackend,
+    P: Preset,
+    TFK20MultiSettings: FK20MultiSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
-    chunk_len: usize,
-    n: usize,
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
-) {
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
+) where
+    B::FFTSettings: FFTFr<B::Fr>,
+{
+    let chunk_len = FIELD_ELEMENTS_PER_CELL;
+    let n = P::FIELD_ELEMENTS_PER_BLOB / 2;
     let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
     assert!(is_power_of_two(n));
@@ -171,12 +199,13 @@ fn fk_multi_case<
 
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
-    let fs = TFFTSettings::new(width).unwrap();
-    let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
+    let fs = B::FFTSettings::new(width).unwrap();
+    let ks =
+        B::KZGSettings::new_for_preset::<FIELD_ELEMENTS_PER_CELL, P>(&s1, &s2, &s3, &fs).unwrap();
     let fk = TFK20MultiSettings::new(&ks, n * 2, chunk_len).unwrap();
 
     // Create a test polynomial of size n that's independent of chunk_len
-    let mut p = TPoly::new(n);
+    let mut p = B::Poly::new(n);
     for i in 0..chunk_count {
         for j in 0..chunk_len {
             let p_index = i * chunk_len + j;
@@ -189,7 +218,7 @@ fn fk_multi_case<
             if v_index == 5 {
                 v += tmp * tmp;
             }
-            p.set_coeff_at(p_index, &TFr::from_u64(v));
+            p.set_coeff_at(p_index, &B::Fr::from_u64(v));
             if v_index == 12 {
                 p.set_coeff_at(p_index, &p.get_coeff_at(p_index).negate());
             }
@@ -206,7 +235,7 @@ fn fk_multi_case<
     let all_proofs = fk.data_availability(&p).unwrap();
 
     // Now actually extend the polynomial with zeros
-    let mut extended_coeffs = vec![TFr::zero(); 2 * n];
+    let mut extended_coeffs = vec![B::Fr::zero(); 2 * n];
     for (i, extended_coeff) in extended_coeffs.iter_mut().enumerate().take(n) {
         *extended_coeff = p.get_coeff_at(i);
     }
@@ -214,11 +243,11 @@ fn fk_multi_case<
     reverse_bit_order(&mut extended_coeffs_fft).unwrap();
 
     // Verify the proofs
-    let mut ys = vec![TFr::default(); chunk_len];
-    let mut ys2 = vec![TFr::default(); chunk_len];
+    let mut ys = vec![B::Fr::default(); chunk_len];
+    let mut ys2 = vec![B::Fr::default(); chunk_len];
     let domain_stride = fs.get_max_width() / (2 * n);
     for pos in 0..(2 * chunk_count) {
-        let domain_pos = reverse_bits_limited(chunk_count, pos);
+        let domain_pos = reverse_bits_limited(2 * chunk_count, pos);
         let x = fs.get_roots_of_unity_at(domain_pos * domain_stride);
 
         // The ys from the extended coeffients
@@ -247,83 +276,83 @@ fn fk_multi_case<
     }
 }
 
+struct TestPreset3;
+
+impl Preset for TestPreset3 {
+    const FIELD_ELEMENTS_PER_BLOB: usize = 1024;
+    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 2048;
+    const CELLS_PER_EXT_BLOB: usize = 1024;
+}
+
 #[allow(clippy::type_complexity)]
 pub fn fk_multi_chunk_len_1_512<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20MultiSettings: FK20MultiSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    fk_multi_case::<
-        TFr,
-        TG1,
-        TG2,
-        TPoly,
-        TFFTSettings,
-        TKZGSettings,
-        TFK20MultiSettings,
-        TG1Fp,
-        TG1Affine,
-    >(1, 512, &generate_trusted_setup);
+    fk_multi_case::<1, B, TestPreset3, TFK20MultiSettings>(&generate_trusted_setup);
+}
+
+struct TestPreset4;
+
+impl Preset for TestPreset4 {
+    const FIELD_ELEMENTS_PER_BLOB: usize = 1024;
+    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 2048;
+    const CELLS_PER_EXT_BLOB: usize = 32;
 }
 
 #[allow(clippy::type_complexity)]
 pub fn fk_multi_chunk_len_16_512<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20MultiSettings: FK20MultiSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    fk_multi_case::<
-        TFr,
-        TG1,
-        TG2,
-        TPoly,
-        TFFTSettings,
-        TKZGSettings,
-        TFK20MultiSettings,
-        TG1Fp,
-        TG1Affine,
-    >(16, 512, &generate_trusted_setup);
+    fk_multi_case::<16, B, TestPreset4, TFK20MultiSettings>(&generate_trusted_setup);
+}
+
+struct TestPreset5;
+
+impl Preset for TestPreset5 {
+    const FIELD_ELEMENTS_PER_BLOB: usize = 32;
+    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 64;
+    const CELLS_PER_EXT_BLOB: usize = 4;
 }
 
 #[allow(clippy::type_complexity)]
 pub fn fk_multi_chunk_len_16_16<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr> + FFTFr<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TFK20MultiSettings: FK20MultiSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TKZGSettings, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
+    B: EcBackend,
+    TFK20MultiSettings: FK20MultiSettings<
+        B::Fr,
+        B::G1,
+        B::G2,
+        B::FFTSettings,
+        B::Poly,
+        B::KZGSettings,
+        B::G1Fp,
+        B::G1Affine,
+    >,
 >(
-    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<TG1>, Vec<TG1>, Vec<TG2>),
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    fk_multi_case::<
-        TFr,
-        TG1,
-        TG2,
-        TPoly,
-        TFFTSettings,
-        TKZGSettings,
-        TFK20MultiSettings,
-        TG1Fp,
-        TG1Affine,
-    >(16, 16, &generate_trusted_setup);
+    fk_multi_case::<16, B, TestPreset5, TFK20MultiSettings>(&generate_trusted_setup);
 }

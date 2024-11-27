@@ -9,59 +9,29 @@ mod tests {
         commit_to_nil_poly, commit_to_too_long_poly_returns_err, proof_multi, proof_single,
     };
 
-    use rust_kzg_blst::types::fft_settings::FsFFTSettings;
-    use rust_kzg_blst::types::fp::FsFp;
-    use rust_kzg_blst::types::fr::FsFr;
-    use rust_kzg_blst::types::g1::{FsG1, FsG1Affine};
+    use rust_kzg_blst::eip_7594::BlstBackend;
+    use rust_kzg_blst::types::g1::FsG1;
     use rust_kzg_blst::types::g2::FsG2;
-    use rust_kzg_blst::types::kzg_settings::FsKZGSettings;
-    use rust_kzg_blst::types::poly::FsPoly;
     use rust_kzg_blst::utils::generate_trusted_setup;
 
-    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_proof_single() {
-        proof_single::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings, FsFp, FsG1Affine>(
-            &generate_trusted_setup,
-        );
+        proof_single::<BlstBackend>(&generate_trusted_setup);
     }
 
-    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_commit_to_nil_poly() {
-        commit_to_nil_poly::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
-            FsG1Affine,
-        >(&generate_trusted_setup);
+        commit_to_nil_poly::<BlstBackend>(&generate_trusted_setup);
     }
 
-    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_commit_to_too_long_poly() {
-        commit_to_too_long_poly_returns_err::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
-            FsG1Affine,
-        >(&generate_trusted_setup);
+        commit_to_too_long_poly_returns_err::<BlstBackend>(&generate_trusted_setup);
     }
 
-    #[ignore = "KZG settings loading doesn't support trusted setup sizes other than FIELD_ELEMENTS_PER_BLOB (4096 points)"]
     #[test]
     pub fn test_proof_multi() {
-        proof_multi::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings, FsFp, FsG1Affine>(
-            &generate_trusted_setup,
-        );
+        proof_multi::<BlstBackend>(&generate_trusted_setup);
     }
 
     // This aims at showing that the use of the blst::Pairing engine in pairings_verify

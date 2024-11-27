@@ -4,7 +4,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
-use kzg::{Fr, DAS};
+use kzg::{DASExtension, Fr};
 
 use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fr::FsFr;
@@ -71,7 +71,7 @@ impl FsFFTSettings {
     }
 }
 
-impl DAS<FsFr> for FsFFTSettings {
+impl DASExtension<FsFr> for FsFFTSettings {
     /// Polynomial extension for data availability sampling. Given values of even indices, produce values of odd indices.
     /// FFTSettings must hold at least 2 times the roots of provided evens.
     /// The resulting odd indices make the right half of the coefficients of the inverse FFT of the combined indices zero.
