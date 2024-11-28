@@ -2,18 +2,24 @@ use std::env;
 use std::process::Command;
 
 fn main() {
-    let cargo_manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let out_dir = env::var("OUT_DIR").unwrap();
+    let top_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let opt = if cfg!(target_arch = "x86_64") {
+        ""
+    } else {
+        "-DCMAKE_CXX_COMPILER=clang++"
+    };
 
-    if !Command::new("sh")
-        .arg(format!("{}/build.sh", cargo_manifest_dir))
-        .current_dir(out_dir.clone())
-        .status()
-        .expect("Failed to build")
-        .success()
-    {
-        panic!("Built script failed");
-    }
-
-    println!("cargo:rustc-link-search={}/lib", out_dir);
+    let cmd = format!(
+        "cd {out} && cmake {top}/mcl -DMCL_STATIC_LIB=ON -DMCL_STANDALONE=ON {opt} && make -j",
+        out = out_dir,
+        top = top_dir,
+        opt = opt
+    );
+    Command::new("sh")
+        .args(["-c", &cmd])
+        .output()
+        .expect("fail");
+    let s = format!("cargo:rustc-link-search=native={}/lib", out_dir);
+    println!("{}", s);
 }
