@@ -10,6 +10,9 @@ use blst::{
     blst_fr_sub, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr,
     blst_uint64_from_fr,
 };
+
+use crate::mcl_methods::{mcl_fr};
+
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
 use kzg::Scalar256;
