@@ -4,12 +4,10 @@ use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::{vec, vec::Vec};
 
-use kzg::eip_4844::{
-    FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
-    TRUSTED_SETUP_NUM_G2_POINTS,
-};
+use kzg::eth::c_bindings::CKZGSettings;
+use kzg::eth::{self, FIELD_ELEMENTS_PER_EXT_BLOB};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
-use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
+use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, Preset, G1, G2};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::fft_g1::fft_g1_fast;
@@ -19,6 +17,7 @@ use crate::types::fr::FsFr;
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 use crate::types::poly::FsPoly;
+use crate::utils::PRECOMPUTATION_TABLES;
 
 use super::fp::FsFp;
 use super::g1::FsG1Affine;
@@ -33,28 +32,30 @@ pub struct FsKZGSettings {
     pub x_ext_fft_columns: Vec<Vec<FsG1>>,
 }
 
-fn g1_fft(output: &mut [FsG1], input: &[FsG1], s: &FsFFTSettings) -> Result<(), String> {
-    // g1_t *out, const g1_t *in, size_t n, const KZGSettings *s
-
+fn g1_fft<P: Preset>(output: &mut [FsG1], input: &[FsG1], s: &FsFFTSettings) -> Result<(), String> {
     /* Ensure the length is valid */
-    if input.len() > FIELD_ELEMENTS_PER_EXT_BLOB || !input.len().is_power_of_two() {
+    if input.len() > P::FIELD_ELEMENTS_PER_EXT_BLOB || !input.len().is_power_of_two() {
         return Err("Invalid input size".to_string());
     }
 
-    let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
+    let roots_stride = P::FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
     fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride);
 
     Ok(())
 }
 
-fn toeplitz_part_1(output: &mut [FsG1], x: &[FsG1], s: &FsFFTSettings) -> Result<(), String> {
+fn toeplitz_part_1<P: Preset>(
+    output: &mut [FsG1],
+    x: &[FsG1],
+    s: &FsFFTSettings,
+) -> Result<(), String> {
     let n = x.len();
     let n2 = n * 2;
     let mut x_ext = vec![FsG1::identity(); n2];
 
     x_ext[..n].copy_from_slice(x);
 
-    g1_fft(output, &x_ext, s)?;
+    g1_fft::<P>(output, &x_ext, s)?;
 
     Ok(())
 }
@@ -66,14 +67,27 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         g2_monomial: &[FsG2],
         fft_settings: &FsFFTSettings,
     ) -> Result<Self, String> {
-        if g1_monomial.len() != FIELD_ELEMENTS_PER_BLOB
-            || g1_lagrange_brp.len() != FIELD_ELEMENTS_PER_BLOB
-            || g2_monomial.len() != TRUSTED_SETUP_NUM_G2_POINTS
+        Self::new_for_preset::<{ eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>(
+            g1_monomial,
+            g1_lagrange_brp,
+            g2_monomial,
+            fft_settings,
+        )
+    }
+
+    fn new_for_preset<const FIELD_ELEMENTS_PER_CELL: usize, P: Preset>(
+        g1_monomial: &[FsG1],
+        g1_lagrange_brp: &[FsG1],
+        g2_monomial: &[FsG2],
+        fft_settings: &FsFFTSettings,
+    ) -> Result<Self, String> {
+        if g1_monomial.len() != P::FIELD_ELEMENTS_PER_BLOB
+            || g1_lagrange_brp.len() != P::FIELD_ELEMENTS_PER_BLOB
         {
             return Err("Length does not match FIELD_ELEMENTS_PER_BLOB".to_string());
         }
 
-        let n = FIELD_ELEMENTS_PER_EXT_BLOB / 2;
+        let n = P::FIELD_ELEMENTS_PER_EXT_BLOB / 2;
         let k = n / FIELD_ELEMENTS_PER_CELL;
         let k2 = 2 * k;
 
@@ -89,31 +103,12 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
             }
             x[k - 1] = FsG1::identity();
 
-            toeplitz_part_1(&mut points, &x, fft_settings)?;
+            toeplitz_part_1::<P>(&mut points, &x, fft_settings)?;
 
             for row in 0..k2 {
                 x_ext_fft_columns[row][offset] = points[row];
             }
         }
-
-        // for (size_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
-        //     /* Compute x, sections of the g1 values */
-        //     size_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
-        //     for (size_t i = 0; i < k - 1; i++) {
-        //         size_t j = start - i * FIELD_ELEMENTS_PER_CELL;
-        //         x[i] = s->g1_values_monomial[j];
-        //     }
-        //     x[k - 1] = G1_IDENTITY;
-
-        //     /* Compute points, the fft of an extended x */
-        //     ret = toeplitz_part_1(points, x, k, s);
-        //     if (ret != C_KZG_OK) goto out;
-
-        //     /* Reorganize from rows into columns */
-        //     for (size_t row = 0; row < k2; row++) {
-        //         s->x_ext_fft_columns[row][offset] = points[row];
-        //     }
-        // }
 
         Ok(Self {
             g1_values_monomial: g1_monomial.to_vec(),
@@ -122,7 +117,25 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
             fs: fft_settings.clone(),
             x_ext_fft_columns,
             precomputation: {
-                precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
+                #[cfg(feature = "sppark")]
+                {
+                    use blst::blst_p1_affine;
+                    let points =
+                        kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(secret_g1);
+                    let points = unsafe {
+                        alloc::slice::from_raw_parts(
+                            points.as_ptr() as *const blst_p1_affine,
+                            points.len(),
+                        )
+                    };
+                    let prepared = rust_kzg_mcl_sppark::prepare_multi_scalar_mult(points);
+                    Some(Arc::new(PrecomputationTable::from_ptr(prepared)))
+                }
+
+                #[cfg(not(feature = "sppark"))]
+                {
+                    precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
+                }
             },
         })
     }
@@ -294,5 +307,89 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
 
     fn get_x_ext_fft_column(&self, index: usize) -> &[FsG1] {
         &self.x_ext_fft_columns[index]
+    }
+}
+
+impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
+    type Error = String;
+
+    fn try_from(settings: &'a CKZGSettings) -> Result<Self, Self::Error> {
+        let roots_of_unity = unsafe {
+            core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
+                .iter()
+                .map(|r| FsFr(*r))
+                .collect::<Vec<FsFr>>()
+        };
+
+        let brp_roots_of_unity = unsafe {
+            core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
+                .iter()
+                .map(|r| FsFr(*r))
+                .collect::<Vec<FsFr>>()
+        };
+
+        let reverse_roots_of_unity = unsafe {
+            core::slice::from_raw_parts(
+                settings.reverse_roots_of_unity,
+                FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+            )
+            .iter()
+            .map(|r| FsFr(*r))
+            .collect::<Vec<FsFr>>()
+        };
+
+        let fft_settings = FsFFTSettings {
+            max_width: FIELD_ELEMENTS_PER_EXT_BLOB,
+            root_of_unity: roots_of_unity[1],
+            roots_of_unity,
+            brp_roots_of_unity,
+            reverse_roots_of_unity,
+        };
+
+        Ok(FsKZGSettings {
+            fs: fft_settings,
+            g1_values_monomial: unsafe {
+                core::slice::from_raw_parts(
+                    settings.g1_values_monomial,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
+            }
+            .iter()
+            .map(|r| FsG1(*r))
+            .collect::<Vec<_>>(),
+            g1_values_lagrange_brp: unsafe {
+                core::slice::from_raw_parts(
+                    settings.g1_values_lagrange_brp,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
+            }
+            .iter()
+            .map(|r| FsG1(*r))
+            .collect::<Vec<_>>(),
+            g2_values_monomial: unsafe {
+                core::slice::from_raw_parts(
+                    settings.g2_values_monomial,
+                    eth::TRUSTED_SETUP_NUM_G2_POINTS,
+                )
+            }
+            .iter()
+            .map(|r| FsG2(*r))
+            .collect::<Vec<_>>(),
+            x_ext_fft_columns: unsafe {
+                core::slice::from_raw_parts(
+                    settings.x_ext_fft_columns,
+                    2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / eth::FIELD_ELEMENTS_PER_CELL),
+                )
+            }
+            .iter()
+            .map(|it| {
+                unsafe { core::slice::from_raw_parts(*it, eth::FIELD_ELEMENTS_PER_CELL) }
+                    .iter()
+                    .map(|it| FsG1(*it))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>(),
+            precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(settings) },
+        })
     }
 }
