@@ -24,149 +24,149 @@ extern "C" {
     fn mclBn_getFpByteSize() -> u32;
     fn mclBn_getCurveOrder(buf: *mut u8, maxBufSize: usize) -> usize;
     fn mclBn_getFieldOrder(buf: *mut u8, maxBufSize: usize) -> usize;
-    fn mclBn_pairing(z: *mut GT, x: *const G1, y: *const G2);
-    fn mclBn_millerLoop(z: *mut GT, x: *const G1, y: *const G2);
-    fn mclBn_finalExp(y: *mut GT, x: *const GT);
+    fn mclBn_pairing(z: *mut mcl_gt, x: *const mcl_g1, y: *const mcl_g2);
+    fn mclBn_millerLoop(z: *mut mcl_gt, x: *const mcl_g1, y: *const mcl_g2);
+    fn mclBn_finalExp(y: *mut mcl_gt, x: *const mcl_gt);
 
-    // Fr
-    fn mclBnFr_isEqual(x: *const Fr, y: *const Fr) -> i32;
-    fn mclBnFr_isValid(x: *const Fr) -> i32;
-    fn mclBnFr_isZero(x: *const Fr) -> i32;
-    fn mclBnFr_isOne(x: *const Fr) -> i32;
-    fn mclBnFr_isOdd(x: *const Fr) -> i32;
-    fn mclBnFr_isNegative(x: *const Fr) -> i32;
-    fn mclBnFr_cmp(x: *const Fr, y: *const Fr) -> i32;
+    // mcl_fr
+    fn mclBnFr_isEqual(x: *const mcl_fr, y: *const mcl_fr) -> i32;
+    fn mclBnFr_isValid(x: *const mcl_fr) -> i32;
+    fn mclBnFr_isZero(x: *const mcl_fr) -> i32;
+    fn mclBnFr_isOne(x: *const mcl_fr) -> i32;
+    fn mclBnFr_isOdd(x: *const mcl_fr) -> i32;
+    fn mclBnFr_isNegative(x: *const mcl_fr) -> i32;
+    fn mclBnFr_cmp(x: *const mcl_fr, y: *const mcl_fr) -> i32;
 
-    fn mclBnFr_setStr(x: *mut Fr, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
-    fn mclBnFr_getStr(buf: *mut u8, maxBufSize: usize, x: *const Fr, ioMode: i32) -> usize;
-    fn mclBnFr_serialize(buf: *mut u8, maxBufSize: usize, x: *const Fr) -> usize;
-    fn mclBnFr_deserialize(x: *mut Fr, buf: *const u8, bufSize: usize) -> usize;
+    fn mclBnFr_setStr(x: *mut mcl_fr, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
+    fn mclBnFr_getStr(buf: *mut u8, maxBufSize: usize, x: *const mcl_fr, ioMode: i32) -> usize;
+    fn mclBnFr_serialize(buf: *mut u8, maxBufSize: usize, x: *const mcl_fr) -> usize;
+    fn mclBnFr_deserialize(x: *mut mcl_fr, buf: *const u8, bufSize: usize) -> usize;
 
-    fn mclBnFr_setInt32(x: *mut Fr, v: i32);
-    fn mclBnFr_setLittleEndian(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnFr_setLittleEndianMod(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnFr_setHashOf(x: *mut Fr, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnFr_setByCSPRNG(x: *mut Fr);
+    fn mclBnFr_setInt32(x: *mut mcl_fr, v: i32);
+    fn mclBnFr_setLittleEndian(x: *mut mcl_fr, buf: *const u8, bufSize: usize) -> i32;
+    fn mclBnFr_setLittleEndianMod(x: *mut mcl_fr, buf: *const u8, bufSize: usize) -> i32;
+    fn mclBnFr_setHashOf(x: *mut mcl_fr, buf: *const u8, bufSize: usize) -> i32;
+    fn mclBnFr_setByCSPRNG(x: *mut mcl_fr);
 
-    fn mclBnFr_add(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_sub(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_neg(y: *mut Fr, x: *const Fr);
+    fn mclBnFr_add(z: *mut mcl_fr, x: *const mcl_fr, y: *const mcl_fr);
+    fn mclBnFr_sub(z: *mut mcl_fr, x: *const mcl_fr, y: *const mcl_fr);
+    fn mclBnFr_neg(y: *mut mcl_fr, x: *const mcl_fr);
 
-    fn mclBnFr_mul(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_div(z: *mut Fr, x: *const Fr, y: *const Fr);
-    fn mclBnFr_inv(y: *mut Fr, x: *const Fr);
-    fn mclBnFr_sqr(y: *mut Fr, x: *const Fr);
-    fn mclBnFr_squareRoot(y: *mut Fr, x: *const Fr) -> i32;
+    fn mclBnFr_mul(z: *mut mcl_fr, x: *const mcl_fr, y: *const mcl_fr);
+    fn mclBnFr_div(z: *mut mcl_fr, x: *const mcl_fr, y: *const mcl_fr);
+    fn mclBnFr_inv(y: *mut mcl_fr, x: *const mcl_fr);
+    fn mclBnFr_sqr(y: *mut mcl_fr, x: *const mcl_fr);
+    fn mclBnFr_squareRoot(y: *mut mcl_fr, x: *const mcl_fr) -> i32;
 
-    // Fp
-    pub fn mclBnFp_isEqual(x: *const Fp, y: *const Fp) -> i32;
-    pub fn mclBnFp_isValid(x: *const Fp) -> i32;
-    pub fn mclBnFp_isZero(x: *const Fp) -> i32;
-    pub fn mclBnFp_isOne(x: *const Fp) -> i32;
-    pub fn mclBnFp_isOdd(x: *const Fp) -> i32;
-    pub fn mclBnFp_isNegative(x: *const Fp) -> i32;
-    pub fn mclBnFp_cmp(x: *const Fp, y: *const Fp) -> i32;
+    // mcl_fp
+    pub fn mclBnFp_isEqual(x: *const mcl_fp, y: *const mcl_fp) -> i32;
+    pub fn mclBnFp_isValid(x: *const mcl_fp) -> i32;
+    pub fn mclBnFp_isZero(x: *const mcl_fp) -> i32;
+    pub fn mclBnFp_isOne(x: *const mcl_fp) -> i32;
+    pub fn mclBnFp_isOdd(x: *const mcl_fp) -> i32;
+    pub fn mclBnFp_isNegative(x: *const mcl_fp) -> i32;
+    pub fn mclBnFp_cmp(x: *const mcl_fp, y: *const mcl_fp) -> i32;
 
-    pub fn mclBnFp_setStr(x: *mut Fp, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
-    pub fn mclBnFp_getStr(buf: *mut u8, maxBufSize: usize, x: *const Fp, ioMode: i32) -> usize;
-    pub fn mclBnFp_serialize(buf: *mut u8, maxBufSize: usize, x: *const Fp) -> usize;
-    pub fn mclBnFp_deserialize(x: *mut Fp, buf: *const u8, bufSize: usize) -> usize;
+    pub fn mclBnFp_setStr(x: *mut mcl_fp, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
+    pub fn mclBnFp_getStr(buf: *mut u8, maxBufSize: usize, x: *const mcl_fp, ioMode: i32) -> usize;
+    pub fn mclBnFp_serialize(buf: *mut u8, maxBufSize: usize, x: *const mcl_fp) -> usize;
+    pub fn mclBnFp_deserialize(x: *mut mcl_fp, buf: *const u8, bufSize: usize) -> usize;
 
-    pub fn mclBnFp_setInt32(x: *mut Fp, v: i32);
-    pub fn mclBnFp_setLittleEndian(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
-    pub fn mclBnFp_setLittleEndianMod(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
-    pub fn mclBnFp_setHashOf(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
-    pub fn mclBnFp_setByCSPRNG(x: *mut Fp);
+    pub fn mclBnFp_setInt32(x: *mut mcl_fp, v: i32);
+    pub fn mclBnFp_setLittleEndian(x: *mut mcl_fp, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFp_setLittleEndianMod(x: *mut mcl_fp, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFp_setHashOf(x: *mut mcl_fp, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFp_setByCSPRNG(x: *mut mcl_fp);
 
-    pub fn mclBnFp_add(z: *mut Fp, x: *const Fp, y: *const Fp);
-    pub fn mclBnFp_sub(z: *mut Fp, x: *const Fp, y: *const Fp);
-    pub fn mclBnFp_neg(y: *mut Fp, x: *const Fp);
+    pub fn mclBnFp_add(z: *mut mcl_fp, x: *const mcl_fp, y: *const mcl_fp);
+    pub fn mclBnFp_sub(z: *mut mcl_fp, x: *const mcl_fp, y: *const mcl_fp);
+    pub fn mclBnFp_neg(y: *mut mcl_fp, x: *const mcl_fp);
 
-    pub fn mclBnFp_mul(z: *mut Fp, x: *const Fp, y: *const Fp);
-    pub fn mclBnFp_div(z: *mut Fp, x: *const Fp, y: *const Fp);
-    pub fn mclBnFp_inv(y: *mut Fp, x: *const Fp);
-    pub fn mclBnFp_sqr(y: *mut Fp, x: *const Fp);
-    pub fn mclBnFp_squareRoot(y: *mut Fp, x: *const Fp) -> i32;
+    pub fn mclBnFp_mul(z: *mut mcl_fp, x: *const mcl_fp, y: *const mcl_fp);
+    pub fn mclBnFp_div(z: *mut mcl_fp, x: *const mcl_fp, y: *const mcl_fp);
+    pub fn mclBnFp_inv(y: *mut mcl_fp, x: *const mcl_fp);
+    pub fn mclBnFp_sqr(y: *mut mcl_fp, x: *const mcl_fp);
+    pub fn mclBnFp_squareRoot(y: *mut mcl_fp, x: *const mcl_fp) -> i32;
 
-    // Fp2
-    fn mclBnFp2_isEqual(x: *const Fp2, y: *const Fp2) -> i32;
-    fn mclBnFp2_isZero(x: *const Fp2) -> i32;
+    // mcl_fp2
+    fn mclBnFp2_isEqual(x: *const mcl_fp2, y: *const mcl_fp2) -> i32;
+    fn mclBnFp2_isZero(x: *const mcl_fp2) -> i32;
 
-    fn mclBnFp2_serialize(buf: *mut u8, maxBufSize: usize, x: *const Fp2) -> usize;
-    fn mclBnFp2_deserialize(x: *mut Fp2, buf: *const u8, bufSize: usize) -> usize;
+    fn mclBnFp2_serialize(buf: *mut u8, maxBufSize: usize, x: *const mcl_fp2) -> usize;
+    fn mclBnFp2_deserialize(x: *mut mcl_fp2, buf: *const u8, bufSize: usize) -> usize;
 
-    fn mclBnFp2_add(z: *mut Fp2, x: *const Fp2, y: *const Fp2);
-    fn mclBnFp2_sub(z: *mut Fp2, x: *const Fp2, y: *const Fp2);
-    fn mclBnFp2_neg(y: *mut Fp2, x: *const Fp2);
+    fn mclBnFp2_add(z: *mut mcl_fp2, x: *const mcl_fp2, y: *const mcl_fp2);
+    fn mclBnFp2_sub(z: *mut mcl_fp2, x: *const mcl_fp2, y: *const mcl_fp2);
+    fn mclBnFp2_neg(y: *mut mcl_fp2, x: *const mcl_fp2);
 
-    fn mclBnFp2_mul(z: *mut Fp2, x: *const Fp2, y: *const Fp2);
-    fn mclBnFp2_div(z: *mut Fp2, x: *const Fp2, y: *const Fp2);
-    fn mclBnFp2_inv(y: *mut Fp2, x: *const Fp2);
-    fn mclBnFp2_sqr(y: *mut Fp2, x: *const Fp2);
-    fn mclBnFp2_squareRoot(y: *mut Fp2, x: *const Fp2) -> i32;
+    fn mclBnFp2_mul(z: *mut mcl_fp2, x: *const mcl_fp2, y: *const mcl_fp2);
+    fn mclBnFp2_div(z: *mut mcl_fp2, x: *const mcl_fp2, y: *const mcl_fp2);
+    fn mclBnFp2_inv(y: *mut mcl_fp2, x: *const mcl_fp2);
+    fn mclBnFp2_sqr(y: *mut mcl_fp2, x: *const mcl_fp2);
+    fn mclBnFp2_squareRoot(y: *mut mcl_fp2, x: *const mcl_fp2) -> i32;
 
-    // G1
-    fn mclBnG1_isEqual(x: *const G1, y: *const G1) -> i32;
-    fn mclBnG1_isValid(x: *const G1) -> i32;
-    fn mclBnG1_isZero(x: *const G1) -> i32;
+    // mcl_g1
+    fn mclBnG1_isEqual(x: *const mcl_g1, y: *const mcl_g1) -> i32;
+    fn mclBnG1_isValid(x: *const mcl_g1) -> i32;
+    fn mclBnG1_isZero(x: *const mcl_g1) -> i32;
 
-    fn mclBnG1_setStr(x: *mut G1, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
-    fn mclBnG1_getStr(buf: *mut u8, maxBufSize: usize, x: *const G1, ioMode: i32) -> usize;
-    fn mclBnG1_serialize(buf: *mut u8, maxBufSize: usize, x: *const G1) -> usize;
-    fn mclBnG1_deserialize(x: *mut G1, buf: *const u8, bufSize: usize) -> usize;
+    fn mclBnG1_setStr(x: *mut mcl_g1, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
+    fn mclBnG1_getStr(buf: *mut u8, maxBufSize: usize, x: *const mcl_g1, ioMode: i32) -> usize;
+    fn mclBnG1_serialize(buf: *mut u8, maxBufSize: usize, x: *const mcl_g1) -> usize;
+    fn mclBnG1_deserialize(x: *mut mcl_g1, buf: *const u8, bufSize: usize) -> usize;
 
-    fn mclBnG1_add(z: *mut G1, x: *const G1, y: *const G1);
-    fn mclBnG1_sub(z: *mut G1, x: *const G1, y: *const G1);
-    fn mclBnG1_neg(y: *mut G1, x: *const G1);
+    fn mclBnG1_add(z: *mut mcl_g1, x: *const mcl_g1, y: *const mcl_g1);
+    fn mclBnG1_sub(z: *mut mcl_g1, x: *const mcl_g1, y: *const mcl_g1);
+    fn mclBnG1_neg(y: *mut mcl_g1, x: *const mcl_g1);
 
-    fn mclBnG1_dbl(y: *mut G1, x: *const G1);
-    fn mclBnG1_mul(z: *mut G1, x: *const G1, y: *const Fr);
-    fn mclBnG1_normalize(y: *mut G1, x: *const G1);
-    fn mclBnG1_hashAndMapTo(x: *mut G1, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnG1_mulVec(z: *mut G1, x: *const G1, y: *const Fr, n: usize);
+    fn mclBnG1_dbl(y: *mut mcl_g1, x: *const mcl_g1);
+    fn mclBnG1_mul(z: *mut mcl_g1, x: *const mcl_g1, y: *const mcl_fr);
+    fn mclBnG1_normalize(y: *mut mcl_g1, x: *const mcl_g1);
+    fn mclBnG1_hashAndMapTo(x: *mut mcl_g1, buf: *const u8, bufSize: usize) -> i32;
+    fn mclBnG1_mulVec(z: *mut mcl_g1, x: *const mcl_g1, y: *const mcl_fr, n: usize);
 
-    // G2
-    fn mclBnG2_isEqual(x: *const G2, y: *const G2) -> i32;
-    fn mclBnG2_isValid(x: *const G2) -> i32;
-    fn mclBnG2_isZero(x: *const G2) -> i32;
+    // mcl_g2
+    fn mclBnG2_isEqual(x: *const mcl_g2, y: *const mcl_g2) -> i32;
+    fn mclBnG2_isValid(x: *const mcl_g2) -> i32;
+    fn mclBnG2_isZero(x: *const mcl_g2) -> i32;
 
-    fn mclBnG2_setStr(x: *mut G2, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
-    fn mclBnG2_getStr(buf: *mut u8, maxBufSize: usize, x: *const G2, ioMode: i32) -> usize;
-    fn mclBnG2_serialize(buf: *mut u8, maxBufSize: usize, x: *const G2) -> usize;
-    fn mclBnG2_deserialize(x: *mut G2, buf: *const u8, bufSize: usize) -> usize;
+    fn mclBnG2_setStr(x: *mut mcl_g2, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
+    fn mclBnG2_getStr(buf: *mut u8, maxBufSize: usize, x: *const mcl_g2, ioMode: i32) -> usize;
+    fn mclBnG2_serialize(buf: *mut u8, maxBufSize: usize, x: *const mcl_g2) -> usize;
+    fn mclBnG2_deserialize(x: *mut mcl_g2, buf: *const u8, bufSize: usize) -> usize;
 
-    fn mclBnG2_add(z: *mut G2, x: *const G2, y: *const G2);
-    fn mclBnG2_sub(z: *mut G2, x: *const G2, y: *const G2);
-    fn mclBnG2_neg(y: *mut G2, x: *const G2);
+    fn mclBnG2_add(z: *mut mcl_g2, x: *const mcl_g2, y: *const mcl_g2);
+    fn mclBnG2_sub(z: *mut mcl_g2, x: *const mcl_g2, y: *const mcl_g2);
+    fn mclBnG2_neg(y: *mut mcl_g2, x: *const mcl_g2);
 
-    fn mclBnG2_dbl(y: *mut G2, x: *const G2);
-    fn mclBnG2_mul(z: *mut G2, x: *const G2, y: *const Fr);
-    fn mclBnG2_normalize(y: *mut G2, x: *const G2);
-    fn mclBnG2_hashAndMapTo(x: *mut G2, buf: *const u8, bufSize: usize) -> i32;
-    fn mclBnG2_mulVec(z: *mut G2, x: *const G2, y: *const Fr, n: usize);
+    fn mclBnG2_dbl(y: *mut mcl_g2, x: *const mcl_g2);
+    fn mclBnG2_mul(z: *mut mcl_g2, x: *const mcl_g2, y: *const mcl_fr);
+    fn mclBnG2_normalize(y: *mut mcl_g2, x: *const mcl_g2);
+    fn mclBnG2_hashAndMapTo(x: *mut mcl_g2, buf: *const u8, bufSize: usize) -> i32;
+    fn mclBnG2_mulVec(z: *mut mcl_g2, x: *const mcl_g2, y: *const mcl_fr, n: usize);
 
-    // GT
-    fn mclBnGT_isEqual(x: *const GT, y: *const GT) -> i32;
-    fn mclBnGT_isZero(x: *const GT) -> i32;
-    fn mclBnGT_isOne(x: *const GT) -> i32;
+    // mcl_gt
+    fn mclBnGT_isEqual(x: *const mcl_gt, y: *const mcl_gt) -> i32;
+    fn mclBnGT_isZero(x: *const mcl_gt) -> i32;
+    fn mclBnGT_isOne(x: *const mcl_gt) -> i32;
 
-    fn mclBnGT_setStr(x: *mut GT, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
-    fn mclBnGT_getStr(buf: *mut u8, maxBufSize: usize, x: *const GT, ioMode: i32) -> usize;
-    fn mclBnGT_serialize(buf: *mut u8, maxBufSize: usize, x: *const GT) -> usize;
-    fn mclBnGT_deserialize(x: *mut GT, buf: *const u8, bufSize: usize) -> usize;
+    fn mclBnGT_setStr(x: *mut mcl_gt, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
+    fn mclBnGT_getStr(buf: *mut u8, maxBufSize: usize, x: *const mcl_gt, ioMode: i32) -> usize;
+    fn mclBnGT_serialize(buf: *mut u8, maxBufSize: usize, x: *const mcl_gt) -> usize;
+    fn mclBnGT_deserialize(x: *mut mcl_gt, buf: *const u8, bufSize: usize) -> usize;
 
-    fn mclBnGT_setInt32(x: *mut GT, v: i32);
+    fn mclBnGT_setInt32(x: *mut mcl_gt, v: i32);
 
-    fn mclBnGT_add(z: *mut GT, x: *const GT, y: *const GT);
-    fn mclBnGT_sub(z: *mut GT, x: *const GT, y: *const GT);
-    fn mclBnGT_neg(y: *mut GT, x: *const GT);
+    fn mclBnGT_add(z: *mut mcl_gt, x: *const mcl_gt, y: *const mcl_gt);
+    fn mclBnGT_sub(z: *mut mcl_gt, x: *const mcl_gt, y: *const mcl_gt);
+    fn mclBnGT_neg(y: *mut mcl_gt, x: *const mcl_gt);
 
-    fn mclBnGT_mul(z: *mut GT, x: *const GT, y: *const GT);
-    fn mclBnGT_div(z: *mut GT, x: *const GT, y: *const GT);
-    fn mclBnGT_inv(y: *mut GT, x: *const GT);
-    fn mclBnGT_sqr(y: *mut GT, x: *const GT);
+    fn mclBnGT_mul(z: *mut mcl_gt, x: *const mcl_gt, y: *const mcl_gt);
+    fn mclBnGT_div(z: *mut mcl_gt, x: *const mcl_gt, y: *const mcl_gt);
+    fn mclBnGT_inv(y: *mut mcl_gt, x: *const mcl_gt);
+    fn mclBnGT_sqr(y: *mut mcl_gt, x: *const mcl_gt);
 
-    fn mclBnGT_pow(z: *mut GT, x: *const GT, y: *const Fr);
+    fn mclBnGT_pow(z: *mut mcl_gt, x: *const mcl_gt, y: *const mcl_fr);
 }
 
 pub enum CurveType {
@@ -428,7 +428,7 @@ macro_rules! ec_impl {
             pub fn dbl(y: &mut $t, x: &$t) {
                 unsafe { $dbl_fn(y, x) }
             }
-            pub fn mul(z: &mut $t, x: &$t, y: &Fr) {
+            pub fn mul(z: &mut $t, x: &$t, y: &mcl_fr) {
                 unsafe { $mul_fn(z, x, y) }
             }
             pub fn normalize(y: &mut $t, x: &$t) {
@@ -437,7 +437,7 @@ macro_rules! ec_impl {
             pub fn set_hash_of(&mut self, buf: &[u8]) -> bool {
                 unsafe { $set_hash_and_map_fn(self, buf.as_ptr(), buf.len()) == 0 }
             }
-            pub fn mul_vec(z: &mut $t, x: &[$t], y: &[Fr]) {
+            pub fn mul_vec(z: &mut $t, x: &[$t], y: &[mcl_fr]) {
                 unsafe { $mul_vec_fn(z, x.as_ptr(), y.as_ptr(), x.len()) }
             }
         }
@@ -446,26 +446,26 @@ macro_rules! ec_impl {
 
 #[derive(Default, Debug, Clone, Copy, Eq,)]
 #[repr(C)]
-pub struct Fp {
+pub struct mcl_fp {
     pub d: [u64; MCLBN_FP_UNIT_SIZE],
 }
-impl Fp {
+impl mcl_fp {
     pub fn get_order() -> String {
         get_field_order()
     }
 }
-common_impl![Fp, mclBnFp_isEqual, mclBnFp_isZero];
-is_valid_impl![Fp, mclBnFp_isValid];
+common_impl![mcl_fp, mclBnFp_isEqual, mclBnFp_isZero];
+is_valid_impl![mcl_fp, mclBnFp_isValid];
 serialize_impl![
-    Fp,
+    mcl_fp,
     mclBn_getFpByteSize(),
     mclBnFp_serialize,
     mclBnFp_deserialize
 ];
-str_impl![Fp, 128, mclBnFp_getStr, mclBnFp_setStr];
-int_impl![Fp, mclBnFp_setInt32, mclBnFp_isOne];
+str_impl![mcl_fp, 128, mclBnFp_getStr, mclBnFp_setStr];
+int_impl![mcl_fp, mclBnFp_setInt32, mclBnFp_isOne];
 base_field_impl![
-    Fp,
+    mcl_fp,
     mclBnFp_setLittleEndian,
     mclBnFp_setLittleEndianMod,
     mclBnFp_setHashOf,
@@ -475,51 +475,51 @@ base_field_impl![
     mclBnFp_cmp,
     mclBnFp_squareRoot
 ];
-add_op_impl![Fp, mclBnFp_add, mclBnFp_sub, mclBnFp_neg];
-field_mul_op_impl![Fp, mclBnFp_mul, mclBnFp_div, mclBnFp_inv, mclBnFp_sqr];
+add_op_impl![mcl_fp, mclBnFp_add, mclBnFp_sub, mclBnFp_neg];
+field_mul_op_impl![mcl_fp, mclBnFp_mul, mclBnFp_div, mclBnFp_inv, mclBnFp_sqr];
 
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
-pub struct Fp2 {
-    pub d: [Fp; 2],
+pub struct mcl_fp2 {
+    pub d: [mcl_fp; 2],
 }
-common_impl![Fp2, mclBnFp2_isEqual, mclBnFp2_isZero];
+common_impl![mcl_fp2, mclBnFp2_isEqual, mclBnFp2_isZero];
 serialize_impl![
-    Fp2,
+    mcl_fp2,
     mclBn_getFpByteSize() * 2,
     mclBnFp2_serialize,
     mclBnFp2_deserialize
 ];
-add_op_impl![Fp2, mclBnFp2_add, mclBnFp2_sub, mclBnFp2_neg];
-field_mul_op_impl![Fp2, mclBnFp2_mul, mclBnFp2_div, mclBnFp2_inv, mclBnFp2_sqr];
-impl Fp2 {
-    pub fn square_root(y: &mut Fp2, x: &Fp2) -> bool {
+add_op_impl![mcl_fp2, mclBnFp2_add, mclBnFp2_sub, mclBnFp2_neg];
+field_mul_op_impl![mcl_fp2, mclBnFp2_mul, mclBnFp2_div, mclBnFp2_inv, mclBnFp2_sqr];
+impl mcl_fp2 {
+    pub fn square_root(y: &mut mcl_fp2, x: &mcl_fp2) -> bool {
         unsafe { mclBnFp2_squareRoot(y, x) == 0 }
     }
 }
 
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
-pub struct Fr {
+pub struct mcl_fr {
     d: [u64; MCLBN_FR_UNIT_SIZE],
 }
-impl Fr {
+impl mcl_fr {
     pub fn get_order() -> String {
         get_curve_order()
     }
 } 
-common_impl![Fr, mclBnFr_isEqual, mclBnFr_isZero];
-is_valid_impl![Fr, mclBnFr_isValid];
+common_impl![mcl_fr, mclBnFr_isEqual, mclBnFr_isZero];
+is_valid_impl![mcl_fr, mclBnFr_isValid];
 serialize_impl![
-    Fr,
+    mcl_fr,
     mclBn_getFrByteSize(),
     mclBnFr_serialize,
     mclBnFr_deserialize
 ];
-str_impl![Fr, 128, mclBnFr_getStr, mclBnFr_setStr];
-int_impl![Fr, mclBnFr_setInt32, mclBnFr_isOne];
+str_impl![mcl_fr, 128, mclBnFr_getStr, mclBnFr_setStr];
+int_impl![mcl_fr, mclBnFr_setInt32, mclBnFr_isOne];
 base_field_impl![
-    Fr,
+    mcl_fr,
     mclBnFr_setLittleEndian,
     mclBnFr_setLittleEndianMod,
     mclBnFr_setHashOf,
@@ -529,28 +529,28 @@ base_field_impl![
     mclBnFr_cmp,
     mclBnFr_squareRoot
 ];
-add_op_impl![Fr, mclBnFr_add, mclBnFr_sub, mclBnFr_neg];
-field_mul_op_impl![Fr, mclBnFr_mul, mclBnFr_div, mclBnFr_inv, mclBnFr_sqr];
+add_op_impl![mcl_fr, mclBnFr_add, mclBnFr_sub, mclBnFr_neg];
+field_mul_op_impl![mcl_fr, mclBnFr_mul, mclBnFr_div, mclBnFr_inv, mclBnFr_sqr];
 
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
-pub struct G1 {
-    pub x: Fp,
-    pub y: Fp,
-    pub z: Fp,
+pub struct mcl_g1 {
+    pub x: mcl_fp,
+    pub y: mcl_fp,
+    pub z: mcl_fp,
 }
-common_impl![G1, mclBnG1_isEqual, mclBnG1_isZero];
-is_valid_impl![G1, mclBnG1_isValid];
+common_impl![mcl_g1, mclBnG1_isEqual, mclBnG1_isZero];
+is_valid_impl![mcl_g1, mclBnG1_isValid];
 serialize_impl![
-    G1,
+    mcl_g1,
     mclBn_getFpByteSize(),
     mclBnG1_serialize,
     mclBnG1_deserialize
 ];
-str_impl![G1, 128 * 3, mclBnG1_getStr, mclBnG1_setStr];
-add_op_impl![G1, mclBnG1_add, mclBnG1_sub, mclBnG1_neg];
+str_impl![mcl_g1, 128 * 3, mclBnG1_getStr, mclBnG1_setStr];
+add_op_impl![mcl_g1, mclBnG1_add, mclBnG1_sub, mclBnG1_neg];
 ec_impl![
-    G1,
+    mcl_g1,
     mclBnG1_dbl,
     mclBnG1_mul,
     mclBnG1_normalize,
@@ -560,23 +560,23 @@ ec_impl![
 
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
-pub struct G2 {
-    pub x: Fp2,
-    pub y: Fp2,
-    pub z: Fp2,
+pub struct mcl_g2 {
+    pub x: mcl_fp2,
+    pub y: mcl_fp2,
+    pub z: mcl_fp2,
 }
-common_impl![G2, mclBnG2_isEqual, mclBnG2_isZero];
-is_valid_impl![G2, mclBnG2_isValid];
+common_impl![mcl_g2, mclBnG2_isEqual, mclBnG2_isZero];
+is_valid_impl![mcl_g2, mclBnG2_isValid];
 serialize_impl![
-    G2,
+    mcl_g2,
     mclBn_getFpByteSize() * 2,
     mclBnG2_serialize,
     mclBnG2_deserialize
 ];
-str_impl![G2, 128 * 3 * 2, mclBnG2_getStr, mclBnG2_setStr];
-add_op_impl![G2, mclBnG2_add, mclBnG2_sub, mclBnG2_neg];
+str_impl![mcl_g2, 128 * 3 * 2, mclBnG2_getStr, mclBnG2_setStr];
+add_op_impl![mcl_g2, mclBnG2_add, mclBnG2_sub, mclBnG2_neg];
 ec_impl![
-    G2,
+    mcl_g2,
     mclBnG2_dbl,
     mclBnG2_mul,
     mclBnG2_normalize,
@@ -586,22 +586,22 @@ ec_impl![
 
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
-pub struct GT {
-    d: [Fp; 12],
+pub struct mcl_gt {
+    d: [mcl_fp; 12],
 }
-common_impl![GT, mclBnGT_isEqual, mclBnGT_isZero];
+common_impl![mcl_gt, mclBnGT_isEqual, mclBnGT_isZero];
 serialize_impl![
-    GT,
+    mcl_gt,
     mclBn_getFpByteSize() * 12,
     mclBnGT_serialize,
     mclBnGT_deserialize
 ];
-str_impl![GT, 128 * 12, mclBnGT_getStr, mclBnGT_setStr];
-int_impl![GT, mclBnGT_setInt32, mclBnGT_isOne];
-add_op_impl![GT, mclBnGT_add, mclBnGT_sub, mclBnGT_neg];
-field_mul_op_impl![GT, mclBnGT_mul, mclBnGT_div, mclBnGT_inv, mclBnGT_sqr];
-impl GT {
-    pub fn pow(z: &mut GT, x: &GT, y: &Fr) {
+str_impl![mcl_gt, 128 * 12, mclBnGT_getStr, mclBnGT_setStr];
+int_impl![mcl_gt, mclBnGT_setInt32, mclBnGT_isOne];
+add_op_impl![mcl_gt, mclBnGT_add, mclBnGT_sub, mclBnGT_neg];
+field_mul_op_impl![mcl_gt, mclBnGT_mul, mclBnGT_div, mclBnGT_inv, mclBnGT_sqr];
+impl mcl_gt {
+    pub fn pow(z: &mut mcl_gt, x: &mcl_gt, y: &mcl_fr) {
         unsafe { mclBnGT_pow(z, x, y) }
     }
 }
@@ -657,19 +657,19 @@ pub fn get_curve_order() -> String {
     get_str_impl![mclBn_getCurveOrder]
 }
 
-pub fn pairing(z: &mut GT, x: &G1, y: &G2) {
+pub fn pairing(z: &mut mcl_gt, x: &mcl_g1, y: &mcl_g2) {
     unsafe {
         mclBn_pairing(z, x, y);
     }
 }
 
-pub fn miller_loop(z: &mut GT, x: &G1, y: &G2) {
+pub fn miller_loop(z: &mut mcl_gt, x: &mcl_g1, y: &mcl_g2) {
     unsafe {
         mclBn_millerLoop(z, x, y);
     }
 }
 
-pub fn final_exp(y: &mut GT, x: &GT) {
+pub fn final_exp(y: &mut mcl_gt, x: &mcl_gt) {
     unsafe {
         mclBn_finalExp(y, x);
     }
