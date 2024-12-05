@@ -1,16 +1,16 @@
 use blst::blst_fp;
 use kzg::G1Fp;
 
-use crate::mcl_methods::{mclBnFp_add, mclBnFp_inv, mclBnFp_mul, mclBnFp_neg, mclBnFp_sqr, mclBnFp_sub, try_init_mcl, MFp};
+use crate::mcl_methods::{mclBnFp_add, mclBnFp_inv, mclBnFp_mul, mclBnFp_neg, mclBnFp_sqr, mclBnFp_sub, try_init_mcl, Fp};
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
-pub struct FsFp(pub MFp);
+pub struct FsFp(pub Fp);
 impl G1Fp for FsFp {
     fn one() -> Self {
         try_init_mcl();
             
-        Self(MFp {
+        Self(Fp {
             d: [
                 8505329371266088957,
                 17002214543764226050,
@@ -25,7 +25,7 @@ impl G1Fp for FsFp {
     fn zero() -> Self {
         try_init_mcl();
 
-        Self(MFp {
+        Self(Fp {
             d: [0, 0, 0, 0, 0, 0],
         })
     }
@@ -33,7 +33,7 @@ impl G1Fp for FsFp {
     fn bls12_381_rx_p() -> Self {
         try_init_mcl();
 
-        Self(MFp {
+        Self(Fp {
             d: [
                 8505329371266088957,
                 17002214543764226050,
@@ -49,7 +49,7 @@ impl G1Fp for FsFp {
         try_init_mcl();
 
         let mut out: Self = *self;
-        MFp::inv(&mut out.0, &self.0);
+        Fp::inv(&mut out.0, &self.0);
 
         Some(out)
     }
@@ -58,7 +58,7 @@ impl G1Fp for FsFp {
         try_init_mcl();
 
         let mut out: Self = *self;
-        MFp::sqr(&mut out.0, &self.0);
+        Fp::sqr(&mut out.0, &self.0);
 
         out
     }
@@ -78,7 +78,7 @@ impl G1Fp for FsFp {
     fn from_underlying_arr(arr: &[u64; 6]) -> Self {
         try_init_mcl();
 
-        Self(MFp { d: *arr })
+        Self(Fp { d: *arr })
     }
 
     fn neg_assign(&mut self) {

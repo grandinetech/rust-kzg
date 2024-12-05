@@ -58,35 +58,35 @@ extern "C" {
     fn mclBnFr_sqr(y: *mut Fr, x: *const Fr);
     fn mclBnFr_squareRoot(y: *mut Fr, x: *const Fr) -> i32;
 
-    // MFp
-    pub fn mclBnFp_isEqual(x: *const MFp, y: *const MFp) -> i32;
-    pub fn mclBnFp_isValid(x: *const MFp) -> i32;
-    pub fn mclBnFp_isZero(x: *const MFp) -> i32;
-    pub fn mclBnFp_isOne(x: *const MFp) -> i32;
-    pub fn mclBnFp_isOdd(x: *const MFp) -> i32;
-    pub fn mclBnFp_isNegative(x: *const MFp) -> i32;
-    pub fn mclBnFp_cmp(x: *const MFp, y: *const MFp) -> i32;
+    // Fp
+    pub fn mclBnFp_isEqual(x: *const Fp, y: *const Fp) -> i32;
+    pub fn mclBnFp_isValid(x: *const Fp) -> i32;
+    pub fn mclBnFp_isZero(x: *const Fp) -> i32;
+    pub fn mclBnFp_isOne(x: *const Fp) -> i32;
+    pub fn mclBnFp_isOdd(x: *const Fp) -> i32;
+    pub fn mclBnFp_isNegative(x: *const Fp) -> i32;
+    pub fn mclBnFp_cmp(x: *const Fp, y: *const Fp) -> i32;
 
-    pub fn mclBnFp_setStr(x: *mut MFp, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
-    pub fn mclBnFp_getStr(buf: *mut u8, maxBufSize: usize, x: *const MFp, ioMode: i32) -> usize;
-    pub fn mclBnFp_serialize(buf: *mut u8, maxBufSize: usize, x: *const MFp) -> usize;
-    pub fn mclBnFp_deserialize(x: *mut MFp, buf: *const u8, bufSize: usize) -> usize;
+    pub fn mclBnFp_setStr(x: *mut Fp, buf: *const u8, bufSize: usize, ioMode: i32) -> i32;
+    pub fn mclBnFp_getStr(buf: *mut u8, maxBufSize: usize, x: *const Fp, ioMode: i32) -> usize;
+    pub fn mclBnFp_serialize(buf: *mut u8, maxBufSize: usize, x: *const Fp) -> usize;
+    pub fn mclBnFp_deserialize(x: *mut Fp, buf: *const u8, bufSize: usize) -> usize;
 
-    pub fn mclBnFp_setInt32(x: *mut MFp, v: i32);
-    pub fn mclBnFp_setLittleEndian(x: *mut MFp, buf: *const u8, bufSize: usize) -> i32;
-    pub fn mclBnFp_setLittleEndianMod(x: *mut MFp, buf: *const u8, bufSize: usize) -> i32;
-    pub fn mclBnFp_setHashOf(x: *mut MFp, buf: *const u8, bufSize: usize) -> i32;
-    pub fn mclBnFp_setByCSPRNG(x: *mut MFp);
+    pub fn mclBnFp_setInt32(x: *mut Fp, v: i32);
+    pub fn mclBnFp_setLittleEndian(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFp_setLittleEndianMod(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFp_setHashOf(x: *mut Fp, buf: *const u8, bufSize: usize) -> i32;
+    pub fn mclBnFp_setByCSPRNG(x: *mut Fp);
 
-    pub fn mclBnFp_add(z: *mut MFp, x: *const MFp, y: *const MFp);
-    pub fn mclBnFp_sub(z: *mut MFp, x: *const MFp, y: *const MFp);
-    pub fn mclBnFp_neg(y: *mut MFp, x: *const MFp);
+    pub fn mclBnFp_add(z: *mut Fp, x: *const Fp, y: *const Fp);
+    pub fn mclBnFp_sub(z: *mut Fp, x: *const Fp, y: *const Fp);
+    pub fn mclBnFp_neg(y: *mut Fp, x: *const Fp);
 
-    pub fn mclBnFp_mul(z: *mut MFp, x: *const MFp, y: *const MFp);
-    pub fn mclBnFp_div(z: *mut MFp, x: *const MFp, y: *const MFp);
-    pub fn mclBnFp_inv(y: *mut MFp, x: *const MFp);
-    pub fn mclBnFp_sqr(y: *mut MFp, x: *const MFp);
-    pub fn mclBnFp_squareRoot(y: *mut MFp, x: *const MFp) -> i32;
+    pub fn mclBnFp_mul(z: *mut Fp, x: *const Fp, y: *const Fp);
+    pub fn mclBnFp_div(z: *mut Fp, x: *const Fp, y: *const Fp);
+    pub fn mclBnFp_inv(y: *mut Fp, x: *const Fp);
+    pub fn mclBnFp_sqr(y: *mut Fp, x: *const Fp);
+    pub fn mclBnFp_squareRoot(y: *mut Fp, x: *const Fp) -> i32;
 
     // Fp2
     fn mclBnFp2_isEqual(x: *const Fp2, y: *const Fp2) -> i32;
@@ -446,26 +446,26 @@ macro_rules! ec_impl {
 
 #[derive(Default, Debug, Clone, Copy, Eq,)]
 #[repr(C)]
-pub struct MFp {
+pub struct Fp {
     pub d: [u64; MCLBN_FP_UNIT_SIZE],
 }
-impl MFp {
+impl Fp {
     pub fn get_order() -> String {
         get_field_order()
     }
 }
-common_impl![MFp, mclBnFp_isEqual, mclBnFp_isZero];
-is_valid_impl![MFp, mclBnFp_isValid];
+common_impl![Fp, mclBnFp_isEqual, mclBnFp_isZero];
+is_valid_impl![Fp, mclBnFp_isValid];
 serialize_impl![
-    MFp,
+    Fp,
     mclBn_getFpByteSize(),
     mclBnFp_serialize,
     mclBnFp_deserialize
 ];
-str_impl![MFp, 128, mclBnFp_getStr, mclBnFp_setStr];
-int_impl![MFp, mclBnFp_setInt32, mclBnFp_isOne];
+str_impl![Fp, 128, mclBnFp_getStr, mclBnFp_setStr];
+int_impl![Fp, mclBnFp_setInt32, mclBnFp_isOne];
 base_field_impl![
-    MFp,
+    Fp,
     mclBnFp_setLittleEndian,
     mclBnFp_setLittleEndianMod,
     mclBnFp_setHashOf,
@@ -475,13 +475,13 @@ base_field_impl![
     mclBnFp_cmp,
     mclBnFp_squareRoot
 ];
-add_op_impl![MFp, mclBnFp_add, mclBnFp_sub, mclBnFp_neg];
-field_mul_op_impl![MFp, mclBnFp_mul, mclBnFp_div, mclBnFp_inv, mclBnFp_sqr];
+add_op_impl![Fp, mclBnFp_add, mclBnFp_sub, mclBnFp_neg];
+field_mul_op_impl![Fp, mclBnFp_mul, mclBnFp_div, mclBnFp_inv, mclBnFp_sqr];
 
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct Fp2 {
-    pub d: [MFp; 2],
+    pub d: [Fp; 2],
 }
 common_impl![Fp2, mclBnFp2_isEqual, mclBnFp2_isZero];
 serialize_impl![
@@ -535,9 +535,9 @@ field_mul_op_impl![Fr, mclBnFr_mul, mclBnFr_div, mclBnFr_inv, mclBnFr_sqr];
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct G1 {
-    pub x: MFp,
-    pub y: MFp,
-    pub z: MFp,
+    pub x: Fp,
+    pub y: Fp,
+    pub z: Fp,
 }
 common_impl![G1, mclBnG1_isEqual, mclBnG1_isZero];
 is_valid_impl![G1, mclBnG1_isValid];
@@ -587,7 +587,7 @@ ec_impl![
 #[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct GT {
-    d: [MFp; 12],
+    d: [Fp; 12],
 }
 common_impl![GT, mclBnGT_isEqual, mclBnGT_isZero];
 serialize_impl![
