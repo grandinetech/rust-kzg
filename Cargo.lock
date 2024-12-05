@@ -1479,7 +1479,6 @@ dependencies = [
  "once_cell",
  "rand",
  "rayon",
- "rust-kzg-blst-sppark",
  "smallvec",
 ]
 
