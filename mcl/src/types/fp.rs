@@ -1,7 +1,6 @@
-use blst::blst_fp;
 use kzg::G1Fp;
 
-use crate::mcl_methods::{mclBnFp_add, mclBnFp_inv, mclBnFp_mul, mclBnFp_neg, mclBnFp_sqr, mclBnFp_sub, try_init_mcl, Fp};
+use crate::mcl_methods::{mclBnFp_add, mclBnFp_neg, try_init_mcl, Fp};
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
