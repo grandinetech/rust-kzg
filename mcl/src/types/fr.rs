@@ -11,7 +11,7 @@ use blst::{
     blst_uint64_from_fr,
 };
 
-use crate::mcl_methods::{mcl_fr};
+use crate::mcl_methods::mcl_fr;
 
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;

@@ -122,25 +122,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
             fs: fft_settings.clone(),
             x_ext_fft_columns,
             precomputation: {
-                #[cfg(feature = "sppark")]
-                {
-                    use blst::blst_p1_affine;
-                    let points =
-                        kzg::msm::msm_impls::batch_convert::<FsG1, FsFp, FsG1Affine>(secret_g1);
-                    let points = unsafe {
-                        alloc::slice::from_raw_parts(
-                            points.as_ptr() as *const blst_p1_affine,
-                            points.len(),
-                        )
-                    };
-                    let prepared = rust_kzg_mcl_sppark::prepare_multi_scalar_mult(points);
-                    Some(Arc::new(PrecomputationTable::from_ptr(prepared)))
-                }
-
-                #[cfg(not(feature = "sppark"))]
-                {
-                    precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
-                }
+                precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
             },
         })
     }
