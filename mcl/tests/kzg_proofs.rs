@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use kzg::G1;
     use kzg_bench::tests::kzg_proofs::{
         commit_to_nil_poly, commit_to_too_long_poly_returns_err, proof_multi, proof_single,
     };
