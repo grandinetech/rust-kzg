@@ -2,11 +2,8 @@ use super::utils::{get_manifest_dir, get_trusted_setup_path};
 use crate::test_vectors::{
     compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs, verify_cell_kzg_proof_batch,
 };
-use kzg::{
-    eip_4844::{BYTES_PER_FIELD_ELEMENT, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL},
-    FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2,
-};
-use std::{fmt::Debug, fs, path::PathBuf};
+use kzg::{eth, EcBackend, Fr, DAS, G1};
+use std::{fs, path::PathBuf};
 
 const COMPUTE_CELLS_AND_KZG_PROOFS_TEST_VECTORS: &str =
     "src/test_vectors/compute_cells_and_kzg_proofs/*/*/*";
@@ -16,24 +13,9 @@ const VERIFY_CELL_KZG_PROOF_BATCH_TEST_VECTORS: &str =
     "src/test_vectors/verify_cell_kzg_proof_batch/*/*/*";
 
 #[allow(clippy::type_complexity)]
-pub fn test_vectors_compute_cells_and_kzg_proofs<
-    TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
->(
-    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
-    compute_cells_and_kzg_proofs: &dyn Fn(
-        Option<&mut [[TFr; FIELD_ELEMENTS_PER_CELL]]>,
-        Option<&mut [TG1]>,
-        &[TFr],
-        &TKZGSettings,
-    ) -> Result<(), String>,
-    bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
+pub fn test_vectors_compute_cells_and_kzg_proofs<B: EcBackend>(
+    load_trusted_setup: &dyn Fn(&str) -> Result<B::KZGSettings, String>,
+    bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<B::Fr>, String>,
 ) {
     let settings = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(&format!(
@@ -58,18 +40,19 @@ pub fn test_vectors_compute_cells_and_kzg_proofs<
             }
         };
 
-        let mut recv_cells =
-            vec![
-                core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| TFr::default());
-                CELLS_PER_EXT_BLOB
-            ];
-        let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
+        let mut recv_cells = vec![
+            core::array::from_fn::<_, { eth::FIELD_ELEMENTS_PER_CELL }, _>(
+                |_| B::Fr::default()
+            );
+            eth::CELLS_PER_EXT_BLOB
+        ];
+        let mut recv_proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
-        match compute_cells_and_kzg_proofs(
+        match <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::compute_cells_and_kzg_proofs(
+            &settings,
             Some(&mut recv_cells),
             Some(&mut recv_proofs),
             &blob,
-            &settings,
         ) {
             Err(_) => assert!(test.get_output().is_none()),
             Ok(()) => {
@@ -100,24 +83,8 @@ pub fn test_vectors_compute_cells_and_kzg_proofs<
 }
 
 #[allow(clippy::type_complexity)]
-pub fn test_vectors_recover_cells_and_kzg_proofs<
-    TFr: Fr + Debug,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
->(
-    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
-    recover_cells_and_kzg_proofs: &dyn Fn(
-        &mut [[TFr; FIELD_ELEMENTS_PER_CELL]],
-        Option<&mut [TG1]>,
-        &[usize],
-        &[[TFr; FIELD_ELEMENTS_PER_CELL]],
-        &TKZGSettings,
-    ) -> Result<(), String>,
+pub fn test_vectors_recover_cells_and_kzg_proofs<B: EcBackend>(
+    load_trusted_setup: &dyn Fn(&str) -> Result<B::KZGSettings, String>,
 ) {
     let settings = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(&format!(
@@ -141,8 +108,8 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<
             .iter()
             .map(|bytes| {
                 match bytes
-                    .chunks(BYTES_PER_FIELD_ELEMENT)
-                    .map(|bytes| TFr::from_bytes(bytes))
+                    .chunks(eth::BYTES_PER_FIELD_ELEMENT)
+                    .map(B::Fr::from_bytes)
                     .collect::<Result<Vec<_>, String>>()
                 {
                     Ok(value) => value
@@ -171,20 +138,21 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<
         };
 
         let mut recv_cells = vec![
-            vec![TFr::default(); FIELD_ELEMENTS_PER_CELL]
+            vec![B::Fr::default(); eth::FIELD_ELEMENTS_PER_CELL]
                 .try_into()
-                .unwrap();
-            CELLS_PER_EXT_BLOB
+                .map_err(|_| ())
+                .expect("Failed to create output cells");
+            eth::CELLS_PER_EXT_BLOB
         ];
 
-        let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
+        let mut recv_proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
-        match recover_cells_and_kzg_proofs(
+        match <B::KZGSettings as DAS<B, {eth::FIELD_ELEMENTS_PER_CELL}, eth::Mainnet>>::recover_cells_and_kzg_proofs(
+            &settings,
             &mut recv_cells,
             Some(&mut recv_proofs),
             &test.input.get_cell_indices().unwrap().iter().map(|it| (*it).into()).collect::<Vec<_>>(),
             &cells,
-            &settings,
         ) {
             Err(err) => assert!(test.get_output().is_none(), "Should correctly recover cells, but failed with error {err:?}, for test vector {test_file:?}"),
             Ok(()) => {
@@ -219,24 +187,8 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<
 }
 
 #[allow(clippy::type_complexity)]
-pub fn test_vectors_verify_cell_kzg_proof_batch<
-    TFr: Fr + Debug,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
->(
-    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
-    verify_cell_kzg_proof_batch: &dyn Fn(
-        &[TG1],
-        &[usize],
-        &[[TFr; FIELD_ELEMENTS_PER_CELL]],
-        &[TG1],
-        &TKZGSettings,
-    ) -> Result<bool, String>,
+pub fn test_vectors_verify_cell_kzg_proof_batch<B: EcBackend>(
+    load_trusted_setup: &dyn Fn(&str) -> Result<B::KZGSettings, String>,
 ) {
     let settings = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
     let test_files: Vec<PathBuf> = glob::glob(&format!(
@@ -260,8 +212,8 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<
             .iter()
             .map(|bytes| {
                 match bytes
-                    .chunks(BYTES_PER_FIELD_ELEMENT)
-                    .map(|bytes| TFr::from_bytes(bytes))
+                    .chunks(eth::BYTES_PER_FIELD_ELEMENT)
+                    .map(B::Fr::from_bytes)
                     .collect::<Result<Vec<_>, String>>()
                 {
                     Ok(value) => value
@@ -294,7 +246,7 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<
             .get_commitment_bytes()
             .unwrap()
             .iter()
-            .map(|bytes| TG1::from_bytes(bytes))
+            .map(|bytes| B::G1::from_bytes(bytes))
             .collect::<Result<Vec<_>, _>>()
         {
             Ok(v) => v,
@@ -319,7 +271,7 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<
             .get_proof_bytes()
             .unwrap()
             .iter()
-            .map(|bytes| TG1::from_bytes(bytes))
+            .map(|bytes| B::G1::from_bytes(bytes))
             .collect::<Result<Vec<_>, _>>()
         {
             Ok(v) => v,
@@ -341,12 +293,12 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<
 
         let cell_indices = test.input.get_cell_indices().unwrap();
 
-        match verify_cell_kzg_proof_batch(
+        match <B::KZGSettings as DAS<B, {eth::FIELD_ELEMENTS_PER_CELL}, eth::Mainnet>>::verify_cell_kzg_proof_batch(
+            &settings,
             &commitments,
             &cell_indices,
             &cells,
             &proofs,
-            &settings,
         ) {
             Err(err) => assert!(test.get_output().is_none(), "Should correctly verify cells, but failed with error {err:?}, for test vector {test_file:?}"),
             Ok(value) => {

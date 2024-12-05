@@ -2,10 +2,9 @@ use std::path::PathBuf;
 
 use crate::tests::eip_4844::generate_random_blob_bytes;
 use criterion::{BenchmarkId, Criterion};
-use kzg::eip_4844::{
-    BYTES_PER_BLOB, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL, TRUSTED_SETUP_PATH,
-};
-use kzg::{FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2};
+use kzg::eip_4844::TRUSTED_SETUP_PATH;
+use kzg::eth::{self, BYTES_PER_BLOB, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL};
+use kzg::{EcBackend, DAS};
 
 pub fn get_partial_cells<T: Clone>(cells: &[T], m: usize) -> (Vec<usize>, Vec<T>) {
     let mut cell_indices = Vec::new();
@@ -23,40 +22,11 @@ pub fn get_partial_cells<T: Clone>(cells: &[T], m: usize) -> (Vec<usize>, Vec<T>
 
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
-pub fn bench_eip_7594<
-    TFr: Fr + std::fmt::Debug,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
-    TG2: G2,
-    TPoly: Poly<TFr>,
-    TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
->(
+pub fn bench_eip_7594<B: EcBackend>(
     c: &mut Criterion,
-    load_trusted_setup: &dyn Fn(&str) -> Result<TKZGSettings, String>,
-    bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
-    blob_to_kzg_commitment: &dyn Fn(&[TFr], &TKZGSettings) -> Result<TG1, String>,
-    compute_cells_and_kzg_proofs: &dyn Fn(
-        Option<&mut [[TFr; FIELD_ELEMENTS_PER_CELL]]>,
-        Option<&mut [TG1]>,
-        &[TFr],
-        &TKZGSettings,
-    ) -> Result<(), String>,
-    recover_cells_and_kzg_proofs: &dyn Fn(
-        &mut [[TFr; FIELD_ELEMENTS_PER_CELL]],
-        Option<&mut [TG1]>,
-        &[usize],
-        &[[TFr; FIELD_ELEMENTS_PER_CELL]],
-        &TKZGSettings,
-    ) -> Result<(), String>,
-    verify_cell_kzg_proof_batch: &dyn Fn(
-        &[TG1],
-        &[usize],
-        &[[TFr; FIELD_ELEMENTS_PER_CELL]],
-        &[TG1],
-        &TKZGSettings,
-    ) -> Result<bool, String>,
+    load_trusted_setup: &dyn Fn(&str) -> Result<B::KZGSettings, String>,
+    bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<B::Fr>, String>,
+    blob_to_kzg_commitment: &dyn Fn(&[B::Fr], &B::KZGSettings) -> Result<B::G1, String>,
 ) {
     let ts = load_trusted_setup(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -80,13 +50,13 @@ pub fn bench_eip_7594<
     for blob in blobs.iter() {
         let mut cells =
             vec![
-                core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| TFr::default());
+                core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| B::Fr::default());
                 CELLS_PER_EXT_BLOB
             ];
-        let mut proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
+        let mut proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
 
         let blob = bytes_to_blob(blob).unwrap();
-        compute_cells_and_kzg_proofs(Some(&mut cells), Some(&mut proofs), &blob, &ts).unwrap();
+        <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::compute_cells_and_kzg_proofs(&ts, Some(&mut cells), Some(&mut proofs), &blob).unwrap();
         blob_cells.push(cells);
         blob_cell_proofs.push(proofs);
         blob_commitments.push(blob_to_kzg_commitment(&blob, &ts).unwrap());
@@ -103,12 +73,12 @@ pub fn bench_eip_7594<
 
             let mut recv_cells =
                 vec![
-                    core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| TFr::default());
+                    core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| B::Fr::default());
                     CELLS_PER_EXT_BLOB
                 ];
-            let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
+            let mut recv_proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
 
-            compute_cells_and_kzg_proofs(Some(&mut recv_cells), Some(&mut recv_proofs), &blob, &ts)
+            <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::compute_cells_and_kzg_proofs(&ts, Some(&mut recv_cells), Some(&mut recv_proofs), &blob)
                 .unwrap();
         });
     });
@@ -121,20 +91,20 @@ pub fn bench_eip_7594<
         group.bench_function(BenchmarkId::from_parameter(percent_missing), |b| {
             b.iter(|| {
                 let mut recv_cells = vec![
-                    vec![TFr::default(); FIELD_ELEMENTS_PER_CELL]
+                    vec![B::Fr::default(); FIELD_ELEMENTS_PER_CELL]
                         .try_into()
                         .unwrap();
                     CELLS_PER_EXT_BLOB
                 ];
 
-                let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
+                let mut recv_proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
 
-                recover_cells_and_kzg_proofs(
+                <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::recover_cells_and_kzg_proofs(
+                    &ts,
                     &mut recv_cells,
                     Some(&mut recv_proofs),
                     &cell_indices,
                     &partial_cells,
-                    &ts,
                 )
                 .unwrap();
             });
@@ -150,20 +120,20 @@ pub fn bench_eip_7594<
         group.bench_function(BenchmarkId::from_parameter(i), |b| {
             b.iter(|| {
                 let mut recv_cells = vec![
-                    vec![TFr::default(); FIELD_ELEMENTS_PER_CELL]
+                    vec![B::Fr::default(); FIELD_ELEMENTS_PER_CELL]
                         .try_into()
                         .unwrap();
                     CELLS_PER_EXT_BLOB
                 ];
 
-                let mut recv_proofs = vec![TG1::default(); CELLS_PER_EXT_BLOB];
+                let mut recv_proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
 
-                recover_cells_and_kzg_proofs(
+                <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::recover_cells_and_kzg_proofs(
+                    &ts,
                     &mut recv_cells,
                     Some(&mut recv_proofs),
                     &cell_indices,
                     &partial_cells,
-                    &ts,
                 )
                 .unwrap();
             });
@@ -187,12 +157,16 @@ pub fn bench_eip_7594<
         }
 
         b.iter(|| {
-            let result = verify_cell_kzg_proof_batch(
+            let result = <B::KZGSettings as DAS<
+                B,
+                { eth::FIELD_ELEMENTS_PER_CELL },
+                eth::Mainnet,
+            >>::verify_cell_kzg_proof_batch(
+                &ts,
                 &cell_commitments,
                 &cell_indices,
                 &cells,
                 &cell_proofs,
-                &ts,
             )
             .unwrap();
             assert!(result);
@@ -217,12 +191,16 @@ pub fn bench_eip_7594<
             }
 
             b.iter(|| {
-                let result = verify_cell_kzg_proof_batch(
+                let result = <B::KZGSettings as DAS<
+                    B,
+                    { eth::FIELD_ELEMENTS_PER_CELL },
+                    eth::Mainnet,
+                >>::verify_cell_kzg_proof_batch(
+                    &ts,
                     &cell_commitments,
                     &cell_indices,
                     &cells,
                     &cell_proofs,
-                    &ts,
                 )
                 .unwrap();
                 assert!(result);
@@ -249,12 +227,16 @@ pub fn bench_eip_7594<
             }
 
             b.iter(|| {
-                let result = verify_cell_kzg_proof_batch(
+                let result = <B::KZGSettings as DAS<
+                    B,
+                    { eth::FIELD_ELEMENTS_PER_CELL },
+                    eth::Mainnet,
+                >>::verify_cell_kzg_proof_batch(
+                    &ts,
                     &cell_commitments,
                     &cell_indices,
                     &cells,
                     &cell_proofs,
-                    &ts,
                 )
                 .unwrap();
                 assert!(result);

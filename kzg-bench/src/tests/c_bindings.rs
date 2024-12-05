@@ -6,10 +6,13 @@ use std::{
     ptr::null_mut,
 };
 
-use kzg::eip_4844::{
-    load_trusted_setup_string, Blob, Bytes48, CKZGSettings, KZGCommitment, KZGProof,
-    BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, BYTES_PER_PROOF,
-    C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK,
+use kzg::eth::c_bindings::{Blob, Bytes48, CKZGSettings, KZGCommitment, KZGProof};
+use kzg::{
+    eip_4844::{
+        load_trusted_setup_string, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1,
+        BYTES_PER_G2, BYTES_PER_PROOF,
+    },
+    eth::c_bindings::CKzgRet,
 };
 use libc::FILE;
 
@@ -35,7 +38,7 @@ fn get_ckzg_settings(
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) -> CKZGSettings {
     let mut c_settings = CKZGSettings {
         g1_values_lagrange_brp: null_mut(),
@@ -65,7 +68,7 @@ fn get_ckzg_settings(
         libc::fclose(file);
     }
 
-    assert_ne!(out, C_KZG_RET_BADARGS);
+    assert_ne!(out, CKzgRet::BadArgs);
 
     c_settings
 }
@@ -75,11 +78,11 @@ pub fn blob_to_kzg_commitment_invalid_blob_test(
         out: *mut KZGCommitment,
         blob: *const Blob,
         s: &CKZGSettings,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let settings = get_ckzg_settings(load_trusted_setup_file);
 
@@ -101,7 +104,7 @@ pub fn blob_to_kzg_commitment_invalid_blob_test(
 
     let output = unsafe { blob_to_kzg_commitment(&mut commitment, &blob, &settings) };
 
-    assert_eq!(output, C_KZG_RET_BADARGS)
+    assert_eq!(output, CKzgRet::BadArgs)
 }
 
 pub fn load_trusted_setup_invalid_g1_byte_length_test(
@@ -114,7 +117,7 @@ pub fn load_trusted_setup_invalid_g1_byte_length_test(
         *const u8,
         u64,
         u64,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
@@ -151,7 +154,7 @@ pub fn load_trusted_setup_invalid_g1_byte_length_test(
         )
     };
 
-    assert_eq!(status, C_KZG_RET_BADARGS)
+    assert_eq!(status, CKzgRet::BadArgs)
 }
 
 pub fn load_trusted_setup_invalid_g1_point_test(
@@ -164,7 +167,7 @@ pub fn load_trusted_setup_invalid_g1_point_test(
         *const u8,
         u64,
         u64,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
@@ -200,7 +203,7 @@ pub fn load_trusted_setup_invalid_g1_point_test(
         )
     };
 
-    assert_eq!(status, C_KZG_RET_BADARGS)
+    assert_eq!(status, CKzgRet::BadArgs)
 }
 
 pub fn load_trusted_setup_invalid_g2_byte_length_test(
@@ -213,7 +216,7 @@ pub fn load_trusted_setup_invalid_g2_byte_length_test(
         *const u8,
         u64,
         u64,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
@@ -250,7 +253,7 @@ pub fn load_trusted_setup_invalid_g2_byte_length_test(
         )
     };
 
-    assert_eq!(status, C_KZG_RET_BADARGS)
+    assert_eq!(status, CKzgRet::BadArgs)
 }
 
 pub fn load_trusted_setup_invalid_g2_point_test(
@@ -263,7 +266,7 @@ pub fn load_trusted_setup_invalid_g2_point_test(
         *const u8,
         u64,
         u64,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let mut file = File::open(get_trusted_setup_path()).unwrap();
     let mut contents = String::new();
@@ -299,7 +302,7 @@ pub fn load_trusted_setup_invalid_g2_point_test(
         )
     };
 
-    assert_eq!(status, C_KZG_RET_BADARGS)
+    assert_eq!(status, CKzgRet::BadArgs)
 }
 
 pub fn load_trusted_setup_invalid_form_test(
@@ -312,7 +315,7 @@ pub fn load_trusted_setup_invalid_form_test(
         *const u8,
         u64,
         u64,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let mut file = File::open(get_trusted_setup_fixture_path("old")).unwrap();
     let mut contents = String::new();
@@ -346,14 +349,14 @@ pub fn load_trusted_setup_invalid_form_test(
         )
     };
 
-    assert_eq!(status, C_KZG_RET_BADARGS)
+    assert_eq!(status, CKzgRet::BadArgs)
 }
 
 pub fn load_trusted_setup_file_invalid_format_test(
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     struct Fixture {
         name: String,
@@ -433,7 +436,7 @@ pub fn load_trusted_setup_file_invalid_format_test(
         }
 
         assert!(
-            output == C_KZG_RET_BADARGS,
+            output == CKzgRet::BadArgs,
             "{}, fixture: {file_path}",
             fixture.message
         );
@@ -444,7 +447,7 @@ pub fn load_trusted_setup_file_valid_format_test(
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     struct Fixture {
         name: String,
@@ -494,7 +497,7 @@ pub fn load_trusted_setup_file_valid_format_test(
         }
 
         assert!(
-            output == C_KZG_RET_OK,
+            output == CKzgRet::Ok,
             "{}, fixture: {file_path}",
             fixture.message
         );
@@ -533,7 +536,7 @@ pub fn free_trusted_setup_set_all_values_to_null_test(
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let mut settings = get_ckzg_settings(load_trusted_setup_file);
 
@@ -562,11 +565,11 @@ pub fn compute_blob_kzg_proof_invalid_blob_test(
         blob: *const Blob,
         commitment_bytes: *const Bytes48,
         s: &CKZGSettings,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let settings = get_ckzg_settings(load_trusted_setup_file);
 
@@ -592,7 +595,7 @@ pub fn compute_blob_kzg_proof_invalid_blob_test(
 
     let out = unsafe { compute_blob_kzg_proof(&mut out, &blob, &commitment, &settings) };
 
-    assert_eq!(out, C_KZG_RET_BADARGS);
+    assert_eq!(out, CKzgRet::BadArgs);
 }
 
 pub fn compute_blob_kzg_proof_commitment_is_point_at_infinity_test(
@@ -601,11 +604,11 @@ pub fn compute_blob_kzg_proof_commitment_is_point_at_infinity_test(
         blob: *const Blob,
         commitment_bytes: *const Bytes48,
         s: &CKZGSettings,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let settings = get_ckzg_settings(load_trusted_setup_file);
 
@@ -626,7 +629,7 @@ pub fn compute_blob_kzg_proof_commitment_is_point_at_infinity_test(
 
     let out = unsafe { compute_blob_kzg_proof(&mut out, &blob, &commitment, &settings) };
 
-    assert_eq!(out, C_KZG_RET_OK);
+    assert_eq!(out, CKzgRet::Ok);
 }
 
 pub fn compute_blob_kzg_proof_zero_input_test(
@@ -635,11 +638,11 @@ pub fn compute_blob_kzg_proof_zero_input_test(
         blob: *const Blob,
         commitment_bytes: *const Bytes48,
         s: &CKZGSettings,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
     load_trusted_setup_file: unsafe extern "C" fn(
         out: *mut CKZGSettings,
         in_: *mut FILE,
-    ) -> C_KZG_RET,
+    ) -> CKzgRet,
 ) {
     let settings = get_ckzg_settings(load_trusted_setup_file);
 
@@ -659,5 +662,5 @@ pub fn compute_blob_kzg_proof_zero_input_test(
 
     let out = unsafe { compute_blob_kzg_proof(&mut out, &blob, &commitment, &settings) };
 
-    assert_eq!(out, C_KZG_RET_OK);
+    assert_eq!(out, CKzgRet::Ok);
 }

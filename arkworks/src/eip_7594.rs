@@ -1,33 +1,31 @@
+extern crate alloc;
+
+use crate::kzg_proofs::KZGSettings as LKZGSettings;
+use crate::kzg_types::{ArkFr, ArkG1};
 use kzg::eip_4844::{
     Blob, Bytes48, CKZGSettings, Cell, KZGProof, BYTES_PER_FIELD_ELEMENT, CELLS_PER_EXT_BLOB,
     C_KZG_RET, C_KZG_RET_BADARGS, C_KZG_RET_OK, FIELD_ELEMENTS_PER_CELL,
 };
-
-use crate::{
-    kzg_proofs::KZGSettings,
-    kzg_types::{ZFr, ZG1},
-    utils::{deserialize_blob, kzg_settings_to_rust},
-};
-
 use kzg::{Fr, G1};
 
-extern crate alloc;
+use crate::utils::deserialize_blob;
+use crate::utils::kzg_settings_to_rust;
 
 pub fn compute_cells_and_kzg_proofs_rust(
-    cells: Option<&mut [[ZFr; FIELD_ELEMENTS_PER_CELL]]>,
-    proofs: Option<&mut [ZG1]>,
-    blob: &[ZFr],
-    s: &KZGSettings,
+    cells: Option<&mut [[ArkFr; FIELD_ELEMENTS_PER_CELL]]>,
+    proofs: Option<&mut [ArkG1]>,
+    blob: &[ArkFr],
+    s: &LKZGSettings,
 ) -> Result<(), String> {
     kzg::eip_7594::compute_cells_and_kzg_proofs(cells, proofs, blob, s)
 }
 
 pub fn recover_cells_and_kzg_proofs_rust(
-    recovered_cells: &mut [[ZFr; FIELD_ELEMENTS_PER_CELL]],
-    recovered_proofs: Option<&mut [ZG1]>,
+    recovered_cells: &mut [[ArkFr; FIELD_ELEMENTS_PER_CELL]],
+    recovered_proofs: Option<&mut [ArkG1]>,
     cell_indicies: &[usize],
-    cells: &[[ZFr; FIELD_ELEMENTS_PER_CELL]],
-    s: &KZGSettings,
+    cells: &[[ArkFr; FIELD_ELEMENTS_PER_CELL]],
+    s: &LKZGSettings,
 ) -> Result<(), String> {
     kzg::eip_7594::recover_cells_and_kzg_proofs(
         recovered_cells,
@@ -39,11 +37,11 @@ pub fn recover_cells_and_kzg_proofs_rust(
 }
 
 pub fn verify_cell_kzg_proof_batch_rust(
-    commitments: &[ZG1],
+    commitments: &[ArkG1],
     cell_indices: &[usize],
-    cells: &[[ZFr; FIELD_ELEMENTS_PER_CELL]],
-    proofs: &[ZG1],
-    s: &KZGSettings,
+    cells: &[[ArkFr; FIELD_ELEMENTS_PER_CELL]],
+    proofs: &[ArkG1],
+    s: &LKZGSettings,
 ) -> Result<bool, String> {
     kzg::eip_7594::verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs, s)
 }
@@ -66,14 +64,14 @@ pub unsafe extern "C" fn compute_cells_and_kzg_proofs(
             None
         } else {
             Some(vec![
-                [ZFr::default(); FIELD_ELEMENTS_PER_CELL];
+                [ArkFr::default(); FIELD_ELEMENTS_PER_CELL];
                 CELLS_PER_EXT_BLOB
             ])
         };
         let mut proofs_rs = if proofs.is_null() {
             None
         } else {
-            Some(vec![ZG1::default(); CELLS_PER_EXT_BLOB])
+            Some(vec![ArkG1::default(); CELLS_PER_EXT_BLOB])
         };
 
         let blob = deserialize_blob(blob).map_err(|_| "Invalid blob".to_string())?;
@@ -132,12 +130,12 @@ pub unsafe extern "C" fn recover_cells_and_kzg_proofs(
         s: *const CKZGSettings,
     ) -> Result<(), String> {
         let mut recovered_cells_rs =
-            vec![[ZFr::default(); FIELD_ELEMENTS_PER_CELL]; CELLS_PER_EXT_BLOB];
+            vec![[ArkFr::default(); FIELD_ELEMENTS_PER_CELL]; CELLS_PER_EXT_BLOB];
 
         let mut recovered_proofs_rs = if recovered_proofs.is_null() {
             None
         } else {
-            Some(vec![ZG1::default(); CELLS_PER_EXT_BLOB])
+            Some(vec![ArkG1::default(); CELLS_PER_EXT_BLOB])
         };
 
         let cell_indicies = core::slice::from_raw_parts(cell_indices, num_cells as usize)
@@ -146,10 +144,10 @@ pub unsafe extern "C" fn recover_cells_and_kzg_proofs(
             .collect::<Vec<_>>();
         let cells = core::slice::from_raw_parts(cells, num_cells as usize)
             .iter()
-            .map(|it| -> Result<[ZFr; FIELD_ELEMENTS_PER_CELL], String> {
+            .map(|it| -> Result<[ArkFr; FIELD_ELEMENTS_PER_CELL], String> {
                 it.bytes
                     .chunks(BYTES_PER_FIELD_ELEMENT)
-                    .map(ZFr::from_bytes)
+                    .map(ArkFr::from_bytes)
                     .collect::<Result<Vec<_>, String>>()
                     .and_then(|frs| {
                         frs.try_into()
@@ -224,7 +222,7 @@ pub unsafe extern "C" fn verify_cell_kzg_proof_batch(
     ) -> Result<(), String> {
         let commitments = core::slice::from_raw_parts(commitments_bytes, num_cells as usize)
             .iter()
-            .map(|bytes| ZG1::from_bytes(&bytes.bytes))
+            .map(|bytes| ArkG1::from_bytes(&bytes.bytes))
             .collect::<Result<Vec<_>, String>>()?;
 
         let cell_indices = core::slice::from_raw_parts(cell_indices, num_cells as usize)
@@ -234,21 +232,23 @@ pub unsafe extern "C" fn verify_cell_kzg_proof_batch(
 
         let cells = core::slice::from_raw_parts(cells, num_cells as usize)
             .iter()
-            .map(|it| -> Result<[ZFr; FIELD_ELEMENTS_PER_CELL], String> {
-                it.bytes
-                    .chunks(BYTES_PER_FIELD_ELEMENT)
-                    .map(ZFr::from_bytes)
-                    .collect::<Result<Vec<_>, String>>()
-                    .and_then(|frs| {
-                        frs.try_into()
-                            .map_err(|_| "Invalid field element count per cell".to_string())
-                    })
-            })
+            .map(
+                |it| -> Result<[ArkFr; kzg::eip_4844::FIELD_ELEMENTS_PER_CELL], String> {
+                    it.bytes
+                        .chunks(BYTES_PER_FIELD_ELEMENT)
+                        .map(ArkFr::from_bytes)
+                        .collect::<Result<Vec<_>, String>>()
+                        .and_then(|frs| {
+                            frs.try_into()
+                                .map_err(|_| "Invalid field element count per cell".to_string())
+                        })
+                },
+            )
             .collect::<Result<Vec<_>, String>>()?;
 
         let proofs = core::slice::from_raw_parts(proofs_bytes, num_cells as usize)
             .iter()
-            .map(|bytes| ZG1::from_bytes(&bytes.bytes))
+            .map(|bytes| ArkG1::from_bytes(&bytes.bytes))
             .collect::<Result<Vec<_>, String>>()?;
 
         let settings = kzg_settings_to_rust(&*s)?;
