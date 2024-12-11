@@ -57,6 +57,8 @@ mod tests {
         // so we negate one of the points.
         let mut a1neg: FsG1 = a1;
         unsafe {
+            todo!()
+            /*
             blst_p1_cneg(&mut a1neg.0, true);
             blst_p1_to_affine(&mut aa1, &a1neg.0);
 
@@ -76,6 +78,7 @@ mod tests {
             pairing_blst.raw_aggregate(&bb2, &bb1);
 
             assert_eq!(gt_point, pairing_blst.as_fp12().final_exp());
+             */
         }
     }
 
