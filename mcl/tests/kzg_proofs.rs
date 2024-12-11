@@ -9,29 +9,29 @@ mod tests {
         commit_to_nil_poly, commit_to_too_long_poly_returns_err, proof_multi, proof_single,
     };
 
-    use rust_kzg_mcl::eip_7594::BlstBackend;
+    use rust_kzg_mcl::eip_7594::MclBackend;
     use rust_kzg_mcl::types::g1::FsG1;
     use rust_kzg_mcl::types::g2::FsG2;
     use rust_kzg_mcl::utils::generate_trusted_setup;
 
     #[test]
     pub fn test_proof_single() {
-        proof_single::<BlstBackend>(&generate_trusted_setup);
+        proof_single::<MclBackend>(&generate_trusted_setup);
     }
 
     #[test]
     pub fn test_commit_to_nil_poly() {
-        commit_to_nil_poly::<BlstBackend>(&generate_trusted_setup);
+        commit_to_nil_poly::<MclBackend>(&generate_trusted_setup);
     }
 
     #[test]
     pub fn test_commit_to_too_long_poly() {
-        commit_to_too_long_poly_returns_err::<BlstBackend>(&generate_trusted_setup);
+        commit_to_too_long_poly_returns_err::<MclBackend>(&generate_trusted_setup);
     }
 
     #[test]
     pub fn test_proof_multi() {
-        proof_multi::<BlstBackend>(&generate_trusted_setup);
+        proof_multi::<MclBackend>(&generate_trusted_setup);
     }
 
     // This aims at showing that the use of the blst::Pairing engine in pairings_verify
