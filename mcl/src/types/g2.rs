@@ -27,6 +27,12 @@ impl FsG2 {
         todo!()
         // pc_g2projective_into_blst_p2(self.0)
     }
+
+    #[cfg(feature = "rand")]
+    pub fn rand() -> Self {
+        let result: FsG2 = G2_GENERATOR;
+        result.mul(&FsFr::rand())
+    }
 }
 
 impl G2 for FsG2 {
