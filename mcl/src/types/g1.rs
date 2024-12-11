@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use core::ops::Add;
 use core::ptr;
 
 use alloc::format;
@@ -26,6 +27,7 @@ use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::g1_linear_combination;
 use crate::mcl_methods::mcl_fp;
 use crate::mcl_methods::mcl_g1;
+use crate::mcl_methods::try_init_mcl;
 use crate::types::fr::FsFr;
 
 use super::fp::FsFp;
@@ -53,9 +55,9 @@ impl FsG1 {
 
 impl G1 for FsG1 {
     fn zero() -> Self {
-        FsG1::from_blst_p1(blst_p1 {
-            x: blst_fp {
-                l: [
+        Self(mcl_g1 {
+            x: mcl_fp {
+                d: [
                     8505329371266088957,
                     17002214543764226050,
                     6865905132761471162,
@@ -64,8 +66,8 @@ impl G1 for FsG1 {
                     1582556514881692819,
                 ],
             },
-            y: blst_fp {
-                l: [
+            y: mcl_fp {
+                d: [
                     8505329371266088957,
                     17002214543764226050,
                     6865905132761471162,
@@ -74,26 +76,34 @@ impl G1 for FsG1 {
                     1582556514881692819,
                 ],
             },
-            z: blst_fp {
-                l: [0, 0, 0, 0, 0, 0],
+            z: mcl_fp {
+                d: [0, 0, 0, 0, 0, 0],
             },
         })
     }
 
     fn identity() -> Self {
-        todo!()
+        try_init_mcl();
+
+        G1_IDENTITY
     }
 
     fn generator() -> Self {
-        todo!()
+        try_init_mcl();
+        
+        G1_GENERATOR
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        try_init_mcl();
+
+        G1_NEGATIVE_GENERATOR
     }
 
     #[cfg(feature = "rand")]
     fn rand() -> Self {
+        try_init_mcl();
+
         let result: FsG1 = G1_GENERATOR;
         result.mul(&kzg::Fr::rand())
     }
@@ -111,7 +121,10 @@ impl G1 for FsG1 {
     }
 
     fn add_or_dbl(&self, b: &Self) -> Self {
-        todo!()
+        try_init_mcl();
+        let mut out = mcl_g1::default();
+        mcl_g1::add(&mut out, &self.0,&b.0);
+        Self(out)
     }
 
     fn is_inf(&self) -> bool {
@@ -127,7 +140,7 @@ impl G1 for FsG1 {
     }
 
     fn add(&self, b: &Self) -> Self {
-        todo!()
+        Self(self.0.add(&b.0))
     }
 
     fn sub(&self, b: &Self) -> Self {
@@ -153,6 +166,8 @@ impl G1 for FsG1 {
 
 impl G1GetFp<FsFp> for FsG1 {
     fn x(&self) -> &FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&self.0.x)
@@ -160,6 +175,8 @@ impl G1GetFp<FsFp> for FsG1 {
     }
 
     fn y(&self) -> &FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&self.0.y)
@@ -167,6 +184,8 @@ impl G1GetFp<FsFp> for FsG1 {
     }
 
     fn z(&self) -> &FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&self.0.z)
@@ -174,6 +193,8 @@ impl G1GetFp<FsFp> for FsG1 {
     }
 
     fn x_mut(&mut self) -> &mut FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&mut self.0.x)
@@ -181,6 +202,8 @@ impl G1GetFp<FsFp> for FsG1 {
     }
 
     fn y_mut(&mut self) -> &mut FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&mut self.0.y)
@@ -188,6 +211,8 @@ impl G1GetFp<FsFp> for FsG1 {
     }
 
     fn z_mut(&mut self) -> &mut FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&mut self.0.z)
@@ -197,6 +222,8 @@ impl G1GetFp<FsFp> for FsG1 {
 
 impl G1Mul<FsFr> for FsG1 {
     fn mul(&self, b: &FsFr) -> Self {
+        try_init_mcl();
+
         let mut out = FsG1::default();
         mcl_g1::mul(&mut out.0, &self.0, &b.0);
         out
@@ -210,6 +237,8 @@ impl G1LinComb<FsFr, FsFp, FsG1Affine> for FsG1 {
         len: usize,
         precomputation: Option<&PrecomputationTable<FsFr, Self, FsFp, FsG1Affine>>,
     ) -> Self {
+        try_init_mcl();
+
         let mut out = FsG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
         out
@@ -225,6 +254,8 @@ pub struct FsG1Affine {
 
 impl G1Affine<FsG1, FsFp> for FsG1Affine {
     fn zero() -> Self {
+        try_init_mcl();
+
         Self { 
             x: {
                 mcl_fp {
@@ -240,6 +271,8 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 
     fn into_affine(g1: &FsG1) -> Self {
+        try_init_mcl();
+
         let mut out: mcl_g1 = Default::default();
         mcl_g1::normalize(&mut out, &g1.0);
 
@@ -254,10 +287,19 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 
     fn to_proj(&self) -> FsG1 {
-        todo!()
+        try_init_mcl();
+
+        let mut ret: FsG1 = FsG1::generator();
+
+        ret.0.x = self.x;
+        ret.0.y = self.y;
+
+        ret
     }
 
     fn x(&self) -> &FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&self.x)
@@ -265,6 +307,8 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 
     fn y(&self) -> &FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&self.y)
@@ -272,6 +316,8 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 
     fn x_mut(&mut self) -> &mut FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&mut self.x)
@@ -279,6 +325,8 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 
     fn y_mut(&mut self) -> &mut FsFp {
+        try_init_mcl();
+
         unsafe {
             // Transmute safe due to repr(C) on FsFp
             core::mem::transmute(&mut self.y)
