@@ -30,6 +30,10 @@ impl FsG2 {
 
     #[cfg(feature = "rand")]
     pub fn rand() -> Self {
+        use crate::mcl_methods::try_init_mcl;
+
+        try_init_mcl();
+
         let result: FsG2 = G2_GENERATOR;
         result.mul(&FsFr::rand())
     }

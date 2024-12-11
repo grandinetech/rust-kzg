@@ -6,6 +6,7 @@ use alloc::string::ToString;
 use blst::blst_fr;
 
 use crate::mcl_methods::mcl_fr;
+use crate::mcl_methods::try_init_mcl;
 
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
@@ -30,6 +31,8 @@ impl Fr for FsFr {
 
     #[cfg(feature = "rand")]
     fn rand() -> Self {
+        try_init_mcl();
+
         use blst::blst_fr_from_uint64;
 
         let val: [u64; 4] = [
@@ -132,6 +135,8 @@ impl Fr for FsFr {
 
 impl FsFr {
     pub fn from_blst_fr(fr: blst_fr) -> Self {
+        try_init_mcl();
+
         Self {
             0: mcl_fr {
                 d: fr.l
@@ -140,6 +145,8 @@ impl FsFr {
     }
 
     pub fn to_blst_fr(&self) -> blst_fr {
+        try_init_mcl();
+
         blst_fr {
             l: self.0.d
         }
