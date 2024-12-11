@@ -478,7 +478,7 @@ base_field_impl![
 add_op_impl![mcl_fp, mclBnFp_add, mclBnFp_sub, mclBnFp_neg];
 field_mul_op_impl![mcl_fp, mclBnFp_mul, mclBnFp_div, mclBnFp_inv, mclBnFp_sqr];
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Default, Clone, Copy, Eq)]
 #[repr(C)]
 pub struct mcl_fp2 {
     pub d: [mcl_fp; 2],
@@ -498,7 +498,7 @@ impl mcl_fp2 {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Copy, Eq, Default)]
 #[repr(C)]
 pub struct mcl_fr {
     d: [u64; MCLBN_FR_UNIT_SIZE],
@@ -532,7 +532,7 @@ base_field_impl![
 add_op_impl![mcl_fr, mclBnFr_add, mclBnFr_sub, mclBnFr_neg];
 field_mul_op_impl![mcl_fr, mclBnFr_mul, mclBnFr_div, mclBnFr_inv, mclBnFr_sqr];
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Default, Clone, Copy, Eq)]
 #[repr(C)]
 pub struct mcl_g1 {
     pub x: mcl_fp,
@@ -558,7 +558,7 @@ ec_impl![
     mclBnG1_mulVec
 ];
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Default, Clone, Copy, Eq)]
 #[repr(C)]
 pub struct mcl_g2 {
     pub x: mcl_fp2,

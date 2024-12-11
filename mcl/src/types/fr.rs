@@ -3,13 +3,7 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
-
-use blst::{
-    blst_bendian_from_scalar, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
-    blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr,
-    blst_fr_sub, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian, blst_scalar_from_fr,
-    blst_uint64_from_fr,
-};
+use blst::blst_fr;
 
 use crate::mcl_methods::mcl_fr;
 
@@ -19,249 +13,112 @@ use kzg::Scalar256;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct FsFr(pub blst_fr);
+pub struct FsFr(pub mcl_fr);
 
 impl Fr for FsFr {
     fn null() -> Self {
-        Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+        todo!()
     }
 
     fn zero() -> Self {
-        Self::from_u64(0)
+        todo!()
     }
 
     fn one() -> Self {
-        Self::from_u64(1)
+        todo!()
     }
 
-    #[cfg(feature = "rand")]
     fn rand() -> Self {
-        let val: [u64; 4] = [
-            rand::random(),
-            rand::random(),
-            rand::random(),
-            rand::random(),
-        ];
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_from_uint64(&mut ret.0, val.as_ptr());
-        }
-
-        ret
+        todo!()
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
-        bytes
-            .try_into()
-            .map_err(|_| {
-                format!(
-                    "Invalid byte length. Expected {}, got {}",
-                    BYTES_PER_FIELD_ELEMENT,
-                    bytes.len()
-                )
-            })
-            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let mut bls_scalar = blst_scalar::default();
-                let mut fr = blst_fr::default();
-                unsafe {
-                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
-                    if !blst_scalar_fr_check(&bls_scalar) {
-                        return Err("Invalid scalar".to_string());
-                    }
-                    blst_fr_from_scalar(&mut fr, &bls_scalar);
-                }
-                Ok(Self(fr))
-            })
-    }
-
-    fn from_bytes_unchecked(bytes: &[u8]) -> Result<Self, String> {
-        bytes
-            .try_into()
-            .map_err(|_| {
-                format!(
-                    "Invalid byte length. Expected {}, got {}",
-                    BYTES_PER_FIELD_ELEMENT,
-                    bytes.len()
-                )
-            })
-            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let mut bls_scalar = blst_scalar::default();
-                let mut fr = blst_fr::default();
-                unsafe {
-                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
-                    blst_fr_from_scalar(&mut fr, &bls_scalar);
-                }
-                Self(fr)
-            })
+        todo!()
     }
 
     fn from_hex(hex: &str) -> Result<Self, String> {
-        let bytes = hex::decode(&hex[2..]).unwrap();
-        Self::from_bytes(&bytes)
+        todo!()
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_from_uint64(&mut ret.0, u.as_ptr());
-        }
-
-        ret
+        todo!()
     }
 
-    fn from_u64(val: u64) -> Self {
-        Self::from_u64_arr(&[val, 0, 0, 0])
+    fn from_u64(u: u64) -> Self {
+        todo!()
     }
 
     fn to_bytes(&self) -> [u8; 32] {
-        let mut scalar = blst_scalar::default();
-        let mut bytes = [0u8; 32];
-        unsafe {
-            blst_scalar_from_fr(&mut scalar, &self.0);
-            blst_bendian_from_scalar(bytes.as_mut_ptr(), &scalar);
-        }
-
-        bytes
+        todo!()
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-
-        val
+        todo!()
     }
 
     fn is_one(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-
-        val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0
+        todo!()
     }
 
     fn is_zero(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-
-        val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0
+        todo!()
     }
 
     fn is_null(&self) -> bool {
-        self.equals(&Self::null())
+        todo!()
     }
 
     fn sqr(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_sqr(&mut ret.0, &self.0);
-        }
-
-        ret
+        todo!()
     }
 
     fn mul(&self, b: &Self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_mul(&mut ret.0, &self.0, &b.0);
-        }
-
-        ret
+        todo!()
     }
 
     fn add(&self, b: &Self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_add(&mut ret.0, &self.0, &b.0);
-        }
-
-        ret
+        todo!()
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_sub(&mut ret.0, &self.0, &b.0);
-        }
-
-        ret
+        todo!()
     }
 
     fn eucl_inverse(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_eucl_inverse(&mut ret.0, &self.0);
-        }
-
-        ret
+        todo!()
     }
 
     fn negate(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_cneg(&mut ret.0, &self.0, true);
-        }
-
-        ret
+        todo!()
     }
 
     fn inverse(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_inverse(&mut ret.0, &self.0);
-        }
-
-        ret
+        todo!()
     }
 
     fn pow(&self, n: usize) -> Self {
-        let mut out = Self::one();
-
-        let mut temp = *self;
-        let mut n = n;
-        loop {
-            if (n & 1) == 1 {
-                out = out.mul(&temp);
-            }
-            n >>= 1;
-            if n == 0 {
-                break;
-            }
-
-            temp = temp.sqr();
-        }
-
-        out
+        todo!()
     }
 
     fn div(&self, b: &Self) -> Result<Self, String> {
-        let tmp = b.eucl_inverse();
-        let out = self.mul(&tmp);
-
-        Ok(out)
+        todo!()
     }
 
     fn equals(&self, b: &Self) -> bool {
-        let mut val_a: [u64; 4] = [0; 4];
-        let mut val_b: [u64; 4] = [0; 4];
-
-        unsafe {
-            blst_uint64_from_fr(val_a.as_mut_ptr(), &self.0);
-            blst_uint64_from_fr(val_b.as_mut_ptr(), &b.0);
-        }
-
-        val_a[0] == val_b[0] && val_a[1] == val_b[1] && val_a[2] == val_b[2] && val_a[3] == val_b[3]
+        todo!()
     }
 
     fn to_scalar(&self) -> Scalar256 {
-        let mut blst_scalar = blst_scalar::default();
-        unsafe {
-            blst_scalar_from_fr(&mut blst_scalar, &self.0);
-        }
-        Scalar256::from_u8(&blst_scalar.b)
+        todo!()
+    }
+}
+
+impl FsFr {
+    pub fn from_blst_fr(fr: blst_fr) -> Self {
+        todo!()
+    }
+
+    pub fn to_blst_fr(&self) -> blst_fr {
+        todo!()
     }
 }
