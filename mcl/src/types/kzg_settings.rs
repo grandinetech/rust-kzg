@@ -317,14 +317,14 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
         let roots_of_unity = unsafe {
             core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
                 .iter()
-                .map(|r| FsFr(*r))
+                .map(|r| FsFr::from_blst_fr(*r))
                 .collect::<Vec<FsFr>>()
         };
 
         let brp_roots_of_unity = unsafe {
             core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
                 .iter()
-                .map(|r| FsFr(*r))
+                .map(|r| FsFr::from_blst_fr(*r))
                 .collect::<Vec<FsFr>>()
         };
 
@@ -334,7 +334,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 FIELD_ELEMENTS_PER_EXT_BLOB + 1,
             )
             .iter()
-            .map(|r| FsFr(*r))
+            .map(|r| FsFr::from_blst_fr(*r))
             .collect::<Vec<FsFr>>()
         };
 
@@ -355,7 +355,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG1(*r))
+            .map(|r| FsG1::from_blst_p1(*r))
             .collect::<Vec<_>>(),
             g1_values_lagrange_brp: unsafe {
                 core::slice::from_raw_parts(
@@ -364,7 +364,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG1(*r))
+            .map(|r| FsG1::from_blst_p1(*r))
             .collect::<Vec<_>>(),
             g2_values_monomial: unsafe {
                 core::slice::from_raw_parts(
@@ -373,7 +373,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG2(*r))
+            .map(|r| FsG2::from_blst_p2(*r))
             .collect::<Vec<_>>(),
             x_ext_fft_columns: unsafe {
                 core::slice::from_raw_parts(
@@ -385,7 +385,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
             .map(|it| {
                 unsafe { core::slice::from_raw_parts(*it, eth::FIELD_ELEMENTS_PER_CELL) }
                     .iter()
-                    .map(|it| FsG1(*it))
+                    .map(|it| FsG1::from_blst_p1(*it))
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>(),

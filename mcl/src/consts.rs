@@ -1,12 +1,11 @@
-use blst::{blst_fp, blst_fp2, blst_p1, blst_p2};
-
+use crate::mcl_methods::{mcl_fp, mcl_fp2, mcl_g1, mcl_g2};
 use crate::types::g1::FsG1;
 use crate::types::g2::FsG2;
 
 pub const G1_IDENTITY: FsG1 = FsG1::from_xyz(
-    blst_fp { l: [0; 6] },
-    blst_fp { l: [0; 6] },
-    blst_fp { l: [0; 6] },
+    mcl_fp { d: [0; 6] },
+    mcl_fp { d: [0; 6] },
+    mcl_fp { d: [0; 6] },
 );
 
 pub const SCALE_FACTOR: u64 = 5;
@@ -49,9 +48,9 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x63e7cb4906ffc93f, 0xf070bb00e28a193d, 0xad1715b02e5713b5, 0x4b5371495990693f]
 ];
 
-pub const G1_GENERATOR: FsG1 = FsG1(blst_p1 {
-    x: blst_fp {
-        l: [
+pub const G1_GENERATOR: FsG1 = FsG1(mcl_g1 {
+    x: mcl_fp {
+        d: [
             0x5cb38790fd530c16,
             0x7817fc679976fff5,
             0x154f95c7143ba1c1,
@@ -60,8 +59,8 @@ pub const G1_GENERATOR: FsG1 = FsG1(blst_p1 {
             0x120177419e0bfb75,
         ],
     },
-    y: blst_fp {
-        l: [
+    y: mcl_fp {
+        d: [
             0xbaac93d50ce72271,
             0x8c22631a7918fd8e,
             0xdd595f13570725ce,
@@ -70,8 +69,8 @@ pub const G1_GENERATOR: FsG1 = FsG1(blst_p1 {
             0x0bbc3efc5008a26a,
         ],
     },
-    z: blst_fp {
-        l: [
+    z: mcl_fp {
+        d: [
             0x760900000002fffd,
             0xebf4000bc40c0002,
             0x5f48985753c758ba,
@@ -82,9 +81,9 @@ pub const G1_GENERATOR: FsG1 = FsG1(blst_p1 {
     },
 });
 
-pub const G1_NEGATIVE_GENERATOR: FsG1 = FsG1(blst_p1 {
-    x: blst_fp {
-        l: [
+pub const G1_NEGATIVE_GENERATOR: FsG1 = FsG1(mcl_g1 {
+    x: mcl_fp {
+        d: [
             0x5cb38790fd530c16,
             0x7817fc679976fff5,
             0x154f95c7143ba1c1,
@@ -93,8 +92,8 @@ pub const G1_NEGATIVE_GENERATOR: FsG1 = FsG1(blst_p1 {
             0x120177419e0bfb75,
         ],
     },
-    y: blst_fp {
-        l: [
+    y: mcl_fp {
+        d: [
             0xff526c2af318883a,
             0x92899ce4383b0270,
             0x89d7738d9fa9d055,
@@ -103,8 +102,8 @@ pub const G1_NEGATIVE_GENERATOR: FsG1 = FsG1(blst_p1 {
             0x0e44d2ede9774430,
         ],
     },
-    z: blst_fp {
-        l: [
+    z: mcl_fp {
+        d: [
             0x760900000002fffd,
             0xebf4000bc40c0002,
             0x5f48985753c758ba,
@@ -115,11 +114,11 @@ pub const G1_NEGATIVE_GENERATOR: FsG1 = FsG1(blst_p1 {
     },
 });
 
-pub const G2_GENERATOR: FsG2 = FsG2(blst_p2 {
-    x: blst_fp2 {
-        fp: [
-            blst_fp {
-                l: [
+pub const G2_GENERATOR: FsG2 = FsG2(mcl_g2 {
+    x: mcl_fp2 {
+        d: [
+            mcl_fp {
+                d: [
                     0xf5f28fa202940a10,
                     0xb3f5fb2687b4961a,
                     0xa1a893b53e2ae580,
@@ -128,8 +127,8 @@ pub const G2_GENERATOR: FsG2 = FsG2(blst_p2 {
                     0x058191924350bcd7,
                 ],
             },
-            blst_fp {
-                l: [
+            mcl_fp {
+                d: [
                     0xa5a9c0759e23f606,
                     0xaaa0c59dbccd60c3,
                     0x3bb17e18e2867806,
@@ -140,10 +139,10 @@ pub const G2_GENERATOR: FsG2 = FsG2(blst_p2 {
             },
         ],
     },
-    y: blst_fp2 {
-        fp: [
-            blst_fp {
-                l: [
+    y: mcl_fp2 {
+        d: [
+            mcl_fp {
+                d: [
                     0x4c730af860494c4a,
                     0x597cfa1f5e369c5a,
                     0xe7e6856caa0a635a,
@@ -152,8 +151,8 @@ pub const G2_GENERATOR: FsG2 = FsG2(blst_p2 {
                     0x0083fd8e7e80dae5,
                 ],
             },
-            blst_fp {
-                l: [
+            mcl_fp {
+                d: [
                     0xadc0fc92df64b05d,
                     0x18aa270a2b1461dc,
                     0x86adac6a3be4eba0,
@@ -164,10 +163,10 @@ pub const G2_GENERATOR: FsG2 = FsG2(blst_p2 {
             },
         ],
     },
-    z: blst_fp2 {
-        fp: [
-            blst_fp {
-                l: [
+    z: mcl_fp2 {
+        d: [
+            mcl_fp {
+                d: [
                     0x760900000002fffd,
                     0xebf4000bc40c0002,
                     0x5f48985753c758ba,
@@ -176,8 +175,8 @@ pub const G2_GENERATOR: FsG2 = FsG2(blst_p2 {
                     0x15f65ec3fa80e493,
                 ],
             },
-            blst_fp {
-                l: [
+            mcl_fp {
+                d: [
                     0x0000000000000000,
                     0x0000000000000000,
                     0x0000000000000000,
@@ -190,11 +189,11 @@ pub const G2_GENERATOR: FsG2 = FsG2(blst_p2 {
     },
 });
 
-pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(blst_p2 {
-    x: blst_fp2 {
-        fp: [
-            blst_fp {
-                l: [
+pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(mcl_g2 {
+    x: mcl_fp2 {
+        d: [
+            mcl_fp {
+                d: [
                     0xf5f28fa202940a10,
                     0xb3f5fb2687b4961a,
                     0xa1a893b53e2ae580,
@@ -203,8 +202,8 @@ pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(blst_p2 {
                     0x058191924350bcd7,
                 ],
             },
-            blst_fp {
-                l: [
+            mcl_fp {
+                d: [
                     0xa5a9c0759e23f606,
                     0xaaa0c59dbccd60c3,
                     0x3bb17e18e2867806,
@@ -215,10 +214,10 @@ pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(blst_p2 {
             },
         ],
     },
-    y: blst_fp2 {
-        fp: [
-            blst_fp {
-                l: [
+    y: mcl_fp2 {
+        d: [
+            mcl_fp {
+                d: [
                     0x6d8bf5079fb65e61,
                     0xc52f05df531d63a5,
                     0x7f4a4d344ca692c9,
@@ -227,8 +226,8 @@ pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(blst_p2 {
                     0x197d145bbaff0bb5,
                 ],
             },
-            blst_fp {
-                l: [
+            mcl_fp {
+                d: [
                     0x0c3e036d209afa4e,
                     0x0601d8f4863f9e23,
                     0xe0832636bacc0a84,
@@ -239,10 +238,10 @@ pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(blst_p2 {
             },
         ],
     },
-    z: blst_fp2 {
-        fp: [
-            blst_fp {
-                l: [
+    z: mcl_fp2 {
+        d: [
+            mcl_fp {
+                d: [
                     0x760900000002fffd,
                     0xebf4000bc40c0002,
                     0x5f48985753c758ba,
@@ -251,8 +250,8 @@ pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(blst_p2 {
                     0x15f65ec3fa80e493,
                 ],
             },
-            blst_fp {
-                l: [
+            mcl_fp {
+                d: [
                     0x0000000000000000,
                     0x0000000000000000,
                     0x0000000000000000,
