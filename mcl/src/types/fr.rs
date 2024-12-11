@@ -28,8 +28,25 @@ impl Fr for FsFr {
         todo!()
     }
 
+    #[cfg(feature = "rand")]
     fn rand() -> Self {
-        todo!()
+        use blst::blst_fr_from_uint64;
+
+        let val: [u64; 4] = [
+            rand::random(),
+            rand::random(),
+            rand::random(),
+            rand::random(),
+        ];
+
+        let ret = Self::default();
+        let mut blst = FsFr::to_blst_fr(&ret);
+
+        unsafe {
+            blst_fr_from_uint64(&mut blst, val.as_ptr());
+        }
+
+        FsFr::from_blst_fr(blst)
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
@@ -115,10 +132,16 @@ impl Fr for FsFr {
 
 impl FsFr {
     pub fn from_blst_fr(fr: blst_fr) -> Self {
-        todo!()
+        Self {
+            0: mcl_fr {
+                d: fr.l
+            }
+        }
     }
 
     pub fn to_blst_fr(&self) -> blst_fr {
-        todo!()
+        blst_fr {
+            l: self.0.d
+        }
     }
 }

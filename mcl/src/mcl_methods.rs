@@ -501,7 +501,7 @@ impl mcl_fp2 {
 #[derive(Debug, Clone, Copy, Eq, Default)]
 #[repr(C)]
 pub struct mcl_fr {
-    d: [u64; MCLBN_FR_UNIT_SIZE],
+    pub d: [u64; MCLBN_FR_UNIT_SIZE],
 }
 impl mcl_fr {
     pub fn get_order() -> String {
