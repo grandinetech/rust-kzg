@@ -14,13 +14,13 @@ mod tests {
     };
     use rust_kzg_mcl::{
         eip_4844::load_trusted_setup_filename_rust,
-        eip_7594::BlstBackend,
+        eip_7594::MclBackend,
         types::{fr::FsFr, g1::FsG1, kzg_settings::FsKZGSettings},
     };
 
     #[test]
     pub fn test_vectors_compute_cells_and_kzg_proofs_() {
-        test_vectors_compute_cells_and_kzg_proofs::<BlstBackend>(
+        test_vectors_compute_cells_and_kzg_proofs::<MclBackend>(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
         );
@@ -28,12 +28,12 @@ mod tests {
 
     #[test]
     pub fn test_vectors_recover_cells_and_kzg_proofs_() {
-        test_vectors_recover_cells_and_kzg_proofs::<BlstBackend>(&load_trusted_setup_filename_rust);
+        test_vectors_recover_cells_and_kzg_proofs::<MclBackend>(&load_trusted_setup_filename_rust);
     }
 
     #[test]
     pub fn test_vectors_verify_cell_kzg_proof_batch_() {
-        test_vectors_verify_cell_kzg_proof_batch::<BlstBackend>(&load_trusted_setup_filename_rust);
+        test_vectors_verify_cell_kzg_proof_batch::<MclBackend>(&load_trusted_setup_filename_rust);
     }
 
     #[test]
@@ -51,7 +51,7 @@ mod tests {
 
         /* Get the cells and proofs */
         let mut result = <FsKZGSettings as DAS<
-            BlstBackend,
+            MclBackend,
             { eth::FIELD_ELEMENTS_PER_CELL },
             eth::Mainnet,
         >>::compute_cells_and_kzg_proofs(
@@ -74,7 +74,7 @@ mod tests {
 
         /* Reconstruct with half of the cells */
         result = <FsKZGSettings as DAS<
-            BlstBackend,
+            MclBackend,
             { eth::FIELD_ELEMENTS_PER_CELL },
             eth::Mainnet,
         >>::recover_cells_and_kzg_proofs(
@@ -111,7 +111,7 @@ mod tests {
 
         /* Compute cells and proofs */
         let result = <FsKZGSettings as DAS<
-            BlstBackend,
+            MclBackend,
             { eth::FIELD_ELEMENTS_PER_CELL },
             eth::Mainnet,
         >>::compute_cells_and_kzg_proofs(
@@ -126,7 +126,7 @@ mod tests {
 
         /* Verify all the proofs */
         let verify_result = <FsKZGSettings as DAS<
-            BlstBackend,
+            MclBackend,
             { eth::FIELD_ELEMENTS_PER_CELL },
             eth::Mainnet,
         >>::verify_cell_kzg_proof_batch(

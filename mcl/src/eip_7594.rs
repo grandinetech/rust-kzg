@@ -13,9 +13,9 @@ use kzg::c_bindings_eip7594;
 
 use crate::types::fr::FsFr;
 
-pub struct BlstBackend;
+pub struct MclBackend;
 
-impl EcBackend for BlstBackend {
+impl EcBackend for MclBackend {
     type Fr = FsFr;
     type G1Fp = FsFp;
     type G1Affine = FsG1Affine;
@@ -26,4 +26,4 @@ impl EcBackend for BlstBackend {
     type KZGSettings = FsKZGSettings;
 }
 
-c_bindings_eip7594!(BlstBackend);
+c_bindings_eip7594!(MclBackend);
