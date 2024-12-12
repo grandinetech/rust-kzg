@@ -1,7 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::kzg::{bench_commit_to_poly, bench_compute_proof_single};
 
-use rust_kzg_arkworks3::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
+use rust_kzg_arkworks3::kzg_proofs::{
+    generate_trusted_setup, LFFTSettings as FFTSettings, LKZGSettings as KZGSettings,
+};
 use rust_kzg_arkworks3::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
 use rust_kzg_arkworks3::utils::PolyData;
 
