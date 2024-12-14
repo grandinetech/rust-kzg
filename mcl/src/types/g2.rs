@@ -10,7 +10,9 @@ use kzg::Fr;
 use kzg::{G2Mul, G2};
 
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
+use crate::mcl_methods::mcl_g1;
 use crate::mcl_methods::mcl_g2;
+use crate::mcl_methods::try_init_mcl;
 use crate::types::fr::FsFr;
 
 #[repr(C)]
@@ -41,11 +43,15 @@ impl FsG2 {
 
 impl G2 for FsG2 {
     fn generator() -> Self {
-        todo!()
+        try_init_mcl();
+
+        G2_GENERATOR
     }
 
     fn negative_generator() -> Self {
-        todo!()
+        try_init_mcl();
+
+        G2_NEGATIVE_GENERATOR
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
@@ -57,24 +63,42 @@ impl G2 for FsG2 {
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        todo!()
+        try_init_mcl();
+
+        let mut out: mcl_g2 = mcl_g2::default();
+        mcl_g2::add(&mut out, &self.0, &b.0);
+        Self(out)
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        try_init_mcl();
+
+        let mut out = mcl_g2::default();
+        mcl_g2::dbl(&mut out, &self.0);
+        Self(out)
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        try_init_mcl();
+
+        let mut out: mcl_g2 = mcl_g2::default();
+        mcl_g2::sub(&mut out, &self.0, &b.0);
+        Self(out)
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        try_init_mcl();
+
+        mcl_g2::eq(&self.0, &b.0)
     }
 }
 
 impl G2Mul<FsFr> for FsG2 {
     fn mul(&self, b: &FsFr) -> Self {
-        todo!()
+        try_init_mcl();
+
+        let mut out: mcl_g2 = mcl_g2::default();
+        mcl_g2::mul(&mut out, &self.0, &b.0);
+        Self(out)
     }
 }
