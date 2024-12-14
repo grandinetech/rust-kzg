@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use crate::mcl_methods::mcl_gt;
 use crate::types::fp::FsFp;
 use crate::types::g1::FsG1;
 use crate::types::{fr::FsFr, g1::FsG1Affine};

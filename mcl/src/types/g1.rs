@@ -1,6 +1,7 @@
 extern crate alloc;
 
 use core::ops::Add;
+use core::ops::Sub;
 use core::ptr;
 
 use alloc::format;
@@ -11,6 +12,7 @@ use alloc::vec::Vec;
 use blst::blst_fp;
 use blst::blst_p1;
 use blst::blst_p1_affine;
+use blst::blst_p1_is_inf;
 use blst::blst_p1_mult;
 use blst::blst_scalar;
 use blst::blst_scalar_from_fr;
@@ -55,6 +57,8 @@ impl FsG1 {
 
 impl G1 for FsG1 {
     fn zero() -> Self {
+        try_init_mcl();
+
         Self(mcl_g1 {
             x: mcl_fp {
                 d: [
@@ -122,33 +126,48 @@ impl G1 for FsG1 {
 
     fn add_or_dbl(&self, b: &Self) -> Self {
         try_init_mcl();
+
         let mut out = mcl_g1::default();
         mcl_g1::add(&mut out, &self.0,&b.0);
         Self(out)
     }
 
     fn is_inf(&self) -> bool {
-        todo!()
+        try_init_mcl();
+
+        mcl_g1::get_str(&self.0, 0).eq("0")
     }
 
     fn is_valid(&self) -> bool {
-        todo!()
+        try_init_mcl();
+
+        mcl_g1::is_valid(&self.0)
     }
 
     fn dbl(&self) -> Self {
-        todo!()
+        try_init_mcl();
+
+        let mut out = mcl_g1::default();
+        mcl_g1::dbl(&mut out, &self.0);
+        Self(out)
     }
 
     fn add(&self, b: &Self) -> Self {
+        try_init_mcl();
+
         Self(self.0.add(&b.0))
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        try_init_mcl();
+
+        Self(self.0.sub(&b.0))
     }
 
     fn equals(&self, b: &Self) -> bool {
-        todo!()
+        try_init_mcl();
+
+        mcl_g1::eq(&self.0, &b.0)
     }
 
     fn add_or_dbl_assign(&mut self, b: &Self) {
@@ -156,11 +175,17 @@ impl G1 for FsG1 {
     }
 
     fn add_assign(&mut self, b: &Self) {
-        todo!()
+        try_init_mcl();
+        
+        self.0 = self.0.add(&b.0);
     }
 
     fn dbl_assign(&mut self) {
-        todo!()
+        try_init_mcl();
+
+        let mut r = mcl_g1::default();
+        mcl_g1::dbl(&mut r, &self.0);
+        self.0 = r;
     }
 }
 
@@ -283,7 +308,13 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 
     fn into_affines_loc(out: &mut [Self], g1: &[FsG1]) {
-        todo!()
+        try_init_mcl();
+
+        let mut i = 0;
+        for g in g1 {
+            out[i] = Self::into_affine(g);
+            i += 1;
+        }
     }
 
     fn to_proj(&self) -> FsG1 {
