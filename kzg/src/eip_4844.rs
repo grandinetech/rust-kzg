@@ -2,6 +2,7 @@
 extern crate alloc;
 
 use crate::common_utils::reverse_bit_order;
+use crate::eth;
 use crate::eth::c_bindings::CKZGSettings;
 use crate::eth::FIELD_ELEMENTS_PER_EXT_BLOB;
 use crate::msm::precompute::PrecomputationTable;
@@ -915,5 +916,6 @@ pub fn load_trusted_setup_rust<
         &g1_lagrange_values,
         &g2_monomial_values,
         &fs,
+        eth::FIELD_ELEMENTS_PER_CELL,
     )
 }

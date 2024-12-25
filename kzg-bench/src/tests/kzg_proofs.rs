@@ -1,19 +1,11 @@
 use kzg::{
-    EcBackend, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, Preset, G1, G2,
+    eth, EcBackend, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2,
 };
 
 pub const SECRET: [u8; 32usize] = [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
-
-struct TestPreset1;
-
-impl Preset for TestPreset1 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 17;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 34;
-    const CELLS_PER_EXT_BLOB: usize = 1;
-}
 
 /// Check that both FFT implementations produce the same results
 #[allow(clippy::type_complexity)]
@@ -34,7 +26,7 @@ pub fn proof_single<B: EcBackend>(
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(4).unwrap();
-    let ks = B::KZGSettings::new_for_preset::<7, TestPreset1>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 7).unwrap();
 
     // Compute the proof for x = 25
     let x = B::Fr::from_u64(25);
@@ -54,14 +46,6 @@ pub fn proof_single<B: EcBackend>(
         .unwrap());
 }
 
-struct TestPreset2;
-
-impl Preset for TestPreset2 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 16;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 32;
-    const CELLS_PER_EXT_BLOB: usize = 4;
-}
-
 #[allow(clippy::type_complexity)]
 pub fn commit_to_nil_poly<B: EcBackend>(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
@@ -72,7 +56,7 @@ pub fn commit_to_nil_poly<B: EcBackend>(
         // Initialise the (arbitrary) secrets and data structures
         let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
         let fs = B::FFTSettings::new(4).unwrap();
-        let ks = B::KZGSettings::new_for_preset::<8, TestPreset2>(&s1, &s2, &s3, &fs).unwrap();
+        let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 8).unwrap();
 
         let a = B::Poly::new(0);
         let result = ks.commit_to_poly(&a).unwrap();
@@ -102,7 +86,7 @@ pub fn commit_to_too_long_poly<
         // Initialise the (arbitrary) secrets and data structures
         let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
         let fs = TFFTSettings::new(4).unwrap();
-        let ks = TKZGSettings::new(&s1, &s2, &s3, &fs).unwrap();
+        let ks = TKZGSettings::new(&s1, &s2, &s3, &fs, eth::FIELD_ELEMENTS_PER_CELL).unwrap();
 
         let a = TPoly::new(poly_len);
         let _result = ks.commit_to_poly(&a);
@@ -120,7 +104,7 @@ pub fn commit_to_too_long_poly_returns_err<B: EcBackend>(
     // Initialise the (arbitrary) secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(4).unwrap();
-    let ks = B::KZGSettings::new_for_preset::<8, TestPreset2>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 8).unwrap();
 
     let a = B::Poly::new(poly_len);
     let _result = ks.commit_to_poly(&a);
@@ -156,13 +140,13 @@ pub fn proof_multi<B: EcBackend>(
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs1 = B::FFTSettings::new(4).unwrap();
-    let ks1 = B::KZGSettings::new_for_preset::<7, TestPreset1>(&s1, &s2, &s3, &fs1).unwrap();
+    let ks1 = B::KZGSettings::new(&s1, &s2, &s3, &fs1, 7).unwrap();
 
     // Commit to the polynomial
     let commitment = ks1.commit_to_poly(&p).unwrap();
 
     let fs2 = B::FFTSettings::new(coset_scale).unwrap();
-    let ks2 = B::KZGSettings::new_for_preset::<7, TestPreset1>(&s1, &s2, &s3, &fs2).unwrap();
+    let ks2 = B::KZGSettings::new(&s1, &s2, &s3, &fs2, 7).unwrap();
 
     // Compute proof at the points [x * root_i] 0 <= i < coset_len
     let x = B::Fr::from_u64(5431);
