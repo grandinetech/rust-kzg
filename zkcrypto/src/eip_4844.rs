@@ -3,18 +3,17 @@ extern crate alloc;
 use crate::kzg_proofs::KZGSettings;
 use crate::kzg_types::{ZFr, ZG1};
 use crate::utils::{
-    deserialize_blob, handle_ckzg_badargs, kzg_settings_to_c,
-    PRECOMPUTATION_TABLES,
+    deserialize_blob, handle_ckzg_badargs, kzg_settings_to_c, PRECOMPUTATION_TABLES,
 };
 use kzg::eip_4844::{
     blob_to_kzg_commitment_rust, compute_blob_kzg_proof_rust, compute_kzg_proof_rust,
     load_trusted_setup_rust, verify_blob_kzg_proof_batch_rust, verify_blob_kzg_proof_rust,
-    verify_kzg_proof_rust, 
-    BYTES_PER_G1, FIELD_ELEMENTS_PER_BLOB,
-    TRUSTED_SETUP_NUM_G1_POINTS,
+    verify_kzg_proof_rust, BYTES_PER_G1, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
     TRUSTED_SETUP_NUM_G2_POINTS,
 };
-use kzg::eth::c_bindings::{Blob, Bytes32, Bytes48, CKZGSettings, CKzgRet, KZGCommitment, KZGProof};
+use kzg::eth::c_bindings::{
+    Blob, Bytes32, Bytes48, CKZGSettings, CKzgRet, KZGCommitment, KZGProof,
+};
 use kzg::{cfg_into_iter, eth, Fr, G1};
 use std::ptr::{self};
 
@@ -375,7 +374,8 @@ pub unsafe extern "C" fn compute_kzg_proof(
 
     let settings: KZGSettings = handle_ckzg_badargs!(s.try_into());
 
-    let (proof_out_tmp, fry_tmp) = handle_ckzg_badargs!(compute_kzg_proof_rust(&deserialized_blob, &frz, &settings));
+    let (proof_out_tmp, fry_tmp) =
+        handle_ckzg_badargs!(compute_kzg_proof_rust(&deserialized_blob, &frz, &settings));
 
     (*proof_out).bytes = proof_out_tmp.to_bytes();
     (*y_out).bytes = fry_tmp.to_bytes();

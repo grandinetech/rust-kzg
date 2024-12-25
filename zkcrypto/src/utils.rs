@@ -6,7 +6,14 @@ use crate::{
 };
 use bls12_381::{G1Projective, G2Projective, Scalar};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
-use kzg::{eip_4844::PrecomputationTableManager, eth::{self, c_bindings::{Blob, CKZGSettings, CKzgRet}}, Fr};
+use kzg::{
+    eip_4844::PrecomputationTableManager,
+    eth::{
+        self,
+        c_bindings::{Blob, CKZGSettings, CKzgRet},
+    },
+    Fr,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error;
@@ -76,17 +83,23 @@ pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FF
     let settings = unsafe { &*c_settings };
 
     let roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.roots_of_unity, eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1)
-            .iter()
-            .map(|r| ZFr::from_blst_fr(*r))
-            .collect::<Vec<ZFr>>()
+        core::slice::from_raw_parts(
+            settings.roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        )
+        .iter()
+        .map(|r| ZFr::from_blst_fr(*r))
+        .collect::<Vec<ZFr>>()
     };
 
     let brp_roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.brp_roots_of_unity, eth::FIELD_ELEMENTS_PER_EXT_BLOB)
-            .iter()
-            .map(|r| ZFr::from_blst_fr(*r))
-            .collect::<Vec<ZFr>>()
+        core::slice::from_raw_parts(
+            settings.brp_roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB,
+        )
+        .iter()
+        .map(|r| ZFr::from_blst_fr(*r))
+        .collect::<Vec<ZFr>>()
     };
 
     let reverse_roots_of_unity = unsafe {

@@ -91,7 +91,7 @@ impl FFTG1<ArkG1> for LFFTSettings {
             &self.roots_of_unity
         };
 
-        fft_g1_fast(&mut ret, data, 1, roots, stride, 1);
+        fft_g1_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
             let inv_fr_len = ArkFr::from_u64(data.len() as u64).inverse();
@@ -110,7 +110,6 @@ pub fn fft_g1_slow(
     stride: usize,
     roots: &[ArkFr],
     roots_stride: usize,
-    _width: usize,
 ) {
     for i in 0..data.len() {
         // Evaluate first member at 1
@@ -131,7 +130,6 @@ pub fn fft_g1_fast(
     stride: usize,
     roots: &[ArkFr],
     roots_stride: usize,
-    _width: usize,
 ) {
     let half = ret.len() / 2;
     if half > 0 {
@@ -146,21 +144,13 @@ pub fn fft_g1_fast(
 
         #[cfg(not(feature = "parallel"))]
         {
-            fft_g1_fast(
-                &mut ret[..half],
-                data,
-                stride * 2,
-                roots,
-                roots_stride * 2,
-                1,
-            );
+            fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
             fft_g1_fast(
                 &mut ret[half..],
                 &data[stride..],
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1,
             );
         }
 
