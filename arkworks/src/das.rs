@@ -1,6 +1,6 @@
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
-use kzg::{Fr, DAS};
+use kzg::{DASExtension, Fr};
 use std::cmp::Ordering;
 
 impl FFTSettings {
@@ -56,7 +56,7 @@ impl FFTSettings {
     }
 }
 
-impl DAS<BlstFr> for FFTSettings {
+impl DASExtension<BlstFr> for FFTSettings {
     fn das_fft_extension(&self, vals: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
         if vals.is_empty() {
             return Err(String::from("vals can not be empty"));
