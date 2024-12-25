@@ -1,19 +1,18 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::kzg::{bench_commit_to_poly, bench_compute_proof_single};
 
-use rust_kzg_zkcrypto::kzg_proofs::{generate_trusted_setup, FFTSettings, KZGSettings};
-use rust_kzg_zkcrypto::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2};
-use rust_kzg_zkcrypto::poly::PolyData;
+use rust_kzg_zkcrypto::eip_7594::ZBackend;
+use rust_kzg_zkcrypto::kzg_proofs::generate_trusted_setup;
 
 fn bench_commit_to_poly_(c: &mut Criterion) {
-    bench_commit_to_poly::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings, ZFp, ZG1Affine>(
+    bench_commit_to_poly::<ZBackend>(
         c,
         &generate_trusted_setup,
     );
 }
 
 fn bench_compute_proof_single_(c: &mut Criterion) {
-    bench_compute_proof_single::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings, ZFp, ZG1Affine>(
+    bench_compute_proof_single::<ZBackend>(
         c,
         &generate_trusted_setup,
     );
