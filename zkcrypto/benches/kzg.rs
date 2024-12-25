@@ -5,17 +5,11 @@ use rust_kzg_zkcrypto::eip_7594::ZBackend;
 use rust_kzg_zkcrypto::kzg_proofs::generate_trusted_setup;
 
 fn bench_commit_to_poly_(c: &mut Criterion) {
-    bench_commit_to_poly::<ZBackend>(
-        c,
-        &generate_trusted_setup,
-    );
+    bench_commit_to_poly::<ZBackend>(c, &generate_trusted_setup);
 }
 
 fn bench_compute_proof_single_(c: &mut Criterion) {
-    bench_compute_proof_single::<ZBackend>(
-        c,
-        &generate_trusted_setup,
-    );
+    bench_compute_proof_single::<ZBackend>(c, &generate_trusted_setup);
 }
 
 criterion_group! {

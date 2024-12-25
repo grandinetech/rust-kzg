@@ -22,10 +22,7 @@ use blst::{
     blst_scalar_from_fr, blst_uint64_from_fr, BLST_ERROR,
 };
 use kzg::common_utils::{log2_u64, reverse_bit_order};
-use kzg::eip_4844::{
-    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
-    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
-};
+use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
@@ -1104,26 +1101,27 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 }
 
-fn g1_fft(output: &mut [ArkG1], input: &[ArkG1], s: &LFFTSettings) -> Result<(), String> {
-    /* Ensure the length is valid */
-    if input.len() > FIELD_ELEMENTS_PER_EXT_BLOB || !input.len().is_power_of_two() {
-        return Err("Invalid input size".to_string());
-    }
-
-    let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
-    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride, 1);
-
-    Ok(())
-}
-
-fn toeplitz_part_1(output: &mut [ArkG1], x: &[ArkG1], s: &LFFTSettings) -> Result<(), String> {
+fn toeplitz_part_1(
+    field_elements_per_ext_blob: usize,
+    output: &mut [ArkG1],
+    x: &[ArkG1],
+    s: &LFFTSettings,
+) -> Result<(), String> {
     let n = x.len();
     let n2 = n * 2;
     let mut x_ext = vec![ArkG1::identity(); n2];
 
     x_ext[..n].copy_from_slice(x);
 
-    g1_fft(output, &x_ext, s)?;
+    let x_ext = &x_ext[..];
+
+    /* Ensure the length is valid */
+    if x_ext.len() > field_elements_per_ext_blob || !x_ext.len().is_power_of_two() {
+        return Err("Invalid input size".to_string());
+    }
+
+    let roots_stride = field_elements_per_ext_blob / x_ext.len();
+    fft_g1_fast(output, x_ext, 1, &s.roots_of_unity, roots_stride);
 
     Ok(())
 }
@@ -1134,36 +1132,38 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         g1_lagrange_brp: &[ArkG1],
         g2_monomial: &[ArkG2],
         fft_settings: &LFFTSettings,
+        cell_size: usize,
     ) -> Result<LKZGSettings, String> {
-        if g1_monomial.len() != FIELD_ELEMENTS_PER_BLOB
-            || g1_lagrange_brp.len() != FIELD_ELEMENTS_PER_BLOB
-            || g2_monomial.len() != TRUSTED_SETUP_NUM_G2_POINTS
-        {
-            return Err("Length does not match FIELD_ELEMENTS_PER_BLOB".to_string());
+        if g1_monomial.len() != g1_lagrange_brp.len() {
+            return Err("G1 point length mismatch".to_string());
         }
 
-        let n = FIELD_ELEMENTS_PER_EXT_BLOB / 2;
-        let k = n / FIELD_ELEMENTS_PER_CELL;
+        let field_elements_per_blob = g1_monomial.len();
+        let field_elements_per_ext_blob = field_elements_per_blob * 2;
+
+        let n = field_elements_per_ext_blob / 2;
+        let k = n / cell_size;
         let k2 = 2 * k;
 
         let mut points = vec![ArkG1::default(); k2];
         let mut x = vec![ArkG1::default(); k];
-        let mut x_ext_fft_columns = vec![vec![ArkG1::default(); FIELD_ELEMENTS_PER_CELL]; k2];
+        let mut x_ext_fft_columns = vec![vec![ArkG1::default(); cell_size]; k2];
 
-        for offset in 0..FIELD_ELEMENTS_PER_CELL {
-            let start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for offset in 0..cell_size {
+            let start = n - cell_size - 1 - offset;
             for (i, p) in x.iter_mut().enumerate().take(k - 1) {
-                let j = start - i * FIELD_ELEMENTS_PER_CELL;
+                let j = start - i * cell_size;
                 *p = g1_monomial[j];
             }
             x[k - 1] = ArkG1::identity();
 
-            toeplitz_part_1(&mut points, &x, fft_settings)?;
+            toeplitz_part_1(field_elements_per_ext_blob, &mut points, &x, fft_settings)?;
 
             for row in 0..k2 {
                 x_ext_fft_columns[row][offset] = points[row];
             }
         }
+
         Ok(Self {
             g1_values_monomial: g1_monomial.to_vec(),
             g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
@@ -1207,6 +1207,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
                     precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
                 }
             },
+            cell_size,
         })
     }
 
@@ -1377,6 +1378,10 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
+    }
+
+    fn get_cell_size(&self) -> usize {
+        self.cell_size
     }
 }
 

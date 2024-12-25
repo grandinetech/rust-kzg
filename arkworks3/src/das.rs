@@ -1,6 +1,6 @@
 use crate::kzg_proofs::LFFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
-use kzg::{Fr, DAS};
+use kzg::{DASExtension, Fr};
 use std::cmp::Ordering;
 
 impl LFFTSettings {
@@ -64,7 +64,7 @@ impl LFFTSettings {
     }
 }
 
-impl DAS<BlstFr> for LFFTSettings {
+impl DASExtension<BlstFr> for LFFTSettings {
     fn das_fft_extension(&self, evens: &[BlstFr]) -> Result<Vec<BlstFr>, String> {
         if evens.is_empty() {
             return Err(String::from("A non-zero list ab expected"));

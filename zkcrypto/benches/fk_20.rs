@@ -5,17 +5,11 @@ use rust_kzg_zkcrypto::fk20_proofs::{KzgFK20MultiSettings, KzgFK20SingleSettings
 use rust_kzg_zkcrypto::kzg_proofs::generate_trusted_setup;
 
 fn bench_fk_single_da_(c: &mut Criterion) {
-    bench_fk_single_da::<
-    ZBackend,
-        KzgFK20SingleSettings,
-    >(c, &generate_trusted_setup)
+    bench_fk_single_da::<ZBackend, KzgFK20SingleSettings>(c, &generate_trusted_setup)
 }
 
 fn bench_fk_multi_da_(c: &mut Criterion) {
-    bench_fk_multi_da::<
-    ZBackend,
-        KzgFK20MultiSettings,
-    >(c, &generate_trusted_setup)
+    bench_fk_multi_da::<ZBackend, KzgFK20MultiSettings>(c, &generate_trusted_setup)
 }
 
 criterion_group! {

@@ -3,14 +3,16 @@
 extern crate alloc;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
+use crate::utils::{fft_settings_to_rust, PRECOMPUTATION_TABLES};
 use alloc::sync::Arc;
 use ark_bls12_381::Bls12_381;
 use ark_ec::PairingEngine;
 use ark_ec::ProjectiveCurve;
 use ark_std::One;
 use kzg::eip_4844::hash_to_bls_field;
+use kzg::eth::c_bindings::CKZGSettings;
 use kzg::msm::precompute::PrecomputationTable;
-use kzg::{Fr, G1Mul, G2Mul, G1, G2};
+use kzg::{eth, Fr, G1Mul, G2Mul, G1, G2};
 use std::ops::Neg;
 
 #[derive(Debug, Clone)]
@@ -48,6 +50,60 @@ pub struct LKZGSettings {
     pub g2_values_monomial: Vec<ArkG2>,
     pub precomputation: Option<Arc<PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>>,
     pub x_ext_fft_columns: Vec<Vec<ArkG1>>,
+    pub cell_size: usize,
+}
+
+impl<'a> TryFrom<&'a CKZGSettings> for LKZGSettings {
+    type Error = String;
+
+    fn try_from(c_settings: &CKZGSettings) -> Result<LKZGSettings, String> {
+        Ok(LKZGSettings {
+            fs: fft_settings_to_rust(c_settings)?,
+            g1_values_monomial: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g1_values_monomial,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
+            }
+            .iter()
+            .map(|r| ArkG1::from_blst_p1(*r))
+            .collect::<Vec<_>>(),
+            g1_values_lagrange_brp: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g1_values_lagrange_brp,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
+            }
+            .iter()
+            .map(|r| ArkG1::from_blst_p1(*r))
+            .collect::<Vec<_>>(),
+            g2_values_monomial: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g2_values_monomial,
+                    eth::TRUSTED_SETUP_NUM_G2_POINTS,
+                )
+            }
+            .iter()
+            .map(|r| ArkG2::from_blst_p2(*r))
+            .collect::<Vec<_>>(),
+            x_ext_fft_columns: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.x_ext_fft_columns,
+                    2 * ((eth::FIELD_ELEMENTS_PER_EXT_BLOB / 2) / eth::FIELD_ELEMENTS_PER_CELL),
+                )
+            }
+            .iter()
+            .map(|it| {
+                unsafe { core::slice::from_raw_parts(*it, eth::FIELD_ELEMENTS_PER_CELL) }
+                    .iter()
+                    .map(|it| ArkG1::from_blst_p1(*it))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>(),
+            precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
+            cell_size: eth::FIELD_ELEMENTS_PER_CELL,
+        })
+    }
 }
 
 pub fn generate_trusted_setup(
@@ -63,7 +119,7 @@ pub fn generate_trusted_setup(
 
     for _ in 0..n {
         s1.push(ArkG1::generator().mul(&s_pow));
-        s2.push(ArkG1::generator()); // TODO: this should be lagrange form
+        s2.push(ArkG1::generator().mul(&s_pow)); // TODO: this should be lagrange form
         s3.push(ArkG2::generator().mul(&s_pow));
 
         s_pow = s_pow.mul(&s);

@@ -8,29 +8,21 @@ mod tests {
 
     #[test]
     fn proof_single_() {
-        proof_single::<ZBackend>(
-            &generate_trusted_setup,
-        );
+        proof_single::<ZBackend>(&generate_trusted_setup);
     }
 
     #[test]
     fn commit_to_nil_poly_() {
-        commit_to_nil_poly::<ZBackend>(
-            &generate_trusted_setup,
-        );
+        commit_to_nil_poly::<ZBackend>(&generate_trusted_setup);
     }
 
     #[test]
     fn commit_to_too_long_poly_() {
-        commit_to_too_long_poly_returns_err::<
-        ZBackend
-        >(&generate_trusted_setup);
+        commit_to_too_long_poly_returns_err::<ZBackend>(&generate_trusted_setup);
     }
 
     #[test]
     fn proof_multi_() {
-        proof_multi::<ZBackend>(
-            &generate_trusted_setup,
-        );
+        proof_multi::<ZBackend>(&generate_trusted_setup);
     }
 }

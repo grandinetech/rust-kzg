@@ -8,15 +8,15 @@ use crate::kzg_proofs::{
 };
 use crate::poly::PolyData;
 use crate::utils::{
-    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective, fft_settings_to_rust, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PRECOMPUTATION_TABLES
+    blst_fr_into_pc_fr, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
+    fft_settings_to_rust, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
+    pc_g2projective_into_blst_p2, PRECOMPUTATION_TABLES,
 };
 use bls12_381::{Fp, G1Affine, G1Projective, G2Affine, G2Projective, Scalar, MODULUS, R2};
 use blst::{blst_fr, blst_p1};
 use ff::Field;
 use kzg::common_utils::reverse_bit_order;
-use kzg::eip_4844::{
-    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, 
-};
+use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 use kzg::eth::c_bindings::CKZGSettings;
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{eth, G1Affine as G1AffineTrait};
@@ -930,7 +930,7 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
             fs: fft_settings.clone(),
             x_ext_fft_columns,
             precomputation: precompute(g1_lagrange_brp).ok().flatten().map(Arc::new),
-            cell_size
+            cell_size,
         })
     }
 
@@ -1091,7 +1091,7 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
     fn get_x_ext_fft_column(&self, index: usize) -> &[ZG1] {
         &self.x_ext_fft_columns[index]
     }
-    
+
     fn get_cell_size(&self) -> usize {
         self.cell_size
     }
@@ -1104,19 +1104,28 @@ impl<'a> TryFrom<&'a CKZGSettings> for ZKZGSettings {
         Ok(ZKZGSettings {
             fs: fft_settings_to_rust(c_settings)?,
             g1_values_monomial: unsafe {
-                core::slice::from_raw_parts(c_settings.g1_values_monomial, eth::FIELD_ELEMENTS_PER_BLOB)
+                core::slice::from_raw_parts(
+                    c_settings.g1_values_monomial,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
             }
             .iter()
             .map(|r| ZG1::from_blst_p1(*r))
             .collect::<Vec<_>>(),
             g1_values_lagrange_brp: unsafe {
-                core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, eth::FIELD_ELEMENTS_PER_BLOB)
+                core::slice::from_raw_parts(
+                    c_settings.g1_values_lagrange_brp,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
             }
             .iter()
             .map(|r| ZG1::from_blst_p1(*r))
             .collect::<Vec<_>>(),
             g2_values_monomial: unsafe {
-                core::slice::from_raw_parts(c_settings.g2_values_monomial, eth::TRUSTED_SETUP_NUM_G2_POINTS)
+                core::slice::from_raw_parts(
+                    c_settings.g2_values_monomial,
+                    eth::TRUSTED_SETUP_NUM_G2_POINTS,
+                )
             }
             .iter()
             .map(|r| ZG2::from_blst_p2(*r))

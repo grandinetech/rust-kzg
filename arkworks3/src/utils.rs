@@ -3,15 +3,15 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use kzg::{
-    eip_4844::{
-        Blob, CKZGSettings, PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT, C_KZG_RET,
-        C_KZG_RET_BADARGS, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
-        FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
+    eip_4844::{PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT},
+    eth::{
+        self,
+        c_bindings::{Blob, CKZGSettings, CKzgRet},
     },
     Fr,
 };
 
-use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2, LFFTSettings, LKZGSettings};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, LFFTSettings, LKZGSettings};
 
 use super::{Fp, P1};
 use crate::P2;
@@ -30,7 +30,7 @@ pub struct PolyData {
 }
 // FIXME: Store just dense poly here
 
-pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C_KZG_RET> {
+pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, CKzgRet> {
     (*blob)
         .bytes
         .chunks(BYTES_PER_FIELD_ELEMENT)
@@ -40,17 +40,17 @@ pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, C
             if let Ok(result) = ArkFr::from_bytes(&bytes) {
                 Ok(result)
             } else {
-                Err(C_KZG_RET_BADARGS)
+                Err(CKzgRet::BadArgs)
             }
         })
-        .collect::<Result<Vec<ArkFr>, C_KZG_RET>>()
+        .collect::<Result<Vec<ArkFr>, CKzgRet>>()
 }
 
 macro_rules! handle_ckzg_badargs {
     ($x: expr) => {
         match $x {
             Ok(value) => value,
-            Err(_) => return kzg::eip_4844::C_KZG_RET_BADARGS,
+            Err(_) => return kzg::eth::c_bindings::CKzgRet::BadArgs,
         }
     };
 }
@@ -63,23 +63,29 @@ pub(crate) fn fft_settings_to_rust(
     let settings = unsafe { &*c_settings };
 
     let roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
-            .iter()
-            .map(|r| ArkFr(*r))
-            .collect::<Vec<ArkFr>>()
+        core::slice::from_raw_parts(
+            settings.roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        )
+        .iter()
+        .map(|r| ArkFr(*r))
+        .collect::<Vec<ArkFr>>()
     };
 
     let brp_roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
-            .iter()
-            .map(|r| ArkFr(*r))
-            .collect::<Vec<ArkFr>>()
+        core::slice::from_raw_parts(
+            settings.brp_roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB,
+        )
+        .iter()
+        .map(|r| ArkFr(*r))
+        .collect::<Vec<ArkFr>>()
     };
 
     let reverse_roots_of_unity = unsafe {
         core::slice::from_raw_parts(
             settings.reverse_roots_of_unity,
-            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1,
         )
         .iter()
         .map(|r| ArkFr(*r))
@@ -87,7 +93,7 @@ pub(crate) fn fft_settings_to_rust(
     };
 
     Ok(LFFTSettings {
-        max_width: FIELD_ELEMENTS_PER_EXT_BLOB,
+        max_width: eth::FIELD_ELEMENTS_PER_EXT_BLOB,
         root_of_unity: roots_of_unity[1],
         roots_of_unity,
         brp_roots_of_unity,
@@ -101,45 +107,6 @@ pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
     ArkFp,
     ArkG1Affine,
 > = PrecomputationTableManager::new();
-
-pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<LKZGSettings, String> {
-    Ok(LKZGSettings {
-        fs: fft_settings_to_rust(c_settings)?,
-        g1_values_monomial: unsafe {
-            core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
-        }
-        .iter()
-        .map(|r| ArkG1::from_blst_p1(*r))
-        .collect::<Vec<_>>(),
-        g1_values_lagrange_brp: unsafe {
-            core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, FIELD_ELEMENTS_PER_BLOB)
-        }
-        .iter()
-        .map(|r| ArkG1::from_blst_p1(*r))
-        .collect::<Vec<_>>(),
-        g2_values_monomial: unsafe {
-            core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
-        }
-        .iter()
-        .map(|r| ArkG2::from_blst_p2(*r))
-        .collect::<Vec<_>>(),
-        x_ext_fft_columns: unsafe {
-            core::slice::from_raw_parts(
-                c_settings.x_ext_fft_columns,
-                2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
-            )
-        }
-        .iter()
-        .map(|it| {
-            unsafe { core::slice::from_raw_parts(*it, FIELD_ELEMENTS_PER_CELL) }
-                .iter()
-                .map(|it| ArkG1::from_blst_p1(*it))
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>(),
-        precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
-    })
-}
 
 pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
     CKZGSettings {
