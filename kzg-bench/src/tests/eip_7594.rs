@@ -2,7 +2,10 @@ use super::utils::{get_manifest_dir, get_trusted_setup_path};
 use crate::test_vectors::{
     compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs, verify_cell_kzg_proof_batch,
 };
-use kzg::{eth, EcBackend, Fr, DAS, G1};
+use kzg::{
+    eth::{self, FIELD_ELEMENTS_PER_CELL},
+    EcBackend, Fr, DAS, G1,
+};
 use std::{fs, path::PathBuf};
 
 const COMPUTE_CELLS_AND_KZG_PROOFS_TEST_VECTORS: &str =
@@ -40,15 +43,11 @@ pub fn test_vectors_compute_cells_and_kzg_proofs<B: EcBackend>(
             }
         };
 
-        let mut recv_cells = vec![
-            core::array::from_fn::<_, { eth::FIELD_ELEMENTS_PER_CELL }, _>(
-                |_| B::Fr::default()
-            );
-            eth::CELLS_PER_EXT_BLOB
-        ];
+        let mut recv_cells =
+            vec![B::Fr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
         let mut recv_proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
-        match <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::compute_cells_and_kzg_proofs(
+        match <B::KZGSettings as DAS<B>>::compute_cells_and_kzg_proofs(
             &settings,
             Some(&mut recv_cells),
             Some(&mut recv_proofs),
@@ -59,7 +58,7 @@ pub fn test_vectors_compute_cells_and_kzg_proofs<B: EcBackend>(
                 let (exp_cells, exp_proofs) = test.get_output().unwrap();
 
                 let recv_cells = recv_cells
-                    .into_iter()
+                    .chunks(FIELD_ELEMENTS_PER_CELL)
                     .map(|it| it.iter().flat_map(|it| it.to_bytes()).collect::<Vec<_>>())
                     .collect::<Vec<Vec<u8>>>();
                 let recv_proofs = recv_proofs
@@ -106,17 +105,10 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<B: EcBackend>(
             .get_cell_bytes()
             .unwrap()
             .iter()
-            .map(|bytes| {
-                match bytes
+            .flat_map(|bytes| {
+                bytes
                     .chunks(eth::BYTES_PER_FIELD_ELEMENT)
                     .map(B::Fr::from_bytes)
-                    .collect::<Result<Vec<_>, String>>()
-                {
-                    Ok(value) => value
-                        .try_into()
-                        .map_err(|_| "Invalid field element per cell count".to_string()),
-                    Err(err) => Err(err),
-                }
             })
             .collect::<Result<Vec<_>, _>>()
         {
@@ -137,17 +129,12 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<B: EcBackend>(
             }
         };
 
-        let mut recv_cells = vec![
-            vec![B::Fr::default(); eth::FIELD_ELEMENTS_PER_CELL]
-                .try_into()
-                .map_err(|_| ())
-                .expect("Failed to create output cells");
-            eth::CELLS_PER_EXT_BLOB
-        ];
+        let mut recv_cells =
+            vec![B::Fr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
 
         let mut recv_proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
-        match <B::KZGSettings as DAS<B, {eth::FIELD_ELEMENTS_PER_CELL}, eth::Mainnet>>::recover_cells_and_kzg_proofs(
+        match <B::KZGSettings as DAS<B>>::recover_cells_and_kzg_proofs(
             &settings,
             &mut recv_cells,
             Some(&mut recv_proofs),
@@ -163,7 +150,7 @@ pub fn test_vectors_recover_cells_and_kzg_proofs<B: EcBackend>(
                 let (exp_cells, exp_proofs) = test_output.unwrap();
 
                 let recv_cells = recv_cells
-                    .into_iter()
+                    .chunks(eth::FIELD_ELEMENTS_PER_CELL)
                     .map(|it| it.iter().flat_map(|it| it.to_bytes()).collect::<Vec<_>>())
                     .collect::<Vec<Vec<u8>>>();
 
@@ -210,17 +197,10 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<B: EcBackend>(
             .get_cell_bytes()
             .unwrap()
             .iter()
-            .map(|bytes| {
-                match bytes
+            .flat_map(|bytes| {
+                bytes
                     .chunks(eth::BYTES_PER_FIELD_ELEMENT)
                     .map(B::Fr::from_bytes)
-                    .collect::<Result<Vec<_>, String>>()
-                {
-                    Ok(value) => value
-                        .try_into()
-                        .map_err(|_| "Invalid field element per cell count".to_string()),
-                    Err(err) => Err(err),
-                }
             })
             .collect::<Result<Vec<_>, _>>()
         {
@@ -293,7 +273,7 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<B: EcBackend>(
 
         let cell_indices = test.input.get_cell_indices().unwrap();
 
-        match <B::KZGSettings as DAS<B, {eth::FIELD_ELEMENTS_PER_CELL}, eth::Mainnet>>::verify_cell_kzg_proof_batch(
+        match <B::KZGSettings as DAS<B>>::verify_cell_kzg_proof_batch(
             &settings,
             &commitments,
             &cell_indices,

@@ -7,7 +7,7 @@ use alloc::{vec, vec::Vec};
 use kzg::eth::c_bindings::CKZGSettings;
 use kzg::eth::{self, FIELD_ELEMENTS_PER_EXT_BLOB};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
-use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, Preset, G1, G2};
+use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::fft_g1::fft_g1_fast;
@@ -30,21 +30,11 @@ pub struct FsKZGSettings {
     pub g2_values_monomial: Vec<FsG2>,
     pub precomputation: Option<Arc<PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>>,
     pub x_ext_fft_columns: Vec<Vec<FsG1>>,
+    pub cell_size: usize,
 }
 
-fn g1_fft<P: Preset>(output: &mut [FsG1], input: &[FsG1], s: &FsFFTSettings) -> Result<(), String> {
-    /* Ensure the length is valid */
-    if input.len() > P::FIELD_ELEMENTS_PER_EXT_BLOB || !input.len().is_power_of_two() {
-        return Err("Invalid input size".to_string());
-    }
-
-    let roots_stride = P::FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
-    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride);
-
-    Ok(())
-}
-
-fn toeplitz_part_1<P: Preset>(
+fn toeplitz_part_1(
+    field_elements_per_ext_blob: usize,
     output: &mut [FsG1],
     x: &[FsG1],
     s: &FsFFTSettings,
@@ -55,7 +45,15 @@ fn toeplitz_part_1<P: Preset>(
 
     x_ext[..n].copy_from_slice(x);
 
-    g1_fft::<P>(output, &x_ext, s)?;
+    let x_ext = &x_ext[..];
+
+    /* Ensure the length is valid */
+    if x_ext.len() > field_elements_per_ext_blob || !x_ext.len().is_power_of_two() {
+        return Err("Invalid input size".to_string());
+    }
+
+    let roots_stride = field_elements_per_ext_blob / x_ext.len();
+    fft_g1_fast(output, x_ext, 1, &s.roots_of_unity, roots_stride);
 
     Ok(())
 }
@@ -66,44 +64,32 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         g1_lagrange_brp: &[FsG1],
         g2_monomial: &[FsG2],
         fft_settings: &FsFFTSettings,
+        cell_size: usize,
     ) -> Result<Self, String> {
-        Self::new_for_preset::<{ eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>(
-            g1_monomial,
-            g1_lagrange_brp,
-            g2_monomial,
-            fft_settings,
-        )
-    }
-
-    fn new_for_preset<const FIELD_ELEMENTS_PER_CELL: usize, P: Preset>(
-        g1_monomial: &[FsG1],
-        g1_lagrange_brp: &[FsG1],
-        g2_monomial: &[FsG2],
-        fft_settings: &FsFFTSettings,
-    ) -> Result<Self, String> {
-        if g1_monomial.len() != P::FIELD_ELEMENTS_PER_BLOB
-            || g1_lagrange_brp.len() != P::FIELD_ELEMENTS_PER_BLOB
-        {
-            return Err("Length does not match FIELD_ELEMENTS_PER_BLOB".to_string());
+        if g1_monomial.len() != g1_lagrange_brp.len() {
+            return Err("G1 point length mismatch".to_string());
         }
 
-        let n = P::FIELD_ELEMENTS_PER_EXT_BLOB / 2;
-        let k = n / FIELD_ELEMENTS_PER_CELL;
+        let field_elements_per_blob = g1_monomial.len();
+        let field_elements_per_ext_blob = field_elements_per_blob * 2;
+
+        let n = field_elements_per_ext_blob / 2;
+        let k = n / cell_size;
         let k2 = 2 * k;
 
         let mut points = vec![FsG1::default(); k2];
         let mut x = vec![FsG1::default(); k];
-        let mut x_ext_fft_columns = vec![vec![FsG1::default(); FIELD_ELEMENTS_PER_CELL]; k2];
+        let mut x_ext_fft_columns = vec![vec![FsG1::default(); cell_size]; k2];
 
-        for offset in 0..FIELD_ELEMENTS_PER_CELL {
-            let start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for offset in 0..cell_size {
+            let start = n - cell_size - 1 - offset;
             for (i, p) in x.iter_mut().enumerate().take(k - 1) {
-                let j = start - i * FIELD_ELEMENTS_PER_CELL;
+                let j = start - i * cell_size;
                 *p = g1_monomial[j];
             }
             x[k - 1] = FsG1::identity();
 
-            toeplitz_part_1::<P>(&mut points, &x, fft_settings)?;
+            toeplitz_part_1(field_elements_per_ext_blob, &mut points, &x, fft_settings)?;
 
             for row in 0..k2 {
                 x_ext_fft_columns[row][offset] = points[row];
@@ -137,6 +123,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
                     precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
                 }
             },
+            cell_size,
         })
     }
 
@@ -308,6 +295,10 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
     fn get_x_ext_fft_column(&self, index: usize) -> &[FsG1] {
         &self.x_ext_fft_columns[index]
     }
+
+    fn get_cell_size(&self) -> usize {
+        self.cell_size
+    }
 }
 
 impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
@@ -390,6 +381,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
             })
             .collect::<Vec<_>>(),
             precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(settings) },
+            cell_size: eth::FIELD_ELEMENTS_PER_CELL,
         })
     }
 }

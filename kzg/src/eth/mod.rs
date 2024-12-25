@@ -1,5 +1,3 @@
-use crate::Preset;
-
 pub mod c_bindings;
 
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
@@ -16,11 +14,3 @@ pub const CELLS_PER_EXT_BLOB: usize = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMEN
 pub const RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN: [u8; 16] = *b"RCKZGCBATCH__V1_";
 pub const TRUSTED_SETUP_NUM_G1_POINTS: usize = 4096;
 pub const TRUSTED_SETUP_NUM_G2_POINTS: usize = 65;
-
-pub struct Mainnet;
-
-impl Preset for Mainnet {
-    const FIELD_ELEMENTS_PER_BLOB: usize = FIELD_ELEMENTS_PER_BLOB;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = FIELD_ELEMENTS_PER_BLOB * 2;
-    const CELLS_PER_EXT_BLOB: usize = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
-}

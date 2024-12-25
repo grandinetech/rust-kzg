@@ -1,7 +1,7 @@
 use criterion::Criterion;
 use kzg::{
     common_utils::{is_power_of_two, log2_pow2},
-    EcBackend, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly, Preset,
+    EcBackend, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly,
 };
 use rand::{thread_rng, RngCore};
 
@@ -11,14 +11,6 @@ pub const SECRET: [u8; 32usize] = [
 ];
 
 const BENCH_SCALE: usize = 14;
-
-struct TestPreset1;
-
-impl Preset for TestPreset1 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 16385;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 32770;
-    const CELLS_PER_EXT_BLOB: usize = 2048;
-}
 
 #[allow(clippy::type_complexity)]
 pub fn bench_fk_single_da<
@@ -52,7 +44,7 @@ pub fn bench_fk_single_da<
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(BENCH_SCALE).unwrap();
-    let ks = B::KZGSettings::new_for_preset::<16, TestPreset1>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 16).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -61,14 +53,6 @@ pub fn bench_fk_single_da<
     // Generate the proofs
     let id = format!("bench_fk_single_da scale: '{}'", BENCH_SCALE);
     c.bench_function(&id, |b| b.iter(|| fk.data_availability(&p).unwrap()));
-}
-
-struct TestPreset2;
-
-impl Preset for TestPreset2 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 32768;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 65536;
-    const CELLS_PER_EXT_BLOB: usize = 4096;
 }
 
 #[allow(clippy::type_complexity)]
@@ -104,7 +88,7 @@ pub fn bench_fk_multi_da<
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(width).unwrap();
-    let ks = B::KZGSettings::new_for_preset::<16, TestPreset2>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 16).unwrap();
     let fk = TFK20MultiSettings::new(&ks, secrets_len, chunk_len).unwrap();
 
     // Create a test polynomial of size n that's independent of chunk_len

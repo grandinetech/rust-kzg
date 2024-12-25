@@ -2,18 +2,16 @@ use std::path::PathBuf;
 
 use crate::tests::eip_4844::generate_random_blob_bytes;
 use criterion::{BenchmarkId, Criterion};
-use kzg::eip_4844::TRUSTED_SETUP_PATH;
-use kzg::eth::{self, BYTES_PER_BLOB, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL};
-use kzg::{EcBackend, DAS};
+use kzg::{eip_4844::TRUSTED_SETUP_PATH, eth, EcBackend, DAS};
 
 pub fn get_partial_cells<T: Clone>(cells: &[T], m: usize) -> (Vec<usize>, Vec<T>) {
     let mut cell_indices = Vec::new();
     let mut partial_cells = Vec::new();
 
-    for (i, cell) in cells.iter().enumerate() {
+    for (i, cell) in cells.chunks(eth::FIELD_ELEMENTS_PER_CELL).enumerate() {
         if i % m != 0 {
             cell_indices.push(i);
-            partial_cells.push(cell.clone());
+            partial_cells.extend_from_slice(cell);
         }
     }
 
@@ -39,7 +37,7 @@ pub fn bench_eip_7594<B: EcBackend>(
 
     const MAX_COUNT: usize = 64;
 
-    let blobs: Vec<[u8; BYTES_PER_BLOB]> = (0..MAX_COUNT)
+    let blobs: Vec<[u8; eth::BYTES_PER_BLOB]> = (0..MAX_COUNT)
         .map(|_| generate_random_blob_bytes(&mut rng))
         .collect();
 
@@ -49,14 +47,17 @@ pub fn bench_eip_7594<B: EcBackend>(
 
     for blob in blobs.iter() {
         let mut cells =
-            vec![
-                core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| B::Fr::default());
-                CELLS_PER_EXT_BLOB
-            ];
-        let mut proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
+            vec![B::Fr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
+        let mut proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
         let blob = bytes_to_blob(blob).unwrap();
-        <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::compute_cells_and_kzg_proofs(&ts, Some(&mut cells), Some(&mut proofs), &blob).unwrap();
+        <B::KZGSettings as DAS<B>>::compute_cells_and_kzg_proofs(
+            &ts,
+            Some(&mut cells),
+            Some(&mut proofs),
+            &blob,
+        )
+        .unwrap();
         blob_cells.push(cells);
         blob_cell_proofs.push(proofs);
         blob_commitments.push(blob_to_kzg_commitment(&blob, &ts).unwrap());
@@ -72,14 +73,16 @@ pub fn bench_eip_7594<B: EcBackend>(
             let blob = bytes_to_blob(blob_bytes).unwrap();
 
             let mut recv_cells =
-                vec![
-                    core::array::from_fn::<_, FIELD_ELEMENTS_PER_CELL, _>(|_| B::Fr::default());
-                    CELLS_PER_EXT_BLOB
-                ];
-            let mut recv_proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
+                vec![B::Fr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
+            let mut recv_proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
-            <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::compute_cells_and_kzg_proofs(&ts, Some(&mut recv_cells), Some(&mut recv_proofs), &blob)
-                .unwrap();
+            <B::KZGSettings as DAS<B>>::compute_cells_and_kzg_proofs(
+                &ts,
+                Some(&mut recv_cells),
+                Some(&mut recv_proofs),
+                &blob,
+            )
+            .unwrap();
         });
     });
 
@@ -90,16 +93,12 @@ pub fn bench_eip_7594<B: EcBackend>(
 
         group.bench_function(BenchmarkId::from_parameter(percent_missing), |b| {
             b.iter(|| {
-                let mut recv_cells = vec![
-                    vec![B::Fr::default(); FIELD_ELEMENTS_PER_CELL]
-                        .try_into()
-                        .unwrap();
-                    CELLS_PER_EXT_BLOB
-                ];
+                let mut recv_cells =
+                    vec![B::Fr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
 
-                let mut recv_proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
+                let mut recv_proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
-                <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::recover_cells_and_kzg_proofs(
+                <B::KZGSettings as DAS<B>>::recover_cells_and_kzg_proofs(
                     &ts,
                     &mut recv_cells,
                     Some(&mut recv_proofs),
@@ -114,21 +113,17 @@ pub fn bench_eip_7594<B: EcBackend>(
 
     let mut group = c.benchmark_group("recover_cells_and_kzg_proofs (missing)");
     for i in 1..=5 {
-        let modulo = (CELLS_PER_EXT_BLOB + i - 1) / i;
+        let modulo = (eth::CELLS_PER_EXT_BLOB + i - 1) / i;
         let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], modulo);
 
         group.bench_function(BenchmarkId::from_parameter(i), |b| {
             b.iter(|| {
-                let mut recv_cells = vec![
-                    vec![B::Fr::default(); FIELD_ELEMENTS_PER_CELL]
-                        .try_into()
-                        .unwrap();
-                    CELLS_PER_EXT_BLOB
-                ];
+                let mut recv_cells =
+                    vec![B::Fr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
 
-                let mut recv_proofs = vec![B::G1::default(); CELLS_PER_EXT_BLOB];
+                let mut recv_proofs = vec![B::G1::default(); eth::CELLS_PER_EXT_BLOB];
 
-                <B::KZGSettings as DAS<B, { eth::FIELD_ELEMENTS_PER_CELL }, eth::Mainnet>>::recover_cells_and_kzg_proofs(
+                <B::KZGSettings as DAS<B>>::recover_cells_and_kzg_proofs(
                     &ts,
                     &mut recv_cells,
                     Some(&mut recv_proofs),
@@ -142,26 +137,22 @@ pub fn bench_eip_7594<B: EcBackend>(
     group.finish();
 
     c.bench_function("verify_cell_kzg_proof_batch", |b| {
-        let mut cell_commitments = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
-        let mut cell_indices = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
-        let mut cells = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
-        let mut cell_proofs = Vec::with_capacity(MAX_COUNT * CELLS_PER_EXT_BLOB);
+        let mut cell_commitments = Vec::with_capacity(MAX_COUNT * eth::CELLS_PER_EXT_BLOB);
+        let mut cell_indices = Vec::with_capacity(MAX_COUNT * eth::CELLS_PER_EXT_BLOB);
+        let mut cells = Vec::with_capacity(MAX_COUNT * eth::CELLS_PER_EXT_BLOB);
+        let mut cell_proofs = Vec::with_capacity(MAX_COUNT * eth::CELLS_PER_EXT_BLOB);
 
         for (row_index, blob_cell) in blob_cells.iter().enumerate() {
-            for (cell_index, cell) in blob_cell.iter().enumerate() {
+            for (cell_index, cell) in blob_cell.chunks(eth::FIELD_ELEMENTS_PER_CELL).enumerate() {
                 cell_commitments.push(blob_commitments[row_index].clone());
                 cell_indices.push(cell_index);
-                cells.push(cell.clone());
+                cells.extend_from_slice(cell);
                 cell_proofs.push(blob_cell_proofs[row_index][cell_index].clone());
             }
         }
 
         b.iter(|| {
-            let result = <B::KZGSettings as DAS<
-                B,
-                { eth::FIELD_ELEMENTS_PER_CELL },
-                eth::Mainnet,
-            >>::verify_cell_kzg_proof_batch(
+            let result = <B::KZGSettings as DAS<B>>::verify_cell_kzg_proof_batch(
                 &ts,
                 &cell_commitments,
                 &cell_indices,
@@ -176,26 +167,23 @@ pub fn bench_eip_7594<B: EcBackend>(
     let mut group = c.benchmark_group("verify_cell_kzg_proof_batch (rows)");
     for i in (0..=MAX_COUNT.ilog2()).map(|exp| 2usize.pow(exp)) {
         group.bench_function(BenchmarkId::from_parameter(i), |b| {
-            let mut cell_commitments = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
-            let mut cell_indices = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
-            let mut cells = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
-            let mut cell_proofs = Vec::with_capacity(i * CELLS_PER_EXT_BLOB);
+            let mut cell_commitments = Vec::with_capacity(i * eth::CELLS_PER_EXT_BLOB);
+            let mut cell_indices = Vec::with_capacity(i * eth::CELLS_PER_EXT_BLOB);
+            let mut cells = Vec::with_capacity(i * eth::CELLS_PER_EXT_BLOB);
+            let mut cell_proofs = Vec::with_capacity(i * eth::CELLS_PER_EXT_BLOB);
 
             for (row_index, blob_cell) in blob_cells.iter().take(i).enumerate() {
-                for (cell_index, cell) in blob_cell.iter().enumerate() {
+                for (cell_index, cell) in blob_cell.chunks(eth::FIELD_ELEMENTS_PER_CELL).enumerate()
+                {
                     cell_commitments.push(blob_commitments[row_index].clone());
                     cell_indices.push(cell_index);
-                    cells.push(cell.clone());
+                    cells.extend_from_slice(cell);
                     cell_proofs.push(blob_cell_proofs[row_index][cell_index].clone());
                 }
             }
 
             b.iter(|| {
-                let result = <B::KZGSettings as DAS<
-                    B,
-                    { eth::FIELD_ELEMENTS_PER_CELL },
-                    eth::Mainnet,
-                >>::verify_cell_kzg_proof_batch(
+                let result = <B::KZGSettings as DAS<B>>::verify_cell_kzg_proof_batch(
                     &ts,
                     &cell_commitments,
                     &cell_indices,
@@ -210,7 +198,7 @@ pub fn bench_eip_7594<B: EcBackend>(
     group.finish();
 
     let mut group = c.benchmark_group("verify_cell_kzg_proof_batch (columns)");
-    for i in (0..=CELLS_PER_EXT_BLOB.ilog2()).map(|exp| 2usize.pow(exp)) {
+    for i in (0..=eth::CELLS_PER_EXT_BLOB.ilog2()).map(|exp| 2usize.pow(exp)) {
         group.bench_function(BenchmarkId::from_parameter(i), |b| {
             let mut cell_commitments = Vec::with_capacity(MAX_COUNT * i);
             let mut cell_indices = Vec::with_capacity(MAX_COUNT * i);
@@ -218,20 +206,20 @@ pub fn bench_eip_7594<B: EcBackend>(
             let mut cell_proofs = Vec::with_capacity(MAX_COUNT * i);
 
             for (row_index, blob_cell) in blob_cells.iter().enumerate() {
-                for (cell_index, cell) in blob_cell.iter().take(i).enumerate() {
+                for (cell_index, cell) in blob_cell
+                    .chunks(eth::FIELD_ELEMENTS_PER_CELL)
+                    .take(i)
+                    .enumerate()
+                {
                     cell_commitments.push(blob_commitments[row_index].clone());
                     cell_indices.push(cell_index);
-                    cells.push(cell.clone());
+                    cells.extend_from_slice(cell);
                     cell_proofs.push(blob_cell_proofs[row_index][cell_index].clone());
                 }
             }
 
             b.iter(|| {
-                let result = <B::KZGSettings as DAS<
-                    B,
-                    { eth::FIELD_ELEMENTS_PER_CELL },
-                    eth::Mainnet,
-                >>::verify_cell_kzg_proof_batch(
+                let result = <B::KZGSettings as DAS<B>>::verify_cell_kzg_proof_batch(
                     &ts,
                     &cell_commitments,
                     &cell_indices,

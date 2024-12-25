@@ -6,8 +6,7 @@ use crate::{
 };
 
 use super::{
-    Mainnet, BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
-    BYTES_PER_PROOF,
+    BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
 };
 
 use crate::alloc::{
@@ -136,29 +135,25 @@ unsafe fn deserialize_blob<B: EcBackend>(
 /// # Safety
 pub unsafe fn compute_cells_and_kzg_proofs<
     B: EcBackend,
-    D: DAS<B, FIELD_ELEMENTS_PER_CELL, Mainnet> + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
+    D: DAS<B> + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
 >(
     cells: *mut Cell,
     proofs: *mut KZGProof,
     blob: *const Blob,
     settings: *const CKZGSettings,
 ) -> CKzgRet {
-    unsafe fn inner<
-        B: EcBackend,
-        D: DAS<B, FIELD_ELEMENTS_PER_CELL, Mainnet>
-            + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
-    >(
+    unsafe fn inner<B: EcBackend, D: DAS<B> + for<'a> TryFrom<&'a CKZGSettings, Error = String>>(
         cells: *mut Cell,
         proofs: *mut KZGProof,
         blob: *const Blob,
         settings: *const CKZGSettings,
     ) -> Result<(), String> {
-        let mut cells_rs: Option<Vec<[B::Fr; FIELD_ELEMENTS_PER_CELL]>> = if cells.is_null() {
+        let mut cells_rs: Option<Vec<B::Fr>> = if cells.is_null() {
             None
         } else {
             Some(vec![
-                core::array::from_fn(|_| B::Fr::default());
-                CELLS_PER_EXT_BLOB
+                B::Fr::default();
+                CELLS_PER_EXT_BLOB * FIELD_ELEMENTS_PER_CELL
             ])
         };
         let mut proofs_rs = if proofs.is_null() {
@@ -178,12 +173,14 @@ pub unsafe fn compute_cells_and_kzg_proofs<
 
         if let Some(cells_rs) = cells_rs {
             let cells = core::slice::from_raw_parts_mut(cells, CELLS_PER_EXT_BLOB);
-            for (cell_index, cell) in cells_rs.iter().enumerate() {
-                for (fr_index, fr) in cell.iter().enumerate() {
-                    cells[cell_index].bytes[(fr_index * BYTES_PER_FIELD_ELEMENT)
-                        ..((fr_index + 1) * BYTES_PER_FIELD_ELEMENT)]
-                        .copy_from_slice(&fr.to_bytes());
-                }
+
+            for (cell_rs, cell_c) in cells_rs.chunks(FIELD_ELEMENTS_PER_CELL).zip(cells) {
+                cell_c.bytes.copy_from_slice(
+                    &cell_rs
+                        .iter()
+                        .flat_map(|fr| fr.to_bytes())
+                        .collect::<Vec<u8>>(),
+                );
             }
         }
 
@@ -206,7 +203,7 @@ pub unsafe fn compute_cells_and_kzg_proofs<
 /// # Safety
 pub unsafe fn recover_cells_and_kzg_proofs<
     B: EcBackend,
-    D: DAS<B, FIELD_ELEMENTS_PER_CELL, Mainnet> + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
+    D: DAS<B> + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
 >(
     recovered_cells: *mut Cell,
     recovered_proofs: *mut KZGProof,
@@ -215,11 +212,7 @@ pub unsafe fn recover_cells_and_kzg_proofs<
     num_cells: u64,
     s: *const CKZGSettings,
 ) -> CKzgRet {
-    unsafe fn inner<
-        B: EcBackend,
-        D: DAS<B, FIELD_ELEMENTS_PER_CELL, Mainnet>
-            + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
-    >(
+    unsafe fn inner<B: EcBackend, D: DAS<B> + for<'a> TryFrom<&'a CKZGSettings, Error = String>>(
         recovered_cells: *mut Cell,
         recovered_proofs: *mut KZGProof,
         cell_indices: *const u64,
@@ -227,8 +220,8 @@ pub unsafe fn recover_cells_and_kzg_proofs<
         num_cells: u64,
         s: *const CKZGSettings,
     ) -> Result<(), String> {
-        let mut recovered_cells_rs: Vec<[B::Fr; FIELD_ELEMENTS_PER_CELL]> =
-            vec![core::array::from_fn(|_| B::Fr::default()); CELLS_PER_EXT_BLOB];
+        let mut recovered_cells_rs: Vec<B::Fr> =
+            vec![B::Fr::default(); FIELD_ELEMENTS_PER_CELL * CELLS_PER_EXT_BLOB];
 
         let mut recovered_proofs_rs = if recovered_proofs.is_null() {
             None
@@ -242,15 +235,10 @@ pub unsafe fn recover_cells_and_kzg_proofs<
             .collect::<Vec<_>>();
         let cells = core::slice::from_raw_parts(cells, num_cells as usize)
             .iter()
-            .map(|it| -> Result<[B::Fr; FIELD_ELEMENTS_PER_CELL], String> {
+            .flat_map(|it| {
                 it.bytes
                     .chunks(BYTES_PER_FIELD_ELEMENT)
                     .map(B::Fr::from_bytes)
-                    .collect::<Result<Vec<_>, String>>()
-                    .and_then(|frs| {
-                        frs.try_into()
-                            .map_err(|_| "Invalid field element count per cell".to_string())
-                    })
             })
             .collect::<Result<Vec<_>, String>>()?;
         let settings: D = (&*s).try_into()?;
@@ -263,7 +251,10 @@ pub unsafe fn recover_cells_and_kzg_proofs<
         )?;
 
         let recovered_cells = core::slice::from_raw_parts_mut(recovered_cells, CELLS_PER_EXT_BLOB);
-        for (cell_c, cell_rs) in recovered_cells.iter_mut().zip(recovered_cells_rs.iter()) {
+        for (cell_c, cell_rs) in recovered_cells
+            .iter_mut()
+            .zip(recovered_cells_rs.chunks(FIELD_ELEMENTS_PER_CELL))
+        {
             cell_c.bytes.copy_from_slice(
                 &cell_rs
                     .iter()
@@ -300,7 +291,7 @@ pub unsafe fn recover_cells_and_kzg_proofs<
 /// # Safety
 pub unsafe fn verify_cell_kzg_proof_batch<
     B: EcBackend,
-    D: DAS<B, FIELD_ELEMENTS_PER_CELL, Mainnet> + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
+    D: DAS<B> + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
 >(
     ok: *mut bool,
     commitments_bytes: *const Bytes48,
@@ -310,11 +301,7 @@ pub unsafe fn verify_cell_kzg_proof_batch<
     num_cells: u64,
     s: *const CKZGSettings,
 ) -> CKzgRet {
-    unsafe fn inner<
-        B: EcBackend,
-        D: DAS<B, FIELD_ELEMENTS_PER_CELL, Mainnet>
-            + for<'a> TryFrom<&'a CKZGSettings, Error = String>,
-    >(
+    unsafe fn inner<B: EcBackend, D: DAS<B> + for<'a> TryFrom<&'a CKZGSettings, Error = String>>(
         ok: *mut bool,
         commitments_bytes: *const Bytes48,
         cell_indices: *const u64,
@@ -335,15 +322,10 @@ pub unsafe fn verify_cell_kzg_proof_batch<
 
         let cells = core::slice::from_raw_parts(cells, num_cells as usize)
             .iter()
-            .map(|it| -> Result<[B::Fr; FIELD_ELEMENTS_PER_CELL], String> {
+            .flat_map(|it| {
                 it.bytes
                     .chunks(BYTES_PER_FIELD_ELEMENT)
                     .map(B::Fr::from_bytes)
-                    .collect::<Result<Vec<_>, String>>()
-                    .and_then(|frs| {
-                        frs.try_into()
-                            .map_err(|_| "Invalid field element count per cell".to_string())
-                    })
             })
             .collect::<Result<Vec<_>, String>>()?;
 
