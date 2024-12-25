@@ -77,8 +77,15 @@ impl MixedKzgSettings {
         g1_lagrange_brp: &[CtG1],
         g2_monomial: &[CtG2],
         fft_settings: &CtFFTSettings,
+        cell_size: usize,
     ) -> Result<Self, String> {
-        let res = GenericContext::new(g1_monomial, g1_lagrange_brp, g2_monomial, fft_settings);
+        let res = GenericContext::new(
+            g1_monomial,
+            g1_lagrange_brp,
+            g2_monomial,
+            fft_settings,
+            cell_size,
+        );
         match res {
             Ok(generic_context) => Ok(Self::Generic(generic_context)),
             Err(x) => Err(x),
@@ -119,8 +126,15 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         g1_lagrange_brp: &[CtG1],
         g2_monomial: &[CtG2],
         fft_settings: &CtFFTSettings,
+        cell_size: usize,
     ) -> Result<Self, String> {
-        MixedKzgSettings::new(g1_monomial, g1_lagrange_brp, g2_monomial, fft_settings)
+        MixedKzgSettings::new(
+            g1_monomial,
+            g1_lagrange_brp,
+            g2_monomial,
+            fft_settings,
+            cell_size,
+        )
     }
 
     fn commit_to_poly(&self, p: &CtPoly) -> Result<CtG1, String> {
@@ -238,6 +252,15 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
             MixedKzgSettings::Generic(generic_context) => {
                 generic_context.get_x_ext_fft_column(index)
             }
+        }
+    }
+
+    fn get_cell_size(&self) -> usize {
+        match self {
+            MixedKzgSettings::Constantine(_) => {
+                panic!("Context not in generic format")
+            }
+            MixedKzgSettings::Generic(generic_context) => generic_context.get_cell_size(),
         }
     }
 }
