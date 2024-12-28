@@ -1,21 +1,21 @@
-From d0e5b619807c0b9e936ce178b2a8e019da020a14 Mon Sep 17 00:00:00 2001
+From 6de1858704912a5f3d7da23b7f630c821c9cf506 Mon Sep 17 00:00:00 2001
 From: sirse <artiom.tretjakovas2@gmail.com>
-Date: Thu, 16 May 2024 13:26:25 +0300
-Subject: [PATCH] Patch go bindings
+Date: Wed, 2 Oct 2024 07:45:45 +0000
+Subject: [PATCH] Patch Go binding
 
 ---
  bindings/go/main.go | 13 +++++++++----
  1 file changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/bindings/go/main.go b/bindings/go/main.go
-index bf344a1..4f1c0f4 100644
+index c912d09..edcc96f 100644
 --- a/bindings/go/main.go
 +++ b/bindings/go/main.go
 @@ -2,7 +2,15 @@ package ckzg4844
  
  // #cgo CFLAGS: -I${SRCDIR}/../../src
  // #cgo CFLAGS: -I${SRCDIR}/blst_headers
--// #include "c_kzg_4844.c"
+-// #include "ckzg.c"
 +// #ifndef BYTES_PER_G1
 +// #define BYTES_PER_G1 48
 +// #endif
@@ -23,8 +23,8 @@ index bf344a1..4f1c0f4 100644
 +// #define BYTES_PER_G2 96
 +// #endif
 +// #include <stdlib.h>
-+// #include "c_kzg_4844.h"
-+// #cgo LDFLAGS: -L${SRCDIR}/../../../../target/release -l:rust_kzg_arkworks3.a -lm
++// #include "ckzg.h"
++// #cgo LDFLAGS: -ldl -L${SRCDIR}/../../lib -lrust_kzg_arkworks3 -lm
  import "C"
  
  import (
@@ -39,5 +39,5 @@ index bf344a1..4f1c0f4 100644
  
  const (
 -- 
-2.36.2.windows.1
+2.46.1
 
