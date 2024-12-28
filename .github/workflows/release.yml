@@ -39,7 +39,7 @@ jobs:
       - name: "constantine - install deps"
         if: matrix.backend == 'constantine'
         run: |
-          sudo DEBIAN_FRONTEND='noninteractive' apt-fast install \
+          sudo DEBIAN_FRONTEND='noninteractive' apt-get install \
             --no-install-recommends -yq \
             libgmp-dev \
             llvm
