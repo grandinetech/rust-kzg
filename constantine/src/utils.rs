@@ -27,7 +27,7 @@ pub fn generate_trusted_setup(
 
     for _ in 0..n {
         s1.push(G1_GENERATOR.mul(&s_pow));
-        s2.push(G1_GENERATOR); // TODO: this should be lagrange form
+        s2.push(G1_GENERATOR.mul(&s_pow)); // TODO: this should be lagrange form
         s3.push(G2_GENERATOR.mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
