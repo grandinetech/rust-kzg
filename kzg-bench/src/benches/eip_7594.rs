@@ -4,11 +4,11 @@ use crate::tests::eip_4844::generate_random_blob_bytes;
 use criterion::{BenchmarkId, Criterion};
 use kzg::{eip_4844::TRUSTED_SETUP_PATH, eth, EcBackend, DAS};
 
-pub fn get_partial_cells<T: Clone>(cells: &[T], m: usize) -> (Vec<usize>, Vec<T>) {
+pub fn get_partial_cells<T: Clone>(cells: &[T], chunk_size: usize, m: usize) -> (Vec<usize>, Vec<T>) {
     let mut cell_indices = Vec::new();
     let mut partial_cells = Vec::new();
 
-    for (i, cell) in cells.chunks(eth::FIELD_ELEMENTS_PER_CELL).enumerate() {
+    for (i, cell) in cells.chunks(chunk_size).enumerate() {
         if i % m != 0 {
             cell_indices.push(i);
             partial_cells.extend_from_slice(cell);
@@ -89,7 +89,7 @@ pub fn bench_eip_7594<B: EcBackend>(
     let mut group = c.benchmark_group("recover_cells_and_kzg_proofs (% missing)");
     for i in [2, 4, 8] {
         let percent_missing = 100.0 / (i as f64);
-        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], i);
+        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], eth::FIELD_ELEMENTS_PER_CELL, i);
 
         group.bench_function(BenchmarkId::from_parameter(percent_missing), |b| {
             b.iter(|| {
@@ -114,7 +114,7 @@ pub fn bench_eip_7594<B: EcBackend>(
     let mut group = c.benchmark_group("recover_cells_and_kzg_proofs (missing)");
     for i in 1..=5 {
         let modulo = (eth::CELLS_PER_EXT_BLOB + i - 1) / i;
-        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], modulo);
+        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], eth::FIELD_ELEMENTS_PER_CELL, modulo);
 
         group.bench_function(BenchmarkId::from_parameter(i), |b| {
             b.iter(|| {
