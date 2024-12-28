@@ -8,16 +8,14 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::eth;
-
 use crate::{
     common_utils::{reverse_bit_order, reverse_bits_limited},
     eip_4844::{
         blob_to_polynomial, compute_powers, hash, hash_to_bls_field, BYTES_PER_COMMITMENT,
         BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
     },
-    FFTFr, FFTSettings, Fr, G1Affine, G1Fp, G1LinComb, KZGSettings, PairingVerify, Poly, FFTG1, G1,
-    G2,
+    eth, FFTFr, FFTSettings, Fr, G1Affine, G1Fp, G1LinComb, KZGSettings, PairingVerify, Poly,
+    FFTG1, G1, G2,
 };
 
 pub const RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN: [u8; 16] = *b"RCKZGCBATCH__V1_";
@@ -185,7 +183,13 @@ pub trait DAS<B: EcBackend> {
         let fft_settings = kzg_settings.get_fft_settings();
 
         if cells.len() != 2 * ts_len {
-            recover_cells::<B>(cell_size, recovered_cells, cell_indices, fft_settings)?;
+            recover_cells::<B>(
+                cell_size,
+                recovered_cells,
+                cell_indices,
+                fft_settings,
+                2 * ts_len,
+            )?;
         }
 
         #[allow(clippy::redundant_slicing)]
@@ -343,6 +347,7 @@ pub trait DAS<B: EcBackend> {
             &r_powers,
             cell_indices,
             fft_settings,
+            ts_size * 2,
         )?;
 
         let final_g1_sum = final_g1_sum.add(&weighted_sum_of_proofs);
@@ -426,12 +431,15 @@ fn vanishing_polynomial_for_missing_cells<B: EcBackend>(
     cell_size: usize,
     missing_cell_indicies: &[usize],
     fft_settings: &B::FFTSettings,
+    field_elements_per_ext_blob: usize,
 ) -> Result<Vec<B::Fr>, String> {
-    if missing_cell_indicies.is_empty() || missing_cell_indicies.len() >= eth::CELLS_PER_EXT_BLOB {
+    let cells_per_ext_blob = field_elements_per_ext_blob / cell_size;
+
+    if missing_cell_indicies.is_empty() || missing_cell_indicies.len() >= cells_per_ext_blob {
         return Err("Invalid missing cell indicies count".to_string());
     }
 
-    let stride = eth::FIELD_ELEMENTS_PER_EXT_BLOB / eth::CELLS_PER_EXT_BLOB;
+    let stride = field_elements_per_ext_blob / cells_per_ext_blob;
 
     let roots = missing_cell_indicies
         .iter()
@@ -440,7 +448,7 @@ fn vanishing_polynomial_for_missing_cells<B: EcBackend>(
 
     let short_vanishing_poly = compute_vanishing_polynomial_from_roots::<B>(&roots)?;
 
-    let mut vanishing_poly = vec![B::Fr::zero(); eth::FIELD_ELEMENTS_PER_EXT_BLOB];
+    let mut vanishing_poly = vec![B::Fr::zero(); field_elements_per_ext_blob];
 
     for (i, coeff) in short_vanishing_poly.into_iter().enumerate() {
         vanishing_poly[i * cell_size] = coeff
@@ -454,21 +462,23 @@ fn recover_cells<B: EcBackend>(
     output: &mut [B::Fr],
     cell_indicies: &[usize],
     fft_settings: &B::FFTSettings,
+    field_elements_per_ext_blob: usize,
 ) -> Result<(), String> {
+    let cells_per_ext_blob = field_elements_per_ext_blob / cell_size;
     let mut missing_cell_indicies = Vec::new();
 
     let mut cells_brp = output.to_vec();
     reverse_bit_order(&mut cells_brp)?;
 
-    for i in 0..eth::CELLS_PER_EXT_BLOB {
+    for i in 0..cells_per_ext_blob {
         if !cell_indicies.contains(&i) {
-            missing_cell_indicies.push(reverse_bits_limited(eth::CELLS_PER_EXT_BLOB, i));
+            missing_cell_indicies.push(reverse_bits_limited(cells_per_ext_blob, i));
         }
     }
 
     let missing_cell_indicies = &missing_cell_indicies[..];
 
-    if missing_cell_indicies.len() > eth::CELLS_PER_EXT_BLOB / 2 {
+    if missing_cell_indicies.len() > cells_per_ext_blob / 2 {
         return Err("Not enough cells".to_string());
     }
 
@@ -476,13 +486,14 @@ fn recover_cells<B: EcBackend>(
         cell_size,
         missing_cell_indicies,
         fft_settings,
+        field_elements_per_ext_blob,
     )?;
 
     let vanishing_poly_eval = fft_settings.fft_fr(&vanishing_poly_coeff, false)?;
 
-    let mut extended_evaluation_times_zero = Vec::with_capacity(eth::FIELD_ELEMENTS_PER_EXT_BLOB);
+    let mut extended_evaluation_times_zero = Vec::with_capacity(field_elements_per_ext_blob);
 
-    for i in 0..eth::FIELD_ELEMENTS_PER_EXT_BLOB {
+    for i in 0..field_elements_per_ext_blob {
         if cells_brp[i].is_null() {
             extended_evaluation_times_zero.push(B::Fr::zero());
         } else {
@@ -497,7 +508,7 @@ fn recover_cells<B: EcBackend>(
 
     let vanishing_poly_over_coset = coset_fft::<B>(vanishing_poly_coeff, fft_settings)?;
 
-    for i in 0..eth::FIELD_ELEMENTS_PER_EXT_BLOB {
+    for i in 0..field_elements_per_ext_blob {
         extended_evaluations_over_coset[i] =
             extended_evaluations_over_coset[i].div(&vanishing_poly_over_coset[i])?;
     }
@@ -709,14 +720,21 @@ fn compute_weighted_sum_of_commitments<B: EcBackend>(
 }
 
 fn get_inv_coset_shift_for_cell<B: EcBackend>(
+    cell_size: usize,
     cell_index: usize,
     fft_settings: &B::FFTSettings,
+    field_elements_per_ext_blob: usize,
 ) -> Result<B::Fr, String> {
+    let cells_per_ext_blob = field_elements_per_ext_blob / cell_size;
     /*
      * Get the cell index in reverse-bit order.
      * This index points to this cell's coset factor h_k in the roots_of_unity array.
      */
-    let cell_index_rbl = CELL_INDICES_RBL[cell_index];
+    let cell_index_rbl = if cells_per_ext_blob == eth::CELLS_PER_EXT_BLOB {
+        CELL_INDICES_RBL[cell_index]
+    } else {
+        reverse_bits_limited(cells_per_ext_blob, cell_index)
+    };
 
     /*
      * Observe that for every element in roots_of_unity, we can find its inverse by
@@ -726,13 +744,13 @@ fn get_inv_coset_shift_for_cell<B: EcBackend>(
      *   roots = {w^0, w^1, w^2, ... w^7, w^0}
      * For a root of unity in roots[i], we can find its inverse in roots[-i].
      */
-    if cell_index_rbl > eth::FIELD_ELEMENTS_PER_EXT_BLOB {
+    if cell_index_rbl > field_elements_per_ext_blob {
         return Err("Invalid cell index".to_string());
     }
-    let inv_coset_factor_idx = eth::FIELD_ELEMENTS_PER_EXT_BLOB - cell_index_rbl;
+    let inv_coset_factor_idx = field_elements_per_ext_blob - cell_index_rbl;
 
     /* Get h_k^{-1} using the index */
-    if inv_coset_factor_idx > eth::FIELD_ELEMENTS_PER_EXT_BLOB {
+    if inv_coset_factor_idx > field_elements_per_ext_blob {
         return Err("Invalid cell index".to_string());
     }
 
@@ -747,7 +765,9 @@ fn compute_commitment_to_aggregated_interpolation_poly<B: EcBackend>(
     fft_settings: &B::FFTSettings,
     g1_monomial: &[B::G1],
 ) -> Result<B::G1, String> {
-    let mut aggregated_column_cells = vec![B::Fr::zero(); eth::CELLS_PER_EXT_BLOB * cell_size];
+    let cells_per_ext_blob = g1_monomial.len() * 2 / cell_size;
+
+    let mut aggregated_column_cells = vec![B::Fr::zero(); cells_per_ext_blob * cell_size];
 
     for (cell_index, column_index) in cell_indices.iter().enumerate() {
         for fr_index in 0..cell_size {
@@ -761,7 +781,7 @@ fn compute_commitment_to_aggregated_interpolation_poly<B: EcBackend>(
         }
     }
 
-    let mut is_cell_used = vec![false; eth::CELLS_PER_EXT_BLOB];
+    let mut is_cell_used = vec![false; cells_per_ext_blob];
 
     for cell_index in cell_indices {
         is_cell_used[*cell_index] = true;
@@ -780,7 +800,8 @@ fn compute_commitment_to_aggregated_interpolation_poly<B: EcBackend>(
         let mut column_interpolation_poly =
             fft_settings.fft_fr(&aggregated_column_cells[index..(index + cell_size)], true)?;
 
-        let inv_coset_factor = get_inv_coset_shift_for_cell::<B>(i, fft_settings)?;
+        let inv_coset_factor =
+            get_inv_coset_shift_for_cell::<B>(cell_size, i, fft_settings, g1_monomial.len() * 2)?;
 
         shift_poly::<B>(&mut column_interpolation_poly, &inv_coset_factor);
 
@@ -803,12 +824,18 @@ fn get_coset_shift_pow_for_cell<B: EcBackend>(
     cell_size: usize,
     cell_index: usize,
     fft_settings: &B::FFTSettings,
+    field_elements_per_ext_blob: usize,
 ) -> Result<B::Fr, String> {
+    let cells_per_ext_blob = field_elements_per_ext_blob / cell_size;
     /*
      * Get the cell index in reverse-bit order.
      * This index points to this cell's coset factor h_k in the roots_of_unity array.
      */
-    let cell_idx_rbl = CELL_INDICES_RBL[cell_index];
+    let cell_idx_rbl = if cells_per_ext_blob == eth::CELLS_PER_EXT_BLOB {
+        CELL_INDICES_RBL[cell_index]
+    } else {
+        reverse_bits_limited(cells_per_ext_blob, cell_index)
+    };
 
     /*
      * Get the index to h_k^n in the roots_of_unity array.
@@ -818,8 +845,7 @@ fn get_coset_shift_pow_for_cell<B: EcBackend>(
      */
     let h_k_pow_idx = cell_idx_rbl * cell_size;
 
-    // FIXME: cell_indices_rbl must be recomputed based on FIELD_ELEMENTS_PER_EXT_BLOB must be
-    if h_k_pow_idx > eth::FIELD_ELEMENTS_PER_EXT_BLOB {
+    if h_k_pow_idx > field_elements_per_ext_blob {
         return Err("Invalid cell index".to_string());
     }
 
@@ -833,6 +859,7 @@ fn computed_weighted_sum_of_proofs<B: EcBackend>(
     r_powers: &[B::Fr],
     cell_indices: &[usize],
     fft_settings: &B::FFTSettings,
+    field_elements_per_ext_blob: usize,
 ) -> Result<B::G1, String> {
     let num_cells = proofs.len();
 
@@ -842,7 +869,12 @@ fn computed_weighted_sum_of_proofs<B: EcBackend>(
 
     let mut weighted_powers_of_r = Vec::with_capacity(num_cells);
     for i in 0..num_cells {
-        let h_k_pow = get_coset_shift_pow_for_cell::<B>(cell_size, cell_indices[i], fft_settings)?;
+        let h_k_pow = get_coset_shift_pow_for_cell::<B>(
+            cell_size,
+            cell_indices[i],
+            fft_settings,
+            field_elements_per_ext_blob,
+        )?;
 
         weighted_powers_of_r.push(r_powers[i].mul(&h_k_pow));
     }
