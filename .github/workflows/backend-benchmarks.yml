@@ -44,7 +44,7 @@ jobs:
       - name: "constantine - install deps"
         if: matrix.backend == 'constantine' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo DEBIAN_FRONTEND='noninteractive' apt-fast install \
+          sudo DEBIAN_FRONTEND='noninteractive' apt-get install \
             --no-install-recommends -yq \
             libgmp-dev \
             llvm
@@ -52,6 +52,10 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ^1.19
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '7.x.x'
 
       - name: "${{ matrix.backend }} Benchmark"
         uses: actions-rs/cargo@v1
