@@ -195,6 +195,33 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
 
     PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
+    if !(*s).roots_of_unity.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        ));
+        drop(v);
+        (*s).roots_of_unity = ptr::null_mut();
+    }
+
+    if !(*s).brp_roots_of_unity.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).brp_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+        ));
+        drop(v);
+        (*s).brp_roots_of_unity = ptr::null_mut();
+    }
+
+    if !(*s).reverse_roots_of_unity.is_null() {
+        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+            (*s).reverse_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        ));
+        drop(v);
+        (*s).reverse_roots_of_unity = ptr::null_mut();
+    }
+
     if !(*s).g1_values_monomial.is_null() {
         let v = Box::from_raw(core::slice::from_raw_parts_mut(
             (*s).g1_values_monomial,
@@ -223,39 +250,25 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
     }
 
     if !(*s).x_ext_fft_columns.is_null() {
-        let v = Box::from_raw(core::slice::from_raw_parts_mut(
+        let x_ext_fft_columns = core::slice::from_raw_parts_mut(
             (*s).x_ext_fft_columns,
             2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
-        ));
+        );
+
+        for column in x_ext_fft_columns.iter_mut() {
+            if !(*column).is_null() {
+                let v = Box::from_raw(core::slice::from_raw_parts_mut(
+                    *column,
+                    FIELD_ELEMENTS_PER_CELL,
+                ));
+                drop(v);
+                *column = ptr::null_mut();
+            }
+        }
+
+        let v = Box::from_raw(x_ext_fft_columns);
         drop(v);
         (*s).x_ext_fft_columns = ptr::null_mut();
-    }
-
-    if !(*s).roots_of_unity.is_null() {
-        let v = Box::from_raw(core::slice::from_raw_parts_mut(
-            (*s).roots_of_unity,
-            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
-        ));
-        drop(v);
-        (*s).roots_of_unity = ptr::null_mut();
-    }
-
-    if !(*s).reverse_roots_of_unity.is_null() {
-        let v = Box::from_raw(core::slice::from_raw_parts_mut(
-            (*s).reverse_roots_of_unity,
-            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
-        ));
-        drop(v);
-        (*s).reverse_roots_of_unity = ptr::null_mut();
-    }
-
-    if !(*s).brp_roots_of_unity.is_null() {
-        let v = Box::from_raw(core::slice::from_raw_parts_mut(
-            (*s).brp_roots_of_unity,
-            FIELD_ELEMENTS_PER_EXT_BLOB,
-        ));
-        drop(v);
-        (*s).brp_roots_of_unity = ptr::null_mut();
     }
 }
 

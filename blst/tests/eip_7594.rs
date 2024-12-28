@@ -64,7 +64,11 @@ mod tests {
 
         /* Erase half of the cells */
         for i in 0..(eth::CELLS_PER_EXT_BLOB / 2) {
-            partial_cells[i] = cells[cell_indices[i]];
+            partial_cells[i * eth::FIELD_ELEMENTS_PER_CELL..(i + 1) * eth::FIELD_ELEMENTS_PER_CELL]
+                .clone_from_slice(
+                    &cells[cell_indices[i] * eth::FIELD_ELEMENTS_PER_CELL
+                        ..(cell_indices[i] + 1) * eth::FIELD_ELEMENTS_PER_CELL],
+                );
         }
 
         let mut recovered_cells =
