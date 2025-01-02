@@ -1,5 +1,5 @@
 use crate::consts::SCALE2_ROOT_OF_UNITY;
-use crate::fft_g1::g1_linear_combination;
+use crate::fft_g1::{fft_g1_fast, g1_linear_combination};
 use crate::kzg_proofs::{
     eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
     KZGSettings as LKZGSettings,
@@ -783,7 +783,7 @@ impl Default for LFFTSettings {
         Self {
             max_width: 0,
             root_of_unity: ArkFr::zero(),
-            expanded_roots_of_unity: Vec::new(),
+            brp_roots_of_unity: Vec::new(),
             reverse_roots_of_unity: Vec::new(),
             roots_of_unity: Vec::new(),
         }
@@ -801,33 +801,26 @@ impl FFTSettings<ArkFr> for LFFTSettings {
         let max_width: usize = 1 << scale;
         let root_of_unity = ArkFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
-        let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
-        let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
-        reverse_roots_of_unity.reverse();
+        let roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
 
-        let mut roots_of_unity = expanded_roots_of_unity.clone();
-        roots_of_unity.pop();
-        reverse_bit_order(&mut roots_of_unity)?;
+        let mut brp_roots_of_unity = roots_of_unity.clone();
+        brp_roots_of_unity.pop();
+        reverse_bit_order(&mut brp_roots_of_unity)?;
+
+        let mut reverse_roots_of_unity = roots_of_unity.clone();
+        reverse_roots_of_unity.reverse();
 
         Ok(LFFTSettings {
             max_width,
             root_of_unity,
-            expanded_roots_of_unity,
             reverse_roots_of_unity,
             roots_of_unity,
+            brp_roots_of_unity,
         })
     }
 
     fn get_max_width(&self) -> usize {
         self.max_width
-    }
-
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> ArkFr {
-        self.expanded_roots_of_unity[i]
-    }
-
-    fn get_expanded_roots_of_unity(&self) -> &[ArkFr] {
-        &self.expanded_roots_of_unity
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> ArkFr {
@@ -845,25 +838,92 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     fn get_roots_of_unity(&self) -> &[ArkFr] {
         &self.roots_of_unity
     }
+
+    fn get_brp_roots_of_unity(&self) -> &[ArkFr] {
+        &self.brp_roots_of_unity
+    }
+
+    fn get_brp_roots_of_unity_at(&self, i: usize) -> ArkFr {
+        self.brp_roots_of_unity[i]
+    }
+}
+
+fn toeplitz_part_1(
+    field_elements_per_ext_blob: usize,
+    output: &mut [ArkG1],
+    x: &[ArkG1],
+    s: &LFFTSettings,
+) -> Result<(), String> {
+    let n = x.len();
+    let n2 = n * 2;
+    let mut x_ext = vec![ArkG1::identity(); n2];
+
+    x_ext[..n].copy_from_slice(x);
+
+    let x_ext = &x_ext[..];
+
+    /* Ensure the length is valid */
+    if x_ext.len() > field_elements_per_ext_blob || !x_ext.len().is_power_of_two() {
+        return Err("Invalid input size".to_string());
+    }
+
+    let roots_stride = field_elements_per_ext_blob / x_ext.len();
+    fft_g1_fast(output, x_ext, 1, &s.roots_of_unity, roots_stride);
+
+    Ok(())
 }
 
 impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine> for LKZGSettings {
     fn new(
-        secret_g1: &[ArkG1],
-        secret_g2: &[ArkG2],
-        _length: usize,
+        g1_monomial: &[ArkG1],
+        g1_lagrange_brp: &[ArkG1],
+        g2_monomial: &[ArkG2],
         fft_settings: &LFFTSettings,
-    ) -> Result<LKZGSettings, String> {
+        cell_size: usize,
+    ) -> Result<Self, String> {
+        if g1_monomial.len() != g1_lagrange_brp.len() {
+            return Err("G1 point length mismatch".to_string());
+        }
+
+        let field_elements_per_blob = g1_monomial.len();
+        let field_elements_per_ext_blob = field_elements_per_blob * 2;
+
+        let n = field_elements_per_ext_blob / 2;
+        let k = n / cell_size;
+        let k2 = 2 * k;
+
+        let mut points = vec![ArkG1::default(); k2];
+        let mut x = vec![ArkG1::default(); k];
+        let mut x_ext_fft_columns = vec![vec![ArkG1::default(); cell_size]; k2];
+
+        for offset in 0..cell_size {
+            let start = n - cell_size - 1 - offset;
+            for (i, p) in x.iter_mut().enumerate().take(k - 1) {
+                let j = start - i * cell_size;
+                *p = g1_monomial[j];
+            }
+            x[k - 1] = ArkG1::identity();
+
+            toeplitz_part_1(field_elements_per_ext_blob, &mut points, &x, fft_settings)?;
+
+            for row in 0..k2 {
+                x_ext_fft_columns[row][offset] = points[row];
+            }
+        }
+
         Ok(Self {
-            secret_g1: secret_g1.to_vec(),
-            secret_g2: secret_g2.to_vec(),
+            g1_values_monomial: g1_monomial.to_vec(),
+            g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
+            g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
+            x_ext_fft_columns,
             precomputation: {
                 #[cfg(feature = "sppark")]
                 {
                     use ark_bls12_381::G1Affine;
-                    let points =
-                        kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(secret_g1);
+                    let points = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(
+                        g1_lagrange_brp,
+                    );
                     let points = unsafe {
                         alloc::slice::from_raw_parts(
                             points.as_ptr() as *const G1Affine,
@@ -876,12 +936,13 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
 
                 #[cfg(feature = "sppark_wlc")]
                 {
-                    let affines =
-                        kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&secret_g1);
+                    let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(
+                        &g1_lagrange_brp,
+                    );
                     let affines = unsafe {
                         alloc::slice::from_raw_parts(
                             affines.as_ptr() as *const G1Affine,
-                            secret_g1.len(),
+                            g1_lagrange_brp.len(),
                         )
                     };
 
@@ -892,21 +953,22 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
 
                 #[cfg(not(any(feature = "sppark", feature = "sppark_wlc")))]
                 {
-                    precompute(secret_g1).ok().flatten().map(Arc::new)
+                    precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
                 }
             },
+            cell_size,
         })
     }
 
     fn commit_to_poly(&self, p: &PolyData) -> Result<ArkG1, String> {
-        if p.coeffs.len() > self.secret_g1.len() {
+        if p.coeffs.len() > self.g1_values_lagrange_brp.len() {
             return Err(String::from("Polynomial is longer than secret g1"));
         }
 
         let mut out = ArkG1::default();
         g1_linear_combination(
             &mut out,
-            &self.secret_g1,
+            &self.g1_values_lagrange_brp,
             &p.coeffs,
             p.coeffs.len(),
             self.get_precomputation(),
@@ -945,7 +1007,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         y: &ArkFr,
     ) -> Result<bool, String> {
         let x_g2: ArkG2 = ArkG2::generator().mul(x);
-        let s_minus_x: ArkG2 = self.secret_g2[1].sub(&x_g2);
+        let s_minus_x: ArkG2 = self.g2_values_monomial[1].sub(&x_g2);
         let y_g1 = ArkG1::generator().mul(y);
         let commitment_minus_y: ArkG1 = com.sub(&y_g1);
 
@@ -1023,7 +1085,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         let xn2 = ArkG2::generator().mul(&x_pow);
 
         // [s^n - x^n]_2
-        let xn_minus_yn = self.secret_g2[n].sub(&xn2);
+        let xn_minus_yn = self.g2_values_monomial[n].sub(&xn2);
 
         // [interpolation_polynomial(s)]_1
         let is1 = self.commit_to_poly(&interp).unwrap();
@@ -1041,10 +1103,6 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         Ok(ret)
     }
 
-    fn get_expanded_roots_of_unity_at(&self, i: usize) -> ArkFr {
-        self.fs.get_expanded_roots_of_unity_at(i)
-    }
-
     fn get_roots_of_unity_at(&self, i: usize) -> ArkFr {
         self.fs.get_roots_of_unity_at(i)
     }
@@ -1053,16 +1111,28 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         &self.fs
     }
 
-    fn get_g1_secret(&self) -> &[ArkG1] {
-        &self.secret_g1
-    }
-
-    fn get_g2_secret(&self) -> &[ArkG2] {
-        &self.secret_g2
-    }
-
     fn get_precomputation(&self) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
+    }
+
+    fn get_g1_monomial(&self) -> &[ArkG1] {
+        &self.g1_values_monomial
+    }
+
+    fn get_g1_lagrange_brp(&self) -> &[ArkG1] {
+        &self.g1_values_lagrange_brp
+    }
+
+    fn get_g2_monomial(&self) -> &[ArkG2] {
+        &self.g2_values_monomial
+    }
+
+    fn get_x_ext_fft_column(&self, index: usize) -> &[ArkG1] {
+        &self.x_ext_fft_columns[index]
+    }
+
+    fn get_cell_size(&self) -> usize {
+        self.cell_size
     }
 }
 

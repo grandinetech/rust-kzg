@@ -1,33 +1,58 @@
-use crate::kzg_proofs::FFTSettings;
+use crate::kzg_proofs::FFTSettings as LFFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
 use kzg::{FFTFr, Fr as FFr};
 
-impl FFTFr<BlstFr> for FFTSettings {
-    fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
+impl LFFTSettings {
+    /// Fast Fourier Transform for finite field elements, `output` must be zeroes
+    pub(crate) fn fft_fr_output(
+        &self,
+        data: &[BlstFr],
+        inverse: bool,
+        output: &mut [BlstFr],
+    ) -> Result<(), String> {
         if data.len() > self.max_width {
-            return Err(String::from("data length is longer than allowed max width"));
+            return Err(String::from(
+                "Supplied list is longer than the available max width",
+            ));
+        }
+        if data.len() != output.len() {
+            return Err(format!(
+                "Output length {} doesn't match data length {}",
+                data.len(),
+                output.len()
+            ));
         }
         if !data.len().is_power_of_two() {
-            return Err(String::from("data length is not power of 2"));
+            return Err(String::from("A list with power-of-two length expected"));
         }
 
+        // In case more roots are provided with fft_settings, use a larger stride
         let stride = self.max_width / data.len();
-        let mut ret = vec![BlstFr::default(); data.len()];
 
+        // Inverse is same as regular, but all constants are reversed and results are divided by n
+        // This is a property of the DFT matrix
         let roots = if inverse {
             &self.reverse_roots_of_unity
         } else {
-            &self.expanded_roots_of_unity
+            &self.roots_of_unity
         };
 
-        fft_fr_fast(&mut ret, data, 1, roots, stride);
+        fft_fr_fast(output, data, 1, roots, stride);
 
         if inverse {
             let inv_fr_len = BlstFr::from_u64(data.len() as u64).inverse();
-            ret[..data.len()]
-                .iter_mut()
-                .for_each(|f| *f = BlstFr::mul(f, &inv_fr_len));
+            output.iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
         }
+
+        Ok(())
+    }
+}
+
+impl FFTFr<BlstFr> for LFFTSettings {
+    fn fft_fr(&self, data: &[BlstFr], inverse: bool) -> Result<Vec<BlstFr>, String> {
+        let mut ret = vec![BlstFr::default(); data.len()];
+
+        self.fft_fr_output(data, inverse, &mut ret)?;
 
         Ok(ret)
     }
