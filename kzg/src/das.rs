@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use core::mem::size_of;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
