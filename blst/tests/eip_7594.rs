@@ -45,39 +45,38 @@ mod tests {
         let blob_bytes = generate_random_blob_bytes(&mut rng);
         let blob: Vec<FsFr> = bytes_to_blob(&blob_bytes).unwrap();
 
-        let mut cells: Vec<[FsFr; eth::FIELD_ELEMENTS_PER_CELL]> =
-            vec![core::array::from_fn(|_| FsFr::default()); eth::CELLS_PER_EXT_BLOB];
+        let mut cells =
+            vec![FsFr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
         let mut proofs = vec![FsG1::default(); eth::CELLS_PER_EXT_BLOB];
 
         /* Get the cells and proofs */
-        let mut result = <FsKZGSettings as DAS<
-            BlstBackend,
-            { eth::FIELD_ELEMENTS_PER_CELL },
-            eth::Mainnet,
-        >>::compute_cells_and_kzg_proofs(
-            &settings, Some(&mut cells), Some(&mut proofs), &blob
+        let mut result = <FsKZGSettings as DAS<BlstBackend>>::compute_cells_and_kzg_proofs(
+            &settings,
+            Some(&mut cells),
+            Some(&mut proofs),
+            &blob,
         );
         assert!(result.is_ok());
 
         let cell_indices: Vec<usize> = (0..).step_by(2).take(eth::CELLS_PER_EXT_BLOB / 2).collect();
-        let mut partial_cells: Vec<[FsFr; eth::FIELD_ELEMENTS_PER_CELL]> =
-            vec![core::array::from_fn(|_| FsFr::default()); eth::CELLS_PER_EXT_BLOB / 2];
+        let mut partial_cells =
+            vec![FsFr::default(); (eth::CELLS_PER_EXT_BLOB / 2) * eth::FIELD_ELEMENTS_PER_CELL];
 
         /* Erase half of the cells */
         for i in 0..(eth::CELLS_PER_EXT_BLOB / 2) {
-            partial_cells[i] = cells[cell_indices[i]];
+            partial_cells[i * eth::FIELD_ELEMENTS_PER_CELL..(i + 1) * eth::FIELD_ELEMENTS_PER_CELL]
+                .clone_from_slice(
+                    &cells[cell_indices[i] * eth::FIELD_ELEMENTS_PER_CELL
+                        ..(cell_indices[i] + 1) * eth::FIELD_ELEMENTS_PER_CELL],
+                );
         }
 
-        let mut recovered_cells: Vec<[FsFr; eth::FIELD_ELEMENTS_PER_CELL]> =
-            vec![core::array::from_fn(|_| FsFr::default()); eth::CELLS_PER_EXT_BLOB];
+        let mut recovered_cells =
+            vec![FsFr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
         let mut recovered_proofs = vec![FsG1::default(); eth::CELLS_PER_EXT_BLOB];
 
         /* Reconstruct with half of the cells */
-        result = <FsKZGSettings as DAS<
-            BlstBackend,
-            { eth::FIELD_ELEMENTS_PER_CELL },
-            eth::Mainnet,
-        >>::recover_cells_and_kzg_proofs(
+        result = <FsKZGSettings as DAS<BlstBackend>>::recover_cells_and_kzg_proofs(
             &settings,
             &mut recovered_cells,
             Some(&mut recovered_proofs),
@@ -105,17 +104,16 @@ mod tests {
         assert!(commitment_result.is_ok());
         let commitment = commitment_result.unwrap();
 
-        let mut cells: Vec<[FsFr; eth::FIELD_ELEMENTS_PER_CELL]> =
-            vec![core::array::from_fn(|_| FsFr::default()); eth::CELLS_PER_EXT_BLOB];
+        let mut cells: Vec<FsFr> =
+            vec![FsFr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
         let mut proofs = vec![FsG1::default(); eth::CELLS_PER_EXT_BLOB];
 
         /* Compute cells and proofs */
-        let result = <FsKZGSettings as DAS<
-            BlstBackend,
-            { eth::FIELD_ELEMENTS_PER_CELL },
-            eth::Mainnet,
-        >>::compute_cells_and_kzg_proofs(
-            &settings, Some(&mut cells), Some(&mut proofs), &blob
+        let result = <FsKZGSettings as DAS<BlstBackend>>::compute_cells_and_kzg_proofs(
+            &settings,
+            Some(&mut cells),
+            Some(&mut proofs),
+            &blob,
         );
         assert!(result.is_ok());
 
@@ -125,12 +123,12 @@ mod tests {
         let cell_indices: Vec<usize> = (0..).step_by(1).take(eth::CELLS_PER_EXT_BLOB).collect();
 
         /* Verify all the proofs */
-        let verify_result = <FsKZGSettings as DAS<
-            BlstBackend,
-            { eth::FIELD_ELEMENTS_PER_CELL },
-            eth::Mainnet,
-        >>::verify_cell_kzg_proof_batch(
-            &settings, &commitments, &cell_indices, &cells, &proofs
+        let verify_result = <FsKZGSettings as DAS<BlstBackend>>::verify_cell_kzg_proof_batch(
+            &settings,
+            &commitments,
+            &cell_indices,
+            &cells,
+            &proofs,
         );
         assert!(verify_result.is_ok());
     }

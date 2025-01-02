@@ -1379,6 +1379,7 @@ dependencies = [
  "rayon",
  "rust-kzg-arkworks3-sppark",
  "rust-kzg-arkworks3-sppark-wlc",
+ "smallvec",
 ]
 
 [[package]]

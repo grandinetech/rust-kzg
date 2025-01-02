@@ -1,5 +1,5 @@
 use crate::consts::SCALE_FACTOR;
-use crate::kzg_proofs::FFTSettings;
+use crate::kzg_proofs::LFFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
 use crate::utils::PolyData;
 
@@ -82,10 +82,10 @@ pub fn unscale_poly(p: &mut PolyData) {
         }
     }
 }
-impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
+impl PolyRecover<BlstFr, PolyData, LFFTSettings> for PolyData {
     fn recover_poly_coeffs_from_samples(
         samples: &[Option<BlstFr>],
-        fs: &FFTSettings,
+        fs: &LFFTSettings,
     ) -> Result<Self, String> {
         if !samples.len().is_power_of_two() {
             return Err(String::from("samples lenght has to be power of 2"));
@@ -212,7 +212,7 @@ impl PolyRecover<BlstFr, PolyData, FFTSettings> for PolyData {
 
     fn recover_poly_from_samples(
         samples: &[Option<BlstFr>],
-        fs: &FFTSettings,
+        fs: &LFFTSettings,
     ) -> Result<Self, String> {
         let reconstructed_poly = Self::recover_poly_coeffs_from_samples(samples, fs)?;
 

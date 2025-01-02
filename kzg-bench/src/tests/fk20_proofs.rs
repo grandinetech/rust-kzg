@@ -1,21 +1,12 @@
 use kzg::{
     common_utils::{is_power_of_two, log2_pow2, reverse_bit_order, reverse_bits_limited},
     EcBackend, FFTFr, FFTSettings, FK20MultiSettings, FK20SingleSettings, Fr, KZGSettings, Poly,
-    Preset,
 };
 
 pub const SECRET: [u8; 32usize] = [
     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
-
-struct TestPreset1;
-
-impl Preset for TestPreset1 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 33;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 66;
-    const CELLS_PER_EXT_BLOB: usize = 16;
-}
 
 #[allow(clippy::type_complexity)]
 pub fn fk_single<
@@ -48,7 +39,7 @@ pub fn fk_single<
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(n).unwrap();
-    let ks = B::KZGSettings::new_for_preset::<4, TestPreset1>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 4).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -78,14 +69,6 @@ pub fn fk_single<
         let y = p.eval(&x);
         assert!(ks.check_proof_single(&commitment, proof, &x, &y).unwrap());
     }
-}
-
-struct TestPreset2;
-
-impl Preset for TestPreset2 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 257;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 514;
-    const CELLS_PER_EXT_BLOB: usize = 32;
 }
 
 #[allow(clippy::type_complexity)]
@@ -120,7 +103,7 @@ pub fn fk_single_strided<
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(n).unwrap();
-    let ks = B::KZGSettings::new_for_preset::<16, TestPreset2>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 16).unwrap();
     let fk = TFK20SingleSettings::new(&ks, 2 * poly_len).unwrap();
 
     // Commit to the polynomial
@@ -160,15 +143,13 @@ pub fn fk_multi_settings<
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(n).unwrap();
-    let ks = B::KZGSettings::new_for_preset::<4, TestPreset1>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 4).unwrap();
     let _fk = TFK20MultiSettings::new(&ks, 32, 4).unwrap();
 }
 
 #[allow(clippy::type_complexity)]
 fn fk_multi_case<
-    const FIELD_ELEMENTS_PER_CELL: usize,
     B: EcBackend,
-    P: Preset,
     TFK20MultiSettings: FK20MultiSettings<
         B::Fr,
         B::G1,
@@ -180,12 +161,12 @@ fn fk_multi_case<
         B::G1Affine,
     >,
 >(
+    chunk_len: usize,
+    n: usize,
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) where
     B::FFTSettings: FFTFr<B::Fr>,
 {
-    let chunk_len = FIELD_ELEMENTS_PER_CELL;
-    let n = P::FIELD_ELEMENTS_PER_BLOB / 2;
     let vv: Vec<u64> = vec![1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33];
 
     assert!(is_power_of_two(n));
@@ -200,8 +181,7 @@ fn fk_multi_case<
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(width).unwrap();
-    let ks =
-        B::KZGSettings::new_for_preset::<FIELD_ELEMENTS_PER_CELL, P>(&s1, &s2, &s3, &fs).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, chunk_len).unwrap();
     let fk = TFK20MultiSettings::new(&ks, n * 2, chunk_len).unwrap();
 
     // Create a test polynomial of size n that's independent of chunk_len
@@ -276,14 +256,6 @@ fn fk_multi_case<
     }
 }
 
-struct TestPreset3;
-
-impl Preset for TestPreset3 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 1024;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 2048;
-    const CELLS_PER_EXT_BLOB: usize = 1024;
-}
-
 #[allow(clippy::type_complexity)]
 pub fn fk_multi_chunk_len_1_512<
     B: EcBackend,
@@ -300,15 +272,7 @@ pub fn fk_multi_chunk_len_1_512<
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    fk_multi_case::<1, B, TestPreset3, TFK20MultiSettings>(&generate_trusted_setup);
-}
-
-struct TestPreset4;
-
-impl Preset for TestPreset4 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 1024;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 2048;
-    const CELLS_PER_EXT_BLOB: usize = 32;
+    fk_multi_case::<B, TFK20MultiSettings>(1, 512, &generate_trusted_setup);
 }
 
 #[allow(clippy::type_complexity)]
@@ -327,15 +291,7 @@ pub fn fk_multi_chunk_len_16_512<
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    fk_multi_case::<16, B, TestPreset4, TFK20MultiSettings>(&generate_trusted_setup);
-}
-
-struct TestPreset5;
-
-impl Preset for TestPreset5 {
-    const FIELD_ELEMENTS_PER_BLOB: usize = 32;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 64;
-    const CELLS_PER_EXT_BLOB: usize = 4;
+    fk_multi_case::<B, TFK20MultiSettings>(16, 512, &generate_trusted_setup);
 }
 
 #[allow(clippy::type_complexity)]
@@ -354,5 +310,5 @@ pub fn fk_multi_chunk_len_16_16<
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    fk_multi_case::<16, B, TestPreset5, TFK20MultiSettings>(&generate_trusted_setup);
+    fk_multi_case::<B, TFK20MultiSettings>(16, 16, &generate_trusted_setup);
 }

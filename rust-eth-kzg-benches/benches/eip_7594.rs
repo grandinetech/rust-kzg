@@ -51,7 +51,7 @@ fn bench_eip_7594_(c: &mut Criterion) {
     let mut group = c.benchmark_group("recover_cells_and_kzg_proofs (% missing)");
     for i in [2, 4, 8] {
         let percent_missing = 100.0 / (i as f64);
-        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], i);
+        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], 1, i);
 
         let partial_cells = partial_cells
             .iter()
@@ -74,7 +74,7 @@ fn bench_eip_7594_(c: &mut Criterion) {
     let mut group = c.benchmark_group("recover_cells_and_kzg_proofs (missing)");
     for i in 1..=5 {
         let modulo = (CELLS_PER_EXT_BLOB + i - 1) / i;
-        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], modulo);
+        let (cell_indices, partial_cells) = get_partial_cells(&blob_cells[0], 1, modulo);
 
         let partial_cells = partial_cells
             .iter()

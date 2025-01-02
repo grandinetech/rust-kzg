@@ -13,7 +13,7 @@ pub mod eip_4844;
 pub mod eth;
 pub mod msm;
 
-pub use das::{EcBackend, Preset, DAS};
+pub use das::{EcBackend, DAS};
 
 pub trait Fr: Default + Clone + PartialEq + Sync {
     fn null() -> Self;
@@ -519,13 +519,7 @@ pub trait KZGSettings<
         g1_lagrange_brp: &[Coeff2],
         g2_monomial: &[Coeff3],
         fs: &Fs,
-    ) -> Result<Self, String>;
-
-    fn new_for_preset<const FIELD_ELEMENTS_PER_CELL: usize, P: Preset>(
-        g1_monomial: &[Coeff2],
-        g1_lagrange_brp: &[Coeff2],
-        g2_monomial: &[Coeff3],
-        fs: &Fs,
+        cell_size: usize,
     ) -> Result<Self, String>;
 
     fn commit_to_poly(&self, p: &Polynomial) -> Result<Coeff2, String>;
@@ -564,6 +558,8 @@ pub trait KZGSettings<
     fn get_precomputation(&self) -> Option<&PrecomputationTable<Coeff1, Coeff2, TG1Fp, TG1Affine>>;
 
     fn get_x_ext_fft_column(&self, index: usize) -> &[Coeff2];
+
+    fn get_cell_size(&self) -> usize;
 }
 
 pub trait FK20SingleSettings<

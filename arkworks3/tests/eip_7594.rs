@@ -5,8 +5,7 @@ mod tests {
         test_vectors_compute_cells_and_kzg_proofs, test_vectors_recover_cells_and_kzg_proofs,
         test_vectors_verify_cell_kzg_proof_batch,
     };
-    use rust_kzg_arkworks::eip_4844::load_trusted_setup_filename_rust;
-    use rust_kzg_arkworks::eip_7594::ArkBackend;
+    use rust_kzg_arkworks3::{eip_4844::load_trusted_setup_filename_rust, eip_7594::ArkBackend};
 
     #[test]
     pub fn test_vectors_compute_cells_and_kzg_proofs_() {

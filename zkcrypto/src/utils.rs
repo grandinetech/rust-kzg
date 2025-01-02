@@ -6,6 +6,14 @@ use crate::{
 };
 use bls12_381::{G1Projective, G2Projective, Scalar};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
+use kzg::{
+    eip_4844::PrecomputationTableManager,
+    eth::{
+        self,
+        c_bindings::{Blob, CKZGSettings, CKzgRet},
+    },
+    Fr,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error;
@@ -65,42 +73,39 @@ macro_rules! handle_ckzg_badargs {
     ($x: expr) => {
         match $x {
             Ok(value) => value,
-            Err(_) => return kzg::eip_4844::C_KZG_RET_BADARGS,
+            Err(_) => return kzg::eth::c_bindings::CKzgRet::BadArgs,
         }
     };
 }
-
 pub(crate) use handle_ckzg_badargs;
-use kzg::{
-    eip_4844::{
-        Blob, CKZGSettings, PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT, C_KZG_RET,
-        C_KZG_RET_BADARGS, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
-        FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
-    },
-    Fr,
-};
 
 pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {
     let settings = unsafe { &*c_settings };
 
     let roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
-            .iter()
-            .map(|r| ZFr::from_blst_fr(*r))
-            .collect::<Vec<ZFr>>()
+        core::slice::from_raw_parts(
+            settings.roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        )
+        .iter()
+        .map(|r| ZFr::from_blst_fr(*r))
+        .collect::<Vec<ZFr>>()
     };
 
     let brp_roots_of_unity = unsafe {
-        core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
-            .iter()
-            .map(|r| ZFr::from_blst_fr(*r))
-            .collect::<Vec<ZFr>>()
+        core::slice::from_raw_parts(
+            settings.brp_roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB,
+        )
+        .iter()
+        .map(|r| ZFr::from_blst_fr(*r))
+        .collect::<Vec<ZFr>>()
     };
 
     let reverse_roots_of_unity = unsafe {
         core::slice::from_raw_parts(
             settings.reverse_roots_of_unity,
-            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1,
         )
         .iter()
         .map(|r| ZFr::from_blst_fr(*r))
@@ -108,7 +113,7 @@ pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FF
     };
 
     Ok(FFTSettings {
-        max_width: FIELD_ELEMENTS_PER_EXT_BLOB,
+        max_width: eth::FIELD_ELEMENTS_PER_EXT_BLOB,
         root_of_unity: roots_of_unity[1],
         roots_of_unity,
         brp_roots_of_unity,
@@ -198,60 +203,21 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &KZGSettings) -> CKZGSettings {
     }
 }
 
-pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ZFr>, C_KZG_RET> {
+pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ZFr>, CKzgRet> {
     (*blob)
         .bytes
-        .chunks(BYTES_PER_FIELD_ELEMENT)
+        .chunks(eth::BYTES_PER_FIELD_ELEMENT)
         .map(|chunk| {
-            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
+            let mut bytes = [0u8; eth::BYTES_PER_FIELD_ELEMENT];
             bytes.copy_from_slice(chunk);
             if let Ok(result) = ZFr::from_bytes(&bytes) {
                 Ok(result)
             } else {
-                Err(C_KZG_RET_BADARGS)
+                Err(CKzgRet::BadArgs)
             }
         })
-        .collect::<Result<Vec<ZFr>, C_KZG_RET>>()
+        .collect::<Result<Vec<ZFr>, CKzgRet>>()
 }
 
 pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<ZFr, ZG1, ZFp, ZG1Affine> =
     PrecomputationTableManager::new();
-
-pub(crate) fn kzg_settings_to_rust(c_settings: &CKZGSettings) -> Result<KZGSettings, String> {
-    Ok(KZGSettings {
-        fs: fft_settings_to_rust(c_settings)?,
-        g1_values_monomial: unsafe {
-            core::slice::from_raw_parts(c_settings.g1_values_monomial, FIELD_ELEMENTS_PER_BLOB)
-        }
-        .iter()
-        .map(|r| ZG1::from_blst_p1(*r))
-        .collect::<Vec<_>>(),
-        g1_values_lagrange_brp: unsafe {
-            core::slice::from_raw_parts(c_settings.g1_values_lagrange_brp, FIELD_ELEMENTS_PER_BLOB)
-        }
-        .iter()
-        .map(|r| ZG1::from_blst_p1(*r))
-        .collect::<Vec<_>>(),
-        g2_values_monomial: unsafe {
-            core::slice::from_raw_parts(c_settings.g2_values_monomial, TRUSTED_SETUP_NUM_G2_POINTS)
-        }
-        .iter()
-        .map(|r| ZG2::from_blst_p2(*r))
-        .collect::<Vec<_>>(),
-        x_ext_fft_columns: unsafe {
-            core::slice::from_raw_parts(
-                c_settings.x_ext_fft_columns,
-                2 * ((FIELD_ELEMENTS_PER_EXT_BLOB / 2) / FIELD_ELEMENTS_PER_CELL),
-            )
-        }
-        .iter()
-        .map(|it| {
-            unsafe { core::slice::from_raw_parts(*it, FIELD_ELEMENTS_PER_CELL) }
-                .iter()
-                .map(|it| ZG1::from_blst_p1(*it))
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>(),
-        precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
-    })
-}

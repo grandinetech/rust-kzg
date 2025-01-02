@@ -6,7 +6,7 @@ mod tests {
         poly_inverse_simple_0, poly_inverse_simple_1, poly_mul_direct_test, poly_mul_fft_test,
         poly_mul_random, poly_test_div,
     };
-    use rust_kzg_arkworks3::kzg_proofs::FFTSettings;
+    use rust_kzg_arkworks3::kzg_proofs::LFFTSettings as FFTSettings;
     use rust_kzg_arkworks3::kzg_types::ArkFr;
     use rust_kzg_arkworks3::utils::PolyData;
 
@@ -46,7 +46,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn poly_div_by_zero_() {
         poly_div_by_zero::<ArkFr, PolyData>();
     }

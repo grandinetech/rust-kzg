@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use kzg_bench::benches::zero_poly::bench_zero_poly;
 
-use rust_kzg_arkworks3::kzg_proofs::FFTSettings;
+use rust_kzg_arkworks3::kzg_proofs::LFFTSettings as FFTSettings;
 use rust_kzg_arkworks3::kzg_types::ArkFr;
 use rust_kzg_arkworks3::utils::PolyData;
 
