@@ -139,12 +139,13 @@ impl G1 for FsG1 {
     }
 
     fn from_hex(hex: &str) -> Result<Self, String> {
-        todo!()
+        let bytes = hex::decode(&hex[2..]).unwrap();
+        Self::from_bytes(&bytes)
     }
 
     fn to_bytes(&self) -> [u8; 48] {
         try_init_mcl();
-        
+
         let mut out = [0u8; BYTES_PER_G1];
         unsafe {
             blst::blst_p1_compress(out.as_mut_ptr(), &self.to_blst_p1());
@@ -199,7 +200,9 @@ impl G1 for FsG1 {
     }
 
     fn add_or_dbl_assign(&mut self, b: &Self) {
-        todo!()
+        try_init_mcl();
+        
+        self.0 = self.0.add(&b.0);
     }
 
     fn add_assign(&mut self, b: &Self) {
