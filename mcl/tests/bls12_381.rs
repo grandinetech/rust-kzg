@@ -115,10 +115,8 @@ mod tests {
         g1_random_linear_combination::<FsFr, FsG1, FsFp, FsG1Affine>(&g1_linear_combination)
     }
 
-    /*
     #[test]
     fn pairings_work_() {
         pairings_work::<FsFr, FsG1, FsG2>(&pairings_verify)
     }
-     */
 }
