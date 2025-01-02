@@ -1,4 +1,4 @@
-use crate::kzg_proofs::{FFTSettings, KZGSettings};
+use crate::kzg_proofs::{FFTSettings, KZGSettings as LKZGSettings};
 use crate::kzg_types::{ArkFp, ArkFr as BlstFr, ArkG1, ArkG1Affine, ArkG2};
 use crate::utils::PolyData;
 use kzg::common_utils::reverse_bit_order;
@@ -10,7 +10,7 @@ use rayon::prelude::*;
 #[repr(C)]
 #[derive(Debug, Clone, Default)]
 pub struct KzgFK20SingleSettings {
-    pub ks: KZGSettings,
+    pub ks: LKZGSettings,
     pub x_ext_fft: Vec<ArkG1>,
     pub x_ext_fft_len: usize,
 }
@@ -18,17 +18,25 @@ pub struct KzgFK20SingleSettings {
 #[repr(C)]
 #[derive(Debug, Clone, Default)]
 pub struct KzgFK20MultiSettings {
-    pub ks: KZGSettings,
+    pub ks: LKZGSettings,
     pub chunk_len: usize,
     pub x_ext_fft_files: Vec<Vec<ArkG1>>,
     pub length: usize,
 }
 
 impl
-    FK20SingleSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings, ArkFp, ArkG1Affine>
-    for KzgFK20SingleSettings
+    FK20SingleSettings<
+        BlstFr,
+        ArkG1,
+        ArkG2,
+        FFTSettings,
+        PolyData,
+        LKZGSettings,
+        ArkFp,
+        ArkG1Affine,
+    > for KzgFK20SingleSettings
 {
-    fn new(ks: &KZGSettings, n2: usize) -> Result<Self, String> {
+    fn new(ks: &LKZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;
 
         if n2 > ks.fs.max_width {
@@ -45,13 +53,13 @@ impl
 
         let mut x = Vec::new();
         for i in 0..(n - 1) {
-            x.push(ks.secret_g1[n - 2 - i])
+            x.push(ks.g1_values_monomial[n - 2 - i])
         }
         x.push(ArkG1::identity());
 
-        let new_ks = KZGSettings {
+        let new_ks = LKZGSettings {
             fs: ks.fs.clone(),
-            ..KZGSettings::default()
+            ..LKZGSettings::default()
         };
 
         Ok(KzgFK20SingleSettings {
@@ -84,10 +92,11 @@ impl
     }
 }
 
-impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings, ArkFp, ArkG1Affine>
+impl
+    FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, LKZGSettings, ArkFp, ArkG1Affine>
     for KzgFK20MultiSettings
 {
-    fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
+    fn new(ks: &LKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         if n2 > ks.fs.max_width {
             return Err(String::from(
                 "n2 must be equal or less than kzg settings max width",
@@ -123,7 +132,7 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings,
             };
             let mut j = start;
             for i in x.iter_mut().take(k - 1) {
-                i.0 = ks.secret_g1[j].0;
+                i.0 = ks.g1_values_monomial[j].0;
                 if j >= chunk_len {
                     j -= chunk_len;
                 } else {
@@ -134,9 +143,9 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings,
             x_ext_fft_files.push(toeplitz_part_1(&x, &ks.fs).unwrap());
         }
 
-        let new_ks = KZGSettings {
+        let new_ks = LKZGSettings {
             fs: ks.fs.clone(),
-            ..KZGSettings::default()
+            ..LKZGSettings::default()
         };
 
         Ok(KzgFK20MultiSettings {
