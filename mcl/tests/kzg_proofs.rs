@@ -34,11 +34,11 @@ mod tests {
         proof_multi::<MclBackend>(&generate_trusted_setup);
     }
 
+    /*
     // This aims at showing that the use of the blst::Pairing engine in pairings_verify
     // has the desired semantics.
     #[cfg(feature = "rand")]
     fn og_pairings_verify() {
-        todo!();
         /*
         let a1 = FsG1::rand();
         let a2 = FsG2::rand();
@@ -89,4 +89,5 @@ mod tests {
             og_pairings_verify();
         }
     }
+    */
 }
