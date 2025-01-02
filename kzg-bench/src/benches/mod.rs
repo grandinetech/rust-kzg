@@ -1,9 +1,11 @@
 pub mod das;
 pub mod eip_4844;
+pub mod eip_7594;
 pub mod fft;
 pub mod fk20;
 pub mod kzg;
 pub mod lincomb;
 pub mod poly;
 pub mod recover;
+pub mod trusted_setup;
 pub mod zero_poly;
