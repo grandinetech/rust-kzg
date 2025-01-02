@@ -63,7 +63,27 @@ impl Fr for FsFr {
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
-        todo!()
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_FIELD_ELEMENT,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
+                let mut bls_scalar = blst_scalar::default();
+                let mut fr = blst_fr::default();
+                unsafe {
+                    blst::blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
+                    if !blst::blst_scalar_fr_check(&bls_scalar) {
+                        return Err("Invalid scalar".to_string());
+                    }
+                    blst::blst_fr_from_scalar(&mut fr, &bls_scalar);
+                }
+                Ok(Self{0: mcl_fr{d: fr.l }})
+            })
     }
 
     fn from_hex(hex: &str) -> Result<Self, String> {
@@ -90,7 +110,16 @@ impl Fr for FsFr {
     }
 
     fn to_bytes(&self) -> [u8; 32] {
-        todo!()
+        try_init_mcl();
+        
+        let mut scalar = blst_scalar::default();
+        let mut bytes = [0u8; 32];
+        unsafe {
+            blst_scalar_from_fr(&mut scalar, &self.to_blst_fr());
+            blst::blst_bendian_from_scalar(bytes.as_mut_ptr(), &scalar);
+        }
+
+        bytes
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
@@ -146,7 +175,11 @@ impl Fr for FsFr {
     }
 
     fn sub(&self, b: &Self) -> Self {
-        todo!()
+        try_init_mcl();
+
+        let mut ret = Self::default();
+        mcl_fr::sub(&mut ret.0, &self.0, &b.0);
+        ret
     }
 
     fn eucl_inverse(&self) -> Self {
