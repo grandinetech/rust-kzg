@@ -1,34 +1,37 @@
-From cb0c44c9df8a7a6a92ed5b4f1acb771532812257 Mon Sep 17 00:00:00 2001
+From 43ef934fbf7d904b3014d9a37a37dc2d853f27b0 Mon Sep 17 00:00:00 2001
 From: sirse <artiom.tretjakovas2@gmail.com>
-Date: Thu, 16 May 2024 14:19:08 +0300
-Subject: [PATCH] Patch nodejs bindings
+Date: Wed, 2 Oct 2024 07:43:11 +0000
+Subject: [PATCH] Patch node.js bindings
 
 ---
  bindings/node.js/binding.gyp | 9 ++++-----
  1 file changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/bindings/node.js/binding.gyp b/bindings/node.js/binding.gyp
-index c42bb8f..e781e61 100644
+index d01e38b..1591b8e 100644
 --- a/bindings/node.js/binding.gyp
 +++ b/bindings/node.js/binding.gyp
-@@ -3,9 +3,7 @@
+@@ -3,22 +3,22 @@
      {
        "target_name": "kzg",
        "sources": [
 -        "src/kzg.cxx",
 -        "deps/blst/src/server.c",
--        "deps/c-kzg/c_kzg_4844.c"
+-        "deps/c-kzg/ckzg.c"
 +        "src/kzg.cxx"
        ],
        "include_dirs": [
          "<(module_root_dir)/deps/blst/bindings",
-@@ -16,9 +14,11 @@
+         "<(module_root_dir)/deps/c-kzg",
+         "<!@(node -p \"require('node-addon-api').include\")"
+       ],
++      "libraries": [
++        "<(module_root_dir)/../../lib/librust_kzg_blst.a"
++      ],
+       "defines": [
          "__BLST_PORTABLE__",
          "NAPI_CPP_EXCEPTIONS"
        ],
-+      "libraries": [
-+        "<(module_root_dir)/../../../../target/release/rust_kzg_blst.a"
-+      ],
        "conditions": [
          ["OS!='win'", {
 -          "sources": ["deps/blst/build/assembly.S"],
@@ -44,5 +47,5 @@ index c42bb8f..e781e61 100644
              "_CRT_SECURE_NO_WARNINGS",
              "_HAS_EXCEPTIONS=1"
 -- 
-2.36.2.windows.1
+2.46.1
 

@@ -45,8 +45,6 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
-mv ../target/release/librust_kzg_$backend.a ../target/release/rust_kzg_$backend.a
-
 ###################### cloning c-kzg-4844 ######################
 
 print_msg "Cloning c-kzg-4844"
@@ -55,25 +53,15 @@ cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
+mv ../../target/release/librust_kzg_$backend.a ./lib
+
 ###################### rust benchmarks ######################
 
 print_msg "Patching rust binding"
 git apply < ../rust.patch
-cd bindings/rust || exit
 
 print_msg "Running rust benchmarks"
 cargo bench
-cd ../..
-
-###################### java benchmarks ######################
-
-print_msg "Patching java binding"
-git apply < ../java.patch
-cd bindings/java || exit
-
-print_msg "Running java benchmarks"
-make build benchmark
-cd ../..
 
 ###################### go benchmarks ######################
 
