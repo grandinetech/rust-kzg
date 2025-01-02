@@ -43,9 +43,6 @@ else
   cargo rustc --release --crate-type=staticlib
 fi
 
-rm -f ../target/release/rust_kzg_$backend.a
-mv ../target/release/librust_kzg_$backend.a ../target/release/rust_kzg_$backend.a
-
 ###################### cloning c-kzg-4844 ######################
 
 print_msg "Removing existing c-kzg-4844"
@@ -57,9 +54,10 @@ cd c-kzg-4844 || exit
 git -c advice.detachedHead=false checkout "$C_KZG_4844_GIT_HASH"
 git submodule update --init
 
+mv ../../target/release/librust_kzg_$backend.a ./lib
+
 print_msg "Applying patches and building blst"
 cd src
-export CFLAGS="-Ofast -fno-builtin-memcpy -fPIC -Wall -Wextra -Werror"
 make blst
 unset CFLAGS
 cd ..
@@ -99,11 +97,9 @@ cd ../..
 
 print_msg "Patching rust binding"
 git apply < ../rust.patch
-cd bindings/rust || exit
 
 print_msg "Running rust tests"
 cargo test --release
-cd ../..
 
 print_msg "Rebuilding blst"
 cd src
