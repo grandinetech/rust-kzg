@@ -22,7 +22,6 @@ pub struct KzgFK20MultiSettings {
     pub ks: KZGSettings,
     pub chunk_len: usize,
     pub x_ext_fft_files: Vec<Vec<ArkG1>>,
-    pub length: usize,
 }
 
 impl
@@ -46,7 +45,7 @@ impl
 
         let mut x = Vec::new();
         for i in 0..(n - 1) {
-            x.push(ks.secret_g1[n - 2 - i])
+            x.push(ks.g1_values_lagrange_brp[n - 2 - i])
         }
         x.push(G1_IDENTITY);
 
@@ -124,7 +123,7 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings,
             };
             let mut j = start;
             for i in x.iter_mut().take(k - 1) {
-                i.0 = ks.secret_g1[j].0;
+                i.0 = ks.g1_values_lagrange_brp[j].0;
                 if j >= chunk_len {
                     j -= chunk_len;
                 } else {
@@ -144,7 +143,6 @@ impl FK20MultiSettings<BlstFr, ArkG1, ArkG2, FFTSettings, PolyData, KZGSettings,
             ks: new_ks,
             x_ext_fft_files,
             chunk_len,
-            length: n, //unsure if this is right
         })
     }
 
