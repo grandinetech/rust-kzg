@@ -10,6 +10,8 @@ use kzg::Fr;
 use kzg::{G2Mul, G2};
 
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
+use crate::mcl_methods::mcl_fp;
+use crate::mcl_methods::mcl_fp2;
 use crate::mcl_methods::mcl_g1;
 use crate::mcl_methods::mcl_g2;
 use crate::mcl_methods::try_init_mcl;
@@ -20,18 +22,31 @@ use crate::types::fr::FsFr;
 pub struct FsG2(pub mcl_g2);
 
 impl FsG2 {
-    pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
-        todo!()
+    pub fn from_blst_p2(p2: blst::blst_p2) -> Self {
+        try_init_mcl();
+
+        Self(mcl_g2 { 
+            x: mcl_fp2{ d: [mcl_fp{ d: p2.x.fp[0].l }, mcl_fp{ d: p2.x.fp[1].l }] }, 
+            y: mcl_fp2{ d: [mcl_fp{ d: p2.y.fp[0].l }, mcl_fp{ d: p2.y.fp[1].l }] }, 
+            z: mcl_fp2{ d: [mcl_fp{ d: p2.z.fp[0].l }, mcl_fp{ d: p2.z.fp[1].l }] }, 
+        })
         // Self(blst_p2_into_pc_g2projective(&p2))
     }
 
     pub const fn to_blst_p2(&self) -> blst::blst_p2 {
-        todo!()
+        blst::blst_p2 {
+            x: blst::blst_fp2{ fp: [ blst::blst_fp{ l: self.0.x.d[0].d }, blst::blst_fp{ l: self.0.x.d[1].d } ] },
+            y: blst::blst_fp2{ fp: [ blst::blst_fp{ l: self.0.y.d[0].d }, blst::blst_fp{ l: self.0.y.d[1].d } ] },
+            z: blst::blst_fp2{ fp: [ blst::blst_fp{ l: self.0.z.d[0].d }, blst::blst_fp{ l: self.0.z.d[1].d } ] }
+        }
+
         // pc_g2projective_into_blst_p2(self.0)
     }
 
     #[cfg(feature = "rand")]
     pub fn rand() -> Self {
+        try_init_mcl();
+
         use crate::mcl_methods::try_init_mcl;
 
         try_init_mcl();
@@ -55,7 +70,31 @@ impl G2 for FsG2 {
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
-        todo!()
+        try_init_mcl();
+
+        bytes
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Invalid byte length. Expected {}, got {}",
+                    BYTES_PER_G2,
+                    bytes.len()
+                )
+            })
+            .and_then(|bytes: &[u8; BYTES_PER_G2]| {
+                use blst::{blst_p2_affine, blst_p2};
+
+                let mut tmp = blst_p2_affine::default();
+                let mut g2 = blst_p2::default();
+                unsafe {
+                    // The uncompress routine also checks that the point is on the curve
+                    if blst::blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != blst::BLST_ERROR::BLST_SUCCESS {
+                        return Err("Failed to uncompress".to_string());
+                    }
+                    blst::blst_p2_from_affine(&mut g2, &tmp);
+                }
+                Ok(FsG2::from_blst_p2(g2))
+            })
     }
 
     fn to_bytes(&self) -> [u8; 96] {

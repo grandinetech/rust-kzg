@@ -43,14 +43,14 @@ impl FsG1 {
         FsG1(mcl_g1 { x, y, z })
     }
 
-    pub const fn from_blst_p1(p1: blst_p1) -> Self {
-        todo!();
+    pub fn from_blst_p1(p1: blst_p1) -> Self {
+        Self(mcl_g1 { x: mcl_fp{ d: p1.x.l }, y: mcl_fp{ d: p1.y.l }, z:  mcl_fp{ d: p1.z.l } })
 
         // Self(blst_p1_into_pc_g1projective(&p1))
     }
 
     pub const fn to_blst_p1(&self) -> blst_p1 {
-        todo!()
+        blst_p1 { x: blst_fp{ l: self.0.x.d } , y: blst_fp{ l: self.0.y.d }, z: blst_fp{ l: self.0.z.d }}
         // pc_g1projective_into_blst_p1(self.0)
     }
 }
@@ -113,7 +113,29 @@ impl G1 for FsG1 {
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
-        todo!()
+        try_init_mcl();
+
+        bytes
+        .try_into()
+        .map_err(|_| {
+            format!(
+                "Invalid byte length. Expected {}, got {}",
+                BYTES_PER_G1,
+                bytes.len()
+            )
+        })
+        .and_then(|bytes: &[u8; BYTES_PER_G1]| {
+            let mut tmp = blst_p1_affine::default();
+            let mut g1 = blst_p1::default();
+            unsafe {
+                // The uncompress routine also checks that the point is on the curve
+                if blst::blst_p1_uncompress(&mut tmp, bytes.as_ptr()) != blst::BLST_ERROR::BLST_SUCCESS {
+                    return Err("Failed to uncompress".to_string());
+                }
+                blst::blst_p1_from_affine(&mut g1, &tmp);
+            }
+            Ok(FsG1::from_blst_p1(g1))
+        })
     }
 
     fn from_hex(hex: &str) -> Result<Self, String> {
@@ -121,7 +143,13 @@ impl G1 for FsG1 {
     }
 
     fn to_bytes(&self) -> [u8; 48] {
-        todo!()
+        try_init_mcl();
+        
+        let mut out = [0u8; BYTES_PER_G1];
+        unsafe {
+            blst::blst_p1_compress(out.as_mut_ptr(), &self.to_blst_p1());
+        }
+        out
     }
 
     fn add_or_dbl(&self, b: &Self) -> Self {
