@@ -145,10 +145,10 @@ impl FFTG1<ArkG1> for FFTSettings {
         let roots = if inverse {
             &self.reverse_roots_of_unity
         } else {
-            &self.expanded_roots_of_unity
+            &self.roots_of_unity
         };
 
-        fft_g1_fast(&mut ret, data, 1, roots, stride, 1);
+        fft_g1_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
             let inv_fr_len = ArkFr::from_u64(data.len() as u64).inverse();
@@ -166,7 +166,6 @@ pub fn fft_g1_slow(
     stride: usize,
     roots: &[ArkFr],
     roots_stride: usize,
-    _width: usize,
 ) {
     for i in 0..data.len() {
         ret[i] = data[0].mul(&roots[0]);
@@ -185,7 +184,6 @@ pub fn fft_g1_fast(
     stride: usize,
     roots: &[ArkFr],
     roots_stride: usize,
-    _width: usize,
 ) {
     let half = ret.len() / 2;
     if half > 0 {
@@ -193,28 +191,20 @@ pub fn fft_g1_fast(
         {
             let (lo, hi) = ret.split_at_mut(half);
             rayon::join(
-                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2, 1),
-                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2, 1),
+                || fft_g1_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+                || fft_g1_fast(lo, data, stride * 2, roots, roots_stride * 2),
             );
         }
 
         #[cfg(not(feature = "parallel"))]
         {
-            fft_g1_fast(
-                &mut ret[..half],
-                data,
-                stride * 2,
-                roots,
-                roots_stride * 2,
-                1,
-            );
+            fft_g1_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
             fft_g1_fast(
                 &mut ret[half..],
                 &data[stride..],
                 stride * 2,
                 roots,
                 roots_stride * 2,
-                1,
             );
         }
 

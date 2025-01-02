@@ -1,7 +1,22 @@
+extern crate alloc;
+
+use alloc::boxed::Box;
+
+use kzg::{
+    eip_4844::{PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT},
+    eth::{
+        self,
+        c_bindings::{Blob, CKZGSettings, CKzgRet},
+    },
+    Fr,
+};
+
+use crate::kzg_proofs::{FFTSettings as LFFTSettings, KZGSettings as LKZGSettings};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
+
 use super::{Fp, P1};
-use crate::kzg_types::ArkFr;
 use crate::P2;
-use ark_bls12_381::{g1, g2, Fq, Fq2, Fr};
+use ark_bls12_381::{g1, g2, Fq, Fq2};
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
 use ark_ff::{BigInteger256, BigInteger384, Fp2};
 use ark_poly::univariate::DensePolynomial as DensePoly;
@@ -17,7 +32,167 @@ pub struct PolyData {
 }
 // FIXME: Store just dense poly here
 
-pub fn pc_poly_into_blst_poly(poly: DensePoly<Fr>) -> PolyData {
+pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, CKzgRet> {
+    (*blob)
+        .bytes
+        .chunks(BYTES_PER_FIELD_ELEMENT)
+        .map(|chunk| {
+            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
+            bytes.copy_from_slice(chunk);
+            if let Ok(result) = ArkFr::from_bytes(&bytes) {
+                Ok(result)
+            } else {
+                Err(CKzgRet::BadArgs)
+            }
+        })
+        .collect::<Result<Vec<ArkFr>, CKzgRet>>()
+}
+
+macro_rules! handle_ckzg_badargs {
+    ($x: expr) => {
+        match $x {
+            Ok(value) => value,
+            Err(_) => return kzg::eth::c_bindings::CKzgRet::BadArgs,
+        }
+    };
+}
+
+pub(crate) use handle_ckzg_badargs;
+
+pub(crate) fn fft_settings_to_rust(
+    c_settings: *const CKZGSettings,
+) -> Result<LFFTSettings, String> {
+    let settings = unsafe { &*c_settings };
+
+    let roots_of_unity = unsafe {
+        core::slice::from_raw_parts(
+            settings.roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        )
+        .iter()
+        .map(|r| ArkFr::from_blst_fr(*r))
+        .collect::<Vec<ArkFr>>()
+    };
+
+    let brp_roots_of_unity = unsafe {
+        core::slice::from_raw_parts(
+            settings.brp_roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB,
+        )
+        .iter()
+        .map(|r| ArkFr::from_blst_fr(*r))
+        .collect::<Vec<ArkFr>>()
+    };
+
+    let reverse_roots_of_unity = unsafe {
+        core::slice::from_raw_parts(
+            settings.reverse_roots_of_unity,
+            eth::FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+        )
+        .iter()
+        .map(|r| ArkFr::from_blst_fr(*r))
+        .collect::<Vec<ArkFr>>()
+    };
+
+    Ok(LFFTSettings {
+        max_width: eth::FIELD_ELEMENTS_PER_EXT_BLOB,
+        root_of_unity: roots_of_unity[1],
+        roots_of_unity,
+        brp_roots_of_unity,
+        reverse_roots_of_unity,
+    })
+}
+
+pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
+    ArkFr,
+    ArkG1,
+    ArkFp,
+    ArkG1Affine,
+> = PrecomputationTableManager::new();
+
+pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
+    CKZGSettings {
+        roots_of_unity: Box::leak(
+            rust_settings
+                .fs
+                .roots_of_unity
+                .iter()
+                .map(|r| r.to_blst_fr())
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        brp_roots_of_unity: Box::leak(
+            rust_settings
+                .fs
+                .brp_roots_of_unity
+                .iter()
+                .map(|r| r.to_blst_fr())
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        reverse_roots_of_unity: Box::leak(
+            rust_settings
+                .fs
+                .reverse_roots_of_unity
+                .iter()
+                .map(|r| r.to_blst_fr())
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        g1_values_monomial: Box::leak(
+            rust_settings
+                .g1_values_monomial
+                .iter()
+                .map(|r| r.to_blst_p1())
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        g1_values_lagrange_brp: Box::leak(
+            rust_settings
+                .g1_values_lagrange_brp
+                .iter()
+                .map(|r| r.to_blst_p1())
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        g2_values_monomial: Box::leak(
+            rust_settings
+                .g2_values_monomial
+                .iter()
+                .map(|r| r.to_blst_p2())
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        x_ext_fft_columns: Box::leak(
+            rust_settings
+                .x_ext_fft_columns
+                .iter()
+                .map(|r| {
+                    Box::leak(
+                        r.iter()
+                            .map(|it| it.to_blst_p1())
+                            .collect::<Vec<_>>()
+                            .into_boxed_slice(),
+                    )
+                    .as_mut_ptr()
+                })
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        tables: core::ptr::null_mut(),
+        wbits: 0,
+        scratch_size: 0,
+    }
+}
+
+pub fn pc_poly_into_blst_poly(poly: DensePoly<ark_bls12_381::Fr>) -> PolyData {
     let mut bls_pol: Vec<ArkFr> = { Vec::new() };
     for x in poly.coeffs {
         bls_pol.push(ArkFr { fr: x });
@@ -25,8 +200,8 @@ pub fn pc_poly_into_blst_poly(poly: DensePoly<Fr>) -> PolyData {
     PolyData { coeffs: bls_pol }
 }
 
-pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<Fr> {
-    let mut poly: Vec<Fr> = vec![Fr::default(); pd.len()];
+pub fn blst_poly_into_pc_poly(pd: &[ArkFr]) -> DensePoly<ark_bls12_381::Fr> {
+    let mut poly: Vec<ark_bls12_381::Fr> = vec![ark_bls12_381::Fr::default(); pd.len()];
     for i in 0..pd.len() {
         poly[i] = pd[i].fr;
     }
@@ -37,13 +212,13 @@ pub const fn pc_fq_into_blst_fp(fq: Fq) -> Fp {
     Fp { l: fq.0 .0 }
 }
 
-pub const fn blst_fr_into_pc_fr(fr: blst_fr) -> Fr {
+pub const fn blst_fr_into_pc_fr(fr: blst_fr) -> ark_bls12_381::Fr {
     let big_int = BigInteger256::new(fr.l);
 
-    Fr::new(big_int)
+    ark_bls12_381::Fr::new(big_int)
 }
 
-pub const fn pc_fr_into_blst_fr(fr: Fr) -> blst_fr {
+pub const fn pc_fr_into_blst_fr(fr: ark_bls12_381::Fr) -> blst_fr {
     blst::blst_fr { l: fr.0 .0 }
 }
 
