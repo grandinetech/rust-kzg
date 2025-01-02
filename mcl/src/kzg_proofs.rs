@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use crate::mcl_methods::mcl_gt;
+use crate::mcl_methods::{mcl_gt, pairing};
 use crate::types::fp::FsFp;
 use crate::types::g1::FsG1;
 use crate::types::{fr::FsFr, g1::FsG1Affine};
@@ -11,7 +11,7 @@ use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
 
 use crate::types::g2::FsG2;
 
-use kzg::PairingVerify;
+use kzg::{G1Mul, PairingVerify};
 
 impl PairingVerify<FsG1, FsG2> for FsG1 {
     fn verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
@@ -35,5 +35,12 @@ pub fn g1_linear_combination(
 }
 
 pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
-    todo!()
+    // Todo: make optimization
+    let mut gt0 = mcl_gt::default();
+    pairing(&mut gt0, &a1.0, &a2.0);
+
+    let mut gt1 = mcl_gt::default();
+    pairing(&mut gt1, &b1.0, &b2.0);
+
+    gt0 == gt1
 }
