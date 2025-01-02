@@ -11,8 +11,8 @@ use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, p
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::{
     blst_fp_into_pc_fq, blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
-    blst_p2_into_pc_g2projective, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
-    pc_g2projective_into_blst_p2, PolyData,
+    blst_p2_into_pc_g2projective, fft_settings_to_rust, pc_fr_into_blst_fr,
+    pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData, PRECOMPUTATION_TABLES,
 };
 use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
 use ark_ec::{models::short_weierstrass::Projective, AffineRepr, Group};
@@ -23,6 +23,7 @@ use ark_std::{One, Zero};
 
 #[cfg(feature = "rand")]
 use ark_std::UniformRand;
+use kzg::eth::c_bindings::CKZGSettings;
 
 use crate::fft_g1::fft_g1_fast;
 
@@ -30,15 +31,13 @@ use blst::{blst_fp, blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
-    FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
-    G1LinComb, G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
+    eth, FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp,
+    G1GetFp, G1LinComb, G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, Scalar256,
+    G1, G2,
 };
 use std::ops::{AddAssign, Mul, Neg, Sub};
 
-use kzg::eip_4844::{
-    BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2, FIELD_ELEMENTS_PER_BLOB,
-    FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB, TRUSTED_SETUP_NUM_G2_POINTS,
-};
+use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -631,26 +630,27 @@ impl FFTSettings<ArkFr> for LFFTSettings {
     }
 }
 
-fn g1_fft(output: &mut [ArkG1], input: &[ArkG1], s: &LFFTSettings) -> Result<(), String> {
-    /* Ensure the length is valid */
-    if input.len() > FIELD_ELEMENTS_PER_EXT_BLOB || !input.len().is_power_of_two() {
-        return Err("Invalid input size".to_string());
-    }
-
-    let roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / input.len();
-    fft_g1_fast(output, input, 1, &s.roots_of_unity, roots_stride);
-
-    Ok(())
-}
-
-fn toeplitz_part_1(output: &mut [ArkG1], x: &[ArkG1], s: &LFFTSettings) -> Result<(), String> {
+fn toeplitz_part_1(
+    field_elements_per_ext_blob: usize,
+    output: &mut [ArkG1],
+    x: &[ArkG1],
+    s: &LFFTSettings,
+) -> Result<(), String> {
     let n = x.len();
     let n2 = n * 2;
     let mut x_ext = vec![ArkG1::identity(); n2];
 
     x_ext[..n].copy_from_slice(x);
 
-    g1_fft(output, &x_ext, s)?;
+    let x_ext = &x_ext[..];
+
+    /* Ensure the length is valid */
+    if x_ext.len() > field_elements_per_ext_blob || !x_ext.len().is_power_of_two() {
+        return Err("Invalid input size".to_string());
+    }
+
+    let roots_stride = field_elements_per_ext_blob / x_ext.len();
+    fft_g1_fast(output, x_ext, 1, &s.roots_of_unity, roots_stride);
 
     Ok(())
 }
@@ -661,31 +661,32 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         g1_lagrange_brp: &[ArkG1],
         g2_monomial: &[ArkG2],
         fft_settings: &LFFTSettings,
+        cell_size: usize,
     ) -> Result<LKZGSettings, String> {
-        if g1_monomial.len() != FIELD_ELEMENTS_PER_BLOB
-            || g1_lagrange_brp.len() != FIELD_ELEMENTS_PER_BLOB
-            || g2_monomial.len() != TRUSTED_SETUP_NUM_G2_POINTS
-        {
-            return Err("Length does not match FIELD_ELEMENTS_PER_BLOB".to_string());
+        if g1_monomial.len() != g1_lagrange_brp.len() {
+            return Err("G1 point length mismatch".to_string());
         }
 
-        let n = FIELD_ELEMENTS_PER_EXT_BLOB / 2;
-        let k = n / FIELD_ELEMENTS_PER_CELL;
+        let field_elements_per_blob = g1_monomial.len();
+        let field_elements_per_ext_blob = field_elements_per_blob * 2;
+
+        let n = field_elements_per_ext_blob / 2;
+        let k = n / cell_size;
         let k2 = 2 * k;
 
         let mut points = vec![ArkG1::default(); k2];
         let mut x = vec![ArkG1::default(); k];
-        let mut x_ext_fft_columns = vec![vec![ArkG1::default(); FIELD_ELEMENTS_PER_CELL]; k2];
+        let mut x_ext_fft_columns = vec![vec![ArkG1::default(); cell_size]; k2];
 
-        for offset in 0..FIELD_ELEMENTS_PER_CELL {
-            let start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for offset in 0..cell_size {
+            let start = n - cell_size - 1 - offset;
             for (i, p) in x.iter_mut().enumerate().take(k - 1) {
-                let j = start - i * FIELD_ELEMENTS_PER_CELL;
+                let j = start - i * cell_size;
                 *p = g1_monomial[j];
             }
             x[k - 1] = ArkG1::identity();
 
-            toeplitz_part_1(&mut points, &x, fft_settings)?;
+            toeplitz_part_1(field_elements_per_ext_blob, &mut points, &x, fft_settings)?;
 
             for row in 0..k2 {
                 x_ext_fft_columns[row][offset] = points[row];
@@ -699,6 +700,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
             fs: fft_settings.clone(),
             x_ext_fft_columns,
             precomputation: precompute(g1_lagrange_brp).ok().flatten().map(Arc::new),
+            cell_size,
         })
     }
 
@@ -866,6 +868,63 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
 
     fn get_x_ext_fft_column(&self, index: usize) -> &[ArkG1] {
         &self.x_ext_fft_columns[index]
+    }
+
+    fn get_cell_size(&self) -> usize {
+        self.cell_size
+    }
+}
+
+impl<'a> TryFrom<&'a CKZGSettings> for LKZGSettings {
+    type Error = String;
+
+    fn try_from(c_settings: &'a CKZGSettings) -> Result<Self, Self::Error> {
+        Ok(LKZGSettings {
+            fs: fft_settings_to_rust(c_settings)?,
+            g1_values_monomial: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g1_values_monomial,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
+            }
+            .iter()
+            .map(|r| ArkG1::from_blst_p1(*r))
+            .collect::<Vec<_>>(),
+            g1_values_lagrange_brp: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g1_values_lagrange_brp,
+                    eth::FIELD_ELEMENTS_PER_BLOB,
+                )
+            }
+            .iter()
+            .map(|r| ArkG1::from_blst_p1(*r))
+            .collect::<Vec<_>>(),
+            g2_values_monomial: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.g2_values_monomial,
+                    eth::TRUSTED_SETUP_NUM_G2_POINTS,
+                )
+            }
+            .iter()
+            .map(|r| ArkG2::from_blst_p2(*r))
+            .collect::<Vec<_>>(),
+            x_ext_fft_columns: unsafe {
+                core::slice::from_raw_parts(
+                    c_settings.x_ext_fft_columns,
+                    2 * ((eth::FIELD_ELEMENTS_PER_EXT_BLOB / 2) / eth::FIELD_ELEMENTS_PER_CELL),
+                )
+            }
+            .iter()
+            .map(|it| {
+                unsafe { core::slice::from_raw_parts(*it, eth::FIELD_ELEMENTS_PER_CELL) }
+                    .iter()
+                    .map(|it| ArkG1::from_blst_p1(*it))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>(),
+            precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
+            cell_size: eth::FIELD_ELEMENTS_PER_CELL,
+        })
     }
 }
 

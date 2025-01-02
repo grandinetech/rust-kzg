@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  C_KZG_4844_GIT_HASH: '0ff9f37000445b28b2f4b17df4efe6140ac121ac'
+  C_KZG_4844_GIT_HASH: '0894e3ded53d6f85f5aa146f4fe3e80afb411b94'
 
 jobs:
   release-build:
@@ -39,7 +39,7 @@ jobs:
       - name: "constantine - install deps"
         if: matrix.backend == 'constantine'
         run: |
-          sudo DEBIAN_FRONTEND='noninteractive' apt-fast install \
+          sudo DEBIAN_FRONTEND='noninteractive' apt-get install \
             --no-install-recommends -yq \
             libgmp-dev \
             llvm

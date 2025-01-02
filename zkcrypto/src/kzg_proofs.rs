@@ -47,6 +47,7 @@ pub struct KZGSettings {
     pub g2_values_monomial: Vec<ZG2>,
     pub precomputation: Option<Arc<PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>>>,
     pub x_ext_fft_columns: Vec<Vec<ZG1>>,
+    pub cell_size: usize,
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ZG1>, Vec<ZG1>, Vec<ZG2>) {
@@ -59,7 +60,7 @@ pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ZG1>, V
 
     for _ in 0..len {
         s1.push(G1_GENERATOR.mul(&s_pow));
-        s2.push(G1_GENERATOR); // TODO: this should be lagrange form
+        s2.push(G1_GENERATOR.mul(&s_pow)); // TODO: this should be lagrange form
         s3.push(G2_GENERATOR.mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
