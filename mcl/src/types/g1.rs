@@ -164,13 +164,13 @@ impl G1 for FsG1 {
     fn is_inf(&self) -> bool {
         try_init_mcl();
 
-        mcl_g1::get_str(&self.0, 0).eq("0")
+        self.0.get_str(0).eq("0")
     }
 
     fn is_valid(&self) -> bool {
         try_init_mcl();
 
-        mcl_g1::is_valid(&self.0)
+        self.0.is_valid()
     }
 
     fn dbl(&self) -> Self {
