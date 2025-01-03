@@ -1,5 +1,4 @@
 extern crate alloc;
-use blst::{blst_fp, blst_fp2, blst_p1, blst_p2};
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;

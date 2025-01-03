@@ -1,17 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use blst::{
-        blst_final_exp, blst_fp12, blst_fp12_mul, blst_miller_loop, blst_p1_affine, blst_p1_cneg,
-        blst_p1_to_affine, blst_p2_affine, blst_p2_to_affine, Pairing,
-    };
-    use kzg::G1;
     use kzg_bench::tests::kzg_proofs::{
         commit_to_nil_poly, commit_to_too_long_poly_returns_err, proof_multi, proof_single,
     };
 
     use rust_kzg_mcl::eip_7594::MclBackend;
-    use rust_kzg_mcl::types::g1::FsG1;
-    use rust_kzg_mcl::types::g2::FsG2;
     use rust_kzg_mcl::utils::generate_trusted_setup;
 
     #[test]

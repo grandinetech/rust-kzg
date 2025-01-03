@@ -11,7 +11,7 @@ use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
 
 use crate::types::g2::FsG2;
 
-use kzg::{G1Mul, PairingVerify};
+use kzg::PairingVerify;
 
 impl PairingVerify<FsG1, FsG2> for FsG1 {
     fn verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {

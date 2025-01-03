@@ -2,21 +2,14 @@ extern crate alloc;
 
 use core::ops::Add;
 use core::ops::Sub;
-use core::ptr;
 
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
-use alloc::vec::Vec;
 
 use blst::blst_fp;
 use blst::blst_p1;
 use blst::blst_p1_affine;
-use blst::blst_p1_is_inf;
-use blst::blst_p1_mult;
-use blst::blst_scalar;
-use blst::blst_scalar_from_fr;
-use kzg::common_utils::log_2_byte;
 use kzg::eip_4844::BYTES_PER_G1;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::G1Affine;
@@ -402,11 +395,11 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
 
 pub struct FsG1ProjAddAffine;
 impl G1ProjAddAffine<FsG1, FsFp, FsG1Affine> for FsG1ProjAddAffine {
-    fn add_assign_affine(proj: &mut FsG1, aff: &FsG1Affine) {
+    fn add_assign_affine(_proj: &mut FsG1, _aff: &FsG1Affine) {
         todo!()
     }
 
-    fn add_or_double_assign_affine(proj: &mut FsG1, aff: &FsG1Affine) {
+    fn add_or_double_assign_affine(_proj: &mut FsG1, _aff: &FsG1Affine) {
         todo!()
     }
 }

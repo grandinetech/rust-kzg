@@ -43,8 +43,6 @@ impl Fr for FsFr {
     fn rand() -> Self {
         try_init_mcl();
 
-        use blst::blst_fr_from_uint64;
-
         let val: [u64; 4] = [
             rand::random(),
             rand::random(),

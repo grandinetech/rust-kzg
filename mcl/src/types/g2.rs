@@ -12,7 +12,6 @@ use kzg::{G2Mul, G2};
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
 use crate::mcl_methods::mcl_fp;
 use crate::mcl_methods::mcl_fp2;
-use crate::mcl_methods::mcl_g1;
 use crate::mcl_methods::mcl_g2;
 use crate::mcl_methods::try_init_mcl;
 use crate::types::fr::FsFr;
@@ -45,10 +44,6 @@ impl FsG2 {
 
     #[cfg(feature = "rand")]
     pub fn rand() -> Self {
-        try_init_mcl();
-
-        use crate::mcl_methods::try_init_mcl;
-
         try_init_mcl();
 
         let result: FsG2 = G2_GENERATOR;
