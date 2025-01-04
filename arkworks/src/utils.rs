@@ -9,10 +9,10 @@ use ark_poly::univariate::DensePolynomial as DensePoly;
 use ark_poly::DenseUVPolynomial;
 use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 
-use kzg::eip_4844::{PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT};
-use kzg::eth::c_bindings::{Blob, CKZGSettings, CKzgRet};
+use kzg::eip_4844::PrecomputationTableManager;
+use kzg::eth::c_bindings::CKZGSettings;
 
-use kzg::{eth, Fr};
+use kzg::eth;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error;
@@ -113,22 +113,6 @@ pub const fn pc_g2projective_into_blst_p2(p2: Projective<g2::Config>) -> blst_p2
             ],
         },
     }
-}
-
-pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, CKzgRet> {
-    (*blob)
-        .bytes
-        .chunks(BYTES_PER_FIELD_ELEMENT)
-        .map(|chunk| {
-            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
-            bytes.copy_from_slice(chunk);
-            if let Ok(result) = ArkFr::from_bytes(&bytes) {
-                Ok(result)
-            } else {
-                Err(CKzgRet::BadArgs)
-            }
-        })
-        .collect::<Result<Vec<ArkFr>, CKzgRet>>()
 }
 
 pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {

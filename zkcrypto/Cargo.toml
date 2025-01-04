@@ -23,7 +23,8 @@ rand = { version = "0.8.5" }
 [features]
 default = [
     "std",
-    "rand"
+    "rand",
+    "c_bindings"
 ]
 std = [
     "kzg/std",
@@ -36,6 +37,7 @@ rand = [
     "dep:rand",
     "kzg/rand",
 ]
+c_bindings = []
 
 [[bench]]
 name = "fft"

@@ -25,7 +25,8 @@ rand = "0.8.5"
 default = [
     "std",
     "rand",
-    "bgmw"
+    "bgmw",
+    "c_bindings"
 ]
 std = [
     "hex/std",
@@ -48,6 +49,7 @@ bgmw = [
 arkmsm = [
     "kzg/arkmsm"
 ]
+c_bindings = []
 
 [[bench]]
 name = "das"

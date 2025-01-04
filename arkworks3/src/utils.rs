@@ -3,12 +3,8 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use kzg::{
-    eip_4844::{PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT},
-    eth::{
-        self,
-        c_bindings::{Blob, CKZGSettings, CKzgRet},
-    },
-    Fr,
+    eip_4844::PrecomputationTableManager,
+    eth::{self, c_bindings::CKZGSettings},
 };
 
 use crate::kzg_proofs::{FFTSettings as LFFTSettings, KZGSettings as LKZGSettings};
@@ -31,22 +27,6 @@ pub struct PolyData {
     pub coeffs: Vec<ArkFr>,
 }
 // FIXME: Store just dense poly here
-
-pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ArkFr>, CKzgRet> {
-    (*blob)
-        .bytes
-        .chunks(BYTES_PER_FIELD_ELEMENT)
-        .map(|chunk| {
-            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
-            bytes.copy_from_slice(chunk);
-            if let Ok(result) = ArkFr::from_bytes(&bytes) {
-                Ok(result)
-            } else {
-                Err(CKzgRet::BadArgs)
-            }
-        })
-        .collect::<Result<Vec<ArkFr>, CKzgRet>>()
-}
 
 macro_rules! handle_ckzg_badargs {
     ($x: expr) => {

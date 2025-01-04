@@ -27,7 +27,8 @@ rand = { version = "0.8.5" }
 [features]
 default = [
     "std",
-    "rand"
+    "rand",
+    "c_bindings"
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 
@@ -50,6 +51,7 @@ sppark_wlc = [
     "dep:rust-kzg-arkworks3-sppark-wlc",
     "kzg/sppark"
 ]
+c_bindings = []
 
 [[bench]]
 name = "fft"

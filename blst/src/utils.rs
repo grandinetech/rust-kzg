@@ -3,8 +3,8 @@ extern crate alloc;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-use kzg::eip_4844::{hash_to_bls_field, PrecomputationTableManager, BYTES_PER_FIELD_ELEMENT};
-use kzg::eth::c_bindings::{Blob, CKZGSettings, CKzgRet};
+use kzg::eip_4844::{hash_to_bls_field, PrecomputationTableManager};
+use kzg::eth::c_bindings::CKZGSettings;
 use kzg::{Fr, G1Mul, G2Mul};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
@@ -34,22 +34,6 @@ pub fn generate_trusted_setup(
     }
 
     (s1, s2, s3)
-}
-
-pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, CKzgRet> {
-    (*blob)
-        .bytes
-        .chunks(BYTES_PER_FIELD_ELEMENT)
-        .map(|chunk| {
-            let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
-            bytes.copy_from_slice(chunk);
-            if let Ok(result) = FsFr::from_bytes(&bytes) {
-                Ok(result)
-            } else {
-                Err(CKzgRet::BadArgs)
-            }
-        })
-        .collect::<Result<Vec<FsFr>, CKzgRet>>()
 }
 
 macro_rules! handle_ckzg_badargs {

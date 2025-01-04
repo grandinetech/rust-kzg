@@ -8,11 +8,7 @@ use bls12_381::{G1Projective, G2Projective, Scalar};
 use blst::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 use kzg::{
     eip_4844::PrecomputationTableManager,
-    eth::{
-        self,
-        c_bindings::{Blob, CKZGSettings, CKzgRet},
-    },
-    Fr,
+    eth::{self, c_bindings::CKZGSettings},
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -201,22 +197,6 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &KZGSettings) -> CKZGSettings {
         wbits: 0,
         scratch_size: 0,
     }
-}
-
-pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<ZFr>, CKzgRet> {
-    (*blob)
-        .bytes
-        .chunks(eth::BYTES_PER_FIELD_ELEMENT)
-        .map(|chunk| {
-            let mut bytes = [0u8; eth::BYTES_PER_FIELD_ELEMENT];
-            bytes.copy_from_slice(chunk);
-            if let Ok(result) = ZFr::from_bytes(&bytes) {
-                Ok(result)
-            } else {
-                Err(CKzgRet::BadArgs)
-            }
-        })
-        .collect::<Result<Vec<ZFr>, CKzgRet>>()
 }
 
 pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<ZFr, ZG1, ZFp, ZG1Affine> =

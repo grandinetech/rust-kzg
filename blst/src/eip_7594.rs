@@ -26,4 +26,5 @@ impl EcBackend for BlstBackend {
     type KZGSettings = FsKZGSettings;
 }
 
+#[cfg(feature = "c_bindings")]
 c_bindings_eip7594!(BlstBackend);
