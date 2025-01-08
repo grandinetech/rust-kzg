@@ -1,7 +1,7 @@
 use super::P1;
 use crate::{
-    kzg_proofs::{FFTSettings, KZGSettings},
-    kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2},
+    kzg_proofs::FFTSettings,
+    kzg_types::{ZFp, ZFr, ZG1Affine, ZG1},
     P2,
 };
 use bls12_381::{G1Projective, G2Projective, Scalar};
@@ -65,16 +65,6 @@ pub const fn pc_g2projective_into_blst_p2(p2: G2Projective) -> blst_p2 {
     blst_p2 { x, y, z }
 }
 
-macro_rules! handle_ckzg_badargs {
-    ($x: expr) => {
-        match $x {
-            Ok(value) => value,
-            Err(_) => return kzg::eth::c_bindings::CKzgRet::BadArgs,
-        }
-    };
-}
-pub(crate) use handle_ckzg_badargs;
-
 pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FFTSettings, String> {
     let settings = unsafe { &*c_settings };
 
@@ -115,88 +105,6 @@ pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FF
         brp_roots_of_unity,
         reverse_roots_of_unity,
     })
-}
-
-pub(crate) fn kzg_settings_to_c(rust_settings: &KZGSettings) -> CKZGSettings {
-    CKZGSettings {
-        roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .roots_of_unity
-                .iter()
-                .map(ZFr::to_blst_fr)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        brp_roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .brp_roots_of_unity
-                .iter()
-                .map(ZFr::to_blst_fr)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        reverse_roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .reverse_roots_of_unity
-                .iter()
-                .map(ZFr::to_blst_fr)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g1_values_monomial: Box::leak(
-            rust_settings
-                .g1_values_monomial
-                .iter()
-                .map(ZG1::to_blst_p1)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g1_values_lagrange_brp: Box::leak(
-            rust_settings
-                .g1_values_lagrange_brp
-                .iter()
-                .map(ZG1::to_blst_p1)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g2_values_monomial: Box::leak(
-            rust_settings
-                .g2_values_monomial
-                .iter()
-                .map(ZG2::to_blst_p2)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        x_ext_fft_columns: Box::leak(
-            rust_settings
-                .x_ext_fft_columns
-                .iter()
-                .map(|r| {
-                    Box::leak(
-                        r.iter()
-                            .map(ZG1::to_blst_p1)
-                            .collect::<Vec<_>>()
-                            .into_boxed_slice(),
-                    )
-                    .as_mut_ptr()
-                })
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        tables: core::ptr::null_mut(),
-        wbits: 0,
-        scratch_size: 0,
-    }
 }
 
 pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<ZFr, ZG1, ZFp, ZG1Affine> =

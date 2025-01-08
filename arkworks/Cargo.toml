@@ -27,7 +27,6 @@ default = [
     "std",
     "rand",
     "bgmw",
-    "c_bindings"
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 

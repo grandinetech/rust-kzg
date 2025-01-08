@@ -28,7 +28,6 @@ rand = { version = "0.8.5" }
 default = [
     "std",
     "rand",
-    "c_bindings"
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 
