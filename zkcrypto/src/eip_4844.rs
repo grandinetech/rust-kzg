@@ -1,18 +1,27 @@
 extern crate alloc;
 
-use crate::kzg_proofs::KZGSettings;
-use crate::utils::{handle_ckzg_badargs, kzg_settings_to_c, PRECOMPUTATION_TABLES};
-use kzg::eip_4844::{
-    load_trusted_setup_rust, BYTES_PER_G1, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
-    TRUSTED_SETUP_NUM_G2_POINTS,
+#[cfg(feature = "c_bindings")]
+use crate::utils::PRECOMPUTATION_TABLES;
+#[cfg(feature = "c_bindings")]
+use crate::{
+    kzg_proofs::KZGSettings,
+    kzg_types::{ZFr, ZG1, ZG2},
 };
-use kzg::eth::c_bindings::{
-    Blob, Bytes32, Bytes48, CKZGSettings, CKzgRet, KZGCommitment, KZGProof,
+#[cfg(feature = "c_bindings")]
+use core::ptr;
+use kzg::eip_4844::load_trusted_setup_rust;
+#[cfg(feature = "c_bindings")]
+use kzg::{
+    eip_4844::{
+        BYTES_PER_G1, FIELD_ELEMENTS_PER_BLOB, TRUSTED_SETUP_NUM_G1_POINTS,
+        TRUSTED_SETUP_NUM_G2_POINTS,
+    },
+    eth,
+    eth::c_bindings::{Blob, Bytes32, Bytes48, CKZGSettings, CKzgRet, KZGCommitment, KZGProof},
+    Fr, G1,
 };
-use kzg::{eth, Fr, G1};
-use std::ptr::{self};
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "c_bindings"))]
 use libc::FILE;
 #[cfg(feature = "std")]
 use std::fs::File;
@@ -21,6 +30,99 @@ use std::io::Read;
 
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
+
+#[cfg(feature = "c_bindings")]
+pub(crate) fn kzg_settings_to_c(rust_settings: &KZGSettings) -> CKZGSettings {
+    CKZGSettings {
+        roots_of_unity: Box::leak(
+            rust_settings
+                .fs
+                .roots_of_unity
+                .iter()
+                .map(ZFr::to_blst_fr)
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        brp_roots_of_unity: Box::leak(
+            rust_settings
+                .fs
+                .brp_roots_of_unity
+                .iter()
+                .map(ZFr::to_blst_fr)
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        reverse_roots_of_unity: Box::leak(
+            rust_settings
+                .fs
+                .reverse_roots_of_unity
+                .iter()
+                .map(ZFr::to_blst_fr)
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        g1_values_monomial: Box::leak(
+            rust_settings
+                .g1_values_monomial
+                .iter()
+                .map(ZG1::to_blst_p1)
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        g1_values_lagrange_brp: Box::leak(
+            rust_settings
+                .g1_values_lagrange_brp
+                .iter()
+                .map(ZG1::to_blst_p1)
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        g2_values_monomial: Box::leak(
+            rust_settings
+                .g2_values_monomial
+                .iter()
+                .map(ZG2::to_blst_p2)
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        x_ext_fft_columns: Box::leak(
+            rust_settings
+                .x_ext_fft_columns
+                .iter()
+                .map(|r| {
+                    Box::leak(
+                        r.iter()
+                            .map(ZG1::to_blst_p1)
+                            .collect::<Vec<_>>()
+                            .into_boxed_slice(),
+                    )
+                    .as_mut_ptr()
+                })
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        )
+        .as_mut_ptr(),
+        tables: core::ptr::null_mut(),
+        wbits: 0,
+        scratch_size: 0,
+    }
+}
+
+#[cfg(feature = "c_bindings")]
+macro_rules! handle_ckzg_badargs {
+    ($x: expr) => {
+        match $x {
+            Ok(value) => value,
+            Err(_) => return kzg::eth::c_bindings::CKzgRet::BadArgs,
+        }
+    };
+}
 
 /// # Safety
 #[cfg(feature = "c_bindings")]
@@ -76,7 +178,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
     out: *mut CKZGSettings,
     in_: *mut FILE,
 ) -> CKzgRet {
-    use crate::utils::{kzg_settings_to_c, PRECOMPUTATION_TABLES};
+    use crate::utils::PRECOMPUTATION_TABLES;
 
     *out = CKZGSettings {
         brp_roots_of_unity: ptr::null_mut(),

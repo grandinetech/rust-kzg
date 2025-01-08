@@ -9,7 +9,6 @@ use crate::types::g1::FsG1Affine;
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
-use kzg::c_bindings_eip7594;
 
 use crate::types::fr::FsFr;
 
@@ -27,4 +26,4 @@ impl EcBackend for BlstBackend {
 }
 
 #[cfg(feature = "c_bindings")]
-c_bindings_eip7594!(BlstBackend);
+kzg::c_bindings_eip7594!(BlstBackend);

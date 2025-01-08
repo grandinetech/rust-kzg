@@ -12,7 +12,6 @@ use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
 use crate::types::g1::{CtG1, CtG1Affine};
 use crate::types::g2::CtG2;
-use crate::types::kzg_settings::CtKZGSettings;
 
 pub fn generate_trusted_setup(
     n: usize,
@@ -98,85 +97,3 @@ pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
     CtFp,
     CtG1Affine,
 > = PrecomputationTableManager::new();
-
-pub(crate) fn kzg_settings_to_c(rust_settings: &CtKZGSettings) -> CKZGSettings {
-    CKZGSettings {
-        roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .roots_of_unity
-                .iter()
-                .map(|r| r.to_blst_fr())
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        brp_roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .brp_roots_of_unity
-                .iter()
-                .map(|r| r.to_blst_fr())
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        reverse_roots_of_unity: Box::leak(
-            rust_settings
-                .fs
-                .reverse_roots_of_unity
-                .iter()
-                .map(|r| r.to_blst_fr())
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g1_values_monomial: Box::leak(
-            rust_settings
-                .g1_values_monomial
-                .iter()
-                .map(|r| r.to_blst_p1())
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g1_values_lagrange_brp: Box::leak(
-            rust_settings
-                .g1_values_lagrange_brp
-                .iter()
-                .map(|r| r.to_blst_p1())
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        g2_values_monomial: Box::leak(
-            rust_settings
-                .g2_values_monomial
-                .iter()
-                .map(|r| r.to_blst_p2())
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        x_ext_fft_columns: Box::leak(
-            rust_settings
-                .x_ext_fft_columns
-                .iter()
-                .map(|r| {
-                    Box::leak(
-                        r.iter()
-                            .map(|it| it.to_blst_p1())
-                            .collect::<Vec<_>>()
-                            .into_boxed_slice(),
-                    )
-                    .as_mut_ptr()
-                })
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )
-        .as_mut_ptr(),
-        tables: core::ptr::null_mut(),
-        wbits: 0,
-        scratch_size: 0,
-    }
-}

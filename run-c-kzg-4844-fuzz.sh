@@ -42,16 +42,16 @@ if [ "$backend" == "unknown" ]; then
   exit 1
 fi
 
-features=""
+features="c_bindings"
 
 #Check if --arkmsm is specified
 if [ "$use_arkmsm" = true ]; then
-  features+="arkmsm,"
+  features+=",arkmsm"
 fi
 
 # Check if --bgmw is specified
 if [ "$use_bgmw" = true ]; then
-  features+="bgmw"
+  features+=",bgmw"
 fi
 
 # Trim the trailing comma, if any
@@ -63,7 +63,7 @@ cd $backend
 
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
-  cargo rustc --release --crate-type=staticlib --features="$features"
+  cargo rustc --release --crate-type=staticlib --features="$features,parallel"
 else
   print_msg "Using non-parallel version"
   cargo rustc --release --crate-type=staticlib --features="$features"

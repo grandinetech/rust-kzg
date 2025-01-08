@@ -24,7 +24,6 @@ default = [
     "std",
     "rand",
     "bgmw",
-    "c_bindings",
 ]
 std = [
     "hex/std",

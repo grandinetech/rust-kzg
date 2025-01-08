@@ -1,4 +1,4 @@
-#[cfg(test)]
+#[cfg(all(test, feature = "c_bindings"))]
 mod tests {
     use kzg_bench::tests::c_bindings::{
         blob_to_kzg_commitment_invalid_blob_test,

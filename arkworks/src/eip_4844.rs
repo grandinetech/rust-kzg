@@ -1,7 +1,9 @@
 extern crate alloc;
 
 use crate::kzg_proofs::KZGSettings as LKZGSettings;
+#[cfg(feature = "c_bindings")]
 use crate::utils::PRECOMPUTATION_TABLES;
+#[cfg(feature = "c_bindings")]
 use kzg::{
     eth::{
         self,
@@ -10,13 +12,14 @@ use kzg::{
     Fr, G1,
 };
 
-#[cfg(feature = "std")]
+#[cfg(feature = "c_bindings")]
+use core::ptr;
+#[cfg(all(feature = "std", feature = "c_bindings"))]
 use libc::FILE;
 #[cfg(feature = "std")]
 use std::fs::File;
 #[cfg(feature = "std")]
 use std::io::Read;
-use std::ptr;
 
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
@@ -37,6 +40,7 @@ pub fn load_trusted_setup_filename_rust(
     load_trusted_setup_rust(&g1_monomial_bytes, &g1_lagrange_bytes, &g2_monomial_bytes)
 }
 
+#[cfg(feature = "c_bindings")]
 pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
     CKZGSettings {
         roots_of_unity: Box::leak(
@@ -119,6 +123,7 @@ pub(crate) fn kzg_settings_to_c(rust_settings: &LKZGSettings) -> CKZGSettings {
     }
 }
 
+#[cfg(feature = "c_bindings")]
 macro_rules! handle_ckzg_badargs {
     ($x: expr) => {
         match $x {
