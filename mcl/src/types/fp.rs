@@ -90,16 +90,19 @@ impl G1Fp for FsFp {
 
     fn mul_assign_fp(&mut self, b: &Self) {
         try_init_mcl();
+
         self.0 *= &b.0;
     }
 
     fn sub_assign_fp(&mut self, b: &Self) {
         try_init_mcl();
+
         self.0 -= &b.0;
     }
 
     fn add_assign_fp(&mut self, b: &Self) {
         try_init_mcl();
+
         self.0 += &b.0;
     }
 }

@@ -4,50 +4,69 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 
-use blst::{
-    blst_fp2, blst_p2, blst_p2_add_or_double, blst_p2_affine, blst_p2_cneg, blst_p2_compress,
-    blst_p2_double, blst_p2_from_affine, blst_p2_is_equal, blst_p2_mult, blst_p2_uncompress,
-    blst_scalar, blst_scalar_from_fr, BLST_ERROR,
-};
 use kzg::eip_4844::BYTES_PER_G2;
 #[cfg(feature = "rand")]
 use kzg::Fr;
 use kzg::{G2Mul, G2};
 
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
+use crate::mcl_methods::mcl_fp;
+use crate::mcl_methods::mcl_fp2;
+use crate::mcl_methods::mcl_g2;
+use crate::mcl_methods::try_init_mcl;
 use crate::types::fr::FsFr;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
-pub struct FsG2(pub blst_p2);
+pub struct FsG2(pub mcl_g2);
 
-impl G2Mul<FsFr> for FsG2 {
-    fn mul(&self, b: &FsFr) -> Self {
-        let mut result = blst_p2::default();
-        let mut scalar = blst_scalar::default();
-        unsafe {
-            blst_scalar_from_fr(&mut scalar, &b.0);
-            blst_p2_mult(
-                &mut result,
-                &self.0,
-                scalar.b.as_ptr(),
-                8 * core::mem::size_of::<blst_scalar>(),
-            );
+impl FsG2 {
+    pub fn from_blst_p2(p2: blst::blst_p2) -> Self {
+        try_init_mcl();
+
+        Self(mcl_g2 { 
+            x: mcl_fp2{ d: [mcl_fp{ d: p2.x.fp[0].l }, mcl_fp{ d: p2.x.fp[1].l }] }, 
+            y: mcl_fp2{ d: [mcl_fp{ d: p2.y.fp[0].l }, mcl_fp{ d: p2.y.fp[1].l }] }, 
+            z: mcl_fp2{ d: [mcl_fp{ d: p2.z.fp[0].l }, mcl_fp{ d: p2.z.fp[1].l }] }, 
+        })
+        // Self(blst_p2_into_pc_g2projective(&p2))
+    }
+
+    pub const fn to_blst_p2(&self) -> blst::blst_p2 {
+        blst::blst_p2 {
+            x: blst::blst_fp2{ fp: [ blst::blst_fp{ l: self.0.x.d[0].d }, blst::blst_fp{ l: self.0.x.d[1].d } ] },
+            y: blst::blst_fp2{ fp: [ blst::blst_fp{ l: self.0.y.d[0].d }, blst::blst_fp{ l: self.0.y.d[1].d } ] },
+            z: blst::blst_fp2{ fp: [ blst::blst_fp{ l: self.0.z.d[0].d }, blst::blst_fp{ l: self.0.z.d[1].d } ] }
         }
-        Self(result)
+
+        // pc_g2projective_into_blst_p2(self.0)
+    }
+
+    #[cfg(feature = "rand")]
+    pub fn rand() -> Self {
+        try_init_mcl();
+
+        let result: FsG2 = G2_GENERATOR;
+        result.mul(&FsFr::rand())
     }
 }
 
 impl G2 for FsG2 {
     fn generator() -> Self {
+        try_init_mcl();
+
         G2_GENERATOR
     }
 
     fn negative_generator() -> Self {
+        try_init_mcl();
+
         G2_NEGATIVE_GENERATOR
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        try_init_mcl();
+
         bytes
             .try_into()
             .map_err(|_| {
@@ -58,66 +77,62 @@ impl G2 for FsG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
+                use blst::{blst_p2_affine, blst_p2};
+
                 let mut tmp = blst_p2_affine::default();
                 let mut g2 = blst_p2::default();
                 unsafe {
                     // The uncompress routine also checks that the point is on the curve
-                    if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
+                    if blst::blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != blst::BLST_ERROR::BLST_SUCCESS {
                         return Err("Failed to uncompress".to_string());
                     }
-                    blst_p2_from_affine(&mut g2, &tmp);
+                    blst::blst_p2_from_affine(&mut g2, &tmp);
                 }
-                Ok(FsG2(g2))
+                Ok(FsG2::from_blst_p2(g2))
             })
     }
 
     fn to_bytes(&self) -> [u8; 96] {
-        let mut out = [0u8; BYTES_PER_G2];
-        unsafe {
-            blst_p2_compress(out.as_mut_ptr(), &self.0);
-        }
-        out
+        todo!()
     }
 
     fn add_or_dbl(&mut self, b: &Self) -> Self {
-        let mut result = blst_p2::default();
-        unsafe {
-            blst_p2_add_or_double(&mut result, &self.0, &b.0);
-        }
-        Self(result)
+        try_init_mcl();
+
+        let mut out: mcl_g2 = mcl_g2::default();
+        mcl_g2::add(&mut out, &self.0, &b.0);
+        Self(out)
     }
 
     fn dbl(&self) -> Self {
-        let mut result = blst_p2::default();
-        unsafe {
-            blst_p2_double(&mut result, &self.0);
-        }
-        Self(result)
+        try_init_mcl();
+
+        let mut out = mcl_g2::default();
+        mcl_g2::dbl(&mut out, &self.0);
+        Self(out)
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let mut bneg: blst_p2 = b.0;
-        let mut result = blst_p2::default();
-        unsafe {
-            blst_p2_cneg(&mut bneg, true);
-            blst_p2_add_or_double(&mut result, &self.0, &bneg);
-        }
-        Self(result)
+        try_init_mcl();
+
+        let mut out: mcl_g2 = mcl_g2::default();
+        mcl_g2::sub(&mut out, &self.0, &b.0);
+        Self(out)
     }
 
     fn equals(&self, b: &Self) -> bool {
-        unsafe { blst_p2_is_equal(&self.0, &b.0) }
+        try_init_mcl();
+
+        mcl_g2::eq(&self.0, &b.0)
     }
 }
 
-impl FsG2 {
-    pub(crate) fn _from_xyz(x: blst_fp2, y: blst_fp2, z: blst_fp2) -> Self {
-        FsG2(blst_p2 { x, y, z })
-    }
+impl G2Mul<FsFr> for FsG2 {
+    fn mul(&self, b: &FsFr) -> Self {
+        try_init_mcl();
 
-    #[cfg(feature = "rand")]
-    pub fn rand() -> Self {
-        let result: FsG2 = G2_GENERATOR;
-        result.mul(&FsFr::rand())
+        let mut out: mcl_g2 = mcl_g2::default();
+        mcl_g2::mul(&mut out, &self.0, &b.0);
+        Self(out)
     }
 }
