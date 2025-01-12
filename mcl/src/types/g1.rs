@@ -10,6 +10,7 @@ use alloc::string::ToString;
 use blst::blst_fp;
 use blst::blst_p1;
 use blst::blst_p1_affine;
+use blst::blst_p1_in_g1;
 use kzg::eip_4844::BYTES_PER_G1;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::G1Affine;
@@ -163,7 +164,11 @@ impl G1 for FsG1 {
     fn is_valid(&self) -> bool {
         try_init_mcl();
 
-        self.0.is_valid()
+        let blst = self.to_blst_p1();
+
+        unsafe {
+            blst_p1_in_g1(&blst)
+        }
     }
 
     fn dbl(&self) -> Self {
