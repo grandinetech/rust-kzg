@@ -1,5 +1,3 @@
-use blst::{blst_fr, blst_p1, blst_p1_affine, blst_p2};
-
 use crate::{
     eth::{CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL},
     EcBackend, Fr, DAS, G1,
@@ -420,4 +418,57 @@ macro_rules! c_bindings_eip7594 {
             )
         }
     };
+}
+
+// Below types are copied from `blst` crate.
+// It is needed so other backends do not depend on blst runtime, but still can
+// provide c-kzg-4844 compatible apis.
+#[allow(non_camel_case_types)]
+pub type limb_t = u64;
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub struct blst_fr {
+    pub l: [limb_t; 4usize],
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub struct blst_p1 {
+    pub x: blst_fp,
+    pub y: blst_fp,
+    pub z: blst_fp,
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub struct blst_fp {
+    pub l: [limb_t; 6usize],
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub struct blst_p2 {
+    pub x: blst_fp2,
+    pub y: blst_fp2,
+    pub z: blst_fp2,
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub struct blst_fp2 {
+    pub fp: [blst_fp; 2usize],
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub struct blst_p1_affine {
+    pub x: blst_fp,
+    pub y: blst_fp,
 }

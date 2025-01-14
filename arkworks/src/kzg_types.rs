@@ -23,11 +23,10 @@ use ark_std::{One, Zero};
 
 #[cfg(feature = "rand")]
 use ark_std::UniformRand;
-use kzg::eth::c_bindings::CKZGSettings;
+use kzg::eth::c_bindings::{blst_fp, blst_fr, blst_p1, blst_p2, CKZGSettings};
 
 use crate::fft_g1::fft_g1_fast;
 
-use blst::{blst_fp, blst_fr, blst_p1};
 use kzg::common_utils::reverse_bit_order;
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
@@ -422,11 +421,11 @@ impl PairingVerify<ArkG1, ArkG2> for ArkG1 {
 pub struct ArkG2(pub Projective<g2::Config>);
 
 impl ArkG2 {
-    pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
+    pub const fn from_blst_p2(p2: blst_p2) -> Self {
         Self(blst_p2_into_pc_g2projective(&p2))
     }
 
-    pub const fn to_blst_p2(&self) -> blst::blst_p2 {
+    pub const fn to_blst_p2(&self) -> blst_p2 {
         pc_g2projective_into_blst_p2(self.0)
     }
 }

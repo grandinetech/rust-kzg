@@ -4,6 +4,8 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use constantine::ctt_codec_ecc_status;
+use kzg::eth::c_bindings::blst_fp;
+use kzg::eth::c_bindings::blst_p1;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::G1LinComb;
 
@@ -53,7 +55,7 @@ impl CtG1 {
         CtG1(bls12_381_g1_jac { x, y, z })
     }
 
-    pub const fn from_blst_p1(p1: blst::blst_p1) -> Self {
+    pub const fn from_blst_p1(p1: blst_p1) -> Self {
         unsafe {
             Self(bls12_381_g1_jac {
                 x: bls12_381_fp {
@@ -69,16 +71,16 @@ impl CtG1 {
         }
     }
 
-    pub const fn to_blst_p1(&self) -> blst::blst_p1 {
+    pub const fn to_blst_p1(&self) -> blst_p1 {
         unsafe {
-            blst::blst_p1 {
-                x: blst::blst_fp {
+            blst_p1 {
+                x: blst_fp {
                     l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.x.limbs),
                 },
-                y: blst::blst_fp {
+                y: blst_fp {
                     l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.y.limbs),
                 },
-                z: blst::blst_fp {
+                z: blst_fp {
                     l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.z.limbs),
                 },
             }

@@ -5,10 +5,10 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 
-use blst::blst_fr;
 use constantine::ctt_codec_scalar_status;
 use core::fmt::{Debug, Formatter};
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
+use kzg::eth::c_bindings::blst_fr;
 use kzg::Fr;
 use kzg::Scalar256;
 
@@ -37,7 +37,7 @@ impl PartialEq for CtFr {
 impl Eq for CtFr {}
 
 impl CtFr {
-    pub fn from_blst_fr(fr: blst::blst_fr) -> Self {
+    pub fn from_blst_fr(fr: blst_fr) -> Self {
         unsafe {
             Self(bls12_381_fr {
                 limbs: core::mem::transmute::<[u64; 4], [usize; 4]>(fr.l),
