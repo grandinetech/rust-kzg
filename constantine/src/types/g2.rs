@@ -20,11 +20,13 @@ use constantine_sys::{
 
 use constantine_sys as constantine;
 
+use kzg::eth::c_bindings::{blst_fp, blst_fp2, blst_p2};
+
 #[derive(Default, Clone, Copy)]
 pub struct CtG2(pub bls12_381_g2_jac);
 
 impl CtG2 {
-    pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
+    pub const fn from_blst_p2(p2: blst_p2) -> Self {
         unsafe {
             Self(bls12_381_g2_jac {
                 x: bls12_381_fp2 {
@@ -61,35 +63,35 @@ impl CtG2 {
         }
     }
 
-    pub const fn to_blst_p2(&self) -> blst::blst_p2 {
+    pub const fn to_blst_p2(&self) -> blst_p2 {
         unsafe {
-            blst::blst_p2 {
-                x: blst::blst_fp2 {
+            blst_p2 {
+                x: blst_fp2 {
                     fp: [
-                        blst::blst_fp {
+                        blst_fp {
                             l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.x.c[0].limbs),
                         },
-                        blst::blst_fp {
+                        blst_fp {
                             l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.x.c[1].limbs),
                         },
                     ],
                 },
-                y: blst::blst_fp2 {
+                y: blst_fp2 {
                     fp: [
-                        blst::blst_fp {
+                        blst_fp {
                             l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.y.c[0].limbs),
                         },
-                        blst::blst_fp {
+                        blst_fp {
                             l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.y.c[1].limbs),
                         },
                     ],
                 },
-                z: blst::blst_fp2 {
+                z: blst_fp2 {
                     fp: [
-                        blst::blst_fp {
+                        blst_fp {
                             l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.z.c[0].limbs),
                         },
-                        blst::blst_fp {
+                        blst_fp {
                             l: core::mem::transmute::<[usize; 6], [u64; 6]>(self.0.z.c[1].limbs),
                         },
                     ],

@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-blst = "0.3.11"
 kzg = { path = "../kzg", default-features = false }
 bls12_381 = { path = "../zkcrypto/bls12_381" }
 ff = { version = "0.13", features = ["derive"] }
