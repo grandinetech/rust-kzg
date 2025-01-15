@@ -165,14 +165,14 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release --features c_bindings
 
       # Check parallel backend tests
       - name: "${{ matrix.backend }} Tests (parallel)"
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release --features parallel
+          args: --manifest-path ${{ matrix.backend }}/Cargo.toml --no-fail-fast --release --features c_bindings,parallel
 
       # Check ckzg backend tests
       - name: "${{ matrix.backend }} Tests (c-kzg-4844)"
