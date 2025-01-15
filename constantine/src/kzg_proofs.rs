@@ -20,7 +20,6 @@ use crate::types::g1::CtG1ProjAddAffine;
 use kzg::msm::precompute::PrecomputationTable;
 
 use crate::types::g2::CtG2;
-use blst::{blst_p1_affine, blst_p1_cneg, blst_p1_to_affine, blst_p2_affine, blst_p2_to_affine};
 
 use kzg::PairingVerify;
 
@@ -85,22 +84,22 @@ pub fn g1_linear_combination(
 
 pub fn pairings_verify(a1: &CtG1, a2: &CtG2, b1: &CtG1, b2: &CtG2) -> bool {
     // FIXME: Remove usage of BLST version, though not sure if there's a constantine version of multi miller loop
-    let mut aa1 = blst_p1_affine::default();
-    let mut bb1 = blst_p1_affine::default();
+    let mut aa1 = blst::blst_p1_affine::default();
+    let mut bb1 = blst::blst_p1_affine::default();
 
-    let mut aa2 = blst_p2_affine::default();
-    let mut bb2 = blst_p2_affine::default();
+    let mut aa2 = blst::blst_p2_affine::default();
+    let mut bb2 = blst::blst_p2_affine::default();
 
     // As an optimisation, we want to invert one of the pairings,
     // so we negate one of the points.
     let mut a1neg: CtG1 = *a1;
     unsafe {
-        blst_p1_cneg(ptr_transmute_mut(&mut a1neg.0), true);
-        blst_p1_to_affine(&mut aa1, ptr_transmute(&a1neg.0));
+        blst::blst_p1_cneg(ptr_transmute_mut(&mut a1neg.0), true);
+        blst::blst_p1_to_affine(&mut aa1, ptr_transmute(&a1neg.0));
 
-        blst_p1_to_affine(&mut bb1, ptr_transmute(&b1.0));
-        blst_p2_to_affine(&mut aa2, ptr_transmute(&a2.0));
-        blst_p2_to_affine(&mut bb2, ptr_transmute(&b2.0));
+        blst::blst_p1_to_affine(&mut bb1, ptr_transmute(&b1.0));
+        blst::blst_p2_to_affine(&mut aa2, ptr_transmute(&a2.0));
+        blst::blst_p2_to_affine(&mut bb2, ptr_transmute(&b2.0));
 
         let dst = [0u8; 3];
         let mut pairing_blst = blst::Pairing::new(false, &dst);

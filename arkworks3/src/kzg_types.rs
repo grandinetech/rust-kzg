@@ -11,7 +11,6 @@ use crate::utils::{
     blst_p2_into_pc_g2projective, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
     pc_g2projective_into_blst_p2, PolyData,
 };
-use crate::P2;
 use ark_bls12_381::{g1, g2, Fr, G1Affine};
 use ark_ec::ModelParameters;
 use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, AffineCurve, ProjectiveCurve};
@@ -22,13 +21,9 @@ use ark_std::{One, Zero};
 #[cfg(feature = "rand")]
 use ark_std::UniformRand;
 
-use blst::{
-    blst_fp, blst_fp2, blst_fr, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
-    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
-    blst_p2_uncompress, BLST_ERROR,
-};
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
+use kzg::eth::c_bindings::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
@@ -83,14 +78,10 @@ impl KzgFr for ArkFr {
     }
 
     fn zero() -> Self {
-        // Self::from_u64(0)
         Self { fr: Fr::zero() }
     }
 
     fn one() -> Self {
-        // let one = Fr::one();
-        // // assert_eq!(one.0.0, [0, 1, 1, 1], "must be eq");
-        // Self { fr: one }
         Self::from_u64(1)
     }
 
@@ -363,17 +354,21 @@ impl G1 for ArkG1 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G1]| {
-                let mut blst_affine = blst_p1_affine::default();
-                let result = unsafe { blst_p1_uncompress(&mut blst_affine, bytes.as_ptr()) };
+                let mut blst_affine = blst::blst_p1_affine::default();
+                let result = unsafe { blst::blst_p1_uncompress(&mut blst_affine, bytes.as_ptr()) };
 
-                if result != BLST_ERROR::BLST_SUCCESS {
+                if result != blst::BLST_ERROR::BLST_SUCCESS {
                     return Err("Failed to deserialize G1".to_owned());
                 }
 
-                let mut blst_point = blst_p1::default();
-                unsafe { blst_p1_from_affine(&mut blst_point, &blst_affine) };
+                let mut blst_point = blst::blst_p1::default();
+                unsafe { blst::blst_p1_from_affine(&mut blst_point, &blst_affine) };
 
-                Ok(ArkG1::from_blst_p1(blst_point))
+                Ok(ArkG1::from_blst_p1(blst_p1 {
+                    x: blst_fp { l: blst_point.x.l },
+                    y: blst_fp { l: blst_point.y.l },
+                    z: blst_fp { l: blst_point.z.l },
+                }))
             })
     }
 
@@ -382,10 +377,18 @@ impl G1 for ArkG1 {
         Self::from_bytes(&bytes)
     }
 
-    fn to_bytes(&self) -> [u8; 48] {
+    fn to_bytes(&self) -> [u8; BYTES_PER_G1] {
         let mut out = [0u8; BYTES_PER_G1];
+        let v = self.to_blst_p1();
         unsafe {
-            blst_p1_compress(out.as_mut_ptr(), &self.to_blst_p1());
+            blst::blst_p1_compress(
+                out.as_mut_ptr(),
+                &blst::blst_p1 {
+                    x: blst::blst_fp { l: v.x.l },
+                    y: blst::blst_fp { l: v.y.l },
+                    z: blst::blst_fp { l: v.z.l },
+                },
+            );
         }
         out
     }
@@ -395,12 +398,13 @@ impl G1 for ArkG1 {
     }
 
     fn is_inf(&self) -> bool {
-        let temp = &self.0;
-        temp.z.is_zero()
+        self.0.is_zero()
     }
 
     fn is_valid(&self) -> bool {
-        unsafe { blst_p1_in_g1(&self.to_blst_p1()) }
+        let affine = self.0.into_affine();
+
+        affine.is_on_curve() && affine.is_in_correct_subgroup_assuming_on_curve()
     }
 
     fn dbl(&self) -> Self {
@@ -490,18 +494,18 @@ impl PairingVerify<ArkG1, ArkG2> for ArkG1 {
 pub struct ArkG2(pub GroupProjective<g2::Parameters>);
 
 impl ArkG2 {
-    pub fn from_blst_p2(p2: blst::blst_p2) -> Self {
+    pub fn from_blst_p2(p2: blst_p2) -> Self {
         Self(blst_p2_into_pc_g2projective(&p2))
     }
 
-    pub fn to_blst_p2(&self) -> blst::blst_p2 {
+    pub fn to_blst_p2(&self) -> blst_p2 {
         pc_g2projective_into_blst_p2(self.0)
     }
 }
 
 impl G2 for ArkG2 {
     fn generator() -> Self {
-        ArkG2::from_blst_p2(P2 {
+        ArkG2::from_blst_p2(blst_p2 {
             x: blst_fp2 {
                 fp: [
                     blst_fp {
@@ -578,7 +582,7 @@ impl G2 for ArkG2 {
     }
 
     fn negative_generator() -> Self {
-        ArkG2::from_blst_p2(P2 {
+        ArkG2::from_blst_p2(blst_p2 {
             x: blst_fp2 {
                 fp: [
                     blst_fp {
@@ -666,17 +670,48 @@ impl G2 for ArkG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let mut blst_affine = blst_p2_affine::default();
-                let result = unsafe { blst_p2_uncompress(&mut blst_affine, bytes.as_ptr()) };
+                let mut blst_affine = blst::blst_p2_affine::default();
+                let result = unsafe { blst::blst_p2_uncompress(&mut blst_affine, bytes.as_ptr()) };
 
-                if result != BLST_ERROR::BLST_SUCCESS {
+                if result != blst::BLST_ERROR::BLST_SUCCESS {
                     return Err("Failed to deserialize G1".to_owned());
                 }
 
-                let mut blst_point = blst_p2::default();
-                unsafe { blst_p2_from_affine(&mut blst_point, &blst_affine) };
+                let mut blst_point = blst::blst_p2::default();
+                unsafe { blst::blst_p2_from_affine(&mut blst_point, &blst_affine) };
 
-                Ok(ArkG2::from_blst_p2(blst_point))
+                Ok(ArkG2::from_blst_p2(blst_p2 {
+                    x: blst_fp2 {
+                        fp: [
+                            blst_fp {
+                                l: blst_point.x.fp[0].l,
+                            },
+                            blst_fp {
+                                l: blst_point.x.fp[1].l,
+                            },
+                        ],
+                    },
+                    y: blst_fp2 {
+                        fp: [
+                            blst_fp {
+                                l: blst_point.y.fp[0].l,
+                            },
+                            blst_fp {
+                                l: blst_point.y.fp[1].l,
+                            },
+                        ],
+                    },
+                    z: blst_fp2 {
+                        fp: [
+                            blst_fp {
+                                l: blst_point.z.fp[0].l,
+                            },
+                            blst_fp {
+                                l: blst_point.z.fp[1].l,
+                            },
+                        ],
+                    },
+                }))
             })
     }
 

@@ -32,13 +32,15 @@ use crate::{types::kzg_settings::FsKZGSettings, utils::PRECOMPUTATION_TABLES};
 
 #[cfg(feature = "c_bindings")]
 fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
+    use kzg::eth::c_bindings::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
+
     CKZGSettings {
         roots_of_unity: Box::leak(
             rust_settings
                 .fs
                 .roots_of_unity
                 .iter()
-                .map(|r| r.0)
+                .map(|r| blst_fr { l: r.0.l })
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -48,7 +50,7 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
                 .fs
                 .brp_roots_of_unity
                 .iter()
-                .map(|r| r.0)
+                .map(|r| blst_fr { l: r.0.l })
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -58,7 +60,7 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
                 .fs
                 .reverse_roots_of_unity
                 .iter()
-                .map(|r| r.0)
+                .map(|r| blst_fr { l: r.0.l })
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -67,7 +69,11 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
             rust_settings
                 .g1_values_monomial
                 .iter()
-                .map(|r| r.0)
+                .map(|r| blst_p1 {
+                    x: blst_fp { l: r.0.x.l },
+                    y: blst_fp { l: r.0.y.l },
+                    z: blst_fp { l: r.0.z.l },
+                })
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -76,7 +82,11 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
             rust_settings
                 .g1_values_lagrange_brp
                 .iter()
-                .map(|r| r.0)
+                .map(|r| blst_p1 {
+                    x: blst_fp { l: r.0.x.l },
+                    y: blst_fp { l: r.0.y.l },
+                    z: blst_fp { l: r.0.z.l },
+                })
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -85,7 +95,17 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
             rust_settings
                 .g2_values_monomial
                 .iter()
-                .map(|r| r.0)
+                .map(|r| blst_p2 {
+                    x: blst_fp2 {
+                        fp: [blst_fp { l: r.0.x.fp[0].l }, blst_fp { l: r.0.x.fp[1].l }],
+                    },
+                    y: blst_fp2 {
+                        fp: [blst_fp { l: r.0.y.fp[0].l }, blst_fp { l: r.0.y.fp[1].l }],
+                    },
+                    z: blst_fp2 {
+                        fp: [blst_fp { l: r.0.z.fp[0].l }, blst_fp { l: r.0.z.fp[1].l }],
+                    },
+                })
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
@@ -97,7 +117,11 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
                 .map(|r| {
                     Box::leak(
                         r.iter()
-                            .map(|it| it.0)
+                            .map(|r| blst_p1 {
+                                x: blst_fp { l: r.0.x.l },
+                                y: blst_fp { l: r.0.y.l },
+                                z: blst_fp { l: r.0.z.l },
+                            })
                             .collect::<Vec<_>>()
                             .into_boxed_slice(),
                     )

@@ -13,11 +13,10 @@ use crate::utils::{
     pc_g2projective_into_blst_p2, PRECOMPUTATION_TABLES,
 };
 use bls12_381::{Fp, G1Affine, G1Projective, G2Affine, G2Projective, Scalar, MODULUS, R2};
-use blst::{blst_fr, blst_p1};
 use ff::Field;
 use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
-use kzg::eth::c_bindings::CKZGSettings;
+use kzg::eth::c_bindings::{blst_fr, blst_p1, blst_p2, CKZGSettings};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{eth, G1Affine as G1AffineTrait};
 use kzg::{
@@ -679,7 +678,7 @@ pub struct ZG2 {
 }
 
 impl ZG2 {
-    pub const fn from_blst_p2(p2: blst::blst_p2) -> Self {
+    pub const fn from_blst_p2(p2: blst_p2) -> Self {
         Self {
             proj: blst_p2_into_pc_g2projective(&p2),
         }
@@ -687,7 +686,7 @@ impl ZG2 {
     pub const fn from_g2_projective(proj: G2Projective) -> Self {
         Self { proj }
     }
-    pub const fn to_blst_p2(&self) -> blst::blst_p2 {
+    pub const fn to_blst_p2(&self) -> blst_p2 {
         pc_g2projective_into_blst_p2(self.proj)
     }
 }
