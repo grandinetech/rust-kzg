@@ -2,7 +2,6 @@
 name = "rust-kzg-mcl"
 version = "0.1.0"
 edition = "2021"
-build = "build.rs"
 
 [dependencies]
 blst = "0.3.11"
@@ -18,6 +17,8 @@ hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 criterion = "0.5.1"
 kzg-bench = { path = "../kzg-bench" }
 rand = "0.8.5"
+
+mcl_rust = { git = "https://github.com/herumi/mcl-rust.git" }
 
 [features]
 default = [
