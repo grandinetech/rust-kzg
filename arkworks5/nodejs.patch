@@ -1,0 +1,51 @@
+From 43ef934fbf7d904b3014d9a37a37dc2d853f27b0 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Wed, 2 Oct 2024 07:43:11 +0000
+Subject: [PATCH] Patch node.js bindings
+
+---
+ bindings/node.js/binding.gyp | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/bindings/node.js/binding.gyp b/bindings/node.js/binding.gyp
+index d01e38b..1591b8e 100644
+--- a/bindings/node.js/binding.gyp
++++ b/bindings/node.js/binding.gyp
+@@ -3,22 +3,22 @@
+     {
+       "target_name": "kzg",
+       "sources": [
+-        "src/kzg.cxx",
+-        "deps/blst/src/server.c",
+-        "deps/c-kzg/ckzg.c"
++        "src/kzg.cxx"
+       ],
+       "include_dirs": [
+         "<(module_root_dir)/deps/blst/bindings",
+         "<(module_root_dir)/deps/c-kzg",
+         "<!@(node -p \"require('node-addon-api').include\")"
+       ],
++      "libraries": [
++        "<(module_root_dir)/../../lib/librust_kzg_arkworks5.a"
++      ],
+       "defines": [
+         "__BLST_PORTABLE__",
+         "NAPI_CPP_EXCEPTIONS"
+       ],
+       "conditions": [
+         ["OS!='win'", {
+-          "sources": ["deps/blst/build/assembly.S"],
+           "cflags_cc": [
+             "-fexceptions",
+             "-std=c++17",
+@@ -26,7 +26,6 @@
+           ]
+         }],
+         ["OS=='win'", {
+-          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
+           "defines": [
+             "_CRT_SECURE_NO_WARNINGS",
+             "_HAS_EXCEPTIONS=1"
+-- 
+2.46.1
+

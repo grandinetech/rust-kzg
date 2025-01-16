@@ -27,7 +27,7 @@ while [[ -n $# ]]; do
     --bgmw)
       use_bgmw=true
       ;;
-    blst|arkworks4|arkworks3|mcl|zkcrypto|constantine)
+    blst|arkworks5|arkworks4|arkworks3|mcl|zkcrypto|constantine)
       backend="$1"
       ;;
     *)
