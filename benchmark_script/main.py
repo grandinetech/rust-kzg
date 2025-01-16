@@ -286,13 +286,13 @@ def generate_fft_graph(out_filename, data):
     max_time = None
     max_time_2 = None
     for cores in data:
-        for backend in ['rust-kzg with blst backend (parallel, bgmw)', 'rust-kzg with arkworks backend (parallel, bgmw)', 'rust-kzg with constantine backend (parallel, bgmw)', 'rust-kzg with zkcrypto backend (parallel)']:
+        for backend in ['rust-kzg with blst backend (parallel, bgmw)', 'rust-kzg with arkworks4 backend (parallel, bgmw)', 'rust-kzg with constantine backend (parallel, bgmw)', 'rust-kzg with zkcrypto backend (parallel)']:
             result = data[cores][backend]["bench_fft_fr scale: '15'"]
             if max_time is None:
                 max_time = result
             elif max_time < result:
                 max_time = result
-        for backend in ['rust-kzg with blst backend (parallel, bgmw)', 'rust-kzg with arkworks backend (parallel, bgmw)', 'rust-kzg with constantine backend (parallel, bgmw)', 'rust-kzg with zkcrypto backend (parallel)']:
+        for backend in ['rust-kzg with blst backend (parallel, bgmw)', 'rust-kzg with arkworks4 backend (parallel, bgmw)', 'rust-kzg with constantine backend (parallel, bgmw)', 'rust-kzg with zkcrypto backend (parallel)']:
             result = data[cores][backend]["bench_fft_g1 scale: '15'"]
             if max_time_2 is None:
                 max_time_2 = result
@@ -334,13 +334,13 @@ def generate_msm_graph(out_filename, data):
     max_time = None
     max_time_2 = None
     for cores in data:
-        for backend in ['rust-kzg with blst backend (parallel)', 'rust-kzg with arkworks backend (parallel)', 'rust-kzg with constantine backend (parallel)', 'rust-kzg with zkcrypto backend (parallel)']:
+        for backend in ['rust-kzg with blst backend (parallel)', 'rust-kzg with arkworks4 backend (parallel)', 'rust-kzg with constantine backend (parallel)', 'rust-kzg with zkcrypto backend (parallel)']:
             result = data[cores][backend]["bench_g1_lincomb points: '4096'"]
             if max_time is None:
                 max_time = result
             elif max_time < result:
                 max_time = result
-        for backend in ['rust-kzg with blst backend (sequential)', 'rust-kzg with arkworks backend (sequential)', 'rust-kzg with constantine backend (sequential)', 'rust-kzg with zkcrypto backend (sequential)']:
+        for backend in ['rust-kzg with blst backend (sequential)', 'rust-kzg with arkworks4 backend (sequential)', 'rust-kzg with constantine backend (sequential)', 'rust-kzg with zkcrypto backend (sequential)']:
             result = data[cores][backend]["bench_g1_lincomb points: '4096'"]
             if max_time_2 is None:
                 max_time_2 = result
