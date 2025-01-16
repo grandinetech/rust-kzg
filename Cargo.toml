@@ -1,7 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "arkworks",
+    "arkworks5",
+    "arkworks4",
     "arkworks3",
     "arkworks3-sppark",
     "arkworks3-sppark-wlc",

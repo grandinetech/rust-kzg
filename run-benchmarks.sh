@@ -112,22 +112,22 @@ do
   # rust crates
   cd rust-kzg || exit
 
-  # 3.3. rust-kzg with arkworks backend (sequential)
-  print_msg "rust-kzg with arkworks backend (sequential)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --no-default-features --features std,rand >> ../"$paste_file"
+  # 3.3. rust-kzg with arkworks4 backend (sequential)
+  print_msg "rust-kzg with arkworks4 backend (sequential)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand >> ../"$paste_file"
 
-  print_msg "rust-kzg with arkworks backend (sequential, arkmsm)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --no-default-features --features std,rand,arkmsm >> ../"$paste_file"
+  print_msg "rust-kzg with arkworks4 backend (sequential, arkmsm)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand,arkmsm >> ../"$paste_file"
 
-  print_msg "rust-kzg with arkworks backend (sequential, bgmw)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --no-default-features --features std,rand,bgmw >> ../"$paste_file"
+  print_msg "rust-kzg with arkworks4 backend (sequential, bgmw)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand,bgmw >> ../"$paste_file"
 
-  # 3.4. rust-kzg with arkworks backend (parallel)
-  print_msg "rust-kzg with arkworks backend (parallel)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --no-default-features --features std,rand,parallel >> ../"$paste_file"
+  # 3.4. rust-kzg with arkworks4 backend (parallel)
+  print_msg "rust-kzg with arkworks4 backend (parallel)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand,parallel >> ../"$paste_file"
 
-  print_msg "rust-kzg with arkworks backend (parallel, bgmw)" ../"$paste_file"
-  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks/Cargo.toml --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
+  print_msg "rust-kzg with arkworks4 backend (parallel, bgmw)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
 
   # 3.5. rust-kzg with zkcrypto backend (sequential)
   print_msg "rust-kzg with zkcrypto backend (sequential)" ../"$paste_file"
@@ -187,13 +187,30 @@ do
   print_msg "rust-kzg with constantine backend (parallel, constantine_msm)" ../"$paste_file"
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path constantine/Cargo.toml --no-default-features --features std,rand,parallel,constantine_msm >> ../"$paste_file"
 
-  # 3.15. rust binding (rust-kzg with blst backend)
+  # 3.15. rust-kzg with arkworks4 backend (sequential)
+  print_msg "rust-kzg with arkworks4 backend (sequential)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand >> ../"$paste_file"
+
+  print_msg "rust-kzg with arkworks4 backend (sequential, arkmsm)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand,arkmsm >> ../"$paste_file"
+
+  print_msg "rust-kzg with arkworks4 backend (sequential, bgmw)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks4/Cargo.toml --no-default-features --features std,rand,bgmw >> ../"$paste_file"
+
+  # 3.16. rust-kzg with arkworks5 backend (parallel)
+  print_msg "rust-kzg with arkworks5 backend (parallel)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks5/Cargo.toml --no-default-features --features std,rand,parallel >> ../"$paste_file"
+
+  print_msg "rust-kzg with arkworks5 backend (parallel, bgmw)" ../"$paste_file"
+  taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench --manifest-path arkworks5/Cargo.toml --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
+
+  # 3.17. rust binding (rust-kzg with blst backend)
   print_msg "rust binding (rust-kzg with blst backend)" ../"$paste_file"
   cd blst/c-kzg-4844/bindings/rust/ || exit
   taskset --cpu-list "${taskset_cpu_list[$i]}" cargo bench >> ../../../../../"$paste_file"
   cd ../../../..
 
-  # 3.16. go binding (rust-kzg with blst backend)
+  # 3.18. go binding (rust-kzg with blst backend)
   print_msg "go binding (rust-kzg with blst backend)" ../"$paste_file"
   cd blst/c-kzg-4844/bindings/go/ || exit
   export CGO_CFLAGS="-O2 -D__BLST_PORTABLE__"
