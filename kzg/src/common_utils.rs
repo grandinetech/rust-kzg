@@ -95,3 +95,45 @@ pub fn reverse_bits_limited(length: usize, value: usize) -> usize {
     let unused_bits = length.leading_zeros() + 1;
     value.reverse_bits() >> unused_bits
 }
+
+#[macro_export]
+macro_rules! cfg_iter_mut {
+    ($collection:expr) => {{
+        #[cfg(feature = "parallel")]
+        {
+            $collection.par_iter_mut()
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            $collection.iter_mut()
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! cfg_iter {
+    ($collection:expr) => {{
+        #[cfg(feature = "parallel")]
+        {
+            $collection.par_iter()
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            $collection.iter()
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! cfg_chunks {
+    ($collection:expr, $chunk_size:expr) => {{
+        #[cfg(feature = "parallel")]
+        {
+            $collection.par_chunks($chunk_size)
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            $collection.chunks($chunk_size)
+        }
+    }};
+}

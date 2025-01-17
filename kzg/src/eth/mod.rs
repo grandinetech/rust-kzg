@@ -1,4 +1,5 @@
 pub mod c_bindings;
+pub mod eip_7594;
 
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 pub const BYTES_PER_G1: usize = 48;
