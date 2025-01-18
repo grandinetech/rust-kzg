@@ -10,6 +10,7 @@ use alloc::{
 };
 
 use crate::{
+    cfg_iter, cfg_iter_mut,
     common_utils::{reverse_bit_order, reverse_bits_limited},
     eip_4844::{
         blob_to_polynomial, compute_powers, hash, hash_to_bls_field, BYTES_PER_COMMITMENT,
@@ -20,32 +21,6 @@ use crate::{
 };
 
 pub const RANDOM_CHALLENGE_KZG_CELL_BATCH_DOMAIN: [u8; 16] = *b"RCKZGCBATCH__V1_";
-
-macro_rules! cfg_iter_mut {
-    ($collection:expr) => {{
-        #[cfg(feature = "parallel")]
-        {
-            $collection.par_iter_mut()
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            $collection.iter_mut()
-        }
-    }};
-}
-
-macro_rules! cfg_iter {
-    ($collection:expr) => {{
-        #[cfg(feature = "parallel")]
-        {
-            $collection.par_iter()
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            $collection.iter()
-        }
-    }};
-}
 
 pub trait EcBackend {
     type Fr: Fr + Debug + Send;
