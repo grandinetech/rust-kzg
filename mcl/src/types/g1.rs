@@ -24,17 +24,17 @@ use crate::kzg_proofs::g1_linear_combination;
 use crate::mcl_methods::mcl_fp;
 use crate::mcl_methods::mcl_g1;
 use crate::mcl_methods::try_init_mcl;
-use crate::types::fr::FsFr;
+use crate::types::fr::MclFr;
 
-use super::fp::FsFp;
+use super::fp::MclFp;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
-pub struct FsG1(pub mcl_g1);
+pub struct MclG1(pub mcl_g1);
 
-impl FsG1 {
+impl MclG1 {
     pub(crate) const fn from_xyz(x: mcl_fp, y: mcl_fp, z: mcl_fp) -> Self {
-        FsG1(mcl_g1 { x, y, z })
+        MclG1(mcl_g1 { x, y, z })
     }
 
     pub fn from_blst_p1(p1: blst_p1) -> Self {
@@ -49,7 +49,7 @@ impl FsG1 {
     }
 }
 
-impl G1 for FsG1 {
+impl G1 for MclG1 {
     fn zero() -> Self {
         try_init_mcl();
 
@@ -102,7 +102,7 @@ impl G1 for FsG1 {
     fn rand() -> Self {
         try_init_mcl();
 
-        let result: FsG1 = G1_GENERATOR;
+        let result: MclG1 = G1_GENERATOR;
         result.mul(&kzg::Fr::rand())
     }
 
@@ -128,7 +128,7 @@ impl G1 for FsG1 {
                 }
                 blst::blst_p1_from_affine(&mut g1, &tmp);
             }
-            Ok(FsG1::from_blst_p1(g1))
+            Ok(MclG1::from_blst_p1(g1))
         })
     }
 
@@ -218,82 +218,82 @@ impl G1 for FsG1 {
     }
 }
 
-impl G1GetFp<FsFp> for FsG1 {
-    fn x(&self) -> &FsFp {
+impl G1GetFp<MclFp> for MclG1 {
+    fn x(&self) -> &MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&self.0.x)
         }
     }
 
-    fn y(&self) -> &FsFp {
+    fn y(&self) -> &MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&self.0.y)
         }
     }
 
-    fn z(&self) -> &FsFp {
+    fn z(&self) -> &MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&self.0.z)
         }
     }
 
-    fn x_mut(&mut self) -> &mut FsFp {
+    fn x_mut(&mut self) -> &mut MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&mut self.0.x)
         }
     }
 
-    fn y_mut(&mut self) -> &mut FsFp {
+    fn y_mut(&mut self) -> &mut MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&mut self.0.y)
         }
     }
 
-    fn z_mut(&mut self) -> &mut FsFp {
+    fn z_mut(&mut self) -> &mut MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&mut self.0.z)
         }
     }
 }
 
-impl G1Mul<FsFr> for FsG1 {
-    fn mul(&self, b: &FsFr) -> Self {
+impl G1Mul<MclFr> for MclG1 {
+    fn mul(&self, b: &MclFr) -> Self {
         try_init_mcl();
 
-        let mut out = FsG1::default();
+        let mut out = MclG1::default();
         mcl_g1::mul(&mut out.0, &self.0, &b.0);
         out
     }
 }
 
-impl G1LinComb<FsFr, FsFp, FsG1Affine> for FsG1 {
+impl G1LinComb<MclFr, MclFp, FsG1Affine> for MclG1 {
     fn g1_lincomb(
         points: &[Self],
-        scalars: &[FsFr],
+        scalars: &[MclFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<FsFr, Self, FsFp, FsG1Affine>>,
+        precomputation: Option<&PrecomputationTable<MclFr, Self, MclFp, FsG1Affine>>,
     ) -> Self {
         try_init_mcl();
 
-        let mut out = FsG1::default();
+        let mut out = MclG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
         out
     }
@@ -306,7 +306,7 @@ pub struct FsG1Affine {
     pub y: mcl_fp
 }
 
-impl G1Affine<FsG1, FsFp> for FsG1Affine {
+impl G1Affine<MclG1, MclFp> for FsG1Affine {
     fn zero() -> Self {
         try_init_mcl();
 
@@ -324,7 +324,7 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
         }
     }
 
-    fn into_affine(g1: &FsG1) -> Self {
+    fn into_affine(g1: &MclG1) -> Self {
         try_init_mcl();
 
         let mut out: mcl_g1 = Default::default();
@@ -336,7 +336,7 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
         }
     }
 
-    fn into_affines_loc(out: &mut [Self], g1: &[FsG1]) {
+    fn into_affines_loc(out: &mut [Self], g1: &[MclG1]) {
         try_init_mcl();
 
         let mut i = 0;
@@ -346,10 +346,10 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
         }
     }
 
-    fn to_proj(&self) -> FsG1 {
+    fn to_proj(&self) -> MclG1 {
         try_init_mcl();
 
-        let mut ret: FsG1 = FsG1::generator();
+        let mut ret: MclG1 = MclG1::generator();
 
         ret.0.x = self.x;
         ret.0.y = self.y;
@@ -357,38 +357,38 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
         ret
     }
 
-    fn x(&self) -> &FsFp {
+    fn x(&self) -> &MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&self.x)
         }
     }
 
-    fn y(&self) -> &FsFp {
+    fn y(&self) -> &MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&self.y)
         }
     }
 
-    fn x_mut(&mut self) -> &mut FsFp {
+    fn x_mut(&mut self) -> &mut MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&mut self.x)
         }
     }
 
-    fn y_mut(&mut self) -> &mut FsFp {
+    fn y_mut(&mut self) -> &mut MclFp {
         try_init_mcl();
 
         unsafe {
-            // Transmute safe due to repr(C) on FsFp
+            // Transmute safe due to repr(C) on MclFp
             core::mem::transmute(&mut self.y)
         }
     }
@@ -398,13 +398,13 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 }
 
-pub struct FsG1ProjAddAffine;
-impl G1ProjAddAffine<FsG1, FsFp, FsG1Affine> for FsG1ProjAddAffine {
-    fn add_assign_affine(_proj: &mut FsG1, _aff: &FsG1Affine) {
+pub struct MclG1ProjAddAffine;
+impl G1ProjAddAffine<MclG1, MclFp, FsG1Affine> for MclG1ProjAddAffine {
+    fn add_assign_affine(_proj: &mut MclG1, _aff: &FsG1Affine) {
         todo!()
     }
 
-    fn add_or_double_assign_affine(_proj: &mut FsG1, _aff: &FsG1Affine) {
+    fn add_or_double_assign_affine(_proj: &mut MclG1, _aff: &FsG1Affine) {
         todo!()
     }
 }

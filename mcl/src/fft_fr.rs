@@ -7,15 +7,15 @@ use alloc::vec::Vec;
 
 use kzg::{FFTFr, Fr};
 
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
 
 /// Fast Fourier Transform for finite field elements. Polynomial ret is operated on in reverse order: ret_i * x ^ (len - i - 1)
 pub fn fft_fr_fast(
-    ret: &mut [FsFr],
-    data: &[FsFr],
+    ret: &mut [MclFr],
+    data: &[MclFr],
     stride: usize,
-    roots: &[FsFr],
+    roots: &[MclFr],
     roots_stride: usize,
 ) {
     let half: usize = ret.len() / 2;
@@ -66,13 +66,13 @@ pub fn fft_fr_fast(
     }
 }
 
-impl FsFFTSettings {
+impl MclFFTSettings {
     /// Fast Fourier Transform for finite field elements, `output` must be zeroes
     pub(crate) fn fft_fr_output(
         &self,
-        data: &[FsFr],
+        data: &[MclFr],
         inverse: bool,
-        output: &mut [FsFr],
+        output: &mut [MclFr],
     ) -> Result<(), String> {
         if data.len() > self.max_width {
             return Err(String::from(
@@ -104,7 +104,7 @@ impl FsFFTSettings {
         fft_fr_fast(output, data, 1, roots, stride);
 
         if inverse {
-            let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
+            let inv_fr_len = MclFr::from_u64(data.len() as u64).inverse();
             output.iter_mut().for_each(|f| *f = f.mul(&inv_fr_len));
         }
 
@@ -112,10 +112,10 @@ impl FsFFTSettings {
     }
 }
 
-impl FFTFr<FsFr> for FsFFTSettings {
+impl FFTFr<MclFr> for MclFFTSettings {
     /// Fast Fourier Transform for finite field elements
-    fn fft_fr(&self, data: &[FsFr], inverse: bool) -> Result<Vec<FsFr>, String> {
-        let mut ret = vec![FsFr::default(); data.len()];
+    fn fft_fr(&self, data: &[MclFr], inverse: bool) -> Result<Vec<MclFr>, String> {
+        let mut ret = vec![MclFr::default(); data.len()];
 
         self.fft_fr_output(data, inverse, &mut ret)?;
 
@@ -125,10 +125,10 @@ impl FFTFr<FsFr> for FsFFTSettings {
 
 /// Simplified Discrete Fourier Transform, mainly used for testing
 pub fn fft_fr_slow(
-    ret: &mut [FsFr],
-    data: &[FsFr],
+    ret: &mut [MclFr],
+    data: &[MclFr],
     stride: usize,
-    roots: &[FsFr],
+    roots: &[MclFr],
     roots_stride: usize,
 ) {
     for i in 0..data.len() {

@@ -5,24 +5,24 @@ use alloc::vec::Vec;
 
 use kzg::{FFTFr, Fr, PolyRecover, ZeroPoly};
 
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
-use crate::types::poly::FsPoly;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
+use crate::types::poly::MclPoly;
 use once_cell::sync::OnceCell;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 const SCALE_FACTOR: u64 = 5;
-static INVERSE_FACTORS: OnceCell<Vec<FsFr>> = OnceCell::new();
-static UNSCALE_FACTOR_POWERS: OnceCell<Vec<FsFr>> = OnceCell::new();
+static INVERSE_FACTORS: OnceCell<Vec<MclFr>> = OnceCell::new();
+static UNSCALE_FACTOR_POWERS: OnceCell<Vec<MclFr>> = OnceCell::new();
 
-pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
+pub fn scale_poly(p: &mut [MclFr], len_p: usize) {
     let factors = INVERSE_FACTORS.get_or_init(|| {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
-        let inv_factor = FsFr::inverse(&scale_factor);
+        let scale_factor = MclFr::from_u64(SCALE_FACTOR);
+        let inv_factor = MclFr::inverse(&scale_factor);
         let mut temp = Vec::with_capacity(65536);
-        temp.push(FsFr::one());
+        temp.push(MclFr::one());
         for i in 1..65536 {
             temp.push(temp[i - 1].mul(&inv_factor));
         }
@@ -38,11 +38,11 @@ pub fn scale_poly(p: &mut [FsFr], len_p: usize) {
         });
 }
 
-pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
+pub fn unscale_poly(p: &mut [MclFr], len_p: usize) {
     let factors = UNSCALE_FACTOR_POWERS.get_or_init(|| {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
+        let scale_factor = MclFr::from_u64(SCALE_FACTOR);
         let mut temp = Vec::with_capacity(65536);
-        temp.push(FsFr::one());
+        temp.push(MclFr::one());
         for i in 1..65536 {
             temp.push(temp[i - 1].mul(&scale_factor));
         }
@@ -58,10 +58,10 @@ pub fn unscale_poly(p: &mut [FsFr], len_p: usize) {
         });
 }
 
-impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
+impl PolyRecover<MclFr, MclPoly, MclFFTSettings> for MclPoly {
     fn recover_poly_coeffs_from_samples(
-        samples: &[Option<FsFr>],
-        fs: &FsFFTSettings,
+        samples: &[Option<MclFr>],
+        fs: &MclFFTSettings,
     ) -> Result<Self, String> {
         let len_samples = samples.len();
 
@@ -97,7 +97,7 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
 
                 match maybe_sample {
                     Some(sample) => sample.mul(&zero_eval),
-                    None => FsFr::zero(),
+                    None => MclFr::zero(),
                 }
             })
             .collect::<Vec<_>>();
@@ -172,8 +172,8 @@ impl PolyRecover<FsFr, FsPoly, FsFFTSettings> for FsPoly {
     }
 
     fn recover_poly_from_samples(
-        samples: &[Option<FsFr>],
-        fs: &FsFFTSettings,
+        samples: &[Option<MclFr>],
+        fs: &MclFFTSettings,
     ) -> Result<Self, String> {
         let reconstructed_poly = Self::recover_poly_coeffs_from_samples(samples, fs)?;
 

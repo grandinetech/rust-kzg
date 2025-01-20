@@ -6,26 +6,26 @@ use alloc::vec::Vec;
 use kzg::common_utils::reverse_bit_order;
 use kzg::{FK20SingleSettings, Poly, FFTG1, G1};
 
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
-use crate::types::g1::FsG1;
-use crate::types::g2::FsG2;
-use crate::types::kzg_settings::FsKZGSettings;
-use crate::types::poly::FsPoly;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
+use crate::types::g1::MclG1;
+use crate::types::g2::MclG2;
+use crate::types::kzg_settings::MclKZGSettings;
+use crate::types::poly::MclPoly;
 
-use super::fp::FsFp;
+use super::fp::MclFp;
 use super::g1::FsG1Affine;
 
 #[derive(Debug, Clone, Default)]
-pub struct FsFK20SingleSettings {
-    pub kzg_settings: FsKZGSettings,
-    pub x_ext_fft: Vec<FsG1>,
+pub struct MclFK20SingleSettings {
+    pub kzg_settings: MclKZGSettings,
+    pub x_ext_fft: Vec<MclG1>,
 }
 
-impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, FsFp, FsG1Affine>
-    for FsFK20SingleSettings
+impl FK20SingleSettings<MclFr, MclG1, MclG2, MclFFTSettings, MclPoly, MclKZGSettings, MclFp, FsG1Affine>
+    for MclFK20SingleSettings
 {
-    fn new(kzg_settings: &FsKZGSettings, n2: usize) -> Result<Self, String> {
+    fn new(kzg_settings: &MclKZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;
 
         if n2 > kzg_settings.fs.max_width {
@@ -42,7 +42,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, 
         for i in 0..n - 1 {
             x.push(kzg_settings.g1_values_lagrange_brp[n - 2 - i]);
         }
-        x.push(FsG1::identity());
+        x.push(MclG1::identity());
 
         let x_ext_fft = kzg_settings.fs.toeplitz_part_1(&x);
         drop(x);
@@ -56,7 +56,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, 
         Ok(ret)
     }
 
-    fn data_availability(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+    fn data_availability(&self, p: &MclPoly) -> Result<Vec<MclG1>, String> {
         let n = p.len();
         let n2 = n * 2;
 
@@ -74,7 +74,7 @@ impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, 
         Ok(ret)
     }
 
-    fn data_availability_optimized(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+    fn data_availability_optimized(&self, p: &MclPoly) -> Result<Vec<MclG1>, String> {
         let n = p.len();
         let n2 = n * 2;
 

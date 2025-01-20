@@ -17,9 +17,9 @@ use kzg::Scalar256;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct FsFr(pub mcl_fr);
+pub struct MclFr(pub mcl_fr);
 
-impl Fr for FsFr {
+impl Fr for MclFr {
     fn null() -> Self {
         try_init_mcl();
 
@@ -50,13 +50,13 @@ impl Fr for FsFr {
         ];
 
         let ret = Self::default();
-        let mut blst = FsFr::to_blst_fr(&ret);
+        let mut blst = MclFr::to_blst_fr(&ret);
 
         unsafe {
             blst_fr_from_uint64(&mut blst, val.as_ptr());
         }
 
-        FsFr::from_blst_fr(blst)
+        MclFr::from_blst_fr(blst)
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
@@ -113,13 +113,13 @@ impl Fr for FsFr {
         try_init_mcl();
 
         let ret = Self::default();
-        let mut blst = FsFr::to_blst_fr(&ret);
+        let mut blst = MclFr::to_blst_fr(&ret);
         
         unsafe {
             blst_fr_from_uint64(&mut blst, val.as_ptr());
         }
 
-        FsFr::from_blst_fr(blst)
+        MclFr::from_blst_fr(blst)
     }
 
     fn from_u64(val: u64) -> Self {
@@ -283,7 +283,7 @@ impl Fr for FsFr {
     }
 }
 
-impl FsFr {
+impl MclFr {
     pub fn from_blst_fr(fr: blst::blst_fr) -> Self {
         try_init_mcl();
 

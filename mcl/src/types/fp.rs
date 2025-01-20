@@ -4,8 +4,8 @@ use crate::mcl_methods::{mclBnFp_add, mclBnFp_neg, try_init_mcl, mcl_fp};
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
-pub struct FsFp(pub mcl_fp);
-impl G1Fp for FsFp {
+pub struct MclFp(pub mcl_fp);
+impl G1Fp for MclFp {
     fn one() -> Self {
         try_init_mcl();
             

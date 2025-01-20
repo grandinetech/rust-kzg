@@ -6,15 +6,15 @@ use alloc::vec::Vec;
 
 use kzg::{Fr, G1Mul, FFTG1, G1};
 
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
-use crate::types::g1::FsG1;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
+use crate::types::g1::MclG1;
 
 pub fn fft_g1_fast(
-    ret: &mut [FsG1],
-    data: &[FsG1],
+    ret: &mut [MclG1],
+    data: &[MclG1],
     stride: usize,
-    roots: &[FsFr],
+    roots: &[MclFr],
     roots_stride: usize,
 ) {
     let half = ret.len() / 2;
@@ -50,8 +50,8 @@ pub fn fft_g1_fast(
     }
 }
 
-impl FFTG1<FsG1> for FsFFTSettings {
-    fn fft_g1(&self, data: &[FsG1], inverse: bool) -> Result<Vec<FsG1>, String> {
+impl FFTG1<MclG1> for MclFFTSettings {
+    fn fft_g1(&self, data: &[MclG1], inverse: bool) -> Result<Vec<MclG1>, String> {
         if data.len() > self.max_width {
             return Err(String::from(
                 "Supplied list is longer than the available max width",
@@ -61,7 +61,7 @@ impl FFTG1<FsG1> for FsFFTSettings {
         }
 
         let stride = self.max_width / data.len();
-        let mut ret = vec![FsG1::default(); data.len()];
+        let mut ret = vec![MclG1::default(); data.len()];
 
         let roots = if inverse {
             &self.reverse_roots_of_unity
@@ -72,7 +72,7 @@ impl FFTG1<FsG1> for FsFFTSettings {
         fft_g1_fast(&mut ret, data, 1, roots, stride);
 
         if inverse {
-            let inv_fr_len = FsFr::from_u64(data.len() as u64).inverse();
+            let inv_fr_len = MclFr::from_u64(data.len() as u64).inverse();
             ret[..data.len()]
                 .iter_mut()
                 .for_each(|f| *f = f.mul(&inv_fr_len));
@@ -84,10 +84,10 @@ impl FFTG1<FsG1> for FsFFTSettings {
 
 // Used for testing
 pub fn fft_g1_slow(
-    ret: &mut [FsG1],
-    data: &[FsG1],
+    ret: &mut [MclG1],
+    data: &[MclG1],
     stride: usize,
-    roots: &[FsFr],
+    roots: &[MclFr],
     roots_stride: usize,
 ) {
     for i in 0..data.len() {

@@ -7,9 +7,9 @@ use core::cmp::{min, Ordering};
 
 use kzg::{common_utils::next_pow_of_2, FFTFr, Fr, ZeroPoly};
 
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
-use crate::types::poly::FsPoly;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
+use crate::types::poly::MclPoly;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -21,14 +21,14 @@ const DEGREE_OF_PARTIAL: usize = 256;
 const REDUCTION_FACTOR: usize = 4;
 
 /// Pad given poly it with zeros to new length
-pub fn pad_poly(mut poly: Vec<FsFr>, new_length: usize) -> Result<Vec<FsFr>, String> {
+pub fn pad_poly(mut poly: Vec<MclFr>, new_length: usize) -> Result<Vec<MclFr>, String> {
     if new_length < poly.len() {
         return Err(String::from(
             "new_length must be longer or equal to poly length",
         ));
     }
 
-    poly.resize(new_length, FsFr::zero());
+    poly.resize(new_length, MclFr::zero());
 
     Ok(poly)
 }
@@ -52,18 +52,18 @@ where
     Ok(coeffs)
 }
 
-impl FsFFTSettings {
+impl MclFFTSettings {
     fn do_zero_poly_mul_partial(
         &self,
         idxs: &[usize],
         stride: usize,
-    ) -> Result<SmallVec<[FsFr; DEGREE_OF_PARTIAL]>, String> {
+    ) -> Result<SmallVec<[MclFr; DEGREE_OF_PARTIAL]>, String> {
         if idxs.is_empty() {
             return Err(String::from("idx array must not be empty"));
         }
 
         // Makes use of long multiplication in terms of (x - w_0)(x - w_1)..
-        let mut coeffs = SmallVec::<[FsFr; DEGREE_OF_PARTIAL]>::new();
+        let mut coeffs = SmallVec::<[MclFr; DEGREE_OF_PARTIAL]>::new();
 
         // For the first member, store -w_0 as constant term
         coeffs.push(self.roots_of_unity[idxs[0] * stride].negate());
@@ -83,7 +83,7 @@ impl FsFFTSettings {
             coeffs[0] = coeffs[0].mul(&neg_di);
         }
 
-        coeffs.resize(idxs.len() + 1, FsFr::one());
+        coeffs.resize(idxs.len() + 1, MclFr::one());
 
         Ok(coeffs)
     }
@@ -91,8 +91,8 @@ impl FsFFTSettings {
     fn reduce_partials(
         &self,
         domain_size: usize,
-        partial_coeffs: SmallVec<[SmallVec<[FsFr; DEGREE_OF_PARTIAL]>; REDUCTION_FACTOR]>,
-    ) -> Result<SmallVec<[FsFr; DEGREE_OF_PARTIAL]>, String> {
+        partial_coeffs: SmallVec<[SmallVec<[MclFr; DEGREE_OF_PARTIAL]>; REDUCTION_FACTOR]>,
+    ) -> Result<SmallVec<[MclFr; DEGREE_OF_PARTIAL]>, String> {
         if !domain_size.is_power_of_two() {
             return Err(String::from("Expected domain size to be a power of 2"));
         }
@@ -126,14 +126,14 @@ impl FsFFTSettings {
                 .expect("Not empty, checked above; qed"),
             domain_size,
         )?;
-        let mut eval_result: SmallVec<[FsFr; DEGREE_OF_PARTIAL]> =
-            smallvec![FsFr::zero(); domain_size];
+        let mut eval_result: SmallVec<[MclFr; DEGREE_OF_PARTIAL]> =
+            smallvec![MclFr::zero(); domain_size];
         self.fft_fr_output(&padded_partial, false, &mut eval_result)?;
 
         for partial in partial_coeffs {
             padded_partial = pad_poly_coeffs(partial, domain_size)?;
-            let mut evaluated_partial: SmallVec<[FsFr; DEGREE_OF_PARTIAL]> =
-                smallvec![FsFr::zero(); domain_size];
+            let mut evaluated_partial: SmallVec<[MclFr; DEGREE_OF_PARTIAL]> =
+                smallvec![MclFr::zero(); domain_size];
             self.fft_fr_output(&padded_partial, false, &mut evaluated_partial)?;
 
             eval_result
@@ -144,7 +144,7 @@ impl FsFFTSettings {
                 });
         }
 
-        let mut coeffs = smallvec![FsFr::zero(); domain_size];
+        let mut coeffs = smallvec![MclFr::zero(); domain_size];
         // Apply an inverse FFT to produce a new poly. Limit its size to out_degree + 1
         self.fft_fr_output(&eval_result, true, &mut coeffs)?;
         coeffs.truncate(out_degree + 1);
@@ -153,15 +153,15 @@ impl FsFFTSettings {
     }
 }
 
-impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
-    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<FsPoly, String> {
+impl ZeroPoly<MclFr, MclPoly> for MclFFTSettings {
+    fn do_zero_poly_mul_partial(&self, idxs: &[usize], stride: usize) -> Result<MclPoly, String> {
         self.do_zero_poly_mul_partial(idxs, stride)
-            .map(|coeffs| FsPoly {
+            .map(|coeffs| MclPoly {
                 coeffs: coeffs.into_vec(),
             })
     }
 
-    fn reduce_partials(&self, domain_size: usize, partials: &[FsPoly]) -> Result<FsPoly, String> {
+    fn reduce_partials(&self, domain_size: usize, partials: &[MclPoly]) -> Result<MclPoly, String> {
         self.reduce_partials(
             domain_size,
             partials
@@ -169,7 +169,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                 .map(|partial| SmallVec::from_slice(&partial.coeffs))
                 .collect(),
         )
-        .map(|coeffs| FsPoly {
+        .map(|coeffs| MclPoly {
             coeffs: coeffs.into_vec(),
         })
     }
@@ -178,13 +178,13 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         &self,
         domain_size: usize,
         missing_idxs: &[usize],
-    ) -> Result<(Vec<FsFr>, FsPoly), String> {
-        let zero_eval: Vec<FsFr>;
-        let mut zero_poly: FsPoly;
+    ) -> Result<(Vec<MclFr>, MclPoly), String> {
+        let zero_eval: Vec<MclFr>;
+        let mut zero_poly: MclPoly;
 
         if missing_idxs.is_empty() {
             zero_eval = Vec::new();
-            zero_poly = FsPoly { coeffs: Vec::new() };
+            zero_poly = MclPoly { coeffs: Vec::new() };
             return Ok((zero_eval, zero_poly));
         }
 
@@ -208,7 +208,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         // Calculate zero poly
         if missing_idxs.len() <= missing_per_partial {
             // When all idxs fit into a single multiplication
-            zero_poly = FsPoly {
+            zero_poly = MclPoly {
                 coeffs: self
                     .do_zero_poly_mul_partial(missing_idxs, domain_stride)?
                     .into_vec(),
@@ -216,7 +216,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
         } else {
             // Otherwise, construct a set of partial polynomials
             // Save all constructed polynomials in a shared 'work' vector
-            let mut work = vec![FsFr::zero(); next_pow];
+            let mut work = vec![MclFr::zero(); next_pow];
 
             let mut partial_lens = vec![DEGREE_OF_PARTIAL; partial_count];
 
@@ -292,7 +292,7 @@ impl ZeroPoly<FsFr, FsPoly> for FsFFTSettings {
                 partial_count = reduced_count;
             }
 
-            zero_poly = FsPoly { coeffs: work };
+            zero_poly = MclPoly { coeffs: work };
         }
 
         // Pad resulting poly to expected

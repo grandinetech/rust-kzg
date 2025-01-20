@@ -8,30 +8,30 @@ use kzg::common_utils::{log2_pow2, log2_u64, next_pow_of_2};
 use kzg::{FFTFr, FFTSettings, FFTSettingsPoly, Fr, Poly};
 
 use crate::consts::SCALE_FACTOR;
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct FsPoly {
-    pub coeffs: Vec<FsFr>,
+pub struct MclPoly {
+    pub coeffs: Vec<MclFr>,
 }
 
-impl Poly<FsFr> for FsPoly {
+impl Poly<MclFr> for MclPoly {
     fn new(size: usize) -> Self {
         Self {
-            coeffs: vec![FsFr::default(); size],
+            coeffs: vec![MclFr::default(); size],
         }
     }
 
-    fn get_coeff_at(&self, i: usize) -> FsFr {
+    fn get_coeff_at(&self, i: usize) -> MclFr {
         self.coeffs[i]
     }
 
-    fn set_coeff_at(&mut self, i: usize, x: &FsFr) {
+    fn set_coeff_at(&mut self, i: usize, x: &MclFr) {
         self.coeffs[i] = *x
     }
 
-    fn get_coeffs(&self) -> &[FsFr] {
+    fn get_coeffs(&self) -> &[MclFr] {
         &self.coeffs
     }
 
@@ -39,9 +39,9 @@ impl Poly<FsFr> for FsPoly {
         self.coeffs.len()
     }
 
-    fn eval(&self, x: &FsFr) -> FsFr {
+    fn eval(&self, x: &MclFr) -> MclFr {
         if self.coeffs.is_empty() {
-            return FsFr::zero();
+            return MclFr::zero();
         } else if x.is_zero() {
             return self.coeffs[0];
         }
@@ -62,10 +62,10 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn scale(&mut self) {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
+        let scale_factor = MclFr::from_u64(SCALE_FACTOR);
         let inv_factor = scale_factor.inverse();
 
-        let mut factor_power = FsFr::one();
+        let mut factor_power = MclFr::one();
         for i in 0..self.coeffs.len() {
             factor_power = factor_power.mul(&inv_factor);
             self.coeffs[i] = self.coeffs[i].mul(&factor_power);
@@ -73,9 +73,9 @@ impl Poly<FsFr> for FsPoly {
     }
 
     fn unscale(&mut self) {
-        let scale_factor = FsFr::from_u64(SCALE_FACTOR);
+        let scale_factor = MclFr::from_u64(SCALE_FACTOR);
 
-        let mut factor_power = FsFr::one();
+        let mut factor_power = MclFr::one();
         for i in 0..self.coeffs.len() {
             factor_power = factor_power.mul(&scale_factor);
             self.coeffs[i] = self.coeffs[i].mul(&factor_power);
@@ -94,8 +94,8 @@ impl Poly<FsFr> for FsPoly {
             ));
         }
 
-        let mut ret = FsPoly {
-            coeffs: vec![FsFr::zero(); output_len],
+        let mut ret = MclPoly {
+            coeffs: vec![MclFr::zero(); output_len],
         };
         // If the input polynomial is constant, the remainder of the series is zero
         if self.coeffs.len() == 1 {
@@ -109,7 +109,7 @@ impl Poly<FsFr> for FsPoly {
         // Max space for multiplications is (2 * length - 1)
         // Don't need the following as its recalculated inside
         // let scale: usize = log2_pow2(next_pow_of_2(2 * output_len - 1));
-        // let fft_settings = FsFFTSettings::new(scale).unwrap();
+        // let fft_settings = MclFFTSettings::new(scale).unwrap();
 
         // To store intermediate results
 
@@ -166,7 +166,7 @@ impl Poly<FsFr> for FsPoly {
 
         let out_length = self.poly_quotient_length(divisor);
         if out_length == 0 {
-            return Ok(FsPoly { coeffs: vec![] });
+            return Ok(MclPoly { coeffs: vec![] });
         }
 
         // Special case for divisor.len() == 2
@@ -184,10 +184,10 @@ impl Poly<FsFr> for FsPoly {
 
             out_coeffs[0] = out_coeffs[0].div(&divisor_1).unwrap();
 
-            Ok(FsPoly { coeffs: out_coeffs })
+            Ok(MclPoly { coeffs: out_coeffs })
         } else {
-            let mut out: FsPoly = FsPoly {
-                coeffs: vec![FsFr::default(); out_length],
+            let mut out: MclPoly = MclPoly {
+                coeffs: vec![MclFr::default(); out_length],
             };
 
             let mut a_pos = self.len() - 1;
@@ -225,13 +225,13 @@ impl Poly<FsFr> for FsPoly {
 
         // If the divisor is larger than the dividend, the result is zero-length
         if n > m {
-            return Ok(FsPoly { coeffs: Vec::new() });
+            return Ok(MclPoly { coeffs: Vec::new() });
         }
 
         // Special case for divisor.length == 1 (it's a constant)
         if divisor.len() == 1 {
-            let mut out = FsPoly {
-                coeffs: vec![FsFr::zero(); self.len()],
+            let mut out = MclPoly {
+                coeffs: vec![MclFr::zero(); self.len()],
             };
             for i in 0..out.len() {
                 out.coeffs[i] = self.coeffs[i].div(&divisor.coeffs[0]).unwrap();
@@ -251,13 +251,13 @@ impl Poly<FsFr> for FsPoly {
 
     fn mul_direct(&mut self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
         if self.len() == 0 || multiplier.len() == 0 {
-            return Ok(FsPoly::new(0));
+            return Ok(MclPoly::new(0));
         }
 
         let a_degree = self.len() - 1;
         let b_degree = multiplier.len() - 1;
 
-        let mut ret = FsPoly {
+        let mut ret = MclPoly {
             coeffs: vec![Fr::zero(); output_len],
         };
 
@@ -277,18 +277,18 @@ impl Poly<FsFr> for FsPoly {
     }
 }
 
-impl FFTSettingsPoly<FsFr, FsPoly, FsFFTSettings> for FsFFTSettings {
+impl FFTSettingsPoly<MclFr, MclPoly, MclFFTSettings> for MclFFTSettings {
     fn poly_mul_fft(
-        a: &FsPoly,
-        b: &FsPoly,
+        a: &MclPoly,
+        b: &MclPoly,
         len: usize,
-        _fs: Option<&FsFFTSettings>,
-    ) -> Result<FsPoly, String> {
+        _fs: Option<&MclFFTSettings>,
+    ) -> Result<MclPoly, String> {
         b.mul_fft(a, len)
     }
 }
 
-impl FsPoly {
+impl MclPoly {
     pub fn _poly_norm(&self) -> Self {
         let mut ret = self.clone();
 
@@ -316,7 +316,7 @@ impl FsPoly {
 
     pub fn pad(&self, out_length: usize) -> Self {
         let mut ret = Self {
-            coeffs: vec![FsFr::zero(); out_length],
+            coeffs: vec![MclFr::zero(); out_length],
         };
 
         for i in 0..self.len().min(out_length) {
@@ -326,9 +326,9 @@ impl FsPoly {
         ret
     }
 
-    pub fn flip(&self) -> Result<FsPoly, String> {
-        let mut ret = FsPoly {
-            coeffs: vec![FsFr::default(); self.len()],
+    pub fn flip(&self) -> Result<MclPoly, String> {
+        let mut ret = MclPoly {
+            coeffs: vec![MclFr::default(); self.len()],
         };
         for i in 0..self.len() {
             ret.coeffs[i] = self.coeffs[self.coeffs.len() - i - 1]
@@ -341,13 +341,13 @@ impl FsPoly {
         let length = next_pow_of_2(self.len() + multiplier.len() - 1);
 
         let scale = log2_pow2(length);
-        let fft_settings = FsFFTSettings::new(scale).unwrap();
+        let fft_settings = MclFFTSettings::new(scale).unwrap();
 
         let a_pad = self.pad(length);
         let b_pad = multiplier.pad(length);
 
-        let a_fft: Vec<FsFr>;
-        let b_fft: Vec<FsFr>;
+        let a_fft: Vec<MclFr>;
+        let b_fft: Vec<MclFr>;
 
         #[cfg(feature = "parallel")]
         {
@@ -385,8 +385,8 @@ impl FsPoly {
         let ab = fft_settings.fft_fr(&ab_fft, true).unwrap();
         drop(ab_fft);
 
-        let mut ret = FsPoly {
-            coeffs: vec![FsFr::zero(); output_len],
+        let mut ret = MclPoly {
+            coeffs: vec![MclFr::zero(); output_len],
         };
 
         let range = ..output_len.min(length);

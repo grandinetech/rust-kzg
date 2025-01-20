@@ -8,26 +8,26 @@ use kzg::common_utils::reverse_bit_order;
 use kzg::{FFTSettings, Fr};
 
 use crate::consts::SCALE2_ROOT_OF_UNITY;
-use crate::types::fr::FsFr;
+use crate::types::fr::MclFr;
 
 #[derive(Debug, Clone)]
-pub struct FsFFTSettings {
+pub struct MclFFTSettings {
     pub max_width: usize,
-    pub root_of_unity: FsFr,
-    pub roots_of_unity: Vec<FsFr>,
-    pub brp_roots_of_unity: Vec<FsFr>,
-    pub reverse_roots_of_unity: Vec<FsFr>,
+    pub root_of_unity: MclFr,
+    pub roots_of_unity: Vec<MclFr>,
+    pub brp_roots_of_unity: Vec<MclFr>,
+    pub reverse_roots_of_unity: Vec<MclFr>,
 }
 
-impl Default for FsFFTSettings {
+impl Default for MclFFTSettings {
     fn default() -> Self {
         Self::new(0).unwrap()
     }
 }
 
-impl FFTSettings<FsFr> for FsFFTSettings {
+impl FFTSettings<MclFr> for MclFFTSettings {
     /// Create FFTSettings with roots of unity for a selected scale. Resulting roots will have a magnitude of 2 ^ max_scale.
-    fn new(scale: usize) -> Result<FsFFTSettings, String> {
+    fn new(scale: usize) -> Result<MclFFTSettings, String> {
         if scale >= SCALE2_ROOT_OF_UNITY.len() {
             return Err(String::from(
                 "Scale is expected to be within root of unity matrix row size",
@@ -36,7 +36,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
 
         // max_width = 2 ^ max_scale
         let max_width: usize = 1 << scale;
-        let root_of_unity = FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
+        let root_of_unity = MclFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[scale]);
 
         // create max_width of roots & store them reversed as well
         let roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
@@ -48,7 +48,7 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         let mut reverse_roots_of_unity = roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
 
-        Ok(FsFFTSettings {
+        Ok(MclFFTSettings {
             max_width,
             root_of_unity,
             reverse_roots_of_unity,
@@ -61,34 +61,34 @@ impl FFTSettings<FsFr> for FsFFTSettings {
         self.max_width
     }
 
-    fn get_reverse_roots_of_unity_at(&self, i: usize) -> FsFr {
+    fn get_reverse_roots_of_unity_at(&self, i: usize) -> MclFr {
         self.reverse_roots_of_unity[i]
     }
 
-    fn get_reversed_roots_of_unity(&self) -> &[FsFr] {
+    fn get_reversed_roots_of_unity(&self) -> &[MclFr] {
         &self.reverse_roots_of_unity
     }
 
-    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+    fn get_roots_of_unity_at(&self, i: usize) -> MclFr {
         self.roots_of_unity[i]
     }
 
-    fn get_roots_of_unity(&self) -> &[FsFr] {
+    fn get_roots_of_unity(&self) -> &[MclFr] {
         &self.roots_of_unity
     }
 
-    fn get_brp_roots_of_unity(&self) -> &[FsFr] {
+    fn get_brp_roots_of_unity(&self) -> &[MclFr] {
         &self.brp_roots_of_unity
     }
 
-    fn get_brp_roots_of_unity_at(&self, i: usize) -> FsFr {
+    fn get_brp_roots_of_unity_at(&self, i: usize) -> MclFr {
         self.brp_roots_of_unity[i]
     }
 }
 
 /// Multiply a given root of unity by itself until it results in a 1 and result all multiplication values in a vector
-pub fn expand_root_of_unity(root: &FsFr, width: usize) -> Result<Vec<FsFr>, String> {
-    let mut generated_powers = vec![FsFr::one(), *root];
+pub fn expand_root_of_unity(root: &MclFr, width: usize) -> Result<Vec<MclFr>, String> {
+    let mut generated_powers = vec![MclFr::one(), *root];
 
     while !(generated_powers.last().unwrap().is_one()) {
         if generated_powers.len() > width {
