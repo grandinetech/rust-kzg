@@ -10,8 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        # Excluding mcl for now due to they have different project layout
-        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, constantine]
+        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, constantine, mcl]
         include:
           # Setup exec_once_per_backend flag
           - os: ubuntu-latest
@@ -29,7 +28,12 @@ jobs:
             support_ckzg: true
           - backend: constantine
             support_ckzg: true
-
+          - backend: mcl
+            support_ckzg: true
+        exclude:
+          - os: windows-latest
+            backend: mcl
+            
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v3

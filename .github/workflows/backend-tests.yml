@@ -64,8 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        # Excluding mcl for now due to they have different project layout
-        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, constantine]
+        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, constantine, mcl]
         include:
           # Set default clippy flag
           - clippy-flag: --features=default,std,rand,parallel
@@ -93,6 +92,12 @@ jobs:
             # FIXME: Check for wasm support
             support_wasm: false
             support_ckzg: true
+          - backend: mcl
+            support_wasm: true
+            support_ckzg: true
+        exclude:
+          - os: windows-latest
+            backend: mcl
 
     steps:
       - uses: actions/checkout@v2

@@ -1,0 +1,93 @@
+[package]
+name = "rust-kzg-mcl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+blst = "0.3.11"
+kzg = { path = "../kzg", default-features = false }
+libc = { version = "0.2.148", default-features = false }
+once_cell = { version = "1.18.0", features = ["critical-section"], default-features = false }
+rand = { version = "0.8.5", optional = true }
+rayon = { version = "1.8.0", optional = true } 
+smallvec = { version = "1.11.1", features = ["const_generics"] }
+hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
+mcl_rust = { git = "https://github.com/herumi/mcl-rust.git" }
+
+[dev-dependencies]
+criterion = "0.5.1"
+kzg-bench = { path = "../kzg-bench" }
+rand = "0.8.5"
+
+
+[features]
+default = [
+    "std",
+    "rand",
+    "bgmw"
+]
+std = [
+    "hex/std",
+    "kzg/std",
+    "libc/std",
+    "once_cell/std",
+]
+rand = [
+    "dep:rand",
+    "kzg/rand",
+]
+parallel = [
+    "dep:rayon",
+    "kzg/parallel"
+]
+bgmw = [
+    "kzg/bgmw"
+]
+arkmsm = [
+    "kzg/arkmsm"
+]
+c_bindings = []
+
+[[bench]]
+name = "das"
+harness = false
+
+[[bench]]
+name = "fft"
+harness = false
+
+[[bench]]
+name = "poly"
+harness = false
+
+[[bench]]
+name = "kzg"
+harness = false
+
+[[bench]]
+name = "fk_20"
+harness = false
+
+[[bench]]
+name = "recover"
+harness = false
+
+[[bench]]
+name = "zero_poly"
+harness = false
+
+[[bench]]
+name = "eip_4844"
+harness = false
+
+[[bench]]
+name = "eip_7594"
+harness = false
+
+[[bench]]
+name = "lincomb"
+harness = false
+
+[[bench]]
+name = "trusted_setup"
+harness = false

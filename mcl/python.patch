@@ -1,0 +1,29 @@
+From 3c414d6a692f258023f6f4630f447244a7185021 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Sat, 12 Oct 2024 16:57:40 +0000
+Subject: [PATCH] Patch python bindings
+
+---
+ setup.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/setup.py b/setup.py
+index d16c833..b604f1d 100644
+--- a/setup.py
++++ b/setup.py
+@@ -35,10 +35,10 @@ def main():
+         ext_modules=[
+             Extension(
+                 "ckzg",
+-                sources=["bindings/python/ckzg_wrap.c", "src/ckzg.c"],
++                sources=["bindings/python/ckzg_wrap.c"],
+                 include_dirs=["inc", "src"],
+                 library_dirs=["lib"],
+-                libraries=["blst"]
++                libraries=["rust_kzg_mcl", "stdc++"]
+             )
+         ],
+         cmdclass={
+-- 
+2.46.1
+
