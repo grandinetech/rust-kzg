@@ -39,10 +39,10 @@ cd $backend
 
 if [[ "$parallel" = true ]]; then
   print_msg "Using parallel version"
-  cargo rustc --release --crate-type=staticlib --features=parallel
+  cargo rustc --release --crate-type=staticlib --features=c_bindings,parallel
 else
   print_msg "Using non-parallel version"
-  cargo rustc --release --crate-type=staticlib
+  cargo rustc --release --crate-type=staticlib --features=c_bindings
 fi
 
 ###################### cloning c-kzg-4844 ######################

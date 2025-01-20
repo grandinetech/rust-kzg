@@ -28,7 +28,7 @@ rand = { version = "0.8.5" }
 [features]
 default = [
     "std",
-    "rand"
+    "rand",
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 
@@ -51,6 +51,7 @@ sppark_wlc = [
     "dep:rust-kzg-arkworks3-sppark-wlc",
     "kzg/sppark"
 ]
+c_bindings = []
 
 [[bench]]
 name = "fft"
@@ -82,6 +83,10 @@ harness = false
 
 [[bench]]
 name = "eip_4844"
+harness = false
+
+[[bench]]
+name = "eip_7594"
 harness = false
 
 [[bench]]

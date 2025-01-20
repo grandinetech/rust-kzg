@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-blst = "0.3.11"
 kzg = { path = "../kzg", default-features = false }
 bls12_381 = { path = "../zkcrypto/bls12_381" }
 ff = { version = "0.13", features = ["derive"] }
@@ -23,7 +22,7 @@ rand = { version = "0.8.5" }
 [features]
 default = [
     "std",
-    "rand"
+    "rand",
 ]
 std = [
     "kzg/std",
@@ -36,6 +35,7 @@ rand = [
     "dep:rand",
     "kzg/rand",
 ]
+c_bindings = []
 
 [[bench]]
 name = "fft"
@@ -67,6 +67,10 @@ harness = false
 
 [[bench]]
 name = "eip_4844"
+harness = false
+
+[[bench]]
+name = "eip_7594"
 harness = false
 
 [[bench]]

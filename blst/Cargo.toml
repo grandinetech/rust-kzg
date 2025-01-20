@@ -23,7 +23,7 @@ rand = "0.8.5"
 default = [
     "std",
     "rand",
-    "bgmw"
+    "bgmw",
 ]
 std = [
     "hex/std",
@@ -49,6 +49,7 @@ sppark = [
     "dep:rust-kzg-blst-sppark",
     "kzg/sppark"
 ]
+c_bindings = []
 
 [[bench]]
 name = "das"
