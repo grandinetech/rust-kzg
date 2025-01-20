@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, constantine]
+        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, constantine, mcl]
         target: [windows, linux]
         include:
           # Set target-name for target builds

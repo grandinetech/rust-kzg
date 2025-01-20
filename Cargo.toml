@@ -10,13 +10,11 @@ members = [
     "blst-sppark",
     "kzg",
     "kzg-bench",
-    "mcl/kzg",
-    "mcl/kzg-bench",
+    "mcl",
     "zkcrypto",
     "constantine",
     "rust-eth-kzg-benches",
 ]
-
 
 [profile.bench]
 lto = "thin"

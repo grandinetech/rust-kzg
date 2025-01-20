@@ -1,0 +1,26 @@
+From 061a6c5edf411b6f0120133fa58dbf638aaa0c2f Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 23 Jan 2025 23:11:00 +0200
+Subject: [PATCH] Patch Java bindings
+
+---
+ bindings/java/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/bindings/java/Makefile b/bindings/java/Makefile
+index 3f646ef..4fc1631 100644
+--- a/bindings/java/Makefile
++++ b/bindings/java/Makefile
+@@ -1,8 +1,8 @@
+ INCLUDE_DIRS = ../../src ../../blst/bindings
+ 
+-TARGETS=ckzg_jni.c ../../src/ckzg.c ../../lib/libblst.a
++TARGETS=ckzg_jni.c ../../lib/librust_kzg_mcl.a
+ 
+-CC_FLAGS=
++CC_FLAGS=-lstdc++
+ OPTIMIZATION_LEVEL=-O2
+ 
+ ifeq ($(OS),Windows_NT)
+-- 
+2.43.0
