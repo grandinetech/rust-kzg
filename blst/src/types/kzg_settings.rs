@@ -1,8 +1,8 @@
 extern crate alloc;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::sync::Arc;
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 
 use kzg::eth::c_bindings::CKZGSettings;
 use kzg::eth::{self, FIELD_ELEMENTS_PER_EXT_BLOB};

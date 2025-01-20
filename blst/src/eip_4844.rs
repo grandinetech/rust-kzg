@@ -148,7 +148,9 @@ macro_rules! handle_ckzg_badargs {
 }
 
 #[cfg(feature = "std")]
-pub fn load_trusted_setup_filename_rust(filepath: &str) -> Result<FsKZGSettings, String> {
+pub fn load_trusted_setup_filename_rust(
+    filepath: &str,
+) -> Result<crate::types::kzg_settings::FsKZGSettings, alloc::string::String> {
     let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)
