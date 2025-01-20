@@ -27,33 +27,33 @@ mod tests {
     use rust_kzg_mcl::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_mcl::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_mcl::types::fft_settings::expand_root_of_unity;
-    use rust_kzg_mcl::types::fp::FsFp;
+    use rust_kzg_mcl::types::fp::MclFp;
     use rust_kzg_mcl::types::g1::FsG1Affine;
     use rust_kzg_mcl::types::{
-        fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
-        poly::FsPoly,
+        fft_settings::MclFFTSettings, fr::MclFr, g1::MclG1, g2::MclG2, kzg_settings::MclKZGSettings,
+        poly::MclPoly,
     };
 
     #[test]
     pub fn bytes_to_bls_field_test_() {
-        bytes_to_bls_field_test::<FsFr>();
+        bytes_to_bls_field_test::<MclFr>();
     }
 
     #[test]
     pub fn compute_powers_test_() {
-        compute_powers_test::<FsFr>(&compute_powers);
+        compute_powers_test::<MclFr>(&compute_powers);
     }
 
     #[test]
     pub fn blob_to_kzg_commitment_test_() {
         blob_to_kzg_commitment_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -64,13 +64,13 @@ mod tests {
     #[test]
     pub fn compute_kzg_proof_test_() {
         compute_kzg_proof_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -83,13 +83,13 @@ mod tests {
     #[test]
     pub fn compute_and_verify_kzg_proof_round_trip_test_() {
         compute_and_verify_kzg_proof_round_trip_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -105,13 +105,13 @@ mod tests {
     #[test]
     pub fn compute_and_verify_kzg_proof_within_domain_test_() {
         compute_and_verify_kzg_proof_within_domain_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -127,13 +127,13 @@ mod tests {
     #[test]
     pub fn compute_and_verify_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_kzg_proof_fails_with_incorrect_proof_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -149,13 +149,13 @@ mod tests {
     #[test]
     pub fn compute_and_verify_blob_kzg_proof_test_() {
         compute_and_verify_blob_kzg_proof_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -169,13 +169,13 @@ mod tests {
     #[test]
     pub fn compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test_() {
         compute_and_verify_blob_kzg_proof_fails_with_incorrect_proof_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -189,13 +189,13 @@ mod tests {
     #[test]
     pub fn verify_kzg_proof_batch_test_() {
         verify_kzg_proof_batch_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -209,13 +209,13 @@ mod tests {
     #[test]
     pub fn verify_kzg_proof_batch_fails_with_incorrect_proof_test_() {
         verify_kzg_proof_batch_fails_with_incorrect_proof_test::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -229,13 +229,13 @@ mod tests {
     #[test]
     pub fn test_vectors_blob_to_kzg_commitment_() {
         test_vectors_blob_to_kzg_commitment::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -247,13 +247,13 @@ mod tests {
     #[test]
     pub fn test_vectors_compute_kzg_proof_() {
         test_vectors_compute_kzg_proof::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -265,13 +265,13 @@ mod tests {
     #[test]
     pub fn test_vectors_compute_blob_kzg_proof_() {
         test_vectors_compute_blob_kzg_proof::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -283,13 +283,13 @@ mod tests {
     #[test]
     pub fn test_vectors_verify_kzg_proof_() {
         test_vectors_verify_kzg_proof::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(&load_trusted_setup_filename_rust, &verify_kzg_proof_rust);
     }
@@ -297,13 +297,13 @@ mod tests {
     #[test]
     pub fn test_vectors_verify_blob_kzg_proof_() {
         test_vectors_verify_blob_kzg_proof::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -315,13 +315,13 @@ mod tests {
     #[test]
     pub fn test_vectors_verify_blob_kzg_proof_batch_() {
         test_vectors_verify_blob_kzg_proof_batch::<
-            FsFr,
-            FsG1,
-            FsG2,
-            FsPoly,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclPoly,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &load_trusted_setup_filename_rust,
@@ -332,31 +332,31 @@ mod tests {
 
     #[test]
     pub fn expand_root_of_unity_too_long() {
-        let out = expand_root_of_unity(&FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[1]), 1);
+        let out = expand_root_of_unity(&MclFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[1]), 1);
         assert!(out.is_err());
     }
 
     #[test]
     pub fn expand_root_of_unity_too_short() {
-        let out = expand_root_of_unity(&FsFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[1]), 3);
+        let out = expand_root_of_unity(&MclFr::from_u64_arr(&SCALE2_ROOT_OF_UNITY[1]), 3);
         assert!(out.is_err());
     }
 
     #[test]
     pub fn compute_kzg_proof_incorrect_blob_length() {
-        compute_kzg_proof_incorrect_blob_length_test::<FsFr, FsPoly>(&blob_to_polynomial);
+        compute_kzg_proof_incorrect_blob_length_test::<MclFr, MclPoly>(&blob_to_polynomial);
     }
 
     #[test]
     pub fn compute_kzg_proof_incorrect_poly_length() {
         compute_kzg_proof_incorrect_poly_length_test::<
-            FsPoly,
-            FsFr,
-            FsG1,
-            FsG2,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclPoly,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(&evaluate_polynomial_in_evaluation_form);
     }
@@ -364,13 +364,13 @@ mod tests {
     #[test]
     pub fn compute_kzg_proof_empty_blob_vector() {
         compute_kzg_proof_empty_blob_vector_test::<
-            FsPoly,
-            FsFr,
-            FsG1,
-            FsG2,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclPoly,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
@@ -378,13 +378,13 @@ mod tests {
     #[test]
     pub fn compute_kzg_proof_incorrect_commitments_len() {
         compute_kzg_proof_incorrect_commitments_len_test::<
-            FsPoly,
-            FsFr,
-            FsG1,
-            FsG2,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclPoly,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
@@ -392,13 +392,13 @@ mod tests {
     #[test]
     pub fn compute_kzg_proof_incorrect_proofs_len() {
         compute_kzg_proof_incorrect_proofs_len_test::<
-            FsPoly,
-            FsFr,
-            FsG1,
-            FsG2,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclPoly,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
@@ -406,13 +406,13 @@ mod tests {
     #[test]
     pub fn validate_batched_input() {
         validate_batched_input_test::<
-            FsPoly,
-            FsFr,
-            FsG1,
-            FsG2,
-            FsFFTSettings,
-            FsKZGSettings,
-            FsFp,
+            MclPoly,
+            MclFr,
+            MclG1,
+            MclG2,
+            MclFFTSettings,
+            MclKZGSettings,
+            MclFp,
             FsG1Affine,
         >(
             &verify_blob_kzg_proof_batch_rust,

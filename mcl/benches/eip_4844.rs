@@ -8,18 +8,18 @@ use kzg_bench::benches::eip_4844::bench_eip_4844;
 use rust_kzg_mcl::{
     eip_4844::load_trusted_setup_filename_rust,
     types::{
-        fft_settings::FsFFTSettings,
-        fp::FsFp,
-        fr::FsFr,
-        g1::{FsG1, FsG1Affine},
-        g2::FsG2,
-        kzg_settings::FsKZGSettings,
-        poly::FsPoly,
+        fft_settings::MclFFTSettings,
+        fp::MclFp,
+        fr::MclFr,
+        g1::{MclG1, FsG1Affine},
+        g2::MclG2,
+        kzg_settings::MclKZGSettings,
+        poly::MclPoly,
     },
 };
 
 fn bench_eip_4844_(c: &mut Criterion) {
-    bench_eip_4844::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings, FsFp, FsG1Affine>(
+    bench_eip_4844::<MclFr, MclG1, MclG2, MclPoly, MclFFTSettings, MclKZGSettings, MclFp, FsG1Affine>(
         c,
         &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,

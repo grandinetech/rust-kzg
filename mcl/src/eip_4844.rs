@@ -24,10 +24,10 @@ use std::io::Read;
 #[cfg(feature = "std")]
 use kzg::eip_4844::load_trusted_setup_string;
 
-use crate::types::fr::FsFr;
+use crate::types::fr::MclFr;
 
-use crate::types::g1::FsG1;
-use crate::types::kzg_settings::FsKZGSettings;
+use crate::types::g1::MclG1;
+use crate::types::kzg_settings::MclKZGSettings;
 use crate::utils::{
     deserialize_blob, handle_ckzg_badargs, kzg_settings_to_c, PRECOMPUTATION_TABLES,
 };
@@ -38,7 +38,7 @@ use rayon::prelude::*;
 #[cfg(feature = "std")]
 pub fn load_trusted_setup_filename_rust(
     filepath: &str,
-) -> Result<crate::types::kzg_settings::FsKZGSettings, alloc::string::String> {
+) -> Result<crate::types::kzg_settings::MclKZGSettings, alloc::string::String> {
     let mut file = File::open(filepath).map_err(|_| "Unable to open file".to_string())?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -62,7 +62,7 @@ pub unsafe extern "C" fn blob_to_kzg_commitment(
     };
 
     let deserialized_blob = handle_ckzg_badargs!(deserialize_blob(blob));
-    let settings: FsKZGSettings = handle_ckzg_badargs!(s.try_into());
+    let settings: MclKZGSettings = handle_ckzg_badargs!(s.try_into());
     let tmp = handle_ckzg_badargs!(blob_to_kzg_commitment_rust(&deserialized_blob, &settings));
 
     (*out).bytes = tmp.to_bytes();
@@ -175,8 +175,8 @@ pub unsafe extern "C" fn compute_blob_kzg_proof(
         Err(err) => return err,
     };
 
-    let commitment_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
-    let settings: FsKZGSettings = handle_ckzg_badargs!(s.try_into());
+    let commitment_g1 = handle_ckzg_badargs!(MclG1::from_bytes(&(*commitment_bytes).bytes));
+    let settings: MclKZGSettings = handle_ckzg_badargs!(s.try_into());
     let proof = handle_ckzg_badargs!(compute_blob_kzg_proof_rust(
         &deserialized_blob,
         &commitment_g1,
@@ -270,12 +270,12 @@ pub unsafe extern "C" fn verify_kzg_proof(
     proof_bytes: *const Bytes48,
     s: &CKZGSettings,
 ) -> CKzgRet {
-    let frz = handle_ckzg_badargs!(FsFr::from_bytes(&(*z_bytes).bytes));
-    let fry = handle_ckzg_badargs!(FsFr::from_bytes(&(*y_bytes).bytes));
-    let g1commitment = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
-    let g1proof = handle_ckzg_badargs!(FsG1::from_bytes(&(*proof_bytes).bytes));
+    let frz = handle_ckzg_badargs!(MclFr::from_bytes(&(*z_bytes).bytes));
+    let fry = handle_ckzg_badargs!(MclFr::from_bytes(&(*y_bytes).bytes));
+    let g1commitment = handle_ckzg_badargs!(MclG1::from_bytes(&(*commitment_bytes).bytes));
+    let g1proof = handle_ckzg_badargs!(MclG1::from_bytes(&(*proof_bytes).bytes));
 
-    let settings: FsKZGSettings = handle_ckzg_badargs!(s.try_into());
+    let settings: MclKZGSettings = handle_ckzg_badargs!(s.try_into());
 
     let result = handle_ckzg_badargs!(verify_kzg_proof_rust(
         &g1commitment,
@@ -299,9 +299,9 @@ pub unsafe extern "C" fn verify_blob_kzg_proof(
     s: &CKZGSettings,
 ) -> CKzgRet {
     let deserialized_blob = handle_ckzg_badargs!(deserialize_blob(blob));
-    let commitment_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*commitment_bytes).bytes));
-    let proof_g1 = handle_ckzg_badargs!(FsG1::from_bytes(&(*proof_bytes).bytes));
-    let settings: FsKZGSettings = handle_ckzg_badargs!(s.try_into());
+    let commitment_g1 = handle_ckzg_badargs!(MclG1::from_bytes(&(*commitment_bytes).bytes));
+    let proof_g1 = handle_ckzg_badargs!(MclG1::from_bytes(&(*proof_bytes).bytes));
+    let settings: MclKZGSettings = handle_ckzg_badargs!(s.try_into());
 
     let result = handle_ckzg_badargs!(verify_blob_kzg_proof_rust(
         &deserialized_blob,
@@ -328,22 +328,22 @@ pub unsafe extern "C" fn verify_blob_kzg_proof_batch(
     let raw_commitments = core::slice::from_raw_parts(commitments_bytes, n);
     let raw_proofs = core::slice::from_raw_parts(proofs_bytes, n);
 
-    let deserialized_blobs: Result<Vec<Vec<FsFr>>, CKzgRet> = cfg_into_iter!(raw_blobs)
+    let deserialized_blobs: Result<Vec<Vec<MclFr>>, CKzgRet> = cfg_into_iter!(raw_blobs)
         .map(|raw_blob| deserialize_blob(raw_blob).map_err(|_| CKzgRet::BadArgs))
         .collect();
 
-    let commitments_g1: Result<Vec<FsG1>, CKzgRet> = cfg_into_iter!(raw_commitments)
-        .map(|raw_commitment| FsG1::from_bytes(&raw_commitment.bytes).map_err(|_| CKzgRet::BadArgs))
+    let commitments_g1: Result<Vec<MclG1>, CKzgRet> = cfg_into_iter!(raw_commitments)
+        .map(|raw_commitment| MclG1::from_bytes(&raw_commitment.bytes).map_err(|_| CKzgRet::BadArgs))
         .collect();
 
-    let proofs_g1: Result<Vec<FsG1>, CKzgRet> = cfg_into_iter!(raw_proofs)
-        .map(|raw_proof| FsG1::from_bytes(&raw_proof.bytes).map_err(|_| CKzgRet::BadArgs))
+    let proofs_g1: Result<Vec<MclG1>, CKzgRet> = cfg_into_iter!(raw_proofs)
+        .map(|raw_proof| MclG1::from_bytes(&raw_proof.bytes).map_err(|_| CKzgRet::BadArgs))
         .collect();
 
     if let (Ok(blobs), Ok(commitments), Ok(proofs)) =
         (deserialized_blobs, commitments_g1, proofs_g1)
     {
-        let settings: FsKZGSettings = match s.try_into() {
+        let settings: MclKZGSettings = match s.try_into() {
             Ok(value) => value,
             Err(_) => return CKzgRet::BadArgs,
         };
@@ -377,12 +377,12 @@ pub unsafe extern "C" fn compute_kzg_proof(
         Err(err) => return err,
     };
 
-    let frz = match FsFr::from_bytes(&(*z_bytes).bytes) {
+    let frz = match MclFr::from_bytes(&(*z_bytes).bytes) {
         Ok(value) => value,
         Err(_) => return CKzgRet::BadArgs,
     };
 
-    let settings: FsKZGSettings = match s.try_into() {
+    let settings: MclKZGSettings = match s.try_into() {
         Ok(value) => value,
         Err(_) => return CKzgRet::BadArgs,
     };

@@ -4,25 +4,25 @@ use kzg_bench::benches::trusted_setup::bench_load_trusted_setup;
 use rust_kzg_mcl::{
     eip_4844::load_trusted_setup_filename_rust,
     types::{
-        fft_settings::FsFFTSettings,
-        fp::FsFp,
-        fr::FsFr,
-        g1::{FsG1, FsG1Affine},
-        g2::FsG2,
-        kzg_settings::FsKZGSettings,
-        poly::FsPoly,
+        fft_settings::MclFFTSettings,
+        fp::MclFp,
+        fr::MclFr,
+        g1::{MclG1, FsG1Affine},
+        g2::MclG2,
+        kzg_settings::MclKZGSettings,
+        poly::MclPoly,
     },
 };
 
 fn bench_load_trusted_setup_(c: &mut Criterion) {
     bench_load_trusted_setup::<
-        FsFr,
-        FsG1,
-        FsG2,
-        FsPoly,
-        FsFFTSettings,
-        FsKZGSettings,
-        FsFp,
+        MclFr,
+        MclG1,
+        MclG2,
+        MclPoly,
+        MclFFTSettings,
+        MclKZGSettings,
+        MclFp,
         FsG1Affine,
     >(
         c,

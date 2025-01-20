@@ -7,23 +7,23 @@ use alloc::vec::Vec;
 use kzg::common_utils::reverse_bit_order;
 use kzg::{FK20MultiSettings, Poly, FFTG1, G1};
 
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
-use crate::types::g1::FsG1;
-use crate::types::g2::FsG2;
-use crate::types::kzg_settings::FsKZGSettings;
-use crate::types::poly::FsPoly;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
+use crate::types::g1::MclG1;
+use crate::types::g2::MclG2;
+use crate::types::kzg_settings::MclKZGSettings;
+use crate::types::poly::MclPoly;
 
-use super::fp::FsFp;
+use super::fp::MclFp;
 use super::g1::FsG1Affine;
 
-pub struct FsFK20MultiSettings {
-    pub kzg_settings: FsKZGSettings,
+pub struct MclFK20MultiSettings {
+    pub kzg_settings: MclKZGSettings,
     pub chunk_len: usize,
-    pub x_ext_fft_files: Vec<Vec<FsG1>>,
+    pub x_ext_fft_files: Vec<Vec<MclG1>>,
 }
 
-impl Clone for FsFK20MultiSettings {
+impl Clone for MclFK20MultiSettings {
     fn clone(&self) -> Self {
         Self {
             kzg_settings: self.kzg_settings.clone(),
@@ -33,21 +33,21 @@ impl Clone for FsFK20MultiSettings {
     }
 }
 
-impl Default for FsFK20MultiSettings {
+impl Default for MclFK20MultiSettings {
     fn default() -> Self {
         Self {
-            kzg_settings: FsKZGSettings::default(),
+            kzg_settings: MclKZGSettings::default(),
             chunk_len: 1,
             x_ext_fft_files: vec![],
         }
     }
 }
 
-impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, FsFp, FsG1Affine>
-    for FsFK20MultiSettings
+impl FK20MultiSettings<MclFr, MclG1, MclG2, MclFFTSettings, MclPoly, MclKZGSettings, MclFp, FsG1Affine>
+    for MclFK20MultiSettings
 {
     #[allow(clippy::many_single_char_names)]
-    fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
+    fn new(ks: &MclKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         if n2 > ks.fs.max_width {
             return Err(String::from(
                 "n2 must be less than or equal to kzg settings max width",
@@ -88,7 +88,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, F
                         j = 0;
                     }
                 }
-                x.push(FsG1::identity());
+                x.push(MclG1::identity());
 
                 let ext_fft_file = ks.fs.toeplitz_part_1(&x);
                 x.clear();
@@ -105,7 +105,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, F
         Ok(ret)
     }
 
-    fn data_availability(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+    fn data_availability(&self, p: &MclPoly) -> Result<Vec<MclG1>, String> {
         let n = p.len();
         let n2 = n * 2;
 
@@ -125,7 +125,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, F
         Ok(ret)
     }
 
-    fn data_availability_optimized(&self, p: &FsPoly) -> Result<Vec<FsG1>, String> {
+    fn data_availability_optimized(&self, p: &MclPoly) -> Result<Vec<MclG1>, String> {
         let n = p.len();
         let n2 = n * 2;
 
@@ -141,7 +141,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, F
         let k = n / self.chunk_len;
         let k2 = k * 2;
 
-        let mut h_ext_fft = vec![FsG1::identity(); k2];
+        let mut h_ext_fft = vec![MclG1::identity(); k2];
 
         for i in 0..self.chunk_len {
             let toeplitz_coeffs = p.toeplitz_coeffs_stride(i, self.chunk_len);
@@ -157,7 +157,7 @@ impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, F
 
         let mut h = self.kzg_settings.fs.toeplitz_part_3(&h_ext_fft);
 
-        h[k..k2].copy_from_slice(&vec![FsG1::identity(); k2 - k]);
+        h[k..k2].copy_from_slice(&vec![MclG1::identity(); k2 - k]);
 
         let ret = self.kzg_settings.fs.fft_g1(&h, false).unwrap();
 

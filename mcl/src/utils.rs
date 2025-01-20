@@ -8,16 +8,16 @@ use kzg::eth::c_bindings::{Blob, CKZGSettings, CKzgRet};
 use kzg::{Fr, G1Mul, G2Mul};
 
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
-use crate::types::fp::FsFp;
-use crate::types::fr::FsFr;
-use crate::types::g1::{FsG1, FsG1Affine};
-use crate::types::g2::FsG2;
-use crate::types::kzg_settings::FsKZGSettings;
+use crate::types::fp::MclFp;
+use crate::types::fr::MclFr;
+use crate::types::g1::{MclG1, FsG1Affine};
+use crate::types::g2::MclG2;
+use crate::types::kzg_settings::MclKZGSettings;
 
 pub fn generate_trusted_setup(
     n: usize,
     secret: [u8; 32usize],
-) -> (Vec<FsG1>, Vec<FsG1>, Vec<FsG2>) {
+) -> (Vec<MclG1>, Vec<MclG1>, Vec<MclG2>) {
     let s = hash_to_bls_field(&secret);
     let mut s_pow = Fr::one();
 
@@ -36,20 +36,20 @@ pub fn generate_trusted_setup(
     (s1, s2, s3)
 }
 
-pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<FsFr>, CKzgRet> {
+pub(crate) unsafe fn deserialize_blob(blob: *const Blob) -> Result<Vec<MclFr>, CKzgRet> {
     (*blob)
         .bytes
         .chunks(BYTES_PER_FIELD_ELEMENT)
         .map(|chunk| {
             let mut bytes = [0u8; BYTES_PER_FIELD_ELEMENT];
             bytes.copy_from_slice(chunk);
-            if let Ok(result) = FsFr::from_bytes(&bytes) {
+            if let Ok(result) = MclFr::from_bytes(&bytes) {
                 Ok(result)
             } else {
                 Err(CKzgRet::BadArgs)
             }
         })
-        .collect::<Result<Vec<FsFr>, CKzgRet>>()
+        .collect::<Result<Vec<MclFr>, CKzgRet>>()
 }
 
 macro_rules! handle_ckzg_badargs {
@@ -64,13 +64,13 @@ macro_rules! handle_ckzg_badargs {
 pub(crate) use handle_ckzg_badargs;
 
 pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
-    FsFr,
-    FsG1,
-    FsFp,
+    MclFr,
+    MclG1,
+    MclFp,
     FsG1Affine,
 > = PrecomputationTableManager::new();
 
-pub(crate) fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
+pub(crate) fn kzg_settings_to_c(rust_settings: &MclKZGSettings) -> CKZGSettings {
     use kzg::eth::c_bindings::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 
     CKZGSettings {

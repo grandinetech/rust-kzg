@@ -1,8 +1,8 @@
 use crate::mcl_methods::{mcl_fp, mcl_fp2, mcl_g1, mcl_g2};
-use crate::types::g1::FsG1;
-use crate::types::g2::FsG2;
+use crate::types::g1::MclG1;
+use crate::types::g2::MclG2;
 
-pub const G1_IDENTITY: FsG1 = FsG1::from_xyz(
+pub const G1_IDENTITY: MclG1 = MclG1::from_xyz(
     mcl_fp { d: [0; 6] },
     mcl_fp { d: [0; 6] },
     mcl_fp { d: [0; 6] },
@@ -48,7 +48,7 @@ pub const SCALE2_ROOT_OF_UNITY: [[u64; 4]; 32] = [
     [0x63e7cb4906ffc93f, 0xf070bb00e28a193d, 0xad1715b02e5713b5, 0x4b5371495990693f]
 ];
 
-pub const G1_GENERATOR: FsG1 = FsG1(mcl_g1 {
+pub const G1_GENERATOR: MclG1 = MclG1(mcl_g1 {
     x: mcl_fp {
         d: [
             0x5cb38790fd530c16,
@@ -81,7 +81,7 @@ pub const G1_GENERATOR: FsG1 = FsG1(mcl_g1 {
     },
 });
 
-pub const G1_NEGATIVE_GENERATOR: FsG1 = FsG1(mcl_g1 {
+pub const G1_NEGATIVE_GENERATOR: MclG1 = MclG1(mcl_g1 {
     x: mcl_fp {
         d: [
             0x5cb38790fd530c16,
@@ -114,7 +114,7 @@ pub const G1_NEGATIVE_GENERATOR: FsG1 = FsG1(mcl_g1 {
     },
 });
 
-pub const G2_GENERATOR: FsG2 = FsG2(mcl_g2 {
+pub const G2_GENERATOR: MclG2 = MclG2(mcl_g2 {
     x: mcl_fp2 {
         d: [
             mcl_fp {
@@ -189,7 +189,7 @@ pub const G2_GENERATOR: FsG2 = FsG2(mcl_g2 {
     },
 });
 
-pub const G2_NEGATIVE_GENERATOR: FsG2 = FsG2(mcl_g2 {
+pub const G2_NEGATIVE_GENERATOR: MclG2 = MclG2(mcl_g2 {
     x: mcl_fp2 {
         d: [
             mcl_fp {

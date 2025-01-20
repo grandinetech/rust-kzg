@@ -14,13 +14,13 @@ use crate::mcl_methods::mcl_fp;
 use crate::mcl_methods::mcl_fp2;
 use crate::mcl_methods::mcl_g2;
 use crate::mcl_methods::try_init_mcl;
-use crate::types::fr::FsFr;
+use crate::types::fr::MclFr;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
-pub struct FsG2(pub mcl_g2);
+pub struct MclG2(pub mcl_g2);
 
-impl FsG2 {
+impl MclG2 {
     pub fn from_blst_p2(p2: blst::blst_p2) -> Self {
         try_init_mcl();
 
@@ -46,12 +46,12 @@ impl FsG2 {
     pub fn rand() -> Self {
         try_init_mcl();
 
-        let result: FsG2 = G2_GENERATOR;
-        result.mul(&FsFr::rand())
+        let result: MclG2 = G2_GENERATOR;
+        result.mul(&MclFr::rand())
     }
 }
 
-impl G2 for FsG2 {
+impl G2 for MclG2 {
     fn generator() -> Self {
         try_init_mcl();
 
@@ -88,7 +88,7 @@ impl G2 for FsG2 {
                     }
                     blst::blst_p2_from_affine(&mut g2, &tmp);
                 }
-                Ok(FsG2::from_blst_p2(g2))
+                Ok(MclG2::from_blst_p2(g2))
             })
     }
 
@@ -127,8 +127,8 @@ impl G2 for FsG2 {
     }
 }
 
-impl G2Mul<FsFr> for FsG2 {
-    fn mul(&self, b: &FsFr) -> Self {
+impl G2Mul<MclFr> for MclG2 {
+    fn mul(&self, b: &MclFr) -> Self {
         try_init_mcl();
 
         let mut out: mcl_g2 = mcl_g2::default();

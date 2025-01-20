@@ -1,32 +1,32 @@
 extern crate alloc;
 
 use crate::mcl_methods::{mcl_gt, pairing};
-use crate::types::fp::FsFp;
-use crate::types::g1::FsG1;
-use crate::types::{fr::FsFr, g1::FsG1Affine};
+use crate::types::fp::MclFp;
+use crate::types::g1::MclG1;
+use crate::types::{fr::MclFr, g1::FsG1Affine};
 
-use crate::types::g1::FsG1ProjAddAffine;
+use crate::types::g1::MclG1ProjAddAffine;
 
 use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
 
-use crate::types::g2::FsG2;
+use crate::types::g2::MclG2;
 
 use kzg::PairingVerify;
 
-impl PairingVerify<FsG1, FsG2> for FsG1 {
-    fn verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
+impl PairingVerify<MclG1, MclG2> for MclG1 {
+    fn verify(a1: &MclG1, a2: &MclG2, b1: &MclG1, b2: &MclG2) -> bool {
         pairings_verify(a1, a2, b1, b2)
     }
 }
 
 pub fn g1_linear_combination(
-    out: &mut FsG1,
-    points: &[FsG1],
-    scalars: &[FsFr],
+    out: &mut MclG1,
+    points: &[MclG1],
+    scalars: &[MclFr],
     len: usize,
-    precomputation: Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>,
+    precomputation: Option<&PrecomputationTable<MclFr, MclG1, MclFp, FsG1Affine>>,
 ) {
-    *out = msm::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine, FsFr>(
+    *out = msm::<MclG1, MclFp, FsG1Affine, MclG1ProjAddAffine, MclFr>(
         points,
         scalars,
         len,
@@ -34,7 +34,7 @@ pub fn g1_linear_combination(
     );
 }
 
-pub fn pairings_verify(a1: &FsG1, a2: &FsG2, b1: &FsG1, b2: &FsG2) -> bool {
+pub fn pairings_verify(a1: &MclG1, a2: &MclG2, b1: &MclG1, b2: &MclG2) -> bool {
     // Todo: make optimization
     let mut gt0 = mcl_gt::default();
     pairing(&mut gt0, &a1.0, &a2.0);

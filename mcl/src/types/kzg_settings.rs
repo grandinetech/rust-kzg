@@ -12,36 +12,36 @@ use kzg::{FFTFr, FFTSettings, Fr, G1Mul, G2Mul, KZGSettings, Poly, G1, G2};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::fft_g1::fft_g1_fast;
 use crate::kzg_proofs::{g1_linear_combination, pairings_verify};
-use crate::types::fft_settings::FsFFTSettings;
-use crate::types::fr::FsFr;
-use crate::types::g1::FsG1;
-use crate::types::g2::FsG2;
-use crate::types::poly::FsPoly;
+use crate::types::fft_settings::MclFFTSettings;
+use crate::types::fr::MclFr;
+use crate::types::g1::MclG1;
+use crate::types::g2::MclG2;
+use crate::types::poly::MclPoly;
 use crate::utils::PRECOMPUTATION_TABLES;
 
-use super::fp::FsFp;
+use super::fp::MclFp;
 use super::g1::FsG1Affine;
 
 #[derive(Debug, Clone, Default)]
-pub struct FsKZGSettings {
-    pub fs: FsFFTSettings,
-    pub g1_values_monomial: Vec<FsG1>,
-    pub g1_values_lagrange_brp: Vec<FsG1>,
-    pub g2_values_monomial: Vec<FsG2>,
-    pub precomputation: Option<Arc<PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>>,
-    pub x_ext_fft_columns: Vec<Vec<FsG1>>,
+pub struct MclKZGSettings {
+    pub fs: MclFFTSettings,
+    pub g1_values_monomial: Vec<MclG1>,
+    pub g1_values_lagrange_brp: Vec<MclG1>,
+    pub g2_values_monomial: Vec<MclG2>,
+    pub precomputation: Option<Arc<PrecomputationTable<MclFr, MclG1, MclFp, FsG1Affine>>>,
+    pub x_ext_fft_columns: Vec<Vec<MclG1>>,
     pub cell_size: usize,
 }
 
 fn toeplitz_part_1(
     field_elements_per_ext_blob: usize,
-    output: &mut [FsG1],
-    x: &[FsG1],
-    s: &FsFFTSettings,
+    output: &mut [MclG1],
+    x: &[MclG1],
+    s: &MclFFTSettings,
 ) -> Result<(), String> {
     let n = x.len();
     let n2 = n * 2;
-    let mut x_ext = vec![FsG1::identity(); n2];
+    let mut x_ext = vec![MclG1::identity(); n2];
 
     x_ext[..n].copy_from_slice(x);
 
@@ -58,12 +58,12 @@ fn toeplitz_part_1(
     Ok(())
 }
 
-impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for FsKZGSettings {
+impl KZGSettings<MclFr, MclG1, MclG2, MclFFTSettings, MclPoly, MclFp, FsG1Affine> for MclKZGSettings {
     fn new(
-        g1_monomial: &[FsG1],
-        g1_lagrange_brp: &[FsG1],
-        g2_monomial: &[FsG2],
-        fft_settings: &FsFFTSettings,
+        g1_monomial: &[MclG1],
+        g1_lagrange_brp: &[MclG1],
+        g2_monomial: &[MclG2],
+        fft_settings: &MclFFTSettings,
         cell_size: usize,
     ) -> Result<Self, String> {
         if g1_monomial.len() != g1_lagrange_brp.len() {
@@ -77,9 +77,9 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         let k = n / cell_size;
         let k2 = 2 * k;
 
-        let mut points = vec![FsG1::default(); k2];
-        let mut x = vec![FsG1::default(); k];
-        let mut x_ext_fft_columns = vec![vec![FsG1::default(); cell_size]; k2];
+        let mut points = vec![MclG1::default(); k2];
+        let mut x = vec![MclG1::default(); k];
+        let mut x_ext_fft_columns = vec![vec![MclG1::default(); cell_size]; k2];
 
         for offset in 0..cell_size {
             let start = n - cell_size - 1 - offset;
@@ -87,7 +87,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
                 let j = start - i * cell_size;
                 *p = g1_monomial[j];
             }
-            x[k - 1] = FsG1::identity();
+            x[k - 1] = MclG1::identity();
 
             toeplitz_part_1(field_elements_per_ext_blob, &mut points, &x, fft_settings)?;
 
@@ -109,12 +109,12 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         })
     }
 
-    fn commit_to_poly(&self, poly: &FsPoly) -> Result<FsG1, String> {
+    fn commit_to_poly(&self, poly: &MclPoly) -> Result<MclG1, String> {
         if poly.coeffs.len() > self.g1_values_lagrange_brp.len() {
             return Err(String::from("Polynomial is longer than secret g1"));
         }
 
-        let mut out = FsG1::default();
+        let mut out = MclG1::default();
         g1_linear_combination(
             &mut out,
             &self.g1_values_lagrange_brp,
@@ -126,7 +126,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         Ok(out)
     }
 
-    fn compute_proof_single(&self, p: &FsPoly, x: &FsFr) -> Result<FsG1, String> {
+    fn compute_proof_single(&self, p: &MclPoly, x: &MclFr) -> Result<MclG1, String> {
         if p.coeffs.is_empty() {
             return Err(String::from("Polynomial must not be empty"));
         }
@@ -142,7 +142,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
             out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
         }
 
-        let q = FsPoly { coeffs: out_coeffs };
+        let q = MclPoly { coeffs: out_coeffs };
 
         let ret = self.commit_to_poly(&q)?;
 
@@ -151,15 +151,15 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
 
     fn check_proof_single(
         &self,
-        com: &FsG1,
-        proof: &FsG1,
-        x: &FsFr,
-        y: &FsFr,
+        com: &MclG1,
+        proof: &MclG1,
+        x: &MclFr,
+        y: &MclFr,
     ) -> Result<bool, String> {
-        let x_g2: FsG2 = G2_GENERATOR.mul(x);
-        let s_minus_x: FsG2 = self.g2_values_monomial[1].sub(&x_g2);
+        let x_g2: MclG2 = G2_GENERATOR.mul(x);
+        let s_minus_x: MclG2 = self.g2_values_monomial[1].sub(&x_g2);
         let y_g1 = G1_GENERATOR.mul(y);
-        let commitment_minus_y: FsG1 = com.sub(&y_g1);
+        let commitment_minus_y: MclG1 = com.sub(&y_g1);
 
         Ok(pairings_verify(
             &commitment_minus_y,
@@ -169,7 +169,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         ))
     }
 
-    fn compute_proof_multi(&self, p: &FsPoly, x0: &FsFr, n: usize) -> Result<FsG1, String> {
+    fn compute_proof_multi(&self, p: &MclPoly, x0: &MclFr, n: usize) -> Result<MclG1, String> {
         if p.coeffs.is_empty() {
             return Err(String::from("Polynomial must not be empty"));
         }
@@ -179,7 +179,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         }
 
         // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
-        let mut divisor = FsPoly {
+        let mut divisor = MclPoly {
             coeffs: Vec::with_capacity(n + 1),
         };
 
@@ -209,10 +209,10 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
 
     fn check_proof_multi(
         &self,
-        com: &FsG1,
-        proof: &FsG1,
-        x: &FsFr,
-        ys: &[FsFr],
+        com: &MclG1,
+        proof: &MclG1,
+        x: &MclFr,
+        ys: &[MclFr],
         n: usize,
     ) -> Result<bool, String> {
         if !n.is_power_of_two() {
@@ -220,7 +220,7 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         }
 
         // Interpolate at a coset.
-        let mut interp = FsPoly {
+        let mut interp = MclPoly {
             coeffs: self.fs.fft_fr(ys, true)?,
         };
 
@@ -250,31 +250,31 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         Ok(ret)
     }
 
-    fn get_roots_of_unity_at(&self, i: usize) -> FsFr {
+    fn get_roots_of_unity_at(&self, i: usize) -> MclFr {
         self.fs.get_roots_of_unity_at(i)
     }
 
-    fn get_fft_settings(&self) -> &FsFFTSettings {
+    fn get_fft_settings(&self) -> &MclFFTSettings {
         &self.fs
     }
 
-    fn get_g1_lagrange_brp(&self) -> &[FsG1] {
+    fn get_g1_lagrange_brp(&self) -> &[MclG1] {
         &self.g1_values_lagrange_brp
     }
 
-    fn get_g1_monomial(&self) -> &[FsG1] {
+    fn get_g1_monomial(&self) -> &[MclG1] {
         &self.g1_values_monomial
     }
 
-    fn get_g2_monomial(&self) -> &[FsG2] {
+    fn get_g2_monomial(&self) -> &[MclG2] {
         &self.g2_values_monomial
     }
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>> {
+    fn get_precomputation(&self) -> Option<&PrecomputationTable<MclFr, MclG1, MclFp, FsG1Affine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[FsG1] {
+    fn get_x_ext_fft_column(&self, index: usize) -> &[MclG1] {
         &self.x_ext_fft_columns[index]
     }
 
@@ -283,22 +283,22 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
     }
 }
 
-impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
+impl<'a> TryFrom<&'a CKZGSettings> for MclKZGSettings {
     type Error = String;
 
     fn try_from(settings: &'a CKZGSettings) -> Result<Self, Self::Error> {
         let roots_of_unity = unsafe {
             core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
                 .iter()
-                .map(|r| FsFr::from_blst_fr(blst::blst_fr { l: r.l }))
-                .collect::<Vec<FsFr>>()
+                .map(|r| MclFr::from_blst_fr(blst::blst_fr { l: r.l }))
+                .collect::<Vec<MclFr>>()
         };
 
         let brp_roots_of_unity = unsafe {
             core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
                 .iter()
-                .map(|r| FsFr::from_blst_fr(blst::blst_fr { l: r.l }))
-                .collect::<Vec<FsFr>>()
+                .map(|r| MclFr::from_blst_fr(blst::blst_fr { l: r.l }))
+                .collect::<Vec<MclFr>>()
         };
 
         let reverse_roots_of_unity = unsafe {
@@ -307,11 +307,11 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 FIELD_ELEMENTS_PER_EXT_BLOB + 1,
             )
             .iter()
-            .map(|r| FsFr::from_blst_fr(blst::blst_fr { l: r.l }))
-            .collect::<Vec<FsFr>>()
+            .map(|r| MclFr::from_blst_fr(blst::blst_fr { l: r.l }))
+            .collect::<Vec<MclFr>>()
         };
 
-        let fft_settings = FsFFTSettings {
+        let fft_settings = MclFFTSettings {
             max_width: FIELD_ELEMENTS_PER_EXT_BLOB,
             root_of_unity: roots_of_unity[1],
             roots_of_unity,
@@ -319,7 +319,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
             reverse_roots_of_unity,
         };
 
-        Ok(FsKZGSettings {
+        Ok(MclKZGSettings {
             fs: fft_settings,
             g1_values_monomial: unsafe {
                 core::slice::from_raw_parts(
@@ -328,7 +328,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG1::from_blst_p1(blst::blst_p1 {
+            .map(|r| MclG1::from_blst_p1(blst::blst_p1 {
                 x: blst::blst_fp { l: r.x.l },
                 y: blst::blst_fp { l: r.y.l },
                 z: blst::blst_fp { l: r.z.l },
@@ -341,7 +341,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG1::from_blst_p1(blst::blst_p1 {
+            .map(|r| MclG1::from_blst_p1(blst::blst_p1 {
                 x: blst::blst_fp { l: r.x.l },
                 y: blst::blst_fp { l: r.y.l },
                 z: blst::blst_fp { l: r.z.l },
@@ -354,7 +354,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG2::from_blst_p2(blst::blst_p2 {
+            .map(|r| MclG2::from_blst_p2(blst::blst_p2 {
                 x: blst::blst_fp2 {
                     fp: [
                         blst::blst_fp { l: r.x.fp[0].l },
@@ -384,7 +384,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
             .map(|it| {
                 unsafe { core::slice::from_raw_parts(*it, eth::FIELD_ELEMENTS_PER_CELL) }
                     .iter()
-                    .map(|r| FsG1::from_blst_p1(blst::blst_p1 {
+                    .map(|r| MclG1::from_blst_p1(blst::blst_p1 {
                         x: blst::blst_fp { l: r.x.l },
                         y: blst::blst_fp { l: r.y.l },
                         z: blst::blst_fp { l: r.z.l },
