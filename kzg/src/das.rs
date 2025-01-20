@@ -238,24 +238,68 @@ pub trait DAS<B: EcBackend> {
         let fft_settings = self.kzg_settings().get_fft_settings();
         poly_lagrange_to_monomial::<B>(&mut poly_monomial[..ts_size], fft_settings)?;
 
-        // compute cells
-        if let Some(cells) = cells {
-            cells.clone_from_slice(&fft_settings.fft_fr(&poly_monomial, false)?);
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
 
-            reverse_bit_order(cells)?;
-        };
+            if let Some(cells) = cells {
+                let fft_result = fft_settings.fft_fr(&poly_monomial, false)?;
 
-        // compute proofs
-        if let Some(proofs) = proofs {
-            let result = compute_fk20_proofs::<B>(
-                cell_size,
-                &poly_monomial,
-                ts_size,
-                fft_settings,
-                settings,
-            )?;
-            proofs.clone_from_slice(&result);
-            reverse_bit_order(proofs)?;
+                let flattened_cells = fft_result.as_slice().to_vec();
+                let num_cells = cells.len();
+                flattened_cells
+                    .par_chunks(flattened_cells.len() / num_cells)
+                    .zip(cells.par_iter_mut())
+                    .for_each(|(chunk, cell)| {
+                        cell.clone_from_slice(chunk);
+                    });
+
+                reverse_bit_order(cells.as_flattened_mut())?;
+            }
+
+            if let Some(proofs) = proofs {
+                let fk20_proofs = compute_fk20_proofs::<FIELD_ELEMENTS_PER_CELL, B>(
+                    cell_size,
+                    &poly_monomial,
+                    ts_size,
+                    fft_settings,
+                    settings,
+                )?;
+
+                proofs
+                    .par_iter_mut()
+                    .zip(fk20_proofs.into_par_iter()) // Consumes fk20_proofs
+                    .for_each(|(proof, result_proof)| {
+                        *proof = result_proof; // Move ownership directly
+                    });
+
+                reverse_bit_order(proofs)?;
+            }
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        {
+            // Compute cells sequentially
+            if let Some(cells) = cells {
+                cells
+                    .as_flattened_mut()
+                    .clone_from_slice(&fft_settings.fft_fr(&poly_monomial, false)?);
+
+                reverse_bit_order(cells.as_flattened_mut())?;
+            }
+
+            // Compute proofs sequentially
+            if let Some(proofs) = proofs {
+                let result = compute_fk20_proofs::<FIELD_ELEMENTS_PER_CELL, B>(
+                    cell_size,
+                    &poly_monomial,
+                    ts_size,
+                    fft_settings,
+                    settings,
+                )?;
+                proofs.clone_from_slice(&result);
+                reverse_bit_order(proofs)?;
+            }
         }
 
         Ok(())
