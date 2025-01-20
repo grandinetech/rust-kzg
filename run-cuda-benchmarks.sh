@@ -51,8 +51,8 @@ cargo bench --manifest-path blst/Cargo.toml --bench eip_4844 --no-default-featur
 print_msg "rust-kzg with blst backend (sppark)" ../"$paste_file"
 cargo bench --manifest-path blst/Cargo.toml --bench eip_4844 --no-default-features --features std,rand,parallel,sppark >> ../"$paste_file"
 
-print_msg "rust-kzg with arkworks backend (parallel, bgmw)" ../"$paste_file"
-cargo bench --manifest-path arkworks/Cargo.toml --bench eip_4844 --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
+print_msg "rust-kzg with arkworks4 backend (parallel, bgmw)" ../"$paste_file"
+cargo bench --manifest-path arkworks4/Cargo.toml --bench eip_4844 --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
 
 print_msg "rust-kzg with arkworks3 backend (parallel)" ../"$paste_file"
 cargo bench --manifest-path arkworks3/Cargo.toml --bench eip_4844 --no-default-features --features std,rand,parallel >> ../"$paste_file"
@@ -76,8 +76,8 @@ do
   print_msg "rust-kzg with blst backend (sppark)" ../"$paste_file"
   cargo bench --manifest-path blst/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel,sppark >> ../"$paste_file"
 
-  print_msg "rust-kzg with arkworks backend (parallel, bgmw)" ../"$paste_file"
-  cargo bench --manifest-path arkworks/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
+  print_msg "rust-kzg with arkworks4 backend (parallel, bgmw)" ../"$paste_file"
+  cargo bench --manifest-path arkworks4/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel,bgmw >> ../"$paste_file"
 
   print_msg "rust-kzg with arkworks3 backend (parallel)" ../"$paste_file"
   cargo bench --manifest-path arkworks3/Cargo.toml --bench lincomb --no-default-features --features std,rand,parallel >> ../"$paste_file"

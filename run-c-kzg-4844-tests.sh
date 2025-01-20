@@ -16,7 +16,7 @@ while [[ -n $# ]]; do
     -p|--parallel)
       parallel=true
       ;;
-    blst|arkworks|arkworks3|mcl|zkcrypto|constantine)
+    blst|arkworks4|arkworks3|mcl|zkcrypto|constantine)
       backend="$1"
       ;;
     *)
