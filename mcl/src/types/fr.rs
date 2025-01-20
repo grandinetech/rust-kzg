@@ -3,7 +3,6 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
-use blst::blst_fr;
 use blst::blst_fr_from_uint64;
 use blst::blst_scalar;
 use blst::blst_scalar_from_fr;
@@ -72,7 +71,7 @@ impl Fr for FsFr {
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let mut bls_scalar = blst_scalar::default();
-                let mut fr = blst_fr::default();
+                let mut fr = blst::blst_fr::default();
                 unsafe {
                     blst::blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
                     if !blst::blst_scalar_fr_check(&bls_scalar) {
@@ -96,7 +95,7 @@ impl Fr for FsFr {
             })
             .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
                 let mut bls_scalar = blst_scalar::default();
-                let mut fr = blst_fr::default();
+                let mut fr = blst::blst_fr::default();
                 unsafe {
                     blst::blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
                     blst::blst_fr_from_scalar(&mut fr, &bls_scalar);
@@ -285,7 +284,7 @@ impl Fr for FsFr {
 }
 
 impl FsFr {
-    pub fn from_blst_fr(fr: blst_fr) -> Self {
+    pub fn from_blst_fr(fr: blst::blst_fr) -> Self {
         try_init_mcl();
 
         Self {
@@ -295,10 +294,10 @@ impl FsFr {
         }
     }
 
-    pub fn to_blst_fr(&self) -> blst_fr {
+    pub fn to_blst_fr(&self) -> blst::blst_fr {
         try_init_mcl();
 
-        blst_fr {
+        blst::blst_fr {
             l: self.0.d
         }
     }
