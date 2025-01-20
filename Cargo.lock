@@ -1430,25 +1430,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-kzg-arkworks"
-version = "0.1.0"
-dependencies = [
- "ark-bls12-381 0.4.0",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-poly 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "criterion 0.5.1",
- "hex",
- "kzg",
- "kzg-bench",
- "libc",
- "rand",
- "rayon",
-]
-
-[[package]]
 name = "rust-kzg-arkworks3"
 version = "0.1.0"
 dependencies = [
@@ -1503,6 +1484,25 @@ dependencies = [
  "rayon",
  "sppark_bal",
  "which",
+]
+
+[[package]]
+name = "rust-kzg-arkworks4"
+version = "0.1.0"
+dependencies = [
+ "ark-bls12-381 0.4.0",
+ "ark-ec 0.4.2",
+ "ark-ff 0.4.2",
+ "ark-poly 0.4.2",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "criterion 0.5.1",
+ "hex",
+ "kzg",
+ "kzg-bench",
+ "libc",
+ "rand",
+ "rayon",
 ]
 
 [[package]]
