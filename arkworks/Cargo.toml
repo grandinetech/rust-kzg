@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-blst = "0.3.11"
 kzg = { path = "../kzg", default-features = false }
 ark-std = { version = "^0.4.0", default-features = false }
 ark-ff = { version = "^0.4.2", default-features = false, features = [ "asm" ] }
@@ -26,7 +25,7 @@ rand = { version = "0.8.5" }
 default = [
     "std",
     "rand",
-    "bgmw"
+    "bgmw",
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 
@@ -47,6 +46,7 @@ bgmw = [
 arkmsm = [
     "kzg/arkmsm"
 ]
+c_bindings = []
 
 [[bench]]
 name = "fft"
@@ -78,6 +78,10 @@ harness = false
 
 [[bench]]
 name = "eip_4844"
+harness = false
+
+[[bench]]
+name = "eip_7594"
 harness = false
 
 [[bench]]

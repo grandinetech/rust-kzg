@@ -2,8 +2,6 @@ extern crate alloc;
 
 use kzg::EcBackend;
 
-use kzg::c_bindings_eip7594;
-
 use crate::kzg_proofs::FFTSettings;
 use crate::kzg_proofs::KZGSettings;
 use crate::kzg_types::ZFp;
@@ -26,4 +24,5 @@ impl EcBackend for ZBackend {
     type KZGSettings = KZGSettings;
 }
 
-c_bindings_eip7594!(ZBackend);
+#[cfg(feature = "c_bindings")]
+kzg::c_bindings_eip7594!(ZBackend);

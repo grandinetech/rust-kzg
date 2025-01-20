@@ -1,4 +1,4 @@
-use crate::kzg_proofs::LFFTSettings;
+use crate::kzg_proofs::FFTSettings as LFFTSettings;
 use crate::kzg_types::ArkFr as BlstFr;
 use kzg::{FFTFr, Fr as FFr};
 

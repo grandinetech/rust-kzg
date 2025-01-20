@@ -18,7 +18,6 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
-pub use blst::{blst_fr, blst_p1, blst_p2};
 use core::hash::Hash;
 use core::hash::Hasher;
 use sha2::{Digest, Sha256};
@@ -282,6 +281,24 @@ pub fn blob_to_kzg_commitment_rust<
     Ok(poly_to_kzg_commitment(&polynomial, settings))
 }
 
+pub fn blob_to_kzg_commitment_raw<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1LinComb<TFr, TG1Fp, TG1Affine> + G1GetFp<TG1Fp>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob: [u8; BYTES_PER_BLOB],
+    settings: &TKZGSettings,
+) -> Result<TG1, String> {
+    let blob = bytes_to_blob(&blob)?;
+
+    blob_to_kzg_commitment_rust(&blob, settings)
+}
+
 pub fn compute_powers<TFr: Fr>(base: &TFr, num_powers: usize) -> Vec<TFr> {
     let mut powers: Vec<TFr> = vec![TFr::default(); num_powers];
     if num_powers == 0 {
@@ -481,6 +498,25 @@ pub fn compute_kzg_proof_rust<
     Ok((proof, y))
 }
 
+pub fn compute_kzg_proof_raw<
+    TFr: Fr + Copy,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob: [u8; BYTES_PER_BLOB],
+    z: [u8; BYTES_PER_FIELD_ELEMENT],
+    s: &TKZGSettings,
+) -> Result<(TG1, TFr), String> {
+    let blob = bytes_to_blob(&blob)?;
+    let z = TFr::from_bytes(&z)?;
+    compute_kzg_proof_rust(&blob, &z, s)
+}
+
 pub fn compute_blob_kzg_proof_rust<
     TFr: Fr + Copy,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
@@ -502,6 +538,26 @@ pub fn compute_blob_kzg_proof_rust<
     let evaluation_challenge_fr = compute_challenge(blob, commitment);
     let (proof, _) = compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts)?;
     Ok(proof)
+}
+
+pub fn compute_blob_kzg_proof_raw<
+    TFr: Fr + Copy,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob: [u8; BYTES_PER_BLOB],
+    commitment: [u8; BYTES_PER_G1],
+    ts: &TKZGSettings,
+) -> Result<TG1, String> {
+    let blob = bytes_to_blob(&blob)?;
+    let commitment = TG1::from_bytes(&commitment)?;
+
+    compute_blob_kzg_proof_rust(&blob, &commitment, ts)
 }
 
 pub fn verify_kzg_proof_rust<
@@ -530,6 +586,30 @@ pub fn verify_kzg_proof_rust<
     s.check_proof_single(commitment, proof, z, y)
 }
 
+pub fn verify_kzg_proof_raw<
+    TFr: Fr,
+    TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    commitment: [u8; BYTES_PER_G1],
+    z: [u8; BYTES_PER_FIELD_ELEMENT],
+    y: [u8; BYTES_PER_FIELD_ELEMENT],
+    proof: [u8; BYTES_PER_G1],
+    s: &TKZGSettings,
+) -> Result<bool, String> {
+    let commitment = TG1::from_bytes(&commitment)?;
+    let z = TFr::from_bytes(&z)?;
+    let y = TFr::from_bytes(&y)?;
+    let proof = TG1::from_bytes(&proof)?;
+
+    verify_kzg_proof_rust(&commitment, &z, &y, &proof, s)
+}
+
 pub fn verify_blob_kzg_proof_rust<
     TFr: Fr + Copy,
     TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
@@ -556,6 +636,28 @@ pub fn verify_blob_kzg_proof_rust<
     let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
     let y_fr = evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts)?;
     verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
+}
+
+pub fn verify_blob_kzg_proof_raw<
+    TFr: Fr + Copy,
+    TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blob: [u8; BYTES_PER_BLOB],
+    commitment_g1: [u8; BYTES_PER_G1],
+    proof_g1: [u8; BYTES_PER_G1],
+    ts: &TKZGSettings,
+) -> Result<bool, String> {
+    let blob = bytes_to_blob(&blob)?;
+    let commitment_g1 = TG1::from_bytes(&commitment_g1)?;
+    let proof_g1 = TG1::from_bytes(&proof_g1)?;
+
+    verify_blob_kzg_proof_rust(&blob, &commitment_g1, &proof_g1, ts)
 }
 
 fn compute_challenges_and_evaluate_polynomial<
@@ -696,7 +798,34 @@ pub fn verify_blob_kzg_proof_batch_rust<
     }
 }
 
-#[allow(clippy::useless_conversion)]
+pub fn verify_blob_kzg_proof_batch_raw<
+    TFr: Fr + Copy + Send,
+    TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG2: G2,
+    TFFTSettings: FFTSettings<TFr>,
+    TPoly: Poly<TFr>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine> + Sync,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    blobs: &[[u8; BYTES_PER_BLOB]],
+    commitments_g1: &[[u8; BYTES_PER_G1]],
+    proofs_g1: &[[u8; BYTES_PER_G1]],
+    ts: &TKZGSettings,
+) -> Result<bool, String> {
+    let blobs = cfg_into_iter!(blobs)
+        .map(|bytes| bytes_to_blob(bytes))
+        .collect::<Result<Vec<_>, _>>()?;
+    let commitments_g1 = cfg_into_iter!(commitments_g1)
+        .map(|bytes| TG1::from_bytes(bytes))
+        .collect::<Result<Vec<_>, _>>()?;
+    let proofs_g1 = cfg_into_iter!(proofs_g1)
+        .map(|bytes| TG1::from_bytes(bytes))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    verify_blob_kzg_proof_batch_rust(&blobs, &commitments_g1, &proofs_g1, ts)
+}
+
 pub fn bytes_to_blob<TFr: Fr>(bytes: &[u8]) -> Result<Vec<TFr>, String> {
     if bytes.len() != BYTES_PER_BLOB {
         return Err(format!(
@@ -854,7 +983,6 @@ fn is_trusted_setup_in_lagrange_form<TG1: G1 + PairingVerify<TG1, TG2>, TG2: G2>
     !is_monotomial_form
 }
 
-#[allow(clippy::useless_conversion)]
 pub fn load_trusted_setup_rust<
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + PairingVerify<TG1, TG2>,

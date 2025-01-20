@@ -1,69 +1,84 @@
 use crate::consts::SCALE2_ROOT_OF_UNITY;
 use crate::fft_g1::{fft_g1_fast, g1_linear_combination};
-pub use crate::kzg_proofs::{expand_root_of_unity, pairings_verify, LFFTSettings, LKZGSettings};
-// use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
+use crate::kzg_proofs::{
+    eval_poly, expand_root_of_unity, pairings_verify, FFTSettings as LFFTSettings,
+    KZGSettings as LKZGSettings,
+};
+use crate::poly::{poly_fast_div, poly_inverse, poly_long_div, poly_mul_direct, poly_mul_fft};
 use crate::recover::{scale_poly, unscale_poly};
 use crate::utils::{
-    blst_fp_into_pc_fq, blst_p1_into_pc_g1projective, blst_p2_into_pc_g2projective,
-    pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData,
+    blst_fp_into_pc_fq, blst_fr_into_pc_fr, blst_p1_into_pc_g1projective,
+    blst_p2_into_pc_g2projective, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
+    pc_g2projective_into_blst_p2, PolyData,
 };
-use crate::P2;
-use ark_bls12_381::{g1, g2, G1Affine};
-use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, ProjectiveCurve};
-use ark_ec::{AffineCurve, ModelParameters};
-use ark_ff::{BigInteger, Field};
+use ark_bls12_381::{g1, g2, Fr, G1Affine};
+use ark_ec::ModelParameters;
+use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, AffineCurve, ProjectiveCurve};
+use ark_ff::PrimeField;
+use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
 use ark_std::{One, Zero};
-use blst::{
-    blst_bendian_from_scalar, blst_fp, blst_fp2, blst_fr, blst_fr_add, blst_fr_cneg,
-    blst_fr_eucl_inverse, blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul,
-    blst_fr_sqr, blst_fr_sub, blst_p1, blst_p1_affine, blst_p1_compress, blst_p1_from_affine,
-    blst_p1_in_g1, blst_p1_uncompress, blst_p2, blst_p2_affine, blst_p2_from_affine,
-    blst_p2_uncompress, blst_scalar, blst_scalar_fr_check, blst_scalar_from_bendian,
-    blst_scalar_from_fr, blst_uint64_from_fr, BLST_ERROR,
-};
-use kzg::common_utils::{log2_u64, reverse_bit_order};
+
+#[cfg(feature = "rand")]
+use ark_std::UniformRand;
+
+use kzg::common_utils::reverse_bit_order;
 use kzg::eip_4844::{BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1, BYTES_PER_G2};
+use kzg::eth::c_bindings::{blst_fp, blst_fp2, blst_fr, blst_p1, blst_p2};
 use kzg::msm::precompute::{precompute, PrecomputationTable};
 use kzg::{
     FFTFr, FFTSettings, FFTSettingsPoly, Fr as KzgFr, G1Affine as G1AffineTrait, G1Fp, G1GetFp,
     G1LinComb, G1Mul, G1ProjAddAffine, G2Mul, KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
 };
-use std::ops::{AddAssign, Sub};
+use std::ops::{AddAssign, Neg, Sub};
 
 extern crate alloc;
 use alloc::sync::Arc;
 
-// fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
-//     u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
-// }
+fn bytes_be_to_uint64(inp: &[u8]) -> u64 {
+    u64::from_be_bytes(inp.try_into().expect("Input wasn't 8 elements..."))
+}
 
-// const BLS12_381_MOD_256: [u64; 4] = [
-//     0xffffffff00000001,
-//     0x53bda402fffe5bfe,
-//     0x3339d80809a1d805,
-//     0x73eda753299d7d48,
-// ];
+const BLS12_381_MOD_256: [u64; 4] = [
+    0xffffffff00000001,
+    0x53bda402fffe5bfe,
+    0x3339d80809a1d805,
+    0x73eda753299d7d48,
+];
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct ArkFr(pub blst_fr);
+pub struct ArkFr {
+    pub fr: Fr,
+}
 
-// impl Fr for ArkFr {
+impl ArkFr {
+    pub fn from_blst_fr(fr: blst_fr) -> Self {
+        Self {
+            fr: blst_fr_into_pc_fr(fr),
+        }
+    }
 
-// fn bigint_check_mod_256(a: &[u64; 4]) -> bool {
-//     let (_, overflow) = a[0].overflowing_sub(BLS12_381_MOD_256[0]);
-//     let (_, overflow) = a[1].overflowing_sub(BLS12_381_MOD_256[1] + overflow as u64);
-//     let (_, overflow) = a[2].overflowing_sub(BLS12_381_MOD_256[2] + overflow as u64);
-//     let (_, overflow) = a[3].overflowing_sub(BLS12_381_MOD_256[3] + overflow as u64);
-//     overflow
-// }
+    pub fn to_blst_fr(&self) -> blst_fr {
+        pc_fr_into_blst_fr(self.fr)
+    }
+}
+
+fn bigint_check_mod_256(a: &[u64; 4]) -> bool {
+    let (_, overflow) = a[0].overflowing_sub(BLS12_381_MOD_256[0]);
+    let (_, overflow) = a[1].overflowing_sub(BLS12_381_MOD_256[1] + overflow as u64);
+    let (_, overflow) = a[2].overflowing_sub(BLS12_381_MOD_256[2] + overflow as u64);
+    let (_, overflow) = a[3].overflowing_sub(BLS12_381_MOD_256[3] + overflow as u64);
+    overflow
+}
 
 impl KzgFr for ArkFr {
     fn null() -> Self {
-        Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
+        Self {
+            fr: Fr::new(BigInteger256::new([u64::MAX; 4])),
+        }
     }
 
     fn zero() -> Self {
-        Self::from_u64(0)
+        Self { fr: Fr::zero() }
     }
 
     fn one() -> Self {
@@ -72,18 +87,10 @@ impl KzgFr for ArkFr {
 
     #[cfg(feature = "rand")]
     fn rand() -> Self {
-        let val: [u64; 4] = [
-            rand::random(),
-            rand::random(),
-            rand::random(),
-            rand::random(),
-        ];
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_from_uint64(&mut ret.0, val.as_ptr());
+        let mut rng = rand::thread_rng();
+        Self {
+            fr: Fr::rand(&mut rng),
         }
-
-        ret
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
@@ -97,16 +104,19 @@ impl KzgFr for ArkFr {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let mut bls_scalar = blst_scalar::default();
-                let mut fr = blst_fr::default();
-                unsafe {
-                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
-                    if !blst_scalar_fr_check(&bls_scalar) {
-                        return Err("Invalid scalar".to_string());
-                    }
-                    blst_fr_from_scalar(&mut fr, &bls_scalar);
+                let storage: [u64; 4] = [
+                    bytes_be_to_uint64(&bytes[24..32]),
+                    bytes_be_to_uint64(&bytes[16..24]),
+                    bytes_be_to_uint64(&bytes[8..16]),
+                    bytes_be_to_uint64(&bytes[0..8]),
+                ];
+                let big_int = BigInteger256::new(storage);
+                if !big_int.is_zero() && !bigint_check_mod_256(&big_int.0) {
+                    return Err("Invalid scalar".to_string());
                 }
-                Ok(Self(fr))
+                Ok(Self {
+                    fr: Fr::from(big_int),
+                })
             })
     }
 
@@ -120,14 +130,8 @@ impl KzgFr for ArkFr {
                     bytes.len()
                 )
             })
-            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| {
-                let mut bls_scalar = blst_scalar::default();
-                let mut fr = blst_fr::default();
-                unsafe {
-                    blst_scalar_from_bendian(&mut bls_scalar, bytes.as_ptr());
-                    blst_fr_from_scalar(&mut fr, &bls_scalar);
-                }
-                Self(fr)
+            .map(|bytes: &[u8; BYTES_PER_FIELD_ELEMENT]| Self {
+                fr: Fr::from_be_bytes_mod_order(bytes),
             })
     }
 
@@ -137,169 +141,93 @@ impl KzgFr for ArkFr {
     }
 
     fn from_u64_arr(u: &[u64; 4]) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_from_uint64(&mut ret.0, u.as_ptr());
+        Self {
+            fr: Fr::from(BigInteger256::new(*u)),
         }
-
-        ret
     }
 
     fn from_u64(val: u64) -> Self {
-        Self::from_u64_arr(&[val, 0, 0, 0])
+        Self { fr: Fr::from(val) }
     }
 
     fn to_bytes(&self) -> [u8; 32] {
-        let mut scalar = blst_scalar::default();
-        let mut bytes = [0u8; 32];
-        unsafe {
-            blst_scalar_from_fr(&mut scalar, &self.0);
-            blst_bendian_from_scalar(bytes.as_mut_ptr(), &scalar);
-        }
-
-        bytes
+        let big_int_256: BigInteger256 = Fr::into(self.fr);
+        <[u8; 32]>::try_from(big_int_256.to_bytes_be()).unwrap()
     }
 
     fn to_u64_arr(&self) -> [u64; 4] {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-
-        val
+        let b: BigInteger256 = Fr::into(self.fr);
+        b.0
     }
 
     fn is_one(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-
-        val[0] == 1 && val[1] == 0 && val[2] == 0 && val[3] == 0
+        self.fr.is_one()
     }
 
     fn is_zero(&self) -> bool {
-        let mut val: [u64; 4] = [0; 4];
-        unsafe {
-            blst_uint64_from_fr(val.as_mut_ptr(), &self.0);
-        }
-
-        val[0] == 0 && val[1] == 0 && val[2] == 0 && val[3] == 0
+        self.fr.is_zero()
     }
 
     fn is_null(&self) -> bool {
-        self.equals(&Self::null())
+        self.equals(&ArkFr::null())
     }
 
     fn sqr(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_sqr(&mut ret.0, &self.0);
+        Self {
+            fr: self.fr.square(),
         }
-
-        ret
     }
 
     fn mul(&self, b: &Self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_mul(&mut ret.0, &self.0, &b.0);
-        }
-
-        ret
+        Self { fr: self.fr * b.fr }
     }
 
     fn add(&self, b: &Self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_add(&mut ret.0, &self.0, &b.0);
-        }
-
-        ret
+        Self { fr: self.fr + b.fr }
     }
 
     fn sub(&self, b: &Self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_sub(&mut ret.0, &self.0, &b.0);
-        }
-
-        ret
+        Self { fr: self.fr - b.fr }
     }
 
     fn eucl_inverse(&self) -> Self {
         // Inverse and eucl inverse work the same way
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_eucl_inverse(&mut ret.0, &self.0);
+        Self {
+            fr: self.fr.inverse().unwrap(),
         }
-
-        ret
     }
 
     fn negate(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_cneg(&mut ret.0, &self.0, true);
-        }
-
-        ret
+        Self { fr: self.fr.neg() }
     }
 
     fn inverse(&self) -> Self {
-        let mut ret = Self::default();
-        unsafe {
-            blst_fr_inverse(&mut ret.0, &self.0);
+        Self {
+            fr: self.fr.inverse().unwrap(),
         }
-
-        ret
     }
 
     fn pow(&self, n: usize) -> Self {
-        let mut out = Self::one();
-
-        let mut temp = *self;
-        let mut n = n;
-        loop {
-            if (n & 1) == 1 {
-                out = out.mul(&temp);
-            }
-            n >>= 1;
-            if n == 0 {
-                break;
-            }
-
-            temp = temp.sqr();
+        Self {
+            fr: self.fr.pow([n as u64]),
         }
-
-        out
     }
 
     fn div(&self, b: &Self) -> Result<Self, String> {
-        let tmp = b.eucl_inverse();
-        let out = self.mul(&tmp);
-
-        Ok(out)
+        let div = self.fr / b.fr;
+        if div.0 .0.is_empty() {
+            Ok(Self { fr: Fr::zero() })
+        } else {
+            Ok(Self { fr: div })
+        }
     }
 
     fn equals(&self, b: &Self) -> bool {
-        let mut val_a: [u64; 4] = [0; 4];
-        let mut val_b: [u64; 4] = [0; 4];
-
-        unsafe {
-            blst_uint64_from_fr(val_a.as_mut_ptr(), &self.0);
-            blst_uint64_from_fr(val_b.as_mut_ptr(), &b.0);
-        }
-
-        val_a[0] == val_b[0] && val_a[1] == val_b[1] && val_a[2] == val_b[2] && val_a[3] == val_b[3]
+        self.fr == b.fr
     }
 
     fn to_scalar(&self) -> Scalar256 {
-        let mut blst_scalar = blst_scalar::default();
-        unsafe {
-            blst_scalar_from_fr(&mut blst_scalar, &self.0);
-        }
-        Scalar256::from_u8(&blst_scalar.b)
+        Scalar256::from_u64(self.fr.0 .0)
     }
 }
 
@@ -410,8 +338,6 @@ impl G1 for ArkG1 {
 
     #[cfg(feature = "rand")]
     fn rand() -> Self {
-        use ark_ff::UniformRand;
-
         let mut rng = rand::thread_rng();
         Self(GroupProjective::rand(&mut rng))
     }
@@ -428,17 +354,21 @@ impl G1 for ArkG1 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G1]| {
-                let mut blst_affine = blst_p1_affine::default();
-                let result = unsafe { blst_p1_uncompress(&mut blst_affine, bytes.as_ptr()) };
+                let mut blst_affine = blst::blst_p1_affine::default();
+                let result = unsafe { blst::blst_p1_uncompress(&mut blst_affine, bytes.as_ptr()) };
 
-                if result != BLST_ERROR::BLST_SUCCESS {
+                if result != blst::BLST_ERROR::BLST_SUCCESS {
                     return Err("Failed to deserialize G1".to_owned());
                 }
 
-                let mut blst_point = blst_p1::default();
-                unsafe { blst_p1_from_affine(&mut blst_point, &blst_affine) };
+                let mut blst_point = blst::blst_p1::default();
+                unsafe { blst::blst_p1_from_affine(&mut blst_point, &blst_affine) };
 
-                Ok(ArkG1::from_blst_p1(blst_point))
+                Ok(ArkG1::from_blst_p1(blst_p1 {
+                    x: blst_fp { l: blst_point.x.l },
+                    y: blst_fp { l: blst_point.y.l },
+                    z: blst_fp { l: blst_point.z.l },
+                }))
             })
     }
 
@@ -447,10 +377,18 @@ impl G1 for ArkG1 {
         Self::from_bytes(&bytes)
     }
 
-    fn to_bytes(&self) -> [u8; 48] {
+    fn to_bytes(&self) -> [u8; BYTES_PER_G1] {
         let mut out = [0u8; BYTES_PER_G1];
+        let v = self.to_blst_p1();
         unsafe {
-            blst_p1_compress(out.as_mut_ptr(), &self.to_blst_p1());
+            blst::blst_p1_compress(
+                out.as_mut_ptr(),
+                &blst::blst_p1 {
+                    x: blst::blst_fp { l: v.x.l },
+                    y: blst::blst_fp { l: v.y.l },
+                    z: blst::blst_fp { l: v.z.l },
+                },
+            );
         }
         out
     }
@@ -460,12 +398,13 @@ impl G1 for ArkG1 {
     }
 
     fn is_inf(&self) -> bool {
-        let temp = &self.0;
-        temp.z.is_zero()
+        self.0.is_zero()
     }
 
     fn is_valid(&self) -> bool {
-        unsafe { blst_p1_in_g1(&self.to_blst_p1()) }
+        let affine = self.0.into_affine();
+
+        affine.is_on_curve() && affine.is_in_correct_subgroup_assuming_on_curve()
     }
 
     fn dbl(&self) -> Self {
@@ -555,18 +494,18 @@ impl PairingVerify<ArkG1, ArkG2> for ArkG1 {
 pub struct ArkG2(pub GroupProjective<g2::Parameters>);
 
 impl ArkG2 {
-    pub fn from_blst_p2(p2: blst::blst_p2) -> Self {
+    pub fn from_blst_p2(p2: blst_p2) -> Self {
         Self(blst_p2_into_pc_g2projective(&p2))
     }
 
-    pub fn to_blst_p2(&self) -> blst::blst_p2 {
+    pub fn to_blst_p2(&self) -> blst_p2 {
         pc_g2projective_into_blst_p2(self.0)
     }
 }
 
 impl G2 for ArkG2 {
     fn generator() -> Self {
-        ArkG2::from_blst_p2(P2 {
+        ArkG2::from_blst_p2(blst_p2 {
             x: blst_fp2 {
                 fp: [
                     blst_fp {
@@ -643,7 +582,7 @@ impl G2 for ArkG2 {
     }
 
     fn negative_generator() -> Self {
-        ArkG2::from_blst_p2(P2 {
+        ArkG2::from_blst_p2(blst_p2 {
             x: blst_fp2 {
                 fp: [
                     blst_fp {
@@ -731,16 +670,48 @@ impl G2 for ArkG2 {
                 )
             })
             .and_then(|bytes: &[u8; BYTES_PER_G2]| {
-                let mut tmp = blst_p2_affine::default();
-                let mut g2 = blst_p2::default();
-                unsafe {
-                    // The uncompress routine also checks that the point is on the curve
-                    if blst_p2_uncompress(&mut tmp, bytes.as_ptr()) != BLST_ERROR::BLST_SUCCESS {
-                        return Err("Failed to uncompress".to_string());
-                    }
-                    blst_p2_from_affine(&mut g2, &tmp);
+                let mut blst_affine = blst::blst_p2_affine::default();
+                let result = unsafe { blst::blst_p2_uncompress(&mut blst_affine, bytes.as_ptr()) };
+
+                if result != blst::BLST_ERROR::BLST_SUCCESS {
+                    return Err("Failed to deserialize G1".to_owned());
                 }
-                Ok(ArkG2::from_blst_p2(g2))
+
+                let mut blst_point = blst::blst_p2::default();
+                unsafe { blst::blst_p2_from_affine(&mut blst_point, &blst_affine) };
+
+                Ok(ArkG2::from_blst_p2(blst_p2 {
+                    x: blst_fp2 {
+                        fp: [
+                            blst_fp {
+                                l: blst_point.x.fp[0].l,
+                            },
+                            blst_fp {
+                                l: blst_point.x.fp[1].l,
+                            },
+                        ],
+                    },
+                    y: blst_fp2 {
+                        fp: [
+                            blst_fp {
+                                l: blst_point.y.fp[0].l,
+                            },
+                            blst_fp {
+                                l: blst_point.y.fp[1].l,
+                            },
+                        ],
+                    },
+                    z: blst_fp2 {
+                        fp: [
+                            blst_fp {
+                                l: blst_point.z.fp[0].l,
+                            },
+                            blst_fp {
+                                l: blst_point.z.fp[1].l,
+                            },
+                        ],
+                    },
+                }))
             })
     }
 
@@ -795,22 +766,7 @@ impl Poly<ArkFr> for PolyData {
     }
 
     fn eval(&self, x: &ArkFr) -> ArkFr {
-        if self.coeffs.is_empty() {
-            return ArkFr::zero();
-        } else if x.is_zero() {
-            return self.coeffs[0];
-        }
-        let mut ret = self.coeffs[self.coeffs.len() - 1];
-        let mut i = self.coeffs.len() - 2;
-        loop {
-            let temp = ret.mul(x);
-            ret = temp.add(&self.coeffs[i]);
-            if i == 0 {
-                break;
-            }
-            i -= 1;
-        }
-        ret
+        eval_poly(self, x)
     }
 
     fn scale(&mut self) {
@@ -821,207 +777,39 @@ impl Poly<ArkFr> for PolyData {
         unscale_poly(self);
     }
 
-    fn inverse(&mut self, output_len: usize) -> Result<Self, String> {
-        if output_len == 0 {
-            return Err(String::from("Can't produce a zero-length result"));
-        } else if self.coeffs.is_empty() {
-            return Err(String::from("Can't inverse a zero-length poly"));
-        } else if self.coeffs[0].is_zero() {
-            return Err(String::from(
-                "First coefficient of polynomial mustn't be zero",
-            ));
-        }
-
-        let mut ret = PolyData {
-            coeffs: vec![ArkFr::zero(); output_len],
-        };
-        // If the input polynomial is constant, the remainder of the series is zero
-        if self.coeffs.len() == 1 {
-            ret.coeffs[0] = self.coeffs[0].eucl_inverse();
-
-            return Ok(ret);
-        }
-
-        let maxd = output_len - 1;
-
-        // Max space for multiplications is (2 * length - 1)
-        // Don't need the following as its recalculated inside
-        // let scale: usize = log2_pow2(next_pow_of_2(2 * output_len - 1));
-        // let fft_settings = FsFFTSettings::new(scale).unwrap();
-
-        // To store intermediate results
-
-        // Base case for d == 0
-        ret.coeffs[0] = self.coeffs[0].eucl_inverse();
-        let mut d: usize = 0;
-        let mut mask: usize = 1 << log2_u64(maxd);
-        while mask != 0 {
-            d = 2 * d + usize::from((maxd & mask) != 0);
-            mask >>= 1;
-
-            // b.c -> tmp0 (we're using out for c)
-            // tmp0.length = min_u64(d + 1, b->length + output->length - 1);
-            let len_temp = (d + 1).min(self.len() + output_len - 1);
-            let mut tmp0 = self.mul(&ret, len_temp).unwrap();
-
-            // 2 - b.c -> tmp0
-            for i in 0..tmp0.len() {
-                tmp0.coeffs[i] = tmp0.coeffs[i].negate();
-            }
-            let fr_two = kzg::Fr::from_u64(2);
-            tmp0.coeffs[0] = tmp0.coeffs[0].add(&fr_two);
-
-            // c.(2 - b.c) -> tmp1;
-            let tmp1 = ret.mul(&tmp0, d + 1).unwrap();
-
-            for i in 0..tmp1.len() {
-                ret.coeffs[i] = tmp1.coeffs[i];
-            }
-        }
-
-        if d + 1 != output_len {
-            return Err(String::from("D + 1 must be equal to output_len"));
-        }
-
-        Ok(ret)
+    fn inverse(&mut self, new_len: usize) -> Result<Self, String> {
+        poly_inverse(self, new_len)
     }
 
     fn div(&mut self, x: &Self) -> Result<Self, String> {
         if x.len() >= self.len() || x.len() < 128 {
-            self.long_div(x)
+            poly_long_div(self, x)
         } else {
-            self.fast_div(x)
+            poly_fast_div(self, x)
         }
     }
 
-    fn long_div(&mut self, divisor: &Self) -> Result<Self, String> {
-        if divisor.coeffs.is_empty() {
-            return Err(String::from("Can't divide by zero"));
-        } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
-            return Err(String::from("Highest coefficient must be non-zero"));
-        }
-
-        let out_length = self.poly_quotient_length(divisor);
-        if out_length == 0 {
-            return Ok(PolyData { coeffs: vec![] });
-        }
-
-        // Special case for divisor.len() == 2
-        if divisor.len() == 2 {
-            let divisor_0 = divisor.coeffs[0];
-            let divisor_1 = divisor.coeffs[1];
-
-            let mut out_coeffs = Vec::from(&self.coeffs[1..]);
-            for i in (1..out_length).rev() {
-                out_coeffs[i] = out_coeffs[i].div(&divisor_1).unwrap();
-
-                let tmp = out_coeffs[i].mul(&divisor_0);
-                out_coeffs[i - 1] = out_coeffs[i - 1].sub(&tmp);
-            }
-
-            out_coeffs[0] = out_coeffs[0].div(&divisor_1).unwrap();
-
-            Ok(PolyData { coeffs: out_coeffs })
-        } else {
-            let mut out: PolyData = PolyData {
-                coeffs: vec![ArkFr::default(); out_length],
-            };
-
-            let mut a_pos = self.len() - 1;
-            let b_pos = divisor.len() - 1;
-            let mut diff = a_pos - b_pos;
-
-            let mut a = self.coeffs.clone();
-
-            while diff > 0 {
-                out.coeffs[diff] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
-
-                for i in 0..(b_pos + 1) {
-                    let tmp = out.coeffs[diff].mul(&divisor.coeffs[i]);
-                    a[diff + i] = a[diff + i].sub(&tmp);
-                }
-
-                diff -= 1;
-                a_pos -= 1;
-            }
-
-            out.coeffs[0] = a[a_pos].div(&divisor.coeffs[b_pos]).unwrap();
-            Ok(out)
-        }
+    fn long_div(&mut self, x: &Self) -> Result<Self, String> {
+        poly_long_div(self, x)
     }
 
-    fn fast_div(&mut self, divisor: &Self) -> Result<Self, String> {
-        if divisor.coeffs.is_empty() {
-            return Err(String::from("Cant divide by zero"));
-        } else if divisor.coeffs[divisor.coeffs.len() - 1].is_zero() {
-            return Err(String::from("Highest coefficient must be non-zero"));
-        }
-
-        let m: usize = self.len() - 1;
-        let n: usize = divisor.len() - 1;
-
-        // If the divisor is larger than the dividend, the result is zero-length
-        if n > m {
-            return Ok(PolyData { coeffs: Vec::new() });
-        }
-
-        // Special case for divisor.length == 1 (it's a constant)
-        if divisor.len() == 1 {
-            let mut out = PolyData {
-                coeffs: vec![ArkFr::zero(); self.len()],
-            };
-            for i in 0..out.len() {
-                out.coeffs[i] = self.coeffs[i].div(&divisor.coeffs[0]).unwrap();
-            }
-            return Ok(out);
-        }
-
-        let mut a_flip = self.flip().unwrap();
-        let mut b_flip = divisor.flip().unwrap();
-
-        let inv_b_flip = b_flip.inverse(m - n + 1).unwrap();
-        let q_flip = a_flip.mul(&inv_b_flip, m - n + 1).unwrap();
-
-        let out = q_flip.flip().unwrap();
-        Ok(out)
+    fn fast_div(&mut self, x: &Self) -> Result<Self, String> {
+        poly_fast_div(self, x)
     }
 
-    fn mul_direct(&mut self, multiplier: &Self, output_len: usize) -> Result<Self, String> {
-        if self.len() == 0 || multiplier.len() == 0 {
-            return Ok(PolyData::new(0));
-        }
-
-        let a_degree = self.len() - 1;
-        let b_degree = multiplier.len() - 1;
-
-        let mut ret = PolyData {
-            coeffs: vec![kzg::Fr::zero(); output_len],
-        };
-
-        // Truncate the output to the length of the output polynomial
-        for i in 0..(a_degree + 1) {
-            let mut j = 0;
-            while (j <= b_degree) && ((i + j) < output_len) {
-                let tmp = self.coeffs[i].mul(&multiplier.coeffs[j]);
-                let tmp = ret.coeffs[i + j].add(&tmp);
-                ret.coeffs[i + j] = tmp;
-
-                j += 1;
-            }
-        }
-
-        Ok(ret)
+    fn mul_direct(&mut self, x: &Self, len: usize) -> Result<Self, String> {
+        poly_mul_direct(self, x, len)
     }
 }
 
 impl FFTSettingsPoly<ArkFr, PolyData, LFFTSettings> for LFFTSettings {
     fn poly_mul_fft(
         a: &PolyData,
-        b: &PolyData,
+        x: &PolyData,
         len: usize,
-        _fs: Option<&LFFTSettings>,
+        fs: Option<&LFFTSettings>,
     ) -> Result<PolyData, String> {
-        b.mul_fft(a, len)
+        poly_mul_fft(a, x, fs, len)
     }
 }
 
@@ -1053,35 +841,21 @@ impl FFTSettings<ArkFr> for LFFTSettings {
         let mut brp_roots_of_unity = roots_of_unity.clone();
         brp_roots_of_unity.pop();
         reverse_bit_order(&mut brp_roots_of_unity)?;
+
         let mut reverse_roots_of_unity = roots_of_unity.clone();
         reverse_roots_of_unity.reverse();
-
-        // let expanded_roots_of_unity = expand_root_of_unity(&root_of_unity, max_width)?;
-        // let mut reverse_roots_of_unity = expanded_roots_of_unity.clone();
-        // reverse_roots_of_unity.reverse();
-
-        // let mut roots_of_unity = expanded_roots_of_unity.clone();
-        // roots_of_unity.pop();
-        // reverse_bit_order(&mut roots_of_unity)?;
 
         Ok(LFFTSettings {
             max_width,
             root_of_unity,
-            brp_roots_of_unity,
             reverse_roots_of_unity,
             roots_of_unity,
+            brp_roots_of_unity,
         })
     }
 
     fn get_max_width(&self) -> usize {
         self.max_width
-    }
-
-    fn get_brp_roots_of_unity(&self) -> &[ArkFr] {
-        &self.brp_roots_of_unity
-    }
-    fn get_brp_roots_of_unity_at(&self, i: usize) -> ArkFr {
-        self.brp_roots_of_unity[i]
     }
 
     fn get_reverse_roots_of_unity_at(&self, i: usize) -> ArkFr {
@@ -1098,6 +872,14 @@ impl FFTSettings<ArkFr> for LFFTSettings {
 
     fn get_roots_of_unity(&self) -> &[ArkFr] {
         &self.roots_of_unity
+    }
+
+    fn get_brp_roots_of_unity(&self) -> &[ArkFr] {
+        &self.brp_roots_of_unity
+    }
+
+    fn get_brp_roots_of_unity_at(&self, i: usize) -> ArkFr {
+        self.brp_roots_of_unity[i]
     }
 }
 
@@ -1133,7 +915,7 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         g2_monomial: &[ArkG2],
         fft_settings: &LFFTSettings,
         cell_size: usize,
-    ) -> Result<LKZGSettings, String> {
+    ) -> Result<Self, String> {
         if g1_monomial.len() != g1_lagrange_brp.len() {
             return Err("G1 point length mismatch".to_string());
         }
@@ -1174,8 +956,9 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
                 #[cfg(feature = "sppark")]
                 {
                     use ark_bls12_381::G1Affine;
-                    let points =
-                        kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(secret_g1);
+                    let points = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(
+                        g1_lagrange_brp,
+                    );
                     let points = unsafe {
                         alloc::slice::from_raw_parts(
                             points.as_ptr() as *const G1Affine,
@@ -1188,12 +971,13 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
 
                 #[cfg(feature = "sppark_wlc")]
                 {
-                    let affines =
-                        kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(&secret_g1);
+                    let affines = kzg::msm::msm_impls::batch_convert::<ArkG1, ArkFp, ArkG1Affine>(
+                        &g1_lagrange_brp,
+                    );
                     let affines = unsafe {
                         alloc::slice::from_raw_parts(
                             affines.as_ptr() as *const G1Affine,
-                            secret_g1.len(),
+                            g1_lagrange_brp.len(),
                         )
                     };
 
@@ -1291,11 +1075,11 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
 
         // Zeros
         for _ in 1..n {
-            divisor.coeffs.push(kzg::Fr::zero());
+            divisor.coeffs.push(ArkFr { fr: Fr::zero() });
         }
 
         // x^n
-        divisor.coeffs.push(kzg::Fr::one());
+        divisor.coeffs.push(ArkFr { fr: Fr::one() });
 
         let mut new_polina = p.clone();
 
@@ -1362,22 +1146,24 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         &self.fs
     }
 
-    fn get_g1_lagrange_brp(&self) -> &[ArkG1] {
-        &self.g1_values_lagrange_brp
+    fn get_precomputation(&self) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>> {
+        self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
     fn get_g1_monomial(&self) -> &[ArkG1] {
         &self.g1_values_monomial
     }
+
+    fn get_g1_lagrange_brp(&self) -> &[ArkG1] {
+        &self.g1_values_lagrange_brp
+    }
+
     fn get_g2_monomial(&self) -> &[ArkG2] {
         &self.g2_values_monomial
     }
+
     fn get_x_ext_fft_column(&self, index: usize) -> &[ArkG1] {
         &self.x_ext_fft_columns[index]
-    }
-
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>> {
-        self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
     fn get_cell_size(&self) -> usize {
@@ -1535,17 +1321,11 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
     }
 
     fn x(&self) -> &ArkFp {
-        unsafe {
-            // Transmute safe due to repr(C) on FsFp
-            core::mem::transmute(&self.aff.x)
-        }
+        unsafe { core::mem::transmute(&self.aff.x) }
     }
 
     fn y(&self) -> &ArkFp {
-        unsafe {
-            // Transmute safe due to repr(C) on FsFp
-            core::mem::transmute(&self.aff.y)
-        }
+        unsafe { core::mem::transmute(&self.aff.y) }
     }
 
     fn is_infinity(&self) -> bool {
@@ -1563,17 +1343,11 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
     }
 
     fn x_mut(&mut self) -> &mut ArkFp {
-        unsafe {
-            // Transmute safe due to repr(C) on FsFp
-            core::mem::transmute(&mut self.aff.x)
-        }
+        unsafe { core::mem::transmute(&mut self.aff.x) }
     }
 
     fn y_mut(&mut self) -> &mut ArkFp {
-        unsafe {
-            // Transmute safe due to repr(C) on FsFp
-            core::mem::transmute(&mut self.aff.y)
-        }
+        unsafe { core::mem::transmute(&mut self.aff.y) }
     }
 }
 

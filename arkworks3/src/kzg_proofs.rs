@@ -1,13 +1,13 @@
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
-use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
-use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
-use crate::utils::{fft_settings_to_rust, PRECOMPUTATION_TABLES};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
+use crate::utils::{blst_poly_into_pc_poly, fft_settings_to_rust, PolyData, PRECOMPUTATION_TABLES};
 use alloc::sync::Arc;
 use ark_bls12_381::Bls12_381;
 use ark_ec::PairingEngine;
 use ark_ec::ProjectiveCurve;
+use ark_poly::Polynomial;
 use ark_std::One;
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::eth::c_bindings::CKZGSettings;
@@ -16,16 +16,16 @@ use kzg::{eth, Fr, G1Mul, G2Mul, G1, G2};
 use std::ops::Neg;
 
 #[derive(Debug, Clone)]
-pub struct LFFTSettings {
+pub struct FFTSettings {
     pub max_width: usize,
-    pub root_of_unity: BlstFr,
-    pub brp_roots_of_unity: Vec<BlstFr>,
-    pub reverse_roots_of_unity: Vec<BlstFr>,
-    pub roots_of_unity: Vec<BlstFr>,
+    pub root_of_unity: ArkFr,
+    pub brp_roots_of_unity: Vec<ArkFr>,
+    pub reverse_roots_of_unity: Vec<ArkFr>,
+    pub roots_of_unity: Vec<ArkFr>,
 }
 
-pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, String> {
-    let mut generated_powers = vec![BlstFr::one(), *root];
+pub fn expand_root_of_unity(root: &ArkFr, width: usize) -> Result<Vec<ArkFr>, String> {
+    let mut generated_powers = vec![ArkFr::one(), *root];
 
     while !(generated_powers.last().unwrap().is_one()) {
         if generated_powers.len() > width {
@@ -43,8 +43,8 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct LKZGSettings {
-    pub fs: LFFTSettings,
+pub struct KZGSettings {
+    pub fs: FFTSettings,
     pub g1_values_monomial: Vec<ArkG1>,
     pub g1_values_lagrange_brp: Vec<ArkG1>,
     pub g2_values_monomial: Vec<ArkG2>,
@@ -53,11 +53,11 @@ pub struct LKZGSettings {
     pub cell_size: usize,
 }
 
-impl<'a> TryFrom<&'a CKZGSettings> for LKZGSettings {
+impl<'a> TryFrom<&'a CKZGSettings> for KZGSettings {
     type Error = String;
 
-    fn try_from(c_settings: &CKZGSettings) -> Result<LKZGSettings, String> {
-        Ok(LKZGSettings {
+    fn try_from(c_settings: &CKZGSettings) -> Result<KZGSettings, String> {
+        Ok(KZGSettings {
             fs: fft_settings_to_rust(c_settings)?,
             g1_values_monomial: unsafe {
                 core::slice::from_raw_parts(
@@ -126,6 +126,13 @@ pub fn generate_trusted_setup(
     }
 
     (s1, s2, s3)
+}
+
+pub fn eval_poly(p: &PolyData, x: &ArkFr) -> ArkFr {
+    let poly = blst_poly_into_pc_poly(&p.coeffs);
+    ArkFr {
+        fr: poly.evaluate(&x.fr),
+    }
 }
 
 pub fn pairings_verify(a1: &ArkG1, a2: &ArkG2, b1: &ArkG1, b2: &ArkG2) -> bool {
