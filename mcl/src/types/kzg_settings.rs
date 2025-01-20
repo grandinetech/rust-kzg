@@ -290,14 +290,14 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
         let roots_of_unity = unsafe {
             core::slice::from_raw_parts(settings.roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1)
                 .iter()
-                .map(|r| FsFr::from_blst_fr(*r))
+                .map(|r| FsFr::from_blst_fr(blst::blst_fr { l: r.l }))
                 .collect::<Vec<FsFr>>()
         };
 
         let brp_roots_of_unity = unsafe {
             core::slice::from_raw_parts(settings.brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB)
                 .iter()
-                .map(|r| FsFr::from_blst_fr(*r))
+                .map(|r| FsFr::from_blst_fr(blst::blst_fr { l: r.l }))
                 .collect::<Vec<FsFr>>()
         };
 
@@ -307,7 +307,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 FIELD_ELEMENTS_PER_EXT_BLOB + 1,
             )
             .iter()
-            .map(|r| FsFr::from_blst_fr(*r))
+            .map(|r| FsFr::from_blst_fr(blst::blst_fr { l: r.l }))
             .collect::<Vec<FsFr>>()
         };
 
@@ -328,7 +328,11 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG1::from_blst_p1(*r))
+            .map(|r| FsG1::from_blst_p1(blst::blst_p1 {
+                x: blst::blst_fp { l: r.x.l },
+                y: blst::blst_fp { l: r.y.l },
+                z: blst::blst_fp { l: r.z.l },
+            }))
             .collect::<Vec<_>>(),
             g1_values_lagrange_brp: unsafe {
                 core::slice::from_raw_parts(
@@ -337,7 +341,11 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG1::from_blst_p1(*r))
+            .map(|r| FsG1::from_blst_p1(blst::blst_p1 {
+                x: blst::blst_fp { l: r.x.l },
+                y: blst::blst_fp { l: r.y.l },
+                z: blst::blst_fp { l: r.z.l },
+            }))
             .collect::<Vec<_>>(),
             g2_values_monomial: unsafe {
                 core::slice::from_raw_parts(
@@ -346,7 +354,25 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                 )
             }
             .iter()
-            .map(|r| FsG2::from_blst_p2(*r))
+            .map(|r| FsG2::from_blst_p2(blst::blst_p2 {
+                x: blst::blst_fp2 {
+                    fp: [
+                        blst::blst_fp { l: r.x.fp[0].l },
+                        blst::blst_fp { l: r.x.fp[1].l },
+                    ],
+                },
+                y: blst::blst_fp2 {
+                    fp: [
+                        blst::blst_fp { l: r.y.fp[0].l },
+                        blst::blst_fp { l: r.y.fp[1].l },
+                    ],
+                },
+                z: blst::blst_fp2 {
+                    fp: [
+                        blst::blst_fp { l: r.z.fp[0].l },
+                        blst::blst_fp { l: r.z.fp[1].l },
+                    ],
+                }}))
             .collect::<Vec<_>>(),
             x_ext_fft_columns: unsafe {
                 core::slice::from_raw_parts(
@@ -358,7 +384,11 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
             .map(|it| {
                 unsafe { core::slice::from_raw_parts(*it, eth::FIELD_ELEMENTS_PER_CELL) }
                     .iter()
-                    .map(|it| FsG1::from_blst_p1(*it))
+                    .map(|r| FsG1::from_blst_p1(blst::blst_p1 {
+                        x: blst::blst_fp { l: r.x.l },
+                        y: blst::blst_fp { l: r.y.l },
+                        z: blst::blst_fp { l: r.z.l },
+                    }))
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>(),
