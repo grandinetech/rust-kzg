@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 blst = "0.3.11"
-sppark = "0.1.6"
+sppark = "0.1.11"
 
 [build-dependencies]
 cc = "^1.0.70"

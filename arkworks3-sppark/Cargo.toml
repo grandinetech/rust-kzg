@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 blst = "0.3.11"
-sppark = "0.1.6"
+sppark = "0.1.11"
 ark-std = "0.3.0"
 ark-ff = "0.3.0"
 ark-ec = { version = "0.3.0", features = [ "parallel" ] }
