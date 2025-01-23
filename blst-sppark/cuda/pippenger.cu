@@ -9,6 +9,8 @@
 #include <ec/jacobian_t.hpp>
 #include <ec/xyzz_t.hpp>
 
+using namespace bls12_381;
+
 typedef jacobian_t<fp_t> point_t;
 typedef xyzz_t<fp_t> bucket_t;
 typedef bucket_t::affine_t affine_t;
