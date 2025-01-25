@@ -560,7 +560,6 @@ fn compute_fk20_proofs<B: EcBackend>(
     let k2 = k * 2;
 
     let mut coeffs = vec![vec![B::Fr::default(); k]; k2];
-    let mut h_ext_fft = vec![B::G1::identity(); k2];
     let mut toeplitz_coeffs = vec![B::Fr::default(); k2];
     let mut toeplitz_coeffs_fft = vec![B::Fr::default(); k2];
 
@@ -572,14 +571,11 @@ fn compute_fk20_proofs<B: EcBackend>(
         }
     }
 
-    for i in 0..k2 {
-        h_ext_fft[i] = B::G1::g1_lincomb(
-            kzg_settings.get_x_ext_fft_column(i),
-            &coeffs[i],
-            cell_size,
-            None,
-        );
-    }
+    let h_ext_fft = B::G1::g1_lincomb_batch(
+        kzg_settings.get_x_ext_fft_columns(),
+        &coeffs,
+        kzg_settings.get_precomputation(),
+    )?;
 
     let mut h = fft_settings.fft_g1(&h_ext_fft, true)?;
 

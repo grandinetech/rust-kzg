@@ -44,7 +44,7 @@ pub fn bench_g1_lincomb<
         })
     });
 
-    let precomputation = precompute::<TFr, TG1, TG1Fp, TG1Affine>(&points).unwrap();
+    let precomputation = precompute::<TFr, TG1, TG1Fp, TG1Affine>(&points, &[]).unwrap();
 
     if precomputation.is_some() {
         let id = format!(
