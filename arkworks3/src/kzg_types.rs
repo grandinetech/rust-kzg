@@ -951,7 +951,6 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
             g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
             g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
-            x_ext_fft_columns,
             precomputation: {
                 #[cfg(feature = "sppark")]
                 {
@@ -988,9 +987,13 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
 
                 #[cfg(not(any(feature = "sppark", feature = "sppark_wlc")))]
                 {
-                    precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
+                    precompute(g1_lagrange_brp, &x_ext_fft_columns)
+                        .ok()
+                        .flatten()
+                        .map(Arc::new)
                 }
             },
+            x_ext_fft_columns,
             cell_size,
         })
     }
@@ -1162,8 +1165,8 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         &self.g2_values_monomial
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[ArkG1] {
-        &self.x_ext_fft_columns[index]
+    fn get_x_ext_fft_columns(&self) -> &[Vec<ArkG1>] {
+        &self.x_ext_fft_columns
     }
 
     fn get_cell_size(&self) -> usize {

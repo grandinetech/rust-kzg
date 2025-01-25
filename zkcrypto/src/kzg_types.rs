@@ -927,8 +927,11 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
             g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
             g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
+            precomputation: precompute(g1_lagrange_brp, &x_ext_fft_columns)
+                .ok()
+                .flatten()
+                .map(Arc::new),
             x_ext_fft_columns,
-            precomputation: precompute(g1_lagrange_brp).ok().flatten().map(Arc::new),
             cell_size,
         })
     }
@@ -1087,8 +1090,8 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
         &self.g2_values_monomial
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[ZG1] {
-        &self.x_ext_fft_columns[index]
+    fn get_x_ext_fft_columns(&self) -> &[Vec<ZG1>] {
+        &self.x_ext_fft_columns
     }
 
     fn get_cell_size(&self) -> usize {

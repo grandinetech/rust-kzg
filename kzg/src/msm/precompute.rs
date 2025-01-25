@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use alloc::string::String;
+use alloc::{string::String, vec::Vec};
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1};
 
@@ -42,8 +42,12 @@ where
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 {
-    fn new(_: &[TG1]) -> Result<Option<Self>, String> {
+    fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
         Ok(None)
+    }
+
+    pub fn multiply_batch(&self, _: &[Vec<TFr>]) -> Vec<TG1> {
+        panic!("This function must not be called")
     }
 
     pub fn multiply_sequential(&self, _: &[TFr]) -> TG1 {
@@ -61,6 +65,7 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine> = EmptyTable<TFr, TG1, 
 
 pub fn precompute<TFr, TG1, TG1Fp, TG1Affine>(
     points: &[TG1],
+    matrix: &[Vec<TG1>],
 ) -> Result<Option<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>, String>
 where
     TFr: Fr,
@@ -68,5 +73,5 @@ where
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 {
-    PrecomputationTable::<TFr, TG1, TG1Fp, TG1Affine>::new(points)
+    PrecomputationTable::<TFr, TG1, TG1Fp, TG1Affine>::new(points, matrix)
 }

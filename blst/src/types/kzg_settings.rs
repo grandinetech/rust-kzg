@@ -101,7 +101,6 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
             g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
             g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
-            x_ext_fft_columns,
             precomputation: {
                 #[cfg(feature = "sppark")]
                 {
@@ -121,9 +120,13 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
 
                 #[cfg(not(feature = "sppark"))]
                 {
-                    precompute(g1_lagrange_brp).ok().flatten().map(Arc::new)
+                    precompute(g1_lagrange_brp, &x_ext_fft_columns)
+                        .ok()
+                        .flatten()
+                        .map(Arc::new)
                 }
             },
+            x_ext_fft_columns,
             cell_size,
         })
     }
@@ -293,8 +296,8 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[FsG1] {
-        &self.x_ext_fft_columns[index]
+    fn get_x_ext_fft_columns(&self) -> &[Vec<FsG1>] {
+        &self.x_ext_fft_columns
     }
 
     fn get_cell_size(&self) -> usize {

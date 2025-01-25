@@ -697,8 +697,11 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
             g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
             g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
+            precomputation: precompute(g1_lagrange_brp, &x_ext_fft_columns)
+                .ok()
+                .flatten()
+                .map(Arc::new),
             x_ext_fft_columns,
-            precomputation: precompute(g1_lagrange_brp).ok().flatten().map(Arc::new),
             cell_size,
         })
     }
@@ -865,8 +868,8 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[ArkG1] {
-        &self.x_ext_fft_columns[index]
+    fn get_x_ext_fft_columns(&self) -> &[Vec<ArkG1>] {
+        &self.x_ext_fft_columns
     }
 
     fn get_cell_size(&self) -> usize {
