@@ -251,14 +251,14 @@ pub trait DAS<B: EcBackend> {
                     .par_chunks(flattened_cells.len() / num_cells)
                     .zip(cells.par_iter_mut())
                     .for_each(|(chunk, cell)| {
-                        cell.clone_from_slice(chunk);
+                        for (dest, src) in cell.iter_mut().zip(chunk.iter()) {
+                            *dest = *src;
+                        }
                     });
-
-                reverse_bit_order(cells.as_flattened_mut())?;
             }
 
             if let Some(proofs) = proofs {
-                let fk20_proofs = compute_fk20_proofs::<FIELD_ELEMENTS_PER_CELL, B>(
+                let fk20_proofs = compute_fk20_proofs::<B>(
                     cell_size,
                     &poly_monomial,
                     ts_size,
@@ -290,7 +290,7 @@ pub trait DAS<B: EcBackend> {
 
             // Compute proofs sequentially
             if let Some(proofs) = proofs {
-                let result = compute_fk20_proofs::<FIELD_ELEMENTS_PER_CELL, B>(
+                let result = compute_fk20_proofs::<B>(
                     cell_size,
                     &poly_monomial,
                     ts_size,
