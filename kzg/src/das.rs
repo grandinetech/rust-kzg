@@ -268,12 +268,12 @@ pub trait DAS<B: EcBackend> {
 
                 proofs
                     .par_iter_mut()
-                    .zip(fk20_proofs.into_par_iter()) // Consumes fk20_proofs
+                    .zip(fk20_proofs.into_par_iter())
                     .for_each(|(proof, result_proof)| {
-                        *proof = result_proof; // Move ownership directly
+                        *proof = result_proof;
                     });
 
-                reverse_bit_order(proofs)?;
+                reverse_bit_order(&mut proofs[..])?;
             }
         }
 
