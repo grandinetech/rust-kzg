@@ -1,5 +1,6 @@
-use core::fmt::Debug;
 use core::mem::size_of;
+use core::{fmt::Debug, hash::Hash};
+use hashbrown::HashMap;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -29,7 +30,9 @@ pub trait EcBackend {
     type G1Affine: G1Affine<Self::G1, Self::G1Fp>;
     type G1: G1
         + G1LinComb<Self::Fr, Self::G1Fp, Self::G1Affine>
-        + PairingVerify<Self::G1, Self::G2>;
+        + PairingVerify<Self::G1, Self::G2>
+        + Eq
+        + Hash;
     type G2: G2;
     type Poly: Poly<Self::Fr>;
     type FFTSettings: FFTSettings<Self::Fr> + FFTFr<Self::Fr> + FFTG1<Self::G1>;
@@ -44,36 +47,29 @@ pub trait EcBackend {
     >;
 }
 
-fn deduplicate_commitments<TG1: PartialEq + Clone>(
-    commitments: &mut [TG1],
-    indicies: &mut [usize],
-    count: &mut usize,
-) {
-    if *count == 0 {
-        return;
-    }
+/// Deduplicates a vector and creates a mapping of original indices to deduplicated indices.
+///
+/// This function is taken from https://github.com/crate-crypto/rust-eth-kzg/blob/63d469ce1c98a9898a0d8cd717aa3ebe46ace227/eip7594/src/verifier.rs#L43-L68
+fn deduplicate_with_indices<T: Eq + core::hash::Hash + Clone>(input: &[T]) -> (Vec<T>, Vec<usize>) {
+    let mut unique_items = Vec::new();
+    let mut index_map = HashMap::new();
+    let mut indices = Vec::with_capacity(input.len());
 
-    indicies[0] = 0;
-    let mut new_count = 1;
-
-    for i in 1..*count {
-        let mut exist = false;
-        for j in 0..new_count {
-            if commitments[i] == commitments[j] {
-                indicies[i] = j;
-                exist = true;
-                break;
+    for item in input {
+        let index = match index_map.get(&item) {
+            Some(&index) => index,
+            None => {
+                let new_index = unique_items.len();
+                unique_items.push(item.clone());
+                index_map.insert(item, new_index);
+                new_index
             }
-        }
-
-        if !exist {
-            commitments[new_count] = commitments[i].clone();
-            indicies[i] = new_count;
-            new_count += 1;
-        }
+        };
+        indices.push(index);
     }
-}
 
+    (unique_items, indices)
+}
 /**
  * This is a precomputed map of cell index to reverse-bits-limited cell index.
  *
@@ -273,14 +269,7 @@ pub trait DAS<B: EcBackend> {
             return Err("Proof is not valid".to_string());
         }
 
-        let mut new_count = commitments.len();
-        let mut unique_commitments = commitments.to_vec();
-        let mut commitment_indices = vec![0usize; cell_count];
-        deduplicate_commitments(
-            &mut unique_commitments,
-            &mut commitment_indices,
-            &mut new_count,
-        );
+        let (unique_commitments, commitment_indices) = deduplicate_with_indices(commitments);
 
         if cfg_iter!(unique_commitments).any(|commitment| !commitment.is_valid()) {
             return Err("Commitment is not valid".to_string());
@@ -288,11 +277,9 @@ pub trait DAS<B: EcBackend> {
 
         let fft_settings = settings.get_fft_settings();
 
-        let unique_commitments = &unique_commitments[0..new_count];
-
         let r_powers = compute_r_powers_for_verify_cell_kzg_proof_batch::<B>(
             cell_size,
-            unique_commitments,
+            &unique_commitments,
             &commitment_indices,
             cell_indices,
             cells,
@@ -302,7 +289,7 @@ pub trait DAS<B: EcBackend> {
         let proof_lincomb = B::G1::g1_lincomb(proofs, &r_powers, cell_count, None);
 
         let final_g1_sum = compute_weighted_sum_of_commitments::<B>(
-            unique_commitments,
+            &unique_commitments,
             &commitment_indices,
             &r_powers,
         );
