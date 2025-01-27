@@ -34,6 +34,8 @@ jobs:
         uses: jiro4989/setup-nim-action@v2
         with:
           nim-version: '2.0.2'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          parent-nim-install-directory: ${{ runner.temp }}
 
       # Install constantine backend deps
       - name: "constantine - install deps"
