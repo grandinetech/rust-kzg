@@ -232,7 +232,7 @@ impl KzgFr for ArkFr {
 }
 
 #[repr(C)]
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct ArkG1(pub GroupProjective<g1::Parameters>);
 
 impl ArkG1 {
