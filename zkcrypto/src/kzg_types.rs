@@ -23,6 +23,7 @@ use kzg::{
     FFTFr, FFTSettings, Fr as KzgFr, G1Fp, G1GetFp, G1LinComb, G1Mul, G1ProjAddAffine, G2Mul,
     KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
 };
+use std::hash::Hash;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 use std::sync::Arc;
 
@@ -363,6 +364,14 @@ impl G1Fp for ZFp {
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ZG1 {
     pub proj: G1Projective,
+}
+
+impl Hash for ZG1 {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.proj.x.0.hash(state);
+        self.proj.y.0.hash(state);
+        self.proj.z.0.hash(state);
+    }
 }
 
 impl ZG1 {
