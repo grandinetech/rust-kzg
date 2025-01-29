@@ -1,6 +1,6 @@
 use core::mem::size_of;
 use core::{fmt::Debug, hash::Hash};
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -131,26 +131,24 @@ pub trait DAS<B: EcBackend> {
             );
         }
 
-        for cell_index in cell_indices {
-            if *cell_index >= (2 * ts_len) / cell_size {
-                return Err("Cell index cannot be larger than CELLS_PER_EXT_BLOB".to_string());
-            }
-        }
-
         for fr in recovered_cells.iter_mut() {
             *fr = B::Fr::null();
         }
 
-        for i in 0..cell_indices.len() {
-            let index = cell_indices[i];
-
-            for j in 0..cell_size {
-                let elem_index = index * cell_size + j;
-                if !recovered_cells[elem_index].is_null() {
-                    return Err("Invalid output cell".to_string());
-                }
-                recovered_cells[elem_index] = cells[i * cell_size + j].clone();
+        // Trick to use HashSet, to check for duplicate commitments, is taken from rust-eth-kzg:
+        // https://github.com/crate-crypto/rust-eth-kzg/blob/63d469ce1c98a9898a0d8cd717aa3ebe46ace227/eip7594/src/recovery.rs#L64-L76
+        let mut provided_indices = HashSet::new();
+        for (i, &cell_index) in cell_indices.iter().enumerate() {
+            if cell_index >= (2 * ts_len) / cell_size {
+                return Err("Cell index cannot be larger than CELLS_PER_EXT_BLOB".to_string());
             }
+
+            if !provided_indices.insert(cell_index) {
+                return Err("Duplicate cell indices provided".to_string());
+            }
+
+            recovered_cells[cell_index * cell_size..(cell_index + 1) * cell_size]
+                .clone_from_slice(&cells[i * cell_size..(i + 1) * cell_size]);
         }
 
         let fft_settings = kzg_settings.get_fft_settings();
@@ -159,7 +157,7 @@ pub trait DAS<B: EcBackend> {
             recover_cells::<B>(
                 cell_size,
                 recovered_cells,
-                cell_indices,
+                &provided_indices,
                 fft_settings,
                 2 * ts_len,
             )?;
@@ -424,7 +422,7 @@ fn vanishing_polynomial_for_missing_cells<B: EcBackend>(
 fn recover_cells<B: EcBackend>(
     cell_size: usize,
     output: &mut [B::Fr],
-    cell_indicies: &[usize],
+    cell_indicies: &HashSet<usize>,
     fft_settings: &B::FFTSettings,
     field_elements_per_ext_blob: usize,
 ) -> Result<(), String> {
