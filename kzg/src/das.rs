@@ -468,11 +468,12 @@ fn recover_cells<B: EcBackend>(
     let mut extended_evaluations_over_coset =
         coset_fft::<B>(extended_evaluation_times_zero_coeffs, fft_settings)?;
 
-    let vanishing_poly_over_coset = coset_fft::<B>(vanishing_poly_coeff, fft_settings)?;
+    let mut vanishing_poly_over_coset = coset_fft::<B>(vanishing_poly_coeff, fft_settings)?;
+    batch_inverse::<B>(&mut vanishing_poly_over_coset);
 
     for i in 0..field_elements_per_ext_blob {
         extended_evaluations_over_coset[i] =
-            extended_evaluations_over_coset[i].div(&vanishing_poly_over_coset[i])?;
+            extended_evaluations_over_coset[i].mul(&vanishing_poly_over_coset[i]);
     }
 
     let reconstructed_poly_coeff = coset_ifft::<B>(&extended_evaluations_over_coset, fft_settings)?;
@@ -843,6 +844,30 @@ fn computed_weighted_sum_of_proofs<B: EcBackend>(
         num_cells,
         None,
     ))
+}
+
+/// This function is taken from rust-eth-kzg:
+/// https://github.com/crate-crypto/rust-eth-kzg/blob/63d469ce1c98a9898a0d8cd717aa3ebe46ace227/cryptography/bls12_381/src/batch_inversion.rs#L4-L50
+fn batch_inverse<B: EcBackend>(v: &mut [B::Fr]) {
+    let mut scratch_pad = Vec::with_capacity(v.len());
+
+    let mut tmp = B::Fr::one();
+    for f in v.iter() {
+        tmp = tmp.mul(f);
+        scratch_pad.push(tmp.clone());
+    }
+
+    tmp = tmp.inverse();
+
+    for (f, s) in v
+        .iter_mut()
+        .rev()
+        .zip(scratch_pad.iter().rev().skip(1).chain(Some(&B::Fr::one())))
+    {
+        let new_tmp = tmp.mul(f);
+        *f = tmp.mul(s);
+        tmp = new_tmp;
+    }
 }
 
 /*
