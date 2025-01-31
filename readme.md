@@ -4,13 +4,13 @@ The goal is to create a parallelized KZG library for Ethereum Data Sharding (aka
 
 # Backend ECC libraries
 
-Support for multiple backend ECC libraries is implemented via [Traits](https://github.com/sifraitech/kzg/blob/main/kzg/src/lib.rs). Such an approach allows to easy change backend ECC libraries as all the crates shared the same interface (see [benchmarks](https://github.com/sifraitech/kzg/tree/main/kzg-bench/src/benches) and [tests](https://github.com/sifraitech/kzg/tree/main/kzg-bench/src/tests)). The current state of supported backend ECC libraries:
+Support for multiple backend ECC libraries is implemented via [Traits](https://github.com/grandinetech/kzg/blob/main/kzg/src/lib.rs). Such an approach allows to easy change backend ECC libraries as all the crates shared the same interface (see [benchmarks](https://github.com/grandinetech/kzg/tree/main/kzg-bench/src/benches) and [tests](https://github.com/grandinetech/kzg/tree/main/kzg-bench/src/tests)). The current state of supported backend ECC libraries:
 
 | Backend ECC | FFT/DAS | EIP-4844 (non-parallel) | EIP-4844 (parallel) | [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) drop-in replacement | GPU acceleration |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | [blst](https://github.com/supranational/blst) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: via [sppark](https://github.com/supranational/sppark) |
 | [constantine](https://github.com/mratsim/constantine) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
-| [mcl](https://github.com/herumi/mcl) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: | :x: |
+| [mcl](https://github.com/herumi/mcl) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | [arkworks5](https://github.com/arkworks-rs/algebra/tree/v0.5.0) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | [arkworks4](https://github.com/arkworks-rs/algebra/tree/v0.4.2) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
 | [arkworks3](https://github.com/arkworks-rs/algebra/tree/v0.3.0) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: via [sppark](https://github.com/supranational/sppark) and [wlc_msm](https://github.com/dunkirkturbo/wlc_msm/tree/master) | 
@@ -19,28 +19,32 @@ Support for multiple backend ECC libraries is implemented via [Traits](https://g
 
 # Drop-in replacement for c-kzg-4844
 
-We aim to expose [an identical C interface](https://github.com/grandinetech/rust-kzg/blob/ca976958e270cd24248a5ab0355b03702f7ae142/blst/src/eip_4844.rs#L53-L412) compared to [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) so that `rust-kzg` could work as a drop-in replacement for c-kzg-4844. If you already use [c-kzg-4844 bindings](https://github.com/ethereum/c-kzg-4844/tree/main/bindings) you can try faster paralellized `rust-kzg` without any changes to your code-base by simply replacing the binary. Instructions for C#, Java, Nodejs, Python, Rust bindings are available [here](https://github.com/sifraitech/rust-kzg/blob/main/blst/run-c-kzg-4844-tests.sh).
+We aim to expose [an identical C interface](https://github.com/grandinetech/rust-kzg/blob/ca976958e270cd24248a5ab0355b03702f7ae142/blst/src/eip_4844.rs#L53-L412) compared to [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) so that `rust-kzg` could work as a drop-in replacement for c-kzg-4844. If you already use [c-kzg-4844 bindings](https://github.com/ethereum/c-kzg-4844/tree/main/bindings) you can try faster paralellized `rust-kzg` without any changes to your code-base by simply replacing the binary. Instructions for C#, Java, Nodejs, Python, Rust bindings are available [here](https://github.com/grandinetech/rust-kzg/blob/main/blst/run-c-kzg-4844-tests.sh).
 
 By default, C bindings are disabled. To enable them, compile static library with feature flag `c_bindings`:
 ```
 cargo rustc -p rust-kzg-blst --release --crate-type=staticlib --features=c_bindings
 ```
 
+# Multi-scalar multiplication
+
+Multiple multi-scalar multiplication algorithms are [implemented](https://github.com/grandinetech/rust-kzg/tree/main/kzg/src/msm) in the library. Most of them are ECC backend agnostic and have both sequential and parallel versions.
+
 # Example
 
-The best place to look for examples is [tests](https://github.com/sifraitech/kzg/tree/main/kzg-bench/src/tests) directory.
+The best place to look for examples is [tests](https://github.com/grandinetech/kzg/tree/main/kzg-bench/src/tests) directory.
 
 Currently, the ECC backend is set by pointing Cargo to the corresponding crate:
 
 ```
 [dependencies]
-kzg = { git = "https://github.com/sifraitech/rust-kzg.git", package = "rust-kzg-blst" }
-kzg_traits = { git = "https://github.com/sifraitech/rust-kzg.git", package = "kzg" }
+kzg = { git = "https://github.com/grandinetech/rust-kzg.git", package = "rust-kzg-blst" }
+kzg_traits = { git = "https://github.com/grandinetech/rust-kzg.git", package = "kzg" }
 ```
 
 # Benchmarks
 
-Benchmarks [run](https://github.com/sifraitech/kzg/blob/main/.github/workflows/benchmarks.yml) on every Github build. However, it's best to run them on a dedicated machine. [Tautvydas](https://github.com/belijzajac) rendered nice charts for results he got on cloud servers:
+Benchmarks [run](https://github.com/grandinetech/kzg/blob/main/.github/workflows/benchmarks.yml) on every Github build. However, it's best to run them on a dedicated machine. [Tautvydas](https://github.com/belijzajac) rendered nice charts for results he got on cloud servers:
 
 ## Blob to KZG commitment
 
@@ -125,4 +129,4 @@ GPU-accelerated multi-scalar multiplication is available for `arkworks3` and `bl
 
 # Authors
 
-The project is mainly developed by a group of students at the Blockchain Technologies course led by [Saulius Grigaitis](https://twitter.com/sauliuseth). The project is heavily based on the [go-kzg](https://github.com/protolambda/go-kzg), [c-kzg](https://github.com/benjaminion/c-kzg), and other libraries.
+The project is developed [numerous contributors](https://github.com/grandinetech/rust-kzg/graphs/contributors) led by [Saulius Grigaitis](https://twitter.com/sauliuseth). The project is heavily based on the [c-kzg-4844](https://github.com/ethereum/c-kzg-4844), [c-kzg](https://github.com/benjaminion/c-kzg), [go-kzg](https://github.com/protolambda/go-kzg), and other libraries.
