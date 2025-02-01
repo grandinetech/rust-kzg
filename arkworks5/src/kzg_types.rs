@@ -921,6 +921,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for LKZGSettings {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>(),
+            #[allow(static_mut_refs)]
             precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
             cell_size: eth::FIELD_ELEMENTS_PER_CELL,
         })

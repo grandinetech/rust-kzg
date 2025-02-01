@@ -51,7 +51,7 @@ impl<
         max_collision_cnt: u32, // default: 128
     ) -> Self {
         // TODO: Check if these can be turned into consts
-        let num_windows = (scalar_bits + window_bits - 1) / window_bits;
+        let num_windows = scalar_bits.div_ceil(window_bits);
         let batch_size = core::cmp::max(8192, max_batch_cnt);
         let bucket_bits = window_bits - 1; // half buckets needed because of signed-bucket-index
         let bucket_size = num_windows << bucket_bits;

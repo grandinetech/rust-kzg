@@ -118,7 +118,7 @@ pub fn bench_eip_7594<B: EcBackend>(
 
     let mut group = c.benchmark_group("recover_cells_and_kzg_proofs (missing)");
     for i in 1..=5 {
-        let modulo = (eth::CELLS_PER_EXT_BLOB + i - 1) / i;
+        let modulo = eth::CELLS_PER_EXT_BLOB.div_ceil(i);
         let (cell_indices, partial_cells) =
             get_partial_cells(&blob_cells[0], eth::FIELD_ELEMENTS_PER_CELL, modulo);
 

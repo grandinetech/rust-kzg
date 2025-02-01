@@ -17,6 +17,8 @@ static mut UNSCALE_FACTOR_POWERS: Vec<BlstFr> = Vec::new();
 pub fn scale_poly(p: &mut PolyData) {
     let scale_factor = BlstFr::from_u64(SCALE_FACTOR);
     let inv_factor = scale_factor.inverse();
+
+    #[allow(static_mut_refs)]
     #[cfg(feature = "parallel")]
     {
         let optim = next_pow_of_2(p.len() - 1);
@@ -56,6 +58,8 @@ pub fn scale_poly(p: &mut PolyData) {
 #[allow(clippy::needless_range_loop)]
 pub fn unscale_poly(p: &mut PolyData) {
     let scale_factor = BlstFr::from_u64(SCALE_FACTOR);
+
+    #[allow(static_mut_refs)]
     #[cfg(feature = "parallel")]
     {
         unsafe {

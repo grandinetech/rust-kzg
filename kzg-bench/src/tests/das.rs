@@ -32,7 +32,6 @@ pub fn das_extension_test_known<TFr: Fr, TFFTSettings: FFTSettings<TFr> + DASExt
 
 /// Check that DAS extension produces correct odds.
 /// Verify this by checking that the second half of the inverse FFT coefficients of odd-even interpolated vector results in zeros.
-
 pub fn das_extension_test_random<
     TFr: Fr,
     TFFTSettings: FFTSettings<TFr> + DASExtension<TFr> + FFTFr<TFr>,

@@ -165,6 +165,7 @@ pub unsafe extern "C" fn load_trusted_setup(
 
     let c_settings = kzg_settings_to_c(&settings);
 
+    #[allow(static_mut_refs)]
     PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
 
     *out = c_settings;
@@ -213,6 +214,7 @@ pub unsafe extern "C" fn load_trusted_setup_file(
 
     let c_settings = kzg_settings_to_c(&settings);
 
+    #[allow(static_mut_refs)]
     PRECOMPUTATION_TABLES.save_precomputation(settings.precomputation.take(), &c_settings);
 
     *out = c_settings;
@@ -264,6 +266,7 @@ pub unsafe extern "C" fn free_trusted_setup(s: *mut CKZGSettings) {
         return;
     }
 
+    #[allow(static_mut_refs)]
     PRECOMPUTATION_TABLES.remove_precomputation(&*s);
 
     if !(*s).roots_of_unity.is_null() {

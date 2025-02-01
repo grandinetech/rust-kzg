@@ -664,7 +664,7 @@ fn compute_weighted_sum_of_commitments<B: EcBackend>(
     #[cfg(feature = "parallel")]
     {
         let num_threads = rayon::current_num_threads();
-        let chunk_size = (r_powers.len() + num_threads - 1) / num_threads;
+        let chunk_size = r_powers.len().div_ceil(num_threads);
 
         let intermediate_weights: Vec<_> = r_powers
             .par_chunks(chunk_size)

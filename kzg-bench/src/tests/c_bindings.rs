@@ -1,10 +1,4 @@
-use std::{
-    ffi::{CStr, CString},
-    fs::File,
-    io::Read,
-    path::PathBuf,
-    ptr::null_mut,
-};
+use std::{ffi::CString, fs::File, io::Read, path::PathBuf, ptr::null_mut};
 
 use kzg::eth::c_bindings::{Blob, Bytes48, CKZGSettings, KZGCommitment, KZGProof};
 use kzg::{
@@ -54,12 +48,7 @@ fn get_ckzg_settings(
     };
 
     let trusted_setup_path = CString::new(get_trusted_setup_path()).unwrap();
-    let file = unsafe {
-        libc::fopen(
-            trusted_setup_path.as_ptr(),
-            CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
-        )
-    };
+    let file = unsafe { libc::fopen(trusted_setup_path.as_ptr(), c"r".as_ptr()) };
     assert!(!file.is_null());
 
     let out = unsafe { load_trusted_setup_file(&mut c_settings, file) };
@@ -408,10 +397,7 @@ pub fn load_trusted_setup_file_invalid_format_test(
         let file_path = get_trusted_setup_fixture_path(&fixture.name);
         let file = unsafe {
             let c_file_path = CString::new(file_path.clone()).unwrap();
-            libc::fopen(
-                c_file_path.as_ptr(),
-                CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
-            )
+            libc::fopen(c_file_path.as_ptr(), c"r".as_ptr())
         };
 
         assert!(!file.is_null());
@@ -469,10 +455,7 @@ pub fn load_trusted_setup_file_valid_format_test(
         let file_path = get_trusted_setup_fixture_path(&fixture.name);
         let file = unsafe {
             let c_file_path = CString::new(file_path.clone()).unwrap();
-            libc::fopen(
-                c_file_path.as_ptr(),
-                CStr::from_bytes_with_nul_unchecked(b"r\0").as_ptr(),
-            )
+            libc::fopen(c_file_path.as_ptr(), c"r".as_ptr())
         };
 
         assert!(!file.is_null());
