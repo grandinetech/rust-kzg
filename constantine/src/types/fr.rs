@@ -128,7 +128,7 @@ impl Fr for CtFr {
                     let _ = constantine::ctt_big255_unmarshalBE(
                         &mut scalar,
                         bytes.as_ptr(),
-                        BYTES_PER_FIELD_ELEMENT as isize,
+                        BYTES_PER_FIELD_ELEMENT,
                     );
                     constantine::ctt_bls12_381_fr_from_big255(&mut ret.0, &scalar);
                 }

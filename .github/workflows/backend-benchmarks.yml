@@ -33,6 +33,9 @@ jobs:
         exclude:
           - os: windows-latest
             backend: mcl
+            # FIXME: enable macos, when fixes are merged into constantine-public-sys branch
+          - os: macos-latest
+            backend: constantine
             
     steps:
       - uses: actions/checkout@v2

@@ -1,3 +1,4 @@
+use core::{marker::PhantomPinned, pin::Pin, ptr::NonNull};
 use std::path::Path;
 
 use crate::types::{
@@ -16,36 +17,178 @@ use kzg::KZGSettings;
 
 use super::mixed_eip_4844::verify_kzg_proof_mixed;
 
-pub struct CttContext {
-    pub ctx: CttEthKzgContext,
-    pub pool: CttThreadpool,
+struct CttContextInner<'a> {
+    ctx: Option<CttEthKzgContext<'a>>,
+    pool: Option<CttThreadpool>,
+    _pin: PhantomPinned,
 }
 
-impl CttContext {
-    pub fn new(path: &Path) -> Result<Self, String> {
-        let res = CttEthKzgContext::load_trusted_setup(path);
-        match res {
-            Ok(constantine_context) => Ok(Self {
-                ctx: constantine_context,
-                pool: CttThreadpool::new(get_thr_count()),
-            }),
-            Err(x) => Err(x.to_string()),
-        }
+pub struct CttContext<'a>(Pin<Box<CttContextInner<'a>>>);
+
+impl CttContext<'_> {
+    pub fn new(path: &Path) -> Result<Self, ctt_eth_trusted_setup_status> {
+        let context = CttEthKzgContext::builder().load_trusted_setup(path)?;
+
+        #[cfg(feature = "parallel")]
+        let this = {
+            let mut this = Box::new(CttContextInner {
+                pool: Some(CttThreadpool::new(
+                    constantine_core::hardware::get_num_threads_os(),
+                )),
+                ctx: None,
+                _pin: PhantomPinned,
+            });
+
+            this.ctx = Some(
+                context
+                    .set_threadpool(unsafe { NonNull::from(this.pool.as_ref().unwrap()).as_ref() })
+                    .build()?,
+            );
+
+            this
+        };
+
+        #[cfg(not(feature = "parallel"))]
+        let this = {
+            Box::new(CttContextInner {
+                pool: None,
+                ctx: Some(context.build()?),
+                _pin: PhantomPinned,
+            })
+        };
+
+        let pin = Box::into_pin(this);
+
+        Ok(CttContext(pin))
     }
-}
 
-fn get_thr_count() -> usize {
-    #[cfg(feature = "parallel")]
-    return constantine_core::hardware::get_num_threads_os();
+    pub fn blob_to_kzg_commitment(
+        &self,
+        blob: &[u8; 4096 * 32],
+    ) -> Result<[u8; 48], ctt_eth_kzg_status> {
+        #[cfg(feature = "parallel")]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .blob_to_kzg_commitment_parallel(blob);
 
-    #[cfg(not(feature = "parallel"))]
-    return 1;
+        #[cfg(not(feature = "parallel"))]
+        return self.0.ctx.as_ref().unwrap().blob_to_kzg_commitment(blob);
+    }
+
+    pub fn compute_kzg_proof(
+        &self,
+        blob: &[u8; 4096 * 32],
+        z_challenge: &[u8; 32],
+    ) -> Result<([u8; 48], [u8; 32]), ctt_eth_kzg_status> {
+        #[cfg(feature = "parallel")]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .compute_kzg_proof_parallel(blob, z_challenge);
+
+        #[cfg(not(feature = "parallel"))]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .compute_kzg_proof(blob, z_challenge);
+    }
+
+    pub fn compute_blob_kzg_proof(
+        &self,
+        blob: &[u8; 4096 * 32],
+        commitment: &[u8; 48],
+    ) -> Result<[u8; 48], ctt_eth_kzg_status> {
+        #[cfg(feature = "parallel")]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .compute_blob_kzg_proof_parallel(blob, commitment);
+
+        #[cfg(not(feature = "parallel"))]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .compute_blob_kzg_proof(blob, commitment);
+    }
+
+    pub fn verify_kzg_proof(
+        &self,
+        commitment: &[u8; 48],
+        z_challenge: &[u8; 32],
+        y_eval_at_challenge: &[u8; 32],
+        proof: &[u8; 48],
+    ) -> Result<bool, ctt_eth_kzg_status> {
+        self.0.ctx.as_ref().unwrap().verify_kzg_proof(
+            commitment,
+            z_challenge,
+            y_eval_at_challenge,
+            proof,
+        )
+    }
+
+    pub fn verify_blob_kzg_proof(
+        &self,
+        blob: &[u8; 4096 * 32],
+        commitment: &[u8; 48],
+        proof: &[u8; 48],
+    ) -> Result<bool, ctt_eth_kzg_status> {
+        #[cfg(feature = "parallel")]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .verify_blob_kzg_proof_parallel(blob, commitment, proof);
+
+        #[cfg(not(feature = "parallel"))]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .verify_blob_kzg_proof(blob, commitment, proof);
+    }
+
+    pub fn verify_blob_kzg_proof_batch(
+        &self,
+        blobs: &[[u8; 4096 * 32]],
+        commitments: &[[u8; 48]],
+        proofs: &[[u8; 48]],
+        secure_random_bytes: &[u8; 32],
+    ) -> Result<bool, ctt_eth_kzg_status> {
+        #[cfg(feature = "parallel")]
+        return self
+            .0
+            .ctx
+            .as_ref()
+            .unwrap()
+            .verify_blob_kzg_proof_batch_parallel(blobs, commitments, proofs, secure_random_bytes);
+
+        #[cfg(not(feature = "parallel"))]
+        return self.0.ctx.as_ref().unwrap().verify_blob_kzg_proof_batch(
+            blobs,
+            commitments,
+            proofs,
+            secure_random_bytes,
+        );
+    }
 }
 
 // Constantine requires loading from path + doesn't expose underlying secrets, but sometimes required for tests
 #[allow(clippy::large_enum_variant)]
-pub enum MixedKzgSettings {
-    Constantine(CttContext),
+pub enum MixedKzgSettings<'a> {
+    Constantine(CttContext<'a>),
     Generic(GenericContext),
 }
 
@@ -71,7 +214,7 @@ impl LocalToStr for ctt_eth_kzg_status {
     }
 }
 
-impl MixedKzgSettings {
+impl MixedKzgSettings<'_> {
     pub fn new(
         g1_monomial: &[CtG1],
         g1_lagrange_brp: &[CtG1],
@@ -93,24 +236,19 @@ impl MixedKzgSettings {
     }
 
     pub fn new_from_path(path: &Path) -> Result<Self, String> {
-        let res = CttEthKzgContext::load_trusted_setup(path);
-        match res {
-            Ok(constantine_context) => Ok(Self::Constantine(CttContext {
-                ctx: constantine_context,
-                pool: CttThreadpool::new(get_thr_count()),
-            })),
-            Err(x) => Err(x.to_string()),
-        }
+        Ok(Self::Constantine(
+            CttContext::new(path).map_err(|e| e.to_string())?,
+        ))
     }
 }
 
-impl Default for MixedKzgSettings {
+impl Default for MixedKzgSettings<'_> {
     fn default() -> Self {
         Self::Generic(GenericContext::default())
     }
 }
 
-impl Clone for MixedKzgSettings {
+impl Clone for MixedKzgSettings<'_> {
     fn clone(&self) -> Self {
         match self {
             Self::Constantine(_) => panic!("Cannot clone constantine context"),
@@ -120,7 +258,9 @@ impl Clone for MixedKzgSettings {
 }
 
 // Allow using MixedKzgSettings as KZGSettings stand-in
-impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for MixedKzgSettings {
+impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine>
+    for MixedKzgSettings<'_>
+{
     fn new(
         g1_monomial: &[CtG1],
         g1_lagrange_brp: &[CtG1],

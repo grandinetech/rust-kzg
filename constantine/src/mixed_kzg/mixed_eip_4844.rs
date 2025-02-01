@@ -40,7 +40,9 @@ fn blob_fr_to_byte(blob: &[CtFr]) -> Result<[u8; BYTES_PER_BLOB], String> {
     // unsafe { Ok(std::mem::transmute(blob.as_ptr() as *const [u8; BYTES_PER_BLOB])) }
 }
 
-pub fn load_trusted_setup_filename_mixed(filepath: &str) -> Result<MixedKzgSettings, String> {
+pub fn load_trusted_setup_filename_mixed(
+    filepath: &str,
+) -> Result<MixedKzgSettings<'static>, String> {
     MixedKzgSettings::new_from_path(Path::new(filepath))
 }
 
@@ -52,19 +54,10 @@ pub fn blob_to_kzg_commitment_mixed(
         MixedKzgSettings::Constantine(ctt_context) => {
             let blob_bytes = blob_fr_to_byte(blob)?;
 
-            #[cfg(feature = "parallel")]
-            let res = ctt_context
-                .ctx
-                .blob_to_kzg_commitment_parallel(&ctt_context.pool, &blob_bytes);
-
-            #[cfg(not(feature = "parallel"))]
-            let res = ctt_context.ctx.blob_to_kzg_commitment(&blob_bytes);
-
-            match res {
-                Ok(commitment) => CtG1::from_bytes(&commitment),
-                Err(x) => Err(x.to_string()),
-            }
-            // return blob_to_kzg_commitment_rust(blob, ctt_context);
+            ctt_context
+                .blob_to_kzg_commitment(&blob_bytes)
+                .map_err(|e| e.to_string())
+                .and_then(|b| CtG1::from_bytes(&b))
         }
         MixedKzgSettings::Generic(generic_context) => {
             blob_to_kzg_commitment_rust(blob, generic_context)
@@ -81,22 +74,10 @@ pub fn compute_kzg_proof_mixed(
         MixedKzgSettings::Constantine(ctt_context) => {
             let blob_bytes = blob_fr_to_byte(blob)?;
 
-            #[cfg(feature = "parallel")]
-            let res = ctt_context.ctx.compute_kzg_proof_parallel(
-                &ctt_context.pool,
-                &blob_bytes,
-                &z.to_bytes(),
-            );
-
-            #[cfg(not(feature = "parallel"))]
-            let res = ctt_context
-                .ctx
-                .compute_kzg_proof(&blob_bytes, &z.to_bytes());
-
-            match res {
-                Ok((proof, y)) => Ok((CtG1::from_bytes(&proof)?, CtFr::from_bytes(&y)?)),
-                Err(x) => Err(x.to_string()),
-            }
+            ctt_context
+                .compute_kzg_proof(&blob_bytes, &z.to_bytes())
+                .map_err(|e| e.to_string())
+                .and_then(|(proof, y)| Ok((CtG1::from_bytes(&proof)?, CtFr::from_bytes(&y)?)))
         }
         MixedKzgSettings::Generic(generic_context) => {
             compute_kzg_proof_rust(blob, z, generic_context)
@@ -113,22 +94,10 @@ pub fn compute_blob_kzg_proof_mixed(
         MixedKzgSettings::Constantine(ctt_context) => {
             let blob_bytes = blob_fr_to_byte(blob)?;
 
-            #[cfg(feature = "parallel")]
-            let res = ctt_context.ctx.compute_blob_kzg_proof_parallel(
-                &ctt_context.pool,
-                &blob_bytes,
-                &commitment.to_bytes(),
-            );
-
-            #[cfg(not(feature = "parallel"))]
-            let res = ctt_context
-                .ctx
-                .compute_blob_kzg_proof(&blob_bytes, &commitment.to_bytes());
-
-            match res {
-                Ok(proof) => CtG1::from_bytes(&proof),
-                Err(x) => Err(x.to_string()),
-            }
+            ctt_context
+                .compute_blob_kzg_proof(&blob_bytes, &commitment.to_bytes())
+                .map_err(|e| e.to_string())
+                .and_then(|proof| CtG1::from_bytes(&proof))
         }
         MixedKzgSettings::Generic(generic_context) => {
             compute_blob_kzg_proof_rust(blob, commitment, generic_context)
@@ -144,18 +113,14 @@ pub fn verify_kzg_proof_mixed(
     s: &MixedKzgSettings,
 ) -> Result<bool, String> {
     match s {
-        MixedKzgSettings::Constantine(ctt_context) => {
-            let res = ctt_context.ctx.verify_kzg_proof(
+        MixedKzgSettings::Constantine(ctt_context) => ctt_context
+            .verify_kzg_proof(
                 &commitment.to_bytes(),
                 &z.to_bytes(),
                 &y.to_bytes(),
                 &proof.to_bytes(),
-            );
-            match res {
-                Ok(x) => Ok(x),
-                Err(x) => Err(x.to_string()),
-            }
-        }
+            )
+            .map_err(|e| e.to_string()),
         MixedKzgSettings::Generic(generic_context) => {
             verify_kzg_proof_rust(commitment, z, y, proof, generic_context)
         }
@@ -172,25 +137,9 @@ pub fn verify_blob_kzg_proof_mixed(
         MixedKzgSettings::Constantine(ctt_context) => {
             let blob_bytes = blob_fr_to_byte(blob)?;
 
-            #[cfg(feature = "parallel")]
-            let res = ctt_context.ctx.verify_blob_kzg_proof_parallel(
-                &ctt_context.pool,
-                &blob_bytes,
-                &commitment_g1.to_bytes(),
-                &proof_g1.to_bytes(),
-            );
-
-            #[cfg(not(feature = "parallel"))]
-            let res = ctt_context.ctx.verify_blob_kzg_proof(
-                &blob_bytes,
-                &commitment_g1.to_bytes(),
-                &proof_g1.to_bytes(),
-            );
-
-            match res {
-                Ok(x) => Ok(x),
-                Err(x) => Err(x.to_string()),
-            }
+            ctt_context
+                .verify_blob_kzg_proof(&blob_bytes, &commitment_g1.to_bytes(), &proof_g1.to_bytes())
+                .map_err(|e| e.to_string())
         }
         MixedKzgSettings::Generic(generic_context) => {
             verify_blob_kzg_proof_rust(blob, commitment_g1, proof_g1, generic_context)
@@ -220,29 +169,16 @@ pub fn verify_blob_kzg_proof_batch_mixed(
                 .collect::<Vec<_>>();
             let proofs_g1 = proofs_g1.iter().map(|x| x.to_bytes()).collect::<Vec<_>>();
 
-            let rand_thing = [0u8; 32];
+            let rand_thing = rand::random();
 
-            #[cfg(feature = "parallel")]
-            let res = ctt_context.ctx.verify_blob_kzg_proof_batch_parallel(
-                &ctt_context.pool,
-                blobs_storage.as_slice(),
-                commitments.as_slice(),
-                proofs_g1.as_slice(),
-                &rand_thing,
-            );
-
-            #[cfg(not(feature = "parallel"))]
-            let res = ctt_context.ctx.verify_blob_kzg_proof_batch(
-                blobs_storage.as_slice(),
-                commitments.as_slice(),
-                proofs_g1.as_slice(),
-                &rand_thing,
-            );
-
-            match res {
-                Ok(x) => Ok(x),
-                Err(x) => Err(x.to_string()),
-            }
+            ctt_context
+                .verify_blob_kzg_proof_batch(
+                    blobs_storage.as_slice(),
+                    commitments.as_slice(),
+                    proofs_g1.as_slice(),
+                    &rand_thing,
+                )
+                .map_err(|e| e.to_string())
         }
         MixedKzgSettings::Generic(generic_context) => {
             verify_blob_kzg_proof_batch_rust(blobs, commitments_g1, proofs_g1, generic_context)
