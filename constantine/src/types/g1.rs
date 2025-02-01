@@ -162,7 +162,7 @@ impl G1 for CtG1 {
     }
 
     fn is_inf(&self) -> bool {
-        unsafe { constantine::ctt_bls12_381_g1_jac_is_inf(&self.0) != 0 }
+        unsafe { constantine::ctt_bls12_381_g1_jac_is_neutral(&self.0) != 0 }
     }
 
     fn is_valid(&self) -> bool {
@@ -392,7 +392,7 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     }
 
     fn is_infinity(&self) -> bool {
-        unsafe { constantine::ctt_bls12_381_g1_aff_is_inf(&self.0) != 0 }
+        unsafe { constantine::ctt_bls12_381_g1_aff_is_neutral(&self.0) != 0 }
     }
 
     fn x_mut(&mut self) -> &mut CtFp {
