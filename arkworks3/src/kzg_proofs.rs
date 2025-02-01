@@ -53,7 +53,7 @@ pub struct KZGSettings {
     pub cell_size: usize,
 }
 
-impl<'a> TryFrom<&'a CKZGSettings> for KZGSettings {
+impl TryFrom<&CKZGSettings> for KZGSettings {
     type Error = String;
 
     fn try_from(c_settings: &CKZGSettings) -> Result<KZGSettings, String> {
@@ -100,6 +100,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for KZGSettings {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>(),
+            #[allow(static_mut_refs)]
             precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(c_settings) },
             cell_size: eth::FIELD_ELEMENTS_PER_CELL,
         })

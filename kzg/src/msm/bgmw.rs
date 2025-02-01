@@ -54,8 +54,7 @@ const fn get_table_dimensions(window: BgmwWindow) -> (usize, usize) {
         }
     }
 
-    let h =
-        (NBITS + window_width - 1) / window_width + is_zero((NBITS % window_width) as u64) as usize;
+    let h = NBITS.div_ceil(window_width) + is_zero((NBITS % window_width) as u64) as usize;
 
     (window_width, h)
 }
@@ -126,7 +125,7 @@ const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usiz
 
     let mut win = 2;
     while win <= 40 {
-        let ops = (1 << win) + ((((255 + win - 1) / win) + ncpus - 1) / ncpus * npoints) - 2;
+        let ops = (1 << win) + (255usize.div_ceil(win).div_ceil(ncpus) * npoints) - 2;
         if min_ops >= ops {
             min_ops = ops;
             opt = win;
@@ -142,7 +141,7 @@ const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usiz
         let nx = ncpus * mult;
         let wnd = bgmw_window_size(npoints / nx);
 
-        let ops = mult * ((255 + wnd - 1) / wnd) * ((npoints + nx - 1) / nx) + (1 << wnd) - 2;
+        let ops = mult * 255usize.div_ceil(wnd) * npoints.div_ceil(nx) + (1 << wnd) - 2;
 
         if min_ops > ops {
             min_ops = ops;
@@ -153,7 +152,7 @@ const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usiz
         mult += 1;
     }
 
-    (opt_x, (255 + opt - 1) / opt, opt)
+    (opt_x, 255usize.div_ceil(opt), opt)
 }
 
 impl<

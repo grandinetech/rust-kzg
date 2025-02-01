@@ -11,8 +11,8 @@ pub const fn breakdown(window: usize, ncpus: usize) -> (usize, usize, usize) {
         if (window + wnd) > 18 {
             wnd = window - wnd;
         } else {
-            wnd = (NBITS / window + ncpus - 1) / ncpus;
-            if (NBITS / (window + 1) + ncpus - 1) / ncpus < wnd {
+            wnd = (NBITS / window).div_ceil(ncpus);
+            if (NBITS / (window + 1)).div_ceil(ncpus) < wnd {
                 wnd = window + 1;
             } else {
                 wnd = window;

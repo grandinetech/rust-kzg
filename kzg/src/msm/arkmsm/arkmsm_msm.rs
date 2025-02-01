@@ -66,7 +66,7 @@ impl VariableBaseMSM {
         max_batch: u32,
         max_collisions: u32,
     ) -> TG1 {
-        let num_slices: usize = ((G1_SCALAR_SIZE_GLV + window_bits - 1) / window_bits) as usize;
+        let num_slices: usize = G1_SCALAR_SIZE_GLV.div_ceil(window_bits) as usize;
         let mut bucket_msm = BucketMSM::<TG1, TG1Fp, TG1Affine, TProjAddAffine>::new(
             G1_SCALAR_SIZE_GLV,
             window_bits,
@@ -120,7 +120,7 @@ impl VariableBaseMSM {
         max_batch: u32,
         max_collisions: u32,
     ) -> TG1 {
-        let num_slices: usize = ((G1_SCALAR_SIZE + window_bits - 1) / window_bits) as usize;
+        let num_slices: usize = G1_SCALAR_SIZE.div_ceil(window_bits) as usize;
         let mut bucket_msm = BucketMSM::<TG1, TG1Fp, TG1Affine, TProjAddAffine>::new(
             G1_SCALAR_SIZE,
             window_bits,

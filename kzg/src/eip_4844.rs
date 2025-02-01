@@ -956,10 +956,7 @@ pub fn evaluate_polynomial_in_evaluation_form<
     }
 
     tmp = TFr::from_u64(FIELD_ELEMENTS_PER_BLOB as u64);
-    out = match out.div(&tmp) {
-        Ok(value) => value,
-        Err(err) => return Err(err),
-    };
+    out = out.div(&tmp)?;
     tmp = x.pow(FIELD_ELEMENTS_PER_BLOB);
     tmp = tmp.sub(&TFr::one());
     out = out.mul(&tmp);

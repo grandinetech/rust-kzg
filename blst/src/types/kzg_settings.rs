@@ -420,6 +420,7 @@ impl<'a> TryFrom<&'a CKZGSettings> for FsKZGSettings {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>(),
+            #[allow(static_mut_refs)]
             precomputation: unsafe { PRECOMPUTATION_TABLES.get_precomputation(settings) },
             cell_size: eth::FIELD_ELEMENTS_PER_CELL,
         })

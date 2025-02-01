@@ -102,7 +102,7 @@ pub fn reduce_partials_random<
             missing.shuffle(&mut thread_rng());
 
             let missing_per_partial = 63;
-            let partial_count = (missing_count + missing_per_partial - 1) / missing_per_partial;
+            let partial_count = missing_count.div_ceil(missing_per_partial);
 
             let mut idxs = vec![0usize; missing_per_partial];
             let mut partials = Vec::new();
