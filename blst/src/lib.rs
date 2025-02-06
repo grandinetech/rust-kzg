@@ -4,6 +4,7 @@ pub mod consts;
 pub mod data_availability_sampling;
 pub mod eip_4844;
 pub mod eip_7594;
+pub mod eth_kzg_compat;
 pub mod fft_fr;
 pub mod fft_g1;
 pub mod fk20_proofs;
