@@ -16,12 +16,12 @@ edition = "2021"
 rustdoc-args = [ "--html-in-header", "katex-header.html" ]
 
 [dev-dependencies]
-csv = ">= 1.0, < 1.2" # csv 1.2 has MSRV 1.60
+csv = { workspace = true } # csv 1.2 has MSRV 1.60
 criterion = "0.3"
-hex = "0.4"
-rand_xorshift = "0.3"
+hex = { workspace = true }
+rand_xorshift = { workspace = true }
 sha2 = "0.9"
-sha3 = "0.9"
+sha3 = { workspace = true }
 
 [[bench]]
 name = "groups"
@@ -33,35 +33,14 @@ name = "hash_to_curve"
 harness = false
 required-features = ["experimental"]
 
-[dependencies.digest]
-version = "0.9"
-optional = true
-
-[dependencies.ff]
-version = "0.13"
-default-features = false
-
-[dependencies.group]
-version = "0.13"
-default-features = false
-optional = true
-
-[dependencies.pairing]
-version = "0.23"
-optional = true
-
-[dependencies.rand_core]
-version = "0.6"
-default-features = false
-
-[dependencies.subtle]
-version = "2.2.1"
-default-features = false
-
-[dependencies.zeroize]
-version = "1.4"
-default-features = false
-optional = true
+[dependencies]
+digest= { workspace = true, optional = true }
+ff= { workspace = true }
+group= { workspace = true, optional = true }
+pairing= { workspace = true, optional = true }
+rand_core= { workspace = true }
+subtle= { workspace = true }
+zeroize= { workspace = true, optional = true }
 
 [features]
 default = ["groups", "pairings", "alloc", "bits"]

@@ -16,5 +16,48 @@ members = [
     "rust-eth-kzg-benches",
 ]
 
+[workspace.dependencies]
+bls12_381 = { path = "zkcrypto/bls12_381" }
+blst = "0.3.11"
+byteorder = "1.5.0"
+cc = "1.0.70"
+constantine-core = { git = "https://github.com/mratsim/constantine.git", rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" }
+constantine-ethereum-kzg = { git = "https://github.com/mratsim/constantine.git", rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" }
+constantine-sys = { git = "https://github.com/mratsim/constantine.git", rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" }
+csv = ">=1.0, <1.2"
+digest = "0.9"
+ff = { version = "0.13", default-features = false }
+glob = "0.3.1"
+group = { version = "0.13", default-features = false }
+hex = { version = "0.4.3", default-features = false }
+kzg = { path = "kzg", default-features = false }
+kzg-bench = { path = "kzg-bench" }
+libc = { version = "0.2.149", default-features = false }
+mcl_rust = { git = "https://github.com/herumi/mcl-rust.git", rev = "db8e9a639d27fffb167bc48159ef2e3178b347dc" }
+num_cpus = "1.16.0"
+once_cell = { version = "1.18.0", default-features = false }
+pairing = "0.23"
+pathdiff = "0.2.1"
+rand_chacha = "0"
+rand_core = { version = "0.6", default-features = false }
+rand_xorshift = "0.3"
+rayon = "1.10.0"
+rust-kzg-arkworks3-sppark = { version = "0.1.0", path = "arkworks3-sppark" }
+rust-kzg-arkworks3-sppark-wlc = { version = "0.1.0", path = "arkworks3-sppark-wlc" }
+rust-kzg-blst = { path = "blst" }
+rust-kzg-blst-sppark = { version = "0.1.0", path = "blst-sppark" }
+rust_eth_kzg = "0.5.2"
+serde = "1.0"
+serde_yaml = "0.9.17"
+sha3 = "0.9"
+siphasher = { version = "1.0.0", default-features = false }
+smallvec = "1.11.1"
+sppark = "0.1.11"
+sppark_bal = { path = "arkworks3-sppark-wlc/sppark/rust" }
+subtle = { version = "2.5.0", default-features = false }
+threadpool = "1.8.1"
+which = "4.0"
+zeroize = { version = "1.4", default-features = false }
+
 [profile.bench]
 lto = "thin"
