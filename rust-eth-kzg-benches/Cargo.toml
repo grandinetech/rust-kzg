@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rayon = "1.10.0"
-rust_eth_kzg = { version = "0.5.2" }
+rayon = { workspace = true }
+rust_eth_kzg = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
-kzg-bench = { path = "../kzg-bench" }
+kzg-bench = { workspace = true }
 rand = "0.8.5"
 
 [features]

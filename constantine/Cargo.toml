@@ -4,21 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-blst = "0.3.11"
-kzg = { path = "../kzg", default-features = false }
-libc = { version = "0.2.148", default-features = false }
-once_cell = { version = "1.18.0", features = ["critical-section"], default-features = false }
-constantine-ethereum-kzg = { 'git' = 'https://github.com/mratsim/constantine.git', rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" } # branch constantine-public-sys
-constantine-sys = { 'git' = 'https://github.com/mratsim/constantine.git', rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" }  # branch constantine-public-sys
-constantine-core = { 'git' = 'https://github.com/mratsim/constantine.git', rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" }  # branch constantine-public-sys
+blst = { workspace = true }
+kzg = { workspace = true }
+libc = { workspace = true }
+once_cell = { workspace = true, features = ["critical-section"] }
+constantine-ethereum-kzg = { workspace = true } # branch constantine-public-sys
+constantine-sys = { workspace = true }  # branch constantine-public-sys
+constantine-core = { workspace = true }  # branch constantine-public-sys
 rand = { version = "0.8.5", optional = true }
-rayon = { version = "1.8.0", optional = true } 
-smallvec = { version = "1.11.1", features = ["const_generics"] }
-hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
+rayon = { workspace = true, optional = true } 
+smallvec = { workspace = true, features = ["const_generics"] }
+hex = { workspace = true, features = ["alloc"] }
 
 [dev-dependencies]
 criterion = "0.5.1"
-kzg-bench = { path = "../kzg-bench" }
+kzg-bench = { workspace = true }
 rand = "0.8.5"
 
 [features]
