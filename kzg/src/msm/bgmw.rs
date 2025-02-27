@@ -252,6 +252,7 @@ impl<
         use super::{
             cell::Cell,
             thread_pool::{da_pool, ThreadPoolExt},
+            tiling_pippenger_ops::tiling_pippenger,
         };
         use core::sync::atomic::{AtomicUsize, Ordering};
         use std::sync::{mpsc, Arc};
@@ -259,6 +260,11 @@ impl<
         let npoints = scalars.len();
         let pool = da_pool();
         let ncpus = pool.max_count();
+
+        if ncpus > npoints || npoints < 32 {
+            let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+            return tiling_pippenger(&self.points[0..npoints], &scalars);
+        }
 
         struct Tile {
             x: usize,
