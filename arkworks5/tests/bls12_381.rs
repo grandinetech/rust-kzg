@@ -103,6 +103,11 @@ mod tests {
     }
 
     #[test]
+    fn g1_small_linear_combination_() {
+        g1_small_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine>(&g1_linear_combination)
+    }
+
+    #[test]
     pub fn pairings_work_() {
         pairings_work::<ArkFr, ArkG1, ArkG2>(&pairings_verify);
     }
