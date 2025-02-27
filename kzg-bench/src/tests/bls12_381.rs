@@ -1,5 +1,6 @@
 use kzg::{
-    msm::precompute::PrecomputationTable, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G2Mul, G1, G2,
+    msm::precompute::{precompute, PrecomputationTable},
+    Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G2Mul, G1, G2,
 };
 use std::convert::TryInto;
 
@@ -235,6 +236,81 @@ pub fn g1_random_linear_combination<
     g1_linear_combination(&mut res, &p, &coeffs, len, None);
 
     assert!(exp.equals(&res));
+}
+
+#[allow(clippy::type_complexity)]
+pub fn g1_small_linear_combination<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Copy,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+>(
+    g1_linear_combination: &dyn Fn(
+        &mut TG1,
+        &[TG1],
+        &[TFr],
+        usize,
+        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+    ),
+) {
+    let len: usize = 128;
+    let points = (0..len).map(|_| TG1::rand()).collect::<Vec<_>>();
+    let scalars = (0..len).map(|_| TFr::rand()).collect::<Vec<_>>();
+    let mut results = Vec::with_capacity(len + 1);
+
+    let mut current = TG1::zero();
+    results.push(current);
+    for i in 0..len {
+        current = current.add(&points[i].mul(&scalars[i]));
+        results.push(current);
+    }
+    let results = &results[..];
+
+    for i in 0..=len {
+        let mut res = TG1::rand(); // g1_linear_combination must ignore value saved in output, so just to make sure, we initialize with random value
+        g1_linear_combination(&mut res, &points[0..i], &scalars[0..i], i, None);
+        assert_eq!(
+            res, results[i],
+            "should correctly compute msm with size {i}"
+        );
+    }
+
+    // // Precompute once, use to calculate all other results
+    {
+        let precomputation = precompute(&points).unwrap();
+
+        if precomputation.is_some() {
+            for i in 0..=len {
+                let mut res = TG1::rand(); // g1_linear_combination must ignore value saved in output, so just to make sure, we initialize with random value
+                g1_linear_combination(
+                    &mut res,
+                    &points[0..i],
+                    &scalars[0..i],
+                    i,
+                    precomputation.as_ref(),
+                );
+                assert_eq!(res, results[i], "should correctly compute msm, using precomputations for {len} points, with size {i}");
+            }
+        }
+    }
+
+    // Precompute for each set of points
+    {
+        for i in 0..=len {
+            let precomputation = precompute(&points[0..i]).unwrap();
+            if precomputation.is_some() {
+                let mut res = TG1::rand();
+                g1_linear_combination(
+                    &mut res,
+                    &points[0..i],
+                    &scalars[0..i],
+                    i,
+                    precomputation.as_ref(),
+                );
+                assert_eq!(res, results[i], "should correctly compute msm, using precomputations for {i} points, with size {i}");
+            }
+        }
+    }
 }
 
 pub fn pairings_work<TFr: Fr, TG1: G1 + G1Mul<TFr>, TG2: G2 + G2Mul<TFr>>(

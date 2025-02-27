@@ -152,7 +152,11 @@ const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usiz
         mult += 1;
     }
 
-    (opt_x, 255usize.div_ceil(opt), opt)
+    (
+        opt_x,
+        255usize.div_ceil(opt) + is_zero((NBITS % opt) as u64) as usize,
+        opt,
+    )
 }
 
 impl<
