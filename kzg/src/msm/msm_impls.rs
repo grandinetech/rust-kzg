@@ -91,7 +91,7 @@ pub fn msm<
     precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
 ) -> TG1 {
     if len < 8 {
-        let mut out = TG1::default();
+        let mut out = TG1::zero();
         for i in 0..len {
             let tmp = points[i].mul(&scalars[i]);
             out.add_or_dbl_assign(&tmp);

@@ -142,9 +142,9 @@ pub fn tiling_pippenger<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affi
     let mut wbits: usize = 255 % window;
     let mut cbits: usize = wbits + 1;
     let mut bit0: usize = 255;
-    let mut tile = TG1::default();
+    let mut tile = TG1::zero();
 
-    let mut ret = TG1::default();
+    let mut ret = TG1::zero();
 
     loop {
         bit0 -= wbits;
