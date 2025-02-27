@@ -281,8 +281,8 @@ impl<
         let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
         let scalars = &scalars[..];
 
-        // |grid[]| holds "coordinates" and place for result
-        let mut grid: Vec<(Tile, Cell<TG1>)> = Vec::with_capacity(nx * ny);
+        // |grid[]| holds "coordinates"
+        let mut grid: Vec<Tile> = Vec::with_capacity(nx * ny);
         #[allow(clippy::uninit_vec)]
         unsafe {
             grid.set_len(grid.capacity())
@@ -292,20 +292,20 @@ impl<
         let mut total = 0usize;
 
         while total < nx {
-            grid[total].0.x = total * dx;
-            grid[total].0.dx = dx;
-            grid[total].0.y = y;
-            grid[total].0.dy = 255 - y;
+            grid[total].x = total * dx;
+            grid[total].dx = dx;
+            grid[total].y = y;
+            grid[total].dy = NBITS - y;
             total += 1;
         }
-        grid[total - 1].0.dx = npoints - grid[total - 1].0.x;
+        grid[total - 1].dx = npoints - grid[total - 1].x;
         while y != 0 {
             y -= window;
             for i in 0..nx {
-                grid[total].0.x = grid[i].0.x;
-                grid[total].0.dx = grid[i].0.dx;
-                grid[total].0.y = y;
-                grid[total].0.dy = window;
+                grid[total].x = grid[i].x;
+                grid[total].dx = grid[i].dx;
+                grid[total].y = y;
+                grid[total].dy = window;
                 total += 1;
             }
         }
@@ -345,9 +345,9 @@ impl<
                         break;
                     }
 
-                    let x = grid[work].0.x;
-                    let y = grid[work].0.y;
-                    let dx = grid[work].0.dx;
+                    let x = grid[work].x;
+                    let y = grid[work].y;
+                    let dx = grid[work].dx;
 
                     let row_start = (y / window) * self.numpoints + x;
                     let points = &self.points[row_start..(row_start + dx)];
@@ -364,7 +364,7 @@ impl<
             });
         }
 
-        let mut ret = <TG1>::default();
+        let mut ret = TG1::zero();
         for _ in 0..n_workers {
             let idx = rx.recv().unwrap();
 
