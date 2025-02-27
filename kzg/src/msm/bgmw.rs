@@ -394,6 +394,10 @@ pub fn p1_tile_bgmw<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine<TG1, 
     wbits: usize,
     cbits: usize,
 ) {
+    if scalars.is_empty() {
+        return;
+    }
+
     // Get first scalar
     let scalar = &scalars[0];
 
@@ -419,6 +423,11 @@ pub fn p1_tile_bgmw<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine<TG1, 
     // Calculate first window value (encoded bucket index)
     let wval = (get_wval_limb(scalar, bit0, wbits) << z) & wmask;
     let mut wval = booth_encode(wval, cbits);
+
+    if scalars.len() == 1 {
+        booth_decode(buckets, wval, cbits, point);
+        return;
+    }
 
     // Get second scalar
     let scalar = &scalars[1];
