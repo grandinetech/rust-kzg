@@ -186,6 +186,41 @@ pub trait DAS<B: EcBackend> {
         Ok(())
     }
 
+    #[allow(clippy::type_complexity)]
+    fn recover_cells_and_kzg_proofs_batch(
+        &self,
+        cell_indices: &[Vec<usize>],
+        cells: &[Vec<B::Fr>],
+    ) -> Result<(Vec<Vec<B::Fr>>, Vec<Vec<B::G1>>), String>
+    where
+        Self: Sync,
+    {
+        if cell_indices.len() != cells.len() {
+            return Err("Cell indices & cells mismatch".to_string());
+        }
+
+        let kzg_settings = self.kzg_settings();
+        let ts_len = kzg_settings.get_g1_monomial().len();
+        let cell_size = kzg_settings.get_cell_size();
+
+        cfg_iter!(cells)
+            .zip(cfg_iter!(cell_indices))
+            .map(|(cells, cell_indices)| {
+                let mut recovered_cells = vec![B::Fr::null(); 2 * ts_len];
+                let mut recovered_proofs = vec![B::G1::default(); (2 * ts_len) / cell_size];
+
+                self.recover_cells_and_kzg_proofs(
+                    &mut recovered_cells,
+                    Some(&mut recovered_proofs),
+                    cell_indices,
+                    cells,
+                )?;
+
+                Ok((recovered_cells, recovered_proofs))
+            })
+            .collect::<Result<(Vec<_>, Vec<_>), String>>()
+    }
+
     fn compute_cells_and_kzg_proofs(
         &self,
         cells: Option<&mut [B::Fr]>,
