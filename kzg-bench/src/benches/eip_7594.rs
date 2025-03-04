@@ -29,7 +29,9 @@ pub fn bench_eip_7594<B: EcBackend>(
     load_trusted_setup: &dyn Fn(&str) -> Result<B::KZGSettings, String>,
     bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<B::Fr>, String>,
     blob_to_kzg_commitment: &dyn Fn(&[B::Fr], &B::KZGSettings) -> Result<B::G1, String>,
-) {
+) where
+    B::KZGSettings: Sync,
+{
     let ts = load_trusted_setup(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join(TRUSTED_SETUP_PATH)
@@ -112,6 +114,30 @@ pub fn bench_eip_7594<B: EcBackend>(
                 )
                 .unwrap();
             });
+        });
+    }
+    group.finish();
+
+    let mut group =
+        c.benchmark_group("recover_cells_and_kzg_proofs_batch - whole matrix (% missing)");
+    group.sample_size(10);
+    for i in [2, 4, 8] {
+        let percent_missing = 100.0 / (i as f64);
+
+        let (cell_indices, partial_cells) = blob_cells
+            .iter()
+            .map(|cells| get_partial_cells(cells, eth::FIELD_ELEMENTS_PER_CELL, i))
+            .collect::<(Vec<_>, Vec<_>)>();
+
+        group.bench_function(BenchmarkId::from_parameter(percent_missing), |b| {
+            b.iter(|| {
+                <B::KZGSettings as DAS<B>>::recover_cells_and_kzg_proofs_batch(
+                    &ts,
+                    &cell_indices,
+                    &partial_cells,
+                )
+                .unwrap();
+            })
         });
     }
     group.finish();
