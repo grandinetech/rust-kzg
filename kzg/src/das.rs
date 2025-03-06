@@ -1,5 +1,6 @@
-use core::fmt::Debug;
 use core::mem::size_of;
+use core::{fmt::Debug, hash::Hash};
+use hashbrown::{HashMap, HashSet};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -10,6 +11,7 @@ use alloc::{
     vec::Vec,
 };
 
+use crate::G1ProjAddAffine;
 use crate::{
     cfg_iter, cfg_iter_mut,
     common_utils::{reverse_bit_order, reverse_bits_limited},
@@ -27,9 +29,12 @@ pub trait EcBackend {
     type Fr: Fr + Debug + Send;
     type G1Fp: G1Fp;
     type G1Affine: G1Affine<Self::G1, Self::G1Fp>;
+    type G1ProjAddAffine: G1ProjAddAffine<Self::G1, Self::G1Fp, Self::G1Affine>;
     type G1: G1
-        + G1LinComb<Self::Fr, Self::G1Fp, Self::G1Affine>
-        + PairingVerify<Self::G1, Self::G2>;
+        + G1LinComb<Self::Fr, Self::G1Fp, Self::G1Affine, Self::G1ProjAddAffine>
+        + PairingVerify<Self::G1, Self::G2>
+        + Eq
+        + Hash;
     type G2: G2;
     type Poly: Poly<Self::Fr>;
     type FFTSettings: FFTSettings<Self::Fr> + FFTFr<Self::Fr> + FFTG1<Self::G1>;
@@ -41,39 +46,33 @@ pub trait EcBackend {
         Self::Poly,
         Self::G1Fp,
         Self::G1Affine,
+        Self::G1ProjAddAffine,
     >;
 }
 
-fn deduplicate_commitments<TG1: PartialEq + Clone>(
-    commitments: &mut [TG1],
-    indicies: &mut [usize],
-    count: &mut usize,
-) {
-    if *count == 0 {
-        return;
-    }
+/// Deduplicates a vector and creates a mapping of original indices to deduplicated indices.
+///
+/// This function is taken from https://github.com/crate-crypto/rust-eth-kzg/blob/63d469ce1c98a9898a0d8cd717aa3ebe46ace227/eip7594/src/verifier.rs#L43-L68
+fn deduplicate_with_indices<T: Eq + core::hash::Hash + Clone>(input: &[T]) -> (Vec<T>, Vec<usize>) {
+    let mut unique_items = Vec::new();
+    let mut index_map = HashMap::new();
+    let mut indices = Vec::with_capacity(input.len());
 
-    indicies[0] = 0;
-    let mut new_count = 1;
-
-    for i in 1..*count {
-        let mut exist = false;
-        for j in 0..new_count {
-            if commitments[i] == commitments[j] {
-                indicies[i] = j;
-                exist = true;
-                break;
+    for item in input {
+        let index = match index_map.get(&item) {
+            Some(&index) => index,
+            None => {
+                let new_index = unique_items.len();
+                unique_items.push(item.clone());
+                index_map.insert(item, new_index);
+                new_index
             }
-        }
-
-        if !exist {
-            commitments[new_count] = commitments[i].clone();
-            indicies[i] = new_count;
-            new_count += 1;
-        }
+        };
+        indices.push(index);
     }
-}
 
+    (unique_items, indices)
+}
 /**
  * This is a precomputed map of cell index to reverse-bits-limited cell index.
  *
@@ -135,26 +134,24 @@ pub trait DAS<B: EcBackend> {
             );
         }
 
-        for cell_index in cell_indices {
-            if *cell_index >= (2 * ts_len) / cell_size {
-                return Err("Cell index cannot be larger than CELLS_PER_EXT_BLOB".to_string());
-            }
-        }
-
         for fr in recovered_cells.iter_mut() {
             *fr = B::Fr::null();
         }
 
-        for i in 0..cell_indices.len() {
-            let index = cell_indices[i];
-
-            for j in 0..cell_size {
-                let elem_index = index * cell_size + j;
-                if !recovered_cells[elem_index].is_null() {
-                    return Err("Invalid output cell".to_string());
-                }
-                recovered_cells[elem_index] = cells[i * cell_size + j].clone();
+        // Trick to use HashSet, to check for duplicate commitments, is taken from rust-eth-kzg:
+        // https://github.com/crate-crypto/rust-eth-kzg/blob/63d469ce1c98a9898a0d8cd717aa3ebe46ace227/eip7594/src/recovery.rs#L64-L76
+        let mut provided_indices = HashSet::new();
+        for (i, &cell_index) in cell_indices.iter().enumerate() {
+            if cell_index >= (2 * ts_len) / cell_size {
+                return Err("Cell index cannot be larger than CELLS_PER_EXT_BLOB".to_string());
             }
+
+            if !provided_indices.insert(cell_index) {
+                return Err("Duplicate cell indices provided".to_string());
+            }
+
+            recovered_cells[cell_index * cell_size..(cell_index + 1) * cell_size]
+                .clone_from_slice(&cells[i * cell_size..(i + 1) * cell_size]);
         }
 
         let fft_settings = kzg_settings.get_fft_settings();
@@ -163,7 +160,7 @@ pub trait DAS<B: EcBackend> {
             recover_cells::<B>(
                 cell_size,
                 recovered_cells,
-                cell_indices,
+                &provided_indices,
                 fft_settings,
                 2 * ts_len,
             )?;
@@ -273,14 +270,7 @@ pub trait DAS<B: EcBackend> {
             return Err("Proof is not valid".to_string());
         }
 
-        let mut new_count = commitments.len();
-        let mut unique_commitments = commitments.to_vec();
-        let mut commitment_indices = vec![0usize; cell_count];
-        deduplicate_commitments(
-            &mut unique_commitments,
-            &mut commitment_indices,
-            &mut new_count,
-        );
+        let (unique_commitments, commitment_indices) = deduplicate_with_indices(commitments);
 
         if cfg_iter!(unique_commitments).any(|commitment| !commitment.is_valid()) {
             return Err("Commitment is not valid".to_string());
@@ -288,11 +278,9 @@ pub trait DAS<B: EcBackend> {
 
         let fft_settings = settings.get_fft_settings();
 
-        let unique_commitments = &unique_commitments[0..new_count];
-
         let r_powers = compute_r_powers_for_verify_cell_kzg_proof_batch::<B>(
             cell_size,
-            unique_commitments,
+            &unique_commitments,
             &commitment_indices,
             cell_indices,
             cells,
@@ -302,7 +290,7 @@ pub trait DAS<B: EcBackend> {
         let proof_lincomb = B::G1::g1_lincomb(proofs, &r_powers, cell_count, None);
 
         let final_g1_sum = compute_weighted_sum_of_commitments::<B>(
-            unique_commitments,
+            &unique_commitments,
             &commitment_indices,
             &r_powers,
         );
@@ -437,7 +425,7 @@ fn vanishing_polynomial_for_missing_cells<B: EcBackend>(
 fn recover_cells<B: EcBackend>(
     cell_size: usize,
     output: &mut [B::Fr],
-    cell_indicies: &[usize],
+    cell_indicies: &HashSet<usize>,
     fft_settings: &B::FFTSettings,
     field_elements_per_ext_blob: usize,
 ) -> Result<(), String> {
@@ -483,11 +471,12 @@ fn recover_cells<B: EcBackend>(
     let mut extended_evaluations_over_coset =
         coset_fft::<B>(extended_evaluation_times_zero_coeffs, fft_settings)?;
 
-    let vanishing_poly_over_coset = coset_fft::<B>(vanishing_poly_coeff, fft_settings)?;
+    let mut vanishing_poly_over_coset = coset_fft::<B>(vanishing_poly_coeff, fft_settings)?;
+    batch_inverse::<B>(&mut vanishing_poly_over_coset);
 
     for i in 0..field_elements_per_ext_blob {
         extended_evaluations_over_coset[i] =
-            extended_evaluations_over_coset[i].div(&vanishing_poly_over_coset[i])?;
+            extended_evaluations_over_coset[i].mul(&vanishing_poly_over_coset[i]);
     }
 
     let reconstructed_poly_coeff = coset_ifft::<B>(&extended_evaluations_over_coset, fft_settings)?;
@@ -560,7 +549,6 @@ fn compute_fk20_proofs<B: EcBackend>(
     let k2 = k * 2;
 
     let mut coeffs = vec![vec![B::Fr::default(); k]; k2];
-    let mut h_ext_fft = vec![B::G1::identity(); k2];
     let mut toeplitz_coeffs = vec![B::Fr::default(); k2];
     let mut toeplitz_coeffs_fft = vec![B::Fr::default(); k2];
 
@@ -572,14 +560,11 @@ fn compute_fk20_proofs<B: EcBackend>(
         }
     }
 
-    for i in 0..k2 {
-        h_ext_fft[i] = B::G1::g1_lincomb(
-            kzg_settings.get_x_ext_fft_column(i),
-            &coeffs[i],
-            cell_size,
-            None,
-        );
-    }
+    let h_ext_fft = B::G1::g1_lincomb_batch(
+        kzg_settings.get_x_ext_fft_columns(),
+        &coeffs,
+        kzg_settings.get_precomputation(),
+    )?;
 
     let mut h = fft_settings.fft_g1(&h_ext_fft, true)?;
 
@@ -862,6 +847,30 @@ fn computed_weighted_sum_of_proofs<B: EcBackend>(
         num_cells,
         None,
     ))
+}
+
+/// This function is taken from rust-eth-kzg:
+/// https://github.com/crate-crypto/rust-eth-kzg/blob/63d469ce1c98a9898a0d8cd717aa3ebe46ace227/cryptography/bls12_381/src/batch_inversion.rs#L4-L50
+fn batch_inverse<B: EcBackend>(v: &mut [B::Fr]) {
+    let mut scratch_pad = Vec::with_capacity(v.len());
+
+    let mut tmp = B::Fr::one();
+    for f in v.iter() {
+        tmp = tmp.mul(f);
+        scratch_pad.push(tmp.clone());
+    }
+
+    tmp = tmp.inverse();
+
+    for (f, s) in v
+        .iter_mut()
+        .rev()
+        .zip(scratch_pad.iter().rev().skip(1).chain(Some(&B::Fr::one())))
+    {
+        let new_tmp = tmp.mul(f);
+        *f = tmp.mul(s);
+        tmp = new_tmp;
+    }
 }
 
 /*

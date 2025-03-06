@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use core::hash::Hash;
 use core::ops::Add;
 use core::ops::Sub;
 
@@ -31,6 +32,14 @@ use super::fp::MclFp;
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct MclG1(pub mcl_g1);
+
+impl Hash for MclG1 {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.x.d.hash(state);
+        self.0.y.d.hash(state);
+        self.0.z.d.hash(state);
+    }
+}
 
 impl MclG1 {
     pub(crate) const fn from_xyz(x: mcl_fp, y: mcl_fp, z: mcl_fp) -> Self {

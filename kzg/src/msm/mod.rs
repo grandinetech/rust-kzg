@@ -18,3 +18,6 @@ mod bgmw;
 
 #[cfg(feature = "sppark")]
 mod sppark;
+
+#[cfg(feature = "wbits")]
+mod wbits;
