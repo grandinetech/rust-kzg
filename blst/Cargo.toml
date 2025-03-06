@@ -49,6 +49,9 @@ sppark = [
     "dep:rust-kzg-blst-sppark",
     "kzg/sppark"
 ]
+wbits = [
+    "kzg/wbits"
+]
 c_bindings = []
 
 [[bench]]

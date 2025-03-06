@@ -1,7 +1,7 @@
 use criterion::Criterion;
 use kzg::{
-    eip_4844::TRUSTED_SETUP_PATH, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings,
-    Poly, G1, G2,
+    eip_4844::TRUSTED_SETUP_PATH, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine,
+    KZGSettings, Poly, G1, G2,
 };
 use std::{fs::File, io::Read, path::PathBuf};
 
@@ -12,9 +12,10 @@ pub fn bench_load_trusted_setup<
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     c: &mut Criterion,
     load_trusted_setup_file: &dyn Fn(&str) -> Result<TKZGSettings, String>,
