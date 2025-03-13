@@ -82,7 +82,7 @@ esac
 ###################### dotnet tests ######################
 
 print_msg "Patching dotnet binding"
-git apply < ../csharp.patch
+git apply < ../patches/c-kzg-4844/csharp.patch
 cd bindings/csharp || exit
 
 print_msg "Building dotnet"
@@ -96,7 +96,7 @@ cd ../..
 ###################### rust tests ######################
 
 print_msg "Patching rust binding"
-git apply < ../rust.patch
+git apply < ../patches/c-kzg-4844/rust.patch
 
 print_msg "Running rust tests"
 cargo test --release
@@ -111,7 +111,7 @@ cd ..
 ###################### python tests ######################
 
 print_msg "Patching python binding"
-git apply < ../python.patch
+git apply < ../patches/c-kzg-4844/python.patch
 cd bindings/python || exit
 
 print_msg "Running python tests"
@@ -121,7 +121,7 @@ cd ../..
 ###################### java tests ######################
 
 print_msg "Patching java binding"
-git apply < ../java.patch
+git apply < ../patches/c-kzg-4844/java.patch
 cd bindings/java || exit
 
 print_msg "Running java tests"
@@ -131,7 +131,7 @@ cd ../..
 ###################### nodejs tests ######################
 
 print_msg "Patching nodejs binding"
-git apply < ../nodejs.patch
+git apply < ../patches/c-kzg-4844/nodejs.patch
 cd bindings/node.js || exit
 
 print_msg "Running nodejs tests"
@@ -141,7 +141,7 @@ cd ../..
 ###################### go tests ######################
 
 print_msg "Patching go binding"
-git apply < ../go.patch
+git apply < ../patches/c-kzg-4844/go.patch
 cd bindings/go || exit
 
 print_msg "Running go tests"
@@ -152,7 +152,7 @@ cd ../..
 
 if [ "$backend" != "constantine" ]; then
   print_msg "Patching nim binding"
-  git apply < ../nim.patch
+  git apply < ../patches/c-kzg-4844/nim.patch
 
   print_msg "Installing nim dependencies"
   nimble install -y stew

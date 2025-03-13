@@ -1,0 +1,104 @@
+From 223a615cfb9777393fadb4a74a35ddfcc51137cd Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Thu, 6 Feb 2025 14:08:35 +0200
+Subject: [PATCH] patch
+
+---
+ .../csharp_code/EthKZG.bindings/native_methods.g.cs  |  2 +-
+ bindings/nim/nim_code/nim_eth_kzg/bindings.nim       |  4 ++--
+ scripts/compile.sh                                   |  4 ++--
+ scripts/compile_to_native.sh                         | 12 ++++++++----
+ 4 files changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/bindings/csharp/csharp_code/EthKZG.bindings/native_methods.g.cs b/bindings/csharp/csharp_code/EthKZG.bindings/native_methods.g.cs
+index 4751a50..d902522 100644
+--- a/bindings/csharp/csharp_code/EthKZG.bindings/native_methods.g.cs
++++ b/bindings/csharp/csharp_code/EthKZG.bindings/native_methods.g.cs
+@@ -12,7 +12,7 @@ namespace EthKZG.Native
+ {
+     internal static unsafe partial class NativeMethods
+     {
+-        const string __DllName = "c_eth_kzg";
++        const string __DllName = "rust_kzg_blst";
+ 
+ 
+ 
+diff --git a/bindings/nim/nim_code/nim_eth_kzg/bindings.nim b/bindings/nim/nim_code/nim_eth_kzg/bindings.nim
+index 825af9f..80e0146 100644
+--- a/bindings/nim/nim_code/nim_eth_kzg/bindings.nim
++++ b/bindings/nim/nim_code/nim_eth_kzg/bindings.nim
+@@ -7,9 +7,9 @@ export header
+ when defined(windows):
+   # For gnu toolchain, the extension is .a since it uses the linux toolchain
+   # This will need to be changed if we switch to the msvc toolchain
+-  const libName = "libc_eth_kzg.a"
++  const libName = "librust_kzg_blst.a"
+ else:
+-  const libName = "libc_eth_kzg.a"
++  const libName = "librust_kzg_blst.a"
+ 
+ # Path to the top level directory of the nim project
+ # so we can reference the build directory
+diff --git a/scripts/compile.sh b/scripts/compile.sh
+index 021cfc0..4ed545a 100755
+--- a/scripts/compile.sh
++++ b/scripts/compile.sh
+@@ -31,7 +31,7 @@ compile_csharp() {
+     echo "Compiling for C#..."
+     OUT_DIR="$PROJECT_ROOT/bindings/csharp/csharp_code/EthKZG.bindings/runtimes"
+     LIB_TYPE="dynamic"
+-    LIB_NAME="c_eth_kzg"
++    LIB_NAME="rust_kzg_blst"
+     $PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH $LIB_NAME $LIB_TYPE $OUT_DIR
+ }
+ 
+@@ -51,7 +51,7 @@ compile_nim() {
+     echo "Compiling for Nim..."
+     OUT_DIR="$PROJECT_ROOT/bindings/nim/nim_code/build"
+     LIB_TYPE="static"
+-    LIB_NAME="c_eth_kzg"
++    LIB_NAME="rust_kzg_blst"
+     # Check if the OS is Darwin (macOS) and set ARCH_MODIFIED to universal if true.
+     if [[ "$OS" == "Darwin" ]]; then
+         # Install both targets for mac, so that it won't fail in CI
+diff --git a/scripts/compile_to_native.sh b/scripts/compile_to_native.sh
+index ab6dcdf..b0ca6b2 100755
+--- a/scripts/compile_to_native.sh
++++ b/scripts/compile_to_native.sh
+@@ -32,12 +32,12 @@ fi
+ 
+ # Determine the script's directory
+ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
++PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+ 
+ # Determine the operating system, architecture, library name, library type, output directory, and build tool if not provided
+ OS="${1:-$(uname)}"
+ ARCH="${2:-$(uname -m)}"
+-LIB_NAME="${3:-c_eth_kzg}"
++LIB_NAME="${3:-rust_kzg_blst}"
+ LIB_TYPE="${4:-both}"
+ OUT_DIR="${5:-$PROJECT_ROOT/bindings/c/build}"
+ BUILD_TOOL="${6:-cargo}"
+@@ -137,12 +137,16 @@ esac
+ 
+ # Function to perform the build
+ do_build() {
++    cd ..
++
+     local target=$1
+     if [ "$BUILD_TOOL" == "zigbuild" ]; then
+-        cargo zigbuild --release --target=$target
++        cargo zigbuild --release --target=$target --features c_bindings
+     else
+-        cargo build --release --target=$target
++        cargo build --release --target=$target --features c_bindings
+     fi
++
++    cd ./rust-eth-kzg
+ }
+ 
+ # Build for universal mac target if selected
+-- 
+2.43.0
+

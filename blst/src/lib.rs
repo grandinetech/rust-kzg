@@ -12,3 +12,4 @@ pub mod recovery;
 pub mod types;
 pub mod utils;
 pub mod zero_poly;
+mod eth_kzg_compat;
