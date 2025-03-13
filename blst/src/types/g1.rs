@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use core::hash::Hash;
 use core::ptr;
 
 use alloc::format;
@@ -31,6 +32,14 @@ use super::fp::FsFp;
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1(pub blst_p1);
+
+impl Hash for FsG1 {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.x.l.hash(state);
+        self.0.y.l.hash(state);
+        self.0.z.l.hash(state);
+    }
+}
 
 impl FsG1 {
     pub(crate) const fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {

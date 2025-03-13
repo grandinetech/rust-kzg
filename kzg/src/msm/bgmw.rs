@@ -20,6 +20,11 @@ where
     numpoints: usize,
     h: usize,
 
+    batch_window: BgmwWindow,
+    batch_points: Vec<Vec<TG1Affine>>,
+    batch_numpoints: usize,
+    batch_h: usize,
+
     g1_marker: PhantomData<TG1>,
     g1_fp_marker: PhantomData<TG1Fp>,
     fr_marker: PhantomData<TFr>,
@@ -166,7 +171,7 @@ impl<
         TG1Affine: G1Affine<TG1, TG1Fp>,
     > BgmwTable<TFr, TG1, TG1Fp, TG1Affine>
 {
-    pub fn new(points: &[TG1]) -> Result<Option<Self>, String> {
+    pub fn new(points: &[TG1], matrix: &[Vec<TG1>]) -> Result<Option<Self>, String> {
         let window = Self::window(points.len());
 
         let (window_width, h) = get_table_dimensions(window);
@@ -189,29 +194,173 @@ impl<
             }
         }
 
-        Ok(Some(Self {
-            numpoints: points.len(),
-            points: table,
-            window,
-            h,
+        if matrix.is_empty() {
+            Ok(Some(Self {
+                numpoints: points.len(),
+                points: table,
+                window,
+                h,
 
-            fr_marker: PhantomData,
-            g1_fp_marker: PhantomData,
-            g1_marker: PhantomData,
-        }))
+                batch_window: {
+                    #[cfg(feature = "parallel")]
+                    let w = BgmwWindow::Sync(0);
+
+                    #[cfg(not(feature = "parallel"))]
+                    let w = 0;
+
+                    w
+                },
+                batch_numpoints: 0,
+                batch_points: Vec::new(),
+                batch_h: 0,
+
+                fr_marker: PhantomData,
+                g1_fp_marker: PhantomData,
+                g1_marker: PhantomData,
+            }))
+        } else {
+            let batch_numpoints = matrix[0].len();
+            let batch_window = Self::sequential_window(batch_numpoints);
+            let (batch_window_width, batch_h) = get_table_dimensions(batch_window);
+            let batch_q = TFr::from_u64(1u64 << batch_window_width);
+
+            let mut batch_points = Vec::new();
+            batch_points
+                .try_reserve_exact(matrix.len())
+                .map_err(|_| "BGMW precomputation table is too large".to_owned())?;
+
+            for row in matrix {
+                let mut temp_table = Vec::new();
+                temp_table
+                    .try_reserve_exact(row.len() * batch_h)
+                    .map_err(|_| "BGMW precomputation table is too large".to_owned())?;
+
+                unsafe {
+                    temp_table.set_len(temp_table.capacity());
+                }
+
+                for i in 0..row.len() {
+                    let mut tmp_point = row[i].clone();
+                    for j in 0..batch_h {
+                        let idx = j * row.len() + i;
+                        temp_table[idx] = TG1Affine::into_affine(&tmp_point);
+                        tmp_point = tmp_point.mul(&batch_q);
+                    }
+                }
+
+                batch_points.push(temp_table);
+            }
+
+            Ok(Some(Self {
+                numpoints: points.len(),
+                points: table,
+                window,
+                h,
+
+                batch_window,
+                batch_numpoints,
+                batch_points,
+                batch_h,
+
+                fr_marker: PhantomData,
+                g1_fp_marker: PhantomData,
+                g1_marker: PhantomData,
+            }))
+        }
     }
 
-    pub fn multiply_sequential(&self, scalars: &[TFr]) -> TG1 {
+    pub fn multiply_batch(&self, scalars: &[Vec<TFr>]) -> Vec<TG1> {
+        assert!(scalars.len() == self.batch_points.len());
+
+        #[cfg(not(feature = "parallel"))]
+        {
+            let window = get_sequential_window_size(self.batch_window);
+            let mut buckets = vec![P1XYZZ::<TG1Fp>::default(); 1 << (window - 1)];
+
+            self.batch_points
+                .iter()
+                .zip(scalars)
+                .map(|(points, scalars)| {
+                    Self::multiply_sequential_raw(
+                        points,
+                        scalars,
+                        &mut buckets,
+                        window,
+                        self.batch_numpoints,
+                        self.batch_h,
+                    )
+                })
+                .collect::<Vec<_>>()
+        }
+
+        #[cfg(feature = "parallel")]
+        {
+            use super::{
+                cell::Cell,
+                thread_pool::{da_pool, ThreadPoolExt},
+            };
+            use core::sync::atomic::{AtomicUsize, Ordering};
+            use std::sync::Arc;
+
+            let window = get_sequential_window_size(self.batch_window);
+
+            let pool = da_pool();
+            let ncpus = pool.max_count();
+            let counter = Arc::new(AtomicUsize::new(0));
+            let mut results: Vec<Cell<TG1>> = Vec::with_capacity(scalars.len());
+            #[allow(clippy::uninit_vec)]
+            unsafe {
+                results.set_len(results.capacity())
+            };
+            let results = &results[..];
+
+            for _ in 0..ncpus {
+                let counter = counter.clone();
+                pool.joined_execute(move || {
+                    let mut buckets = vec![P1XYZZ::<TG1Fp>::default(); 1 << (window - 1)];
+
+                    loop {
+                        let work = counter.fetch_add(1, Ordering::Relaxed);
+
+                        if work >= scalars.len() {
+                            break;
+                        }
+
+                        let result = Self::multiply_sequential_raw(
+                            &self.batch_points[work],
+                            &scalars[work],
+                            &mut buckets,
+                            window,
+                            self.batch_numpoints,
+                            self.batch_h,
+                        );
+                        unsafe { *results[work].as_ptr().as_mut().unwrap() = result };
+                    }
+                });
+            }
+
+            pool.join();
+
+            results.iter().map(|it| it.as_mut().clone()).collect()
+        }
+    }
+
+    fn multiply_sequential_raw(
+        points: &[TG1Affine],
+        scalars: &[TFr],
+        buckets: &mut [P1XYZZ<TG1Fp>],
+        window: usize,
+        numpoints: usize,
+        h: usize,
+    ) -> TG1 {
         let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
         let scalars = &scalars[..];
-        let window = get_sequential_window_size(self.window);
-        let mut buckets = vec![P1XYZZ::<TG1Fp>::default(); 1 << (window - 1)];
 
         let mut wbits: usize = 255 % window;
         let mut cbits: usize = wbits + 1;
         let mut bit0: usize = 255;
 
-        let mut q_idx = self.h;
+        let mut q_idx = h;
 
         loop {
             bit0 -= wbits;
@@ -221,9 +370,9 @@ impl<
             }
 
             p1_tile_bgmw(
-                &self.points[q_idx * self.numpoints..(q_idx + 1) * self.numpoints],
+                &points[q_idx * numpoints..(q_idx + 1) * numpoints],
                 scalars,
-                &mut buckets,
+                buckets,
                 bit0,
                 wbits,
                 cbits,
@@ -232,19 +381,26 @@ impl<
             cbits = window;
             wbits = window;
         }
-        p1_tile_bgmw(
-            &self.points[0..self.numpoints],
-            scalars,
-            &mut buckets,
-            0,
-            wbits,
-            cbits,
-        );
+        p1_tile_bgmw(&points[0..numpoints], scalars, buckets, 0, wbits, cbits);
 
         let mut ret = TG1::default();
-        integrate_buckets(&mut ret, &buckets, wbits - 1);
+        integrate_buckets(&mut ret, buckets, wbits - 1);
 
         ret
+    }
+
+    pub fn multiply_sequential(&self, scalars: &[TFr]) -> TG1 {
+        let window = get_sequential_window_size(self.window);
+        let mut buckets = vec![P1XYZZ::<TG1Fp>::default(); 1 << (window - 1)];
+
+        Self::multiply_sequential_raw(
+            &self.points,
+            scalars,
+            &mut buckets,
+            window,
+            self.numpoints,
+            self.h,
+        )
     }
 
     #[cfg(feature = "parallel")]
@@ -337,7 +493,7 @@ impl<
                     if work >= total {
                         integrate_buckets(
                             unsafe { results[worker_index].as_ptr().as_mut() }.unwrap(),
-                            &buckets,
+                            &mut buckets,
                             window - 1,
                         );
                         tx.send(worker_index).expect("disaster");
@@ -386,6 +542,18 @@ impl<
             } else {
                 BgmwWindow::Sync(bgmw_window_size(npoints))
             }
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        {
+            bgmw_window_size(npoints)
+        }
+    }
+
+    fn sequential_window(npoints: usize) -> BgmwWindow {
+        #[cfg(feature = "parallel")]
+        {
+            BgmwWindow::Sync(bgmw_window_size(npoints))
         }
 
         #[cfg(not(feature = "parallel"))]
@@ -493,12 +661,13 @@ pub fn p1_tile_bgmw<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine<TG1, 
 ///
 fn integrate_buckets<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp>(
     out: &mut TG1,
-    buckets: &[P1XYZZ<TFp>],
+    buckets: &mut [P1XYZZ<TFp>],
     wbits: usize,
 ) {
     let mut n = (1usize << wbits) - 1;
     let mut ret = buckets[n];
     let mut acc = buckets[n];
+    buckets[n] = P1XYZZ::<TFp>::default();
 
     loop {
         if n == 0 {
@@ -509,6 +678,7 @@ fn integrate_buckets<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp>(
         if type_is_zero(&buckets[n]) == 0 {
             p1_dadd(&mut acc, &buckets[n]);
         }
+        buckets[n] = P1XYZZ::<TFp>::default();
         p1_dadd(&mut ret, &acc);
     }
 
