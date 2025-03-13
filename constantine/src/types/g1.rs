@@ -9,7 +9,10 @@ use kzg::eth::c_bindings::blst_p1;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::G1LinComb;
 
-use core::fmt::{Debug, Formatter};
+use core::{
+    fmt::{Debug, Formatter},
+    hash::Hash,
+};
 
 use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fp::CtFp;
@@ -34,11 +37,21 @@ use constantine_sys::{
 #[derive(Clone, Copy, Default)]
 pub struct CtG1(pub bls12_381_g1_jac);
 
+impl Hash for CtG1 {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.x.limbs.hash(state);
+        self.0.y.limbs.hash(state);
+        self.0.z.limbs.hash(state);
+    }
+}
+
 impl PartialEq for CtG1 {
     fn eq(&self, other: &Self) -> bool {
         unsafe { constantine::ctt_bls12_381_g1_jac_is_eq(&self.0, &other.0) != 0 }
     }
 }
+
+impl Eq for CtG1 {}
 
 impl Debug for CtG1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -258,12 +271,14 @@ impl G1Mul<CtFr> for CtG1 {
     }
 }
 
-impl G1LinComb<CtFr, CtFp, CtG1Affine> for CtG1 {
+impl G1LinComb<CtFr, CtFp, CtG1Affine, CtG1ProjAddAffine> for CtG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[CtFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<CtFr, Self, CtFp, CtG1Affine>>,
+        precomputation: Option<
+            &PrecomputationTable<CtFr, Self, CtFp, CtG1Affine, CtG1ProjAddAffine>,
+        >,
     ) -> Self {
         let mut out = CtG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
@@ -407,6 +422,14 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
             // Transmute safe due to repr(C) on CtFp
             core::mem::transmute(&mut self.0.y)
         }
+    }
+
+    fn neg(&self) -> Self {
+        let mut output = *self;
+        unsafe {
+            constantine::ctt_bls12_381_g1_aff_neg_in_place(&mut output.0);
+        }
+        output
     }
 }
 

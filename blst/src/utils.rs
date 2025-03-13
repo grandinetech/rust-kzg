@@ -8,7 +8,7 @@ use kzg::{Fr, G1Mul, G2Mul};
 use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::types::fp::FsFp;
 use crate::types::fr::FsFr;
-use crate::types::g1::{FsG1, FsG1Affine};
+use crate::types::g1::{FsG1, FsG1Affine, FsG1ProjAddAffine};
 use crate::types::g2::FsG2;
 
 pub fn generate_trusted_setup(
@@ -38,4 +38,5 @@ pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
     FsG1,
     FsFp,
     FsG1Affine,
+    FsG1ProjAddAffine,
 > = PrecomputationTableManager::new();

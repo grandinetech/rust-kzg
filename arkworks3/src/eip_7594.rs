@@ -8,6 +8,7 @@ use crate::kzg_types::ArkFp;
 use crate::kzg_types::ArkFr;
 use crate::kzg_types::ArkG1;
 use crate::kzg_types::ArkG1Affine;
+use crate::kzg_types::ArkG1ProjAddAffine;
 use crate::kzg_types::ArkG2;
 use crate::utils::PolyData;
 
@@ -22,6 +23,7 @@ impl EcBackend for ArkBackend {
     type Poly = PolyData;
     type FFTSettings = FFTSettings;
     type KZGSettings = KZGSettings;
+    type G1ProjAddAffine = ArkG1ProjAddAffine;
 }
 
 #[cfg(feature = "c_bindings")]

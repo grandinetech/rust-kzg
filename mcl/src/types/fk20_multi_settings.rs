@@ -15,7 +15,7 @@ use crate::types::kzg_settings::MclKZGSettings;
 use crate::types::poly::MclPoly;
 
 use super::fp::MclFp;
-use super::g1::MclG1Affine;
+use super::g1::{MclG1Affine, MclG1ProjAddAffine};
 
 pub struct MclFK20MultiSettings {
     pub kzg_settings: MclKZGSettings,
@@ -53,6 +53,7 @@ impl
         MclKZGSettings,
         MclFp,
         MclG1Affine,
+        MclG1ProjAddAffine,
     > for MclFK20MultiSettings
 {
     #[allow(clippy::many_single_char_names)]
