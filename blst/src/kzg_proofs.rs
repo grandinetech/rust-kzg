@@ -27,7 +27,7 @@ pub fn g1_linear_combination(
     points: &[FsG1],
     scalars: &[FsFr],
     len: usize,
-    precomputation: Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>,
+    precomputation: Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>>,
 ) {
     #[cfg(feature = "sppark")]
     {

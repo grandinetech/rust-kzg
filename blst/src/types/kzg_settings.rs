@@ -20,15 +20,17 @@ use crate::types::poly::FsPoly;
 use crate::utils::PRECOMPUTATION_TABLES;
 
 use super::fp::FsFp;
-use super::g1::FsG1Affine;
+use super::g1::{FsG1Affine, FsG1ProjAddAffine};
 
+#[allow(clippy::type_complexity)]
 #[derive(Debug, Clone, Default)]
 pub struct FsKZGSettings {
     pub fs: FsFFTSettings,
     pub g1_values_monomial: Vec<FsG1>,
     pub g1_values_lagrange_brp: Vec<FsG1>,
     pub g2_values_monomial: Vec<FsG2>,
-    pub precomputation: Option<Arc<PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>>>,
+    pub precomputation:
+        Option<Arc<PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>>>,
     pub x_ext_fft_columns: Vec<Vec<FsG1>>,
     pub cell_size: usize,
 }
@@ -58,7 +60,9 @@ fn toeplitz_part_1(
     Ok(())
 }
 
-impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for FsKZGSettings {
+impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine, FsG1ProjAddAffine>
+    for FsKZGSettings
+{
     fn new(
         g1_monomial: &[FsG1],
         g1_lagrange_brp: &[FsG1],
@@ -292,7 +296,9 @@ impl KZGSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsFp, FsG1Affine> for 
         &self.g2_values_monomial
     }
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine>> {
+    fn get_precomputation(
+        &self,
+    ) -> Option<&PrecomputationTable<FsFr, FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 

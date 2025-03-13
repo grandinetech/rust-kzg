@@ -1,6 +1,6 @@
 use kzg::{
     msm::precompute::{precompute, PrecomputationTable},
-    Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G2Mul, G1, G2,
+    Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G2Mul, G1, G2,
 };
 use std::convert::TryInto;
 
@@ -172,13 +172,14 @@ pub fn g1_make_linear_combination<
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Copy,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     g1_linear_combination: &dyn Fn(
         &mut TG1,
         &[TG1],
         &[TFr],
         usize,
-        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>>,
     ),
 ) {
     let len: usize = 255;
@@ -206,13 +207,14 @@ pub fn g1_random_linear_combination<
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Copy,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     g1_linear_combination: &dyn Fn(
         &mut TG1,
         &[TG1],
         &[TFr],
         usize,
-        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>>,
     ),
 ) {
     let len: usize = 8192;
@@ -244,13 +246,14 @@ pub fn g1_small_linear_combination<
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Copy,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     g1_linear_combination: &dyn Fn(
         &mut TG1,
         &[TG1],
         &[TFr],
         usize,
-        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>>,
     ),
 ) {
     let len: usize = 128;
@@ -277,7 +280,7 @@ pub fn g1_small_linear_combination<
 
     // // Precompute once, use to calculate all other results
     {
-        let precomputation = precompute(&points).unwrap();
+        let precomputation = precompute(&points, &[]).unwrap();
 
         if precomputation.is_some() {
             for i in 0..=len {
@@ -297,7 +300,7 @@ pub fn g1_small_linear_combination<
     // Precompute for each set of points
     {
         for i in 0..=len {
-            let precomputation = precompute(&points[0..i]).unwrap();
+            let precomputation = precompute(&points[0..i], &[]).unwrap();
             if precomputation.is_some() {
                 let mut res = TG1::rand();
                 g1_linear_combination(

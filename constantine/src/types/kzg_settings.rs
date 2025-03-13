@@ -20,15 +20,17 @@ use crate::types::poly::CtPoly;
 use crate::utils::{fft_settings_to_rust, PRECOMPUTATION_TABLES};
 
 use super::fp::CtFp;
-use super::g1::CtG1Affine;
+use super::g1::{CtG1Affine, CtG1ProjAddAffine};
 
 #[derive(Clone, Default)]
+#[allow(clippy::type_complexity)]
 pub struct CtKZGSettings {
     pub fs: CtFFTSettings,
     pub g1_values_monomial: Vec<CtG1>,
     pub g1_values_lagrange_brp: Vec<CtG1>,
     pub g2_values_monomial: Vec<CtG2>,
-    pub precomputation: Option<Arc<PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>>>,
+    pub precomputation:
+        Option<Arc<PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>>>,
     pub x_ext_fft_columns: Vec<Vec<CtG1>>,
     pub cell_size: usize,
 }
@@ -58,7 +60,9 @@ fn toeplitz_part_1(
     Ok(())
 }
 
-impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for CtKZGSettings {
+impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine, CtG1ProjAddAffine>
+    for CtKZGSettings
+{
     fn new(
         g1_monomial: &[CtG1],
         g1_lagrange_brp: &[CtG1],
@@ -270,7 +274,9 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine> for 
         &self.g2_values_monomial
     }
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
+    fn get_precomputation(
+        &self,
+    ) -> Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 

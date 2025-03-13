@@ -20,6 +20,7 @@ pub fn fk_single<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
@@ -83,6 +84,7 @@ pub fn fk_single_strided<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
@@ -133,6 +135,7 @@ pub fn fk_multi_settings<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
@@ -159,6 +162,7 @@ fn fk_multi_case<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     chunk_len: usize,
@@ -268,6 +272,7 @@ pub fn fk_multi_chunk_len_1_512<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
@@ -287,6 +292,7 @@ pub fn fk_multi_chunk_len_16_512<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
@@ -306,6 +312,7 @@ pub fn fk_multi_chunk_len_16_16<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),

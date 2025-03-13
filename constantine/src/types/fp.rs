@@ -107,4 +107,19 @@ impl G1Fp for CtFp {
             constantine::ctt_bls12_381_fp_add_in_place(&mut self.0, &b.0);
         }
     }
+
+    fn mul3(&self) -> Self {
+        const THREE: CtFp = CtFp(bls12_381_fp {
+            limbs: [
+                17157870155352091297,
+                9692872460839157767,
+                5726366251156250088,
+                11420128032487956561,
+                9069687087735597977,
+                1000072309349998725,
+            ],
+        });
+
+        self.mul_fp(&THREE)
+    }
 }
