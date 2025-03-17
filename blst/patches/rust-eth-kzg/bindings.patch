@@ -1,0 +1,760 @@
+From d4d7607787bd577acd1529a50ee4a4e9759b2cf2 Mon Sep 17 00:00:00 2001
+From: sirse <artiom.tretjakovas2@gmail.com>
+Date: Mon, 17 Mar 2025 19:51:08 +0200
+Subject: [PATCH] Patch bindings
+
+---
+ bindings/java/rust_code/Cargo.toml            |   3 +-
+ bindings/java/rust_code/src/errors.rs         |   8 +-
+ bindings/java/rust_code/src/lib.rs            | 296 +-----------------
+ .../nim/nim_code/nim_eth_kzg/bindings.nim     |   4 +-
+ bindings/node/Cargo.toml                      |   3 +-
+ bindings/node/index.d.ts                      |   4 +-
+ bindings/node/src/lib.rs                      | 157 ++++++----
+ scripts/compile.sh                            |   4 +-
+ scripts/compile_to_native.sh                  |  32 +-
+ 9 files changed, 138 insertions(+), 373 deletions(-)
+
+diff --git a/bindings/java/rust_code/Cargo.toml b/bindings/java/rust_code/Cargo.toml
+index bfc232c..61d0ba9 100644
+--- a/bindings/java/rust_code/Cargo.toml
++++ b/bindings/java/rust_code/Cargo.toml
+@@ -11,7 +11,8 @@ repository = { workspace = true }
+ [dependencies]
+ jni = "^0.21.1"
+ hex = { workspace = true }
+-c_eth_kzg = { workspace = true }
++rust-kzg-blst = { path = "../../../..", features = ["c_bindings"] }
++kzg = { path = "../../../../../kzg" }
+ 
+ [lib]
+ crate-type = ["cdylib"]
+diff --git a/bindings/java/rust_code/src/errors.rs b/bindings/java/rust_code/src/errors.rs
+index 2517c97..05b1007 100644
+--- a/bindings/java/rust_code/src/errors.rs
++++ b/bindings/java/rust_code/src/errors.rs
+@@ -1,5 +1,3 @@
+-use c_eth_kzg::Error as KZGError;
+-
+ #[derive(Debug)]
+ pub enum Error {
+     Jni(jni::errors::Error),
+@@ -8,7 +6,7 @@ pub enum Error {
+         got: usize,
+         name: &'static str,
+     },
+-    Cryptography(KZGError),
++    Cryptography(String),
+ }
+ 
+ impl From<jni::errors::Error> for Error {
+@@ -17,8 +15,8 @@ impl From<jni::errors::Error> for Error {
+     }
+ }
+ 
+-impl From<KZGError> for Error {
+-    fn from(err: KZGError) -> Self {
++impl From<String> for Error {
++    fn from(err: String) -> Self {
+         Error::Cryptography(err)
+     }
+ }
+diff --git a/bindings/java/rust_code/src/lib.rs b/bindings/java/rust_code/src/lib.rs
+index e3c0225..69fef05 100644
+--- a/bindings/java/rust_code/src/lib.rs
++++ b/bindings/java/rust_code/src/lib.rs
+@@ -1,300 +1,10 @@
+-use c_eth_kzg::DASContext;
+ use jni::objects::{JByteArray, JClass, JLongArray, JObject, JObjectArray, JValue};
+ use jni::sys::{jboolean, jlong};
+ use jni::JNIEnv;
++use rust_kzg_blst::eth_kzg_compat::*;
++use rust_kzg_blst::eip_7594::BlstBackend;
+ 
+ mod errors;
+ use errors::Error;
+ 
+-#[no_mangle]
+-pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
+-    _env: JNIEnv,
+-    _class: JClass,
+-    use_precomp: jboolean,
+-    num_threads: jlong,
+-) -> jlong {
+-    let use_precomp = use_precomp != 0;
+-    let num_threads = (num_threads as u64) as u32;
+-    c_eth_kzg::eth_kzg_das_context_new(use_precomp, num_threads) as jlong
+-}
+-
+-#[no_mangle]
+-pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextDestroy(
+-    _env: JNIEnv,
+-    _class: JClass,
+-    ctx_ptr: jlong,
+-) {
+-    c_eth_kzg::eth_kzg_das_context_free(ctx_ptr as *mut DASContext);
+-}
+-
+-#[no_mangle]
+-pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_computeCellsAndKZGProofs<'local>(
+-    mut env: JNIEnv<'local>,
+-    _class: JClass,
+-    ctx_ptr: jlong,
+-    blob: JByteArray<'local>,
+-) -> JObject<'local> {
+-    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+-    match compute_cells_and_kzg_proofs(&mut env, ctx, blob) {
+-        Ok(cells_and_proofs) => cells_and_proofs,
+-        Err(err) => {
+-            throw_on_error(&mut env, err, "computeCellsAndKZGProofs");
+-            JObject::default()
+-        }
+-    }
+-}
+-fn compute_cells_and_kzg_proofs<'local>(
+-    env: &mut JNIEnv<'local>,
+-    ctx: &DASContext,
+-    blob: JByteArray<'local>,
+-) -> Result<JObject<'local>, Error> {
+-    let blob = env.convert_byte_array(blob)?;
+-    let blob = slice_to_array_ref(&blob, "blob")?;
+-
+-    let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob)?;
+-    let cells = cells.map(|cell| *cell);
+-    cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
+-}
+-
+-#[no_mangle]
+-pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_blobToKZGCommitment<'local>(
+-    mut env: JNIEnv<'local>,
+-    _class: JClass,
+-    ctx_ptr: jlong,
+-    blob: JByteArray<'local>,
+-) -> JByteArray<'local> {
+-    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+-    match blob_to_kzg_commitment(&mut env, ctx, blob) {
+-        Ok(commitment) => commitment,
+-        Err(err) => {
+-            throw_on_error(&mut env, err, "blobToKZGCommitment");
+-            JByteArray::default()
+-        }
+-    }
+-}
+-fn blob_to_kzg_commitment<'local>(
+-    env: &mut JNIEnv<'local>,
+-    ctx: &DASContext,
+-    blob: JByteArray<'local>,
+-) -> Result<JByteArray<'local>, Error> {
+-    let blob = env.convert_byte_array(blob)?;
+-    let blob = slice_to_array_ref(&blob, "blob")?;
+-
+-    let commitment = ctx.blob_to_kzg_commitment(blob)?;
+-    env.byte_array_from_slice(&commitment).map_err(Error::from)
+-}
+-
+-#[no_mangle]
+-pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyCellKZGProofBatch<'local>(
+-    mut env: JNIEnv<'local>,
+-    _class: JClass,
+-    ctx_ptr: jlong,
+-    commitment: JObjectArray<'local>,
+-    cell_indices: JLongArray,
+-    cells: JObjectArray<'local>,
+-    proofs: JObjectArray<'local>,
+-) -> jboolean {
+-    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+-
+-    match verify_cell_kzg_proof_batch(&mut env, ctx, commitment, cell_indices, cells, proofs) {
+-        Ok(result) => result,
+-        Err(err) => {
+-            throw_on_error(&mut env, err, "verifyCellKZGProofBatch");
+-            jboolean::default()
+-        }
+-    }
+-}
+-fn verify_cell_kzg_proof_batch<'local>(
+-    env: &mut JNIEnv,
+-    ctx: &DASContext,
+-    commitment: JObjectArray<'local>,
+-    cell_indices: JLongArray,
+-    cells: JObjectArray<'local>,
+-    proofs: JObjectArray<'local>,
+-) -> Result<jboolean, Error> {
+-    let commitment = jobject_array_to_2d_byte_array(env, commitment)?;
+-    let cell_indices = jlongarray_to_vec_u64(env, cell_indices)?;
+-    let cells = jobject_array_to_2d_byte_array(env, cells)?;
+-    let proofs = jobject_array_to_2d_byte_array(env, proofs)?;
+-
+-    let cells: Vec<_> = cells
+-        .iter()
+-        .map(|cell| slice_to_array_ref(cell, "cell"))
+-        .collect::<Result<_, _>>()?;
+-    let commitments: Vec<_> = commitment
+-        .iter()
+-        .map(|commitment| slice_to_array_ref(commitment, "commitment"))
+-        .collect::<Result<_, _>>()?;
+-    let proofs: Vec<_> = proofs
+-        .iter()
+-        .map(|proof| slice_to_array_ref(proof, "proof"))
+-        .collect::<Result<_, _>>()?;
+-
+-    match ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs) {
+-        Ok(_) => Ok(jboolean::from(true)),
+-        Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
+-        Err(err) => Err(Error::Cryptography(err)),
+-    }
+-}
+-
+-#[no_mangle]
+-pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_recoverCellsAndKZGProofs<'local>(
+-    mut env: JNIEnv<'local>,
+-    _class: JClass,
+-    ctx_ptr: jlong,
+-    cell_ids: JLongArray,
+-    cells: JObjectArray<'local>,
+-) -> JObject<'local> {
+-    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+-
+-    match recover_cells_and_kzg_proofs(&mut env, ctx, cell_ids, cells) {
+-        Ok(cells_and_proofs) => cells_and_proofs,
+-        Err(err) => {
+-            throw_on_error(&mut env, err, "recoverCellsAndKZGProofs");
+-            JObject::default()
+-        }
+-    }
+-}
+-fn recover_cells_and_kzg_proofs<'local>(
+-    env: &mut JNIEnv<'local>,
+-    ctx: &DASContext,
+-    cell_ids: JLongArray,
+-    cells: JObjectArray<'local>,
+-) -> Result<JObject<'local>, Error> {
+-    let cell_ids = jlongarray_to_vec_u64(env, cell_ids)?;
+-    let cells = jobject_array_to_2d_byte_array(env, cells)?;
+-    let cells: Vec<_> = cells
+-        .iter()
+-        .map(|cell| slice_to_array_ref(cell, "cell"))
+-        .collect::<Result<_, _>>()?;
+-
+-    let (recovered_cells, recovered_proofs) = ctx.recover_cells_and_kzg_proofs(cell_ids, cells)?;
+-    let recovered_cells = recovered_cells.map(|cell| *cell);
+-    cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
+-}
+-
+-/// Converts a JLongArray to a Vec<u64>
+-fn jlongarray_to_vec_u64(env: &JNIEnv, array: JLongArray) -> Result<Vec<u64>, Error> {
+-    // Step 1: Get the length of the JLongArray
+-    let array_length = env.get_array_length(&array)?;
+-
+-    // Step 2: Create a buffer to hold the jlong elements (these are i64s)
+-    let mut buffer: Vec<i64> = vec![0; array_length as usize];
+-
+-    // Step 3: Get the elements from the JLongArray
+-    env.get_long_array_region(array, 0, &mut buffer)?;
+-
+-    // Step 4: Convert the Vec<i64> to Vec<u64>
+-    Ok(buffer.into_iter().map(|x| x as u64).collect())
+-}
+-
+-/// Converts a JObjectArray to a Vec<Vec<u8>>
+-fn jobject_array_to_2d_byte_array(
+-    env: &mut JNIEnv,
+-    array: JObjectArray,
+-) -> Result<Vec<Vec<u8>>, Error> {
+-    // Get the length of the outer array
+-    let outer_len = env.get_array_length(&array)?;
+-
+-    let mut result = Vec::with_capacity(outer_len as usize);
+-
+-    for i in 0..outer_len {
+-        // Get each inner array (JByteArray)
+-        let inner_array_obj = env.get_object_array_element(&array, i)?;
+-        let inner_array: JByteArray = JByteArray::from(inner_array_obj);
+-
+-        // Get the length of the inner array
+-        let inner_len = env.get_array_length(&inner_array)?;
+-
+-        // Get the elements of the inner array
+-        let mut buf = vec![0; inner_len as usize];
+-        env.get_byte_array_region(inner_array, 0, &mut buf)?;
+-
+-        // Convert i8 to u8
+-        let buf = buf.into_iter().map(|x| x as u8).collect();
+-
+-        result.push(buf);
+-    }
+-
+-    Ok(result)
+-}
+-
+-/// Converts a Vec<Vec<u8>> to a JObject that represents a CellsAndProofs object in Java
+-fn cells_and_proofs_to_jobject<'local>(
+-    env: &mut JNIEnv<'local>,
+-    cells: &[impl AsRef<[u8]>],
+-    proofs: &[impl AsRef<[u8]>],
+-) -> Result<JObject<'local>, Error> {
+-    // Create a new instance of the CellsAndProofs class in Java
+-    let cells_and_proofs_class = env.find_class("ethereum/cryptography/CellsAndProofs")?;
+-
+-    let cell_byte_array_class = env.find_class("[B")?;
+-    let proof_byte_array_class = env.find_class("[B")?;
+-
+-    // Create 2D array for cells
+-    let cells_array = env.new_object_array(
+-        cells.len() as i32,
+-        cell_byte_array_class,
+-        env.new_byte_array(0)?,
+-    )?;
+-
+-    for (i, cell) in cells.iter().enumerate() {
+-        let cell_array = env.byte_array_from_slice(cell.as_ref())?;
+-        env.set_object_array_element(&cells_array, i as i32, cell_array)?;
+-    }
+-
+-    // Create 2D array for proofs
+-    let proofs_array = env.new_object_array(
+-        proofs.len() as i32,
+-        proof_byte_array_class,
+-        env.new_byte_array(0)?,
+-    )?;
+-
+-    for (i, proof) in proofs.iter().enumerate() {
+-        let proof_array = env.byte_array_from_slice(proof.as_ref())?;
+-        env.set_object_array_element(&proofs_array, i as i32, proof_array)?;
+-    }
+-
+-    // Create the CellsAndProofs object
+-    let cells_and_proofs_obj = env.new_object(
+-        cells_and_proofs_class,
+-        "([[B[[B)V",
+-        &[JValue::Object(&cells_array), JValue::Object(&proofs_array)],
+-    )?;
+-
+-    Ok(cells_and_proofs_obj)
+-}
+-
+-/// Throws an exception in Java
+-fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
+-    let reason = match err {
+-        Error::Jni(err) => format!("{:?}", err),
+-        Error::IncorrectSize {
+-            expected,
+-            got,
+-            name,
+-        } => format!("{name} is not the correct size. expected: {expected}\ngot: {got}"),
+-        Error::Cryptography(err) => format!("{:?}", err),
+-    };
+-    let msg = format!(
+-        "function {} has thrown an exception, with reason: {}",
+-        func_name, reason
+-    );
+-    env.throw_new("java/lang/IllegalArgumentException", msg)
+-        .expect("Failed to throw exception");
+-}
+-
+-/// Convert a slice into a reference to an array
+-///
+-/// This is needed as the API for rust library does
+-/// not accept slices.
+-fn slice_to_array_ref<'a, const N: usize>(
+-    slice: &'a [u8],
+-    name: &'static str,
+-) -> Result<&'a [u8; N], Error> {
+-    slice.try_into().map_err(|_| Error::IncorrectSize {
+-        expected: N,
+-        got: slice.len(),
+-        name,
+-    })
+-}
++kzg::c_bindings_java_eth_kzg!(BlstBackend);
+diff --git a/bindings/nim/nim_code/nim_eth_kzg/bindings.nim b/bindings/nim/nim_code/nim_eth_kzg/bindings.nim
+index 825af9f..80e0146 100644
+--- a/bindings/nim/nim_code/nim_eth_kzg/bindings.nim
++++ b/bindings/nim/nim_code/nim_eth_kzg/bindings.nim
+@@ -7,9 +7,9 @@ export header
+ when defined(windows):
+   # For gnu toolchain, the extension is .a since it uses the linux toolchain
+   # This will need to be changed if we switch to the msvc toolchain
+-  const libName = "libc_eth_kzg.a"
++  const libName = "librust_kzg_blst.a"
+ else:
+-  const libName = "libc_eth_kzg.a"
++  const libName = "librust_kzg_blst.a"
+ 
+ # Path to the top level directory of the nim project
+ # so we can reference the build directory
+diff --git a/bindings/node/Cargo.toml b/bindings/node/Cargo.toml
+index dd2ecf4..d36a464 100644
+--- a/bindings/node/Cargo.toml
++++ b/bindings/node/Cargo.toml
+@@ -17,7 +17,8 @@ napi = { version = "2.16.3", default-features = false, features = [
+     "async",
+ ] }
+ napi-derive = "2.16.13"
+-rust_eth_kzg = { workspace = true, features = ["multithreaded"] }
++rust-kzg-blst = { path = "../../..", features = ["c_bindings"] }
++kzg = { path = "../../../../kzg" }
+ 
+ [build-dependencies]
+ napi-build = "2.1.4"
+diff --git a/bindings/node/index.d.ts b/bindings/node/index.d.ts
+index a44fe3b..4ef6468 100644
+--- a/bindings/node/index.d.ts
++++ b/bindings/node/index.d.ts
+@@ -13,12 +13,12 @@ export interface DasContextOptions {
+   usePrecomp: boolean
+   numThreads: number
+ }
+-export class CellsAndProofs {
++export declare class CellsAndProofs {
+   cells: Array<Uint8Array>
+   proofs: Array<Uint8Array>
+ }
+ export type DASContextJs = DasContextJs
+-export class DasContextJs {
++export declare class DasContextJs {
+   constructor()
+   static create(options: DasContextOptions): DasContextJs
+   blobToKzgCommitment(blob: Uint8Array): Uint8Array
+diff --git a/bindings/node/src/lib.rs b/bindings/node/src/lib.rs
+index c55e897..e6442b8 100644
+--- a/bindings/node/src/lib.rs
++++ b/bindings/node/src/lib.rs
+@@ -1,28 +1,29 @@
+-use std::sync::Arc;
++use std::{ops::Deref, sync::Arc};
+ 
+ use napi::{
+   bindgen_prelude::{BigInt, Error, Uint8Array},
+   Result,
+ };
+ use napi_derive::napi;
++use rust_kzg_blst::{eip_7594::BlstBackend, types::kzg_settings::FsKZGSettings};
+ 
+-use rust_eth_kzg::{
+-  constants::{self, RECOMMENDED_PRECOMP_WIDTH},
+-  DASContext, ThreadCount, TrustedSetup, UsePrecomp,
++use kzg::{
++  eth::eip_7594::{compute_cells_and_kzg_proofs_raw, recover_cells_and_kzg_proofs_raw},
++  EcBackend, G1,
+ };
+ 
+ #[napi]
+-pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
++pub const BYTES_PER_COMMITMENT: u32 = kzg::eth::BYTES_PER_COMMITMENT as u32;
+ #[napi]
+-pub const BYTES_PER_PROOF: u32 = constants::BYTES_PER_COMMITMENT as u32;
++pub const BYTES_PER_PROOF: u32 = kzg::eth::BYTES_PER_PROOF as u32;
+ #[napi]
+-pub const BYTES_PER_FIELD_ELEMENT: u32 = constants::BYTES_PER_FIELD_ELEMENT as u32;
++pub const BYTES_PER_FIELD_ELEMENT: u32 = kzg::eth::BYTES_PER_FIELD_ELEMENT as u32;
+ #[napi]
+-pub const BYTES_PER_BLOB: u32 = constants::BYTES_PER_BLOB as u32;
++pub const BYTES_PER_BLOB: u32 = kzg::eth::BYTES_PER_BLOB as u32;
+ #[napi]
+-pub const MAX_NUM_COLUMNS: u32 = constants::CELLS_PER_EXT_BLOB as u32;
++pub const MAX_NUM_COLUMNS: u32 = kzg::eth::CELLS_PER_EXT_BLOB as u32;
+ #[napi]
+-pub const BYTES_PER_CELL: u32 = constants::BYTES_PER_CELL as u32;
++pub const BYTES_PER_CELL: u32 = kzg::eth::BYTES_PER_CELL as u32;
+ 
+ #[napi]
+ pub struct CellsAndProofs {
+@@ -32,7 +33,7 @@ pub struct CellsAndProofs {
+ 
+ #[napi]
+ pub struct DASContextJs {
+-  inner: Arc<DASContext>,
++  inner: Arc<FsKZGSettings>,
+ }
+ 
+ impl Default for DASContextJs {
+@@ -64,24 +65,27 @@ impl DASContextJs {
+   }
+ 
+   #[napi(factory)]
+-  pub fn create(options: DASContextOptions) -> Self {
+-    let use_precomp = options.use_precomp;
+-    let num_threads = options.num_threads;
+-
+-    let precomp = if use_precomp {
+-      UsePrecomp::Yes {
+-        width: RECOMMENDED_PRECOMP_WIDTH,
+-      }
+-    } else {
+-      UsePrecomp::No
+-    };
++  pub fn create(_options: DASContextOptions) -> Self {
++    let (g1_monomial_bytes, g1_lagrange_bytes, g2_monomial_bytes) =
++      kzg::eip_4844::load_trusted_setup_string(include_str!(
++        "../../../../../kzg-bench/src/trusted_setup.txt"
++      ))
++      .unwrap();
++
++    let ctx = kzg::eip_4844::load_trusted_setup_rust::<
++      <BlstBackend as EcBackend>::Fr,
++      <BlstBackend as EcBackend>::G1,
++      <BlstBackend as EcBackend>::G2,
++      <BlstBackend as EcBackend>::FFTSettings,
++      <BlstBackend as EcBackend>::Poly,
++      <BlstBackend as EcBackend>::KZGSettings,
++      <BlstBackend as EcBackend>::G1Fp,
++      <BlstBackend as EcBackend>::G1Affine,
++    >(&g1_monomial_bytes, &g1_lagrange_bytes, &g2_monomial_bytes)
++    .unwrap();
+ 
+     DASContextJs {
+-      inner: Arc::new(DASContext::with_threads(
+-        &TrustedSetup::default(),
+-        ThreadCount::Multi(num_threads as usize),
+-        precomp,
+-      )),
++      inner: Arc::new(ctx),
+     }
+   }
+ 
+@@ -91,13 +95,15 @@ impl DASContextJs {
+     let ctx = &self.inner;
+     let blob = slice_to_array_ref(blob, "blob")?;
+ 
+-    let commitment = ctx.blob_to_kzg_commitment(blob).map_err(|err| {
+-      Error::from_reason(format!(
+-        "failed to compute blob_to_kzg_commitment: {:?}",
+-        err
+-      ))
+-    })?;
+-    Ok(Uint8Array::from(&commitment))
++    let commitment =
++      kzg::eip_4844::blob_to_kzg_commitment_raw(blob.clone().try_into().unwrap(), ctx.deref())
++        .map_err(|err| {
++          Error::from_reason(format!(
++            "failed to compute blob_to_kzg_commitment: {:?}",
++            err
++          ))
++        })?;
++    Ok(Uint8Array::from(commitment.to_bytes()))
+   }
+ 
+   #[napi]
+@@ -110,14 +116,18 @@ impl DASContextJs {
+     let blob = blob.as_ref();
+     let ctx = &self.inner;
+ 
+-    let blob = slice_to_array_ref(blob, "blob")?;
++    let blob = slice_to_array_ref(blob, "blob")?
++      .clone()
++      .try_into()
++      .map_err(|_| Error::from_reason("Invalid blob size".to_owned()))?;
+ 
+-    let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob).map_err(|err| {
+-      Error::from_reason(format!(
+-        "failed to compute compute_cells_and_kzg_proofs: {:?}",
+-        err
+-      ))
+-    })?;
++    let (cells, proofs) = compute_cells_and_kzg_proofs_raw::<BlstBackend>(blob, ctx.deref())
++      .map_err(|err| {
++        Error::from_reason(format!(
++          "failed to compute compute_cells_and_kzg_proofs: {:?}",
++          err
++        ))
++      })?;
+ 
+     let cells_uint8array = cells
+       .into_iter()
+@@ -161,24 +171,30 @@ impl DASContextJs {
+     cell_indices: Vec<BigInt>,
+     cells: Vec<Uint8Array>,
+   ) -> Result<CellsAndProofs> {
+-    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
++    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_usize).collect();
+     let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
+ 
+     let ctx = &self.inner;
+ 
+     let cells: Vec<_> = cells
+       .iter()
+-      .map(|cell| slice_to_array_ref(cell, "cell"))
++      .map(|cell| {
++        slice_to_array_ref(cell, "cell")?
++          .clone()
++          .try_into()
++          .map_err(|_| Error::from_reason("Invalid cell size".to_owned()))
++      })
+       .collect::<Result<_, _>>()?;
+ 
+-    let (cells, proofs) = ctx
+-      .recover_cells_and_kzg_proofs(cell_indices, cells)
+-      .map_err(|err| {
+-        Error::from_reason(format!(
+-          "failed to compute recover_cells_and_kzg_proofs: {:?}",
+-          err
+-        ))
+-      })?;
++    let (cells, proofs) =
++      recover_cells_and_kzg_proofs_raw::<BlstBackend>(&cell_indices, &cells, ctx.deref()).map_err(
++        |err| {
++          Error::from_reason(format!(
++            "failed to compute recover_cells_and_kzg_proofs: {:?}",
++            err
++          ))
++        },
++      )?;
+ 
+     let cells_uint8array = cells
+       .into_iter()
+@@ -212,27 +228,46 @@ impl DASContextJs {
+     cells: Vec<Uint8Array>,
+     proofs: Vec<Uint8Array>,
+   ) -> Result<bool> {
+-    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
++    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_usize).collect();
+ 
+     let commitments: Vec<_> = commitments
+       .iter()
+-      .map(|commitment| slice_to_array_ref(commitment, "commitment"))
++      .map(|commitment| {
++        slice_to_array_ref(commitment, "commitment")?
++          .clone()
++          .try_into()
++          .map_err(|_| Error::from_reason("Invalid commitment size".to_owned()))
++      })
+       .collect::<Result<_, _>>()?;
+     let cells: Vec<_> = cells
+       .iter()
+-      .map(|cell| slice_to_array_ref(cell, "cell"))
++      .map(|cell| {
++        slice_to_array_ref(cell, "cell")?
++          .clone()
++          .try_into()
++          .map_err(|_| Error::from_reason("Invalid cell size".to_owned()))
++      })
+       .collect::<Result<_, _>>()?;
+     let proofs: Vec<_> = proofs
+       .iter()
+-      .map(|proof| slice_to_array_ref(proof, "proof"))
++      .map(|proof| {
++        slice_to_array_ref(proof, "proof")?
++          .clone()
++          .try_into()
++          .map_err(|_| Error::from_reason("Invalid proof size".to_owned()))
++      })
+       .collect::<Result<_, _>>()?;
+ 
+     let ctx = &self.inner;
+ 
+-    let valid = ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs);
+-    match valid {
+-      Ok(_) => Ok(true),
+-      Err(x) if x.invalid_proof() => Ok(false),
++    match kzg::eth::eip_7594::verify_cell_kzg_proof_batch_raw::<BlstBackend>(
++      &commitments,
++      &cell_indices,
++      &cells,
++      &proofs,
++      ctx.deref(),
++    ) {
++      Ok(result) => Ok(result),
+       Err(err) => Err(Error::from_reason(format!(
+         "failed to compute verify_cell_kzg_proof_batch: {:?}",
+         err
+@@ -253,10 +288,10 @@ impl DASContextJs {
+ }
+ 
+ // We use bigint because u64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint
+-fn bigint_to_u64(value: BigInt) -> u64 {
++fn bigint_to_usize(value: BigInt) -> usize {
+   let (signed, value_u128, _) = value.get_u128();
+   assert!(!signed, "value should be an unsigned integer");
+-  value_u128 as u64
++  value_u128 as usize
+ }
+ 
+ /// Convert a slice into a reference to an array
+diff --git a/scripts/compile.sh b/scripts/compile.sh
+index 021cfc0..4ed545a 100755
+--- a/scripts/compile.sh
++++ b/scripts/compile.sh
+@@ -31,7 +31,7 @@ compile_csharp() {
+     echo "Compiling for C#..."
+     OUT_DIR="$PROJECT_ROOT/bindings/csharp/csharp_code/EthKZG.bindings/runtimes"
+     LIB_TYPE="dynamic"
+-    LIB_NAME="c_eth_kzg"
++    LIB_NAME="rust_kzg_blst"
+     $PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH $LIB_NAME $LIB_TYPE $OUT_DIR
+ }
+ 
+@@ -51,7 +51,7 @@ compile_nim() {
+     echo "Compiling for Nim..."
+     OUT_DIR="$PROJECT_ROOT/bindings/nim/nim_code/build"
+     LIB_TYPE="static"
+-    LIB_NAME="c_eth_kzg"
++    LIB_NAME="rust_kzg_blst"
+     # Check if the OS is Darwin (macOS) and set ARCH_MODIFIED to universal if true.
+     if [[ "$OS" == "Darwin" ]]; then
+         # Install both targets for mac, so that it won't fail in CI
+diff --git a/scripts/compile_to_native.sh b/scripts/compile_to_native.sh
+index ab6dcdf..838936e 100755
+--- a/scripts/compile_to_native.sh
++++ b/scripts/compile_to_native.sh
+@@ -32,12 +32,16 @@ fi
+ 
+ # Determine the script's directory
+ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
++if [[ "$3" == "java_eth_kzg" ]]; then
++    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
++else
++    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
++fi
+ 
+ # Determine the operating system, architecture, library name, library type, output directory, and build tool if not provided
+ OS="${1:-$(uname)}"
+ ARCH="${2:-$(uname -m)}"
+-LIB_NAME="${3:-c_eth_kzg}"
++LIB_NAME="${3:-rust_kzg_blst}"
+ LIB_TYPE="${4:-both}"
+ OUT_DIR="${5:-$PROJECT_ROOT/bindings/c/build}"
+ BUILD_TOOL="${6:-cargo}"
+@@ -48,6 +52,8 @@ echo "Library type to copy: $LIB_TYPE"
+ echo "Output directory: $OUT_DIR"
+ echo "Build tool: $BUILD_TOOL"
+ 
++echo "$LIB_NAME"
++
+ STATIC_LIB_NAME=""
+ DYNAMIC_LIB_NAME=""
+ TARGET_NAME=""
+@@ -137,11 +143,25 @@ esac
+ 
+ # Function to perform the build
+ do_build() {
+-    local target=$1
+-    if [ "$BUILD_TOOL" == "zigbuild" ]; then
+-        cargo zigbuild --release --target=$target
++    if [[ "$LIB_NAME" == "java_eth_kzg" ]]; then
++        pwd
++
++        local target=$1
++        if [ "$BUILD_TOOL" == "zigbuild" ]; then
++            cargo zigbuild --release --target=$target
++        else
++            cargo build --release --target=$target
++        fi
+     else
+-        cargo build --release --target=$target
++        cd ..
++        local target=$1
++        if [ "$BUILD_TOOL" == "zigbuild" ]; then
++            cargo zigbuild --release --target=$target --features c_bindings
++        else
++            cargo build --release --target=$target --features c_bindings
++        fi
++
++        cd ./rust-eth-kzg
+     fi
+ }
+ 
+-- 
+2.43.0
+

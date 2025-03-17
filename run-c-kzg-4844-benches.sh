@@ -58,7 +58,7 @@ mv ../../target/release/librust_kzg_$backend.a ./lib
 ###################### rust benchmarks ######################
 
 print_msg "Patching rust binding"
-git apply < ../rust.patch
+git apply < ../patches/c-kzg-4844/rust.patch
 
 print_msg "Running rust benchmarks"
 cargo bench
@@ -66,7 +66,7 @@ cargo bench
 ###################### go benchmarks ######################
 
 print_msg "Patching go binding"
-git apply < ../go.patch
+git apply < ../patches/c-kzg-4844/go.patch
 cd bindings/go || exit
 
 print_msg "Running go benchmarks"
