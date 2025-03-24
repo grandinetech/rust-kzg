@@ -1,6 +1,7 @@
 use super::utils::{get_manifest_dir, get_trusted_setup_path};
 use crate::test_vectors::{
-    compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs, verify_cell_kzg_proof_batch,
+    compute_cells, compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs,
+    verify_cell_kzg_proof_batch,
 };
 use kzg::{
     eth::{self, FIELD_ELEMENTS_PER_CELL},
@@ -10,6 +11,7 @@ use std::{fs, path::PathBuf};
 
 const COMPUTE_CELLS_AND_KZG_PROOFS_TEST_VECTORS: &str =
     "src/test_vectors/compute_cells_and_kzg_proofs/*/*/*";
+const COMPUTE_CELLS_TEST_VECTORS: &str = "src/test_vectors/compute_cells/*/*/*";
 const RECOVER_CELLS_AND_KZG_PROOFS_TEST_VECTORS: &str =
     "src/test_vectors/recover_cells_and_kzg_proofs/*/*/*";
 const VERIFY_CELL_KZG_PROOF_BATCH_TEST_VECTORS: &str =
@@ -74,6 +76,61 @@ pub fn test_vectors_compute_cells_and_kzg_proofs<B: EcBackend>(
                 assert!(
                     recv_proofs == exp_proofs,
                     "Proofs do not match, for test vector {:?}",
+                    test_file
+                );
+            }
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn test_vectors_compute_cells<B: EcBackend>(
+    load_trusted_setup: &dyn Fn(&str) -> Result<B::KZGSettings, String>,
+    bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<B::Fr>, String>,
+) {
+    let settings = load_trusted_setup(get_trusted_setup_path().as_str()).unwrap();
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        COMPUTE_CELLS_TEST_VECTORS
+    ))
+    .unwrap()
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap();
+    assert!(!test_files.is_empty());
+
+    for test_file in test_files {
+        let yaml_data = fs::read_to_string(test_file.clone()).unwrap();
+        let test: compute_cells::Test = serde_yaml::from_str(&yaml_data).unwrap();
+
+        let blob = match bytes_to_blob(&test.input.get_blob_bytes().unwrap()) {
+            Ok(blob) => blob,
+            Err(_) => {
+                assert!(test.get_output().is_none());
+                continue;
+            }
+        };
+
+        let mut recv_cells =
+            vec![B::Fr::default(); eth::CELLS_PER_EXT_BLOB * eth::FIELD_ELEMENTS_PER_CELL];
+
+        match <B::KZGSettings as DAS<B>>::compute_cells_and_kzg_proofs(
+            &settings,
+            Some(&mut recv_cells),
+            None,
+            &blob,
+        ) {
+            Err(_) => assert!(test.get_output().is_none()),
+            Ok(()) => {
+                let exp_cells = test.get_output().unwrap();
+
+                let recv_cells = recv_cells
+                    .chunks(FIELD_ELEMENTS_PER_CELL)
+                    .map(|it| it.iter().flat_map(|it| it.to_bytes()).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<u8>>>();
+                assert!(
+                    recv_cells == exp_cells,
+                    "Cells do not match, for test vector {:?}",
                     test_file
                 );
             }

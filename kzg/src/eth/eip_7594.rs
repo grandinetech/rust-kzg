@@ -76,6 +76,23 @@ where
     Ok((converted_cells, converted_proofs))
 }
 
+pub fn compute_cells_raw<B: EcBackend>(
+    blob: [u8; BYTES_PER_BLOB],
+    das: &impl DAS<B>,
+) -> Result<Vec<[u8; BYTES_PER_CELL]>, String>
+where
+    B::Fr: Copy,
+{
+    let blob = bytes_to_blob(&blob)?;
+    let mut recovered_cells = [B::Fr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
+
+    das.compute_cells_and_kzg_proofs(Some(&mut recovered_cells), None, &blob)?;
+
+    let converted_cells = cells_elements_to_cells_bytes::<B>(&recovered_cells)?;
+
+    Ok(converted_cells)
+}
+
 pub fn verify_cell_kzg_proof_batch_raw<B: EcBackend>(
     commitments: &[[u8; BYTES_PER_COMMITMENT]],
     cell_indices: &[usize],

@@ -1,35 +1,34 @@
-From 5a3930e0f7d593e49cb5787b758db7cb1261d94b Mon Sep 17 00:00:00 2001
+From bfa93fbf74ad292e6d0cda71a32574ed54bedf04 Mon Sep 17 00:00:00 2001
 From: sirse <artiom.tretjakovas2@gmail.com>
-Date: Wed, 2 Oct 2024 06:53:08 +0000
+Date: Tue, 25 Mar 2025 23:34:09 +0200
 Subject: [PATCH] Patch rust bindings
 
 ---
  Cargo.toml             |  1 +
- bindings/rust/build.rs | 44 +++---------------------------------------
- 2 files changed, 4 insertions(+), 41 deletions(-)
+ bindings/rust/build.rs | 51 ++++--------------------------------------
+ 2 files changed, 5 insertions(+), 47 deletions(-)
 
 diff --git a/Cargo.toml b/Cargo.toml
-index 197badf..a164920 100644
+index 4c3fea5..9678f0d 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -1,3 +1,4 @@
 +[workspace]
  [package]
  name = "c-kzg"
- version = "2.0.1"
+ version = "2.1.0"
 diff --git a/bindings/rust/build.rs b/bindings/rust/build.rs
-index 45eb72d..994c83f 100644
+index 2f4170a..f1d3f25 100644
 --- a/bindings/rust/build.rs
 +++ b/bindings/rust/build.rs
-@@ -3,48 +3,10 @@ use std::{env, path::PathBuf};
+@@ -3,53 +3,10 @@ use std::{env, path::PathBuf};
  fn main() {
      let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
  
 -    // Obtain the header files of blst
 -    let blst_base_dir = root_dir.join("blst");
 -    let blst_headers_dir = blst_base_dir.join("bindings");
-+    let rust_kzg_target_dir = root_dir.join("lib");
- 
+-
 -    let c_src_dir = root_dir.join("src");
 -
 -    let mut cc = cc::Build::new();
@@ -42,7 +41,12 @@ index 45eb72d..994c83f 100644
 -        // an int. There is a bug in bindgen associated with this. It assumes that a bool in C is
 -        // the same size as a bool in Rust. This is the root cause of the issues on Windows. If/when
 -        // this is fixed in bindgen, it should be safe to remove this compiler flag.
--        cc.flag("/std:c11");
+-
+-        // This flag is for MSVC
+-        cc.flag_if_supported("/std:c11");
+-
+-        // This is for GCC
+-        cc.flag_if_supported("-std=c11");
 -    }
 -
 -    cc.include(c_src_dir.clone());
@@ -68,11 +72,13 @@ index 45eb72d..994c83f 100644
 -
 -    // Finally, tell cargo this provides ckzg/ckzg_min
 -    println!("cargo:rustc-link-lib=ckzg");
++    let rust_kzg_target_dir = root_dir.join("lib");
++    
 +    println!("cargo:rustc-link-search={}", rust_kzg_target_dir.display());
 +    println!("cargo:rustc-link-arg=-lrust_kzg_constantine");
  }
  
  #[cfg(feature = "generate-bindings")]
 -- 
-2.46.1
+2.43.0
 
