@@ -7,8 +7,8 @@ mod tests {
     use kzg_bench::tests::{
         eip_4844::generate_random_blob_bytes,
         eip_7594::{
-            test_vectors_compute_cells_and_kzg_proofs, test_vectors_recover_cells_and_kzg_proofs,
-            test_vectors_verify_cell_kzg_proof_batch,
+            test_vectors_compute_cells, test_vectors_compute_cells_and_kzg_proofs,
+            test_vectors_recover_cells_and_kzg_proofs, test_vectors_verify_cell_kzg_proof_batch,
         },
         utils::get_trusted_setup_path,
     };
@@ -17,6 +17,11 @@ mod tests {
         eip_7594::MclBackend,
         types::{fr::MclFr, g1::MclG1, kzg_settings::MclKZGSettings},
     };
+
+    #[test]
+    pub fn test_vectors_compute_cells_() {
+        test_vectors_compute_cells::<MclBackend>(&load_trusted_setup_filename_rust, &bytes_to_blob);
+    }
 
     #[test]
     pub fn test_vectors_compute_cells_and_kzg_proofs_() {
