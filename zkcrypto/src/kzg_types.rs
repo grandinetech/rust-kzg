@@ -934,14 +934,14 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
     }
 
     fn commit_to_poly(&self, p: &PolyData) -> Result<ZG1, String> {
-        if p.coeffs.len() > self.g1_values_lagrange_brp.len() {
+        if p.coeffs.len() > self.g1_values_monomial.len() {
             return Err(String::from("Polynomial is longer than secret g1"));
         }
 
         let mut out = ZG1::default();
         g1_linear_combination(
             &mut out,
-            &self.g1_values_lagrange_brp,
+            &self.g1_values_monomial,
             &p.coeffs,
             p.coeffs.len(),
             None,

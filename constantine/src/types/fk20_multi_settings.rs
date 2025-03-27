@@ -78,7 +78,7 @@ impl FK20MultiSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtKZGSettings, C
                 let mut j = start;
 
                 while i + 1 < k {
-                    x.push(ks.g1_values_lagrange_brp[j]);
+                    x.push(ks.g1_values_monomial[j]);
 
                     i += 1;
 

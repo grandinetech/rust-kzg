@@ -24,11 +24,11 @@ pub fn fk_single<
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
     let n: usize = 5;
     let n_len: usize = 1 << n;
-    let secrets_len = n_len + 1;
+    let secrets_len = n_len;
 
     assert!(n_len >= 2 * poly_len);
     let mut p = B::Poly::new(poly_len);
@@ -87,12 +87,12 @@ pub fn fk_single_strided<
 >(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    let coeffs: Vec<u64> = vec![1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
     let poly_len: usize = coeffs.len();
     let n: usize = 8;
     let n_len: usize = 1 << n;
     let stride: usize = n_len / (2 * poly_len);
-    let secrets_len = n_len + 1;
+    let secrets_len = n_len;
 
     assert!(n_len >= 2 * poly_len);
     let mut p = B::Poly::new(poly_len);
@@ -138,7 +138,7 @@ pub fn fk_multi_settings<
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
     let n: usize = 5;
-    let secrets_len: usize = 33;
+    let secrets_len: usize = 32;
 
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);

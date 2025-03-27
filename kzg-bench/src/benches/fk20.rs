@@ -33,7 +33,7 @@ pub fn bench_fk_single_da<
     let coeffs: Vec<u64> = vec![rng.next_u64(); 1 << (BENCH_SCALE - 1)];
     let poly_len: usize = coeffs.len();
     let n_len: usize = 1 << BENCH_SCALE;
-    let secrets_len = n_len + 1;
+    let secrets_len = n_len;
 
     assert!(n_len >= 2 * poly_len);
     let mut p = B::Poly::new(poly_len);
