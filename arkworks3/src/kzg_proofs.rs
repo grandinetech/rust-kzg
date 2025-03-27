@@ -9,10 +9,11 @@ use ark_ec::PairingEngine;
 use ark_ec::ProjectiveCurve;
 use ark_poly::Polynomial;
 use ark_std::One;
+use kzg::common_utils::log2_pow2;
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::eth::c_bindings::CKZGSettings;
 use kzg::msm::precompute::PrecomputationTable;
-use kzg::{eth, Fr, G1Mul, G2Mul, G1, G2};
+use kzg::{eth, FFTSettings as _, Fr, G1Mul, G2Mul, FFTG1, G1, G2};
 use std::ops::Neg;
 
 #[derive(Debug, Clone)]
@@ -114,19 +115,20 @@ pub fn generate_trusted_setup(
     let s = hash_to_bls_field(&secret);
     let mut s_pow = Fr::one();
 
-    let mut s1 = Vec::with_capacity(n);
-    let mut s2 = Vec::with_capacity(n);
-    let mut s3 = Vec::with_capacity(n);
+    let mut g1_monomial_values = Vec::with_capacity(n);
+    let mut g2_monomial_values = Vec::with_capacity(n);
 
     for _ in 0..n {
-        s1.push(ArkG1::generator().mul(&s_pow));
-        s2.push(ArkG1::generator().mul(&s_pow)); // TODO: this should be lagrange form
-        s3.push(ArkG2::generator().mul(&s_pow));
+        g1_monomial_values.push(ArkG1::generator().mul(&s_pow));
+        g2_monomial_values.push(ArkG2::generator().mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
     }
 
-    (s1, s2, s3)
+    let s = FFTSettings::new(log2_pow2(n)).unwrap();
+    let g1_lagrange_values = s.fft_g1(&g1_monomial_values, true).unwrap();
+
+    (g1_monomial_values, g1_lagrange_values, g2_monomial_values)
 }
 
 pub fn eval_poly(p: &PolyData, x: &ArkFr) -> ArkFr {

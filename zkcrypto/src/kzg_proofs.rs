@@ -1,14 +1,14 @@
 #![allow(non_camel_case_types)]
-use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::kzg_types::{ZFp, ZFr, ZG1Affine};
 use crate::kzg_types::{ZFr as BlstFr, ZG1, ZG2};
 use crate::poly::PolyData;
 use bls12_381::{
     multi_miller_loop, Fp12 as ZFp12, G1Affine, G2Affine, G2Prepared, MillerLoopResult,
 };
+use kzg::common_utils::log2_pow2;
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::msm::precompute::PrecomputationTable;
-use kzg::{Fr as FrTrait, G1Mul, G2Mul};
+use kzg::{FFTSettings as _, Fr as FrTrait, G1Mul, G2Mul, FFTG1, G1, G2};
 use std::ops::{Add, Neg};
 use std::sync::Arc;
 
@@ -51,22 +51,23 @@ pub struct KZGSettings {
 }
 
 pub fn generate_trusted_setup(len: usize, secret: [u8; 32usize]) -> (Vec<ZG1>, Vec<ZG1>, Vec<ZG2>) {
-    let s = hash_to_bls_field::<ZFr>(&secret);
+    let s = hash_to_bls_field(&secret);
     let mut s_pow = ZFr::one();
 
-    let mut s1 = Vec::with_capacity(len);
-    let mut s2 = Vec::with_capacity(len);
-    let mut s3 = Vec::with_capacity(len);
+    let mut g1_monomial_values = Vec::with_capacity(len);
+    let mut g2_monomial_values = Vec::with_capacity(len);
 
     for _ in 0..len {
-        s1.push(G1_GENERATOR.mul(&s_pow));
-        s2.push(G1_GENERATOR.mul(&s_pow)); // TODO: this should be lagrange form
-        s3.push(G2_GENERATOR.mul(&s_pow));
+        g1_monomial_values.push(ZG1::generator().mul(&s_pow));
+        g2_monomial_values.push(ZG2::generator().mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
     }
 
-    (s1, s2, s3)
+    let s = FFTSettings::new(log2_pow2(len)).unwrap();
+    let g1_lagrange_values = s.fft_g1(&g1_monomial_values, true).unwrap();
+
+    (g1_monomial_values, g1_lagrange_values, g2_monomial_values)
 }
 
 pub fn eval_poly(p: &PolyData, x: &ZFr) -> ZFr {

@@ -49,7 +49,7 @@ impl
 
         let mut x = Vec::with_capacity(n);
         for i in 0..n - 1 {
-            x.push(kzg_settings.g1_values_lagrange_brp[n - 2 - i]);
+            x.push(kzg_settings.g1_values_monomial[n - 2 - i]);
         }
         x.push(MclG1::identity());
 
