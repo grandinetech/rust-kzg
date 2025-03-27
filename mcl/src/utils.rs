@@ -2,10 +2,11 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+use kzg::common_utils::log2_pow2;
 use kzg::eip_4844::{hash_to_bls_field, PrecomputationTableManager};
-use kzg::{Fr, G1Mul, G2Mul};
+use kzg::{FFTSettings, Fr, G1Mul, G2Mul, FFTG1, G1, G2};
 
-use crate::consts::{G1_GENERATOR, G2_GENERATOR};
+use crate::types::fft_settings::MclFFTSettings;
 use crate::types::fp::MclFp;
 use crate::types::fr::MclFr;
 use crate::types::g1::{MclG1, MclG1Affine};
@@ -18,19 +19,20 @@ pub fn generate_trusted_setup(
     let s = hash_to_bls_field(&secret);
     let mut s_pow = Fr::one();
 
-    let mut s1 = Vec::with_capacity(n);
-    let mut s2 = Vec::with_capacity(n);
-    let mut s3 = Vec::with_capacity(n);
+    let mut g1_monomial_values = Vec::with_capacity(n);
+    let mut g2_monomial_values = Vec::with_capacity(n);
 
     for _ in 0..n {
-        s1.push(G1_GENERATOR.mul(&s_pow));
-        s2.push(G1_GENERATOR.mul(&s_pow)); // TODO: this should be lagrange form
-        s3.push(G2_GENERATOR.mul(&s_pow));
+        g1_monomial_values.push(MclG1::generator().mul(&s_pow));
+        g2_monomial_values.push(MclG2::generator().mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
     }
 
-    (s1, s2, s3)
+    let s = MclFFTSettings::new(log2_pow2(n)).unwrap();
+    let g1_lagrange_values = s.fft_g1(&g1_monomial_values, true).unwrap();
+
+    (g1_monomial_values, g1_lagrange_values, g2_monomial_values)
 }
 
 pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
