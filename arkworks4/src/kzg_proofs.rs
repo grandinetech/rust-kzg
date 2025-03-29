@@ -2,7 +2,6 @@
 
 extern crate alloc;
 use super::utils::{blst_poly_into_pc_poly, PolyData};
-use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1Affine};
 use crate::kzg_types::{ArkFr as BlstFr, ArkG1, ArkG2};
 use alloc::sync::Arc;
@@ -11,9 +10,10 @@ use ark_ec::pairing::Pairing;
 use ark_ec::CurveGroup;
 use ark_poly::Polynomial;
 use ark_std::{vec, One};
+use kzg::common_utils::log2_pow2;
 use kzg::eip_4844::hash_to_bls_field;
 use kzg::msm::precompute::PrecomputationTable;
-use kzg::Fr as FrTrait;
+use kzg::{FFTSettings as _, Fr as FrTrait, FFTG1, G1, G2};
 use kzg::{G1Mul, G2Mul};
 use std::ops::Neg;
 
@@ -59,22 +59,23 @@ pub fn generate_trusted_setup(
     len: usize,
     secret: [u8; 32usize],
 ) -> (Vec<ArkG1>, Vec<ArkG1>, Vec<ArkG2>) {
-    let s = hash_to_bls_field::<ArkFr>(&secret);
+    let s = hash_to_bls_field(&secret);
     let mut s_pow = ArkFr::one();
 
-    let mut s1 = Vec::with_capacity(len);
-    let mut s2 = Vec::with_capacity(len);
-    let mut s3 = Vec::with_capacity(len);
+    let mut g1_monomial_values = Vec::with_capacity(len);
+    let mut g2_monomial_values = Vec::with_capacity(len);
 
     for _ in 0..len {
-        s1.push(G1_GENERATOR.mul(&s_pow));
-        s2.push(G1_GENERATOR.mul(&s_pow));
-        s3.push(G2_GENERATOR.mul(&s_pow));
+        g1_monomial_values.push(ArkG1::generator().mul(&s_pow));
+        g2_monomial_values.push(ArkG2::generator().mul(&s_pow));
 
         s_pow = s_pow.mul(&s);
     }
 
-    (s1, s2, s3)
+    let s = FFTSettings::new(log2_pow2(len)).unwrap();
+    let g1_lagrange_values = s.fft_g1(&g1_monomial_values, true).unwrap();
+
+    (g1_monomial_values, g1_lagrange_values, g2_monomial_values)
 }
 
 pub fn eval_poly(p: &PolyData, x: &BlstFr) -> BlstFr {

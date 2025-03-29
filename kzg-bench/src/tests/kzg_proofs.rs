@@ -1,5 +1,6 @@
 use kzg::{
-    eth, EcBackend, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1Mul, KZGSettings, Poly, G1, G2,
+    eth, EcBackend, FFTSettings, Fr, G1Affine, G1Fp, G1GetFp, G1LinComb, G1Mul, KZGSettings, Poly,
+    G1, G2,
 };
 
 pub const SECRET: [u8; 32usize] = [
@@ -7,13 +8,44 @@ pub const SECRET: [u8; 32usize] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
+/// Check that generate_trusted_setup function returns trusted setup in correct form
+#[allow(clippy::type_complexity)]
+pub fn trusted_setup_in_correct_form<B: EcBackend>(
+    generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
+) where
+    B::Fr: Copy,
+{
+    let (s1, s2, s3) = generate_trusted_setup(8, SECRET);
+    let fs = B::FFTSettings::new(3).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 3).unwrap();
+
+    let poly = B::Poly::from_coeffs(
+        &[6, 28, 31, 85, 30, 71, 79, 58]
+            .into_iter()
+            .map(B::Fr::from_u64)
+            .collect::<Vec<_>>(),
+    );
+
+    let evaluations = fs
+        .get_roots_of_unity()
+        .iter()
+        .map(|v| poly.eval(v))
+        .collect::<Vec<_>>();
+    let left = B::G1::g1_lincomb(ks.get_g1_monomial(), poly.get_coeffs(), 8, None);
+    let right = B::G1::g1_lincomb(ks.get_g1_lagrange_brp(), &evaluations, 8, None);
+
+    assert_eq!(left, right);
+}
+
 /// Check that both FFT implementations produce the same results
 #[allow(clippy::type_complexity)]
 pub fn proof_single<B: EcBackend>(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
-) {
-    // Our polynomial: degree 15, 16 coefficients
-    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+) where
+    B::Fr: Copy,
+{
+    // Our polynomial: degree 14, 15 coefficients
+    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13];
     let poly_len = coeffs.len();
     let secrets_len = poly_len + 1;
 
@@ -26,7 +58,7 @@ pub fn proof_single<B: EcBackend>(
     // Initialise the secrets and data structures
     let (s1, s2, s3) = generate_trusted_setup(secrets_len, SECRET);
     let fs = B::FFTSettings::new(4).unwrap();
-    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 7).unwrap();
+    let ks = B::KZGSettings::new(&s1, &s2, &s3, &fs, 4).unwrap();
 
     // Compute the proof for x = 25
     let x = B::Fr::from_u64(25);
@@ -116,8 +148,8 @@ pub fn commit_to_too_long_poly_returns_err<B: EcBackend>(
 pub fn proof_multi<B: EcBackend>(
     generate_trusted_setup: &dyn Fn(usize, [u8; 32usize]) -> (Vec<B::G1>, Vec<B::G1>, Vec<B::G2>),
 ) {
-    // Our polynomial: degree 15, 16 coefficients
-    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13];
+    // Our polynomial: degree 14, 15 coefficients
+    let coeffs = [1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13];
     let poly_len = coeffs.len();
 
     // Compute proof at 2^coset_scale points
