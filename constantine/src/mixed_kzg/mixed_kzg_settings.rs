@@ -384,14 +384,12 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine>
         }
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[CtG1] {
+    fn get_x_ext_fft_columns(&self) -> &[Vec<CtG1>] {
         match self {
             MixedKzgSettings::Constantine(_) => {
                 panic!("Context not in generic format")
             }
-            MixedKzgSettings::Generic(generic_context) => {
-                generic_context.get_x_ext_fft_column(index)
-            }
+            MixedKzgSettings::Generic(generic_context) => generic_context.get_x_ext_fft_columns(),
         }
     }
 

@@ -44,9 +44,13 @@ where
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
 {
-    pub fn new(_: &[TG1]) -> Result<Option<Self>, String> {
+    pub fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
         // TODO: currently no trait-based implementation for sppark msm, maybe in future
         Ok(None)
+    }
+
+    pub fn multiply_batch(&self, _: &[Vec<TFr>]) -> Vec<TG1> {
+        panic!("This function must not be called")
     }
 
     pub fn multiply_sequential(&self, _: &[TFr]) -> TG1 {
