@@ -7,7 +7,7 @@ use rust_kzg_mcl::{
         fft_settings::MclFFTSettings,
         fp::MclFp,
         fr::MclFr,
-        g1::{MclG1, MclG1Affine},
+        g1::{MclG1, MclG1Affine, MclG1ProjAddAffine},
         g2::MclG2,
         kzg_settings::MclKZGSettings,
         poly::MclPoly,
@@ -24,6 +24,7 @@ fn bench_load_trusted_setup_(c: &mut Criterion) {
         MclKZGSettings,
         MclFp,
         MclG1Affine,
+        MclG1ProjAddAffine,
     >(
         c,
         &load_trusted_setup_filename_rust,

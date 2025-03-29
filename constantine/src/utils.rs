@@ -10,7 +10,7 @@ use crate::consts::{G1_GENERATOR, G2_GENERATOR};
 use crate::types::fft_settings::CtFFTSettings;
 use crate::types::fp::CtFp;
 use crate::types::fr::CtFr;
-use crate::types::g1::{CtG1, CtG1Affine};
+use crate::types::g1::{CtG1, CtG1Affine, CtG1ProjAddAffine};
 use crate::types::g2::CtG2;
 
 pub fn generate_trusted_setup(
@@ -96,4 +96,5 @@ pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
     CtG1,
     CtFp,
     CtG1Affine,
+    CtG1ProjAddAffine,
 > = PrecomputationTableManager::new();

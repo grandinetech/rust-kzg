@@ -1,5 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
 use ark_bls12_381::{g1, g2, Fq, Fq2, Fr as Bls12Fr};
 use ark_ec::models::short_weierstrass::Projective;
 use ark_ff::Fp2;
@@ -150,4 +150,5 @@ pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
     ArkG1,
     ArkFp,
     ArkG1Affine,
+    ArkG1ProjAddAffine,
 > = PrecomputationTableManager::new();

@@ -14,7 +14,7 @@ use crate::types::kzg_settings::CtKZGSettings;
 use crate::types::poly::CtPoly;
 
 use super::fp::CtFp;
-use super::g1::CtG1Affine;
+use super::g1::{CtG1Affine, CtG1ProjAddAffine};
 
 #[derive(Clone, Default)]
 pub struct CtFK20SingleSettings {
@@ -22,8 +22,18 @@ pub struct CtFK20SingleSettings {
     pub x_ext_fft: Vec<CtG1>,
 }
 
-impl FK20SingleSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtKZGSettings, CtFp, CtG1Affine>
-    for CtFK20SingleSettings
+impl
+    FK20SingleSettings<
+        CtFr,
+        CtG1,
+        CtG2,
+        CtFFTSettings,
+        CtPoly,
+        CtKZGSettings,
+        CtFp,
+        CtG1Affine,
+        CtG1ProjAddAffine,
+    > for CtFK20SingleSettings
 {
     fn new(kzg_settings: &CtKZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;

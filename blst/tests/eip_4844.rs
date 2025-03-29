@@ -28,7 +28,7 @@ mod tests {
     use rust_kzg_blst::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_blst::types::fft_settings::expand_root_of_unity;
     use rust_kzg_blst::types::fp::FsFp;
-    use rust_kzg_blst::types::g1::FsG1Affine;
+    use rust_kzg_blst::types::g1::{FsG1Affine, FsG1ProjAddAffine};
     use rust_kzg_blst::types::{
         fft_settings::FsFFTSettings, fr::FsFr, g1::FsG1, g2::FsG2, kzg_settings::FsKZGSettings,
         poly::FsPoly,
@@ -55,6 +55,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -72,6 +73,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
@@ -91,6 +93,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -113,6 +116,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -135,6 +139,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -157,6 +162,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -177,6 +183,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -197,6 +204,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -217,6 +225,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -237,6 +246,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -255,6 +265,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
@@ -273,6 +284,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -291,6 +303,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(&load_trusted_setup_filename_rust, &verify_kzg_proof_rust);
     }
 
@@ -305,6 +318,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -323,6 +337,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -358,6 +373,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(&evaluate_polynomial_in_evaluation_form);
     }
 
@@ -372,6 +388,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -386,6 +403,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -400,6 +418,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -414,6 +433,7 @@ mod tests {
             FsKZGSettings,
             FsFp,
             FsG1Affine,
+            FsG1ProjAddAffine,
         >(
             &verify_blob_kzg_proof_batch_rust,
             &load_trusted_setup_filename_rust,

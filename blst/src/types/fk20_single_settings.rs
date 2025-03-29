@@ -14,7 +14,7 @@ use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 
 use super::fp::FsFp;
-use super::g1::FsG1Affine;
+use super::g1::{FsG1Affine, FsG1ProjAddAffine};
 
 #[derive(Debug, Clone, Default)]
 pub struct FsFK20SingleSettings {
@@ -22,8 +22,18 @@ pub struct FsFK20SingleSettings {
     pub x_ext_fft: Vec<FsG1>,
 }
 
-impl FK20SingleSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, FsFp, FsG1Affine>
-    for FsFK20SingleSettings
+impl
+    FK20SingleSettings<
+        FsFr,
+        FsG1,
+        FsG2,
+        FsFFTSettings,
+        FsPoly,
+        FsKZGSettings,
+        FsFp,
+        FsG1Affine,
+        FsG1ProjAddAffine,
+    > for FsFK20SingleSettings
 {
     fn new(kzg_settings: &FsKZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;

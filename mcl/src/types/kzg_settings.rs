@@ -20,15 +20,17 @@ use crate::types::poly::MclPoly;
 use crate::utils::PRECOMPUTATION_TABLES;
 
 use super::fp::MclFp;
-use super::g1::MclG1Affine;
+use super::g1::{MclG1Affine, MclG1ProjAddAffine};
 
 #[derive(Debug, Clone, Default)]
+#[allow(clippy::type_complexity)]
 pub struct MclKZGSettings {
     pub fs: MclFFTSettings,
     pub g1_values_monomial: Vec<MclG1>,
     pub g1_values_lagrange_brp: Vec<MclG1>,
     pub g2_values_monomial: Vec<MclG2>,
-    pub precomputation: Option<Arc<PrecomputationTable<MclFr, MclG1, MclFp, MclG1Affine>>>,
+    pub precomputation:
+        Option<Arc<PrecomputationTable<MclFr, MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine>>>,
     pub x_ext_fft_columns: Vec<Vec<MclG1>>,
     pub cell_size: usize,
 }
@@ -58,8 +60,17 @@ fn toeplitz_part_1(
     Ok(())
 }
 
-impl KZGSettings<MclFr, MclG1, MclG2, MclFFTSettings, MclPoly, MclFp, MclG1Affine>
-    for MclKZGSettings
+impl
+    KZGSettings<
+        MclFr,
+        MclG1,
+        MclG2,
+        MclFFTSettings,
+        MclPoly,
+        MclFp,
+        MclG1Affine,
+        MclG1ProjAddAffine,
+    > for MclKZGSettings
 {
     fn new(
         g1_monomial: &[MclG1],
@@ -103,8 +114,13 @@ impl KZGSettings<MclFr, MclG1, MclG2, MclFFTSettings, MclPoly, MclFp, MclG1Affin
             g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
             g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
+            precomputation: {
+                precompute(g1_lagrange_brp, &x_ext_fft_columns)
+                    .ok()
+                    .flatten()
+                    .map(Arc::new)
+            },
             x_ext_fft_columns,
-            precomputation: { precompute(g1_lagrange_brp).ok().flatten().map(Arc::new) },
             cell_size,
         })
     }
@@ -270,12 +286,14 @@ impl KZGSettings<MclFr, MclG1, MclG2, MclFFTSettings, MclPoly, MclFp, MclG1Affin
         &self.g2_values_monomial
     }
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<MclFr, MclG1, MclFp, MclG1Affine>> {
+    fn get_precomputation(
+        &self,
+    ) -> Option<&PrecomputationTable<MclFr, MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[MclG1] {
-        &self.x_ext_fft_columns[index]
+    fn get_x_ext_fft_columns(&self) -> &[Vec<MclG1>] {
+        &self.x_ext_fft_columns
     }
 
     fn get_cell_size(&self) -> usize {

@@ -24,6 +24,7 @@ pub fn bench_fk_single_da<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     c: &mut Criterion,
@@ -67,6 +68,7 @@ pub fn bench_fk_multi_da<
         B::KZGSettings,
         B::G1Fp,
         B::G1Affine,
+        B::G1ProjAddAffine,
     >,
 >(
     c: &mut Criterion,

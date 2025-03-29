@@ -11,7 +11,7 @@ use rust_kzg_blst::{
         fft_settings::FsFFTSettings,
         fp::FsFp,
         fr::FsFr,
-        g1::{FsG1, FsG1Affine},
+        g1::{FsG1, FsG1Affine, FsG1ProjAddAffine},
         g2::FsG2,
         kzg_settings::FsKZGSettings,
         poly::FsPoly,
@@ -19,7 +19,17 @@ use rust_kzg_blst::{
 };
 
 fn bench_eip_4844_(c: &mut Criterion) {
-    bench_eip_4844::<FsFr, FsG1, FsG2, FsPoly, FsFFTSettings, FsKZGSettings, FsFp, FsG1Affine>(
+    bench_eip_4844::<
+        FsFr,
+        FsG1,
+        FsG2,
+        FsPoly,
+        FsFFTSettings,
+        FsKZGSettings,
+        FsFp,
+        FsG1Affine,
+        FsG1ProjAddAffine,
+    >(
         c,
         &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,
