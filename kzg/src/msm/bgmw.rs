@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, Scalar256, G1};
+use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, Scalar256, G1};
 
 use super::pippenger_utils::{
     booth_decode, booth_encode, get_wval_limb, is_zero, num_bits, p1_dadd, p1_to_jacobian,
@@ -8,12 +8,13 @@ use super::pippenger_utils::{
 };
 
 #[derive(Debug, Clone)]
-pub struct BgmwTable<TFr, TG1, TG1Fp, TG1Affine>
+pub struct BgmwTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
     window: BgmwWindow,
     points: Vec<TG1Affine>,
@@ -28,6 +29,7 @@ where
     g1_marker: PhantomData<TG1>,
     g1_fp_marker: PhantomData<TG1Fp>,
     fr_marker: PhantomData<TFr>,
+    g1_affine_add_marker: PhantomData<TG1ProjAddAffine>,
 }
 
 const NBITS: usize = 255;
@@ -169,7 +171,8 @@ impl<
         TG1Fp: G1Fp,
         TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
         TG1Affine: G1Affine<TG1, TG1Fp>,
-    > BgmwTable<TFr, TG1, TG1Fp, TG1Affine>
+        TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+    > BgmwTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 {
     pub fn new(points: &[TG1], matrix: &[Vec<TG1>]) -> Result<Option<Self>, String> {
         let window = Self::window(points.len());
@@ -217,6 +220,7 @@ impl<
                 fr_marker: PhantomData,
                 g1_fp_marker: PhantomData,
                 g1_marker: PhantomData,
+                g1_affine_add_marker: PhantomData,
             }))
         } else {
             let batch_numpoints = matrix[0].len();
@@ -265,6 +269,7 @@ impl<
                 fr_marker: PhantomData,
                 g1_fp_marker: PhantomData,
                 g1_marker: PhantomData,
+                g1_affine_add_marker: PhantomData,
             }))
         }
     }

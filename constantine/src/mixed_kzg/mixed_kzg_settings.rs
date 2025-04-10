@@ -5,7 +5,7 @@ use crate::types::{
     fft_settings::CtFFTSettings,
     fp::CtFp,
     fr::CtFr,
-    g1::{CtG1, CtG1Affine},
+    g1::{CtG1, CtG1Affine, CtG1ProjAddAffine},
     g2::CtG2,
     kzg_settings::CtKZGSettings as GenericContext,
     poly::CtPoly,
@@ -258,7 +258,7 @@ impl Clone for MixedKzgSettings<'_> {
 }
 
 // Allow using MixedKzgSettings as KZGSettings stand-in
-impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine>
+impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine, CtG1ProjAddAffine>
     for MixedKzgSettings<'_>
 {
     fn new(
@@ -348,7 +348,9 @@ impl KZGSettings<CtFr, CtG1, CtG2, CtFFTSettings, CtPoly, CtFp, CtG1Affine>
 
     fn get_precomputation(
         &self,
-    ) -> Option<&kzg::msm::precompute::PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>> {
+    ) -> Option<
+        &kzg::msm::precompute::PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>,
+    > {
         match self {
             MixedKzgSettings::Constantine(_) => {
                 panic!("Context not in generic format")
