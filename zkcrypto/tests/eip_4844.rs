@@ -23,7 +23,7 @@ mod tests {
     use rust_kzg_zkcrypto::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_zkcrypto::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_zkcrypto::kzg_proofs::{expand_root_of_unity, FFTSettings, KZGSettings};
-    use rust_kzg_zkcrypto::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1, ZG2};
+    use rust_kzg_zkcrypto::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1ProjAddAffine, ZG1, ZG2};
     use rust_kzg_zkcrypto::poly::PolyData;
 
     #[test]
@@ -47,6 +47,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -55,7 +56,17 @@ mod tests {
 
     #[test]
     pub fn compute_kzg_proof_test_() {
-        compute_kzg_proof_test::<ZFr, ZG1, ZG2, PolyData, FFTSettings, KZGSettings, ZFp, ZG1Affine>(
+        compute_kzg_proof_test::<
+            ZFr,
+            ZG1,
+            ZG2,
+            PolyData,
+            FFTSettings,
+            KZGSettings,
+            ZFp,
+            ZG1Affine,
+            ZG1ProjAddAffine,
+        >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
             &blob_to_polynomial,
@@ -74,6 +85,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -96,6 +108,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -118,6 +131,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -140,6 +154,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -160,6 +175,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -180,6 +196,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -200,6 +217,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -220,6 +238,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -238,6 +257,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
@@ -256,6 +276,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -274,6 +295,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(&load_trusted_setup_filename_rust, &verify_kzg_proof_rust);
     }
 
@@ -288,6 +310,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -305,6 +328,7 @@ mod tests {
             KZGSettings,
             ZFp,
             ZG1Affine,
+            ZG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,

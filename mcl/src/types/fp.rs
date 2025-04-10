@@ -1,6 +1,6 @@
 use kzg::G1Fp;
 
-use crate::mcl_methods::{mclBnFp_add, mclBnFp_neg, mcl_fp, try_init_mcl};
+use crate::mcl_methods::{mclBnFp_add, mclBnFp_mul, mclBnFp_neg, mcl_fp, try_init_mcl};
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
@@ -104,5 +104,26 @@ impl G1Fp for MclFp {
         try_init_mcl();
 
         self.0 += &b.0;
+    }
+
+    fn mul3(&self) -> Self {
+        try_init_mcl();
+
+        const THREE: mcl_fp = mcl_fp {
+            d: [
+                17157870155352091297,
+                9692872460839157767,
+                5726366251156250088,
+                11420128032487956561,
+                9069687087735597977,
+                1000072309349998725,
+            ],
+        };
+
+        let mut z = *self;
+        unsafe {
+            mclBnFp_mul(&mut z.0, &z.0, &THREE);
+        }
+        z
     }
 }

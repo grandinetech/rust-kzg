@@ -359,6 +359,19 @@ impl G1Fp for ZFp {
     fn add_assign_fp(&mut self, b: &Self) {
         self.0.add_assign(b.0);
     }
+
+    fn mul3(&self) -> Self {
+        const THREE: Fp = Fp([
+            17157870155352091297,
+            9692872460839157767,
+            5726366251156250088,
+            11420128032487956561,
+            9069687087735597977,
+            1000072309349998725,
+        ]);
+
+        Self(self.0 * THREE)
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
@@ -605,9 +618,25 @@ impl G1AffineTrait<ZG1, ZFp> for ZG1Affine {
     // fn add(&mut self, b: &Self) {
     //     self.0 += b.0;
     // }
+
+    fn neg(&self) -> Self {
+        Self(-self.0)
+    }
+
+    fn from_xy(x: ZFp, y: ZFp) -> Self {
+        let is_infinity = if x.is_zero() && y.is_zero() { 0u8 } else { 1u8 };
+
+        Self(G1Affine {
+            x: x.0,
+            y: y.0,
+            infinity: Choice::from(is_infinity),
+        })
+    }
 }
 
+#[derive(Debug)]
 pub struct ZG1ProjAddAffine;
+
 impl G1ProjAddAffine<ZG1, ZFp, ZG1Affine> for ZG1ProjAddAffine {
     fn add_assign_affine(proj: &mut ZG1, aff: &ZG1Affine) {
         proj.proj += aff.0;
@@ -662,12 +691,12 @@ impl G1GetFp<ZFp> for ZG1 {
     }
 }
 
-impl G1LinComb<ZFr, ZFp, ZG1Affine> for ZG1 {
+impl G1LinComb<ZFr, ZFp, ZG1Affine, ZG1ProjAddAffine> for ZG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[ZFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<ZFr, Self, ZFp, ZG1Affine>>,
+        precomputation: Option<&PrecomputationTable<ZFr, Self, ZFp, ZG1Affine, ZG1ProjAddAffine>>,
     ) -> Self {
         let mut out = ZG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
@@ -893,7 +922,9 @@ fn toeplitz_part_1(
     Ok(())
 }
 
-impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZGSettings {
+impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine, ZG1ProjAddAffine>
+    for ZKZGSettings
+{
     fn new(
         g1_monomial: &[ZG1],
         g1_lagrange_brp: &[ZG1],
@@ -1083,7 +1114,9 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
         &self.fs
     }
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>> {
+    fn get_precomputation(
+        &self,
+    ) -> Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine, ZG1ProjAddAffine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 

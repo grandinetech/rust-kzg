@@ -34,7 +34,7 @@ pub fn g1_linear_combination(
     points: &[CtG1],
     scalars: &[CtFr],
     len: usize,
-    _precomputation: Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine>>,
+    _precomputation: Option<&PrecomputationTable<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>>,
 ) {
     #[cfg(feature = "constantine_msm")]
     {

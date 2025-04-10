@@ -12,6 +12,7 @@ use crate::utils::{
     pc_g2projective_into_blst_p2, PolyData,
 };
 use ark_bls12_381::{g1, g2, Fr, G1Affine};
+use ark_ec::short_weierstrass_jacobian::GroupAffine;
 use ark_ec::ModelParameters;
 use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, AffineCurve, ProjectiveCurve};
 use ark_ff::PrimeField;
@@ -470,12 +471,14 @@ impl G1Mul<ArkFr> for ArkG1 {
     }
 }
 
-impl G1LinComb<ArkFr, ArkFp, ArkG1Affine> for ArkG1 {
+impl G1LinComb<ArkFr, ArkFp, ArkG1Affine, ArkG1ProjAddAffine> for ArkG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[ArkFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<ArkFr, Self, ArkFp, ArkG1Affine>>,
+        precomputation: Option<
+            &PrecomputationTable<ArkFr, Self, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>,
+        >,
     ) -> Self {
         let mut out = Self::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
@@ -908,7 +911,10 @@ fn toeplitz_part_1(
     Ok(())
 }
 
-impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine> for LKZGSettings {
+impl
+    KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>
+    for LKZGSettings
+{
     fn new(
         g1_monomial: &[ArkG1],
         g1_lagrange_brp: &[ArkG1],
@@ -1149,7 +1155,9 @@ impl KZGSettings<ArkFr, ArkG1, ArkG2, LFFTSettings, PolyData, ArkFp, ArkG1Affine
         &self.fs
     }
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>> {
+    fn get_precomputation(
+        &self,
+    ) -> Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
@@ -1249,6 +1257,10 @@ impl G1Fp for ArkFp {
                 1582556514881692819,
             ],
         }))
+    }
+
+    fn mul3(&self) -> Self {
+        Self(self.0 * ArkFpInt::from(3))
     }
 }
 
@@ -1352,8 +1364,21 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
     fn y_mut(&mut self) -> &mut ArkFp {
         unsafe { core::mem::transmute(&mut self.aff.y) }
     }
+
+    fn neg(&self) -> Self {
+        Self {
+            aff: self.aff.neg(),
+        }
+    }
+
+    fn from_xy(x: ArkFp, y: ArkFp) -> Self {
+        Self {
+            aff: GroupAffine::new(x.0, y.0, x.is_zero() && y.is_zero()),
+        }
+    }
 }
 
+#[derive(Debug)]
 pub struct ArkG1ProjAddAffine;
 impl G1ProjAddAffine<ArkG1, ArkFp, ArkG1Affine> for ArkG1ProjAddAffine {
     fn add_assign_affine(proj: &mut ArkG1, aff: &ArkG1Affine) {

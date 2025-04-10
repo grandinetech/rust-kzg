@@ -2,10 +2,8 @@ extern crate alloc;
 
 use crate::mcl_methods::{mcl_gt, pairing};
 use crate::types::fp::MclFp;
-use crate::types::g1::MclG1;
+use crate::types::g1::{MclG1, MclG1ProjAddAffine};
 use crate::types::{fr::MclFr, g1::MclG1Affine};
-
-use crate::types::g1::FsG1ProjAddAffine;
 
 use kzg::msm::{msm_impls::msm, precompute::PrecomputationTable};
 
@@ -24,9 +22,11 @@ pub fn g1_linear_combination(
     points: &[MclG1],
     scalars: &[MclFr],
     len: usize,
-    precomputation: Option<&PrecomputationTable<MclFr, MclG1, MclFp, MclG1Affine>>,
+    precomputation: Option<
+        &PrecomputationTable<MclFr, MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine>,
+    >,
 ) {
-    *out = msm::<MclG1, MclFp, MclG1Affine, FsG1ProjAddAffine, MclFr>(
+    *out = msm::<MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine, MclFr>(
         points,
         scalars,
         len,

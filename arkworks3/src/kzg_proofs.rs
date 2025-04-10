@@ -1,7 +1,7 @@
 #![allow(non_camel_case_types)]
 
 extern crate alloc;
-use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine, ArkG2};
 use crate::utils::{blst_poly_into_pc_poly, fft_settings_to_rust, PolyData, PRECOMPUTATION_TABLES};
 use alloc::sync::Arc;
 use ark_bls12_381::Bls12_381;
@@ -43,13 +43,15 @@ pub fn expand_root_of_unity(root: &ArkFr, width: usize) -> Result<Vec<ArkFr>, St
     Ok(generated_powers)
 }
 
+#[allow(clippy::type_complexity)]
 #[derive(Debug, Clone, Default)]
 pub struct KZGSettings {
     pub fs: FFTSettings,
     pub g1_values_monomial: Vec<ArkG1>,
     pub g1_values_lagrange_brp: Vec<ArkG1>,
     pub g2_values_monomial: Vec<ArkG2>,
-    pub precomputation: Option<Arc<PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>>,
+    pub precomputation:
+        Option<Arc<PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>>>,
     pub x_ext_fft_columns: Vec<Vec<ArkG1>>,
     pub cell_size: usize,
 }

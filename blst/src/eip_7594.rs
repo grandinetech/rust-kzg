@@ -6,6 +6,7 @@ use crate::types::fft_settings::FsFFTSettings;
 use crate::types::fp::FsFp;
 use crate::types::g1::FsG1;
 use crate::types::g1::FsG1Affine;
+use crate::types::g1::FsG1ProjAddAffine;
 use crate::types::g2::FsG2;
 use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
@@ -23,6 +24,7 @@ impl EcBackend for BlstBackend {
     type Poly = FsPoly;
     type FFTSettings = FsFFTSettings;
     type KZGSettings = FsKZGSettings;
+    type G1ProjAddAffine = FsG1ProjAddAffine;
 }
 
 #[cfg(feature = "c_bindings")]

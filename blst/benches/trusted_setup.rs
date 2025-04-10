@@ -7,7 +7,7 @@ use rust_kzg_blst::{
         fft_settings::FsFFTSettings,
         fp::FsFp,
         fr::FsFr,
-        g1::{FsG1, FsG1Affine},
+        g1::{FsG1, FsG1Affine, FsG1ProjAddAffine},
         g2::FsG2,
         kzg_settings::FsKZGSettings,
         poly::FsPoly,
@@ -24,6 +24,7 @@ fn bench_load_trusted_setup_(c: &mut Criterion) {
         FsKZGSettings,
         FsFp,
         FsG1Affine,
+        FsG1ProjAddAffine,
     >(
         c,
         &load_trusted_setup_filename_rust,

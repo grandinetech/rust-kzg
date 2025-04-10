@@ -11,7 +11,7 @@ use rust_kzg_constantine::{
         fft_settings::CtFFTSettings,
         fp::CtFp,
         fr::CtFr,
-        g1::{CtG1, CtG1Affine},
+        g1::{CtG1, CtG1Affine, CtG1ProjAddAffine},
         g2::CtG2,
         kzg_settings::CtKZGSettings,
         poly::CtPoly,
@@ -19,7 +19,17 @@ use rust_kzg_constantine::{
 };
 
 fn bench_eip_4844_(c: &mut Criterion) {
-    bench_eip_4844::<CtFr, CtG1, CtG2, CtPoly, CtFFTSettings, CtKZGSettings, CtFp, CtG1Affine>(
+    bench_eip_4844::<
+        CtFr,
+        CtG1,
+        CtG2,
+        CtPoly,
+        CtFFTSettings,
+        CtKZGSettings,
+        CtFp,
+        CtG1Affine,
+        CtG1ProjAddAffine,
+    >(
         c,
         &load_trusted_setup_filename_rust,
         &blob_to_kzg_commitment_rust,

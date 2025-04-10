@@ -271,12 +271,14 @@ impl G1Mul<CtFr> for CtG1 {
     }
 }
 
-impl G1LinComb<CtFr, CtFp, CtG1Affine> for CtG1 {
+impl G1LinComb<CtFr, CtFp, CtG1Affine, CtG1ProjAddAffine> for CtG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[CtFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<CtFr, Self, CtFp, CtG1Affine>>,
+        precomputation: Option<
+            &PrecomputationTable<CtFr, Self, CtFp, CtG1Affine, CtG1ProjAddAffine>,
+        >,
     ) -> Self {
         let mut out = CtG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
@@ -420,6 +422,18 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
             // Transmute safe due to repr(C) on CtFp
             core::mem::transmute(&mut self.0.y)
         }
+    }
+
+    fn neg(&self) -> Self {
+        let mut output = *self;
+        unsafe {
+            constantine::ctt_bls12_381_g1_aff_neg_in_place(&mut output.0);
+        }
+        output
+    }
+
+    fn from_xy(x: CtFp, y: CtFp) -> Self {
+        Self(bls12_381_g1_aff { x: x.0, y: y.0 })
     }
 }
 

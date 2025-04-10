@@ -1,5 +1,5 @@
 #![allow(non_camel_case_types)]
-use crate::kzg_types::{ZFp, ZFr, ZG1Affine};
+use crate::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1ProjAddAffine};
 use crate::kzg_types::{ZFr as BlstFr, ZG1, ZG2};
 use crate::poly::PolyData;
 use bls12_381::{
@@ -40,12 +40,14 @@ pub fn expand_root_of_unity(root: &BlstFr, width: usize) -> Result<Vec<BlstFr>, 
 }
 
 #[derive(Debug, Clone, Default)]
+#[allow(clippy::type_complexity)]
 pub struct KZGSettings {
     pub fs: FFTSettings,
     pub g1_values_monomial: Vec<ZG1>,
     pub g1_values_lagrange_brp: Vec<ZG1>,
     pub g2_values_monomial: Vec<ZG2>,
-    pub precomputation: Option<Arc<PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>>>,
+    pub precomputation:
+        Option<Arc<PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine, ZG1ProjAddAffine>>>,
     pub x_ext_fft_columns: Vec<Vec<ZG1>>,
     pub cell_size: usize,
 }

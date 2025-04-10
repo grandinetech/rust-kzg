@@ -1,5 +1,5 @@
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
+use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
 
 use kzg::cfg_into_iter;
 #[cfg(feature = "parallel")]
@@ -20,7 +20,9 @@ pub fn g1_linear_combination(
     points: &[ArkG1],
     scalars: &[ArkFr],
     len: usize,
-    precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
+    precomputation: Option<
+        &PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>,
+    >,
 ) {
     #[cfg(feature = "sppark")]
     {
