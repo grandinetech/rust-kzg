@@ -86,4 +86,12 @@ impl G1Fp for FsFp {
             blst::blst_fp_add(&mut self.0, &self.0, &b.0);
         }
     }
+
+    fn mul3(&self) -> Self {
+        let mut ret = FsFp::default();
+        unsafe {
+            blst::blst_fp_mul_by_3(&mut ret.0, &self.0);
+        }
+        ret
+    }
 }
