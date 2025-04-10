@@ -43,6 +43,9 @@ rand = [
 bgmw = [
     "kzg/bgmw"
 ]
+wbits = [
+    "kzg/wbits"
+]
 arkmsm = [
     "kzg/arkmsm"
 ]

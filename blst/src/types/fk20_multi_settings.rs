@@ -15,7 +15,7 @@ use crate::types::kzg_settings::FsKZGSettings;
 use crate::types::poly::FsPoly;
 
 use super::fp::FsFp;
-use super::g1::FsG1Affine;
+use super::g1::{FsG1Affine, FsG1ProjAddAffine};
 
 pub struct FsFK20MultiSettings {
     pub kzg_settings: FsKZGSettings,
@@ -43,8 +43,18 @@ impl Default for FsFK20MultiSettings {
     }
 }
 
-impl FK20MultiSettings<FsFr, FsG1, FsG2, FsFFTSettings, FsPoly, FsKZGSettings, FsFp, FsG1Affine>
-    for FsFK20MultiSettings
+impl
+    FK20MultiSettings<
+        FsFr,
+        FsG1,
+        FsG2,
+        FsFFTSettings,
+        FsPoly,
+        FsKZGSettings,
+        FsFp,
+        FsG1Affine,
+        FsG1ProjAddAffine,
+    > for FsFK20MultiSettings
 {
     #[allow(clippy::many_single_char_names)]
     fn new(ks: &FsKZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {

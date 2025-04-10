@@ -12,7 +12,7 @@ mod tests {
     use rust_kzg_mcl::kzg_proofs::{g1_linear_combination, pairings_verify};
     use rust_kzg_mcl::types::fp::MclFp;
     use rust_kzg_mcl::types::fr::MclFr;
-    use rust_kzg_mcl::types::g1::{MclG1, MclG1Affine};
+    use rust_kzg_mcl::types::g1::{MclG1, MclG1Affine, MclG1ProjAddAffine};
     use rust_kzg_mcl::types::g2::MclG2;
 
     #[test]
@@ -107,17 +107,23 @@ mod tests {
 
     #[test]
     fn g1_make_linear_combination_() {
-        g1_make_linear_combination::<MclFr, MclG1, MclFp, MclG1Affine>(&g1_linear_combination)
+        g1_make_linear_combination::<MclFr, MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine>(
+            &g1_linear_combination,
+        )
     }
 
     #[test]
     fn g1_random_linear_combination_() {
-        g1_random_linear_combination::<MclFr, MclG1, MclFp, MclG1Affine>(&g1_linear_combination)
+        g1_random_linear_combination::<MclFr, MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine>(
+            &g1_linear_combination,
+        )
     }
 
     #[test]
     fn g1_small_linear_combination_() {
-        g1_small_linear_combination::<MclFr, MclG1, MclFp, MclG1Affine>(&g1_linear_combination)
+        g1_small_linear_combination::<MclFr, MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine>(
+            &g1_linear_combination,
+        )
     }
 
     #[test]

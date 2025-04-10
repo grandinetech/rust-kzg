@@ -14,7 +14,7 @@ use crate::types::kzg_settings::MclKZGSettings;
 use crate::types::poly::MclPoly;
 
 use super::fp::MclFp;
-use super::g1::MclG1Affine;
+use super::g1::{MclG1Affine, MclG1ProjAddAffine};
 
 #[derive(Debug, Clone, Default)]
 pub struct MclFK20SingleSettings {
@@ -32,6 +32,7 @@ impl
         MclKZGSettings,
         MclFp,
         MclG1Affine,
+        MclG1ProjAddAffine,
     > for MclFK20SingleSettings
 {
     fn new(kzg_settings: &MclKZGSettings, n2: usize) -> Result<Self, String> {

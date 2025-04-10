@@ -23,7 +23,9 @@ mod tests {
     use rust_kzg_arkworks5::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_arkworks5::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_arkworks5::kzg_proofs::{expand_root_of_unity, FFTSettings, KZGSettings};
-    use rust_kzg_arkworks5::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
+    use rust_kzg_arkworks5::kzg_types::{
+        ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine, ArkG2,
+    };
     use rust_kzg_arkworks5::utils::PolyData;
 
     #[test]
@@ -47,6 +49,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -64,6 +67,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
@@ -83,6 +87,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -105,6 +110,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -127,6 +133,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -149,6 +156,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -169,6 +177,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -189,6 +198,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -209,6 +219,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -229,6 +240,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -247,6 +259,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
@@ -265,6 +278,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -283,6 +297,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(&load_trusted_setup_filename_rust, &verify_kzg_proof_rust);
     }
 
@@ -297,6 +312,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -315,6 +331,7 @@ mod tests {
             KZGSettings,
             ArkFp,
             ArkG1Affine,
+            ArkG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,

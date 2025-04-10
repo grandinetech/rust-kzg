@@ -8,6 +8,7 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
+use blst::blst_fp_cneg;
 use blst::p1_affines;
 use blst::{
     blst_fp, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_affine, blst_p1_cneg,
@@ -276,12 +277,14 @@ impl G1Mul<FsFr> for FsG1 {
     }
 }
 
-impl G1LinComb<FsFr, FsFp, FsG1Affine> for FsG1 {
+impl G1LinComb<FsFr, FsFp, FsG1Affine, FsG1ProjAddAffine> for FsG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[FsFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<FsFr, Self, FsFp, FsG1Affine>>,
+        precomputation: Option<
+            &PrecomputationTable<FsFr, Self, FsFp, FsG1Affine, FsG1ProjAddAffine>,
+        >,
     ) -> Self {
         let mut out = FsG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
@@ -373,9 +376,27 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
             core::mem::transmute(&mut self.0.y)
         }
     }
+
+    fn neg(&self) -> Self {
+        let mut ret = *self;
+
+        if !self.is_infinity() {
+            unsafe {
+                blst_fp_cneg(&mut ret.0.y, &self.0.y, true);
+            }
+        }
+
+        ret
+    }
+
+    fn from_xy(x: FsFp, y: FsFp) -> Self {
+        Self(blst_p1_affine { x: x.0, y: y.0 })
+    }
 }
 
+#[derive(Clone, Debug, Default)]
 pub struct FsG1ProjAddAffine;
+
 impl G1ProjAddAffine<FsG1, FsFp, FsG1Affine> for FsG1ProjAddAffine {
     fn add_assign_affine(proj: &mut FsG1, aff: &FsG1Affine) {
         unsafe {

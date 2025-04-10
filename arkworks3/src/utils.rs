@@ -8,8 +8,8 @@ use kzg::{
     },
 };
 
-use crate::kzg_proofs::FFTSettings as LFFTSettings;
 use crate::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine};
+use crate::{kzg_proofs::FFTSettings as LFFTSettings, kzg_types::ArkG1ProjAddAffine};
 
 use ark_bls12_381::{g1, g2, Fq, Fq2};
 use ark_ec::models::short_weierstrass_jacobian::GroupProjective;
@@ -75,6 +75,7 @@ pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
     ArkG1,
     ArkFp,
     ArkG1Affine,
+    ArkG1ProjAddAffine,
 > = PrecomputationTableManager::new();
 
 pub fn pc_poly_into_blst_poly(poly: DensePoly<ark_bls12_381::Fr>) -> PolyData {

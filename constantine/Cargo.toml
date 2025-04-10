@@ -48,6 +48,9 @@ bgmw = [
 arkmsm = [
     "kzg/arkmsm"
 ]
+wbits = [
+    "kzg/wbits"
+]
 c_bindings = []
 
 [[bench]]

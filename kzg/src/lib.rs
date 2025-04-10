@@ -138,20 +138,24 @@ pub trait G1Mul<TFr: Fr>: G1 + Clone {
     fn mul(&self, b: &TFr) -> Self;
 }
 
-pub trait G1LinComb<TFr: Fr, TG1Fp: G1Fp, TG1Affine: G1Affine<Self, TG1Fp>>:
-    G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Clone
+pub trait G1LinComb<
+    TFr: Fr,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<Self, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<Self, TG1Fp, TG1Affine>,
+>: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Clone
 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[TFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<TFr, Self, TG1Fp, TG1Affine>>,
+        precomputation: Option<&PrecomputationTable<TFr, Self, TG1Fp, TG1Affine, TG1ProjAddAffine>>,
     ) -> Self;
 
     fn g1_lincomb_batch(
         points: &[Vec<Self>],
         scalars: &[Vec<TFr>],
-        precomputation: Option<&PrecomputationTable<TFr, Self, TG1Fp, TG1Affine>>,
+        precomputation: Option<&PrecomputationTable<TFr, Self, TG1Fp, TG1Affine, TG1ProjAddAffine>>,
     ) -> Result<Vec<Self>, String> {
         if points.len() != scalars.len() {
             return Err("Invalid batch size".to_owned());
@@ -189,6 +193,8 @@ pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
     fn double(&self) -> Self;
 
     fn from_underlying_arr(arr: &[u64; 6]) -> Self;
+
+    fn mul3(&self) -> Self;
 
     fn neg_assign(&mut self);
 
@@ -240,6 +246,8 @@ pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
 {
     fn zero() -> Self;
 
+    fn from_xy(x: TG1Fp, y: TG1Fp) -> Self;
+
     fn into_affine(g1: &TG1) -> Self;
 
     // Batch conversion can be faster than transforming each individually
@@ -276,6 +284,8 @@ pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
     fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
+
+    fn neg(&self) -> Self;
 
     fn set_zero(&mut self) {
         *self = Self::zero();
@@ -537,6 +547,7 @@ pub trait KZGSettings<
     Polynomial: Poly<Coeff1>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<Coeff2, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<Coeff2, TG1Fp, TG1Affine>,
 >: Default + Clone
 {
     fn new(
@@ -580,7 +591,9 @@ pub trait KZGSettings<
 
     fn get_g2_monomial(&self) -> &[Coeff3];
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<Coeff1, Coeff2, TG1Fp, TG1Affine>>;
+    fn get_precomputation(
+        &self,
+    ) -> Option<&PrecomputationTable<Coeff1, Coeff2, TG1Fp, TG1Affine, TG1ProjAddAffine>>;
 
     fn get_x_ext_fft_columns(&self) -> &[Vec<Coeff2>];
 
@@ -593,9 +606,10 @@ pub trait FK20SingleSettings<
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
-    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial, TG1Fp, TG1Affine>,
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<Coeff2, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<Coeff2, TG1Fp, TG1Affine>,
 >: Default + Clone
 {
     fn new(ks: &Ks, n2: usize) -> Result<Self, String>;
@@ -611,9 +625,10 @@ pub trait FK20MultiSettings<
     Coeff3: G2,
     Fs: FFTSettings<Coeff1>,
     Polynomial: Poly<Coeff1>,
-    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial, TG1Fp, TG1Affine>,
+    Ks: KZGSettings<Coeff1, Coeff2, Coeff3, Fs, Polynomial, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<Coeff2, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<Coeff2, TG1Fp, TG1Affine>,
 >: Default + Clone
 {
     fn new(ks: &Ks, n2: usize, chunk_len: usize) -> Result<Self, String>;

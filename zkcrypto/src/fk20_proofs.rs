@@ -1,6 +1,6 @@
 use crate::consts::G1_IDENTITY;
 use crate::kzg_proofs::{FFTSettings, KZGSettings};
-use crate::kzg_types::{ZFp, ZFr as BlstFr, ZG1Affine, ZG1, ZG2};
+use crate::kzg_types::{ZFp, ZFr as BlstFr, ZG1Affine, ZG1ProjAddAffine, ZG1, ZG2};
 use crate::poly::PolyData;
 use kzg::common_utils::reverse_bit_order;
 use kzg::{FFTFr, FK20MultiSettings, FK20SingleSettings, Fr, G1Mul, Poly, FFTG1, G1};
@@ -24,8 +24,18 @@ pub struct KzgFK20MultiSettings {
     pub length: usize,
 }
 
-impl FK20SingleSettings<BlstFr, ZG1, ZG2, FFTSettings, PolyData, KZGSettings, ZFp, ZG1Affine>
-    for KzgFK20SingleSettings
+impl
+    FK20SingleSettings<
+        BlstFr,
+        ZG1,
+        ZG2,
+        FFTSettings,
+        PolyData,
+        KZGSettings,
+        ZFp,
+        ZG1Affine,
+        ZG1ProjAddAffine,
+    > for KzgFK20SingleSettings
 {
     fn new(ks: &KZGSettings, n2: usize) -> Result<Self, String> {
         let n = n2 / 2;
@@ -83,8 +93,18 @@ impl FK20SingleSettings<BlstFr, ZG1, ZG2, FFTSettings, PolyData, KZGSettings, ZF
     }
 }
 
-impl FK20MultiSettings<BlstFr, ZG1, ZG2, FFTSettings, PolyData, KZGSettings, ZFp, ZG1Affine>
-    for KzgFK20MultiSettings
+impl
+    FK20MultiSettings<
+        BlstFr,
+        ZG1,
+        ZG2,
+        FFTSettings,
+        PolyData,
+        KZGSettings,
+        ZFp,
+        ZG1Affine,
+        ZG1ProjAddAffine,
+    > for KzgFK20MultiSettings
 {
     fn new(ks: &KZGSettings, n2: usize, chunk_len: usize) -> Result<Self, String> {
         if n2 > ks.fs.max_width {

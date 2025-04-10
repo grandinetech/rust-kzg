@@ -22,6 +22,7 @@ use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::g1_linear_combination;
+use crate::mcl_methods::mclBnFp_neg;
 use crate::mcl_methods::mcl_fp;
 use crate::mcl_methods::mcl_g1;
 use crate::mcl_methods::try_init_mcl;
@@ -301,12 +302,14 @@ impl G1Mul<MclFr> for MclG1 {
     }
 }
 
-impl G1LinComb<MclFr, MclFp, MclG1Affine> for MclG1 {
+impl G1LinComb<MclFr, MclFp, MclG1Affine, MclG1ProjAddAffine> for MclG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[MclFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<MclFr, Self, MclFp, MclG1Affine>>,
+        precomputation: Option<
+            &PrecomputationTable<MclFr, Self, MclFp, MclG1Affine, MclG1ProjAddAffine>,
+        >,
     ) -> Self {
         try_init_mcl();
 
@@ -408,10 +411,27 @@ impl G1Affine<MclG1, MclFp> for MclG1Affine {
     fn is_infinity(&self) -> bool {
         todo!()
     }
+
+    fn neg(&self) -> Self {
+        try_init_mcl();
+
+        let mut output = *self;
+
+        unsafe {
+            mclBnFp_neg(&mut output.y, &output.x);
+        }
+        output
+    }
+
+    fn from_xy(x: MclFp, y: MclFp) -> Self {
+        Self { x: x.0, y: y.0 }
+    }
 }
 
-pub struct FsG1ProjAddAffine;
-impl G1ProjAddAffine<MclG1, MclFp, MclG1Affine> for FsG1ProjAddAffine {
+#[derive(Debug)]
+pub struct MclG1ProjAddAffine;
+
+impl G1ProjAddAffine<MclG1, MclFp, MclG1Affine> for MclG1ProjAddAffine {
     fn add_assign_affine(_proj: &mut MclG1, _aff: &MclG1Affine) {
         todo!()
     }

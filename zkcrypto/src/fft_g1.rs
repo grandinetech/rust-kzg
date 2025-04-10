@@ -1,6 +1,6 @@
 use crate::consts::G1_GENERATOR;
 use crate::kzg_proofs::FFTSettings;
-use crate::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1};
+use crate::kzg_types::{ZFp, ZFr, ZG1Affine, ZG1ProjAddAffine, ZG1};
 use crate::multiscalar_mul::msm_variable_base;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::{Fr as KzgFr, G1Mul};
@@ -13,7 +13,7 @@ pub fn g1_linear_combination(
     points: &[ZG1],
     scalars: &[ZFr],
     _len: usize,
-    _precomputation: Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>>,
+    _precomputation: Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine, ZG1ProjAddAffine>>,
 ) {
     let g1 = msm_variable_base(points, scalars);
     out.proj = g1

@@ -17,10 +17,11 @@ fn msm_parallel<
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     points: &[TG1],
     scalars: &[TFr],
-    precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+    precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>>,
 ) -> TG1 {
     if let Some(precomputation) = precomputation {
         precomputation.multiply_parallel(scalars)
@@ -43,7 +44,7 @@ fn msm_sequential<
 >(
     points: &[TG1],
     scalars: &[TFr],
-    precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+    precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>>,
 ) -> TG1 {
     #[cfg(not(feature = "arkmsm"))]
     {
@@ -88,7 +89,7 @@ pub fn msm<
     points: &[TG1],
     scalars: &[TFr],
     len: usize,
-    precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>,
+    precomputation: Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>>,
 ) -> TG1 {
     if len < 8 {
         let mut out = TG1::zero();
@@ -100,7 +101,7 @@ pub fn msm<
     }
 
     #[cfg(feature = "parallel")]
-    return msm_parallel::<TFr, TG1, TG1Fp, TG1Affine>(
+    return msm_parallel::<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>(
         &points[0..len],
         &scalars[0..len],
         precomputation,
