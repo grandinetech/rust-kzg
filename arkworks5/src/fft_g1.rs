@@ -18,7 +18,9 @@ pub fn g1_linear_combination(
     points: &[ArkG1],
     scalars: &[ArkFr],
     len: usize,
-    precomputation: Option<&PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine>>,
+    precomputation: Option<
+        &PrecomputationTable<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>,
+    >,
 ) {
     *out = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
         points,

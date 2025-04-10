@@ -4,7 +4,9 @@ mod tests {
     use kzg_bench::tests::bls12_381::*;
     use rust_kzg_arkworks3::fft_g1::g1_linear_combination;
     use rust_kzg_arkworks3::kzg_proofs::pairings_verify;
-    use rust_kzg_arkworks3::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG2};
+    use rust_kzg_arkworks3::kzg_types::{
+        ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine, ArkG2,
+    };
 
     #[test]
     pub fn log_2_byte_works_() {
@@ -94,17 +96,23 @@ mod tests {
 
     #[test]
     pub fn g1_make_linear_combination_() {
-        g1_make_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine>(&g1_linear_combination);
+        g1_make_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
+            &g1_linear_combination,
+        );
     }
 
     #[test]
     pub fn g1_random_linear_combination_() {
-        g1_random_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine>(&g1_linear_combination);
+        g1_random_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
+            &g1_linear_combination,
+        );
     }
 
     #[test]
     fn g1_small_linear_combination_() {
-        g1_small_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine>(&g1_linear_combination)
+        g1_small_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
+            &g1_linear_combination,
+        )
     }
 
     #[test]
