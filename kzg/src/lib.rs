@@ -2,8 +2,7 @@
 
 extern crate alloc;
 
-use alloc::string::String;
-use alloc::vec::Vec;
+use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use core::fmt::Debug;
 use msm::precompute::PrecomputationTable;
 
@@ -148,6 +147,32 @@ pub trait G1LinComb<TFr: Fr, TG1Fp: G1Fp, TG1Affine: G1Affine<Self, TG1Fp>>:
         len: usize,
         precomputation: Option<&PrecomputationTable<TFr, Self, TG1Fp, TG1Affine>>,
     ) -> Self;
+
+    fn g1_lincomb_batch(
+        points: &[Vec<Self>],
+        scalars: &[Vec<TFr>],
+        precomputation: Option<&PrecomputationTable<TFr, Self, TG1Fp, TG1Affine>>,
+    ) -> Result<Vec<Self>, String> {
+        if points.len() != scalars.len() {
+            return Err("Invalid batch size".to_owned());
+        }
+
+        if let Some(precomputation) = precomputation {
+            Ok(precomputation.multiply_batch(scalars))
+        } else {
+            let mut result = Vec::new();
+
+            for (points, scalars) in points.iter().zip(scalars.iter()) {
+                if points.len() != scalars.len() {
+                    return Err("Invalid point count length".to_owned());
+                }
+
+                result.push(Self::g1_lincomb(points, scalars, points.len(), None));
+            }
+
+            Ok(result)
+        }
+    }
 }
 
 pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
@@ -557,7 +582,7 @@ pub trait KZGSettings<
 
     fn get_precomputation(&self) -> Option<&PrecomputationTable<Coeff1, Coeff2, TG1Fp, TG1Affine>>;
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[Coeff2];
+    fn get_x_ext_fft_columns(&self) -> &[Vec<Coeff2>];
 
     fn get_cell_size(&self) -> usize;
 }

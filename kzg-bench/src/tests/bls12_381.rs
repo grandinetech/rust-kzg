@@ -277,7 +277,7 @@ pub fn g1_small_linear_combination<
 
     // // Precompute once, use to calculate all other results
     {
-        let precomputation = precompute(&points).unwrap();
+        let precomputation = precompute(&points, &[]).unwrap();
 
         if precomputation.is_some() {
             for i in 0..=len {
@@ -297,7 +297,7 @@ pub fn g1_small_linear_combination<
     // Precompute for each set of points
     {
         for i in 0..=len {
-            let precomputation = precompute(&points[0..i]).unwrap();
+            let precomputation = precompute(&points[0..i], &[]).unwrap();
             if precomputation.is_some() {
                 let mut res = TG1::rand();
                 g1_linear_combination(
