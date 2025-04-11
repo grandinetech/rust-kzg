@@ -31,7 +31,7 @@ mod tests {
     use rust_kzg_constantine::mixed_kzg::mixed_kzg_settings::MixedKzgSettings;
     use rust_kzg_constantine::types::fft_settings::expand_root_of_unity;
     use rust_kzg_constantine::types::fp::CtFp;
-    use rust_kzg_constantine::types::g1::CtG1Affine;
+    use rust_kzg_constantine::types::g1::{CtG1Affine, CtG1ProjAddAffine};
     use rust_kzg_constantine::types::{
         fft_settings::CtFFTSettings, fr::CtFr, g1::CtG1, g2::CtG2, poly::CtPoly,
     };
@@ -57,6 +57,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &blob_to_kzg_commitment_mixed,
@@ -141,6 +142,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &blob_to_kzg_commitment_mixed,
@@ -161,6 +163,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &blob_to_kzg_commitment_mixed,
@@ -181,6 +184,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &blob_to_kzg_commitment_mixed,
@@ -201,6 +205,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &blob_to_kzg_commitment_mixed,
@@ -221,6 +226,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &blob_to_kzg_commitment_mixed,
@@ -239,6 +245,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &compute_kzg_proof_mixed,
@@ -257,6 +264,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &bytes_to_blob,
@@ -275,6 +283,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&load_trusted_setup_filename_mixed, &verify_kzg_proof_mixed);
     }
 
@@ -289,6 +298,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &bytes_to_blob,
@@ -307,6 +317,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_mixed,
             &bytes_to_blob,
@@ -342,6 +353,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&evaluate_polynomial_in_evaluation_form);
     }
 
@@ -356,6 +368,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_mixed)
     }
 
@@ -370,6 +383,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_mixed)
     }
 
@@ -384,6 +398,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_mixed)
     }
 
@@ -398,6 +413,7 @@ mod tests {
             MixedKzgSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &verify_blob_kzg_proof_batch_mixed,
             &load_trusted_setup_filename_mixed,
