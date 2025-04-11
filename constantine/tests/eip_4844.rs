@@ -27,7 +27,7 @@ mod tests {
     use rust_kzg_constantine::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_constantine::eip_4844::load_trusted_setup_filename_rust;
     use rust_kzg_constantine::types::fft_settings::expand_root_of_unity;
-    use rust_kzg_constantine::types::g1::CtG1Affine;
+    use rust_kzg_constantine::types::g1::{CtG1Affine, CtG1ProjAddAffine};
     use rust_kzg_constantine::types::{
         fft_settings::CtFFTSettings, fp::CtFp, fr::CtFr, g1::CtG1, g2::CtG2,
         kzg_settings::CtKZGSettings, poly::CtPoly,
@@ -54,6 +54,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -71,6 +72,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
@@ -90,6 +92,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -112,6 +115,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -134,6 +138,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -156,6 +161,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -176,6 +182,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -196,6 +203,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -216,6 +224,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -236,6 +245,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &blob_to_kzg_commitment_rust,
@@ -254,6 +264,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &compute_kzg_proof_rust,
@@ -272,6 +283,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -290,6 +302,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&load_trusted_setup_filename_rust, &verify_kzg_proof_rust);
     }
 
@@ -304,6 +317,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -322,6 +336,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &load_trusted_setup_filename_rust,
             &bytes_to_blob,
@@ -357,6 +372,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&evaluate_polynomial_in_evaluation_form);
     }
 
@@ -371,6 +387,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -385,6 +402,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -399,6 +417,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(&verify_blob_kzg_proof_batch_rust)
     }
 
@@ -413,6 +432,7 @@ mod tests {
             CtKZGSettings,
             CtFp,
             CtG1Affine,
+            CtG1ProjAddAffine,
         >(
             &verify_blob_kzg_proof_batch_rust,
             &load_trusted_setup_filename_rust,

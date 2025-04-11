@@ -1,6 +1,6 @@
 use crate::{
     kzg_proofs::FFTSettings,
-    kzg_types::{ZFp, ZFr, ZG1Affine, ZG1},
+    kzg_types::{ZFp, ZFr, ZG1Affine, ZG1ProjAddAffine, ZG1},
 };
 use bls12_381::{G1Projective, G2Projective, Scalar};
 use kzg::{
@@ -107,5 +107,10 @@ pub(crate) fn fft_settings_to_rust(c_settings: *const CKZGSettings) -> Result<FF
     })
 }
 
-pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<ZFr, ZG1, ZFp, ZG1Affine> =
-    PrecomputationTableManager::new();
+pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
+    ZFr,
+    ZG1,
+    ZFp,
+    ZG1Affine,
+    ZG1ProjAddAffine,
+> = PrecomputationTableManager::new();

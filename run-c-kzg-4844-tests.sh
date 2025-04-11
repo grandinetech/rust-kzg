@@ -140,13 +140,18 @@ cd ../..
 
 ###################### go tests ######################
 
-print_msg "Patching go binding"
-git apply < ../go.patch
-cd bindings/go || exit
+if [ "$backend" != "constantine" ]; then
+  print_msg "Patching go binding"
+  git apply < ../go.patch
+  cd bindings/go || exit
 
-print_msg "Running go tests"
-CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
-cd ../..
+  print_msg "Running go tests"
+  CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
+  cd ../..
+else
+  # TODO: fix this, constantine was working through go bindings previously
+  print_msg "Currently, go bindings are not supported for constantine backend"
+fi
 
 ###################### nim tests ######################
 

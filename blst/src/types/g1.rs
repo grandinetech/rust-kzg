@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use core::hash::Hash;
 use core::ptr;
 
 use alloc::format;
@@ -7,6 +8,7 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
+use blst::blst_fp_cneg;
 use blst::p1_affines;
 use blst::{
     blst_fp, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_affine, blst_p1_cneg,
@@ -31,6 +33,14 @@ use super::fp::FsFp;
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1(pub blst_p1);
+
+impl Hash for FsG1 {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.x.l.hash(state);
+        self.0.y.l.hash(state);
+        self.0.z.l.hash(state);
+    }
+}
 
 impl FsG1 {
     pub(crate) const fn from_xyz(x: blst_fp, y: blst_fp, z: blst_fp) -> Self {
@@ -267,12 +277,14 @@ impl G1Mul<FsFr> for FsG1 {
     }
 }
 
-impl G1LinComb<FsFr, FsFp, FsG1Affine> for FsG1 {
+impl G1LinComb<FsFr, FsFp, FsG1Affine, FsG1ProjAddAffine> for FsG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[FsFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<FsFr, Self, FsFp, FsG1Affine>>,
+        precomputation: Option<
+            &PrecomputationTable<FsFr, Self, FsFp, FsG1Affine, FsG1ProjAddAffine>,
+        >,
     ) -> Self {
         let mut out = FsG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
@@ -364,9 +376,23 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
             core::mem::transmute(&mut self.0.y)
         }
     }
+
+    fn neg(&self) -> Self {
+        let mut ret = *self;
+
+        if !self.is_infinity() {
+            unsafe {
+                blst_fp_cneg(&mut ret.0.y, &self.0.y, true);
+            }
+        }
+
+        ret
+    }
 }
 
+#[derive(Clone, Debug, Default)]
 pub struct FsG1ProjAddAffine;
+
 impl G1ProjAddAffine<FsG1, FsFp, FsG1Affine> for FsG1ProjAddAffine {
     fn add_assign_affine(proj: &mut FsG1, aff: &FsG1Affine) {
         unsafe {

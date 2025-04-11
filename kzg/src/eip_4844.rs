@@ -10,6 +10,7 @@ use crate::G1Affine;
 use crate::G1Fp;
 use crate::G1GetFp;
 use crate::G1LinComb;
+use crate::G1ProjAddAffine;
 use crate::{FFTSettings, Fr, G1Mul, KZGSettings, PairingVerify, Poly, G1, G2};
 use alloc::collections::BTreeMap;
 use alloc::format;
@@ -59,34 +60,40 @@ pub const RANDOM_CHALLENGE_KZG_BATCH_DOMAIN: [u8; 16] = [
 ////////////////////////////// Constant values for EIP-7594 //////////////////////////////
 ////////////////////////////// C API for EIP-4844 //////////////////////////////
 
-pub struct PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
+#[allow(clippy::type_complexity)]
+pub struct PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
-    tables: BTreeMap<u64, Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>>,
+    tables: BTreeMap<u64, Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>>>,
 }
 
-impl<TFr, TG1, TG1Fp, TG1Affine> Default for PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
+impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> Default
+    for PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<TFr, TG1, TG1Fp, TG1Affine> PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine>
+impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+    PrecomputationTableManager<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
     TFr: Fr,
     TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
     pub const fn new() -> Self {
         Self {
@@ -94,9 +101,12 @@ where
         }
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn save_precomputation(
         &mut self,
-        precomputation: Option<Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>>,
+        precomputation: Option<
+            Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>>,
+        >,
         c_settings: &CKZGSettings,
     ) {
         if c_settings.g1_values_lagrange_brp.is_null() {
@@ -116,10 +126,11 @@ where
         self.tables.remove(&Self::get_key(c_settings));
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn get_precomputation(
         &self,
         c_settings: &CKZGSettings,
-    ) -> Option<Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine>>> {
+    ) -> Option<Arc<PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>>> {
         if c_settings.g1_values_lagrange_brp.is_null() {
             return None;
         }
@@ -244,13 +255,14 @@ macro_rules! cfg_into_iter {
 
 fn poly_to_kzg_commitment<
     TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     p: &TPoly,
     s: &TKZGSettings,
@@ -265,13 +277,14 @@ fn poly_to_kzg_commitment<
 
 pub fn blob_to_kzg_commitment_rust<
     TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1LinComb<TFr, TG1Fp, TG1Affine> + G1GetFp<TG1Fp>,
+    TG1: G1 + G1Mul<TFr> + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine> + G1GetFp<TG1Fp>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: &[TFr],
     settings: &TKZGSettings,
@@ -283,13 +296,14 @@ pub fn blob_to_kzg_commitment_rust<
 
 pub fn blob_to_kzg_commitment_raw<
     TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1LinComb<TFr, TG1Fp, TG1Affine> + G1GetFp<TG1Fp>,
+    TG1: G1 + G1Mul<TFr> + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine> + G1GetFp<TG1Fp>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: [u8; BYTES_PER_BLOB],
     settings: &TKZGSettings,
@@ -365,13 +379,18 @@ fn compute_r_powers<TG1: G1, TFr: Fr>(
 
 fn verify_kzg_proof_batch<
     TFr: Fr,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + PairingVerify<TG1, TG2> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1
+        + G1Mul<TFr>
+        + G1GetFp<TG1Fp>
+        + PairingVerify<TG1, TG2>
+        + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     commitments_g1: &[TG1],
     zs_fr: &[TFr],
@@ -417,13 +436,14 @@ fn verify_kzg_proof_batch<
 
 pub fn compute_kzg_proof_rust<
     TFr: Fr + Copy,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: &[TFr],
     z: &TFr,
@@ -500,13 +520,14 @@ pub fn compute_kzg_proof_rust<
 
 pub fn compute_kzg_proof_raw<
     TFr: Fr + Copy,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: [u8; BYTES_PER_BLOB],
     z: [u8; BYTES_PER_FIELD_ELEMENT],
@@ -519,13 +540,14 @@ pub fn compute_kzg_proof_raw<
 
 pub fn compute_blob_kzg_proof_rust<
     TFr: Fr + Copy,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: &[TFr],
     commitment: &TG1,
@@ -542,13 +564,14 @@ pub fn compute_blob_kzg_proof_rust<
 
 pub fn compute_blob_kzg_proof_raw<
     TFr: Fr + Copy,
-    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: [u8; BYTES_PER_BLOB],
     commitment: [u8; BYTES_PER_G1],
@@ -566,9 +589,10 @@ pub fn verify_kzg_proof_rust<
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     commitment: &TG1,
     z: &TFr,
@@ -592,9 +616,10 @@ pub fn verify_kzg_proof_raw<
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     commitment: [u8; BYTES_PER_G1],
     z: [u8; BYTES_PER_FIELD_ELEMENT],
@@ -616,9 +641,10 @@ pub fn verify_blob_kzg_proof_rust<
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: &[TFr],
     commitment_g1: &TG1,
@@ -644,9 +670,10 @@ pub fn verify_blob_kzg_proof_raw<
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blob: [u8; BYTES_PER_BLOB],
     commitment_g1: [u8; BYTES_PER_G1],
@@ -666,9 +693,10 @@ fn compute_challenges_and_evaluate_polynomial<
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blobs: &[Vec<TFr>],
     commitments_g1: &[TG1],
@@ -707,13 +735,18 @@ fn validate_batched_input<TG1: G1>(commitments: &[TG1], proofs: &[TG1]) -> Resul
 
 pub fn verify_blob_kzg_proof_batch_rust<
     TFr: Fr + Copy,
-    TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1
+        + G1Mul<TFr>
+        + PairingVerify<TG1, TG2>
+        + G1GetFp<TG1Fp>
+        + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine> + Sync,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine> + Sync,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blobs: &[Vec<TFr>],
     commitments_g1: &[TG1],
@@ -800,13 +833,18 @@ pub fn verify_blob_kzg_proof_batch_rust<
 
 pub fn verify_blob_kzg_proof_batch_raw<
     TFr: Fr + Copy + Send,
-    TG1: G1 + G1Mul<TFr> + PairingVerify<TG1, TG2> + G1GetFp<TG1Fp> + G1LinComb<TFr, TG1Fp, TG1Affine>,
+    TG1: G1
+        + G1Mul<TFr>
+        + PairingVerify<TG1, TG2>
+        + G1GetFp<TG1Fp>
+        + G1LinComb<TFr, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine> + Sync,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine> + Sync,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     blobs: &[[u8; BYTES_PER_BLOB]],
     commitments_g1: &[[u8; BYTES_PER_G1]],
@@ -919,9 +957,10 @@ pub fn evaluate_polynomial_in_evaluation_form<
     TG2: G2,
     TPoly: Poly<TFr>,
     TFFTSettings: FFTSettings<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     p: &TPoly,
     x: &TFr,
@@ -986,9 +1025,10 @@ pub fn load_trusted_setup_rust<
     TG2: G2,
     TFFTSettings: FFTSettings<TFr>,
     TPoly: Poly<TFr>,
-    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine>,
+    TKZGSettings: KZGSettings<TFr, TG1, TG2, TFFTSettings, TPoly, TG1Fp, TG1Affine, TG1ProjAddAffine>,
     TG1Fp: G1Fp,
     TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 >(
     g1_monomial_bytes: &[u8],
     g1_lagrange_bytes: &[u8],
