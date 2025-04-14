@@ -23,6 +23,7 @@ use kzg::{
     FFTFr, FFTSettings, Fr as KzgFr, G1Fp, G1GetFp, G1LinComb, G1Mul, G1ProjAddAffine, G2Mul,
     KZGSettings, PairingVerify, Poly, Scalar256, G1, G2,
 };
+use std::hash::Hash;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 use std::sync::Arc;
 
@@ -358,11 +359,32 @@ impl G1Fp for ZFp {
     fn add_assign_fp(&mut self, b: &Self) {
         self.0.add_assign(b.0);
     }
+
+    fn mul3(&self) -> Self {
+        const THREE: Fp = Fp([
+            17157870155352091297,
+            9692872460839157767,
+            5726366251156250088,
+            11420128032487956561,
+            9069687087735597977,
+            1000072309349998725,
+        ]);
+
+        Self(self.0 * THREE)
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ZG1 {
     pub proj: G1Projective,
+}
+
+impl Hash for ZG1 {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.proj.x.0.hash(state);
+        self.proj.y.0.hash(state);
+        self.proj.z.0.hash(state);
+    }
 }
 
 impl ZG1 {
@@ -596,9 +618,15 @@ impl G1AffineTrait<ZG1, ZFp> for ZG1Affine {
     // fn add(&mut self, b: &Self) {
     //     self.0 += b.0;
     // }
+
+    fn neg(&self) -> Self {
+        Self(-self.0)
+    }
 }
 
+#[derive(Debug)]
 pub struct ZG1ProjAddAffine;
+
 impl G1ProjAddAffine<ZG1, ZFp, ZG1Affine> for ZG1ProjAddAffine {
     fn add_assign_affine(proj: &mut ZG1, aff: &ZG1Affine) {
         proj.proj += aff.0;
@@ -653,12 +681,12 @@ impl G1GetFp<ZFp> for ZG1 {
     }
 }
 
-impl G1LinComb<ZFr, ZFp, ZG1Affine> for ZG1 {
+impl G1LinComb<ZFr, ZFp, ZG1Affine, ZG1ProjAddAffine> for ZG1 {
     fn g1_lincomb(
         points: &[Self],
         scalars: &[ZFr],
         len: usize,
-        precomputation: Option<&PrecomputationTable<ZFr, Self, ZFp, ZG1Affine>>,
+        precomputation: Option<&PrecomputationTable<ZFr, Self, ZFp, ZG1Affine, ZG1ProjAddAffine>>,
     ) -> Self {
         let mut out = ZG1::default();
         g1_linear_combination(&mut out, points, scalars, len, precomputation);
@@ -884,7 +912,9 @@ fn toeplitz_part_1(
     Ok(())
 }
 
-impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZGSettings {
+impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine, ZG1ProjAddAffine>
+    for ZKZGSettings
+{
     fn new(
         g1_monomial: &[ZG1],
         g1_lagrange_brp: &[ZG1],
@@ -927,8 +957,11 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
             g1_values_lagrange_brp: g1_lagrange_brp.to_vec(),
             g2_values_monomial: g2_monomial.to_vec(),
             fs: fft_settings.clone(),
+            precomputation: precompute(g1_lagrange_brp, &x_ext_fft_columns)
+                .ok()
+                .flatten()
+                .map(Arc::new),
             x_ext_fft_columns,
-            precomputation: precompute(g1_lagrange_brp).ok().flatten().map(Arc::new),
             cell_size,
         })
     }
@@ -1071,7 +1104,9 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
         &self.fs
     }
 
-    fn get_precomputation(&self) -> Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine>> {
+    fn get_precomputation(
+        &self,
+    ) -> Option<&PrecomputationTable<ZFr, ZG1, ZFp, ZG1Affine, ZG1ProjAddAffine>> {
         self.precomputation.as_ref().map(|v| v.as_ref())
     }
 
@@ -1087,8 +1122,8 @@ impl KZGSettings<ZFr, ZG1, ZG2, ZFFTSettings, PolyData, ZFp, ZG1Affine> for ZKZG
         &self.g2_values_monomial
     }
 
-    fn get_x_ext_fft_column(&self, index: usize) -> &[ZG1] {
-        &self.x_ext_fft_columns[index]
+    fn get_x_ext_fft_columns(&self) -> &[Vec<ZG1>] {
+        &self.x_ext_fft_columns
     }
 
     fn get_cell_size(&self) -> usize {
