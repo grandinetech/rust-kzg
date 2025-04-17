@@ -11,6 +11,7 @@ use alloc::{
     vec::Vec,
 };
 
+use crate::G1ProjAddAffine;
 use crate::{
     cfg_iter, cfg_iter_mut,
     common_utils::{reverse_bit_order, reverse_bits_limited},
@@ -28,8 +29,9 @@ pub trait EcBackend {
     type Fr: Fr + Debug + Send;
     type G1Fp: G1Fp;
     type G1Affine: G1Affine<Self::G1, Self::G1Fp>;
+    type G1ProjAddAffine: G1ProjAddAffine<Self::G1, Self::G1Fp, Self::G1Affine>;
     type G1: G1
-        + G1LinComb<Self::Fr, Self::G1Fp, Self::G1Affine>
+        + G1LinComb<Self::Fr, Self::G1Fp, Self::G1Affine, Self::G1ProjAddAffine>
         + PairingVerify<Self::G1, Self::G2>
         + Eq
         + Hash;
@@ -44,6 +46,7 @@ pub trait EcBackend {
         Self::Poly,
         Self::G1Fp,
         Self::G1Affine,
+        Self::G1ProjAddAffine,
     >;
 }
 

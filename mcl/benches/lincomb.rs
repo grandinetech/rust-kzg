@@ -3,10 +3,13 @@ use kzg_bench::benches::lincomb::bench_g1_lincomb;
 use rust_kzg_mcl::kzg_proofs::g1_linear_combination;
 use rust_kzg_mcl::types::fp::MclFp;
 use rust_kzg_mcl::types::fr::MclFr;
-use rust_kzg_mcl::types::g1::{MclG1, MclG1Affine};
+use rust_kzg_mcl::types::g1::{MclG1, MclG1Affine, MclG1ProjAddAffine};
 
 fn bench_g1_lincomb_(c: &mut Criterion) {
-    bench_g1_lincomb::<MclFr, MclG1, MclFp, MclG1Affine>(c, &g1_linear_combination);
+    bench_g1_lincomb::<MclFr, MclG1, MclFp, MclG1Affine, MclG1ProjAddAffine>(
+        c,
+        &g1_linear_combination,
+    );
 }
 
 criterion_group! {
