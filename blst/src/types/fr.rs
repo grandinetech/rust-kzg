@@ -18,6 +18,21 @@ use kzg::Scalar256;
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct FsFr(pub blst_fr);
 
+#[cfg(feature = "serde")]
+impl serde::Serialize for FsFr {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_bytes(&self.to_bytes())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for FsFr {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let bytes = <[u8; BYTES_PER_FIELD_ELEMENT]>::deserialize(d)?;
+        Ok(Self::from_bytes_unchecked(&bytes).unwrap())
+    }
+}
+
 impl Fr for FsFr {
     fn null() -> Self {
         Self::from_u64_arr(&[u64::MAX, u64::MAX, u64::MAX, u64::MAX])
