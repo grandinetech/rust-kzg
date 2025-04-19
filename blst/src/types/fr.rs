@@ -14,6 +14,7 @@ use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
 use kzg::Scalar256;
 
+/// An element of the 256-bit scalar field of the BLS12-381 curve.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct FsFr(pub blst_fr);

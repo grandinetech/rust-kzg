@@ -34,6 +34,28 @@ use super::fp::FsFp;
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1(pub blst_p1);
 
+#[cfg(feature = "serde")]
+impl serde::Serialize for FsG1 {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_bytes(&self.to_bytes())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for FsG1 {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let bytes = <&[u8]>::deserialize(d)?;
+        if bytes.len() != BYTES_PER_G1 {
+            return Err(serde::de::Error::custom(format!(
+                "Invalid byte length. Expected {}, got {}",
+                BYTES_PER_G1,
+                bytes.len()
+            )));
+        }
+        Ok(Self::from_bytes(bytes).unwrap())
+    }
+}
+
 impl Hash for FsG1 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.0.x.l.hash(state);
