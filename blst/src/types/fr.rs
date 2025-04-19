@@ -280,6 +280,7 @@ impl Fr for FsFr {
 }
 
 #[cfg(test)]
+#[cfg(feature = "serde")]
 mod tests {
     use super::*;
 
