@@ -1,6 +1,7 @@
 use blst::blst_fp;
 use kzg::G1Fp;
 
+/// An element of the 381-bit base field of the BLS12-381 curve.
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsFp(pub blst_fp);

@@ -24,7 +24,8 @@ rand = "0.8.5"
 default = [
     "std",
     "rand",
-    "bgmw"
+    "bgmw",
+    "serde"
 ]
 std = [
     "hex/std",
