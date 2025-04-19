@@ -14,9 +14,25 @@ use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
 use kzg::Scalar256;
 
+/// An element of the 256-bit scalar field of the BLS12-381 curve.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct FsFr(pub blst_fr);
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for FsFr {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        <[_; BYTES_PER_FIELD_ELEMENT]>::serialize(&self.to_bytes(), s)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for FsFr {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let bytes = <[u8; BYTES_PER_FIELD_ELEMENT]>::deserialize(d)?;
+        Ok(Self::from_bytes_unchecked(&bytes).unwrap())
+    }
+}
 
 impl Fr for FsFr {
     fn null() -> Self {
@@ -260,5 +276,23 @@ impl Fr for FsFr {
             blst_scalar_from_fr(&mut blst_scalar, &self.0);
         }
         Scalar256::from_u8(&blst_scalar.b)
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "serde")]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ser() {
+        let fr = FsFr::from_u64(1);
+        let serialized = bincode::serde::encode_to_vec(fr, bincode::config::standard())
+            .expect("Serialization failed");
+        assert_eq!(serialized.len(), BYTES_PER_FIELD_ELEMENT);
+        let (deserialized, _): (FsFr, _) =
+            bincode::serde::decode_from_slice(&serialized, bincode::config::standard())
+                .expect("Deserialization failed");
+        assert_eq!(fr, deserialized);
     }
 }

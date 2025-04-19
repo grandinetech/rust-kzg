@@ -33,6 +33,23 @@ use super::fp::FsFp;
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1(pub blst_p1);
 
+#[cfg(feature = "serde")]
+impl serde::Serialize for FsG1 {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde_big_array::BigArray;
+        <[_; BYTES_PER_G1]>::serialize(&self.to_bytes(), s)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for FsG1 {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        use serde_big_array::BigArray;
+        let bytes = <[u8; BYTES_PER_G1]>::deserialize(d)?;
+        Ok(Self::from_bytes(&bytes).unwrap())
+    }
+}
+
 impl Hash for FsG1 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.0.x.l.hash(state);
@@ -387,5 +404,23 @@ impl G1ProjAddAffine<FsG1, FsFp, FsG1Affine> for FsG1ProjAddAffine {
         unsafe {
             blst::blst_p1_add_or_double_affine(&mut proj.0, &proj.0, &aff.0);
         }
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "serde")]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ser() {
+        let g1 = FsG1::generator();
+        let serialized = bincode::serde::encode_to_vec(g1, bincode::config::standard())
+            .expect("Serialization failed");
+        assert_eq!(serialized.len(), BYTES_PER_G1);
+        let (deserialized, _): (FsG1, _) =
+            bincode::serde::decode_from_slice(&serialized, bincode::config::standard())
+                .expect("Deserialization failed");
+        assert_eq!(g1, deserialized);
     }
 }
