@@ -22,7 +22,7 @@ pub struct FsFr(pub blst_fr);
 #[cfg(feature = "serde")]
 impl serde::Serialize for FsFr {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_bytes(&self.to_bytes())
+        <[_; BYTES_PER_FIELD_ELEMENT]>::serialize(&self.to_bytes(), s)
     }
 }
 
@@ -276,5 +276,22 @@ impl Fr for FsFr {
             blst_scalar_from_fr(&mut blst_scalar, &self.0);
         }
         Scalar256::from_u8(&blst_scalar.b)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ser() {
+        let fr = FsFr::from_u64(1);
+        let serialized = bincode::serde::encode_to_vec(fr, bincode::config::standard())
+            .expect("Serialization failed");
+        assert_eq!(serialized.len(), BYTES_PER_FIELD_ELEMENT);
+        let (deserialized, _): (FsFr, _) =
+            bincode::serde::decode_from_slice(&serialized, bincode::config::standard())
+                .expect("Deserialization failed");
+        assert_eq!(fr, deserialized);
     }
 }

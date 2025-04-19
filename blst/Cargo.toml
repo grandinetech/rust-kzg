@@ -16,6 +16,7 @@ rust-kzg-blst-sppark = { path = "../blst-sppark", version = "0.1.0", optional = 
 serde = { version = "1.0.219", optional = true }
 
 [dev-dependencies]
+bincode = { version = "2.0.1", features = ["serde"] }
 criterion = "0.5.1"
 kzg-bench = { path = "../kzg-bench" }
 rand = "0.8.5"
@@ -24,8 +25,7 @@ rand = "0.8.5"
 default = [
     "std",
     "rand",
-    "bgmw",
-    "serde"
+    "bgmw"
 ]
 std = [
     "hex/std",
