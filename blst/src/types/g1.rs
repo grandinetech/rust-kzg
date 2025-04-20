@@ -25,6 +25,7 @@ use kzg::G1ProjAddAffine;
 use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
+use crate::impl_serde;
 use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fr::FsFr;
 
@@ -34,22 +35,7 @@ use super::fp::FsFp;
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1(pub blst_p1);
 
-#[cfg(feature = "serde")]
-impl serde::Serialize for FsG1 {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        use serde_big_array::BigArray;
-        <[_; BYTES_PER_G1]>::serialize(&self.to_bytes(), s)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for FsG1 {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        use serde_big_array::BigArray;
-        let bytes = <[u8; BYTES_PER_G1]>::deserialize(d)?;
-        Ok(Self::from_bytes(&bytes).unwrap())
-    }
-}
+impl_serde!(FsG1, BYTES_PER_G1);
 
 impl Hash for FsG1 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {

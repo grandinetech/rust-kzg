@@ -14,25 +14,14 @@ use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
 use kzg::Fr;
 use kzg::Scalar256;
 
+use crate::impl_serde;
+
 /// An element of the 256-bit scalar field of the BLS12-381 curve.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct FsFr(pub blst_fr);
 
-#[cfg(feature = "serde")]
-impl serde::Serialize for FsFr {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        <[_; BYTES_PER_FIELD_ELEMENT]>::serialize(&self.to_bytes(), s)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for FsFr {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let bytes = <[u8; BYTES_PER_FIELD_ELEMENT]>::deserialize(d)?;
-        Ok(Self::from_bytes_unchecked(&bytes).unwrap())
-    }
-}
+impl_serde!(FsFr, BYTES_PER_FIELD_ELEMENT);
 
 impl Fr for FsFr {
     fn null() -> Self {

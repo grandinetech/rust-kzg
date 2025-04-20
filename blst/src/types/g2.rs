@@ -15,11 +15,14 @@ use kzg::Fr;
 use kzg::{G2Mul, G2};
 
 use crate::consts::{G2_GENERATOR, G2_NEGATIVE_GENERATOR};
+use crate::impl_serde;
 use crate::types::fr::FsFr;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG2(pub blst_p2);
+
+impl_serde!(FsG2, BYTES_PER_G2);
 
 impl G2Mul<FsFr> for FsG2 {
     fn mul(&self, b: &FsFr) -> Self {
@@ -119,5 +122,23 @@ impl FsG2 {
     pub fn rand() -> Self {
         let result: FsG2 = G2_GENERATOR;
         result.mul(&FsFr::rand())
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "serde")]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ser() {
+        let g2 = FsG2::generator();
+        let serialized = bincode::serde::encode_to_vec(g2, bincode::config::standard())
+            .expect("Serialization failed");
+        assert_eq!(serialized.len(), BYTES_PER_G2);
+        let (deserialized, _) =
+            bincode::serde::decode_from_slice(&serialized, bincode::config::standard())
+                .expect("Deserialization failed");
+        assert_eq!(g2, deserialized);
     }
 }
