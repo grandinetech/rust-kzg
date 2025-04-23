@@ -19,7 +19,7 @@ Support for multiple backend ECC libraries is implemented via [Traits](https://g
 
 # Drop-in replacement for c-kzg-4844
 
-We aim to expose [an identical C interface](https://github.com/grandinetech/rust-kzg/blob/ca976958e270cd24248a5ab0355b03702f7ae142/blst/src/eip_4844.rs#L53-L412) compared to [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) so that `rust-kzg` could work as a drop-in replacement for c-kzg-4844. If you already use [c-kzg-4844 bindings](https://github.com/ethereum/c-kzg-4844/tree/main/bindings) you can try faster paralellized `rust-kzg` without any changes to your code-base by simply replacing the binary. Instructions for C#, Java, Nodejs, Python, Rust bindings are available [here](https://github.com/grandinetech/rust-kzg/blob/main/blst/run-c-kzg-4844-tests.sh).
+We aim to expose [an identical C interface](https://github.com/grandinetech/rust-kzg/blob/ca976958e270cd24248a5ab0355b03702f7ae142/blst/src/eip_4844.rs#L53-L412) compared to [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) so that `rust-kzg` could work as a drop-in replacement for c-kzg-4844. If you already use [c-kzg-4844 bindings](https://github.com/ethereum/c-kzg-4844/tree/main/bindings) you can try faster parallelized `rust-kzg` without any changes to your code-base by simply replacing the binary. Instructions for C#, Java, Nodejs, Python, Rust bindings are available [here](https://github.com/grandinetech/rust-kzg/blob/main/blst/run-c-kzg-4844-tests.sh).
 
 By default, C bindings are disabled. To enable them, compile static library with feature flag `c_bindings`:
 ```
