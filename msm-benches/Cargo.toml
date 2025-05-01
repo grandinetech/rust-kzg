@@ -25,6 +25,8 @@ human_bytes = "0.4.3"
 [features]
 wbits = [
     "rust-kzg-blst/wbits",
+    "rust-kzg-arkworks4/wbits",
+    "rust-kzg-arkworks5/wbits",
     "rust-kzg-constantine/wbits",
 ]
 bgmw = [

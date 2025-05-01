@@ -15,15 +15,19 @@ impl VariableBaseMSM {
     /// on a Ubuntu 20.04.2 LTS server with AMD EPYC 7282 16-Core CPU
     /// and 128G memory, the optimal performance may vary on a different
     /// configuration.
-    const fn get_opt_window_size(k: u32) -> u32 {
-        match k {
-            0..=9 => 8,
-            10..=12 => 10,
-            13..=14 => 12,
-            15..=19 => 13,
-            20..=22 => 15,
-            23.. => 16,
-        }
+    fn get_opt_window_size(k: u32) -> u32 {
+        option_env!("WINDOW_SIZE")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or({
+                match k {
+                    0..=9 => 8,
+                    10..=12 => 10,
+                    13..=14 => 12,
+                    15..=19 => 13,
+                    20..=22 => 15,
+                    23.. => 16,
+                }
+            })
     }
 
     pub fn msm_slice(mut scalar: Scalar256, slices: &mut [u32], window_bits: u32) {
