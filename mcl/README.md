@@ -2,7 +2,7 @@
 
 ## About
 
-This is a KZG10 implementation in Rust, heavily based on the Go implmentation by protolambda https://github.com/protolambda/go-kzg.
+This is a KZG10 implmentation in Rust, heavily based on the Go implementation by protolambda https://github.com/protolambda/go-kzg.
 
 This repo also contains Herumi MCL, as I could not find a way to make the cargo crate for mcl_rust work, and it does seem abandoned. It can be found here: https://github.com/herumi/mcl-rust.
 
