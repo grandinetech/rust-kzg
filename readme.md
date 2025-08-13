@@ -18,7 +18,7 @@ Support for multiple backend ECC libraries is implemented via [Traits](https://g
 
 # Drop-in replacement for c-kzg-4844
 
-We aim to expose [an identical C interface](https://github.com/sifraitech/rust-kzg/blob/b4de1923a6218ea37021d0f9e3bd375dbf529d34/blst-from-scratch/src/eip_4844.rs#L604:L835) compared to [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) so that `rust-kzg` could work as a drop-in replacement for c-kzg-4844. If you already use [c-kzg-4844 bindings](https://github.com/ethereum/c-kzg-4844/tree/main/bindings) you can try faster parallelized `rust-kzg` without any changes to your code-base by simply replacing the binary. Instructions for C#, Java, Nodejs, Python, Rust bindings are available [here](https://github.com/sifraitech/rust-kzg/blob/main/blst/run-c-kzg-4844-tests.sh).
+We aim to expose [an identical C interface](https://github.com/sifraitech/rust-kzg/blob/b4de1923a6218ea37021d0f9e3bd375dbf529d34/blst-from-scratch/src/eip_4844.rs#L604:L835) compared to [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) so that `rust-kzg` could work as a drop-in replacement for c-kzg-4844. If you already use [c-kzg-4844 bindings](https://github.com/ethereum/c-kzg-4844/tree/main/bindings) you can try faster paralellized `rust-kzg` without any changes to your code-base by simply replacing the binary. Instructions for C#, Java, Nodejs, Python, Rust bindings are available [here](https://github.com/sifraitech/rust-kzg/blob/main/blst/run-c-kzg-4844-tests.sh).
 
 # Example
 
