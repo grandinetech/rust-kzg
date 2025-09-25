@@ -26,8 +26,14 @@ fn msm_parallel<
     if let Some(precomputation) = precomputation {
         precomputation.multiply_parallel(scalars)
     } else {
-        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
-        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+        let (points, scalars): (Vec<_>, Vec<_>) = points
+            .iter()
+            .cloned()
+            .zip(scalars.iter())
+            .filter(|(p, _)| !p.is_inf())
+            .collect();
+        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
+        let scalars = scalars.iter().map(|s| s.to_scalar()).collect::<Vec<_>>();
         tiling_parallel_pippenger(&points, &scalars)
     }
 }
@@ -52,16 +58,30 @@ fn msm_sequential<
         if let Some(precomputation) = precomputation {
             precomputation.multiply_sequential(scalars)
         } else {
-            let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
-            let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+            let (points, scalars): (Vec<_>, Vec<_>) = points
+                .iter()
+                .cloned()
+                .zip(scalars.iter())
+                .filter(|(p, _)| !p.is_inf())
+                .collect();
+
+            let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
+            let scalars = scalars.iter().map(|s| s.to_scalar()).collect::<Vec<_>>();
+
             tiling_pippenger(&points, &scalars)
         }
     }
 
     #[cfg(feature = "arkmsm")]
     {
-        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(points);
-        let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+        let (points, scalars): (Vec<_>, Vec<_>) = points
+            .iter()
+            .cloned()
+            .zip(scalars.iter())
+            .filter(|(p, _)| !p.is_inf())
+            .collect();
+        let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
+        let scalars = scalars.iter().map(|s| s.to_scalar()).collect::<Vec<_>>();
         VariableBaseMSM::multi_scalar_mul::<TG1, TG1Fp, TG1Affine, TProjAddAffine>(
             &points, &scalars,
         )

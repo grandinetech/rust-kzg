@@ -172,6 +172,9 @@ pub fn multi_batch_addition_binary_tree_stride<
 >(
     mut multi_points: Vec<Vec<TG1Affine>>,
 ) -> Vec<TG1> {
+    multi_points
+        .iter_mut()
+        .for_each(|points| points.retain(|p| !p.is_infinity()));
     let total_num_points: usize = multi_points.iter().map(|p| p.len()).sum();
     let mut scratchpad = Vec::with_capacity(total_num_points);
 
@@ -216,7 +219,7 @@ pub fn multi_batch_addition_binary_tree_stride<
         for (points, sum) in multi_points.iter_mut().zip(sums.iter_mut()) {
             // Make the number of points even
             if points.len() % 2 != 0 {
-                TG1ProjAddAffine::add_assign_affine(sum, &points.pop().unwrap());
+                TG1ProjAddAffine::add_or_double_assign_affine(sum, &points.pop().unwrap());
             }
         }
 
@@ -225,10 +228,18 @@ pub fn multi_batch_addition_binary_tree_stride<
         // For each pair of points over all
         // vectors, we collect them and put them in the
         // inverse array
-        for points in multi_points.iter() {
+        for points in multi_points.iter_mut() {
             if points.len() < 2 {
                 continue;
             }
+
+            *points = points
+                .chunks_exact(2)
+                .filter(|v| v[0] != v[1].neg())
+                .flat_map(|v| v)
+                .cloned()
+                .collect::<Vec<_>>();
+
             for i in (0..=points.len() - 2).step_by(2) {
                 denominators.push(choose_add_or_double(points[i], points[i + 1]));
             }
@@ -242,6 +253,7 @@ pub fn multi_batch_addition_binary_tree_stride<
             if points.len() < 2 {
                 continue;
             }
+
             for (i, inv) in (0..=points.len() - 2)
                 .step_by(2)
                 .zip(&denominators[denominators_offset..])
@@ -263,7 +275,7 @@ pub fn multi_batch_addition_binary_tree_stride<
 
     for (sum, points) in sums.iter_mut().zip(multi_points) {
         for point in points {
-            TG1ProjAddAffine::add_assign_affine(sum, &point);
+            TG1ProjAddAffine::add_or_double_assign_affine(sum, &point);
         }
     }
 
@@ -388,7 +400,7 @@ impl<
                 result = result.dbl();
             }
             // Add the accumulated point for this window
-            result.add_assign(&point);
+            result.add_or_dbl_assign(&point);
         }
 
         result

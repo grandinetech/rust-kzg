@@ -211,7 +211,10 @@ pub fn g1_make_linear_combination<
     let mut res = TG1::default();
 
     g1_linear_combination(&mut res, &p, &coeffs, len, None);
+    assert_eq!(exp, res);
 
+    let precomputation = precompute(&p, &[]).unwrap();
+    g1_linear_combination(&mut res, &p, &coeffs, len, precomputation.as_ref());
     assert_eq!(exp, res);
 }
 
@@ -249,9 +252,62 @@ pub fn g1_random_linear_combination<
     }
 
     let mut res = TG1::default();
-    g1_linear_combination(&mut res, &p, &coeffs, len, None);
 
+    g1_linear_combination(&mut res, &p, &coeffs, len, None);
     assert!(exp.equals(&res));
+
+    let precomputation = precompute(&p, &[]).unwrap();
+    g1_linear_combination(&mut res, &p, &coeffs, len, precomputation.as_ref());
+    assert!(exp.equals(&res));
+}
+
+#[allow(clippy::type_complexity)]
+pub fn g1_linear_combination_infinity_points<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp> + Copy,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+    TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+>(
+    g1_linear_combination: &dyn Fn(
+        &mut TG1,
+        &[TG1],
+        &[TFr],
+        usize,
+        Option<&PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>>,
+    ),
+) {
+    let len: usize = 4096;
+    let mut coeffs = vec![TFr::default(); len];
+    let mut p = vec![TG1::default(); len];
+
+    for i in 0..len {
+        if rand::random::<f32>() < 0.1 {
+            coeffs[i] = TFr::zero();
+        } else {
+            coeffs[i] = TFr::rand();
+        }
+
+        if rand::random::<f32>() < 0.1 {
+            p[i] = TG1::zero();
+        } else {
+            p[i] = TG1::rand();
+        }
+    }
+
+    let mut exp = TG1::identity();
+    for i in 0..len {
+        exp = exp.add_or_dbl(&p[i].mul(&coeffs[i]));
+    }
+
+    let mut res = TG1::default();
+
+    g1_linear_combination(&mut res, &p, &coeffs, len, None);
+    assert!(exp.equals(&res));
+
+    let precomputation = precompute(&p, &[]).unwrap();
+    g1_linear_combination(&mut res, &p, &coeffs, len, precomputation.as_ref());
+    assert_eq!(exp, res);
 }
 
 #[allow(clippy::type_complexity)]

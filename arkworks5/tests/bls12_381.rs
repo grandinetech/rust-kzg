@@ -119,6 +119,13 @@ mod tests {
     }
 
     #[test]
+    pub fn g1_linear_combination_infinity_points_() {
+        g1_linear_combination_infinity_points::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
+            &g1_linear_combination,
+        );
+    }
+
+    #[test]
     fn g1_small_linear_combination_() {
         g1_small_linear_combination::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
             &g1_linear_combination,
