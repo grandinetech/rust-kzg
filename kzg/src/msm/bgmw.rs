@@ -1,10 +1,12 @@
 use core::marker::PhantomData;
 
-use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, Scalar256, G1};
+use crate::{
+    msm::tiling_pippenger_ops::p1_integrate_buckets, Fr, G1Affine, G1Fp, G1GetFp, G1Mul,
+    G1ProjAddAffine, Scalar256, G1,
+};
 
 use super::pippenger_utils::{
-    booth_decode, booth_encode, get_wval_limb, is_zero, num_bits, p1_dadd, p1_to_jacobian,
-    type_is_zero, P1XYZZ,
+    booth_decode, booth_encode, get_wval_limb, is_zero, num_bits, P1XYZZ,
 };
 
 #[derive(Debug, Clone)]
@@ -389,7 +391,7 @@ impl<
         p1_tile_bgmw(&points[0..numpoints], scalars, buckets, 0, wbits, cbits);
 
         let mut ret = TG1::default();
-        integrate_buckets(&mut ret, buckets, wbits - 1);
+        p1_integrate_buckets(&mut ret, buckets, wbits - 1);
 
         ret
     }
@@ -496,7 +498,7 @@ impl<
                 loop {
                     let work = counter.fetch_add(1, Ordering::Relaxed);
                     if work >= total {
-                        integrate_buckets(
+                        p1_integrate_buckets(
                             unsafe { results[worker_index].as_ptr().as_mut() }.unwrap(),
                             &mut buckets,
                             window - 1,
@@ -651,41 +653,4 @@ pub fn p1_tile_bgmw<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine<TG1, 
     let point = &points[npoints];
     // Move point to bucket
     booth_decode(buckets, wnxt, cbits, point);
-}
-
-/// Calculate bucket sum
-///
-/// This function multiplies the point in each bucket by it's index. Then, it will sum all multiplication results and write
-/// resulting point to the `out`.
-///
-/// ## Arguments
-///
-/// * out     - output where bucket sum must be written
-/// * buckets - pointer to the beginning of the array of buckets
-/// * wbits   - window size, aka exponent of q (q^window)
-///
-fn integrate_buckets<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp>(
-    out: &mut TG1,
-    buckets: &mut [P1XYZZ<TFp>],
-    wbits: usize,
-) {
-    let mut n = (1usize << wbits) - 1;
-    let mut ret = buckets[n];
-    let mut acc = buckets[n];
-    buckets[n] = P1XYZZ::<TFp>::default();
-
-    loop {
-        if n == 0 {
-            break;
-        }
-        n -= 1;
-
-        if type_is_zero(&buckets[n]) == 0 {
-            p1_dadd(&mut acc, &buckets[n]);
-        }
-        buckets[n] = P1XYZZ::<TFp>::default();
-        p1_dadd(&mut ret, &acc);
-    }
-
-    p1_to_jacobian(out, &ret);
 }

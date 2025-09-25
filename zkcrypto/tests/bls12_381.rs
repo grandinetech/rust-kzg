@@ -107,6 +107,13 @@ mod tests {
     }
 
     #[test]
+    pub fn g1_linear_combination_infinity_points_() {
+        g1_linear_combination_infinity_points::<ZFr, ZG1, ZFp, ZG1Affine, ZG1ProjAddAffine>(
+            &g1_linear_combination,
+        );
+    }
+
+    #[test]
     pub fn pairings_work_() {
         pairings_work::<ZFr, ZG1, ZG2>(&pairings_verify);
     }

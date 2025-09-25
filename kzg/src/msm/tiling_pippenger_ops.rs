@@ -7,7 +7,18 @@ use super::pippenger_utils::{
     pippenger_window_size, type_is_zero, type_zero, P1XYZZ,
 };
 
-fn p1_integrate_buckets<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp>(
+/// Calculate bucket sum
+///
+/// This function multiplies the point in each bucket by it's index. Then, it will sum all multiplication results and write
+/// resulting point to the `out`.
+///
+/// ## Arguments
+///
+/// * out     - output where bucket sum must be written
+/// * buckets - pointer to the beginning of the array of buckets
+/// * wbits   - window size, aka exponent of q (q^window)
+///
+pub fn p1_integrate_buckets<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp>(
     out: &mut TG1,
     buckets: &mut [P1XYZZ<TFp>],
     wbits: usize,
@@ -63,12 +74,6 @@ pub fn p1s_tile_pippenger<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine
     wbits: usize,
     cbits: usize,
 ) {
-    // Get first scalar
-    let scalar = &scalars[0];
-
-    // Get first point
-    let point = &points[0];
-
     // Create mask, that contains `wbits` ones at the end.
     let wmask = (1u64 << (wbits + 1)) - 1;
 
@@ -85,49 +90,15 @@ pub fn p1s_tile_pippenger<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp, TG1Affine: G1Affine
     // Increase `wbits` by one, if `bit0` is not equal to zero.
     let wbits = wbits + (z ^ 1) as usize;
 
-    // Calculate first window value (encoded bucket index)
-    let wval = (get_wval_limb(scalar, bit0, wbits) << z) & wmask;
-    let mut wval = booth_encode(wval, cbits);
+    for (point, scalar) in points.iter().zip(scalars.iter()) {
+        // Calculate first window value (encoded bucket index)
+        let wval = (get_wval_limb(scalar, bit0, wbits) << z) & wmask;
+        let wval = booth_encode(wval, cbits);
 
-    // Get second scalar
-    let scalar = &scalars[1];
-
-    // Calculate second window value (encoded bucket index)
-    let wnxt = (get_wval_limb(scalar, bit0, wbits) << z) & wmask;
-    let mut wnxt = booth_encode(wnxt, cbits);
-
-    // Move first point to corresponding bucket
-    booth_decode(buckets, wval, cbits, point);
-
-    // Last point will be calculated separately, so decrementing point count
-    let npoints = points.len() - 1;
-
-    // Move points to buckets
-    for i in 1..npoints {
-        // Get current window value (encoded bucket index)
-        wval = wnxt;
-
-        // Get next scalar
-        let scalar = &scalars[i + 1];
-        // Get next window value (encoded bucket index)
-        wnxt = (get_wval_limb(scalar, bit0, wbits) << z) & wmask;
-        wnxt = booth_encode(wnxt, cbits);
-
-        // TODO: add prefetching
-        // POINTonE1_prefetch(buckets, wnxt, cbits);
-        // p1_prefetch(buckets, wnxt, cbits);
-
-        // Get current point
-        let point = &points[i];
-
-        // Move point to corresponding bucket (add or subtract from bucket)
-        // `wval` contains encoded bucket index, as well as sign, which shows if point should be subtracted or added to bucket
+        // Move point to corresponding bucket
         booth_decode(buckets, wval, cbits, point);
     }
-    // Get last point
-    let point = &points[npoints];
-    // Move point to bucket
-    booth_decode(buckets, wnxt, cbits, point);
+
     // Integrate buckets - multiply point in each bucket by scalar and sum all results
     p1_integrate_buckets(ret, buckets, cbits - 1);
 }
@@ -154,7 +125,7 @@ pub fn tiling_pippenger<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affi
 
         p1s_tile_pippenger(&mut tile, points, scalars, &mut buckets, bit0, wbits, cbits);
 
-        ret.add_assign(&tile);
+        ret.add_or_dbl_assign(&tile);
         for _ in 0..window {
             ret.dbl_assign();
         }
@@ -162,6 +133,6 @@ pub fn tiling_pippenger<TG1: G1 + G1GetFp<TG1Fp>, TG1Fp: G1Fp, TG1Affine: G1Affi
         wbits = window;
     }
     p1s_tile_pippenger(&mut tile, points, scalars, &mut buckets, 0, wbits, cbits);
-    ret.add_assign(&tile);
+    ret.add_or_dbl_assign(&tile);
     ret
 }

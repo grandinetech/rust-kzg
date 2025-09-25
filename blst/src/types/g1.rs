@@ -328,12 +328,16 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
     }
 
     fn into_affines(g1: &[FsG1]) -> Vec<Self> {
-        let points =
-            unsafe { core::slice::from_raw_parts(g1.as_ptr() as *const blst_p1, g1.len()) };
-        let points = p1_affines::from(points);
-        unsafe {
-            // Transmute safe due to repr(C) on FsG1Affine
-            core::mem::transmute(points)
+        if g1.is_empty() {
+            Vec::new()
+        } else {
+            let points =
+                unsafe { core::slice::from_raw_parts(g1.as_ptr() as *const blst_p1, g1.len()) };
+            let points = p1_affines::from(points);
+            unsafe {
+                // Transmute safe due to repr(C) on FsG1Affine
+                core::mem::transmute::<p1_affines, Vec<Self>>(points)
+            }
         }
     }
 
