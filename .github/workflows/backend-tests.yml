@@ -64,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, constantine, mcl]
+        backend: [blst, zkcrypto, arkworks5, arkworks4, arkworks3, mcl]
         include:
           # Set default clippy flag
           - clippy-flag: --features=default,std,rand,parallel
@@ -88,10 +88,11 @@ jobs:
           - backend: arkworks5
             support_wasm: true
             support_ckzg: true
-          - backend: constantine
-            # FIXME: Check for wasm support
-            support_wasm: false
-            support_ckzg: true
+          # TODO: enable constantine back after update
+          # - backend: constantine
+          #   # FIXME: Check for wasm support
+          #   support_wasm: false
+          #   support_ckzg: true
           - backend: mcl
             support_wasm: true
             support_ckzg: true
