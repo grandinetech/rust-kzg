@@ -12,7 +12,7 @@ constantine-ethereum-kzg = { 'git' = 'https://github.com/mratsim/constantine.git
 constantine-sys = { 'git' = 'https://github.com/mratsim/constantine.git', rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" }  # branch constantine-public-sys
 constantine-core = { 'git' = 'https://github.com/mratsim/constantine.git', rev = "3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe" }  # branch constantine-public-sys
 rand = { version = "0.8.5", optional = true }
-rayon = { version = "1.8.0", optional = true } 
+rayon = { version = "1.8.0", optional = true }
 smallvec = { version = "1.11.1", features = ["const_generics"] }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 

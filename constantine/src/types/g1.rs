@@ -371,6 +371,10 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     }
 
     fn into_affines_loc(out: &mut [Self], g1: &[CtG1]) {
+        if g1.is_empty() {
+            return;
+        }
+
         unsafe {
             constantine::ctt_bls12_381_g1_jac_batch_affine(
                 core::mem::transmute::<*mut CtG1Affine, *const constantine_sys::bls12_381_g1_aff>(
