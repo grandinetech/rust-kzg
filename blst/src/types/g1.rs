@@ -25,6 +25,7 @@ use kzg::G1ProjAddAffine;
 use kzg::{G1Mul, G1};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
+use crate::impl_serde;
 use crate::kzg_proofs::g1_linear_combination;
 use crate::types::fr::FsFr;
 
@@ -33,6 +34,8 @@ use super::fp::FsFp;
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1(pub blst_p1);
+
+impl_serde!(FsG1, BYTES_PER_G1);
 
 impl Hash for FsG1 {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -412,5 +415,23 @@ impl G1ProjAddAffine<FsG1, FsFp, FsG1Affine> for FsG1ProjAddAffine {
         unsafe {
             blst::blst_p1_add_or_double_affine(&mut proj.0, &proj.0, &aff.0);
         }
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "serde")]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ser() {
+        let g1 = FsG1::generator();
+        let serialized = bincode::serde::encode_to_vec(g1, bincode::config::standard())
+            .expect("Serialization failed");
+        assert_eq!(serialized.len(), BYTES_PER_G1);
+        let (deserialized, _): (FsG1, _) =
+            bincode::serde::decode_from_slice(&serialized, bincode::config::standard())
+                .expect("Deserialization failed");
+        assert_eq!(g1, deserialized);
     }
 }
