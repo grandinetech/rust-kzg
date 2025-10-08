@@ -108,7 +108,6 @@ mod tests {
         );
     }
 
-    #[ignore = "TODO: handle infinity points"]
     #[test]
     pub fn g1_linear_combination_infinity_points_() {
         g1_linear_combination_infinity_points::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
