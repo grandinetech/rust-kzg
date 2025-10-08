@@ -12,11 +12,12 @@ rust-kzg-arkworks5 = { path = "../arkworks5", default-features = false, features
 rust-kzg-constantine = { path = "../constantine", default-features = false, features = ["std", "rand"] }
 rust-kzg-mcl = { path = "../mcl", default-features = false, features = ["std", "rand"] }
 rust-kzg-zkcrypto = { path = "../zkcrypto", default-features = false, features = ["std", "rand"] }
-crate_crypto_internal_eth_kzg_bls12_381 = { git = "https://github.com/crate-crypto/rust-eth-kzg.git" }
+ekzg-bls12-381 = { git = "https://github.com/crate-crypto/rust-eth-kzg.git" }
 blstrs = "0.7.1"
 kzg = { path = "../kzg" }
 rand = "0.8.5"
 rand_core = "0.6"
+rand_chacha = "0.3"
 
 [dev-dependencies]
 criterion = "0.5.1"

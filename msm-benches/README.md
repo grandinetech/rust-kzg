@@ -11,13 +11,20 @@ This folder contains benchmarks for MSMs:
 You can configure MSM size by specifying environment variable `BENCH_NPOW`. 
 Point count will be `2^BENCH_NPOW`. Default is 12 (4096 points). For example:
 ```bash
-BENCH_NPOW=8 cargo -p msm-benches bench # This will benchmark MSMs with 2^8=256 points.
+BENCH_NPOW=8 cargo -p msm-benches # This will benchmark MSMs with 2^8=256 points.
 ```
 
 You can also select MSMs to benchmark, using criterion's filters. For example:
 ```bash
 cargo bench -p msm-benches -- rust-kzg-blst                      # This will run only rust-kzg-blst MSM
 cargo bench -p msm-benches -- "rust-kzg-blst|rust-kzg-arkworks3" # This will run rust-kzg-blst & rust-kzg-arkworks3 MSMs
+```
+
+You can also specify seed via `SEED` environment variable. When providing "rand"
+value, seed will be selected randomly. For example:
+```bash
+SEED=rand cargo -p msm-benches # This will generate random set of points & scalars on each run
+SEED=7 cargo -p msm-benches    # This will always generate the same set of points & scalars
 ```
 
 ## MSM parameters
