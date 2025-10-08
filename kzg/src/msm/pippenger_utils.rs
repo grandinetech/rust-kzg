@@ -92,7 +92,7 @@ fn p1_dadd_affine<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp>>(
     p2: &TG1Affine,
     subtract: bool, // Need to replace this somehow
 ) {
-    if type_is_zero(p2) != 0 {
+    if p2.is_zero() {
         return;
     } else if vec_is_zero(&out.zzz as *const TFp as *const u8, 2 * size_of::<TFp>()) != 0 {
         vec_copy(
