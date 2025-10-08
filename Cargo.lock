@@ -1315,6 +1315,7 @@ dependencies = [
  "human_bytes",
  "kzg",
  "rand",
+ "rand_chacha",
  "rand_core",
  "rust-kzg-arkworks3",
  "rust-kzg-arkworks4",

@@ -17,6 +17,7 @@ blstrs = "0.7.1"
 kzg = { path = "../kzg" }
 rand = "0.8.5"
 rand_core = "0.6"
+rand_chacha = "0.3"
 
 [dev-dependencies]
 criterion = "0.5.1"
