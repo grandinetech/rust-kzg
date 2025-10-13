@@ -18,17 +18,39 @@ pub fn fft_fr_fast(
     roots: &[FsFr],
     roots_stride: usize,
 ) {
-    fft_fr_fast_inner(ret, data, stride, roots, roots_stride);
+    let args = FftFrFastInner {
+        data,
+        stride,
+        roots,
+        roots_stride,
+    };
+
+    fft_fr_fast_inner(ret, 0, &args, 1);
 }
 
-/// Inner recursive implementation of Fast Fourier Transform for finite field elements.
-/// TODO: make stack usage more efficient
+/// A struct which holds the unmodified arguments to `fft_fr_fast`.
+/// Passing a reference to this struct takes a single pointer, but passing references to its
+/// arguments takes 6 pointers (in Rust, slice references contain a start and length).
+struct FftFrFastInner<'caller> {
+    data: &'caller [FsFr],
+    stride: usize,
+    roots: &'caller [FsFr],
+    roots_stride: usize,
+}
+
+/// Inner recursive implementation of Fast Fourier Transform for finite field elements, with more efficient stack usage.
+///
+/// `fft_fr_fast` parameters are mapped as follows:
+/// - `ret`: unmodified output array, can't be re-used due to Rust's mutable borrow rules.
+/// - `data`: `args.data[args.data_start..]`.
+/// - `stride`: `args.stride * stride_factor`.
+/// - `roots`: `args.roots` (unmodified during recursion).
+/// - `roots_stride`: `args.roots_stride * stride_factor`.
 fn fft_fr_fast_inner(
     ret: &mut [FsFr],
-    data: &[FsFr],
-    stride: usize,
-    roots: &[FsFr],
-    roots_stride: usize,
+    data_start: usize,
+    args: &FftFrFastInner<'_>,
+    stride_factor: usize,
 ) {
     let half: usize = ret.len() / 2;
     if half > 0 {
@@ -37,13 +59,12 @@ fn fft_fr_fast_inner(
         // and the odd members to the second half
         #[cfg(not(feature = "parallel"))]
         {
-            fft_fr_fast_inner(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
+            fft_fr_fast_inner(&mut ret[..half], data_start, args, stride_factor * 2);
             fft_fr_fast_inner(
                 &mut ret[half..],
-                &data[stride..],
-                stride * 2,
-                roots,
-                roots_stride * 2,
+                data_start + args.stride * stride_factor,
+                args,
+                stride_factor * 2,
             );
         }
 
@@ -52,29 +73,36 @@ fn fft_fr_fast_inner(
             if half > 256 {
                 let (lo, hi) = ret.split_at_mut(half);
                 rayon::join(
-                    || fft_fr_fast_inner(lo, data, stride * 2, roots, roots_stride * 2),
-                    || fft_fr_fast_inner(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+                    || fft_fr_fast_inner(lo, data_start, args, stride_factor * 2),
+                    || {
+                        fft_fr_fast_inner(
+                            hi,
+                            data_start + args.stride * stride_factor,
+                            args,
+                            stride_factor * 2,
+                        )
+                    },
                 );
             } else {
-                fft_fr_fast_inner(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
+                fft_fr_fast_inner(&mut ret[..half], data_start, args, stride_factor * 2);
                 fft_fr_fast_inner(
                     &mut ret[half..],
-                    &data[stride..],
-                    stride * 2,
-                    roots,
-                    roots_stride * 2,
+                    data_start + args.stride * stride_factor,
+                    args,
+                    stride_factor * 2,
                 );
             }
         }
 
         for i in 0..half {
-            let y_times_root = ret[i + half].mul(&roots[i * roots_stride]);
+            let y_times_root =
+                ret[i + half].mul(&args.roots[i * args.roots_stride * stride_factor]);
             ret[i + half] = ret[i].sub(&y_times_root);
             ret[i] = ret[i].add(&y_times_root);
         }
     } else {
         // When len = 1, return the permuted element
-        ret[0] = data[0];
+        ret[0] = args.data[data_start];
     }
 }
 
