@@ -18,6 +18,18 @@ pub fn fft_fr_fast(
     roots: &[FsFr],
     roots_stride: usize,
 ) {
+    fft_fr_fast_inner(ret, data, stride, roots, roots_stride);
+}
+
+/// Inner recursive implementation of Fast Fourier Transform for finite field elements.
+/// TODO: make stack usage more efficient
+fn fft_fr_fast_inner(
+    ret: &mut [FsFr],
+    data: &[FsFr],
+    stride: usize,
+    roots: &[FsFr],
+    roots_stride: usize,
+) {
     let half: usize = ret.len() / 2;
     if half > 0 {
         // Recurse
@@ -25,8 +37,8 @@ pub fn fft_fr_fast(
         // and the odd members to the second half
         #[cfg(not(feature = "parallel"))]
         {
-            fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
-            fft_fr_fast(
+            fft_fr_fast_inner(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
+            fft_fr_fast_inner(
                 &mut ret[half..],
                 &data[stride..],
                 stride * 2,
@@ -40,12 +52,12 @@ pub fn fft_fr_fast(
             if half > 256 {
                 let (lo, hi) = ret.split_at_mut(half);
                 rayon::join(
-                    || fft_fr_fast(lo, data, stride * 2, roots, roots_stride * 2),
-                    || fft_fr_fast(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
+                    || fft_fr_fast_inner(lo, data, stride * 2, roots, roots_stride * 2),
+                    || fft_fr_fast_inner(hi, &data[stride..], stride * 2, roots, roots_stride * 2),
                 );
             } else {
-                fft_fr_fast(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
-                fft_fr_fast(
+                fft_fr_fast_inner(&mut ret[..half], data, stride * 2, roots, roots_stride * 2);
+                fft_fr_fast_inner(
                     &mut ret[half..],
                     &data[stride..],
                     stride * 2,
