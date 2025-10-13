@@ -57,11 +57,13 @@ fn fft_fr_fast_inner(
         // Recurse
         // Offsetting data by stride = 1 on the first iteration forces the even members to the first half
         // and the odd members to the second half
+        let (lo, hi) = ret.split_at_mut(half);
+
         #[cfg(not(feature = "parallel"))]
         {
-            fft_fr_fast_inner(&mut ret[..half], data_start, args, stride_factor * 2);
+            fft_fr_fast_inner(lo, data_start, args, stride_factor * 2);
             fft_fr_fast_inner(
-                &mut ret[half..],
+                hi,
                 data_start + args.stride * stride_factor,
                 args,
                 stride_factor * 2,
@@ -71,7 +73,6 @@ fn fft_fr_fast_inner(
         #[cfg(feature = "parallel")]
         {
             if half > 256 {
-                let (lo, hi) = ret.split_at_mut(half);
                 rayon::join(
                     || fft_fr_fast_inner(lo, data_start, args, stride_factor * 2),
                     || {
@@ -84,9 +85,9 @@ fn fft_fr_fast_inner(
                     },
                 );
             } else {
-                fft_fr_fast_inner(&mut ret[..half], data_start, args, stride_factor * 2);
+                fft_fr_fast_inner(lo, data_start, args, stride_factor * 2);
                 fft_fr_fast_inner(
-                    &mut ret[half..],
+                    hi,
                     data_start + args.stride * stride_factor,
                     args,
                     stride_factor * 2,
