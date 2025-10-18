@@ -28,6 +28,11 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     super::wbits::WbitsTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
 
+#[cfg(feature = "bos_coster")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
+    super::bos_coster::BosCosterTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
+
+
 #[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
 #[derive(Debug, Clone)]
 pub struct EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
