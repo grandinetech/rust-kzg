@@ -3,6 +3,9 @@ use core::{marker::PhantomData, ops::Neg};
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
 
+#[cfg(feature = "diskcache")]
+use crate::msm::diskcache::DiskCache;
+
 #[derive(Debug, Clone)]
 pub struct WbitsTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -297,7 +300,66 @@ impl<
         TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
     > WbitsTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 {
+    fn try_read_cache(points: &[TG1], matrix: &[Vec<TG1>]) -> Result<Self, Option<[u8; 32]>> {
+        #[cfg(feature = "diskcache")]
+        {
+            DiskCache::<TG1, TG1Fp, TG1Affine>::load("wbits", get_window_size(), points, matrix)
+                .map_err(|(err, contenthash)| {
+                    println!("Failed to load cache: {err}");
+                    contenthash
+                })
+                .map(|cache| Self {
+                    numpoints: cache.numpoints,
+                    points: cache.table,
+                    batch_numpoints: cache.batch_numpoints,
+                    batch_points: cache.batch_table,
+
+                    g1_marker: PhantomData,
+                    g1_fp_marker: PhantomData,
+                    fr_marker: PhantomData,
+                    g1_affine_add_marker: PhantomData,
+                })
+        }
+
+        #[cfg(not(feature = "diskcache"))]
+        Err(None)
+    }
+
+    fn try_write_cache(
+        points: &[TG1],
+        matrix: &[Vec<TG1>],
+        table: &[TG1Affine],
+        numpoints: usize,
+        batch_table: &[Vec<TG1Affine>],
+        batch_numpoints: usize,
+        contenthash: Option<[u8; 32]>,
+    ) -> Result<(), String> {
+        #[cfg(feature = "diskcache")]
+        {
+            DiskCache::<TG1, TG1Fp, TG1Affine>::save(
+                "wbits",
+                get_window_size(),
+                points,
+                matrix,
+                table,
+                numpoints,
+                batch_table,
+                batch_numpoints,
+                contenthash,
+            )
+            .inspect_err(|err| println!("Failed to save cache: {err}"))
+        }
+
+        #[cfg(not(feature = "diskcache"))]
+        Ok(())
+    }
+
     pub fn new(points: &[TG1], matrix: &[Vec<TG1>]) -> Result<Option<Self>, String> {
+        let contenthash = match Self::try_read_cache(points, matrix) {
+            Ok(v) => return Ok(Some(v)),
+            Err(e) => e,
+        };
+
         let mut table = Vec::new();
 
         table
@@ -314,6 +376,7 @@ impl<
         }
 
         if matrix.is_empty() {
+            Self::try_write_cache(points, matrix, &table, points.len(), &[], 0, contenthash)?;
             Ok(Some(Self {
                 numpoints: points.len(),
                 points: table,
@@ -350,6 +413,16 @@ impl<
 
                 batch_points.push(temp_table);
             }
+
+            Self::try_write_cache(
+                points,
+                matrix,
+                &table,
+                points.len(),
+                &batch_points,
+                batch_numpoints,
+                contenthash,
+            )?;
 
             Ok(Some(Self {
                 numpoints: points.len(),

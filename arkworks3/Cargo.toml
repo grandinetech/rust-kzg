@@ -29,6 +29,7 @@ rand = { version = "0.8.5" }
 default = [
     "std",
     "rand",
+    "diskcache",
 ]
 std = [
     "ark-ff/std", "ark-ec/std", "ark-poly/std", "ark-std/std", 
@@ -52,6 +53,9 @@ sppark_wlc = [
     "kzg/sppark"
 ]
 c_bindings = []
+diskcache = [
+    "kzg/diskcache"
+]
 
 [[bench]]
 name = "fft"

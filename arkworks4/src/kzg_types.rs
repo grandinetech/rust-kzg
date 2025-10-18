@@ -1151,6 +1151,20 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
             aff: G1Affine::new(x.0, y.0),
         }
     }
+
+    fn to_bytes_uncompressed(&self) -> [u8; 96] {
+        let mut buffer = [0u8; 96];
+        self.aff
+            .serialize_uncompressed(&mut buffer[..])
+            .expect("impossible to happen");
+        buffer
+    }
+
+    fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String> {
+        G1Affine::deserialize_uncompressed(&bytes[..])
+            .map(|aff| ArkG1Affine { aff })
+            .map_err(|err| err.to_string())
+    }
 }
 
 #[derive(Debug)]

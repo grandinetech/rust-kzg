@@ -21,3 +21,6 @@ mod sppark;
 
 #[cfg(feature = "wbits")]
 mod wbits;
+
+#[cfg(all(feature = "diskcache", feature = "wbits"))]
+mod diskcache;

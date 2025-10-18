@@ -1,29 +1,23 @@
 extern crate alloc;
 
-use core::hash::Hash;
-use core::ptr;
-
-use alloc::format;
-use alloc::string::String;
-use alloc::string::ToString;
-use alloc::vec::Vec;
-
-use arbitrary::Arbitrary;
-use blst::blst_fp_cneg;
-use blst::p1_affines;
-use blst::{
-    blst_fp, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_affine, blst_p1_cneg,
-    blst_p1_compress, blst_p1_double, blst_p1_from_affine, blst_p1_in_g1, blst_p1_is_equal,
-    blst_p1_is_inf, blst_p1_mult, blst_p1_uncompress, blst_scalar, blst_scalar_from_fr, BLST_ERROR,
+use alloc::{
+    borrow::ToOwned,
+    format,
+    string::{String, ToString},
+    vec::Vec,
 };
-use kzg::common_utils::log_2_byte;
-use kzg::eip_4844::BYTES_PER_G1;
-use kzg::msm::precompute::PrecomputationTable;
-use kzg::G1Affine;
-use kzg::G1GetFp;
-use kzg::G1LinComb;
-use kzg::G1ProjAddAffine;
-use kzg::{G1Mul, G1};
+use arbitrary::Arbitrary;
+use blst::{
+    blst_fp, blst_fp_cneg, blst_p1, blst_p1_add, blst_p1_add_or_double, blst_p1_affine,
+    blst_p1_affine_serialize, blst_p1_cneg, blst_p1_compress, blst_p1_double, blst_p1_from_affine,
+    blst_p1_in_g1, blst_p1_is_equal, blst_p1_is_inf, blst_p1_mult, blst_p1_uncompress, blst_scalar,
+    blst_scalar_from_fr, p1_affines, BLST_ERROR,
+};
+use core::{hash::Hash, ptr};
+use kzg::{
+    common_utils::log_2_byte, eip_4844::BYTES_PER_G1, msm::precompute::PrecomputationTable,
+    G1Affine, G1GetFp, G1LinComb, G1Mul, G1ProjAddAffine, G1,
+};
 
 use crate::consts::{G1_GENERATOR, G1_IDENTITY, G1_NEGATIVE_GENERATOR};
 use crate::kzg_proofs::g1_linear_combination;
@@ -404,6 +398,28 @@ impl G1Affine<FsG1, FsFp> for FsG1Affine {
 
     fn from_xy(x: FsFp, y: FsFp) -> Self {
         Self(blst_p1_affine { x: x.0, y: y.0 })
+    }
+
+    fn to_bytes_uncompressed(&self) -> [u8; 96] {
+        let mut output = [0u8; 96];
+
+        unsafe {
+            blst_p1_affine_serialize(output.as_mut_ptr(), &self.0);
+        }
+
+        output
+    }
+
+    fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String> {
+        let mut output = Self::default();
+
+        let res = unsafe { blst::blst_p1_deserialize(&mut output.0, bytes.as_ptr()) };
+
+        if res == BLST_ERROR::BLST_SUCCESS {
+            Ok(output)
+        } else {
+            Err("Failed to deserialize point".to_owned())
+        }
     }
 }
 

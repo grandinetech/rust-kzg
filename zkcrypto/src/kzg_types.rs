@@ -650,6 +650,17 @@ impl G1AffineTrait<ZG1, ZFp> for ZG1Affine {
             infinity: Choice::from(is_infinity),
         })
     }
+
+    fn to_bytes_uncompressed(&self) -> [u8; 96] {
+        self.0.to_uncompressed()
+    }
+
+    fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String> {
+        G1Affine::from_uncompressed(&bytes)
+            .map(Self)
+            .into_option()
+            .ok_or("Failed to deserialize point".to_owned())
+    }
 }
 
 #[derive(Debug)]

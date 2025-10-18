@@ -4,6 +4,7 @@ use core::hash::Hash;
 use core::ops::Add;
 use core::ops::Sub;
 
+use alloc::borrow::ToOwned;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
@@ -13,6 +14,7 @@ use blst::blst_fp;
 use blst::blst_p1;
 use blst::blst_p1_affine;
 use blst::blst_p1_in_g1;
+use blst::BLST_ERROR;
 use kzg::eip_4844::BYTES_PER_G1;
 use kzg::msm::precompute::PrecomputationTable;
 use kzg::G1Affine;
@@ -327,6 +329,16 @@ pub struct MclG1Affine {
     pub y: mcl_fp,
 }
 
+impl MclG1Affine {
+    #[allow(clippy::wrong_self_convention)]
+    fn to_blst_p1_affine(&self) -> blst_p1_affine {
+        blst_p1_affine {
+            x: blst_fp { l: self.x.d },
+            y: blst_fp { l: self.y.d },
+        }
+    }
+}
+
 impl<'a> Arbitrary<'a> for MclG1Affine {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         Ok(MclG1Affine::into_affine(
@@ -434,6 +446,31 @@ impl G1Affine<MclG1, MclFp> for MclG1Affine {
 
     fn from_xy(x: MclFp, y: MclFp) -> Self {
         Self { x: x.0, y: y.0 }
+    }
+
+    fn to_bytes_uncompressed(&self) -> [u8; 96] {
+        let mut buffer = [0u8; 96];
+
+        unsafe {
+            blst::blst_p1_affine_serialize(buffer.as_mut_ptr(), &self.to_blst_p1_affine());
+        };
+
+        buffer
+    }
+
+    fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String> {
+        let mut aff = blst::blst_p1_affine::default();
+
+        let res = unsafe { blst::blst_p1_deserialize(&mut aff, bytes.as_ptr()) };
+
+        if res == BLST_ERROR::BLST_SUCCESS {
+            Ok(Self {
+                x: mcl_fp { d: aff.x.l },
+                y: mcl_fp { d: aff.y.l },
+            })
+        } else {
+            Err("Failed to deserialize point".to_owned())
+        }
     }
 }
 

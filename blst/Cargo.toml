@@ -24,6 +24,7 @@ rand = "0.8.5"
 default = [
     "std",
     "rand",
+    "diskcache",
     "bgmw",
 ]
 std = [
@@ -54,6 +55,9 @@ wbits = [
     "kzg/wbits"
 ]
 c_bindings = []
+diskcache = [
+    "kzg/diskcache"
+]
 
 [[bench]]
 name = "das"

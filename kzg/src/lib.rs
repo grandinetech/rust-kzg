@@ -291,6 +291,10 @@ pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
     fn set_zero(&mut self) {
         *self = Self::zero();
     }
+
+    fn to_bytes_uncompressed(&self) -> [u8; 96];
+
+    fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String>;
 }
 
 pub trait G1ProjAddAffine<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>:
