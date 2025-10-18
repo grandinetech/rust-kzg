@@ -43,6 +43,9 @@ rand = [
 bgmw = [
     "kzg/bgmw"
 ]
+bos_coster = [
+    "kzg/bos_coster"
+]
 wbits = [
     "kzg/wbits"
 ]
