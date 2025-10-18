@@ -18,6 +18,7 @@ use ark_ec::ModelParameters;
 use ark_ec::{models::short_weierstrass_jacobian::GroupProjective, AffineCurve, ProjectiveCurve};
 use ark_ff::PrimeField;
 use ark_ff::{biginteger::BigInteger256, BigInteger, Field};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{One, Zero};
 
 #[cfg(feature = "rand")]
@@ -1392,6 +1393,20 @@ impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {
         Self {
             aff: GroupAffine::new(x.0, y.0, x.is_zero() && y.is_zero()),
         }
+    }
+
+    fn to_bytes_uncompressed(&self) -> [u8; 96] {
+        let mut buff = [0u8; 96];
+        self.aff
+            .serialize_uncompressed(&mut buff[..])
+            .expect("impossible to happen here");
+        buff
+    }
+
+    fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String> {
+        G1Affine::deserialize_uncompressed(&bytes[..])
+            .map(|aff| Self { aff })
+            .map_err(|err| err.to_string())
     }
 }
 

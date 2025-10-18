@@ -448,6 +448,14 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     fn from_xy(x: CtFp, y: CtFp) -> Self {
         Self(bls12_381_g1_aff { x: x.0, y: y.0 })
     }
+
+    fn to_bytes_uncompressed(&self) -> [u8; 96] {
+        todo!()
+    }
+
+    fn from_bytes_uncompressed(_bytes: [u8; 96]) -> Result<Self, String> {
+        todo!()
+    }
 }
 
 pub struct CtG1ProjAddAffine;

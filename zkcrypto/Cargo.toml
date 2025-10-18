@@ -24,6 +24,7 @@ rand = { version = "0.8.5" }
 default = [
     "std",
     "rand",
+    "diskcache",
 ]
 std = [
     "kzg/std",
@@ -37,6 +38,9 @@ rand = [
     "kzg/rand",
 ]
 c_bindings = []
+diskcache = [
+    "kzg/diskcache"
+]
 
 [[bench]]
 name = "fft"

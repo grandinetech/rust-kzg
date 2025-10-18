@@ -24,7 +24,8 @@ rand = "0.8.5"
 default = [
     "std",
     "rand",
-    "bgmw"
+    "bgmw",
+    "diskcache",
 ]
 std = [
     "hex/std",
@@ -47,6 +48,9 @@ arkmsm = [
     "kzg/arkmsm"
 ]
 c_bindings = []
+diskcache = [
+    "kzg/diskcache"
+]
 
 [[bench]]
 name = "das"
