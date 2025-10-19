@@ -42,6 +42,9 @@ parallel = [
 bgmw = [
     "kzg/bgmw"
 ]
+bos_coster = [
+    "kzg/bos_coster"
+]
 arkmsm = [
     "kzg/arkmsm"
 ]
