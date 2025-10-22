@@ -4,6 +4,7 @@ use std::collections::BinaryHeap;
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, Scalar256, G1};
 
+// TODO: add btclib reference
 #[derive(Debug, Clone)]
 pub struct BosCosterTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -123,21 +124,23 @@ impl<
             let pair1: Pair<TG1> = heap.pop().unwrap();
             let pair2: Pair<TG1> = heap.pop().unwrap();
 
+            // TODO 1/2: implement without conversions
             let s1: TFr = TFr::from_u64_arr(&pair1.scalar.data);
             let s2: TFr = TFr::from_u64_arr(&pair2.scalar.data);
-
-            let tfr1: TFr = TFr::add(&s1, &s2.negate());
-            if !tfr1.is_zero() {
-                heap.push(Pair {
-                    scalar: tfr1.to_scalar(),
-                    point: TG1Affine::into_affine(&pair1.point).to_proj(),
-                });
-            }
 
             heap.push(Pair {
                 scalar: s2.to_scalar(),
                 point: pair2.point.add(&pair1.point),
             });
+
+            // TODO 2/2: implement without conversions
+            let tfr1: TFr = TFr::add(&s1, &s2.negate());
+            if !tfr1.is_zero() {
+                heap.push(Pair {
+                    scalar: tfr1.to_scalar(),
+                    point: pair1.point,
+                });
+            }
         }
 
         let pair = heap.pop().unwrap();
