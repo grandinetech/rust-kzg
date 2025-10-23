@@ -141,9 +141,19 @@ pub trait DAS<B: EcBackend> {
         // Trick to use HashSet, to check for duplicate commitments, is taken from rust-eth-kzg:
         // https://github.com/crate-crypto/rust-eth-kzg/blob/63d469ce1c98a9898a0d8cd717aa3ebe46ace227/eip7594/src/recovery.rs#L64-L76
         let mut provided_indices = HashSet::new();
-        for (i, &cell_index) in cell_indices.iter().enumerate() {
+        for ((i, &cell_index), next_cell_index) in cell_indices
+            .iter()
+            .enumerate()
+            .zip(cell_indices.iter().map(Some).skip(1).chain(Some(None)))
+        {
             if cell_index >= (2 * ts_len) / cell_size {
                 return Err("Cell index cannot be larger than CELLS_PER_EXT_BLOB".to_string());
+            }
+
+            if let Some(&idx) = next_cell_index {
+                if idx <= cell_index {
+                    return Err("Indices must be in strictly ascending order".to_string());
+                }
             }
 
             if !provided_indices.insert(cell_index) {
