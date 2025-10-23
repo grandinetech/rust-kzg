@@ -557,7 +557,7 @@ pub fn compute_blob_kzg_proof_rust<
         return Err("Invalid commitment".to_string());
     }
 
-    let evaluation_challenge_fr = compute_challenge(blob, commitment);
+    let evaluation_challenge_fr = compute_challenge_rust(blob, commitment);
     let (proof, _) = compute_kzg_proof_rust(blob, &evaluation_challenge_fr, ts)?;
     Ok(proof)
 }
@@ -659,7 +659,7 @@ pub fn verify_blob_kzg_proof_rust<
     }
 
     let polynomial = blob_to_polynomial(blob)?;
-    let evaluation_challenge_fr = compute_challenge(blob, commitment_g1);
+    let evaluation_challenge_fr = compute_challenge_rust(blob, commitment_g1);
     let y_fr = evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts)?;
     verify_kzg_proof_rust(commitment_g1, &evaluation_challenge_fr, &y_fr, proof_g1, ts)
 }
@@ -707,7 +707,7 @@ fn compute_challenges_and_evaluate_polynomial<
 
     for i in 0..blobs.len() {
         let polynomial = blob_to_polynomial(&blobs[i])?;
-        let evaluation_challenge_fr = compute_challenge(&blobs[i], &commitments_g1[i]);
+        let evaluation_challenge_fr = compute_challenge_rust(&blobs[i], &commitments_g1[i]);
         let y_fr =
             evaluate_polynomial_in_evaluation_form(&polynomial, &evaluation_challenge_fr, ts)?;
 
@@ -917,7 +917,7 @@ pub fn hash_to_bls_field<TFr: Fr>(x: &[u8; BYTES_PER_FIELD_ELEMENT]) -> TFr {
     TFr::from_bytes_unchecked(x).unwrap()
 }
 
-fn compute_challenge<TFr: Fr, TG1: G1>(blob: &[TFr], commitment: &TG1) -> TFr {
+pub fn compute_challenge_rust<TFr: Fr, TG1: G1>(blob: &[TFr], commitment: &TG1) -> TFr {
     let mut bytes: Vec<u8> = vec![0; CHALLENGE_INPUT_SIZE];
 
     // Copy domain separator

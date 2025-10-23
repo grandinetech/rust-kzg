@@ -1,7 +1,7 @@
 use super::utils::{get_manifest_dir, get_trusted_setup_path};
 use crate::test_vectors::{
-    compute_cells, compute_cells_and_kzg_proofs, recover_cells_and_kzg_proofs,
-    verify_cell_kzg_proof_batch,
+    compute_cells, compute_cells_and_kzg_proofs, compute_verify_cell_kzg_proof_batch_challenge,
+    recover_cells_and_kzg_proofs, verify_cell_kzg_proof_batch,
 };
 use kzg::{
     eth::{self, FIELD_ELEMENTS_PER_CELL},
@@ -16,6 +16,8 @@ const RECOVER_CELLS_AND_KZG_PROOFS_TEST_VECTORS: &str =
     "src/test_vectors/recover_cells_and_kzg_proofs/*/*/*";
 const VERIFY_CELL_KZG_PROOF_BATCH_TEST_VECTORS: &str =
     "src/test_vectors/verify_cell_kzg_proof_batch/*/*/*";
+const COMPUTE_VERIFY_CELL_KZG_PROOF_BATCH_CHALLENGE: &str =
+    "src/test_vectors/compute_verify_cell_kzg_proof_batch_challenge/*/*/*";
 
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_compute_cells_and_kzg_proofs<B: EcBackend>(
@@ -343,6 +345,123 @@ pub fn test_vectors_verify_cell_kzg_proof_batch<B: EcBackend>(
 
                 assert!(test_output.is_some(), "Should fail, but succeeded for test vector {test_file:?}");
                 assert_eq!(value, test_output.unwrap(), "Test vector failed {test_file:?}");
+            }
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn test_vectors_compute_verify_cell_kzg_proof_batch_challenge<B: EcBackend>() {
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        COMPUTE_VERIFY_CELL_KZG_PROOF_BATCH_CHALLENGE
+    ))
+    .unwrap()
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap();
+    assert!(!test_files.is_empty());
+
+    for test_file in test_files {
+        let yaml_data = fs::read_to_string(test_file.clone()).unwrap();
+        let test: compute_verify_cell_kzg_proof_batch_challenge::Test =
+            serde_yaml::from_str(&yaml_data).unwrap();
+
+        let commitments = match test
+            .input
+            .get_commitment_bytes()
+            .unwrap()
+            .iter()
+            .map(|bytes| B::G1::from_bytes(bytes))
+            .collect::<Result<Vec<_>, _>>()
+        {
+            Ok(v) => v,
+            Err(err) => {
+                // c-kzg-4844 also includes tests with invalid byte count for cell
+                // in rust-kzg, these checks are performed outside of recovery function,
+                // while parsing data (in c bindings, for example). These tests will be
+                // additionally checked through rust-kzg c binding tests.
+
+                // We add here assertion, to avoid accidentally skipping valid test case
+                assert!(
+                    test.get_output_bytes().is_none(),
+                    "Parsing input failed with error {err:?}, for test vector {test_file:?}",
+                );
+
+                continue;
+            }
+        };
+
+        let commitment_indices = test.input.get_commitment_indices().unwrap();
+
+        let cell_indices = test.input.get_cell_indices().unwrap();
+
+        let cells = match test
+            .input
+            .get_coset_eval_bytes()
+            .unwrap()
+            .iter()
+            .flat_map(|elements| elements.iter().map(|b| B::Fr::from_bytes(b.as_slice())))
+            .collect::<Result<Vec<_>, _>>()
+        {
+            Ok(v) => v,
+            Err(err) => {
+                // c-kzg-4844 also includes tests with invalid byte count for cell
+                // in rust-kzg, these checks are performed outside of recovery function,
+                // while parsing data (in c bindings, for example). These tests will be
+                // additionally checked through rust-kzg c binding tests.
+
+                // We add here assertion, to avoid accidentally skipping valid test case
+                assert!(
+                    test.get_output_bytes().is_none(),
+                    "Parsing input failed with error {err:?}, for test vector {test_file:?}",
+                );
+
+                continue;
+            }
+        };
+
+        let proofs = match test
+            .input
+            .get_proof_bytes()
+            .unwrap()
+            .iter()
+            .map(|bytes| B::G1::from_bytes(bytes))
+            .collect::<Result<Vec<_>, _>>()
+        {
+            Ok(v) => v,
+            Err(err) => {
+                // c-kzg-4844 also includes tests with invalid byte count for cell
+                // in rust-kzg, these checks are performed outside of recovery function,
+                // while parsing data (in c bindings, for example). These tests will be
+                // additionally checked through rust-kzg c binding tests.
+
+                // We add here assertion, to avoid accidentally skipping valid test case
+                assert!(
+                    test.get_output_bytes().is_none(),
+                    "Parsing input failed with error {err:?}, for test vector {test_file:?}",
+                );
+
+                continue;
+            }
+        };
+
+        match <B::KZGSettings as DAS<B>>::compute_verify_cell_kzg_proof_batch_challenge(
+            kzg::eth::FIELD_ELEMENTS_PER_CELL,
+            &commitments,
+            &commitment_indices,
+            &cell_indices,
+            &cells,
+            &proofs,
+            kzg::eth::FIELD_ELEMENTS_PER_BLOB,
+        ) {
+            Err(err) => assert!(test.get_output_bytes().is_none(), "Should correctly verify cells, but failed with error {err:?}, for test vector {test_file:?}"),
+            Ok(value) => {
+                let test_output = test.get_output_bytes();
+                let res_output = value.to_bytes();
+
+                assert!(test_output.is_some(), "Should fail, but succeeded for test vector {test_file:?}");
+                assert_eq!(res_output.as_slice(), test_output.unwrap().as_slice(), "Test vector failed {test_file:?}");
             }
         }
     }

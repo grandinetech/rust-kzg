@@ -2,8 +2,8 @@
 mod tests {
     use kzg::eip_4844::{
         blob_to_kzg_commitment_rust, blob_to_polynomial, bytes_to_blob,
-        compute_blob_kzg_proof_rust, compute_kzg_proof_rust, compute_powers,
-        evaluate_polynomial_in_evaluation_form, verify_blob_kzg_proof_batch_rust,
+        compute_blob_kzg_proof_rust, compute_challenge_rust, compute_kzg_proof_rust,
+        compute_powers, evaluate_polynomial_in_evaluation_form, verify_blob_kzg_proof_batch_rust,
         verify_blob_kzg_proof_rust, verify_kzg_proof_rust,
     };
     use kzg::Fr;
@@ -19,10 +19,11 @@ mod tests {
         compute_kzg_proof_incorrect_commitments_len_test,
         compute_kzg_proof_incorrect_poly_length_test, compute_kzg_proof_incorrect_proofs_len_test,
         compute_kzg_proof_test, compute_powers_test, test_vectors_blob_to_kzg_commitment,
-        test_vectors_compute_blob_kzg_proof, test_vectors_compute_kzg_proof,
-        test_vectors_verify_blob_kzg_proof, test_vectors_verify_blob_kzg_proof_batch,
-        test_vectors_verify_kzg_proof, validate_batched_input_test,
-        verify_kzg_proof_batch_fails_with_incorrect_proof_test, verify_kzg_proof_batch_test,
+        test_vectors_compute_blob_kzg_proof, test_vectors_compute_challenge,
+        test_vectors_compute_kzg_proof, test_vectors_verify_blob_kzg_proof,
+        test_vectors_verify_blob_kzg_proof_batch, test_vectors_verify_kzg_proof,
+        validate_batched_input_test, verify_kzg_proof_batch_fails_with_incorrect_proof_test,
+        verify_kzg_proof_batch_test,
     };
     use rust_kzg_blst::consts::SCALE2_ROOT_OF_UNITY;
     use rust_kzg_blst::eip_4844::load_trusted_setup_filename_rust;
@@ -343,6 +344,11 @@ mod tests {
             &bytes_to_blob,
             &verify_blob_kzg_proof_batch_rust,
         );
+    }
+
+    #[test]
+    pub fn test_vectors_compute_challenge_() {
+        test_vectors_compute_challenge::<FsFr, FsG1>(&bytes_to_blob, &compute_challenge_rust);
     }
 
     #[test]

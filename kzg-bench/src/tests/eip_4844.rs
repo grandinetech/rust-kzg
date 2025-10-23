@@ -1,8 +1,8 @@
 #![allow(unused)]
 
 use crate::test_vectors::{
-    blob_to_kzg_commitment, compute_blob_kzg_proof, compute_kzg_proof, verify_blob_kzg_proof,
-    verify_blob_kzg_proof_batch, verify_kzg_proof,
+    blob_to_kzg_commitment, compute_blob_kzg_proof, compute_cells, compute_challenge,
+    compute_kzg_proof, verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
 };
 use crate::tests::utils::{get_manifest_dir, get_trusted_setup_path};
 use kzg::eip_4844::{
@@ -542,6 +542,7 @@ const VERIFY_KZG_PROOF_TESTS: &str = "src/test_vectors/verify_kzg_proof/*/*/*";
 const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "src/test_vectors/verify_blob_kzg_proof/*/*/*";
 const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str =
     "src/test_vectors/verify_blob_kzg_proof_batch/*/*/*";
+const COMPUTE_CHALLENGE_TEST_VECTORS: &str = "src/test_vectors/compute_challenge/*/*/*";
 
 #[allow(clippy::type_complexity)]
 pub fn test_vectors_blob_to_kzg_commitment<
@@ -950,6 +951,62 @@ pub fn test_vectors_verify_blob_kzg_proof_batch<
                 continue;
             }
         };
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn test_vectors_compute_challenge<TFr: Fr, TG1: G1>(
+    bytes_to_blob: &dyn Fn(&[u8]) -> Result<Vec<TFr>, String>,
+    compute_challenge: &dyn Fn(&[TFr], &TG1) -> TFr,
+) {
+    let test_files: Vec<PathBuf> = glob::glob(&format!(
+        "{}/{}",
+        get_manifest_dir(),
+        COMPUTE_CHALLENGE_TEST_VECTORS
+    ))
+    .unwrap()
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap();
+    assert!(!test_files.is_empty());
+
+    for test_file in test_files {
+        let yaml_data = fs::read_to_string(test_file).unwrap();
+        let test: compute_challenge::Test = serde_yaml::from_str(&yaml_data).unwrap();
+
+        let blob = match bytes_to_blob(&test.input.get_blob_bytes().unwrap()) {
+            Ok(v) => v,
+            Err(e) => {
+                assert!(
+                    test.get_output_bytes().is_some(),
+                    "test should succeed, but failed with error {:?}",
+                    e
+                );
+                continue;
+            }
+        };
+
+        let commitment = match TG1::from_bytes(&test.input.get_commitment_bytes().unwrap()) {
+            Ok(v) => v,
+            Err(e) => {
+                assert!(
+                    test.get_output_bytes().is_some(),
+                    "test should succeed, but failed with error {:?}",
+                    e
+                );
+                continue;
+            }
+        };
+
+        let challenge = compute_challenge(&blob, &commitment);
+
+        match test.get_output_bytes() {
+            Some(v) => {
+                assert_eq!(challenge.to_bytes(), v.as_slice())
+            }
+            None => {
+                panic!("test should fail, but succeeded");
+            }
+        }
     }
 }
 
