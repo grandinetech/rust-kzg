@@ -5,7 +5,6 @@ use alloc::vec::Vec;
 use super::arkmsm::arkmsm_msm::VariableBaseMSM;
 use super::precompute::PrecomputationTable;
 
-#[cfg(all(not(feature = "arkmsm"), not(feature = "parallel")))]
 use super::tiling_pippenger_ops::tiling_pippenger;
 
 #[cfg(feature = "parallel")]
@@ -38,6 +37,29 @@ fn msm_parallel<
     }
 }
 
+pub fn pippenger<
+    TFr: Fr,
+    TG1: G1 + G1Mul<TFr> + G1GetFp<TG1Fp>,
+    TG1Fp: G1Fp,
+    TG1Affine: G1Affine<TG1, TG1Fp>,
+    TProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+>(
+    points: &[TG1],
+    scalars: &[TFr],
+) -> TG1 {
+    let (points, scalars): (Vec<_>, Vec<_>) = points
+        .iter()
+        .cloned()
+        .zip(scalars.iter())
+        .filter(|(p, _)| !p.is_inf())
+        .collect();
+
+    let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
+    let scalars = scalars.iter().map(|s| s.to_scalar()).collect::<Vec<_>>();
+
+    tiling_pippenger(&points, &scalars)
+}
+
 #[cfg(not(feature = "parallel"))]
 #[allow(clippy::extra_unused_type_parameters)]
 #[allow(unused_variables)]
@@ -58,17 +80,7 @@ fn msm_sequential<
         if let Some(precomputation) = precomputation {
             precomputation.multiply_sequential(scalars)
         } else {
-            let (points, scalars): (Vec<_>, Vec<_>) = points
-                .iter()
-                .cloned()
-                .zip(scalars.iter())
-                .filter(|(p, _)| !p.is_inf())
-                .collect();
-
-            let points = batch_convert::<TG1, TG1Fp, TG1Affine>(&points);
-            let scalars = scalars.iter().map(|s| s.to_scalar()).collect::<Vec<_>>();
-
-            tiling_pippenger(&points, &scalars)
+            pippenger::<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars)
         }
     }
 
