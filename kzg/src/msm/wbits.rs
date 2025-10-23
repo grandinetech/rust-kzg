@@ -3,8 +3,6 @@ use core::{marker::PhantomData, ops::Neg};
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
 
-const WBITS: usize = 8;
-
 #[derive(Debug, Clone)]
 pub struct WbitsTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -24,6 +22,15 @@ where
     g1_fp_marker: PhantomData<TG1Fp>,
     fr_marker: PhantomData<TFr>,
     g1_affine_add_marker: PhantomData<TG1ProjAddAffine>,
+}
+
+fn get_window_size() -> usize {
+    option_env!("WINDOW_SIZE")
+        .map(|v| {
+            v.parse()
+                .expect("WINDOW_SIZE environment variable must be valid number")
+        })
+        .unwrap_or(8)
 }
 
 // Code was taken from: https://github.com/privacy-scaling-explorations/halo2curves/blob/b753a832e92d5c86c5c997327a9cf9de86a18851/src/msm.rs#L13
@@ -294,13 +301,13 @@ impl<
         let mut table = Vec::new();
 
         table
-            .try_reserve_exact(points.len() * (1 << (WBITS - 1)))
+            .try_reserve_exact(points.len() * (1 << (get_window_size() - 1)))
             .map_err(|_| "WBITS precomputation table is too large".to_string())?;
 
         for point in points {
             let mut current = point.clone();
 
-            for _ in 0..(1 << (WBITS - 1)) {
+            for _ in 0..(1 << (get_window_size() - 1)) {
                 table.push(TG1Affine::into_affine(&current));
                 current = current.add_or_dbl(point);
             }
@@ -329,13 +336,13 @@ impl<
             for row in matrix {
                 let mut temp_table = Vec::new();
                 temp_table
-                    .try_reserve_exact(row.len() * (1 << (WBITS - 1)))
+                    .try_reserve_exact(row.len() * (1 << (get_window_size() - 1)))
                     .map_err(|_| "WBITS precomputation table is too large".to_owned())?;
 
                 for point in row {
                     let mut current = point.clone();
 
-                    for _ in 0..(1 << (WBITS - 1)) {
+                    for _ in 0..(1 << (get_window_size() - 1)) {
                         temp_table.push(TG1Affine::into_affine(&current));
                         current = current.add_or_dbl(point);
                     }
@@ -362,15 +369,16 @@ impl<
     fn multiply_sequential_raw(bases: &[TG1Affine], scalars: &[TFr]) -> TG1 {
         let scalars = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
 
-        let number_of_windows = 255 / WBITS + 1;
+        let number_of_windows = 255 / get_window_size() + 1;
         let mut windows_of_points = vec![Vec::with_capacity(scalars.len()); number_of_windows];
 
         for window_idx in 0..windows_of_points.len() {
             for (scalar_idx, scalar_bytes) in scalars.iter().enumerate() {
-                let sub_table =
-                    &bases[scalar_idx * (1 << (WBITS - 1))..(scalar_idx + 1) * (1 << (WBITS - 1))];
+                let sub_table = &bases[scalar_idx * (1 << (get_window_size() - 1))
+                    ..(scalar_idx + 1) * (1 << (get_window_size() - 1))];
 
-                let point_idx = get_booth_index(window_idx, WBITS, scalar_bytes.as_u8());
+                let point_idx =
+                    get_booth_index(window_idx, get_window_size(), scalar_bytes.as_u8());
 
                 if point_idx == 0 {
                     continue;
@@ -396,7 +404,7 @@ impl<
         let mut result: TG1 = accumulated_points.last().unwrap().clone();
         for point in accumulated_points.into_iter().rev().skip(1) {
             // Double the result 'wbits' times
-            for _ in 0..WBITS {
+            for _ in 0..get_window_size() {
                 result = result.dbl();
             }
             // Add the accumulated point for this window

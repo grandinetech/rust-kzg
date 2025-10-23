@@ -297,16 +297,23 @@ pub const fn num_bits(l: usize) -> usize {
 ///                 Adding each point to total bucket sum requires 2 point addition operations, so 2 * 2^(w-1) = 2^w.
 ///   w + 1       - each bucket sum must be multiplied by 2^w. To do this, we need w doublings. Adding this sum to the
 ///                 total requires one more point addition, hence +1.
-pub const fn pippenger_window_size(npoints: usize) -> usize {
-    let wbits = num_bits(npoints);
+pub fn pippenger_window_size(npoints: usize) -> usize {
+    option_env!("WINDOW_SIZE")
+        .map(|v| {
+            v.parse()
+                .expect("WINDOW_SIZE environment variable must be valid number")
+        })
+        .unwrap_or({
+            let wbits = num_bits(npoints);
 
-    if wbits > 13 {
-        return wbits - 4;
-    }
-    if wbits > 5 {
-        return wbits - 3;
-    }
-    2
+            if wbits > 13 {
+                return wbits - 4;
+            }
+            if wbits > 5 {
+                return wbits - 3;
+            }
+            2
+        })
 }
 
 #[cfg(test)]
