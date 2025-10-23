@@ -3,6 +3,7 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
+use arbitrary::Arbitrary;
 use blst::blst_fr;
 use blst::blst_fr_from_uint64;
 use blst::blst_scalar;
@@ -19,6 +20,14 @@ use kzg::Scalar256;
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct MclFr(pub mcl_fr);
+
+impl<'a> Arbitrary<'a> for MclFr {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let val: [u8; 32] = u.arbitrary()?;
+
+        Ok(Self::from_bytes_unchecked(&val).unwrap())
+    }
+}
 
 impl Fr for MclFr {
     fn null() -> Self {

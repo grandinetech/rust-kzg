@@ -4,6 +4,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 
+use arbitrary::Arbitrary;
 use blst::{
     blst_bendian_from_scalar, blst_fr, blst_fr_add, blst_fr_cneg, blst_fr_eucl_inverse,
     blst_fr_from_scalar, blst_fr_from_uint64, blst_fr_inverse, blst_fr_mul, blst_fr_sqr,
@@ -17,6 +18,19 @@ use kzg::Scalar256;
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct FsFr(pub blst_fr);
+
+impl<'a> Arbitrary<'a> for FsFr {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let val: [u64; 4] = [
+            u64::arbitrary(u)?,
+            u64::arbitrary(u)?,
+            u64::arbitrary(u)?,
+            u64::arbitrary(u)?,
+        ];
+
+        Ok(FsFr::from_u64_arr(&val))
+    }
+}
 
 impl Fr for FsFr {
     fn null() -> Self {

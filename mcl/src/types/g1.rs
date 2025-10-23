@@ -8,6 +8,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 
+use arbitrary::Arbitrary;
 use blst::blst_fp;
 use blst::blst_p1;
 use blst::blst_p1_affine;
@@ -324,6 +325,14 @@ impl G1LinComb<MclFr, MclFp, MclG1Affine, MclG1ProjAddAffine> for MclG1 {
 pub struct MclG1Affine {
     pub x: mcl_fp,
     pub y: mcl_fp,
+}
+
+impl<'a> Arbitrary<'a> for MclG1Affine {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(MclG1Affine::into_affine(
+            &MclG1::generator().mul(&u.arbitrary()?),
+        ))
+    }
 }
 
 impl G1Affine<MclG1, MclFp> for MclG1Affine {

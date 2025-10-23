@@ -14,6 +14,7 @@ use crate::utils::{
     blst_p2_into_pc_g2projective, fft_settings_to_rust, pc_fr_into_blst_fr,
     pc_g1projective_into_blst_p1, pc_g2projective_into_blst_p2, PolyData, PRECOMPUTATION_TABLES,
 };
+use arbitrary::Arbitrary;
 use ark_bls12_381::{g1, g2, Fr, G1Affine, G2Affine};
 use ark_ec::{models::short_weierstrass::Projective, AdditiveGroup, AffineRepr};
 use ark_ec::{CurveConfig, CurveGroup};
@@ -55,6 +56,14 @@ const BLS12_381_MOD_256: [u64; 4] = [
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct ArkFr {
     pub fr: Fr,
+}
+
+impl<'a> Arbitrary<'a> for ArkFr {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let val: [u8; 32] = u.arbitrary()?;
+
+        Ok(Self::from_bytes_unchecked(&val).unwrap())
+    }
 }
 
 impl ArkFr {
@@ -1068,6 +1077,14 @@ impl G1GetFp<ArkFp> for ArkG1 {
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ArkG1Affine {
     pub aff: G1Affine,
+}
+
+impl<'a> Arbitrary<'a> for ArkG1Affine {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(ArkG1Affine::into_affine(
+            &ArkG1::generator().mul(&u.arbitrary()?),
+        ))
+    }
 }
 
 impl G1AffineTrait<ArkG1, ArkFp> for ArkG1Affine {

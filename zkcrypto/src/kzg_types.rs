@@ -12,6 +12,7 @@ use crate::utils::{
     fft_settings_to_rust, pc_fr_into_blst_fr, pc_g1projective_into_blst_p1,
     pc_g2projective_into_blst_p2, PRECOMPUTATION_TABLES,
 };
+use arbitrary::Arbitrary;
 use bls12_381::{Fp, G1Affine, G1Projective, G2Affine, G2Projective, Scalar, MODULUS, R2};
 use ff::Field;
 use kzg::common_utils::reverse_bit_order;
@@ -64,6 +65,14 @@ impl ZFr {
             result.push(zg1.fr);
         }
         result
+    }
+}
+
+impl<'a> Arbitrary<'a> for ZFr {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let val: [u8; 32] = u.arbitrary()?;
+
+        Ok(Self::from_bytes_unchecked(&val).unwrap())
     }
 }
 
@@ -555,6 +564,15 @@ impl G1Mul<ZFr> for ZG1 {
 #[repr(C)]
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ZG1Affine(pub G1Affine);
+
+impl<'a> Arbitrary<'a> for ZG1Affine {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(ZG1Affine::into_affine(
+            &ZG1::generator().mul(&u.arbitrary()?),
+        ))
+    }
+}
+
 impl G1AffineTrait<ZG1, ZFp> for ZG1Affine {
     fn into_affine(g1: &ZG1) -> Self {
         Self(g1.proj.into())

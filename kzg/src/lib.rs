@@ -3,6 +3,7 @@
 extern crate alloc;
 
 use alloc::{borrow::ToOwned, string::String, vec::Vec};
+use arbitrary::Arbitrary;
 use core::fmt::Debug;
 use msm::precompute::PrecomputationTable;
 
@@ -14,7 +15,7 @@ pub mod msm;
 
 pub use das::{EcBackend, DAS};
 
-pub trait Fr: Default + Clone + PartialEq + Sync {
+pub trait Fr: Default + Clone + PartialEq + Sync + for<'a> Arbitrary<'a> {
     fn null() -> Self;
 
     fn zero() -> Self;
@@ -242,7 +243,7 @@ pub trait G1Fp: Clone + Default + Sync + Copy + PartialEq + Debug + Send {
 }
 
 pub trait G1Affine<TG1: G1, TG1Fp: G1Fp>:
-    Clone + Default + PartialEq + Sync + Copy + Send + Debug
+    Clone + Default + PartialEq + Sync + Copy + Send + Debug + for<'a> Arbitrary<'a>
 {
     fn zero() -> Self;
 

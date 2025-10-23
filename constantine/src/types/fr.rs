@@ -5,6 +5,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 
+use arbitrary::Arbitrary;
 use constantine::ctt_codec_scalar_status;
 use core::fmt::{Debug, Formatter};
 use kzg::eip_4844::BYTES_PER_FIELD_ELEMENT;
@@ -22,6 +23,14 @@ use crate::utils::ptr_transmute_mut;
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
 pub struct CtFr(pub bls12_381_fr);
+
+impl<'a> Arbitrary<'a> for CtFr {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let bytes: [u8; 32] = u.arbitrary()?;
+
+        Ok(CtFr::from_bytes_unchecked(&bytes).unwrap())
+    }
+}
 
 impl Debug for CtFr {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
