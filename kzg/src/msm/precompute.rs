@@ -16,6 +16,11 @@ compile_error!(
     "incompatible features, please select only one: `arkmsm`, `bgmw`, `sppark` or `wbits`"
 );
 
+#[cfg(feature = "bos_coster")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
+    super::bos_coster::BosCosterTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
+
+
 #[cfg(feature = "bgmw")]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     super::bgmw::BgmwTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
@@ -73,7 +78,7 @@ where
     }
 }
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits"), not(feature = "bos_coster")))]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
 
