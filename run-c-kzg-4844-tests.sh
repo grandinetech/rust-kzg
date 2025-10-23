@@ -140,13 +140,15 @@ cd ../..
 
 ###################### go tests ######################
 
-print_msg "Patching go binding"
-git apply < ../go.patch
-cd bindings/go || exit
+if [ "$backend" = "blst" ]; then
+  print_msg "Patching go binding"
+  git apply < ../go.patch
+  cd bindings/go || exit
 
-print_msg "Running go tests"
-CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
-cd ../..
+  print_msg "Running go tests"
+  CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
+  cd ../..
+fi
 
 ###################### nim tests ######################
 

@@ -43,3 +43,14 @@ pub(crate) static mut PRECOMPUTATION_TABLES: PrecomputationTableManager<
     FsG1Affine,
     FsG1ProjAddAffine,
 > = PrecomputationTableManager::new();
+
+#[cfg(feature = "c_bindings")]
+#[macro_export]
+macro_rules! handle_ckzg_badargs {
+    ($x: expr) => {
+        match $x {
+            Ok(value) => value,
+            Err(_) => return kzg::eth::c_bindings::CKzgRet::BadArgs,
+        }
+    };
+}
