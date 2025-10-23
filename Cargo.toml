@@ -14,7 +14,8 @@ members = [
     "zkcrypto",
     "constantine",
     "rust-eth-kzg-benches",
-    "msm-benches"
+    "msm-benches",
+    "fuzz"
 ]
 
 [profile.bench]

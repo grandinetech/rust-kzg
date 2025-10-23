@@ -1,0 +1,92 @@
+[package]
+name = "rust-kzg-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
+libfuzzer-sys = "0.4"
+rust-kzg-blst = { path = "../blst", default-features = false, features = ["std", "rand"] }
+rust-kzg-arkworks3 = { path = "../arkworks3", default-features = false, features = ["std", "rand"], optional = true }
+rust-kzg-arkworks4 = { path = "../arkworks4", default-features = false, features = ["std", "rand"], optional = true }
+rust-kzg-arkworks5 = { path = "../arkworks5", default-features = false, features = ["std", "rand"], optional = true }
+rust-kzg-constantine = { path = "../constantine", default-features = false, features = ["std", "rand"], optional = true }
+rust-kzg-mcl = { path = "../mcl", default-features = false, features = ["std", "rand"], optional = true }
+rust-kzg-zkcrypto = { path = "../zkcrypto", default-features = false, features = ["std", "rand"], optional = true }
+kzg = { path = "../kzg" }
+rand = "0.8.5"
+rand_core = "0.6"
+rand_chacha = "0.3"
+sha2 = "0.10.9"
+
+[features]
+# turn on all backends by default
+default = [
+    "arkworks3",
+    "arkworks4",
+    "arkworks5",
+    "constantine",
+    "mcl",
+    "zkcrypto"
+]
+
+# msm features
+wbits = [
+    "rust-kzg-blst/wbits",
+    "rust-kzg-arkworks4/wbits",
+    "rust-kzg-arkworks5/wbits",
+    "rust-kzg-constantine/wbits",
+]
+bgmw = [
+    "rust-kzg-blst/bgmw",
+    "rust-kzg-arkworks4/bgmw",
+    "rust-kzg-arkworks5/bgmw",
+    "rust-kzg-constantine/bgmw",
+]
+arkmsm = [
+    "rust-kzg-blst/arkmsm",
+    "rust-kzg-arkworks4/arkmsm",
+    "rust-kzg-arkworks5/arkmsm",
+    "rust-kzg-constantine/arkmsm",
+]
+parallel = [
+    "rust-kzg-blst/parallel",
+    "rust-kzg-arkworks3/parallel",
+    "rust-kzg-arkworks4/parallel",
+    "rust-kzg-arkworks5/parallel",
+    "rust-kzg-constantine/parallel",
+    "rust-kzg-mcl/parallel",
+]
+
+# backends
+arkworks3=["dep:rust-kzg-arkworks3"]
+arkworks4=["dep:rust-kzg-arkworks4"]
+arkworks5=["dep:rust-kzg-arkworks5"]
+constantine=["dep:rust-kzg-constantine"]
+mcl=["dep:rust-kzg-mcl"]
+zkcrypto=["dep:rust-kzg-zkcrypto"]
+
+[[bin]]
+name = "fixed_msm_with_zeros"
+path = "fuzz_targets/fixed_msm_with_zeros.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fixed_msm"
+path = "fuzz_targets/fixed_msm.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "variable_msm"
+path = "fuzz_targets/variable_msm.rs"
+test = false
+doc = false
+bench = false

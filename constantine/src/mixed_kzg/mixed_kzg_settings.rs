@@ -1,4 +1,4 @@
-use core::{marker::PhantomPinned, pin::Pin, ptr::NonNull};
+use core::{marker::PhantomPinned, pin::Pin};
 use std::path::Path;
 
 use crate::types::{
@@ -41,7 +41,9 @@ impl CttContext<'_> {
 
             this.ctx = Some(
                 context
-                    .set_threadpool(unsafe { NonNull::from(this.pool.as_ref().unwrap()).as_ref() })
+                    .set_threadpool(unsafe {
+                        core::ptr::NonNull::from(this.pool.as_ref().unwrap()).as_ref()
+                    })
                     .build()?,
             );
 

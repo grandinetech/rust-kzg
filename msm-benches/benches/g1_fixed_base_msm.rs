@@ -1,14 +1,12 @@
 use std::env;
 
 use blst::{blst_p1_is_equal, blst_p1s_mult_wbits, blst_p1s_mult_wbits_precompute};
-use ekzg_bls12_381::{
-    fixed_base_msm_window::FixedBaseMSMPrecompWindow,
-};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use ekzg_bls12_381::fixed_base_msm_window::FixedBaseMSMPrecompWindow;
 use human_bytes::human_bytes;
 use kzg::{
     msm::{msm_impls::msm, precompute::precompute},
-    Fr, G1Affine, G1, G1Mul
+    Fr, G1Affine, G1Mul, G1,
 };
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -35,19 +33,23 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
         }
     };
 
-    let points = (0..npoints).map(|_| {
-        let fr = FsFr::from_bytes_unchecked(&rng.gen::<[u8; 32]>()).unwrap();
+    let points = (0..npoints)
+        .map(|_| {
+            let fr = FsFr::from_bytes_unchecked(&rng.gen::<[u8; 32]>()).unwrap();
 
-        let p = FsG1::generator().mul(&fr);
+            let p = FsG1::generator().mul(&fr);
 
-        p.to_bytes()
-    }).collect::<Vec<_>>();
+            p.to_bytes()
+        })
+        .collect::<Vec<_>>();
 
-    let scalars = (0..npoints).map(|_| {
-        let fr = FsFr::from_bytes_unchecked(&rng.gen::<[u8; 32]>()).unwrap();
+    let scalars = (0..npoints)
+        .map(|_| {
+            let fr = FsFr::from_bytes_unchecked(&rng.gen::<[u8; 32]>()).unwrap();
 
-        fr.to_bytes()
-    }).collect::<Vec<_>>();
+            fr.to_bytes()
+        })
+        .collect::<Vec<_>>();
 
     let expected_result = {
         let mut res = FsG1::zero();
@@ -205,18 +207,23 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             .for_each(|(wbits, precomputation)| {
                 group.bench_function(
                     BenchmarkId::from_parameter(format!("points: 2^{}, wbits: {}", npow, wbits)),
-                    |b| b.iter(|| {
-                        let result = precomputation.msm(&scalars);
+                    |b| {
+                        b.iter(|| {
+                            let result = precomputation.msm(&scalars);
 
-                        assert_eq!(result, expected_result);
-                    }),
+                            assert_eq!(result, expected_result);
+                        })
+                    },
                 );
             });
         group.finish();
     }
 
     {
-        let points = points.iter().map(|p| FsG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+        let points = points
+            .iter()
+            .map(|p| FsG1::from_bytes(p).unwrap())
+            .collect::<Vec<_>>();
 
         let table = precompute::<FsFr, FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(&points, &[])
             .ok()
@@ -235,7 +242,10 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             );
         }
 
-        let scalars = scalars.iter().map(|s| FsFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+        let scalars = scalars
+            .iter()
+            .map(|s| FsFr::from_bytes(s).unwrap())
+            .collect::<Vec<_>>();
 
         let expected_result = FsG1::from_bytes(&expected_result).unwrap();
 
@@ -263,7 +273,10 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             g1::{CtG1, CtG1Affine, CtG1ProjAddAffine},
         };
 
-        let points = points.iter().map(|p| CtG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+        let points = points
+            .iter()
+            .map(|p| CtG1::from_bytes(p).unwrap())
+            .collect::<Vec<_>>();
 
         let table = precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
             .ok()
@@ -286,7 +299,10 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             );
         }
 
-        let scalars = scalars.iter().map(|s| CtFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+        let scalars = scalars
+            .iter()
+            .map(|s| CtFr::from_bytes(s).unwrap())
+            .collect::<Vec<_>>();
 
         let expected_result = CtG1::from_bytes(&expected_result).unwrap();
 
@@ -312,9 +328,15 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             fft_g1::g1_linear_combination,
             kzg_types::{ArkFr, ArkG1},
         };
-        let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+        let points = points
+            .iter()
+            .map(|p| ArkG1::from_bytes(p).unwrap())
+            .collect::<Vec<_>>();
 
-        let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+        let scalars = scalars
+            .iter()
+            .map(|s| ArkFr::from_bytes(s).unwrap())
+            .collect::<Vec<_>>();
 
         let expected_result = ArkG1::from_bytes(&expected_result).unwrap();
 
@@ -333,7 +355,10 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
 
     {
         use rust_kzg_arkworks4::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
-        let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+        let points = points
+            .iter()
+            .map(|p| ArkG1::from_bytes(p).unwrap())
+            .collect::<Vec<_>>();
 
         let table =
             precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &[])
@@ -356,7 +381,10 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             );
         }
 
-        let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+        let scalars = scalars
+            .iter()
+            .map(|s| ArkFr::from_bytes(s).unwrap())
+            .collect::<Vec<_>>();
 
         c.bench_function(
             format!("rust-kzg-arkworks4 msm mult, points: 2^{}", npow).as_str(),
@@ -375,7 +403,10 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
 
     {
         use rust_kzg_arkworks5::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
-        let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+        let points = points
+            .iter()
+            .map(|p| ArkG1::from_bytes(p).unwrap())
+            .collect::<Vec<_>>();
 
         let table =
             precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &[])
@@ -398,7 +429,10 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             );
         }
 
-        let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+        let scalars = scalars
+            .iter()
+            .map(|s| ArkFr::from_bytes(s).unwrap())
+            .collect::<Vec<_>>();
 
         let expected_result = ArkG1::from_bytes(&expected_result).unwrap();
 
@@ -423,9 +457,15 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             kzg_proofs::g1_linear_combination,
             types::{fr::MclFr, g1::MclG1},
         };
-        let points = points.iter().map(|p| MclG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+        let points = points
+            .iter()
+            .map(|p| MclG1::from_bytes(p).unwrap())
+            .collect::<Vec<_>>();
 
-        let scalars = scalars.iter().map(|s| MclFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+        let scalars = scalars
+            .iter()
+            .map(|s| MclFr::from_bytes(s).unwrap())
+            .collect::<Vec<_>>();
 
         let expected_result = MclG1::from_bytes(&expected_result).unwrap();
 
@@ -447,9 +487,15 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             fft_g1::g1_linear_combination,
             kzg_types::{ZFr, ZG1},
         };
-        let points = points.iter().map(|p| ZG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+        let points = points
+            .iter()
+            .map(|p| ZG1::from_bytes(p).unwrap())
+            .collect::<Vec<_>>();
 
-        let scalars = scalars.iter().map(|s| ZFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+        let scalars = scalars
+            .iter()
+            .map(|s| ZFr::from_bytes(s).unwrap())
+            .collect::<Vec<_>>();
 
         let expected_result = ZG1::from_bytes(&expected_result).unwrap();
 

@@ -8,6 +8,7 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
+use arbitrary::Arbitrary;
 use blst::blst_fp_cneg;
 use blst::p1_affines;
 use blst::{
@@ -295,6 +296,14 @@ impl G1LinComb<FsFr, FsFp, FsG1Affine, FsG1ProjAddAffine> for FsG1 {
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct FsG1Affine(pub blst_p1_affine);
+
+impl<'a> Arbitrary<'a> for FsG1Affine {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(FsG1Affine::into_affine(
+            &FsG1::generator().mul(&u.arbitrary()?),
+        ))
+    }
+}
 
 impl G1Affine<FsG1, FsFp> for FsG1Affine {
     fn zero() -> Self {

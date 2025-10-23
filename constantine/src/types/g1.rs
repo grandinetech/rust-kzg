@@ -3,6 +3,7 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
+use arbitrary::Arbitrary;
 use constantine::ctt_codec_ecc_status;
 use kzg::eth::c_bindings::blst_fp;
 use kzg::eth::c_bindings::blst_p1;
@@ -333,6 +334,14 @@ impl G1GetFp<CtFp> for CtG1 {
 #[repr(C)]
 #[derive(Default, Clone, Copy)]
 pub struct CtG1Affine(pub constantine::bls12_381_g1_aff);
+
+impl<'a> Arbitrary<'a> for CtG1Affine {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(CtG1Affine::into_affine(
+            &CtG1::generator().mul(&u.arbitrary()?),
+        ))
+    }
+}
 
 impl PartialEq for CtG1Affine {
     fn eq(&self, other: &Self) -> bool {

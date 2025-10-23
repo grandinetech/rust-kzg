@@ -13,6 +13,7 @@ rayon = { version = "1.8.0", optional = true }
 smallvec = { version = "1.11.1", features = ["const_generics"] }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 mcl_rust = { git = "https://github.com/herumi/mcl-rust.git", rev = "db8e9a639d27fffb167bc48159ef2e3178b347dc" }
+arbitrary = "1.4.2"
 
 [dev-dependencies]
 criterion = "0.5.1"
