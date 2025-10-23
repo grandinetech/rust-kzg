@@ -8,6 +8,7 @@ mod tests {
         eip_4844::generate_random_blob_bytes,
         eip_7594::{
             test_vectors_compute_cells, test_vectors_compute_cells_and_kzg_proofs,
+            test_vectors_compute_verify_cell_kzg_proof_batch_challenge,
             test_vectors_recover_cells_and_kzg_proofs, test_vectors_verify_cell_kzg_proof_batch,
         },
         utils::get_trusted_setup_path,
@@ -42,6 +43,11 @@ mod tests {
     #[test]
     pub fn test_vectors_verify_cell_kzg_proof_batch_() {
         test_vectors_verify_cell_kzg_proof_batch::<BlstBackend>(&load_trusted_setup_filename_rust);
+    }
+
+    #[test]
+    pub fn test_vectors_compute_verify_cell_kzg_proof_batch_challenge_() {
+        test_vectors_compute_verify_cell_kzg_proof_batch_challenge::<BlstBackend>();
     }
 
     #[test]

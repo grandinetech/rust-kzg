@@ -3,6 +3,7 @@ mod tests {
     use kzg::eip_4844::bytes_to_blob;
     use kzg_bench::tests::eip_7594::{
         test_vectors_compute_cells, test_vectors_compute_cells_and_kzg_proofs,
+        test_vectors_compute_verify_cell_kzg_proof_batch_challenge,
         test_vectors_recover_cells_and_kzg_proofs, test_vectors_verify_cell_kzg_proof_batch,
     };
     use rust_kzg_arkworks3::{eip_4844::load_trusted_setup_filename_rust, eip_7594::ArkBackend};
@@ -28,5 +29,10 @@ mod tests {
     #[test]
     pub fn test_vectors_verify_cell_kzg_proof_batch_() {
         test_vectors_verify_cell_kzg_proof_batch::<ArkBackend>(&load_trusted_setup_filename_rust);
+    }
+
+    #[test]
+    pub fn test_vectors_compute_verify_cell_kzg_proof_batch_challenge_() {
+        test_vectors_compute_verify_cell_kzg_proof_batch_challenge::<ArkBackend>();
     }
 }
