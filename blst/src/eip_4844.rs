@@ -3,6 +3,8 @@ extern crate alloc;
 #[cfg(feature = "c_bindings")]
 use alloc::{boxed::Box, vec::Vec};
 #[cfg(feature = "c_bindings")]
+use blst::{blst_fr, blst_p1};
+#[cfg(feature = "c_bindings")]
 use core::ptr;
 use kzg::eip_4844::load_trusted_setup_rust;
 #[cfg(feature = "c_bindings")]
@@ -28,7 +30,11 @@ use std::io::Read;
 use kzg::eip_4844::load_trusted_setup_string;
 
 #[cfg(feature = "c_bindings")]
-use crate::{types::kzg_settings::FsKZGSettings, utils::PRECOMPUTATION_TABLES};
+use crate::{
+    handle_ckzg_badargs,
+    types::{fr::FsFr, g1::FsG1, kzg_settings::FsKZGSettings},
+    utils::PRECOMPUTATION_TABLES,
+};
 
 #[cfg(feature = "c_bindings")]
 fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
@@ -135,16 +141,6 @@ fn kzg_settings_to_c(rust_settings: &FsKZGSettings) -> CKZGSettings {
         wbits: 0,
         scratch_size: 0,
     }
-}
-
-#[cfg(feature = "c_bindings")]
-macro_rules! handle_ckzg_badargs {
-    ($x: expr) => {
-        match $x {
-            Ok(value) => value,
-            Err(_) => return kzg::eth::c_bindings::CKzgRet::BadArgs,
-        }
-    };
 }
 
 #[cfg(feature = "std")]
@@ -497,4 +493,38 @@ pub unsafe extern "C" fn compute_kzg_proof(
     (*proof_out).bytes = proof_out_tmp.to_bytes();
     (*y_out).bytes = fry_tmp.to_bytes();
     CKzgRet::Ok
+}
+
+/// # Safety
+#[cfg(feature = "c_bindings")]
+#[no_mangle]
+pub unsafe extern "C" fn compute_challenge(
+    eval_challenge_out: *mut blst_fr,
+    blob: *const Blob,
+    commitment: *const blst_p1,
+) {
+    use kzg::eip_4844::{bytes_to_blob, compute_challenge_rust};
+
+    let output = compute_challenge_rust::<FsFr, FsG1>(
+        &bytes_to_blob(&(*blob).bytes).unwrap(),
+        &FsG1(*commitment),
+    );
+
+    *eval_challenge_out = output.0
+}
+
+/// # Safety
+#[cfg(feature = "c_bindings")]
+#[no_mangle]
+pub unsafe extern "C" fn bytes_to_kzg_commitment(out: *mut blst_p1, b: *const Bytes48) -> CKzgRet {
+    *out = handle_ckzg_badargs!(FsG1::from_bytes(&(*b).bytes)).0;
+
+    CKzgRet::Ok
+}
+
+/// # Safety
+#[cfg(feature = "c_bindings")]
+#[no_mangle]
+pub unsafe extern "C" fn bytes_from_bls_field(out: *mut Bytes32, inp: *const blst_fr) {
+    (*out).bytes = FsFr(*inp).to_bytes();
 }

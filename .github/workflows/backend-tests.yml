@@ -1,7 +1,7 @@
 name: tests
 on: [push, pull_request, workflow_dispatch]
 env:
-  C_KZG_4844_GIT_HASH: "dffa18ee350aeef38f749ffad24a27c1645fb4f8"
+  C_KZG_4844_GIT_HASH: '00ae727c21a346ba0bd027eca6e378da0def988f'
 
 jobs:
   kzg_ci:
@@ -132,6 +132,15 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.x.x"
+
+      - name: "install clang-format"
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo DEBIAN_FRONTEND='noninteractive' apt-get install \
+            --no-install-recommends -yq \
+            clang-format-20
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-20 200
+          sudo update-alternatives --set clang-format /usr/bin/clang-format-20
 
       # Install constantine backend deps
       - name: "constantine - install deps"
