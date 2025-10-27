@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::ops::Sub;
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, Scalar256, G1};
 
@@ -15,6 +16,7 @@ where
     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
     points: Vec<TG1Affine>,
+    points_projection: Vec<TG1>,
     numpoints: usize,
 
     batch_numpoints: usize,
@@ -42,6 +44,21 @@ impl Ord for Scalar256 {
 impl PartialOrd for Scalar256 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl Sub for Scalar256 {
+    type Output = Scalar256;
+
+    fn sub(self, rhs: Scalar256) -> Scalar256 {
+        let mut result = Scalar256::default();
+        let mut borrow = 0u64;
+        for i in 0..4 {
+            let (res, b) = self.data[i].overflowing_sub(rhs.data[i] + borrow);
+            result.data[i] = res;
+            borrow = if b { 1 } else { 0 };
+        }
+        result
     }
 }
 
@@ -85,6 +102,7 @@ impl<
                 .iter()
                 .map(|g1| TG1Affine::into_affine(g1))
                 .collect(),
+            points_projection: Vec::from(points),
 
             // TODO:
             batch_numpoints: 0,
@@ -124,20 +142,15 @@ impl<
             let pair1: Pair<TG1> = heap.pop().unwrap();
             let pair2: Pair<TG1> = heap.pop().unwrap();
 
-            // TODO 1/2: implement without conversions
-            let s1: TFr = TFr::from_u64_arr(&pair1.scalar.data);
-            let s2: TFr = TFr::from_u64_arr(&pair2.scalar.data);
-
             heap.push(Pair {
-                scalar: s2.to_scalar(),
+                scalar: pair2.scalar,
                 point: pair2.point.add(&pair1.point),
             });
 
-            // TODO 2/2: implement without conversions
-            let tfr1: TFr = TFr::add(&s1, &s2.negate());
-            if !tfr1.is_zero() {
+            let scalar = pair1.scalar.sub(pair2.scalar);
+            if !scalar.is_zero() {
                 heap.push(Pair {
-                    scalar: tfr1.to_scalar(),
+                    scalar,
                     point: pair1.point,
                 });
             }
