@@ -15,14 +15,13 @@ where
     TG1Affine: G1Affine<TG1, TG1Fp>,
     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
-    points: Vec<TG1Affine>,
-    points_projection: Vec<TG1>,
+    points: Vec<TG1>,
     numpoints: usize,
 
     batch_numpoints: usize,
-    batch_points: Vec<Vec<TG1Affine>>,
+    batch_points: Vec<Vec<TG1>>,
 
-    g1_marker: PhantomData<TG1>,
+    g1_affine_marker: PhantomData<TG1Affine>,
     g1_fp_marker: PhantomData<TG1Fp>,
     fr_marker: PhantomData<TFr>,
     g1_affine_add_marker: PhantomData<TG1ProjAddAffine>,
@@ -96,23 +95,34 @@ impl<
     > BosCosterTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 {
     pub fn new(points: &[TG1], matrix: &[Vec<TG1>]) -> Result<Option<Self>, String> {
-        Ok(Some(Self {
-            numpoints: points.len(),
-            points: Vec::from(points)
-                .iter()
-                .map(|g1| TG1Affine::into_affine(g1))
-                .collect(),
-            points_projection: Vec::from(points),
+        if matrix.is_empty() {
+            Ok(Some(Self {
+                numpoints: points.len(),
+                points: Vec::from(points),
 
-            // TODO:
-            batch_numpoints: 0,
-            batch_points: Vec::new(),
+                // TODO:
+                batch_numpoints: 0,
+                batch_points: Vec::new(),
 
-            fr_marker: PhantomData,
-            g1_fp_marker: PhantomData,
-            g1_marker: PhantomData,
-            g1_affine_add_marker: PhantomData,
-        }))
+                fr_marker: PhantomData,
+                g1_fp_marker: PhantomData,
+                g1_affine_marker: PhantomData,
+                g1_affine_add_marker: PhantomData,
+            }))
+        } else {
+            Ok(Some(Self {
+                numpoints: points.len(),
+                points: Vec::from(points),
+
+                batch_numpoints: matrix[0].len(),
+                batch_points: Vec::from(matrix),
+
+                fr_marker: PhantomData,
+                g1_fp_marker: PhantomData,
+                g1_affine_marker: PhantomData,
+                g1_affine_add_marker: PhantomData,
+            }))
+        }
     }
 
     #[cfg(feature = "parallel")]
@@ -121,7 +131,7 @@ impl<
     }
 
     pub fn multiply_sequential(&self, scalars: &[TFr]) -> TG1 {
-        Self::multiply_sequential_raw(&self.points_projection, scalars)
+        Self::multiply_sequential_raw(&self.points, scalars)
     }
 
     fn multiply_sequential_raw(bases: &[TG1], scalars: &[TFr]) -> TG1 {
@@ -165,16 +175,55 @@ impl<
         return pair.point.mul(&TFr::from_u64_arr(&pair.scalar.data));
     }
 
-    // TODO:
     pub fn multiply_batch(&self, scalars: &[Vec<TFr>]) -> Vec<TG1> {
         assert!(scalars.len() == self.batch_points.len());
 
-        self.batch_points
-            .iter()
-            .zip(scalars)
-            .map(|(points, scalars)| {
-                Self::multiply_sequential_raw(&self.points_projection, scalars)
-            })
-            .collect::<Vec<_>>()
+        #[cfg(not(feature = "parallel"))]
+        {
+            self.batch_points
+                .iter()
+                .zip(scalars)
+                .map(|(points, scalars)| Self::multiply_sequential_raw(points, scalars))
+                .collect::<Vec<_>>()
+        }
+
+        #[cfg(feature = "parallel")]
+        {
+            use super::{
+                cell::Cell,
+                thread_pool::{da_pool, ThreadPoolExt},
+            };
+            use core::sync::atomic::{AtomicUsize, Ordering};
+            use std::sync::Arc;
+
+            let pool = da_pool();
+            let ncpus = pool.max_count();
+            let counter = Arc::new(AtomicUsize::new(0));
+            let mut results: Vec<Cell<TG1>> = Vec::with_capacity(scalars.len());
+            #[allow(clippy::uninit_vec)]
+            unsafe {
+                results.set_len(results.capacity())
+            };
+            let results = &results[..];
+
+            for _ in 0..ncpus {
+                let counter = counter.clone();
+                pool.joined_execute(move || loop {
+                    let work = counter.fetch_add(1, Ordering::Relaxed);
+
+                    if work >= scalars.len() {
+                        break;
+                    }
+
+                    let result =
+                        Self::multiply_sequential_raw(&self.batch_points[work], &scalars[work]);
+                    unsafe { *results[work].as_ptr().as_mut().unwrap() = result };
+                });
+            }
+
+            pool.join();
+
+            results.iter().map(|it| it.as_mut().clone()).collect()
+        }
     }
 }
