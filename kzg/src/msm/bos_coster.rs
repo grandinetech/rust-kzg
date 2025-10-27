@@ -5,7 +5,6 @@ use std::ops::Sub;
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, Scalar256, G1};
 
-// TODO: add btclib reference
 #[derive(Debug, Clone)]
 pub struct BosCosterTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -50,7 +49,7 @@ impl Sub for Scalar256 {
     type Output = Scalar256;
 
     fn sub(self, rhs: Scalar256) -> Scalar256 {
-        let mut result = Scalar256::default();
+        let mut result = Scalar256::ZERO;
         let mut borrow = 0u64;
         for i in 0..4 {
             let (res, b) = self.data[i].overflowing_sub(rhs.data[i] + borrow);
@@ -100,7 +99,6 @@ impl<
                 numpoints: points.len(),
                 points: Vec::from(points),
 
-                // TODO:
                 batch_numpoints: 0,
                 batch_points: Vec::new(),
 
@@ -134,6 +132,7 @@ impl<
         Self::multiply_sequential_raw(&self.points, scalars)
     }
 
+    // https://github.com/btclib-org/btclib was used as reference for this implementation
     fn multiply_sequential_raw(bases: &[TG1], scalars: &[TFr]) -> TG1 {
         let scalars: Vec<Scalar256> = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
 
@@ -151,11 +150,12 @@ impl<
 
         while heap.len() > 1 {
             let pair1: Pair<TG1> = heap.pop().unwrap();
-            let pair2: Pair<TG1> = heap.pop().unwrap();
+            let mut pair2: Pair<TG1> = heap.pop().unwrap();
 
+            pair2.point.add_assign(&pair1.point);
             heap.push(Pair {
                 scalar: pair2.scalar,
-                point: (&pair2.point).add(&pair1.point),
+                point: pair2.point,
             });
 
             let scalar = pair1.scalar.sub(pair2.scalar);
