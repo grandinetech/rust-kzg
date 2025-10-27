@@ -755,7 +755,7 @@ impl G1Projective {
     pub fn random(mut rng: impl RngCore) -> Self {
         loop {
             let x = Fp::random(&mut rng);
-            let flip_sign = rng.next_u32() % 2 != 0;
+            let flip_sign = !rng.next_u32().is_multiple_of(2);
 
             // Obtain the corresponding y-coordinate given x as y = sqrt(x^3 + 4)
             let p = ((x.square() * x) + B).sqrt().map(|y| G1Affine {
@@ -970,7 +970,7 @@ impl Group for G1Projective {
     fn random(mut rng: impl RngCore) -> Self {
         loop {
             let x = Fp::random(&mut rng);
-            let flip_sign = rng.next_u32() % 2 != 0;
+            let flip_sign = !rng.next_u32().is_multiple_of(2);
 
             // Obtain the corresponding y-coordinate given x as y = sqrt(x^3 + 4)
             let p = ((x.square() * x) + B).sqrt().map(|y| G1Affine {
@@ -1001,7 +1001,6 @@ impl Group for G1Projective {
         self.is_identity()
     }
 
-    #[must_use]
     fn double(&self) -> Self {
         self.double()
     }

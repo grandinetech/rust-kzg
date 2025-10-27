@@ -39,7 +39,7 @@ pub fn parallel_affine_conv<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp> + 
         ret.set_len(npoints)
     };
 
-    let mut nslices = (npoints + 511) / 512;
+    let mut nslices = npoints.div_ceil(512);
     nslices = core::cmp::min(nslices, ncpus);
     let wg = Arc::new((Barrier::new(2), AtomicUsize::new(nslices)));
 
