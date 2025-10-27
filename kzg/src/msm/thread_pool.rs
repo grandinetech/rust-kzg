@@ -10,7 +10,7 @@ use threadpool::ThreadPool;
 
 pub fn da_pool() -> ThreadPool {
     static INIT: Once = Once::new();
-    static mut POOL: *const Mutex<ThreadPool> = 0 as *const Mutex<ThreadPool>;
+    static mut POOL: *const Mutex<ThreadPool> = std::ptr::null();
 
     INIT.call_once(|| {
         let pool = Mutex::new(ThreadPool::default());

@@ -478,7 +478,6 @@ impl Group for Gt {
         self.ct_eq(&Self::identity())
     }
 
-    #[must_use]
     fn double(&self) -> Self {
         self.double()
     }
