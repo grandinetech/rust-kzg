@@ -11,7 +11,9 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 rust-kzg-blst = { path = "../blst", default-features = false, features = ["std", "rand"] }
 kzg = { path = "../kzg" }
-rand = "*"
+rand = "0.8.5"
+rand_core = "0.6"
+rand_chacha = "0.3"
 
 [features]
 wbits = [
@@ -28,8 +30,15 @@ parallel = [
 ]
 
 [[bin]]
-name = "blst_msm_with_zeros"
-path = "fuzz_targets/blst_msm_with_zeros.rs"
+name = "blst_fixed_msm_with_zeros"
+path = "fuzz_targets/blst_fixed_msm_with_zeros.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "blst_fixed_msm"
+path = "fuzz_targets/blst_fixed_msm.rs"
 test = false
 doc = false
 bench = false
