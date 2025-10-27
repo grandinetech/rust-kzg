@@ -939,6 +939,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
+name = "ekzg-bls12-381"
+version = "0.10.0"
+source = "git+https://github.com/crate-crypto/rust-eth-kzg.git#acf3a5e8062e9a67c184c77ebff9c55223f9e034"
+dependencies = [
+ "blst",
+ "blstrs",
+ "ff",
+ "group",
+ "pairing",
+ "subtle",
+]
+
+[[package]]
 name = "enum-ordinalize"
 version = "4.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1161,6 +1174,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "human_bytes"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91f255a4535024abf7640cb288260811fc14794f62b063652ed349f9a6c2348e"
+
+[[package]]
 name = "indexmap"
 version = "2.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1294,6 +1313,28 @@ name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
+
+[[package]]
+name = "msm-benches"
+version = "0.1.0"
+dependencies = [
+ "blst",
+ "blstrs",
+ "criterion 0.5.1",
+ "ekzg-bls12-381",
+ "human_bytes",
+ "kzg",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "rust-kzg-arkworks3",
+ "rust-kzg-arkworks4",
+ "rust-kzg-arkworks5",
+ "rust-kzg-blst",
+ "rust-kzg-constantine",
+ "rust-kzg-mcl",
+ "rust-kzg-zkcrypto",
+]
 
 [[package]]
 name = "num-bigint"
