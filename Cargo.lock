@@ -1356,13 +1356,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
- "rust-kzg-arkworks3",
- "rust-kzg-arkworks4",
- "rust-kzg-arkworks5",
  "rust-kzg-blst",
- "rust-kzg-constantine",
- "rust-kzg-mcl",
- "rust-kzg-zkcrypto",
 ]
 
 [[package]]
@@ -1826,7 +1820,9 @@ version = "0.0.0"
 dependencies = [
  "kzg",
  "libfuzzer-sys",
- "rand 0.9.2",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "rust-kzg-blst",
 ]
 

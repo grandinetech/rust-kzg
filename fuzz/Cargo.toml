@@ -28,6 +28,9 @@ arkmsm = [
 parallel = [
     "rust-kzg-blst/parallel",
 ]
+bos_coster = [
+    "rust-kzg-blst/bos_coster",
+]
 
 [[bin]]
 name = "blst_fixed_msm_with_zeros"

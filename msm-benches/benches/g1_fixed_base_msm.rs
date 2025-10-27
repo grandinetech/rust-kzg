@@ -256,215 +256,215 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
         );
     }
 
-    {
-        use rust_kzg_constantine::types::{
-            fp::CtFp,
-            fr::CtFr,
-            g1::{CtG1, CtG1Affine, CtG1ProjAddAffine},
-        };
+    // {
+    //     use rust_kzg_constantine::types::{
+    //         fp::CtFp,
+    //         fr::CtFr,
+    //         g1::{CtG1, CtG1Affine, CtG1ProjAddAffine},
+    //     };
 
-        let points = points.iter().map(|p| CtG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+    //     let points = points.iter().map(|p| CtG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
 
-        let table = precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
-            .ok()
-            .flatten();
+    //     let table = precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
+    //         .ok()
+    //         .flatten();
 
-        if table.is_some() {
-            c.bench_function(
-                format!(
-                    "rust-kzg-constantine msm initialization, points: 2^{}",
-                    npow
-                )
-                .as_str(),
-                |b| {
-                    b.iter(|| {
-                        precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
-                            .unwrap()
-                            .unwrap()
-                    });
-                },
-            );
-        }
+    //     if table.is_some() {
+    //         c.bench_function(
+    //             format!(
+    //                 "rust-kzg-constantine msm initialization, points: 2^{}",
+    //                 npow
+    //             )
+    //             .as_str(),
+    //             |b| {
+    //                 b.iter(|| {
+    //                     precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
+    //                         .unwrap()
+    //                         .unwrap()
+    //                 });
+    //             },
+    //         );
+    //     }
 
-        let scalars = scalars.iter().map(|s| CtFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+    //     let scalars = scalars.iter().map(|s| CtFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
 
-        let expected_result = CtG1::from_bytes(&expected_result).unwrap();
+    //     let expected_result = CtG1::from_bytes(&expected_result).unwrap();
 
-        c.bench_function(
-            format!("rust-kzg-constantine msm mult, points: 2^{}", npow).as_str(),
-            |b| {
-                b.iter(|| {
-                    let result = msm::<CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine, CtFr>(
-                        &points,
-                        &scalars,
-                        npoints,
-                        table.as_ref(),
-                    );
+    //     c.bench_function(
+    //         format!("rust-kzg-constantine msm mult, points: 2^{}", npow).as_str(),
+    //         |b| {
+    //             b.iter(|| {
+    //                 let result = msm::<CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine, CtFr>(
+    //                     &points,
+    //                     &scalars,
+    //                     npoints,
+    //                     table.as_ref(),
+    //                 );
 
-                    assert!(result.equals(&expected_result));
-                })
-            },
-        );
-    }
+    //                 assert!(result.equals(&expected_result));
+    //             })
+    //         },
+    //     );
+    // }
 
-    {
-        use rust_kzg_arkworks3::{
-            fft_g1::g1_linear_combination,
-            kzg_types::{ArkFr, ArkG1},
-        };
-        let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+    // {
+    //     use rust_kzg_arkworks3::{
+    //         fft_g1::g1_linear_combination,
+    //         kzg_types::{ArkFr, ArkG1},
+    //     };
+    //     let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
 
-        let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+    //     let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
 
-        let expected_result = ArkG1::from_bytes(&expected_result).unwrap();
+    //     let expected_result = ArkG1::from_bytes(&expected_result).unwrap();
 
-        c.bench_function(
-            format!("rust-kzg-arkworks3 msm mult, points: 2^{}", npow).as_str(),
-            |b| {
-                b.iter(|| {
-                    let mut output = ArkG1::default();
-                    g1_linear_combination(&mut output, &points, &scalars, npoints, None);
+    //     c.bench_function(
+    //         format!("rust-kzg-arkworks3 msm mult, points: 2^{}", npow).as_str(),
+    //         |b| {
+    //             b.iter(|| {
+    //                 let mut output = ArkG1::default();
+    //                 g1_linear_combination(&mut output, &points, &scalars, npoints, None);
 
-                    assert!(output.equals(&expected_result));
-                })
-            },
-        );
-    }
+    //                 assert!(output.equals(&expected_result));
+    //             })
+    //         },
+    //     );
+    // }
 
-    {
-        use rust_kzg_arkworks4::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
-        let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+    // {
+    //     use rust_kzg_arkworks4::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
+    //     let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
 
-        let table =
-            precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &[])
-                .ok()
-                .flatten();
+    //     let table =
+    //         precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &[])
+    //             .ok()
+    //             .flatten();
 
-        if table.is_some() {
-            c.bench_function(
-                format!("rust-kzg-arkworks4 msm initialization, points: 2^{}", npow).as_str(),
-                |b| {
-                    b.iter(|| {
-                        precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
-                            &points,
-                            &[],
-                        )
-                        .unwrap()
-                        .unwrap()
-                    });
-                },
-            );
-        }
+    //     if table.is_some() {
+    //         c.bench_function(
+    //             format!("rust-kzg-arkworks4 msm initialization, points: 2^{}", npow).as_str(),
+    //             |b| {
+    //                 b.iter(|| {
+    //                     precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
+    //                         &points,
+    //                         &[],
+    //                     )
+    //                     .unwrap()
+    //                     .unwrap()
+    //                 });
+    //             },
+    //         );
+    //     }
 
-        let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+    //     let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
 
-        c.bench_function(
-            format!("rust-kzg-arkworks4 msm mult, points: 2^{}", npow).as_str(),
-            |b| {
-                b.iter(|| {
-                    msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
-                        &points,
-                        &scalars,
-                        npoints,
-                        table.as_ref(),
-                    );
-                })
-            },
-        );
-    }
+    //     c.bench_function(
+    //         format!("rust-kzg-arkworks4 msm mult, points: 2^{}", npow).as_str(),
+    //         |b| {
+    //             b.iter(|| {
+    //                 msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+    //                     &points,
+    //                     &scalars,
+    //                     npoints,
+    //                     table.as_ref(),
+    //                 );
+    //             })
+    //         },
+    //     );
+    // }
 
-    {
-        use rust_kzg_arkworks5::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
-        let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+    // {
+    //     use rust_kzg_arkworks5::kzg_types::{ArkFp, ArkFr, ArkG1, ArkG1Affine, ArkG1ProjAddAffine};
+    //     let points = points.iter().map(|p| ArkG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
 
-        let table =
-            precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &[])
-                .ok()
-                .flatten();
+    //     let table =
+    //         precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(&points, &[])
+    //             .ok()
+    //             .flatten();
 
-        if table.is_some() {
-            c.bench_function(
-                format!("rust-kzg-arkworks5 msm initialization, points: 2^{}", npow).as_str(),
-                |b| {
-                    b.iter(|| {
-                        precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
-                            &points,
-                            &[],
-                        )
-                        .unwrap()
-                        .unwrap()
-                    });
-                },
-            );
-        }
+    //     if table.is_some() {
+    //         c.bench_function(
+    //             format!("rust-kzg-arkworks5 msm initialization, points: 2^{}", npow).as_str(),
+    //             |b| {
+    //                 b.iter(|| {
+    //                     precompute::<ArkFr, ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine>(
+    //                         &points,
+    //                         &[],
+    //                     )
+    //                     .unwrap()
+    //                     .unwrap()
+    //                 });
+    //             },
+    //         );
+    //     }
 
-        let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+    //     let scalars = scalars.iter().map(|s| ArkFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
 
-        let expected_result = ArkG1::from_bytes(&expected_result).unwrap();
+    //     let expected_result = ArkG1::from_bytes(&expected_result).unwrap();
 
-        c.bench_function(
-            format!("rust-kzg-arkworks5 msm mult, points: 2^{}", npow).as_str(),
-            |b| {
-                b.iter(|| {
-                    let result = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
-                        &points,
-                        &scalars,
-                        npoints,
-                        table.as_ref(),
-                    );
-                    assert!(result.equals(&expected_result));
-                })
-            },
-        );
-    }
+    //     c.bench_function(
+    //         format!("rust-kzg-arkworks5 msm mult, points: 2^{}", npow).as_str(),
+    //         |b| {
+    //             b.iter(|| {
+    //                 let result = msm::<ArkG1, ArkFp, ArkG1Affine, ArkG1ProjAddAffine, ArkFr>(
+    //                     &points,
+    //                     &scalars,
+    //                     npoints,
+    //                     table.as_ref(),
+    //                 );
+    //                 assert!(result.equals(&expected_result));
+    //             })
+    //         },
+    //     );
+    // }
 
-    {
-        use rust_kzg_mcl::{
-            kzg_proofs::g1_linear_combination,
-            types::{fr::MclFr, g1::MclG1},
-        };
-        let points = points.iter().map(|p| MclG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+    // {
+    //     use rust_kzg_mcl::{
+    //         kzg_proofs::g1_linear_combination,
+    //         types::{fr::MclFr, g1::MclG1},
+    //     };
+    //     let points = points.iter().map(|p| MclG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
 
-        let scalars = scalars.iter().map(|s| MclFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+    //     let scalars = scalars.iter().map(|s| MclFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
 
-        let expected_result = MclG1::from_bytes(&expected_result).unwrap();
+    //     let expected_result = MclG1::from_bytes(&expected_result).unwrap();
 
-        c.bench_function(
-            format!("rust-kzg-mcl msm mult, points: 2^{}", npow).as_str(),
-            |b| {
-                b.iter(|| {
-                    let mut output = MclG1::default();
-                    g1_linear_combination(&mut output, &points, &scalars, npoints, None);
+    //     c.bench_function(
+    //         format!("rust-kzg-mcl msm mult, points: 2^{}", npow).as_str(),
+    //         |b| {
+    //             b.iter(|| {
+    //                 let mut output = MclG1::default();
+    //                 g1_linear_combination(&mut output, &points, &scalars, npoints, None);
 
-                    assert!(output.equals(&expected_result));
-                })
-            },
-        );
-    }
+    //                 assert!(output.equals(&expected_result));
+    //             })
+    //         },
+    //     );
+    // }
 
-    {
-        use rust_kzg_zkcrypto::{
-            fft_g1::g1_linear_combination,
-            kzg_types::{ZFr, ZG1},
-        };
-        let points = points.iter().map(|p| ZG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+    // {
+    //     use rust_kzg_zkcrypto::{
+    //         fft_g1::g1_linear_combination,
+    //         kzg_types::{ZFr, ZG1},
+    //     };
+    //     let points = points.iter().map(|p| ZG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
 
-        let scalars = scalars.iter().map(|s| ZFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+    //     let scalars = scalars.iter().map(|s| ZFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
 
-        let expected_result = ZG1::from_bytes(&expected_result).unwrap();
+    //     let expected_result = ZG1::from_bytes(&expected_result).unwrap();
 
-        c.bench_function(
-            format!("rust-kzg-zkcrypto msm mult, points: 2^{}", npow).as_str(),
-            |b| {
-                b.iter(|| {
-                    let mut output = ZG1::default();
-                    g1_linear_combination(&mut output, &points, &scalars, npoints, None);
+    //     c.bench_function(
+    //         format!("rust-kzg-zkcrypto msm mult, points: 2^{}", npow).as_str(),
+    //         |b| {
+    //             b.iter(|| {
+    //                 let mut output = ZG1::default();
+    //                 g1_linear_combination(&mut output, &points, &scalars, npoints, None);
 
-                    assert!(output.equals(&expected_result));
-                })
-            },
-        );
-    }
+    //                 assert!(output.equals(&expected_result));
+    //             })
+    //         },
+    //     );
+    // }
 }
 
 criterion_group!(benches, bench_fixed_base_msm);

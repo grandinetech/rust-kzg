@@ -6,12 +6,12 @@ edition = "2021"
 [dependencies]
 blst = "0.3.11"
 rust-kzg-blst = { path = "../blst", default-features = false, features = ["std", "rand"] }
-rust-kzg-arkworks3 = { path = "../arkworks3", default-features = false, features = ["std", "rand"] }
-rust-kzg-arkworks4 = { path = "../arkworks4", default-features = false, features = ["std", "rand"] }
-rust-kzg-arkworks5 = { path = "../arkworks5", default-features = false, features = ["std", "rand"] }
-rust-kzg-constantine = { path = "../constantine", default-features = false, features = ["std", "rand"] }
-rust-kzg-mcl = { path = "../mcl", default-features = false, features = ["std", "rand"] }
-rust-kzg-zkcrypto = { path = "../zkcrypto", default-features = false, features = ["std", "rand"] }
+# rust-kzg-arkworks3 = { path = "../arkworks3", default-features = false, features = ["std", "rand"] }
+# rust-kzg-arkworks4 = { path = "../arkworks4", default-features = false, features = ["std", "rand"] }
+# rust-kzg-arkworks5 = { path = "../arkworks5", default-features = false, features = ["std", "rand"] }
+# rust-kzg-constantine = { path = "../constantine", default-features = false, features = ["std", "rand"] }
+# rust-kzg-mcl = { path = "../mcl", default-features = false, features = ["std", "rand"] }
+# rust-kzg-zkcrypto = { path = "../zkcrypto", default-features = false, features = ["std", "rand"] }
 ekzg-bls12-381 = { git = "https://github.com/crate-crypto/rust-eth-kzg.git" }
 blstrs = "0.7.1"
 kzg = { path = "../kzg" }
@@ -26,35 +26,35 @@ human_bytes = "0.4.3"
 [features]
 wbits = [
     "rust-kzg-blst/wbits",
-    "rust-kzg-arkworks4/wbits",
-    "rust-kzg-arkworks5/wbits",
-    "rust-kzg-constantine/wbits",
+    # "rust-kzg-arkworks4/wbits",
+    # "rust-kzg-arkworks5/wbits",
+    # "rust-kzg-constantine/wbits",
 ]
 bgmw = [
     "rust-kzg-blst/bgmw",
-    "rust-kzg-arkworks4/bgmw",
-    "rust-kzg-arkworks5/bgmw",
-    "rust-kzg-constantine/bgmw",
+    # "rust-kzg-arkworks4/bgmw",
+    # "rust-kzg-arkworks5/bgmw",
+    # "rust-kzg-constantine/bgmw",
 ]
 arkmsm = [
     "rust-kzg-blst/arkmsm",
-    "rust-kzg-arkworks4/arkmsm",
-    "rust-kzg-arkworks5/arkmsm",
-    "rust-kzg-constantine/arkmsm",
+    # "rust-kzg-arkworks4/arkmsm",
+    # "rust-kzg-arkworks5/arkmsm",
+    # "rust-kzg-constantine/arkmsm",
 ]
 parallel = [
     "rust-kzg-blst/parallel",
-    "rust-kzg-arkworks3/parallel",
-    "rust-kzg-arkworks4/parallel",
-    "rust-kzg-arkworks5/parallel",
-    "rust-kzg-constantine/parallel",
-    "rust-kzg-mcl/parallel",
+    # "rust-kzg-arkworks3/parallel",
+    # "rust-kzg-arkworks4/parallel",
+    # "rust-kzg-arkworks5/parallel",
+    # "rust-kzg-constantine/parallel",
+    # "rust-kzg-mcl/parallel",
 ]
 bos_coster = [
     "rust-kzg-blst/bos_coster",
-    "rust-kzg-arkworks4/bos_coster",
-    "rust-kzg-arkworks5/bos_coster",
-    "rust-kzg-constantine/bos_coster",
+    # "rust-kzg-arkworks4/bos_coster",
+    # "rust-kzg-arkworks5/bos_coster",
+    # "rust-kzg-constantine/bos_coster",
 ]
 
 [[bench]]
