@@ -99,73 +99,100 @@ const fn get_sequential_window_size(window: BgmwWindow) -> usize {
 ///   2^w - 2     - computing total bucket sum (bucket aggregation). Total number of buckets (scratch size) is 2^(w-1).
 ///                 Adding each point to total bucket sum requires 2 point addition operations, so 2 * 2^(w-1) = 2^w.
 #[allow(unused)]
-const fn bgmw_window_size(npoints: usize) -> usize {
-    let wbits = num_bits(npoints);
+fn bgmw_window_size(npoints: usize) -> usize {
+    option_env!("WINDOW_SIZE")
+        .map(|v| {
+            v.parse()
+                .expect("WINDOW_SIZE environment variable must be valid number")
+        })
+        .unwrap_or({
+            let wbits = num_bits(npoints);
 
-    match (wbits) {
-        1 => 4,
-        2..=3 => 5,
-        4 => 6,
-        5 => 7,
-        6..=7 => 8,
-        8 => 9,
-        9..=10 => 10,
-        11 => 11,
-        12 => 12,
-        13..=14 => 13,
-        15..=16 => 15,
-        17 => 16,
-        18..=19 => 17,
-        20 => 19,
-        21..=22 => 20,
-        23..=24 => 22,
-        25..=26 => 24,
-        27..=29 => 26,
-        30..=32 => 29,
-        33..=37 => 32,
-        _ => 37,
-    }
+            match (wbits) {
+                1 => 4,
+                2..=3 => 5,
+                4 => 6,
+                5 => 7,
+                6..=7 => 8,
+                8 => 9,
+                9..=10 => 10,
+                11 => 11,
+                12 => 12,
+                13..=14 => 13,
+                15..=16 => 15,
+                17 => 16,
+                18..=19 => 17,
+                20 => 19,
+                21..=22 => 20,
+                23..=24 => 22,
+                25..=26 => 24,
+                27..=29 => 26,
+                30..=32 => 29,
+                33..=37 => 32,
+                _ => 37,
+            }
+        })
 }
 
 #[cfg(feature = "parallel")]
-const fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usize, usize) {
-    let mut min_ops = usize::MAX;
-    let mut opt = 0;
+#[allow(clippy::option_env_unwrap)]
+fn bgmw_parallel_window_size(npoints: usize, ncpus: usize) -> (usize, usize, usize) {
+    option_env!("WINDOW_NX")
+        .and_then(|v| v.parse().ok())
+        .map(|nx| {
+            let wnd = option_env!("WINDOW_SIZE")
+                .expect(
+                    "Unable to use BGMW: when specifying WINDOW_NX environment \
+            variable, please also specify WINDOW_SIZE",
+                )
+                .parse()
+                .expect("WINDOW_SIZE environment variable must be valid number");
 
-    let mut win = 2;
-    while win <= 40 {
-        let ops = (1 << win) + (255usize.div_ceil(win).div_ceil(ncpus) * npoints) - 2;
-        if min_ops >= ops {
-            min_ops = ops;
-            opt = win;
-        }
-        win += 1;
-    }
+            (
+                nx,
+                255usize.div_ceil(wnd) + is_zero((NBITS % wnd) as u64) as usize,
+                wnd,
+            )
+        })
+        .unwrap_or({
+            let mut min_ops = usize::MAX;
+            let mut opt = 0;
 
-    let mut mult = 1;
+            let mut win = 2;
+            while win <= 40 {
+                let ops = (1 << win) + (255usize.div_ceil(win).div_ceil(ncpus) * npoints) - 2;
+                if min_ops >= ops {
+                    min_ops = ops;
+                    opt = win;
+                }
+                win += 1;
+            }
 
-    let mut opt_x = 1;
+            let mut mult = 1;
 
-    while mult <= 8 {
-        let nx = ncpus * mult;
-        let wnd = bgmw_window_size(npoints / nx);
+            let mut opt_x = 1;
 
-        let ops = mult * 255usize.div_ceil(wnd) * npoints.div_ceil(nx) + (1 << wnd) - 2;
+            while mult <= 8 {
+                let nx = ncpus * mult;
+                let wnd = bgmw_window_size(npoints / nx);
 
-        if min_ops > ops {
-            min_ops = ops;
-            opt = wnd;
-            opt_x = nx;
-        }
+                let ops = mult * 255usize.div_ceil(wnd) * npoints.div_ceil(nx) + (1 << wnd) - 2;
 
-        mult += 1;
-    }
+                if min_ops > ops {
+                    min_ops = ops;
+                    opt = wnd;
+                    opt_x = nx;
+                }
 
-    (
-        opt_x,
-        255usize.div_ceil(opt) + is_zero((NBITS % opt) as u64) as usize,
-        opt,
-    )
+                mult += 1;
+            }
+
+            (
+                opt_x,
+                255usize.div_ceil(opt) + is_zero((NBITS % opt) as u64) as usize,
+                opt,
+            )
+        })
 }
 
 impl<
