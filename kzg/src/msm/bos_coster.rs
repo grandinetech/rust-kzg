@@ -121,19 +121,20 @@ impl<
     }
 
     pub fn multiply_sequential(&self, scalars: &[TFr]) -> TG1 {
-        Self::multiply_sequential_raw(&self.points, scalars)
+        Self::multiply_sequential_raw(&self.points_projection, scalars)
     }
 
-    fn multiply_sequential_raw(bases: &[TG1Affine], scalars: &[TFr]) -> TG1 {
+    fn multiply_sequential_raw(bases: &[TG1], scalars: &[TFr]) -> TG1 {
         let scalars: Vec<Scalar256> = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
 
         let value: Vec<Pair<TG1>> = scalars
             .iter()
-            .zip(bases.iter().map(|p| p.to_proj()))
+            .zip(bases.iter())
             .map(|(&s, p)| Pair {
                 scalar: s,
-                point: p,
+                point: p.clone(),
             })
+            .filter(|pair| !pair.scalar.is_zero())
             .collect();
 
         let mut heap: BinaryHeap<Pair<TG1>> = BinaryHeap::from(value);
@@ -144,7 +145,7 @@ impl<
 
             heap.push(Pair {
                 scalar: pair2.scalar,
-                point: pair2.point.add(&pair1.point),
+                point: (&pair2.point).add(&pair1.point),
             });
 
             let scalar = pair1.scalar.sub(pair2.scalar);
@@ -154,6 +155,10 @@ impl<
                     point: pair1.point,
                 });
             }
+        }
+
+        if heap.is_empty() {
+            return TG1::zero();
         }
 
         let pair = heap.pop().unwrap();
@@ -167,7 +172,9 @@ impl<
         self.batch_points
             .iter()
             .zip(scalars)
-            .map(|(points, scalars)| Self::multiply_sequential_raw(points, scalars))
+            .map(|(points, scalars)| {
+                Self::multiply_sequential_raw(&self.points_projection, scalars)
+            })
             .collect::<Vec<_>>()
     }
 }
