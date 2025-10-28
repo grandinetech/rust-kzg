@@ -47,6 +47,9 @@ bgmw = [
 arkmsm = [
     "kzg/arkmsm"
 ]
+strauss = [
+    "kzg/strauss"
+]
 c_bindings = []
 diskcache = [
     "kzg/diskcache"

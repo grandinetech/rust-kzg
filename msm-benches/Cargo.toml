@@ -49,6 +49,19 @@ parallel = [
     "rust-kzg-arkworks5/parallel",
     "rust-kzg-constantine/parallel",
     "rust-kzg-mcl/parallel",
+],
+bos_coster = [
+    "rust-kzg-blst/bos_coster",
+    # "rust-kzg-arkworks4/bos_coster",
+    # "rust-kzg-arkworks5/bos_coster",
+    # "rust-kzg-constantine/bos_coster",
+]
+
+strauss = [
+    "rust-kzg-blst/strauss",
+    # "rust-kzg-arkworks4/strauss",
+    # "rust-kzg-arkworks5/strauss",
+    # "rust-kzg-constantine/strauss",
 ]
 
 [[bench]]

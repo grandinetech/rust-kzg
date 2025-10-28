@@ -28,6 +28,10 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     super::wbits::WbitsTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
 
+#[cfg(feature = "strauss")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
+    super::strauss::StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
+
 #[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
 #[derive(Debug, Clone)]
 pub struct EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
@@ -73,7 +77,7 @@ where
     }
 }
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits"), not(feature = "strauss")))]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
 

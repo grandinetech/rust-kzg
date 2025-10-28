@@ -54,6 +54,12 @@ sppark = [
 wbits = [
     "kzg/wbits"
 ]
+bos_coster = [
+    "kzg/bos_coster"
+]
+strauss = [
+    "kzg/strauss"
+]
 c_bindings = []
 diskcache = [
     "kzg/diskcache"
