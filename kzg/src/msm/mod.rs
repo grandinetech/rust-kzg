@@ -21,3 +21,6 @@ mod sppark;
 
 #[cfg(feature = "wbits")]
 mod wbits;
+
+#[cfg(feature = "strauss")]
+mod strauss;

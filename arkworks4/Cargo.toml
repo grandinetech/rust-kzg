@@ -49,6 +49,9 @@ wbits = [
 arkmsm = [
     "kzg/arkmsm"
 ]
+strauss = [
+    "kzg/strauss"
+]
 c_bindings = []
 
 [[bench]]

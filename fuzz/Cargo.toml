@@ -1,0 +1,50 @@
+[package]
+name = "rust-kzg-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+rust-kzg-blst = { path = "../blst", default-features = false, features = ["std", "rand"] }
+kzg = { path = "../kzg" }
+rand = "0.8.5"
+rand_core = "0.6"
+rand_chacha = "0.3"
+
+[features]
+wbits = [
+    "rust-kzg-blst/wbits",
+]
+bgmw = [
+    "rust-kzg-blst/bgmw",
+]
+arkmsm = [
+    "rust-kzg-blst/arkmsm",
+]
+parallel = [
+    "rust-kzg-blst/parallel",
+]
+bos_coster = [
+    "rust-kzg-blst/bos_coster",
+]
+strauss = [
+    "rust-kzg-blst/strauss",
+]
+
+[[bin]]
+name = "blst_fixed_msm_with_zeros"
+path = "fuzz_targets/blst_fixed_msm_with_zeros.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "blst_fixed_msm"
+path = "fuzz_targets/blst_fixed_msm.rs"
+test = false
+doc = false
+bench = false
