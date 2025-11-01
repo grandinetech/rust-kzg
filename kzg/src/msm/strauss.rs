@@ -105,29 +105,33 @@ pub fn straus_unwindowed<
     TG1Affine: G1Affine<TG1, TG1Fp>,
     TFr: Fr,
 >(
-
     points: &[TG1],
     scalars: &[TFr],
     len: usize,
 ) -> TG1 {
-    // Convert to Scalar256 for bit access
+    // For large n, use simple MSM - Straus is only efficient for small n
+    if len > 8 {
+        let mut acc = TG1::zero();
+        for i in 0..len {
+            let tmp = points[i].mul(&scalars[i]);
+            acc.add_or_dbl_assign(&tmp);
+        }
+        return acc;
+    }
+
     let mut svals: Vec<crate::Scalar256> = Vec::with_capacity(len);
     for i in 0..len {
         svals.push(scalars[i].to_scalar());
     }
 
-    // window size is hardcoded 4 - we use 256 bit scalars, which are divided into 4 u64 type data units 
-
-    // Find highest set bit among all scalars
-    let mut max_bit: isize = -1;
+    // Find highest bit
+    let mut max_bit = 0usize;
     for s in &svals {
-        // use length of data to stay generic (e.g. [u64; 4])
-        let limbs = s.data.len();
-        for limb in (0..limbs).rev() {
+        for limb in (0..s.data.len()).rev() {
             let v = s.data[limb];
             if v != 0 {
                 let leading = 63 - v.leading_zeros() as usize;
-                let bit = (limb * 64 + leading) as isize; // 64 bits is used for the Scalar256
+                let bit = limb * 64 + leading;
                 if bit > max_bit {
                     max_bit = bit;
                 }
@@ -136,73 +140,36 @@ pub fn straus_unwindowed<
         }
     }
 
-    if max_bit < 0 {
-        return TG1::zero();
-    }
-
-    //to fail the test
-    //return TG1::zero();
-
-    // Precompute table of size 2^n (n = len) (all combinations)
-    // 0 bit means excluded from some, 1 means included
-    // 000
-    // 001
-    // ...
-    // 111
-    let n = (len as f64).log2() as usize;
-    // let n = len;
-    if n > 8 {
-        #[cfg(debug_assertions)]
-        eprintln!("[Straus MSM] n={} too large for table, falling back.", n);
-
-        // Fallback to simple MSM for large n
-        let mut acc = TG1::zero();
-        for i in 0..n {
-            let tmp = points[i].mul(&scalars[i]);
-            acc.add_or_dbl_assign(&tmp);
-        }
-        return acc;
-    }
-
-    // otherwise continue with Straus precomputation
-    // let table_size = 1usize.checked_shl(n as u32).expect("n too large for table");
-    let table_size = 1 << n;
+    // Precompute table - size 2^len
+    let table_size = 1 << len;
     let mut table: Vec<TG1> = Vec::with_capacity(table_size);
-    table.push(TG1::zero()); // table[0] = 0
+    table.push(TG1::zero());
+    
     for mask in 1..table_size {
-        let lb = mask.trailing_zeros() as usize; // index of lowest set bit
-        let prev = table[mask ^ (1 << lb)].clone(); // toggles the element presence at the index
-        let mut cur = prev;
-        // add point[lb]
+        let lb = mask.trailing_zeros() as usize;
+        let mut cur = table[mask ^ (1 << lb)].clone();
         cur.add_or_dbl_assign(&points[lb]);
         table.push(cur);
     }
 
-    // Main loop: from max_bit down to 0
+    // Main loop
     let mut out = TG1::zero();
-    let max_b = max_bit as usize;
-    for b in (0..=max_b).rev() {
-        out.dbl_assign(); // double the accumulator
-        // build mask for this bit
-        let mut mask = 0usize;
-        let limb_idx = b / 64; 
+    for b in (0..=max_bit).rev() {
+        out.dbl_assign();
         
-
-        let off = b % 64;
-        for i in 0..n {
-            // safety: if limb index is out of range treat as zero
+        let limb_idx = b / 64;
+        let bit_pos = b % 64;
+        
+        let mut mask = 0usize;
+        for i in 0..len {
             if limb_idx < svals[i].data.len() {
-                if ((svals[i].data[limb_idx] >> off) & 1u64) == 1u64 {
+                if (svals[i].data[limb_idx] >> bit_pos) & 1 != 0 {
                     mask |= 1 << i;
                 }
             }
-            // builds the required mask from the scalar, like
-            // 1011, meaning P4 + P2 + P1 
         }
-
-
+        
         if mask != 0 {
-            // assignment to result, which will be double on the next iteration
             out.add_or_dbl_assign(&table[mask]);
         }
     }
