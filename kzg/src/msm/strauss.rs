@@ -14,7 +14,11 @@
 
 // https://doc-internal.dalek.rs/src/curve25519_dalek/backend/serial/scalar_mul/straus.rs.html#48-143
 // https://www.jstor.org/stable/2310929?seq=2
-// cargo +nightly fuzz run --features strauss blst_fixed_msm_with_zeros
+// NPOW=7 cargo +nightly fuzz run --features strauss blst_fixed_msm_with_zeros
+// strauss only
+// cargo bench -p msm-benches --features strauss -- "straus msm mult"
+// strauss compared to simple msm
+// BENCH_NPOW=4 cargo bench -p msm-benches --features strauss -- "rust-kzg-blst"
 
 //use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
 //use alloc::vec::Vec;
@@ -109,7 +113,7 @@ pub fn straus_unwindowed<
     scalars: &[TFr],
     len: usize,
 ) -> TG1 {
-    // For large n, use simple MSM - Straus is only efficient for small n
+    // Use Straus for n <= 8 as intended
     if len > 8 {
         let mut acc = TG1::zero();
         for i in 0..len {
@@ -119,62 +123,74 @@ pub fn straus_unwindowed<
         return acc;
     }
 
-    let mut svals: Vec<crate::Scalar256> = Vec::with_capacity(len);
-    for i in 0..len {
-        svals.push(scalars[i].to_scalar());
+    let mut scalar_bits = Vec::with_capacity(len);
+    for scalar in scalars {
+        let s = scalar.to_scalar();
+        scalar_bits.push(s);
     }
 
-    // Find highest bit
     let mut max_bit = 0usize;
-    for s in &svals {
-        for limb in (0..s.data.len()).rev() {
-            let v = s.data[limb];
-            if v != 0 {
-                let leading = 63 - v.leading_zeros() as usize;
-                let bit = limb * 64 + leading;
-                if bit > max_bit {
-                    max_bit = bit;
+    for s in &scalar_bits {
+        for (limb_idx, &limb) in s.data.iter().enumerate().rev() {
+            if limb != 0 {
+                let bit_pos = 63 - limb.leading_zeros() as usize;
+                let global_bit = limb_idx * 64 + bit_pos;
+                if global_bit > max_bit {
+                    max_bit = global_bit;
                 }
                 break;
             }
         }
     }
 
-    // Precompute table - size 2^len
+
     let table_size = 1 << len;
     let mut table: Vec<TG1> = Vec::with_capacity(table_size);
     table.push(TG1::zero());
-    
+
     for mask in 1..table_size {
         let lb = mask.trailing_zeros() as usize;
-        let mut cur = table[mask ^ (1 << lb)].clone();
-        cur.add_or_dbl_assign(&points[lb]);
-        table.push(cur);
+        let prev_mask = mask ^ (1 << lb);
+        
+        if prev_mask == 0 {
+            // First element case - just take the point
+            table.push(points[lb].clone());
+        } else {
+            // Add to existing table entry
+            let mut new_val = table[prev_mask].clone();
+            new_val.add_or_dbl_assign(&points[lb]);
+            table.push(new_val);
+        }
     }
 
-    // Main loop
-    let mut out = TG1::zero();
-    for b in (0..=max_bit).rev() {
-        out.dbl_assign();
-        
-        let limb_idx = b / 64;
-        let bit_pos = b % 64;
-        
+    let mut bit_masks = vec![0usize; max_bit + 1];
+    for bit in 0..=max_bit {
+        let limb_idx = bit / 64;
+        let bit_in_limb = bit % 64;
         let mut mask = 0usize;
+        
         for i in 0..len {
-            if limb_idx < svals[i].data.len() {
-                if (svals[i].data[limb_idx] >> bit_pos) & 1 != 0 {
+            if limb_idx < scalar_bits[i].data.len() {
+                if (scalar_bits[i].data[limb_idx] >> bit_in_limb) & 1 != 0 {
                     mask |= 1 << i;
                 }
             }
         }
+        bit_masks[bit] = mask;
+    }
+
+    // Main computation loop
+    let mut result = TG1::zero();
+    for bit in (0..=max_bit).rev() {
+        result.dbl_assign();
         
+        let mask = bit_masks[bit];
         if mask != 0 {
-            out.add_or_dbl_assign(&table[mask]);
+            result.add_or_dbl_assign(&table[mask]);
         }
     }
 
-    out
+    result
 }
 
 // #[allow(clippy::extra_unused_type_parameters)]
@@ -227,9 +243,7 @@ where
     TG1Affine: G1Affine<TG1, TG1Fp> + Clone,
     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
-    /// Called from precompute.rs
     pub fn new(points: &[TG1], _matrix: &[Vec<TG1>]) -> Result<Option<Self>, String> {
-        // Convert projective points to affine form
         let points_affine = TG1Affine::into_affines(points);
 
         let table = StraussTable {
@@ -256,7 +270,6 @@ where
     pub fn multiply_sequential(&self, scalars: &[TFr]) -> TG1 {
         let n = scalars.len();
 
-        // Fix: gracefully handle n larger than precomputed size
         if n > self.points.len() {
             #[cfg(debug_assertions)]
             eprintln!(
@@ -265,7 +278,7 @@ where
                 self.points.len()
             );
 
-            // Fallback: do a simple MSM manually
+            // Fallback- do a simple MSM manually
             let mut acc = TG1::zero();
             // scalars.iter().zip(self.points.iter().cycle().take(n))
             // yields ( &TFr, &TG1Affine )
@@ -276,7 +289,6 @@ where
             return acc;
         }
 
-        // Normal fast path
         let points_proj: Vec<TG1> = self.points.iter().map(|a| a.to_proj()).collect();
         straus_unwindowed::<TG1, TG1Fp, TG1Affine, TFr>(&points_proj, scalars, self.numpoints)
     }
@@ -292,7 +304,6 @@ where
 
     #[cfg(feature = "parallel")]
     pub fn multiply_parallel(&self, scalars: &[TFr]) -> TG1 {
-        // Optional: you can optimize this later, but for now just reuse sequential.
         self.multiply_sequential(scalars)
     }
 }
