@@ -27,12 +27,13 @@ where
 }
 
 impl Ord for Scalar256 {
+    #[inline(always)]
     fn cmp(&self, other: &Self) -> Ordering {
-        // Compare as big-endian integer: highest limb first
-        for (a, b) in self.data.iter().zip(other.data.iter()).rev() {
-            match a.cmp(b) {
-                Ordering::Equal => continue,
-                non_eq => return non_eq,
+        for i in (0..4).rev() {
+            if self.data[i] < other.data[i] {
+                return Ordering::Less;
+            } else if self.data[i] > other.data[i] {
+                return Ordering::Greater;
             }
         }
         Ordering::Equal
@@ -150,15 +151,13 @@ impl<
 
         while heap.len() > 1 {
             let pair1: Pair<TG1> = heap.pop().unwrap();
-            let mut pair2: Pair<TG1> = heap.pop().unwrap();
+            let pair2_scalar = {
+                let mut pair2 = heap.peek_mut().unwrap();
+                pair2.point.add_assign(&pair1.point);
+                pair2.scalar
+            };
 
-            pair2.point.add_assign(&pair1.point);
-            heap.push(Pair {
-                scalar: pair2.scalar,
-                point: pair2.point,
-            });
-
-            let scalar = pair1.scalar.sub(pair2.scalar);
+            let scalar = pair1.scalar.sub(pair2_scalar);
             if !scalar.is_zero() {
                 heap.push(Pair {
                     scalar,
