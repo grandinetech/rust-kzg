@@ -16,6 +16,26 @@ Support for multiple backend ECC libraries is implemented via [Traits](https://g
 | [arkworks3](https://github.com/arkworks-rs/algebra/tree/v0.3.0) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: via [sppark](https://github.com/supranational/sppark) and [wlc_msm](https://github.com/dunkirkturbo/wlc_msm/tree/master) | 
 | [zkcrypto](https://github.com/zkcrypto/bls12_381) | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
 
+## Additional setup steps for ECC libraries
+
+* For all backends:
+    1. Set up rust. Only latest rust version is tested on CI, so it is better to use this one.
+    2. C/C++ compiler:
+        * Debian/Ubuntu: `sudo apt update && sudo apt install build-essential`
+        * Archlinux: `pacman -S base-devel`
+        * Windows: rustup automatically sets up [visual studio C++ compiler](https://visualstudio.microsoft.com/vs/features/cplusplus/), make sure it is present.
+* For `constantine`:
+    1. Set up nim. It is recommended to use [`choosenim`](https://github.com/nim-lang/choosenim), and set up `2.0.2` nim version.
+    2. Clang compiler:
+        * Debian/Ubuntu: `sudo apt update && sudo apt install clang`
+        * Archlinux: `pacman -S clang`
+        * Windows: you can install "C++ Clang tools for Windows" from visual studio installer
+* For `mcl`:
+    1. GMP:
+        * Debian/Ubuntu: `sudo apt instal libgmp-dev`
+        * MacOS: `brew install gmp`
+
+`blst`, `arkworks3`, `arkworks4`, `arkworks5` and `zkcrypto` do not require additional setup steps.
 
 # Drop-in replacement for c-kzg-4844
 
