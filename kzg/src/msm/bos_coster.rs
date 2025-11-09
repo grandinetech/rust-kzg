@@ -40,6 +40,50 @@ impl Ord for Scalar256 {
     }
 }
 
+impl Scalar256 {
+    #[inline(always)]
+    fn bitlen_256(&self) -> u32 {
+        for i in (0..4).rev() {
+            if self.data[i] != 0 {
+                return (i as u32) * 64 + (64 - self.data[i].leading_zeros());
+            }
+        }
+        0
+    }
+
+    #[inline(always)]
+    fn shl_256(&self, n: u32) -> Scalar256 {
+        if n == 0 {
+            return *self;
+        }
+        let limb_shift = (n / 64) as usize;
+        let bit_shift = n % 64;
+        let mut res = [0u64; 4];
+
+        for i in (0..4).rev() {
+            if i < limb_shift {
+                continue;
+            }
+            let mut val = self.data[i - limb_shift] << bit_shift;
+            if bit_shift != 0 && i - limb_shift > 0 {
+                val |= self.data[i - limb_shift - 1] >> (64 - bit_shift);
+            }
+            res[i] = val;
+        }
+        Scalar256::from_u64(res)
+    }
+
+    #[inline(always)]
+    pub fn shr1_assign(&mut self) {
+        let mut carry = 0u64;
+        for limb in self.data.iter_mut().rev() {
+            let new_carry = (*limb & 1) << 63;
+            *limb = (*limb >> 1) | carry;
+            carry = new_carry;
+        }
+    }
+}
+
 impl PartialOrd for Scalar256 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -49,13 +93,15 @@ impl PartialOrd for Scalar256 {
 impl Sub for Scalar256 {
     type Output = Scalar256;
 
+    #[inline(always)]
     fn sub(self, rhs: Scalar256) -> Scalar256 {
         let mut result = Scalar256::ZERO;
         let mut borrow = 0u64;
         for i in 0..4 {
-            let (res, b) = self.data[i].overflowing_sub(rhs.data[i] + borrow);
+            let (rhs_with_borrow, overflow_add) = rhs.data[i].overflowing_add(borrow);
+            let (res, overflow_sub) = self.data[i].overflowing_sub(rhs_with_borrow);
             result.data[i] = res;
-            borrow = if b { 1 } else { 0 };
+            borrow = if overflow_add || overflow_sub { 1 } else { 0 };
         }
         result
     }
@@ -144,7 +190,7 @@ impl<
                 scalar: s,
                 point: p.clone(),
             })
-            .filter(|pair| !pair.scalar.is_zero())
+            .filter(|pair| !pair.scalar.is_zero() && !pair.point.is_inf())
             .collect();
 
         let mut heap: BinaryHeap<Pair<TG1>> = BinaryHeap::from(value);
@@ -153,8 +199,13 @@ impl<
             let pair1: Pair<TG1> = heap.pop().unwrap();
             let pair2_scalar = {
                 let mut pair2 = heap.peek_mut().unwrap();
-                pair2.point.add_assign(&pair1.point);
-                pair2.scalar
+                let (k, pair2_scalar_2powk) = find_k(&pair1.scalar, &pair2.scalar);
+                let mut new_point = pair1.point.clone();
+                for _ in 0..k {
+                    new_point.dbl_assign();
+                }
+                pair2.point.add_assign(&new_point);
+                pair2_scalar_2powk
             };
 
             let scalar = pair1.scalar.sub(pair2_scalar);
@@ -225,4 +276,21 @@ impl<
             results.iter().map(|it| it.as_mut().clone()).collect()
         }
     }
+}
+
+// x >= y
+#[inline(always)]
+fn find_k(x: &Scalar256, y: &Scalar256) -> (u32, Scalar256) {
+    let bitlen_x = Scalar256::bitlen_256(&x);
+    let bitlen_y = Scalar256::bitlen_256(&y);
+    if bitlen_x == bitlen_y {
+        return (0, *y);
+    }
+    let mut d = bitlen_x - bitlen_y;
+    let mut shifted_y = y.shl_256(d);
+    if shifted_y.cmp(&x) == std::cmp::Ordering::Greater {
+        d -= 1;
+        shifted_y.shr1_assign();
+    }
+    (d, shifted_y)
 }
