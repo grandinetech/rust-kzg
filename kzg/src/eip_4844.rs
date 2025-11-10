@@ -867,7 +867,7 @@ pub fn verify_blob_kzg_proof_batch_raw<
 pub fn bytes_to_blob<TFr: Fr>(bytes: &[u8]) -> Result<Vec<TFr>, String> {
     if bytes.len() != BYTES_PER_BLOB {
         return Err(format!(
-            "Invalid byte length. Expected {} got {}",
+            "Invalid blob: Invalid byte length. Expected {} got {}",
             BYTES_PER_BLOB,
             bytes.len(),
         ));
