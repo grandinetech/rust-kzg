@@ -672,6 +672,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d728cc89cf3aee9ff92b05e62b19ee65a02b5702cff7d5a377e32c6ae29d8d"
 
 [[package]]
+name = "cmake"
+version = "0.1.54"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7caa3f9de89ddbe2c607f4101924c5abec803763ae9534e4f4d7d8f84aa81f0"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "constantine-core"
 version = "0.1.0"
 source = "git+https://github.com/mratsim/constantine.git?rev=3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe#3ed6eeac4f0a9b0092bb4234b61768dfde25cdbe"
@@ -1325,10 +1334,10 @@ checksum = "d26c52dbd32dccf2d10cac7725f8eae5296885fb5703b261f7d0a0739ec807ab"
 
 [[package]]
 name = "mcl_rust"
-version = "1.0.2"
-source = "git+https://github.com/herumi/mcl-rust.git?rev=db8e9a639d27fffb167bc48159ef2e3178b347dc#db8e9a639d27fffb167bc48159ef2e3178b347dc"
+version = "1.0.3"
+source = "git+https://github.com/herumi/mcl-rust.git?tag=v1.0.3#f8c96482a6831a64e4cdd5b201e0d874abc84415"
 dependencies = [
- "cc",
+ "cmake",
 ]
 
 [[package]]
