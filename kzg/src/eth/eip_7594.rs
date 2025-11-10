@@ -26,7 +26,15 @@ where
     B::Fr: Copy,
 {
     let cells = cfg_chunks!(cells.as_flattened(), BYTES_PER_FIELD_ELEMENT)
-        .map(B::Fr::from_bytes)
+        .enumerate()
+        .map(|(index, bytes)| {
+            B::Fr::from_bytes(bytes)
+                .map_err(|e| {
+                    let start = index * BYTES_PER_FIELD_ELEMENT;
+                    let end = start + bytes.len();
+                    format!("Failed to deserialize field element with index {index} (bytes [{start}; {end})) with error: {e}")
+                })
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     let mut recovered_cells = [B::Fr::default(); FIELD_ELEMENTS_PER_EXT_BLOB];
@@ -37,7 +45,8 @@ where
         Some(&mut recovered_proofs),
         cell_indices,
         &cells,
-    )?;
+    )
+    .map_err(|err| format!("Cell and proof recovery failed with error: {err}"))?;
 
     let converted_cells = cells_elements_to_cells_bytes::<B>(&recovered_cells)?;
     let converted_proofs = recovered_proofs
@@ -101,15 +110,29 @@ pub fn verify_cell_kzg_proof_batch_raw<B: EcBackend>(
     das: &impl DAS<B>,
 ) -> Result<bool, String> {
     let commitments = cfg_iter!(commitments)
-        .map(|commitment| B::G1::from_bytes(commitment))
+        .enumerate()
+        .map(|(index, commitment)| B::G1::from_bytes(commitment).map_err(|err| format!("Failed to deserialize commitment at index {index}, commitment 0x{commitment}: {err}", commitment = hex::encode(commitment))))
         .collect::<Result<Vec<_>, _>>()?;
 
     let cells = cfg_chunks!(cells.as_flattened(), BYTES_PER_FIELD_ELEMENT)
-        .map(B::Fr::from_bytes)
+        .enumerate()
+        .map(|(index, fr)| B::Fr::from_bytes(fr).map_err(|err| {
+            let cell_index = index / FIELD_ELEMENTS_PER_CELL;
+            let cell_part_index = index % FIELD_ELEMENTS_PER_CELL;
+            format!("Failed to deserialize cell's {cell_index} element with index {cell_part_index}: {err}")
+        }))
         .collect::<Result<Vec<_>, _>>()?;
 
     let proofs = cfg_iter!(proofs)
-        .map(|proof| B::G1::from_bytes(proof))
+        .enumerate()
+        .map(|(index, proof)| {
+            B::G1::from_bytes(proof).map_err(|err| {
+                format!(
+                    "Failed to deserialize proof at index {index}, proof {proof}: {err}",
+                    proof = hex::encode(proof)
+                )
+            })
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     das.verify_cell_kzg_proof_batch(&commitments, cell_indices, &cells, &proofs)
