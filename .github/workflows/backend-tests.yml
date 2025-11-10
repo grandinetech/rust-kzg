@@ -94,7 +94,7 @@ jobs:
             support_wasm: false
             support_ckzg: true
           - backend: mcl
-            support_wasm: true
+            support_wasm: false
             support_ckzg: true
         exclude:
           - os: windows-latest
@@ -125,6 +125,7 @@ jobs:
           pip install py_ecc
           pip install PyYAML
           pip install build
+
       - uses: actions/setup-go@v2
         with:
           go-version: ^1.19
@@ -142,7 +143,6 @@ jobs:
           sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-20 200
           sudo update-alternatives --set clang-format /usr/bin/clang-format-20
 
-      # Install constantine backend deps
       - name: "constantine - install deps"
         if: matrix.backend == 'constantine' && matrix.os == 'ubuntu-latest'
         run: |
