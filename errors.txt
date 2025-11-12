@@ -1,190 +1,82 @@
-   Compiling kzg v0.1.0 (/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/kzg)
-warning: associated function `new` is never used
-  --> kzg/src/msm/precompute.rs:62:8
-   |
-53 | / impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
-54 | |     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
-55 | | where
-56 | |     TFr: Fr,
-...  |
-59 | |     TG1Affine: G1Affine<TG1, TG1Fp>,
-60 | |     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
-   | |_____________________________________________________________- associated function in this implementation
-61 |   {
-62 |       fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
-   |          ^^^
-   |
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
 warning: fields `batch_numpoints` and `batch_points` are never read
-  --> kzg/src/msm/strauss.rs:43:5
+  --> kzg/src/msm/strauss.rs:47:5
    |
-32 | pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+36 | pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
    |            ------------ fields in this struct
 ...
-43 |     batch_numpoints: usize,
+47 |     batch_numpoints: usize,
    |     ^^^^^^^^^^^^^^^
-44 |     batch_points: Vec<Vec<TG1Affine>>,
+48 |     batch_points: Vec<Vec<TG1Affine>>,
    |     ^^^^^^^^^^^^
    |
    = note: `StraussTable` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-   Compiling rust-kzg-blst v0.1.0 (/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/blst)
-warning: `kzg` (lib) generated 2 warnings
-   Compiling rust-kzg-fuzz v0.0.0 (/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz)
-warning: unused variable: `table`
-  --> fuzz/fuzz_targets/blst_fixed_msm.rs:58:9
+warning: `kzg` (lib) generated 1 warning
+warning: variable does not need to be mutable
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:53:13
    |
-58 |     let table = TABLE.get_or_init(|| {
+53 |         let mut numzero = rng.gen_range((npoints / 2)..npoints);
+   |             ----^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `table`
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:65:9
+   |
+65 |     let table = TABLE.get_or_init(|| {
    |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_table`
    |
    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-warning: `rust-kzg-fuzz` (bin "blst_fixed_msm") generated 1 warning (run `cargo fix --bin "blst_fixed_msm" -p rust-kzg-fuzz` to apply 1 suggestion)
-    Finished `release` profile [optimized + debuginfo] target(s) in 5.47s
-warning: associated function `new` is never used
-  --> kzg/src/msm/precompute.rs:62:8
-   |
-53 | / impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
-54 | |     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
-55 | | where
-56 | |     TFr: Fr,
-...  |
-59 | |     TG1Affine: G1Affine<TG1, TG1Fp>,
-60 | |     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
-   | |_____________________________________________________________- associated function in this implementation
-61 |   {
-62 |       fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
-   |          ^^^
-   |
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
+warning: `rust-kzg-fuzz` (bin "blst_fixed_msm_with_zeros") generated 2 warnings (run `cargo fix --bin "blst_fixed_msm_with_zeros" -p rust-kzg-fuzz` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.05s
 warning: fields `batch_numpoints` and `batch_points` are never read
-  --> kzg/src/msm/strauss.rs:43:5
+  --> kzg/src/msm/strauss.rs:47:5
    |
-32 | pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+36 | pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
    |            ------------ fields in this struct
 ...
-43 |     batch_numpoints: usize,
+47 |     batch_numpoints: usize,
    |     ^^^^^^^^^^^^^^^
-44 |     batch_points: Vec<Vec<TG1Affine>>,
+48 |     batch_points: Vec<Vec<TG1Affine>>,
    |     ^^^^^^^^^^^^
    |
    = note: `StraussTable` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: `kzg` (lib) generated 2 warnings
-warning: unused variable: `table`
-  --> fuzz/fuzz_targets/blst_fixed_msm.rs:58:9
+warning: `kzg` (lib) generated 1 warning
+warning: variable does not need to be mutable
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:53:13
    |
-58 |     let table = TABLE.get_or_init(|| {
+53 |         let mut numzero = rng.gen_range((npoints / 2)..npoints);
+   |             ----^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `table`
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:65:9
+   |
+65 |     let table = TABLE.get_or_init(|| {
    |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_table`
    |
    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-warning: `rust-kzg-fuzz` (bin "blst_fixed_msm") generated 1 warning (run `cargo fix --bin "blst_fixed_msm" -p rust-kzg-fuzz` to apply 1 suggestion)
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.11s
-     Running `target/aarch64-apple-darwin/release/blst_fixed_msm -artifact_prefix=/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/artifacts/blst_fixed_msm/ /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/corpus/blst_fixed_msm`
+warning: `rust-kzg-fuzz` (bin "blst_fixed_msm_with_zeros") generated 2 warnings (run `cargo fix --bin "blst_fixed_msm_with_zeros" -p rust-kzg-fuzz` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.05s
+     Running `target/aarch64-apple-darwin/release/blst_fixed_msm_with_zeros -artifact_prefix=/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/artifacts/blst_fixed_msm_with_zeros/ /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/corpus/blst_fixed_msm_with_zeros`
 INFO: Running with entropic power schedule (0xFF, 100).
-INFO: Seed: 1118830127
-INFO: Loaded 1 modules   (27901 inline 8-bit counters): 27901 [0x100a37e60, 0x100a3eb5d), 
-INFO: Loaded 1 PC tables (27901 PCs): 27901 [0x100a3eb60,0x100aabb30), 
-INFO:      212 files found in /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/corpus/blst_fixed_msm
+INFO: Seed: 2333374539
+INFO: Loaded 1 modules   (27892 inline 8-bit counters): 27892 [0x100e77f00, 0x100e7ebf4), 
+INFO: Loaded 1 PC tables (27892 PCs): 27892 [0x100e7ebf8,0x100eebb38), 
+INFO:     1926 files found in /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/corpus/blst_fixed_msm_with_zeros
 INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
-INFO: seed corpus: files: 212 min: 1b max: 256b total: 15389b rss: 47Mb
-#213	INITED cov: 242 ft: 530 corp: 124/9418b exec/s: 0 rss: 72Mb
-#235	NEW    cov: 242 ft: 531 corp: 125/9576b lim: 256 exec/s: 0 rss: 75Mb L: 158/256 MS: 2 InsertRepeatedBytes-InsertRepeatedBytes-
-#267	NEW    cov: 242 ft: 532 corp: 126/9832b lim: 256 exec/s: 0 rss: 79Mb L: 256/256 MS: 2 InsertRepeatedBytes-CopyPart-
-#269	NEW    cov: 242 ft: 533 corp: 127/10085b lim: 256 exec/s: 0 rss: 79Mb L: 253/256 MS: 2 CMP-InsertRepeatedBytes- DE: "\000\000\000\000"-
-#309	NEW    cov: 242 ft: 534 corp: 128/10246b lim: 256 exec/s: 0 rss: 83Mb L: 161/256 MS: 5 InsertRepeatedBytes-ChangeBit-InsertRepeatedBytes-ChangeBit-InsertRepeatedBytes-
-#336	NEW    cov: 242 ft: 535 corp: 129/10406b lim: 256 exec/s: 0 rss: 86Mb L: 160/256 MS: 2 ChangeBit-CrossOver-
-#434	NEW    cov: 242 ft: 536 corp: 130/10532b lim: 256 exec/s: 0 rss: 96Mb L: 126/256 MS: 3 CrossOver-EraseBytes-ChangeByte-
-#441	NEW    cov: 242 ft: 537 corp: 131/10546b lim: 256 exec/s: 0 rss: 97Mb L: 14/256 MS: 2 CopyPart-CopyPart-
-#518	NEW    cov: 242 ft: 539 corp: 132/10749b lim: 256 exec/s: 0 rss: 105Mb L: 203/256 MS: 2 CMP-InsertRepeatedBytes- DE: "\377\377"-
-#530	NEW    cov: 242 ft: 540 corp: 133/10954b lim: 256 exec/s: 0 rss: 106Mb L: 205/256 MS: 2 InsertRepeatedBytes-InsertRepeatedBytes-
-#636	NEW    cov: 242 ft: 541 corp: 134/11199b lim: 256 exec/s: 0 rss: 117Mb L: 245/256 MS: 1 InsertRepeatedBytes-
-#657	REDUCE cov: 242 ft: 541 corp: 134/11196b lim: 256 exec/s: 0 rss: 120Mb L: 59/256 MS: 1 EraseBytes-
-#888	NEW    cov: 242 ft: 542 corp: 135/11303b lim: 256 exec/s: 0 rss: 144Mb L: 107/256 MS: 1 PersAutoDict- DE: "\000\000\000\000"-
-#1116	NEW    cov: 242 ft: 543 corp: 136/11556b lim: 256 exec/s: 1116 rss: 168Mb L: 253/256 MS: 3 ChangeByte-CopyPart-PersAutoDict- DE: "\000\000\000\000"-
-#1648	NEW    cov: 242 ft: 544 corp: 137/11772b lim: 256 exec/s: 1648 rss: 224Mb L: 216/256 MS: 1 CopyPart-
-#1685	NEW    cov: 242 ft: 545 corp: 138/12002b lim: 256 exec/s: 1685 rss: 228Mb L: 230/256 MS: 2 ShuffleBytes-InsertByte-
-#1691	NEW    cov: 242 ft: 546 corp: 139/12243b lim: 256 exec/s: 1691 rss: 229Mb L: 241/256 MS: 1 CopyPart-
-#1772	NEW    cov: 242 ft: 550 corp: 140/12346b lim: 256 exec/s: 1772 rss: 237Mb L: 103/256 MS: 1 CrossOver-
-#2048	pulse  cov: 242 ft: 550 corp: 140/12346b lim: 256 exec/s: 1024 rss: 266Mb
-#2123	NEW    cov: 242 ft: 551 corp: 141/12592b lim: 256 exec/s: 1061 rss: 274Mb L: 246/256 MS: 1 InsertByte-
-#2232	NEW    cov: 242 ft: 552 corp: 142/12846b lim: 256 exec/s: 1116 rss: 286Mb L: 254/256 MS: 4 EraseBytes-ChangeByte-InsertByte-CopyPart-
-#2426	NEW    cov: 242 ft: 553 corp: 143/13028b lim: 256 exec/s: 1213 rss: 306Mb L: 182/256 MS: 4 ChangeBit-EraseBytes-InsertByte-InsertRepeatedBytes-
-#2646	NEW    cov: 242 ft: 554 corp: 144/13270b lim: 256 exec/s: 1323 rss: 329Mb L: 242/256 MS: 5 ChangeASCIIInt-CMP-ShuffleBytes-ChangeByte-InsertRepeatedBytes- DE: "\001\000\000\000"-
-#2712	NEW    cov: 242 ft: 555 corp: 145/13500b lim: 256 exec/s: 1356 rss: 336Mb L: 230/256 MS: 1 ChangeBinInt-
-#2863	NEW    cov: 242 ft: 556 corp: 146/13704b lim: 256 exec/s: 954 rss: 352Mb L: 204/256 MS: 1 EraseBytes-
-#2871	REDUCE cov: 242 ft: 556 corp: 146/13702b lim: 256 exec/s: 957 rss: 353Mb L: 39/256 MS: 3 ChangeBinInt-CrossOver-EraseBytes-
-#2887	REDUCE cov: 242 ft: 556 corp: 146/13694b lim: 256 exec/s: 962 rss: 354Mb L: 165/256 MS: 1 EraseBytes-
-#2919	NEW    cov: 242 ft: 557 corp: 147/13938b lim: 256 exec/s: 973 rss: 358Mb L: 244/256 MS: 2 ChangeASCIIInt-CMP- DE: "\001\000"-
-#3267	REDUCE cov: 242 ft: 557 corp: 147/13925b lim: 256 exec/s: 1089 rss: 380Mb L: 97/256 MS: 3 ChangeBit-ChangeBinInt-EraseBytes-
-#3902	REDUCE cov: 242 ft: 557 corp: 147/13919b lim: 256 exec/s: 975 rss: 382Mb L: 176/256 MS: 5 CopyPart-ChangeByte-InsertByte-CopyPart-CrossOver-
-#4096	pulse  cov: 242 ft: 557 corp: 147/13919b lim: 256 exec/s: 1024 rss: 382Mb
-#4373	REDUCE cov: 242 ft: 557 corp: 147/13918b lim: 256 exec/s: 1093 rss: 382Mb L: 252/256 MS: 1 EraseBytes-
-#4417	REDUCE cov: 242 ft: 557 corp: 147/13822b lim: 256 exec/s: 1104 rss: 382Mb L: 119/256 MS: 4 EraseBytes-ChangeBinInt-InsertByte-PersAutoDict- DE: "\377\377"-
-#4421	REDUCE cov: 242 ft: 557 corp: 147/13737b lim: 256 exec/s: 1105 rss: 382Mb L: 73/256 MS: 4 EraseBytes-EraseBytes-ChangeBit-ShuffleBytes-
-#4529	NEW    cov: 242 ft: 558 corp: 148/13849b lim: 256 exec/s: 1132 rss: 382Mb L: 112/256 MS: 3 ChangeByte-PersAutoDict-InsertByte- DE: "\001\000\000\000"-
-#4717	REDUCE cov: 242 ft: 558 corp: 148/13817b lim: 256 exec/s: 943 rss: 382Mb L: 54/256 MS: 3 CopyPart-ShuffleBytes-EraseBytes-
-#4903	REDUCE cov: 242 ft: 558 corp: 148/13787b lim: 256 exec/s: 980 rss: 382Mb L: 87/256 MS: 1 EraseBytes-
-#4927	REDUCE cov: 242 ft: 558 corp: 148/13755b lim: 256 exec/s: 985 rss: 382Mb L: 79/256 MS: 4 PersAutoDict-ChangeByte-EraseBytes-InsertByte- DE: "\377\377"-
-#5236	NEW    cov: 242 ft: 559 corp: 149/14002b lim: 256 exec/s: 1047 rss: 382Mb L: 247/256 MS: 4 ChangeBinInt-CrossOver-ChangeBit-CopyPart-
-#5956	NEW    cov: 242 ft: 561 corp: 150/14131b lim: 256 exec/s: 992 rss: 382Mb L: 129/256 MS: 5 ShuffleBytes-ChangeBinInt-InsertRepeatedBytes-EraseBytes-ChangeBit-
-#6196	NEW    cov: 242 ft: 562 corp: 151/14384b lim: 256 exec/s: 1032 rss: 382Mb L: 253/256 MS: 5 ChangeASCIIInt-ChangeASCIIInt-InsertByte-ChangeBit-CrossOver-
-#6242	NEW    cov: 242 ft: 563 corp: 152/14635b lim: 256 exec/s: 1040 rss: 382Mb L: 251/256 MS: 1 InsertRepeatedBytes-
-#6390	NEW    cov: 242 ft: 564 corp: 153/14737b lim: 256 exec/s: 1065 rss: 383Mb L: 102/256 MS: 3 ChangeBinInt-InsertRepeatedBytes-InsertRepeatedBytes-
-#6448	REDUCE cov: 242 ft: 564 corp: 153/14734b lim: 256 exec/s: 1074 rss: 383Mb L: 59/256 MS: 3 ChangeBinInt-ChangeByte-EraseBytes-
-#6590	REDUCE cov: 242 ft: 564 corp: 153/14730b lim: 256 exec/s: 941 rss: 383Mb L: 201/256 MS: 2 ShuffleBytes-EraseBytes-
-#6642	NEW    cov: 242 ft: 565 corp: 154/14829b lim: 256 exec/s: 948 rss: 383Mb L: 99/256 MS: 2 ChangeBinInt-EraseBytes-
-#6835	REDUCE cov: 242 ft: 565 corp: 154/14821b lim: 256 exec/s: 976 rss: 383Mb L: 17/256 MS: 3 ShuffleBytes-CMP-EraseBytes- DE: "\201\000\000\000\000\000\000\000"-
-#7361	REDUCE cov: 242 ft: 565 corp: 154/14819b lim: 256 exec/s: 1051 rss: 383Mb L: 3/256 MS: 1 EraseBytes-
-#7913	REDUCE cov: 242 ft: 565 corp: 154/14814b lim: 256 exec/s: 989 rss: 383Mb L: 156/256 MS: 2 CrossOver-EraseBytes-
-#8192	pulse  cov: 242 ft: 565 corp: 154/14814b lim: 256 exec/s: 1024 rss: 383Mb
-#8326	REDUCE cov: 242 ft: 565 corp: 154/14783b lim: 256 exec/s: 925 rss: 383Mb L: 72/256 MS: 3 PersAutoDict-EraseBytes-CMP- DE: "\001\000\000\000"-"\001\000"-
-#8333	REDUCE cov: 242 ft: 565 corp: 154/14719b lim: 256 exec/s: 925 rss: 383Mb L: 180/256 MS: 2 CrossOver-EraseBytes-
-#8881	REDUCE cov: 242 ft: 565 corp: 154/14715b lim: 256 exec/s: 986 rss: 383Mb L: 220/256 MS: 3 InsertRepeatedBytes-EraseBytes-CopyPart-
-#9787	NEW    cov: 242 ft: 567 corp: 155/14844b lim: 264 exec/s: 978 rss: 383Mb L: 129/256 MS: 1 ChangeByte-
-#10638	NEW    cov: 242 ft: 568 corp: 156/15096b lim: 272 exec/s: 967 rss: 383Mb L: 252/256 MS: 1 InsertByte-
-#11192	REDUCE cov: 242 ft: 568 corp: 156/15095b lim: 272 exec/s: 932 rss: 383Mb L: 8/256 MS: 4 EraseBytes-EraseBytes-InsertByte-InsertByte-
-#12622	REDUCE cov: 242 ft: 568 corp: 156/15089b lim: 280 exec/s: 970 rss: 383Mb L: 224/256 MS: 5 CopyPart-PersAutoDict-CrossOver-InsertRepeatedBytes-CrossOver- DE: "\001\000"-
-#12711	REDUCE cov: 242 ft: 568 corp: 156/15087b lim: 280 exec/s: 977 rss: 383Mb L: 36/256 MS: 4 CopyPart-ChangeBit-PersAutoDict-EraseBytes- DE: "\000\000\000\000"-
-#13537	REDUCE cov: 242 ft: 568 corp: 156/15055b lim: 288 exec/s: 966 rss: 383Mb L: 85/256 MS: 1 EraseBytes-
-#13880	REDUCE cov: 242 ft: 568 corp: 156/15033b lim: 288 exec/s: 925 rss: 383Mb L: 208/256 MS: 3 CMP-EraseBytes-ChangeBit- DE: "\201\000\000\000\000\000\000\000"-
-#14005	REDUCE cov: 242 ft: 568 corp: 156/15031b lim: 288 exec/s: 933 rss: 383Mb L: 67/256 MS: 5 EraseBytes-CopyPart-CopyPart-CopyPart-EraseBytes-
-#14059	REDUCE cov: 242 ft: 568 corp: 156/15029b lim: 288 exec/s: 937 rss: 383Mb L: 15/256 MS: 4 EraseBytes-PersAutoDict-PersAutoDict-CrossOver- DE: "\001\000\000\000"-"\201\000\000\000\000\000\000\000"-
-#14225	REDUCE cov: 242 ft: 568 corp: 156/15014b lim: 288 exec/s: 948 rss: 383Mb L: 15/256 MS: 1 EraseBytes-
-#14731	NEW    cov: 242 ft: 569 corp: 157/15051b lim: 288 exec/s: 920 rss: 383Mb L: 37/256 MS: 1 InsertByte-
-#14831	REDUCE cov: 242 ft: 569 corp: 157/15019b lim: 288 exec/s: 926 rss: 383Mb L: 148/256 MS: 5 ChangeBinInt-PersAutoDict-ShuffleBytes-PersAutoDict-EraseBytes- DE: "\001\000"-"\001\000\000\000"-
-#15496	NEW    cov: 242 ft: 570 corp: 158/15191b lim: 288 exec/s: 911 rss: 383Mb L: 172/256 MS: 5 ChangeBinInt-ShuffleBytes-CopyPart-ShuffleBytes-CMP- DE: "c\000\000\000\000\000\000\000"-
-#15937	NEW    cov: 242 ft: 571 corp: 159/15408b lim: 288 exec/s: 937 rss: 383Mb L: 217/256 MS: 1 InsertByte-
-#16384	pulse  cov: 242 ft: 571 corp: 159/15408b lim: 288 exec/s: 910 rss: 383Mb
-#16461	REDUCE cov: 242 ft: 571 corp: 159/15407b lim: 288 exec/s: 914 rss: 383Mb L: 58/256 MS: 4 ChangeBit-ChangeByte-ChangeBit-EraseBytes-
-#16582	REDUCE cov: 242 ft: 571 corp: 159/15385b lim: 288 exec/s: 921 rss: 383Mb L: 154/256 MS: 1 EraseBytes-
-#16793	REDUCE cov: 242 ft: 571 corp: 159/15376b lim: 288 exec/s: 932 rss: 383Mb L: 33/256 MS: 1 EraseBytes-
-#17133	NEW    cov: 242 ft: 572 corp: 160/15602b lim: 288 exec/s: 951 rss: 383Mb L: 226/256 MS: 5 CMP-InsertByte-CopyPart-CMP-PersAutoDict- DE: "\377\377"-"\001\000"-"\377\377"-
-#17829	REDUCE cov: 242 ft: 572 corp: 160/15601b lim: 288 exec/s: 938 rss: 383Mb L: 14/256 MS: 1 EraseBytes-
-#18305	REDUCE cov: 242 ft: 572 corp: 160/15596b lim: 288 exec/s: 915 rss: 383Mb L: 9/256 MS: 1 EraseBytes-
-#18644	REDUCE cov: 242 ft: 572 corp: 160/15564b lim: 288 exec/s: 932 rss: 383Mb L: 104/256 MS: 3 InsertByte-ChangeBit-EraseBytes-
-#18916	NEW    cov: 242 ft: 573 corp: 161/15697b lim: 288 exec/s: 945 rss: 383Mb L: 133/256 MS: 2 ChangeByte-PersAutoDict- DE: "\001\000\000\000"-
-#19682	NEW    cov: 242 ft: 574 corp: 162/15931b lim: 288 exec/s: 937 rss: 383Mb L: 234/256 MS: 1 InsertRepeatedBytes-
-#19988	NEW    cov: 242 ft: 575 corp: 163/16061b lim: 288 exec/s: 908 rss: 383Mb L: 130/256 MS: 1 InsertByte-
-#20739	NEW    cov: 242 ft: 576 corp: 164/16198b lim: 288 exec/s: 942 rss: 383Mb L: 137/256 MS: 1 PersAutoDict- DE: "\001\000\000\000"-
-#20892	REDUCE cov: 242 ft: 576 corp: 164/16197b lim: 288 exec/s: 908 rss: 383Mb L: 58/256 MS: 3 CopyPart-EraseBytes-EraseBytes-
-#20918	NEW    cov: 242 ft: 577 corp: 165/16370b lim: 288 exec/s: 909 rss: 383Mb L: 173/256 MS: 1 InsertByte-
-#21688	REDUCE cov: 242 ft: 577 corp: 165/16349b lim: 288 exec/s: 942 rss: 383Mb L: 12/256 MS: 5 PersAutoDict-EraseBytes-ChangeByte-CMP-CrossOver- DE: "\001\000\000\000"-"\001\000"-
-#21764	NEW    cov: 242 ft: 578 corp: 166/16Kb lim: 288 exec/s: 906 rss: 383Mb L: 174/256 MS: 1 InsertByte-
-#22025	NEW    cov: 242 ft: 579 corp: 167/16Kb lim: 288 exec/s: 917 rss: 383Mb L: 134/256 MS: 1 InsertByte-
-#22448	REDUCE cov: 242 ft: 579 corp: 167/16Kb lim: 288 exec/s: 897 rss: 383Mb L: 188/256 MS: 3 ChangeASCIIInt-ChangeBinInt-EraseBytes-
-#22625	REDUCE cov: 242 ft: 579 corp: 167/16Kb lim: 288 exec/s: 905 rss: 383Mb L: 2/256 MS: 2 ChangeByte-EraseBytes-
-#22636	REDUCE cov: 242 ft: 579 corp: 167/16Kb lim: 288 exec/s: 905 rss: 383Mb L: 35/256 MS: 1 EraseBytes-
-#23367	NEW    cov: 242 ft: 580 corp: 168/16Kb lim: 288 exec/s: 898 rss: 383Mb L: 131/256 MS: 1 InsertByte-
-#23373	REDUCE cov: 242 ft: 580 corp: 168/16Kb lim: 288 exec/s: 898 rss: 383Mb L: 84/256 MS: 1 CrossOver-
-#23527	NEW    cov: 242 ft: 581 corp: 169/16Kb lim: 288 exec/s: 904 rss: 383Mb L: 150/256 MS: 4 InsertRepeatedBytes-EraseBytes-PersAutoDict-CMP- DE: "\000\000\000\000"-"\177\000\000\000\000\000\000\000"-
-#23530	NEW    cov: 242 ft: 582 corp: 170/16Kb lim: 288 exec/s: 905 rss: 383Mb L: 116/256 MS: 3 CMP-CMP-CMP- DE: "\000\000"-"\377\377\377\377\377\377\377\177"-"\001\000\000\000"-
-#23758	REDUCE cov: 242 ft: 582 corp: 170/16Kb lim: 288 exec/s: 913 rss: 383Mb L: 121/256 MS: 3 ChangeBit-ChangeBit-EraseBytes-
-#24425	NEW    cov: 242 ft: 583 corp: 171/16Kb lim: 288 exec/s: 904 rss: 383Mb L: 218/256 MS: 2 ChangeBit-InsertByte-
-#26165	REDUCE cov: 242 ft: 583 corp: 171/16Kb lim: 304 exec/s: 902 rss: 383Mb L: 9/256 MS: 5 CopyPart-CopyPart-CopyPart-ShuffleBytes-CrossOver-
-#30903	REDUCE cov: 242 ft: 583 corp: 171/16Kb lim: 344 exec/s: 908 rss: 383Mb L: 5/256 MS: 3 ChangeBinInt-EraseBytes-EraseBytes-
-#31439	NEW    cov: 242 ft: 584 corp: 172/16Kb lim: 344 exec/s: 898 rss: 383Mb L: 146/256 MS: 1 InsertRepeatedBytes-
-==44633== libFuzzer: run interrupted; exiting
+INFO: seed corpus: files: 1926 min: 1b max: 4062b total: 503203b rss: 59Mb
+#64	pulse  cov: 263 ft: 422 corp: 22/56b exec/s: 32 rss: 345Mb
+#128	pulse  cov: 263 ft: 465 corp: 33/120b exec/s: 25 rss: 345Mb
+#256	pulse  cov: 266 ft: 496 corp: 45/269b exec/s: 25 rss: 345Mb
+==42492== libFuzzer: run interrupted; exiting
