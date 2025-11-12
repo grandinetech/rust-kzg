@@ -8,12 +8,16 @@ use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
     all(feature = "arkmsm", feature = "bgmw"),
     all(feature = "arkmsm", feature = "sppark"),
     all(feature = "arkmsm", feature = "wbits"),
+    all(feature = "arkmsm", feature = "strauss"),
     all(feature = "bgmw", feature = "sppark"),
     all(feature = "bgmw", feature = "wbits"),
-    all(feature = "sppark", feature = "wbits")
+    all(feature = "bgmw", feature = "strauss"),
+    all(feature = "sppark", feature = "wbits"),
+    all(feature = "sppark", feature = "strauss"),
+    all(feature = "wbits", feature = "strauss")
 ))]
 compile_error!(
-    "incompatible features, please select only one: `arkmsm`, `bgmw`, `sppark` or `wbits`"
+    "incompatible features, please select only one: `arkmsm`, `bgmw`, `sppark`, `wbits` or `strauss`"
 );
 
 #[cfg(feature = "bgmw")]
@@ -31,8 +35,8 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
 #[cfg(feature = "strauss")]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     super::strauss::StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
-
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
+    
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits"), not(feature = "strauss")))]
 #[derive(Debug, Clone)]
 pub struct EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -49,7 +53,7 @@ where
     g1_affine_add_marker: core::marker::PhantomData<TG1ProjAddAffine>,
 }
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
+#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits"), not(feature = "strauss")))]
 impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -59,7 +63,7 @@ where
     TG1Affine: G1Affine<TG1, TG1Fp>,
     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
-    fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
+    pub fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
         Ok(None)
     }
 

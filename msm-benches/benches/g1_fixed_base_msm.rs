@@ -516,7 +516,7 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
 //criterion_group!(benches, bench_fixed_base_msm);
 //criterion_main!(benches);
 fn bench_small_fixed_base_msm(c: &mut Criterion) {
-    let small_powers = vec![4, 5, 6, 7]; // 16, 32, 64, 128 points
+    let small_powers = vec![4, 5, 6, 7, 8]; // 16, 32, 64, 128 points
     
     for &npow in &small_powers {
         let npoints = 1usize << npow;
