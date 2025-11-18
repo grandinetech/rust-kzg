@@ -1,40 +1,16 @@
-// Source: https://www.bmoeller.de/pdf/TI-01-08.multiexp.pdf
-// according to this https://decentralizedthoughts.github.io/2025-02-14-verifiable-MSM/
-// this algorithm can be applied for msms, as elliptic curves are
-// cyclic additive groups, and joint multiexponentiation works in that case works
-// the same as multi scalar multiplication
-// and multiplication and squaring translates into
-// addition and squaring
-
-// https://doc-internal.dalek.rs/src/curve25519_dalek/backend/serial/scalar_mul/straus.rs.html#48-143
-// https://www.jstor.org/stable/2310929?seq=2
-// tests
-// NPOW=7 cargo +nightly fuzz run --features strauss blst_fixed_msm_with_zeros
-// NPOW=7 cargo +nightly fuzz run --features strauss blst_fixed_msm
-// strauss only
-// cargo bench -p msm-benches --features strauss -- "straus msm mult"
-// strauss compared to simple msm
-// BENCH_NPOW=4 cargo bench -p msm-benches --features strauss -- "rust-kzg-blst"
-
-// EXAMPLE (with CHUNK_SIZE=7):
-// NPOW=7 cargo +nightly fuzz run --features strauss blst_fixed_msm
-// This has 2^7=128 points, so it splits into 18.28 chunks of 7 points each
-// Chunk 0:  points[0..7]     (7 points) → table size 2^7 = 128 entries
-// Chunk 1:  points[7..14]    (7 points) → table size 2^7 = 128 entries
-// Chunk 2:  points[14..21]   (7 points) → table size 2^7 = 128 entries
-// ...
-// Chunk 17: points[119..126] (7 points) → table size 2^7 = 128 entries
-// Chunk 18: points[126..128] (2 points) → table size 2^2 = 4 entries
-// This way, the maximum table size is limited to 128 entries, and
-// doesn't eat up all the memory with 4 billion table entries
-// result = chunk_0_result + chunk_1_result + ... + chunk_18_result
 use alloc::vec::Vec;
 use crate::{Fr, G1, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine};
 use core::marker::PhantomData;
 
-/// Strauss chunk size: process this many points at a time.
-/// Table size = 2^CHUNK_SIZE. For CHUNK_SIZE=6: table has 64 entries.
-const STRAUSS_CHUNK_SIZE: usize = 7;
+#[cfg(feature = "file-io")]
+use alloc::string::String;
+
+#[cfg(feature = "file-io")]
+use serde::{Serialize, Deserialize};
+
+// Strauss chunk size: process this many points at a time.
+// Table size = 2^CHUNK_SIZE. For CHUNK_SIZE=7: table has 128 entries.
+
 
 #[derive(Debug, Clone)]
 pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
@@ -45,7 +21,12 @@ where
     TG1Affine: G1Affine<TG1, TG1Fp>,
     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
-    points: Vec<TG1Affine>,
+    /// precomputed per-chunk tables (each chunk table is a Vec of affine points
+    /// holding sums for each mask in 0..(1<<chunk_len))
+    chunk_tables: Vec<Vec<TG1Affine>>,
+    /// sizes for each chunk (so last chunk may be < STRAUSS_CHUNK_SIZE)
+    chunk_sizes: Vec<usize>,
+
     numpoints: usize,
 
     batch_numpoints: usize,
@@ -57,162 +38,12 @@ where
     g1_affine_add_marker: PhantomData<TG1ProjAddAffine>,
 }
 
-/// Algorithm:
-/// Precompute table[mask] = sum of points indicated by bits in mask
-///  mask=0b0000: identity (no points)
-///  mask=0b0001: point[0]
-///  mask=0b0011: point[0] + point[1]
-///  mask=0b1111: point[0] + point[1] + point[2] + point[3]
-///  Total entries: 2^len
-/// 
-/// 2. Process scalar bits from MSB to LSB:
-///    - Double accumulator (left shift)
-///    - Extract bit b from all scalars, form mask
-///    - Add table[mask] to accumulator
-/// 
-/// Example for len=3, scalars=[s0, s1, s2]:
-///   - If bit b: s0 has 1, s1 has 0, s2 has 1 → mask = 0b101 = 5
-///   - Add table[5] = points[0] + points[2]
-///
-pub fn straus_unwindowed<
-    TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
-    TFr: Fr,
->(
-    points: &[TG1],
-    scalars: &[TFr],
-    len: usize,
-) -> TG1 {
-
-    
-    if len == 0 {
-        return TG1::zero();
-    }
-
-    let mut scalar_bits = Vec::with_capacity(len);
-    let mut max_bit = 0usize;
-    
-    for scalar in scalars {
-        let s = scalar.to_scalar();
-        
-        // Find highest set bit across all 64-bit limbs
-        for (limb_idx, &limb) in s.data.iter().enumerate().rev() {
-            if limb != 0 {
-                let bit_pos = 63 - limb.leading_zeros() as usize;
-                let global_bit = limb_idx * 64 + bit_pos;
-                if global_bit > max_bit {
-                    max_bit = global_bit;
-                }
-                break;
-            }
-        }
-        scalar_bits.push(s);
-    }
-
-    // Build precomputation table of all 2^len point combinations
-    // This is the expensive part that makes large len infeasible
-    let table_size = 1 << len;  // 2^len
-    let mut table: Vec<TG1> = Vec::with_capacity(table_size);
-    table.push(TG1::zero());  // table[0] = identity
-
-    // Incrementally build table using the "lowest bit trick"
-    // For any mask, table[mask] = table[mask without lowest bit] + points[lowest bit position]
-    // Example for len=3:
-    //   table[0b000] = 0
-    //   table[0b001] = 0 + P0 = P0
-    //   table[0b010] = 0 + P1 = P1
-    //   table[0b011] = P0 + P1
-    //   table[0b100] = 0 + P2 = P2
-    //   table[0b101] = P0 + P2
-    //   table[0b110] = P1 + P2
-    //   table[0b111] = P0 + P1 + P2
-    for mask in 1..table_size {
-        let lb = mask.trailing_zeros() as usize;  // Index of lowest set bit
-        let prev_mask = mask ^ (1 << lb);          // Remove lowest bit
-        
-        if prev_mask == 0 {
-            // Only one bit set: just copy the point
-            table.push(points[lb].clone());
-        } else {
-            // Add current point to previous combination
-            let mut new_val = table[prev_mask].clone();
-            new_val.add_or_dbl_assign(&points[lb]);
-            table.push(new_val);
-        }
-    }
-
-    // Precompute bit masks for efficiency (avoid repeated bit extraction)
-    // bit_masks[i] tells us which scalars have bit i set
-    let mut bit_masks = vec![0usize; max_bit + 1];
-    for bit in 0..=max_bit {
-        let limb_idx = bit / 64;
-        let bit_in_limb = bit % 64;
-        let mut mask = 0usize;
-        
-        for i in 0..len {
-            if limb_idx < scalar_bits[i].data.len() {
-                if (scalar_bits[i].data[limb_idx] >> bit_in_limb) & 1 != 0 {
-                    mask |= 1 << i;  // Set bit i if scalar i has this bit
-                }
-            }
-        }
-        bit_masks[bit] = mask;
-    }
-
-    // Main computation loop: process bits from MSB to LSB
-    let mut result = TG1::zero();
-    for bit in (0..=max_bit).rev() {
-        result.dbl_assign(); 
-        
-        let mask = bit_masks[bit];
-        if mask != 0 {
-            result.add_or_dbl_assign(&table[mask]);
-        }
-    }
-
-    result
-}
-
-pub fn straus_chunked<
-    TG1: G1 + G1GetFp<TG1Fp> + G1Mul<TFr>,
-    TG1Fp: G1Fp,
-    TG1Affine: G1Affine<TG1, TG1Fp>,
-    TFr: Fr,
->(
-    points: &[TG1],
-    scalars: &[TFr],
-) -> TG1 {
-    let n = points.len();
-    
-    if n == 0 {
-        return TG1::zero();
-    }
-
-    //For very small n, just use Strauss directly
-    // This will run up to NPOW=2, 3 will get chunked already
-    if n <= STRAUSS_CHUNK_SIZE {
-        return straus_unwindowed::<TG1, TG1Fp, TG1Affine, TFr>(points, scalars, n);
-    }
-
-    // Split into chunks and accumulate results
-    let mut accumulator = TG1::zero();
-    let num_chunks = (n + STRAUSS_CHUNK_SIZE - 1) / STRAUSS_CHUNK_SIZE;
-
-    for chunk_idx in 0..num_chunks {
-        let start = chunk_idx * STRAUSS_CHUNK_SIZE;
-        let end = core::cmp::min(start + STRAUSS_CHUNK_SIZE, n);
-        let chunk_size = end - start;
-
-        let partial = straus_unwindowed::<TG1, TG1Fp, TG1Affine, TFr>(
-            &points[start..end],
-            &scalars[start..end],
-            chunk_size,
-        );
-        accumulator.add_or_dbl_assign(&partial);
-    }
-
-    accumulator
+#[cfg(feature = "file-io")]
+#[derive(Serialize, Deserialize)]
+struct SerializableChunkTable<TG1AffineSer> {
+    chunk_sizes: Vec<usize>,
+    // we store each chunk as a flat vector; caller must ensure TG1AffineSer is serializable
+    chunk_tables: Vec<Vec<TG1AffineSer>>,
 }
 
 impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
@@ -224,12 +55,101 @@ where
     TG1Affine: G1Affine<TG1, TG1Fp> + Clone,
     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
 {
+    /// Build a StraussTable that precomputes chunk tables for all chunks.
+    /// This mirrors the style of other algorithms that precompute and store tables.
     pub fn new(points: &[TG1], _matrix: &[Vec<TG1>]) -> Result<Option<Self>, String> {
-        let points_affine = TG1Affine::into_affines(points);
+        let n = points.len();
+        if n == 0 {
+            // return an empty table (consistent with other implementations returning Some)
+            let table = StraussTable {
+                chunk_tables: Vec::new(),
+                chunk_sizes: Vec::new(),
+                numpoints: 0,
+                batch_numpoints: 0,
+                batch_points: Vec::new(),
+                g1_marker: PhantomData,
+                g1_fp_marker: PhantomData,
+                fr_marker: PhantomData,
+                g1_affine_add_marker: PhantomData,
+            };
+            return Ok(Some(table));
+        }
+
+        // Convert all points to affine once
+        let points_affine: Vec<TG1Affine> = TG1Affine::into_affines(points);
+
+        // Split into chunks
+        let mut chunk_tables: Vec<Vec<TG1Affine>> = Vec::new();
+        let mut chunk_sizes: Vec<usize> = Vec::new();
+
+        let STRAUSS_CHUNK_SIZE: usize = match std::env::var("WINDOW_SIZE") {
+            Ok(s) => s
+                .parse()
+                .expect("WINDOW_SIZE environment variable must be a valid number"),
+            Err(_) => 8usize,
+        };
+
+        let num_chunks = (n + STRAUSS_CHUNK_SIZE - 1) / STRAUSS_CHUNK_SIZE;
+
+        for chunk_idx in 0..num_chunks {
+            let start = chunk_idx * STRAUSS_CHUNK_SIZE;
+            let end = core::cmp::min(start + STRAUSS_CHUNK_SIZE, n);
+            let chunk_len = end - start;
+            chunk_sizes.push(chunk_len);
+
+            // size of table for this chunk: 2^chunk_len
+            let table_size = 1usize << chunk_len;
+
+            // preallocate table
+            let mut table: Vec<TG1Affine> = Vec::with_capacity(table_size);
+            // We will build table in-affine form:
+            // table[0] = identity (as affine identity; we need a representation).
+            // However, many affine types cannot represent identity directly; but existing
+            // code used TG1::zero() in proj form. To keep consistent, we'll build entries
+            // as affine sums by converting sums back to affine via to_affine()
+            // Use TG1 (projective) as intermediate for additions.
+
+            // push placeholder for table[0] as the affine of TG1::zero()
+            // We need a way to obtain affine identity; if TG1Affine has a constructor from proj zero,
+            // the safest is to compute TG1::zero().to_affine() if the API provides it.
+            // If not available, we will populate table[0] later after computing entries.
+            // For portability, push a clone of points_affine[start] as placeholder and overwrite entry 0 later.
+            // But it's better to push the proper identity if possible:
+            // We'll attempt to get affine identity via TG1::zero().to_affine()
+            // If `to_affine` method not available we fall back to a sentinel (first point) and then fix below.
+            let mut table_proj: Vec<TG1> = Vec::with_capacity(table_size);
+            table_proj.push(TG1::zero()); // table_proj[0] = identity
+
+            // Build incremental table using lowest-bit trick; we do this in projective space for easier adds.
+            for mask in 1..table_size {
+                let lb = mask.trailing_zeros() as usize;
+                let prev = mask ^ (1 << lb);
+                if prev == 0 {
+                    // only one bit set -> it's just the point at 'lb'
+                    table_proj.push(points_affine[start + lb].to_proj());
+                } else {
+                    let mut new_val = table_proj[prev].clone();
+                    new_val.add_or_dbl_assign(&points_affine[start + lb].to_proj());
+                    table_proj.push(new_val);
+                }
+            }
+
+            // Convert projective table entries back to affine and store
+            // Use TG1Affine::into_affine? We have `to_affine` available on TG1::to_affine() or TG1Affine::into_affine(&proj)
+            // We'll convert each TG1 proj to affine via TG1Affine::into_affine(&proj)
+            // However, in earlier code they used TG1Affine::into_affine(&tmp_point) where tmp_point is TG1.
+            // We'll use that.
+            for p_proj in table_proj.into_iter() {
+                table.push(TG1Affine::into_affine(&p_proj));
+            }
+
+            chunk_tables.push(table);
+        }
 
         let table = StraussTable {
-            points: points_affine,
-            numpoints: points.len(),
+            chunk_tables,
+            chunk_sizes,
+            numpoints: n,
             batch_numpoints: 0,
             batch_points: Vec::new(),
             g1_marker: PhantomData,
@@ -241,32 +161,96 @@ where
         Ok(Some(table))
     }
 
-    /// Automatically splits into chunks of STRAUSS_CHUNK_SIZE to avoid
-    /// exponential memory usage.
+    /// Multiply using the precomputed chunk tables (sequential)
     pub fn multiply_sequential(&self, scalars: &[TFr]) -> TG1 {
         let n = scalars.len();
-        // FALLBACK, BUT SINCE IT CHUNKS, IT SHOULDN'T GET OUT OF MEMORY ANYMORE
-        // if n > self.points.len() {
-        //     #[cfg(debug_assertions)]
-        //     eprintln!(
-        //         "[Strauss MSM] Requested {} points but only {} available.",
-        //         n, self.points.len()
-        //     );
+        if n == 0 || self.chunk_tables.is_empty() {
+            return TG1::zero();
+        }
 
-        //     // Fallback to simple MSM
-        //     let mut acc = TG1::zero();
-        //     for (s, p_aff) in scalars.iter().zip(self.points.iter().cycle().take(n)) {
-        //         let tmp = p_aff.to_proj().mul(s);
-        //         acc.add_or_dbl_assign(&tmp);
-        //     }
-        //     return acc;
-        // }
-        let points_proj: Vec<TG1> = self.points[..n]
-            .iter()
-            .map(|a| a.to_proj())
-            .collect();
-        
-        straus_chunked::<TG1, TG1Fp, TG1Affine, TFr>(&points_proj, scalars)
+        // Convert scalars to scalar limbs for bit access
+        let scalar_values = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
+
+        // For each chunk, we will compute the chunk result using the precomputed table,
+        // then add it into the global accumulator.
+        let mut accumulator = TG1::zero();
+
+        let mut pt_idx = 0usize;
+        for (chunk_idx, table) in self.chunk_tables.iter().enumerate() {
+            let chunk_len = self.chunk_sizes[chunk_idx];
+            if chunk_len == 0 {
+                continue;
+            }
+
+            // Prepare mask bit extraction for this chunk.
+            // We need to process all bits from MSB down to 0 for the scalars restricted to this chunk's indices.
+            // For Strauss we compute table[mask] where mask is built from the current bit of each scalar in the chunk.
+            // But we can do the original algorithm more simply:
+            // - find max bit across scalars limited to these indices
+            // - for bit from max..0:
+            //    - dbl accumulator
+            //    - build mask from chunk_len scalars at this bit
+            //    - add table[mask]
+            // However building mask from scratch for each bit is direct.
+
+            // Compute max bit among involved scalars
+            let mut max_bit = 0usize;
+            for i in 0..chunk_len {
+                let scalar_idx = pt_idx + i;
+                if scalar_idx >= scalar_values.len() {
+                    break;
+                }
+                let s = &scalar_values[scalar_idx];
+                for (limb_idx, &limb) in s.data.iter().enumerate().rev() {
+                    if limb != 0 {
+                        let bit_pos = 63 - limb.leading_zeros() as usize;
+                        let global_bit = limb_idx * 64 + bit_pos;
+                        if global_bit > max_bit {
+                            max_bit = global_bit;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // local loop: process bits MSB..0
+            let mut chunk_acc = TG1::zero();
+            for bit in (0..=max_bit).rev() {
+                chunk_acc.dbl_assign();
+
+                // build mask for this bit across chunk scalars
+                let mut mask = 0usize;
+                let limb_idx = bit / 64;
+                let bit_in_limb = bit % 64;
+
+                for i in 0..chunk_len {
+                    let scalar_idx = pt_idx + i;
+                    if scalar_idx >= scalar_values.len() {
+                        break;
+                    }
+
+                    let s = &scalar_values[scalar_idx];
+                    if limb_idx < s.data.len() {
+                        if ((s.data[limb_idx] >> bit_in_limb) & 1) != 0 {
+                            mask |= 1 << i;
+                        }
+                    }
+                }
+
+                if mask != 0 {
+                    // table[mask] is affine; convert to proj and add
+                    let tab_aff = &table[mask];
+                    chunk_acc.add_or_dbl_assign(&tab_aff.to_proj());
+                }
+            }
+
+            // Add the chunk result to the global accumulator
+            accumulator.add_or_dbl_assign(&chunk_acc);
+
+            pt_idx += chunk_len;
+        }
+
+        accumulator
     }
 
     pub fn multiply_batch(&self, scalars: &[Vec<TFr>]) -> Vec<TG1> {
@@ -275,6 +259,57 @@ where
 
     #[cfg(feature = "parallel")]
     pub fn multiply_parallel(&self, scalars: &[TFr]) -> TG1 {
+        // For now use the sequential method; can be parallelized later.
         self.multiply_sequential(scalars)
+    }
+
+    // Optional: persist precomputed chunk tables to file (requires `file-io` feature,
+    // and the concrete TG1Affine type must implement serde Serialize/Deserialize)
+    #[cfg(feature = "file-io")]
+    pub fn save_to_file<S>(&self, path: S) -> Result<(), String>
+    where
+        S: AsRef<str>,
+        TG1Affine: Serialize,
+    {
+        // Convert chunk tables into serializable shape
+        let ser = SerializableChunkTable {
+            chunk_sizes: self.chunk_sizes.clone(),
+            chunk_tables: self
+                .chunk_tables
+                .iter()
+                .map(|chunk| chunk.clone())
+                .collect::<Vec<_>>(),
+        };
+
+        let bytes = bincode::serialize(&ser).map_err(|e| format!("serialize error: {}", e))?;
+        std::fs::write(path.as_ref(), &bytes)
+            .map_err(|e| format!("file write error: {}", e))?;
+        Ok(())
+    }
+
+    // Optional: load from file (requires TG1Affine: DeserializeOwned + Clone)
+    #[cfg(feature = "file-io")]
+    pub fn load_from_file<S>(path: S) -> Result<Self, String>
+    where
+        S: AsRef<str>,
+        TG1Affine: for<'de> Deserialize<'de> + Clone,
+    {
+        let bytes = std::fs::read(path.as_ref()).map_err(|e| format!("file read error: {}", e))?;
+        let ser: SerializableChunkTable<TG1Affine> =
+            bincode::deserialize(&bytes).map_err(|e| format!("deserialize error: {}", e))?;
+
+        let table = StraussTable {
+            chunk_tables: ser.chunk_tables,
+            chunk_sizes: ser.chunk_sizes,
+            numpoints: 0, // We don't know total numpoints here; user can set or extend if desired
+            batch_numpoints: 0,
+            batch_points: Vec::new(),
+            g1_marker: PhantomData,
+            g1_fp_marker: PhantomData,
+            fr_marker: PhantomData,
+            g1_affine_add_marker: PhantomData,
+        };
+
+        Ok(table)
     }
 }
