@@ -12,6 +12,7 @@ siphasher = { version = "1.0.0", default-features = false }
 hashbrown = "0.15.2"
 arbitrary = "1.4.2"
 dirs = { version = "6", optional = true }
+hex = "0.4.3"
 
 [features]
 default = [
