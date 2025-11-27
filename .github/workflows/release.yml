@@ -23,6 +23,9 @@ jobs:
             target-name: x86_64-unknown-linux-gnu
           - target: windows
             target-name: x86_64-pc-windows-gnu
+        exclude:
+          - target: windows
+            backend: mcl
     env:
       matrix-name: "[${{ matrix.backend }}, ${{ matrix.target }}]"
       staging-dir: staging/${{ matrix.backend }}/${{ matrix.target }}
