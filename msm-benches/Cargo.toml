@@ -50,6 +50,12 @@ parallel = [
     "rust-kzg-constantine/parallel",
     "rust-kzg-mcl/parallel",
 ]
+strauss = [
+    "rust-kzg-blst/strauss",
+    "rust-kzg-arkworks4/strauss",
+    "rust-kzg-arkworks5/strauss",
+    "rust-kzg-constantine/strauss",
+]
 
 [[bench]]
 name = "g1_fixed_base_msm"

@@ -24,3 +24,6 @@ mod wbits;
 
 #[cfg(all(feature = "diskcache", feature = "wbits"))]
 mod diskcache;
+
+#[cfg(feature = "strauss")]
+mod strauss;

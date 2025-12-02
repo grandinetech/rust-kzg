@@ -1,0 +1,1444 @@
+warning: function `fallback_simple_msm` is never used
+   --> kzg/src/msm/strauss.rs:167:4
+    |
+167 | fn fallback_simple_msm<
+    |    ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `kzg` (lib) generated 1 warning
+warning: variable does not need to be mutable
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:53:13
+   |
+53 |         let mut numzero = rng.gen_range((npoints / 2)..npoints);
+   |             ----^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `table`
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:65:9
+   |
+65 |     let table = TABLE.get_or_init(|| {
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_table`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rust-kzg-fuzz` (bin "blst_fixed_msm_with_zeros") generated 2 warnings (run `cargo fix --bin "blst_fixed_msm_with_zeros" -p rust-kzg-fuzz` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.13s
+warning: function `fallback_simple_msm` is never used
+   --> kzg/src/msm/strauss.rs:167:4
+    |
+167 | fn fallback_simple_msm<
+    |    ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `kzg` (lib) generated 1 warning
+warning: variable does not need to be mutable
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:53:13
+   |
+53 |         let mut numzero = rng.gen_range((npoints / 2)..npoints);
+   |             ----^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `table`
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:65:9
+   |
+65 |     let table = TABLE.get_or_init(|| {
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_table`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rust-kzg-fuzz` (bin "blst_fixed_msm_with_zeros") generated 2 warnings (run `cargo fix --bin "blst_fixed_msm_with_zeros" -p rust-kzg-fuzz` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.05s
+     Running `target/aarch64-apple-darwin/release/blst_fixed_msm_with_zeros -artifact_prefix=/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/artifacts/blst_fixed_msm_with_zeros/ /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/corpus/blst_fixed_msm_with_zeros`
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2104096875
+INFO: Loaded 1 modules   (27729 inline 8-bit counters): 27729 [0x100de3c10, 0x100dea861), 
+INFO: Loaded 1 PC tables (27729 PCs): 27729 [0x100dea868,0x100e56d78), 
+INFO:     1917 files found in /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/corpus/blst_fixed_msm_with_zeros
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+
+thread '<unnamed>' (10801430) panicked at /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/kzg/src/msm/strauss.rs:122:22:
+attempt to shift left with overflow
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+==39574== ERROR: libFuzzer: deadly signal
+    #0 0x0001017113c4 in __sanitizer_print_stack_trace+0x28 (librustc-nightly_rt.asan.dylib:arm64+0x5d3c4)
+    #1 0x000100cd7744 in fuzzer::PrintStackTrace()+0x30 (blst_fixed_msm_with_zeros:arm64+0x100193744)
+    #2 0x000100ccb9e8 in fuzzer::Fuzzer::CrashCallback()+0x54 (blst_fixed_msm_with_zeros:arm64+0x1001879e8)
+    #3 0x00018cac16a0 in _sigtramp+0x34 (libsystem_platform.dylib:arm64+0x36a0)
+    #4 0x00018ca87888 in pthread_kill+0x124 (libsystem_pthread.dylib:arm64+0x6888)
+    #5 0x00018c990a38 in abort+0x78 (libsystem_c.dylib:arm64+0x78a38)
+    #6 0x000100d569b0 in std::sys::pal::unix::abort_internal::h0883ff819e2e31a6+0x8 (blst_fixed_msm_with_zeros:arm64+0x1002129b0)
+    #7 0x000100d574dc in std::process::abort::h180d315f6dbaaafc+0x8 (blst_fixed_msm_with_zeros:arm64+0x1002134dc)
+    #8 0x000100d54ad8 in libfuzzer_sys::initialize::_$u7b$$u7b$closure$u7d$$u7d$::hb75e99be54f92070+0xb8 (blst_fixed_msm_with_zeros:arm64+0x100210ad8)
+    #9 0x000100d1eb00 in std::panicking::panic_with_hook::h31d21854a861b00f+0x258 (blst_fixed_msm_with_zeros:arm64+0x1001dab00)
+    #10 0x000100d1e784 in std::panicking::panic_handler::_$u7b$$u7b$closure$u7d$$u7d$::h125f85701519d056+0x64 (blst_fixed_msm_with_zeros:arm64+0x1001da784)
+    #11 0x000100d1c4f8 in std::sys::backtrace::__rust_end_short_backtrace::h61c9618219fb8a3f+0x8 (blst_fixed_msm_with_zeros:arm64+0x1001d84f8)
+    #12 0x000100d11b1c in _RNvCsX8hldvlYLa_7___rustc17rust_begin_unwind+0x1c (blst_fixed_msm_with_zeros:arm64+0x1001cdb1c)
+    #13 0x000100d5b40c in core::panicking::panic_fmt::ha6dae6de428d6ff3+0x1c (blst_fixed_msm_with_zeros:arm64+0x10021740c)
+    #14 0x000100d5b06c in core::panicking::panic_const::panic_const_shl_overflow::h25c8ad2ab4cfc07a+0x30 (blst_fixed_msm_with_zeros:arm64+0x10021706c)
+    #15 0x000100b47ed4 in blst_fixed_msm_with_zeros::_::__libfuzzer_sys_run::ha6b735f87754470c blst_fixed_msm_with_zeros.rs:69
+    #16 0x000100b5d938 in rust_fuzzer_test_input lib.rs:363
+    #17 0x000100cc9a94 in std::panicking::catch_unwind::do_call::h85f5ef6f83a87ba8+0x1c0 (blst_fixed_msm_with_zeros:arm64+0x100185a94)
+    #18 0x000100ccaca0 in __rust_try+0x18 (blst_fixed_msm_with_zeros:arm64+0x100186ca0)
+    #19 0x000100cc8cdc in LLVMFuzzerTestOneInput+0x16c (blst_fixed_msm_with_zeros:arm64+0x100184cdc)
+    #20 0x000100ccd2e4 in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long)+0x158 (blst_fixed_msm_with_zeros:arm64+0x1001892e4)
+    #21 0x000100cce5a8 in fuzzer::Fuzzer::ReadAndExecuteSeedCorpora(std::__1::vector<fuzzer::SizedFile, std::__1::allocator<fuzzer::SizedFile>>&)+0x23c (blst_fixed_msm_with_zeros:arm64+0x10018a5a8)
+    #22 0x000100ccec6c in fuzzer::Fuzzer::Loop(std::__1::vector<fuzzer::SizedFile, std::__1::allocator<fuzzer::SizedFile>>&)+0x70 (blst_fixed_msm_with_zeros:arm64+0x10018ac6c)
+    #23 0x000100ceaed4 in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long))+0x1ce8 (blst_fixed_msm_with_zeros:arm64+0x1001a6ed4)
+    #24 0x000100cf9f14 in main+0x24 (blst_fixed_msm_with_zeros:arm64+0x1001b5f14)
+    #25 0x00018c6e6b94 in start+0x17b8 (dyld:arm64+0xfffffffffff3ab94)
+
+NOTE: libFuzzer has rudimentary signal handlers.
+      Combine libFuzzer with AddressSanitizer or similar for better crash reports.
+SUMMARY: libFuzzer: deadly signal
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/artifacts/blst_fixed_msm_with_zeros/'; Test unit written to /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/artifacts/blst_fixed_msm_with_zeros/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+
+────────────────────────────────────────────────────────────────────────────────
+
+Failing input:
+
+	fuzz/artifacts/blst_fixed_msm_with_zeros/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+
+Output of `std::fmt::Debug`:
+
+	FuzzInput {
+	    scalars: [
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	        FsFr(
+	            blst_fr {
+	                l: [
+	                    0,
+	                    0,
+	                    0,
+	                    0,
+	                ],
+	            },
+	        ),
+	    ],
+	    seed: [
+	        121,
+	        213,
+	        57,
+	        149,
+	        120,
+	        178,
+	        100,
+	        30,
+	        61,
+	        211,
+	        198,
+	        18,
+	        80,
+	        7,
+	        184,
+	        16,
+	        37,
+	        164,
+	        184,
+	        13,
+	        47,
+	        154,
+	        97,
+	        175,
+	        194,
+	        138,
+	        181,
+	        246,
+	        176,
+	        91,
+	        111,
+	        73,
+	    ],
+	}
+
+Reproduce with:
+
+	cargo fuzz run --features=strauss blst_fixed_msm_with_zeros fuzz/artifacts/blst_fixed_msm_with_zeros/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+
+Minimize test case with:
+
+	cargo fuzz tmin --features=strauss blst_fixed_msm_with_zeros fuzz/artifacts/blst_fixed_msm_with_zeros/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error: Fuzz target exited with exit status: 77
