@@ -181,19 +181,17 @@ impl<
 
     // https://github.com/btclib-org/btclib was used as reference for this implementation
     fn multiply_sequential_raw(bases: &[TG1], scalars: &[TFr]) -> TG1 {
-        let scalars: Vec<Scalar256> = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
-
-        let value: Vec<Pair<TG1>> = scalars
+        let valid_pairs: Vec<Pair<TG1>> = scalars
             .iter()
             .zip(bases.iter())
-            .map(|(&s, p)| Pair {
-                scalar: s,
+            .filter(|(s, p)| !s.is_zero() && !p.is_inf())
+            .map(|(s, p)| Pair {
+                scalar: TFr::to_scalar(&s),
                 point: p.clone(),
             })
-            .filter(|pair| !pair.scalar.is_zero() && !pair.point.is_inf())
             .collect();
 
-        let mut heap: BinaryHeap<Pair<TG1>> = BinaryHeap::from(value);
+        let mut heap: BinaryHeap<Pair<TG1>> = BinaryHeap::from(valid_pairs);
 
         while heap.len() > 1 {
             let pair1: Pair<TG1> = heap.pop().unwrap();
