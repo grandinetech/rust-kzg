@@ -31,20 +31,21 @@ fn compute_content_hash<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
     }
     for row in matrix {
         for point in row {
-            let affine = TG1Affine::into_affine(&point);
+            let affine = TG1Affine::into_affine(point);
             hasher
                 .write_all(&affine.to_bytes_uncompressed())
                 .map_err(|e| format!("{e:?}"))?;
         }
     }
 
-    Ok(hasher.finalize().into())
+    let result: [u8; 32] = hasher.finalize().into();
+    Ok(result)
 }
 
 impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp, TG1Affine> {
     /// Function for loading precomputed tables from disk.
     ///
-    /// Reads file with name `rust-kzg.{algorithm}.{window}.cache.bin` from cache
+    /// Reads file with name `rust-kzg.{algorithm}.{window}.{type_hash}.cache.bin` from cache
     /// directory. Automatically validates file version & content hash, to avoid
     /// loading invalid precomputations.
     ///
@@ -62,7 +63,24 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             return Err(("Failed to get cache dir".to_owned(), None));
         };
 
-        let cache_path = cache_dir.join(format!("rust-kzg.{algorithm}.{window}.cache.bin"));
+        // Include type information in cache filename to avoid cross-backend collisions
+        let type_hash = {
+            let type_name = format!(
+                "{}_{}",
+                std::any::type_name::<TG1>(),
+                std::any::type_name::<TG1Affine>()
+            );
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(type_name.as_bytes());
+            let hash_bytes: [u8; 32] = hasher.finalize().into();
+            // Use first 8 bytes as hex string for filename
+            format!("{:02x}{:02x}{:02x}{:02x}", 
+                hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3])
+        };
+
+        let cache_path = cache_dir.join(format!(
+            "rust-kzg.{algorithm}.{window}.{type_hash}.cache.bin"
+        ));
         let cache_file =
             File::open(&cache_path).map_err(|e| (format!("Failed to read cache: {e:?}"), None))?;
 
@@ -175,7 +193,24 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             return Err("Failed to get cache dir".to_owned());
         };
 
-        let cache_path = cache_dir.join(format!("rust-kzg.{algorithm}.{window}.cache.bin"));
+        // Include type information in cache filename to avoid cross-backend collisions
+        let type_hash = {
+            let type_name = format!(
+                "{}_{}",
+                std::any::type_name::<TG1>(),
+                std::any::type_name::<TG1Affine>()
+            );
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(type_name.as_bytes());
+            let hash_bytes: [u8; 32] = hasher.finalize().into();
+            // Use first 8 bytes as hex string for filename
+            format!("{:02x}{:02x}{:02x}{:02x}", 
+                hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3])
+        };
+
+        let cache_path = cache_dir.join(format!(
+            "rust-kzg.{algorithm}.{window}.{type_hash}.cache.bin"
+        ));
         let cache_file =
             File::create(&cache_path).map_err(|e| format!("Failed to read cache: {e:?}"))?;
 

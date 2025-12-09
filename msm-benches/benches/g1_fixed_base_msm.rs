@@ -24,7 +24,7 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
     let npoints = 1usize << npow;
 
     let mut rng = {
-        let seed = env::var("SEED").unwrap_or("rand".to_owned());
+        let seed = env::var("SEED").unwrap_or("0".to_owned());
 
         if seed == "rand" {
             rand_chacha::ChaCha8Rng::from_rng(rand::thread_rng()).unwrap()
@@ -229,19 +229,6 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             .ok()
             .flatten();
 
-        if table.is_some() {
-            c.bench_function(
-                format!("rust-kzg-blst msm initialization, points: 2^{}", npow).as_str(),
-                |b| {
-                    b.iter(|| {
-                        precompute::<FsFr, FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(&points, &[])
-                            .unwrap()
-                            .unwrap()
-                    });
-                },
-            );
-        }
-
         let scalars = scalars
             .iter()
             .map(|s| FsFr::from_bytes(s).unwrap())
@@ -281,23 +268,6 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
         let table = precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
             .ok()
             .flatten();
-
-        if table.is_some() {
-            c.bench_function(
-                format!(
-                    "rust-kzg-constantine msm initialization, points: 2^{}",
-                    npow
-                )
-                .as_str(),
-                |b| {
-                    b.iter(|| {
-                        precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
-                            .unwrap()
-                            .unwrap()
-                    });
-                },
-            );
-        }
 
         let scalars = scalars
             .iter()

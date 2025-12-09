@@ -56,6 +56,9 @@ strauss = [
     "kzg/strauss"
 ]
 c_bindings = []
+diskcache = [
+    "kzg/diskcache"
+]
 
 [[bench]]
 name = "das"
