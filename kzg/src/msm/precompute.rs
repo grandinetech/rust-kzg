@@ -35,8 +35,13 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
 #[cfg(feature = "strauss")]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     super::strauss::StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
-    
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits"), not(feature = "strauss")))]
+
+#[cfg(all(
+    not(feature = "bgmw"),
+    not(feature = "sppark"),
+    not(feature = "wbits"),
+    not(feature = "strauss")
+))]
 #[derive(Debug, Clone)]
 pub struct EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -53,7 +58,12 @@ where
     g1_affine_add_marker: core::marker::PhantomData<TG1ProjAddAffine>,
 }
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits"), not(feature = "strauss")))]
+#[cfg(all(
+    not(feature = "bgmw"),
+    not(feature = "sppark"),
+    not(feature = "wbits"),
+    not(feature = "strauss")
+))]
 impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -81,7 +91,12 @@ where
     }
 }
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits"), not(feature = "strauss")))]
+#[cfg(all(
+    not(feature = "bgmw"),
+    not(feature = "sppark"),
+    not(feature = "wbits"),
+    not(feature = "strauss")
+))]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
 

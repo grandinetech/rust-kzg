@@ -94,8 +94,7 @@ impl<
 
             for row in matrix {
                 let mut temp: Vec<TG1Affine> = Vec::new();
-                temp
-                    .try_reserve_exact(row.len().saturating_mul(subtable_size))
+                temp.try_reserve_exact(row.len().saturating_mul(subtable_size))
                     .map_err(|_| "Strauss precomputation table is too large".to_owned())?;
 
                 for p in row {
@@ -140,18 +139,26 @@ impl<
         (v & mask) as usize
     }
 
-    fn multiply_sequential_raw(bases: &[TG1Affine], scalars: &[TFr], window: usize, subtable_size: usize) -> TG1 {
+    fn multiply_sequential_raw(
+        bases: &[TG1Affine],
+        scalars: &[TFr],
+        window: usize,
+        subtable_size: usize,
+    ) -> TG1 {
         let scalars_bytes = scalars.iter().map(TFr::to_scalar).collect::<Vec<_>>();
         let number_of_windows = 255usize.div_ceil(window);
 
         // gather windows points (affine) for each window
-        let mut windows_of_points: Vec<Vec<TG1Affine>> = vec![Vec::with_capacity(scalars.len()); number_of_windows];
+        let mut windows_of_points: Vec<Vec<TG1Affine>> =
+            vec![Vec::with_capacity(scalars.len()); number_of_windows];
 
         for window_idx in 0..number_of_windows {
             for (scalar_idx, scalar_bytes) in scalars_bytes.iter().enumerate() {
                 let bytes = scalar_bytes.as_u8();
                 let digit = Self::extract_window_bits(bytes, window_idx, window);
-                if digit == 0 { continue; }
+                if digit == 0 {
+                    continue;
+                }
                 let point_offset = scalar_idx.saturating_mul(subtable_size);
                 let idx = point_offset + (digit - 1);
                 // safe because table was sized accordingly in new()
@@ -196,7 +203,9 @@ impl<
             self.batch_points
                 .iter()
                 .zip(scalars)
-                .map(|(points, scalars)| Self::multiply_sequential_raw(points, scalars, self.window, self.subtable_size))
+                .map(|(points, scalars)| {
+                    Self::multiply_sequential_raw(points, scalars, self.window, self.subtable_size)
+                })
                 .collect::<Vec<_>>()
         }
 
@@ -214,15 +223,24 @@ impl<
             let counter = Arc::new(AtomicUsize::new(0));
             let mut results: Vec<Cell<TG1>> = Vec::with_capacity(scalars.len());
             #[allow(clippy::uninit_vec)]
-            unsafe { results.set_len(results.capacity()) };
+            unsafe {
+                results.set_len(results.capacity())
+            };
             let results = &results[..];
 
             for _ in 0..ncpus {
                 let counter = counter.clone();
                 pool.joined_execute(move || loop {
                     let work = counter.fetch_add(1, Ordering::Relaxed);
-                    if work >= scalars.len() { break; }
-                    let result = Self::multiply_sequential_raw(&self.batch_points[work], &scalars[work], self.window, self.subtable_size);
+                    if work >= scalars.len() {
+                        break;
+                    }
+                    let result = Self::multiply_sequential_raw(
+                        &self.batch_points[work],
+                        &scalars[work],
+                        self.window,
+                        self.subtable_size,
+                    );
                     unsafe { *results[work].as_ptr().as_mut().unwrap() = result };
                 });
             }
