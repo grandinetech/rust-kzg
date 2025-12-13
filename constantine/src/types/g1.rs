@@ -467,7 +467,7 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String> {
         let mut x_limbs: [usize; 6] = [0; 6];
         let mut y_limbs: [usize; 6] = [0; 6];
-        
+
         // Deserialize: bytes come in big-endian
         // We need to store them in little-endian limbs array
         for i in 0..6 {
@@ -480,16 +480,16 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
             limb_bytes.copy_from_slice(&bytes[48 + i * 8..48 + (i + 1) * 8]);
             y_limbs[5 - i] = usize::from_be_bytes(limb_bytes);
         }
-        
+
         let tmp = bls12_381_g1_aff {
             x: bls12_381_fp { limbs: x_limbs },
             y: bls12_381_fp { limbs: y_limbs },
         };
-        
+
         // Validate point is on curve
         unsafe {
             match constantine::ctt_bls12_381_validate_g1(&tmp) {
-                ctt_codec_ecc_status::cttCodecEcc_Success 
+                ctt_codec_ecc_status::cttCodecEcc_Success
                 | ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity => Ok(CtG1Affine(tmp)),
                 _ => Err("Point is not on the curve".to_string()),
             }
