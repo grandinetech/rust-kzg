@@ -4,6 +4,9 @@ use core::marker::PhantomData;
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
 
+#[cfg(feature = "diskcache")]
+use crate::msm::diskcache::DiskCache;
+
 #[derive(Debug, Clone)]
 pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -47,9 +50,78 @@ impl<
             .unwrap_or(7usize)
     }
 
+    fn try_read_cache(points: &[TG1], matrix: &[Vec<TG1>]) -> Result<Self, Option<[u8; 32]>> {
+        #[cfg(feature = "diskcache")]
+        {
+            DiskCache::<TG1, TG1Fp, TG1Affine>::load(
+                "strauss",
+                Self::read_window_size(),
+                points,
+                matrix,
+            )
+            .map_err(|(err, contenthash)| {
+                println!("Failed to load cache: {err}");
+                contenthash
+            })
+            .map(|cache| {
+                let window = Self::read_window_size();
+                let subtable_size = (1usize << window).saturating_sub(1);
+                Self {
+                    numpoints: cache.numpoints,
+                    window,
+                    subtable_size,
+                    points: cache.table,
+                    batch_numpoints: cache.batch_numpoints,
+                    batch_points: cache.batch_table,
+                    g1_marker: PhantomData,
+                    g1_fp_marker: PhantomData,
+                    fr_marker: PhantomData,
+                    g1_affine_add_marker: PhantomData,
+                }
+            })
+        }
+
+        #[cfg(not(feature = "diskcache"))]
+        Err(None)
+    }
+
+    fn try_write_cache(
+        points: &[TG1],
+        matrix: &[Vec<TG1>],
+        table: &[TG1Affine],
+        numpoints: usize,
+        batch_table: &[Vec<TG1Affine>],
+        batch_numpoints: usize,
+        contenthash: Option<[u8; 32]>,
+    ) -> Result<(), String> {
+        #[cfg(feature = "diskcache")]
+        {
+            DiskCache::<TG1, TG1Fp, TG1Affine>::save(
+                "strauss",
+                Self::read_window_size(),
+                points,
+                matrix,
+                table,
+                numpoints,
+                batch_table,
+                batch_numpoints,
+                contenthash,
+            )
+            .inspect_err(|err| println!("Failed to save cache: {err}"))
+        }
+
+        #[cfg(not(feature = "diskcache"))]
+        Ok(())
+    }
+
     /// Build the Strauss precomputation tables.
     /// Stores multiples 1..(2^w - 1) for each base point as affine.
     pub fn new(points: &[TG1], matrix: &[Vec<TG1>]) -> Result<Option<Self>, String> {
+        let contenthash = match Self::try_read_cache(points, matrix) {
+            Ok(v) => return Ok(Some(v)),
+            Err(e) => e,
+        };
+
         let window = Self::read_window_size();
         if window >= 40 {
             return Err("WINDOW_SIZE too large".to_owned());
@@ -73,6 +145,7 @@ impl<
         }
 
         if matrix.is_empty() {
+            Self::try_write_cache(points, matrix, &table, points.len(), &[], 0, contenthash)?;
             Ok(Some(Self {
                 numpoints: points.len(),
                 window,
@@ -107,6 +180,16 @@ impl<
 
                 batch_points.push(temp);
             }
+
+            Self::try_write_cache(
+                points,
+                matrix,
+                &table,
+                points.len(),
+                &batch_points,
+                batch_numpoints,
+                contenthash,
+            )?;
 
             Ok(Some(Self {
                 numpoints: points.len(),
