@@ -24,7 +24,7 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
     let npoints = 1usize << npow;
 
     let mut rng = {
-        let seed = env::var("SEED").unwrap_or("rand".to_owned());
+        let seed = env::var("SEED").unwrap_or("0".to_owned());
 
         if seed == "rand" {
             rand_chacha::ChaCha8Rng::from_rng(rand::thread_rng()).unwrap()
@@ -229,19 +229,6 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
             .ok()
             .flatten();
 
-        if table.is_some() {
-            c.bench_function(
-                format!("rust-kzg-blst msm initialization, points: 2^{}", npow).as_str(),
-                |b| {
-                    b.iter(|| {
-                        precompute::<FsFr, FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(&points, &[])
-                            .unwrap()
-                            .unwrap()
-                    });
-                },
-            );
-        }
-
         let scalars = scalars
             .iter()
             .map(|s| FsFr::from_bytes(s).unwrap())
@@ -281,23 +268,6 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
         let table = precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
             .ok()
             .flatten();
-
-        if table.is_some() {
-            c.bench_function(
-                format!(
-                    "rust-kzg-constantine msm initialization, points: 2^{}",
-                    npow
-                )
-                .as_str(),
-                |b| {
-                    b.iter(|| {
-                        precompute::<CtFr, CtG1, CtFp, CtG1Affine, CtG1ProjAddAffine>(&points, &[])
-                            .unwrap()
-                            .unwrap()
-                    });
-                },
-            );
-        }
 
         let scalars = scalars
             .iter()
@@ -515,3 +485,88 @@ fn bench_fixed_base_msm(c: &mut Criterion) {
 
 criterion_group!(benches, bench_fixed_base_msm);
 criterion_main!(benches);
+/*fn bench_small_fixed_base_msm(c: &mut Criterion) {
+    let small_powers = vec![4, 5, 6, 7, 8]; // 16, 32, 64, 128 points
+    
+    for &npow in &small_powers {
+        let npoints = 1usize << npow;
+
+        let mut rng = rand_chacha::ChaCha8Rng::from_rng(rand::thread_rng()).unwrap();
+
+        let points = (0..npoints).map(|_| {
+            let fr = FsFr::from_bytes_unchecked(&rng.gen::<[u8; 32]>()).unwrap();
+            let p = FsG1::generator().mul(&fr);
+            p.to_bytes()
+        }).collect::<Vec<_>>();
+
+        let scalars = (0..npoints).map(|_| {
+            let fr = FsFr::from_bytes_unchecked(&rng.gen::<[u8; 32]>()).unwrap();
+            fr.to_bytes()
+        }).collect::<Vec<_>>();
+
+        let expected_result = {
+            let mut res = FsG1::zero();
+            for (p, s) in points.iter().zip(scalars.iter()) {
+                let p = FsG1::from_bytes(p).unwrap();
+                let s = FsFr::from_bytes(s).unwrap();
+                res = res.add_or_dbl(&p.mul(&s));
+            }
+            res.to_bytes()
+        };
+
+
+        {
+            let points_proj = points.iter().map(|p| FsG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+            let table = precompute::<FsFr, FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine>(&points_proj, &[])
+                .ok()
+                .flatten();
+
+            let scalars_fr = scalars.iter().map(|s| FsFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+            let expected_result_g1 = FsG1::from_bytes(&expected_result).unwrap();
+
+            c.bench_function(
+                format!("rust-kzg-blst straus msm mult, points: 2^{}", npow).as_str(),
+                |b| {
+                    b.iter(|| {
+                        let result = msm::<FsG1, FsFp, FsG1Affine, FsG1ProjAddAffine, FsFr>(
+                            &points_proj,
+                            &scalars_fr,
+                            npoints,
+                            table.as_ref(),
+                        );
+                        assert!(result.equals(&expected_result_g1));
+                    })
+                },
+            );
+        }
+
+        // Also benchmark the simple fallback for comparison
+        {
+            let points_proj = points.iter().map(|p| FsG1::from_bytes(p).unwrap()).collect::<Vec<_>>();
+            let scalars_fr = scalars.iter().map(|s| FsFr::from_bytes(s).unwrap()).collect::<Vec<_>>();
+            let expected_result_g1 = FsG1::from_bytes(&expected_result).unwrap();
+
+            c.bench_function(
+                format!("rust-kzg-blst simple msm mult, points: 2^{}", npow).as_str(),
+                |b| {
+                    b.iter(|| {
+                        let mut result = FsG1::zero();
+                        for i in 0..npoints {
+                            let tmp = points_proj[i].mul(&scalars_fr[i]);
+                            result = result.add_or_dbl(&tmp);
+                        }
+                        assert!(result.equals(&expected_result_g1));
+                    })
+                },
+            );
+        }
+    }
+}
+
+
+criterion_group!{
+    name = benches;
+    config = Criterion::default().sample_size(10);
+    targets = bench_fixed_base_msm, bench_small_fixed_base_msm
+}
+criterion_main!(benches);*/

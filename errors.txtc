@@ -1,0 +1,103 @@
+warning: associated function `new` is never used
+  --> kzg/src/msm/precompute.rs:62:8
+   |
+53 | / impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+54 | |     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+55 | | where
+56 | |     TFr: Fr,
+...  |
+59 | |     TG1Affine: G1Affine<TG1, TG1Fp>,
+60 | |     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+   | |_____________________________________________________________- associated function in this implementation
+61 |   {
+62 |       fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
+   |          ^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `batch_numpoints` and `batch_points` are never read
+  --> kzg/src/msm/strauss.rs:43:5
+   |
+32 | pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+   |            ------------ fields in this struct
+...
+43 |     batch_numpoints: usize,
+   |     ^^^^^^^^^^^^^^^
+44 |     batch_points: Vec<Vec<TG1Affine>>,
+   |     ^^^^^^^^^^^^
+   |
+   = note: `StraussTable` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `kzg` (lib) generated 2 warnings
+warning: variable does not need to be mutable
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:53:13
+   |
+53 |         let mut numzero = rng.gen_range((npoints / 2)..npoints);
+   |             ----^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `table`
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:65:9
+   |
+65 |     let table = TABLE.get_or_init(|| {
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_table`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rust-kzg-fuzz` (bin "blst_fixed_msm_with_zeros") generated 2 warnings (run `cargo fix --bin "blst_fixed_msm_with_zeros" -p rust-kzg-fuzz` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.16s
+warning: associated function `new` is never used
+  --> kzg/src/msm/precompute.rs:62:8
+   |
+53 | / impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+54 | |     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+55 | | where
+56 | |     TFr: Fr,
+...  |
+59 | |     TG1Affine: G1Affine<TG1, TG1Fp>,
+60 | |     TG1ProjAddAffine: G1ProjAddAffine<TG1, TG1Fp, TG1Affine>,
+   | |_____________________________________________________________- associated function in this implementation
+61 |   {
+62 |       fn new(_: &[TG1], _: &[Vec<TG1>]) -> Result<Option<Self>, String> {
+   |          ^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `batch_numpoints` and `batch_points` are never read
+  --> kzg/src/msm/strauss.rs:43:5
+   |
+32 | pub struct StraussTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
+   |            ------------ fields in this struct
+...
+43 |     batch_numpoints: usize,
+   |     ^^^^^^^^^^^^^^^
+44 |     batch_points: Vec<Vec<TG1Affine>>,
+   |     ^^^^^^^^^^^^
+   |
+   = note: `StraussTable` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `kzg` (lib) generated 2 warnings
+warning: variable does not need to be mutable
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:53:13
+   |
+53 |         let mut numzero = rng.gen_range((npoints / 2)..npoints);
+   |             ----^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `table`
+  --> fuzz/fuzz_targets/blst_fixed_msm_with_zeros.rs:65:9
+   |
+65 |     let table = TABLE.get_or_init(|| {
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_table`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rust-kzg-fuzz` (bin "blst_fixed_msm_with_zeros") generated 2 warnings (run `cargo fix --bin "blst_fixed_msm_with_zeros" -p rust-kzg-fuzz` to apply 2 suggestions)
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.05s
+     Running `target/aarch64-apple-darwin/release/blst_fixed_msm_with_zeros -artifact_prefix=/Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/artifacts/blst_fixed_msm_with_zeros/ /Users/eimantaslabzentis/Desktop/blockchain/rust-kzg/fuzz/corpus/blst_fixed_msm_with_zeros`

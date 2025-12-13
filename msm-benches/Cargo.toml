@@ -50,6 +50,23 @@ parallel = [
     "rust-kzg-constantine/parallel",
     "rust-kzg-mcl/parallel",
 ]
+strauss = [
+    "rust-kzg-blst/strauss",
+    "rust-kzg-arkworks4/strauss",
+    "rust-kzg-arkworks5/strauss",
+    "rust-kzg-constantine/strauss",
+]
+
+# Re-export diskcache for backends so benches can enable it with a single flag
+# Enables the `diskcache` feature in `kzg` and the common backend crates
+diskcache = [
+    "kzg/diskcache",
+    "rust-kzg-blst/diskcache",
+    "rust-kzg-arkworks3/diskcache",
+    "rust-kzg-arkworks4/diskcache",
+    "rust-kzg-arkworks5/diskcache",
+    "rust-kzg-constantine/diskcache",
+]
 
 [[bench]]
 name = "g1_fixed_base_msm"
