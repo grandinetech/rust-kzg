@@ -7,6 +7,7 @@ use std::{
 
 use crate::{G1Affine, G1Fp, G1};
 
+#[allow(dead_code)]
 pub struct DiskCache<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> {
     pub table: Vec<TG1Affine>,
     pub numpoints: usize,
@@ -18,6 +19,19 @@ pub struct DiskCache<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> {
     g1_fp_marker: PhantomData<TG1Fp>,
 }
 
+pub struct DiskCacheSaveParams<'a, TG1, TG1Affine> {
+    pub algorithm: &'a str,
+    pub window: usize,
+    pub points: &'a [TG1],
+    pub matrix: &'a [Vec<TG1>],
+    pub table: &'a [TG1Affine],
+    pub numpoints: usize,
+    pub batch_table: &'a [Vec<TG1Affine>],
+    pub batch_numpoints: usize,
+    pub contenthash: Option<[u8; 32]>,
+}
+
+#[allow(dead_code)]
 fn compute_content_hash<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
     points: &[TG1],
     matrix: &[Vec<TG1>],
@@ -42,6 +56,7 @@ fn compute_content_hash<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
     Ok(result)
 }
 
+#[allow(dead_code)]
 impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp, TG1Affine> {
     /// Function for loading precomputed tables from disk.
     ///
@@ -74,8 +89,10 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             hasher.update(type_name.as_bytes());
             let hash_bytes: [u8; 32] = hasher.finalize().into();
             // Use first 8 bytes as hex string for filename
-            format!("{:02x}{:02x}{:02x}{:02x}", 
-                hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3])
+            format!(
+                "{:02x}{:02x}{:02x}{:02x}",
+                hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3]
+            )
         };
 
         let cache_path = cache_dir.join(format!(
@@ -103,7 +120,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
         buf_reader
             .read_exact(&mut buf[0..32])
             .map_err(|e| (format!("Read failure: {e:?}"), Some(contenthash)))?;
-        if contenthash != &buf[0..32] {
+        if contenthash != buf[0..32] {
             return Err(("Invalid content hash".to_owned(), Some(contenthash)));
         }
 
@@ -177,16 +194,20 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
     }
 
     pub fn save(
-        algorithm: &str,
-        window: usize,
-        points: &[TG1],
-        matrix: &[Vec<TG1>],
-        table: &[TG1Affine],
-        numpoints: usize,
-        batch_table: &[Vec<TG1Affine>],
-        batch_numpoints: usize,
-        contenthash: Option<[u8; 32]>,
+        params: DiskCacheSaveParams<'_, TG1, TG1Affine>,
     ) -> Result<(), String> {
+        let DiskCacheSaveParams {
+            algorithm,
+            window,
+            points,
+            matrix,
+            table,
+            numpoints,
+            batch_table,
+            batch_numpoints,
+            contenthash,
+        } = params;
+
         let cache_dir = dirs::cache_dir();
 
         let Some(cache_dir) = cache_dir else {
@@ -204,8 +225,10 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             hasher.update(type_name.as_bytes());
             let hash_bytes: [u8; 32] = hasher.finalize().into();
             // Use first 8 bytes as hex string for filename
-            format!("{:02x}{:02x}{:02x}{:02x}", 
-                hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3])
+            format!(
+                "{:02x}{:02x}{:02x}{:02x}",
+                hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3]
+            )
         };
 
         let cache_path = cache_dir.join(format!(
@@ -223,7 +246,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             .map_err(|e| format!("Write failure: {e:?}"))?;
 
         let contenthash = contenthash
-            .map(|v| Ok(v))
+            .map(Ok)
             .unwrap_or_else(|| compute_content_hash::<TG1, TG1Fp, TG1Affine>(points, matrix))?;
 
         writer
@@ -252,7 +275,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             .write_all(&(batch_table.len() as u64).to_be_bytes())
             .map_err(|e| format!("Write failure: {e:?}"))?;
 
-        let columns = batch_table.get(0).map(|s| s.len()).unwrap_or(0);
+        let columns = batch_table.first().map(|s| s.len()).unwrap_or(0);
 
         writer
             .write_all(&(columns as u64).to_be_bytes())
