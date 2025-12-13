@@ -1314,6 +1314,7 @@ dependencies = [
  "bincode",
  "dirs",
  "hashbrown 0.15.5",
+ "hex",
  "num_cpus",
  "rayon",
  "serde",

@@ -1,3 +1,4 @@
+use alloc::format;
 use core::mem::size_of;
 use core::{fmt::Debug, hash::Hash};
 use hashbrown::{HashMap, HashSet};
@@ -147,17 +148,21 @@ pub trait DAS<B: EcBackend> {
             .zip(cell_indices.iter().map(Some).skip(1).chain(Some(None)))
         {
             if cell_index >= (2 * ts_len) / cell_size {
-                return Err("Cell index cannot be larger than CELLS_PER_EXT_BLOB".to_string());
+                return Err(format!("Invalid cell index {cell_index}, position {i}: Cell index cannot be larger than CELLS_PER_EXT_BLOB"));
             }
 
             if let Some(&idx) = next_cell_index {
                 if idx <= cell_index {
-                    return Err("Indices must be in strictly ascending order".to_string());
+                    return Err(
+                        format!("Invalid cell indices: Indices must be in strictly ascending order, but indices at positions {i} and {next} are not ({cell_index} >= {idx})", next = i + 1)
+                    );
                 }
             }
 
             if !provided_indices.insert(cell_index) {
-                return Err("Duplicate cell indices provided".to_string());
+                return Err(format!(
+                    "Invalid cell indices: cell index {cell_index} appears twice."
+                ));
             }
 
             recovered_cells[cell_index * cell_size..(cell_index + 1) * cell_size]
@@ -173,7 +178,8 @@ pub trait DAS<B: EcBackend> {
                 &provided_indices,
                 fft_settings,
                 2 * ts_len,
-            )?;
+            )
+            .map_err(|err| format!("Cell recovery failed with error: {err}"))?;
         }
 
         #[allow(clippy::redundant_slicing)]
@@ -190,7 +196,8 @@ pub trait DAS<B: EcBackend> {
                 ts_len,
                 fft_settings,
                 self.kzg_settings(),
-            )?;
+            )
+            .map_err(|err| format!("Proof computation failed with error: {err}"))?;
             recovered_proofs.clone_from_slice(&res);
 
             reverse_bit_order(recovered_proofs)?;
@@ -258,7 +265,11 @@ pub trait DAS<B: EcBackend> {
 
         // compute cells
         if let Some(cells) = cells {
-            cells.clone_from_slice(&fft_settings.fft_fr(&poly_monomial, false)?);
+            cells.clone_from_slice(
+                &fft_settings
+                    .fft_fr(&poly_monomial, false)
+                    .map_err(|err| format!("Cell computation failed with error: {err}"))?,
+            );
 
             reverse_bit_order(cells)?;
         };
@@ -271,7 +282,8 @@ pub trait DAS<B: EcBackend> {
                 ts_size,
                 fft_settings,
                 settings,
-            )?;
+            )
+            .map_err(|err| format!("Proof computation failed with error: {err:?}"))?;
             proofs.clone_from_slice(&result);
             reverse_bit_order(proofs)?;
         }
@@ -566,7 +578,9 @@ fn recover_cells<B: EcBackend>(
         field_elements_per_ext_blob,
     )?;
 
-    let vanishing_poly_eval = fft_settings.fft_fr(&vanishing_poly_coeff, false)?;
+    let vanishing_poly_eval = fft_settings
+        .fft_fr(&vanishing_poly_coeff, false)
+        .map_err(|err| format!("Vanishing polynomial evaluation failed: {err}"))?;
 
     let mut extended_evaluation_times_zero = Vec::with_capacity(field_elements_per_ext_blob);
 
