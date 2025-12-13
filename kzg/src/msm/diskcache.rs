@@ -193,9 +193,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
         })
     }
 
-    pub fn save(
-        params: DiskCacheSaveParams<'_, TG1, TG1Affine>,
-    ) -> Result<(), String> {
+    pub fn save(params: DiskCacheSaveParams<'_, TG1, TG1Affine>) -> Result<(), String> {
         let DiskCacheSaveParams {
             algorithm,
             window,
