@@ -467,11 +467,91 @@ impl G1Affine<CtG1, CtFp> for CtG1Affine {
     }
 
     fn to_bytes_uncompressed(&self) -> [u8; 96] {
-        todo!()
+        let mut out = [0u8; 96];
+
+        // Check if point is infinity
+        if self.is_infinity() {
+            // Set infinity flag (bit 6) in first byte
+            out[0] = 0x40;
+            return out;
+        }
+
+        // Serialize: 48 bytes x (big-endian) || 48 bytes y (big-endian)
+        // limbs are stored in little-endian, so limbs[5] is most significant
+        for i in 0..6 {
+            let bytes = self.0.x.limbs[5 - i].to_be_bytes();
+            out[i * 8..(i + 1) * 8].copy_from_slice(&bytes);
+        }
+        for i in 0..6 {
+            let bytes = self.0.y.limbs[5 - i].to_be_bytes();
+            out[48 + i * 8..48 + (i + 1) * 8].copy_from_slice(&bytes);
+        }
+
+        out
     }
 
-    fn from_bytes_uncompressed(_bytes: [u8; 96]) -> Result<Self, String> {
-        todo!()
+    fn from_bytes_uncompressed(bytes: [u8; 96]) -> Result<Self, String> {
+        // Check flags in first byte
+        let compression_flag = bytes[0] & 0x80; // most-significant bit
+        let infinity_flag = bytes[0] & 0x40; // second most-significant bit
+        let sort_flag = bytes[0] & 0x20; // third most-significant bit
+
+        // For uncompressed, compression bit must be 0
+        if compression_flag != 0 {
+            return Err("Compression flag set for uncompressed encoding".to_string());
+        }
+
+        // Sort flag must be 0 for uncompressed
+        if sort_flag != 0 {
+            return Err("Sort flag must be 0 for uncompressed encoding".to_string());
+        }
+
+        // Handle infinity point
+        if infinity_flag != 0 {
+            // All other bits (except flags) must be zero for infinity
+            if bytes[0] & 0x1f != 0 || bytes[1..].iter().any(|&b| b != 0) {
+                return Err("Invalid infinity encoding".to_string());
+            }
+            return Ok(Self::zero());
+        }
+
+        let mut x_limbs: [usize; 6] = [0; 6];
+        let mut y_limbs: [usize; 6] = [0; 6];
+
+        // Deserialize: bytes come in big-endian
+        // We need to store them in little-endian limbs array
+        // First limb needs to have flag bits cleared
+        for i in 0..6 {
+            let mut limb_bytes = [0u8; 8];
+            limb_bytes.copy_from_slice(&bytes[i * 8..(i + 1) * 8]);
+            let mut limb_value = usize::from_be_bytes(limb_bytes);
+            // Clear top 3 flag bits from the first limb (most significant)
+            if i == 0 {
+                limb_value &= 0x1fffffffffffffff; // Clear bits 63, 62, 61
+            }
+            x_limbs[5 - i] = limb_value;
+        }
+        for i in 0..6 {
+            let mut limb_bytes = [0u8; 8];
+            limb_bytes.copy_from_slice(&bytes[48 + i * 8..48 + (i + 1) * 8]);
+            y_limbs[5 - i] = usize::from_be_bytes(limb_bytes);
+        }
+
+        let tmp = bls12_381_g1_aff {
+            x: bls12_381_fp { limbs: x_limbs },
+            y: bls12_381_fp { limbs: y_limbs },
+        };
+
+        // Validate point is on curve
+        unsafe {
+            match constantine::ctt_bls12_381_validate_g1(&tmp) {
+                ctt_codec_ecc_status::cttCodecEcc_Success => Ok(CtG1Affine(tmp)),
+                ctt_codec_ecc_status::cttCodecEcc_PointAtInfinity => {
+                    Err("Point at infinity should have infinity flag set".to_string())
+                }
+                _ => Err("Point is not on the curve".to_string()),
+            }
+        }
     }
 }
 

@@ -21,6 +21,7 @@ arbitrary = "1.4.2"
 criterion = "0.5.1"
 kzg-bench = { path = "../kzg-bench" }
 rand = "0.8.5"
+rust-kzg-blst = { path = "../blst", default-features = false, features = ["std", "rand"] }
 
 [features]
 default = [
@@ -52,7 +53,13 @@ arkmsm = [
 wbits = [
     "kzg/wbits"
 ]
+strauss = [
+    "kzg/strauss"
+]
 c_bindings = []
+diskcache = [
+    "kzg/diskcache"
+]
 
 [[bench]]
 name = "das"

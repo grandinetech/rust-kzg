@@ -508,6 +508,9 @@ impl G1ProjAddAffine<MclG1, MclFp, MclG1Affine> for MclG1ProjAddAffine {
     }
 
     fn add_or_double_assign_affine(_proj: &mut MclG1, _aff: &MclG1Affine) {
-        todo!()
+        try_init_mcl();
+
+        let tmp = _aff.to_proj();
+        _proj.0 = _proj.0.add(&tmp.0);
     }
 }

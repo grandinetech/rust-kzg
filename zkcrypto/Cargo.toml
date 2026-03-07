@@ -25,7 +25,6 @@ default = [
     "std",
     "rand",
     "diskcache",
-    "bgmw",
 ]
 std = [
     "kzg/std",
@@ -40,6 +39,9 @@ rand = [
 ]
 bgmw = [
     "kzg/bgmw"
+]
+strauss = [
+    "kzg/strauss"
 ]
 c_bindings = []
 diskcache = [

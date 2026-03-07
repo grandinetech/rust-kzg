@@ -31,7 +31,7 @@ fn compute_content_hash<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>>(
     }
     for row in matrix {
         for point in row {
-            let affine = TG1Affine::into_affine(&point);
+            let affine = TG1Affine::into_affine(point);
             hasher
                 .write_all(&affine.to_bytes_uncompressed())
                 .map_err(|e| format!("{e:?}"))?;
@@ -85,7 +85,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
         buf_reader
             .read_exact(&mut buf[0..32])
             .map_err(|e| (format!("Read failure: {e:?}"), Some(contenthash)))?;
-        if contenthash != &buf[0..32] {
+        if contenthash != buf[0..32] {
             return Err(("Invalid content hash".to_owned(), Some(contenthash)));
         }
 
@@ -188,7 +188,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             .map_err(|e| format!("Write failure: {e:?}"))?;
 
         let contenthash = contenthash
-            .map(|v| Ok(v))
+            .map(Ok)
             .unwrap_or_else(|| compute_content_hash::<TG1, TG1Fp, TG1Affine>(points, matrix))?;
 
         writer
@@ -217,7 +217,7 @@ impl<TG1: G1, TG1Fp: G1Fp, TG1Affine: G1Affine<TG1, TG1Fp>> DiskCache<TG1, TG1Fp
             .write_all(&(batch_table.len() as u64).to_be_bytes())
             .map_err(|e| format!("Write failure: {e:?}"))?;
 
-        let columns = batch_table.get(0).map(|s| s.len()).unwrap_or(0);
+        let columns = batch_table.first().map(|s| s.len()).unwrap_or(0);
 
         writer
             .write_all(&(columns as u64).to_be_bytes())

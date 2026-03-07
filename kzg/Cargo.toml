@@ -34,6 +34,7 @@ arkmsm = []
 bgmw = []
 sppark = []
 wbits = []
+strauss = []
 diskcache = [
     "std",
     "dep:dirs"

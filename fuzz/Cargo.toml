@@ -62,6 +62,15 @@ parallel = [
     "rust-kzg-mcl/parallel",
 ]
 
+strauss = [
+    "rust-kzg-blst/strauss",
+    "rust-kzg-arkworks4/strauss",
+    "rust-kzg-arkworks5/strauss",
+    "rust-kzg-constantine/strauss",
+    "rust-kzg-mcl/strauss",
+    "rust-kzg-zkcrypto/strauss",
+]
+
 # backends
 arkworks3=["dep:rust-kzg-arkworks3"]
 arkworks4=["dep:rust-kzg-arkworks4"]
