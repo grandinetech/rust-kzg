@@ -79,7 +79,6 @@ jobs:
           - backend: zkcrypto
             support_wasm: true
             support_ckzg: true
-            clippy-flag: --all-features
           - backend: arkworks4
             support_wasm: true
             support_ckzg: true

@@ -4,7 +4,11 @@ extern crate alloc;
 
 use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use arbitrary::Arbitrary;
-use core::fmt::Debug;
+use core::{
+    cmp::Ordering,
+    fmt::Debug,
+    ops::{Shl, Sub},
+};
 use msm::precompute::PrecomputationTable;
 
 pub mod common_utils;
@@ -391,6 +395,80 @@ impl Scalar256 {
             }
         }
     }
+
+    #[inline(always)]
+    fn leading_zeros(&self) -> u32 {
+        for i in (0..4).rev() {
+            if self.data[i] != 0 {
+                return (i as u32) * 64 + (64 - self.data[i].leading_zeros());
+            }
+        }
+        0
+    }
+}
+
+impl Ord for Scalar256 {
+    #[inline(always)]
+    fn cmp(&self, other: &Self) -> Ordering {
+        for i in (0..4).rev() {
+            if self.data[i] < other.data[i] {
+                return Ordering::Less;
+            } else if self.data[i] > other.data[i] {
+                return Ordering::Greater;
+            }
+        }
+        Ordering::Equal
+    }
+}
+
+impl Shl<u32> for Scalar256 {
+    type Output = Scalar256;
+
+    // This function was generated with ChatGPT
+    #[inline(always)]
+    fn shl(self, n: u32) -> Scalar256 {
+        if n == 0 {
+            return self;
+        }
+        let limb_shift = (n / 64) as usize;
+        let bit_shift = n % 64;
+        let mut res = [0u64; 4];
+
+        for i in (0..4).rev() {
+            if i < limb_shift {
+                continue;
+            }
+            let mut val = self.data[i - limb_shift] << bit_shift;
+            if bit_shift != 0 && i - limb_shift > 0 {
+                val |= self.data[i - limb_shift - 1] >> (64 - bit_shift);
+            }
+            res[i] = val;
+        }
+        Scalar256::from_u64(res)
+    }
+}
+
+impl PartialOrd for Scalar256 {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Sub for Scalar256 {
+    type Output = Scalar256;
+
+    #[inline(always)]
+    fn sub(self, rhs: Scalar256) -> Scalar256 {
+        let mut result = Scalar256::ZERO;
+        let mut borrow = 0u64;
+        for i in 0..4 {
+            let (rhs_with_borrow, overflow_add) = rhs.data[i].overflowing_add(borrow);
+            let (res, overflow_sub) = self.data[i].overflowing_sub(rhs_with_borrow);
+            result.data[i] = res;
+            borrow = if overflow_add || overflow_sub { 1 } else { 0 };
+        }
+        result
+    }
 }
 
 pub trait G2: Clone + Default {
@@ -659,4 +737,95 @@ pub trait FK20MultiSettings<
     fn data_availability(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
 
     fn data_availability_optimized(&self, p: &Polynomial) -> Result<Vec<Coeff2>, String>;
+}
+
+#[cfg(test)]
+mod test {
+    use crate::Scalar256;
+
+    #[test]
+    fn shl_must_shift_2_bits() {
+        let scalar = Scalar256::from_u64_s(0b101);
+        let expected = Scalar256::from_u64_s(0b10100);
+        let received = scalar << 2;
+        assert_eq!(expected, received);
+    }
+
+    #[test]
+    fn shl_must_shift_2_bits_over_array_bounds() {
+        let scalar = Scalar256::from_u64([
+            0b1101000000000000000000000000000000000000000000000000000000000000,
+            0,
+            0,
+            0,
+        ]);
+        let expected = Scalar256::from_u64([
+            0b0100000000000000000000000000000000000000000000000000000000000000,
+            0b0000000000000000000000000000000000000000000000000000000000000011,
+            0,
+            0,
+        ]);
+        let received = scalar << 2;
+        assert_eq!(expected, received);
+    }
+
+    #[test]
+    fn shl_must_shift_2_bits_over_two_array_bounds() {
+        let scalar = Scalar256::from_u64([
+            0b1101000000000000000000000000000000000000000000000000000000000000,
+            0,
+            0b1101000000000000000000000000000000000000000000000000000000000000,
+            0,
+        ]);
+        let expected = Scalar256::from_u64([
+            0b0100000000000000000000000000000000000000000000000000000000000000,
+            0b0000000000000000000000000000000000000000000000000000000000000011,
+            0b0100000000000000000000000000000000000000000000000000000000000000,
+            0b0000000000000000000000000000000000000000000000000000000000000011,
+        ]);
+        let received = scalar << 2;
+        assert_eq!(expected, received);
+    }
+
+    #[test]
+    fn shl_must_shift_2_bits_overflowing_scalar256() {
+        let scalar = Scalar256::from_u64([
+            0,
+            0,
+            0,
+            0b1101000000000000000000000000000000000000000000000000000000000000,
+        ]);
+        let expected = Scalar256::from_u64([
+            0,
+            0,
+            0,
+            0b0100000000000000000000000000000000000000000000000000000000000000,
+        ]);
+        let received = scalar << 2;
+        assert_eq!(expected, received);
+    }
+
+    #[test]
+    fn shl_must_null_any_number_if_shifted_256_times() {
+        let scalar = Scalar256::from_u64([
+            0b1111111111111111111111111111111111111111111111111111111111111111,
+            0b1111111111111111111111111111111111111111111111111111111111111111,
+            0b1111111111111111111111111111111111111111111111111111111111111111,
+            0b1111111111111111111111111111111111111111111111111111111111111111,
+        ]);
+        let expected = Scalar256::from_u64([0, 0, 0, 0]);
+        let received = scalar << 256;
+        assert_eq!(expected, received);
+    }
+
+    #[test]
+    fn shl_is_the_same_as_doubling() {
+        let mut current_integer = 1u64;
+        let mut current_scalar = Scalar256::from_u64_s(current_integer);
+        for _ in 0..63 {
+            current_scalar = current_scalar << 1;
+            current_integer *= 2;
+            assert_eq!(Scalar256::from_u64_s(current_integer), current_scalar);
+        }
+    }
 }

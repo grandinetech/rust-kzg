@@ -3,6 +3,9 @@ use alloc::vec::Vec;
 
 #[cfg(all(feature = "arkmsm", not(feature = "parallel")))]
 use super::arkmsm::arkmsm_msm::VariableBaseMSM;
+#[cfg(all(feature = "bos_coster", not(feature = "parallel")))]
+use super::bos_coster::BosCosterMSM;
+
 use super::precompute::PrecomputationTable;
 
 use super::tiling_pippenger_ops::tiling_pippenger;
@@ -80,7 +83,17 @@ fn msm_sequential<
         if let Some(precomputation) = precomputation {
             precomputation.multiply_sequential(scalars)
         } else {
-            pippenger::<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars)
+            #[cfg(feature = "bos_coster")]
+            {
+                let scalars = scalars.iter().map(|s| s.to_scalar()).collect::<Vec<_>>();
+                BosCosterMSM::multi_scalar_mul::<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>(
+                    &points, &scalars,
+                )
+            }
+            #[cfg(not(feature = "bos_coster"))]
+            {
+                pippenger::<TFr, TG1, TG1Fp, TG1Affine, TProjAddAffine>(points, scalars)
+            }
         }
     }
 

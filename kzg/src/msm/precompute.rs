@@ -8,12 +8,13 @@ use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
     all(feature = "arkmsm", feature = "bgmw"),
     all(feature = "arkmsm", feature = "sppark"),
     all(feature = "arkmsm", feature = "wbits"),
+    all(feature = "arkmsm", feature = "bos_coster"),
     all(feature = "bgmw", feature = "sppark"),
     all(feature = "bgmw", feature = "wbits"),
-    all(feature = "sppark", feature = "wbits")
+    all(feature = "sppark", feature = "wbits"),
 ))]
 compile_error!(
-    "incompatible features, please select only one: `arkmsm`, `bgmw`, `sppark` or `wbits`"
+    "incompatible features, please select only one: `arkmsm/bos_coster`, `bgmw`, `sppark` or `wbits`"
 );
 
 #[cfg(feature = "bgmw")]

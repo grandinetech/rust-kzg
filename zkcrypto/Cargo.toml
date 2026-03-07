@@ -41,6 +41,9 @@ rand = [
 bgmw = [
     "kzg/bgmw"
 ]
+bos_coster = [
+    "kzg/bos_coster"
+]
 c_bindings = []
 diskcache = [
     "kzg/diskcache"

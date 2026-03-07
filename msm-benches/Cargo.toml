@@ -52,6 +52,14 @@ parallel = [
     "rust-kzg-zkcrypto/parallel",
     "rust-kzg-mcl/parallel",
 ]
+bos_coster = [
+    "rust-kzg-blst/bos_coster",
+    "rust-kzg-arkworks4/bos_coster",
+    "rust-kzg-arkworks5/bos_coster",
+    "rust-kzg-constantine/bos_coster",
+    "rust-kzg-zkcrypto/bos_coster",
+    "rust-kzg-mcl/bos_coster",
+]
 
 [[bench]]
 name = "g1_fixed_base_msm"
