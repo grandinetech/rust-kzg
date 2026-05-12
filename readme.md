@@ -50,6 +50,10 @@ cargo rustc -p rust-kzg-blst --release --crate-type=staticlib --features=c_bindi
 
 Multiple multi-scalar multiplication algorithms are [implemented](https://github.com/grandinetech/rust-kzg/tree/main/kzg/src/msm) in the library. Most of them are ECC backend agnostic and have both sequential and parallel versions.
 
+## Algorithms from research
+
+Instructions for benchmarking algorithms from research paper are in [msm-benches](./msm-benches/README.md) directory, README.md file.
+
 # Example
 
 The best place to look for examples is [tests](https://github.com/grandinetech/kzg/tree/main/kzg-bench/src/tests) directory.

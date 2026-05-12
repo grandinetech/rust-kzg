@@ -4,17 +4,20 @@ use alloc::{string::String, vec::Vec};
 
 use crate::{Fr, G1Affine, G1Fp, G1GetFp, G1Mul, G1ProjAddAffine, G1};
 
-#[cfg(any(
-    all(feature = "arkmsm", feature = "bgmw"),
-    all(feature = "arkmsm", feature = "sppark"),
-    all(feature = "arkmsm", feature = "wbits"),
-    all(feature = "bgmw", feature = "sppark"),
-    all(feature = "bgmw", feature = "wbits"),
-    all(feature = "sppark", feature = "wbits")
-))]
-compile_error!(
-    "incompatible features, please select only one: `arkmsm`, `bgmw`, `sppark` or `wbits`"
-);
+const _: () = {
+    let enabled = cfg!(feature = "arkmsm") as u8
+        + cfg!(feature = "bgmw") as u8
+        + cfg!(feature = "sppark") as u8
+        + cfg!(feature = "wbits") as u8
+        + cfg!(feature = "grigaitis_pairwise") as u8
+        + cfg!(feature = "grigaitis_pairwise_booth") as u8
+        + cfg!(feature = "grigaitis_pairwise_cpdlh") as u8;
+
+    assert!(
+        enabled <= 1,
+        "incompatible features: select only one of `arkmsm`, `bgmw`, `sppark`, `wbits`, `grigaitis_pairwise`, `grigaitis_pairwise_booth`, `grigaitis_pairwise_cpdlh`"
+    );
+};
 
 #[cfg(feature = "bgmw")]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
@@ -28,7 +31,26 @@ pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     super::wbits::WbitsTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
+#[cfg(feature = "grigaitis_pairwise")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
+    super::grigaitis_pairwise::GrigaitisTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
+
+#[cfg(feature = "grigaitis_pairwise_booth")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
+    super::grigaitis_pairwise_booth::GrigaitisTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
+
+#[cfg(feature = "grigaitis_pairwise_cpdlh")]
+pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
+    super::grigaitis_pairwise_cpdlh::GrigaitisTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
+
+#[cfg(not(any(
+    feature = "bgmw",
+    feature = "sppark",
+    feature = "wbits",
+    feature = "grigaitis_pairwise",
+    feature = "grigaitis_pairwise_booth",
+    feature = "grigaitis_pairwise_cpdlh"
+)))]
 #[derive(Debug, Clone)]
 pub struct EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -45,7 +67,14 @@ where
     g1_affine_add_marker: core::marker::PhantomData<TG1ProjAddAffine>,
 }
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
+#[cfg(not(any(
+    feature = "bgmw",
+    feature = "sppark",
+    feature = "wbits",
+    feature = "grigaitis_pairwise",
+    feature = "grigaitis_pairwise_booth",
+    feature = "grigaitis_pairwise_cpdlh"
+)))]
 impl<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>
 where
@@ -73,7 +102,14 @@ where
     }
 }
 
-#[cfg(all(not(feature = "bgmw"), not(feature = "sppark"), not(feature = "wbits")))]
+#[cfg(not(any(
+    feature = "bgmw",
+    feature = "sppark",
+    feature = "wbits",
+    feature = "grigaitis_pairwise",
+    feature = "grigaitis_pairwise_booth",
+    feature = "grigaitis_pairwise_cpdlh"
+)))]
 pub type PrecomputationTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine> =
     EmptyTable<TFr, TG1, TG1Fp, TG1Affine, TG1ProjAddAffine>;
 

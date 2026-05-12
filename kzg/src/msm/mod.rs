@@ -23,5 +23,21 @@ mod sppark;
 #[cfg(feature = "wbits")]
 mod wbits;
 
+#[cfg(any(
+    feature = "grigaitis_pairwise",
+    feature = "grigaitis_pairwise_booth",
+    feature = "grigaitis_pairwise_cpdlh"
+))]
+mod grigaitis_batch_addition;
+
+#[cfg(feature = "grigaitis_pairwise")]
+mod grigaitis_pairwise;
+
+#[cfg(feature = "grigaitis_pairwise_booth")]
+mod grigaitis_pairwise_booth;
+
+#[cfg(feature = "grigaitis_pairwise_cpdlh")]
+mod grigaitis_pairwise_cpdlh;
+
 #[cfg(all(feature = "diskcache", feature = "wbits"))]
 mod diskcache;

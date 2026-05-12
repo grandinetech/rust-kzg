@@ -92,7 +92,7 @@ pub fn p1_to_jacobian<TG1: G1 + G1GetFp<TFp>, TFp: G1Fp>(out: &mut TG1, input: &
     }
 }
 
-fn p1_dadd_affine<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp>>(
+pub fn p1_dadd_affine<TG1: G1, TFp: G1Fp, TG1Affine: G1Affine<TG1, TFp>>(
     out: &mut P1XYZZ<TFp>,
     p2: &TG1Affine,
     subtract: bool, // Need to replace this somehow
